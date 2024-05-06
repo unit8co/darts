@@ -15,6 +15,10 @@ if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import numpy as np
 
@@ -123,7 +127,7 @@ class AnomalyScorer(ABC):
         anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         series: Union[TimeSeries, Sequence[TimeSeries]],
         pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-        metric: str = "AUC_ROC",
+        metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
     ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
         """Computes the anomaly score between `series` and `pred_series`, and returns the score
         of an agnostic threshold metric.
@@ -139,7 +143,7 @@ class AnomalyScorer(ABC):
         metric
             The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
-            Default: "AUC_ROC"
+            Default: "AUC_ROC".
 
         Returns
         -------
@@ -170,7 +174,7 @@ class AnomalyScorer(ABC):
         scorer_name: str = None,
         anomalies: TimeSeries = None,
         title: str = None,
-        metric: str = None,
+        metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
     ):
         """Plot the results of the scorer.
 
@@ -200,9 +204,9 @@ class AnomalyScorer(ABC):
         title
             Title of the figure
         metric
-            The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
+            Optionally, the name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
-            Default: "AUC_ROC"
+            Default: "AUC_ROC".
         """
         series = _check_input(series, name="series", num_series_expected=1)[0]
         pred_series = _check_input(
@@ -218,11 +222,11 @@ class AnomalyScorer(ABC):
 
         return show_anomalies_from_scores(
             series=series,
+            anomalies=anomalies,
             pred_series=pred_series,
             pred_scores=pred_scores,
             window=self.window,
             names_of_scorers=scorer_name,
-            anomalies=anomalies,
             title=title,
             metric=metric,
         )
@@ -528,7 +532,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         self,
         anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         series: Union[TimeSeries, Sequence[TimeSeries]],
-        metric: str = "AUC_ROC",
+        metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
     ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
         """Computes the anomaly score of the given time series, and returns the score
         of an agnostic threshold metric.
@@ -542,7 +546,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         metric
             The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
-            Default: "AUC_ROC"
+            Default: "AUC_ROC".
 
         Returns
         -------
@@ -574,7 +578,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         anomalies: TimeSeries = None,
         scorer_name: str = None,
         title: str = None,
-        metric: str = None,
+        metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
     ):
         """Plot the results of the scorer.
 
@@ -602,9 +606,9 @@ class FittableAnomalyScorer(AnomalyScorer):
         title
             Title of the figure
         metric
-            The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
+            Optionally, the name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
-            Default: "AUC_ROC"
+            Default: "AUC_ROC".
         """
         series = _check_input(series, name="series", num_series_expected=1)[0]
         pred_scores = self.score(series)
@@ -622,10 +626,10 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         return show_anomalies_from_scores(
             series=series,
+            anomalies=anomalies,
             pred_scores=pred_scores,
             window=window,
             names_of_scorers=scorer_name,
-            anomalies=anomalies,
             title=title,
             metric=metric,
         )

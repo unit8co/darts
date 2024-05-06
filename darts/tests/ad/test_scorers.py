@@ -777,7 +777,7 @@ class TestAnomalyDetectionScorer:
                 )  # len(self.test)=100
 
     def diff_fn_parameter(self, scorer, **kwargs):
-        # must be one of Darts per time step metrics (e.g. ae, err, ...)None, 'diff' or 'abs_diff'
+        # must be one of Darts per time step metrics (e.g. ae, err, ...)
         with pytest.raises(ValueError):
             scorer(diff_fn="abs_diff", **kwargs)
         # absolute error / absolute difference

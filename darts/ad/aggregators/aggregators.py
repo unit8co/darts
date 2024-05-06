@@ -11,10 +11,17 @@ Anomaly aggregators base classes
 #   the anomaly alarm came from)
 import sys
 
+import numpy as np
+
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 from abc import ABC, abstractmethod
 from typing import Optional, Sequence, Union
 
@@ -94,9 +101,9 @@ class Aggregator(ABC):
     def eval_metric(
         self,
         anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        pred_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         window: int = 1,
-        metric: str = "recall",
+        metric: Literal["recall", "precision", "f1", "accuracy"] = "recall",
     ) -> Union[float, Sequence[float]]:
         """Aggregates the (sequence of) multivariate series given as input into one (sequence of)
         series and evaluates the results against the ground truth anomaly labels.
@@ -105,7 +112,7 @@ class Aggregator(ABC):
         ----------
         anomalies
             The (sequence of) binary ground truth anomaly labels (1 if it is an anomaly and 0 if not).
-        pred_anomalies
+        series
             The (sequence of) predicted multivariate binary series to aggregate.
         window
             (Sequence of) integer value indicating the number of past samples each point
@@ -114,14 +121,14 @@ class Aggregator(ABC):
             anomalies.
         metric
             The name of the metric function to use. Must be one of "recall", "precision", "f1", and "accuracy".
-             Default: "recall"
+            Default: "recall".
 
         Returns
         -------
         Union[float, Sequence[float]]
             (Sequence of) score for the (sequence of) series.
         """
-        pred_anomalies = self.predict(pred_anomalies)
+        pred_anomalies = self.predict(series)
         return eval_metric_from_binary_prediction(
             anomalies=anomalies,
             pred_anomalies=pred_anomalies,
@@ -138,40 +145,38 @@ class FittableAggregator(Aggregator):
         self._fit_called = False
 
     @abstractmethod
-    def _fit_core(
-        self, series: Sequence[TimeSeries], pred_series: Sequence[TimeSeries]
-    ):
+    def _fit_core(self, anomalies: Sequence[np.ndarray], series: Sequence[np.ndarray]):
         """Fits the aggregator, assuming the input is in the correct shape.
 
         Parameters
         ----------
-        series
+        anomalies
             The (sequence of) binary ground truth anomaly labels (1 if it is an anomaly and 0 if not).
-        pred_series
-            The (sequence of) multivariate binary series (predicted labels) to aggregate.
+        series
+            The (sequence of) multivariate binary anomalies (predicted labels) to aggregate.
         """
         pass
 
     def fit(
         self,
+        anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         series: Union[TimeSeries, Sequence[TimeSeries]],
-        pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     ) -> Self:
-        """Fit the aggregators on the (sequence of) multivariate binary series.
+        """Fit the aggregators on the (sequence of) multivariate binary anomaly series.
 
         If a list of series is given, they must have the same number of components.
 
         Parameters
         ----------
-        series
+        anomalies
             The (sequence of) binary ground truth anomaly labels (1 if it is an anomaly and 0 if not).
-        pred_series
+        series
             The (sequence of) multivariate binary series (predicted labels) to aggregate.
         """
-        pred_width = series2seq(pred_series)[0].width
-        pred_series = _check_input(
-            pred_series,
-            name="pred_series",
+        pred_width = series2seq(series)[0].width
+        series = _check_input(
+            series,
+            name="series",
             width_expected=pred_width,
             check_deterministic=True,
             check_binary=True,
@@ -179,33 +184,26 @@ class FittableAggregator(Aggregator):
         )
         self.width_trained_on = pred_width
 
-        series = _check_input(
-            series,
-            name="series",
+        anomalies = _check_input(
+            anomalies,
+            name="anomalies",
             width_expected=1,
             check_deterministic=True,
             check_binary=True,
             check_multivariate=False,
         )
-        if len(series) != len(pred_series):
+        if len(anomalies) != len(series):
             raise_log(
                 ValueError(
-                    "`series` and `pred_series` must contain the same number of series."
+                    "`anomalies` and `series` must contain the same number of series."
                 ),
                 logger=logger,
             )
-        same_intersection = list(
-            zip(
-                *[
-                    [anomalies.slice_intersect(series), series.slice_intersect(series)]
-                    for (anomalies, series) in zip(series, pred_series)
-                ]
-            )
-        )
-        series = list(same_intersection[0])
-        pred_series = list(same_intersection[1])
-
-        self._fit_core(series, pred_series)
+        anomalies_vals, series_vals = [], []
+        for anom, pred_anom in zip(anomalies, series):
+            anomalies_vals.append(anom.slice_intersect_values(pred_anom)[:, :, 0])
+            series_vals.append(pred_anom.slice_intersect_values(anom)[:, :, 0])
+        self._fit_core(anomalies_vals, series_vals)
         self._fit_called = True
         return self
 

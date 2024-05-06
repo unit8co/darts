@@ -25,8 +25,13 @@ class OrAggregator(Aggregator):
     def _predict_core(
         self, series: Sequence[TimeSeries], *args, **kwargs
     ) -> Sequence[TimeSeries]:
+
         def _compononents_or(s: TimeSeries):
-            return s.sum(axis=1).map(lambda x: (x > 0).astype(s.dtype))
+            return TimeSeries.from_times_and_values(
+                times=s.time_index,
+                values=(s.all_values(copy=False).sum(axis=1) > 0).astype(s.dtype),
+                columns=["components_sum"],
+            )
 
         return _parallel_apply(
             [(s,) for s in series],

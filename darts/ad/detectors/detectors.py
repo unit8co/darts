@@ -10,12 +10,16 @@ Detector Base Classes
 
 import sys
 from abc import ABC, abstractmethod
+from typing import Any, List, Optional, Sequence, Tuple, Union
 
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
-from typing import Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -73,7 +77,7 @@ class Detector(ABC):
         anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         pred_scores: Union[TimeSeries, Sequence[TimeSeries]],
         window: int = 1,
-        metric: str = "recall",
+        metric: Literal["recall", "precision", "f1", "accuracy"] = "recall",
     ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
         """Score the results against true anomalies.
 
@@ -87,7 +91,7 @@ class Detector(ABC):
             Integer value indicating the number of past samples each point represents in the `pred_scores`.
         metric
             The name of the metric function to use. Must be one of "recall", "precision", "f1", and "accuracy".
-             Default: "recall"
+            Default: "recall".
 
         Returns
         -------

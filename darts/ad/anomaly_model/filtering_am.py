@@ -8,12 +8,16 @@ by comparing how actuals deviate from the model's predictions (filtered series).
 """
 
 import sys
-from typing import Dict, Sequence, Union
+from typing import Dict, Optional, Sequence, Union
 
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
@@ -151,7 +155,7 @@ class FilteringAnomalyModel(AnomalyModel):
         self,
         anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         series: Union[TimeSeries, Sequence[TimeSeries]],
-        metric: str = "AUC_ROC",
+        metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
         **filter_kwargs,
     ) -> Union[
         Dict[str, float],
@@ -174,7 +178,7 @@ class FilteringAnomalyModel(AnomalyModel):
         metric
             The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
-            Default: "AUC_ROC"
+            Default: "AUC_ROC".
         **filter_kwargs
             Additional parameters passed to the filtering model's `filter()` method.
 
@@ -204,7 +208,7 @@ class FilteringAnomalyModel(AnomalyModel):
         anomalies: TimeSeries = None,
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
-        metric: str = None,
+        metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
         **score_kwargs,
     ):
         """Plot the results of the anomaly model.
@@ -234,16 +238,16 @@ class FilteringAnomalyModel(AnomalyModel):
         title
             Title of the figure.
         metric
-            The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
+            Optionally, the name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
-            Default: "AUC_ROC"
+            Default: "AUC_ROC".
         score_kwargs
             parameters for the `score()` method.
         """
         return super().show_anomalies(
             series=series,
-            predict_kwargs={},
             anomalies=anomalies,
+            predict_kwargs=None,
             names_of_scorers=names_of_scorers,
             title=title,
             metric=metric,

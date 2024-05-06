@@ -341,7 +341,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         verbose: bool = False,
         show_warnings: bool = True,
         enable_optimization: bool = True,
-        metric: str = "AUC_ROC",
+        metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
     ) -> Union[
         Dict[str, float],
         Dict[str, Sequence[float]],
@@ -397,7 +397,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         metric
             The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
-            Default: "AUC_ROC"
+            Default: "AUC_ROC".
 
         Returns
         -------
@@ -442,7 +442,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         anomalies: TimeSeries = None,
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
-        metric: str = None,
+        metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
         **score_kwargs,
     ):
         """Plot the results of the anomaly model.
@@ -506,9 +506,9 @@ class ForecastingAnomalyModel(AnomalyModel):
         title
             Title of the figure.
         metric
-            The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
+            Optionally, the name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
-            Default: "AUC_ROC"
+            Default: "AUC_ROC".
         score_kwargs
             parameters for the `score()` method.
         """
@@ -525,8 +525,8 @@ class ForecastingAnomalyModel(AnomalyModel):
         }
         return super().show_anomalies(
             series=series,
-            predict_kwargs=predict_kwargs,
             anomalies=anomalies,
+            predict_kwargs=predict_kwargs,
             names_of_scorers=names_of_scorers,
             title=title,
             metric=metric,

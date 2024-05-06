@@ -4,12 +4,16 @@ Anomaly models base classes
 
 import sys
 from abc import ABC, abstractmethod
-from typing import Dict, Sequence, Union
+from typing import Dict, Optional, Sequence, Union
 
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.ad.utils import (
@@ -123,7 +127,7 @@ class AnomalyModel(ABC):
         self,
         anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         series: Union[TimeSeries, Sequence[TimeSeries]],
-        metric: str = "AUC_ROC",
+        metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
         **kwargs,
     ) -> Union[
         Dict[str, float],
@@ -146,7 +150,7 @@ class AnomalyModel(ABC):
         metric
             The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
-            Default: "AUC_ROC"
+            Default: "AUC_ROC".
         **kwargs
             Additional parameters passed to the `score()` method.
 
@@ -218,9 +222,9 @@ class AnomalyModel(ABC):
 
             name_scorers.append(name)
 
-        acc = []
+        metric_vals = []
         for anomalies, scores in zip(anomalies, pred_scores):
-            acc.append(
+            metric_vals.append(
                 eval_metric_from_scores(
                     anomalies=anomalies,
                     pred_scores=scores,
@@ -228,20 +232,24 @@ class AnomalyModel(ABC):
                     metric=metric,
                 )
             )
-        acc_pred_scores = [
-            dict(zip(name_scorers, scorer_values)) for scorer_values in acc
+        metric_vals_pred_scores = [
+            dict(zip(name_scorers, scorer_values)) for scorer_values in metric_vals
         ]
 
-        return acc_pred_scores[0] if called_with_single_series else acc_pred_scores
+        return (
+            metric_vals_pred_scores[0]
+            if called_with_single_series
+            else metric_vals_pred_scores
+        )
 
     def show_anomalies(
         self,
         series: TimeSeries,
-        predict_kwargs: Dict,
         anomalies: TimeSeries = None,
+        predict_kwargs: Optional[Dict] = None,
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
-        metric: str = None,
+        metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
         **score_kwargs,
     ):
         """Plot the results of the anomaly model.
@@ -264,22 +272,23 @@ class AnomalyModel(ABC):
         ----------
         series
             The series to visualize anomalies from.
-        predict_kwargs
-            Additional parameters passed to `AnomalyModel.predict_series()`.
         anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not).
+        predict_kwargs
+            Optionally, some additional parameters passed to `AnomalyModel.predict_series()`.
         names_of_scorers
             Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.
         title
             Title of the figure.
         metric
-            The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
+            Optionally, the name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
-            Default: "AUC_ROC"
+            Default: "AUC_ROC".
         score_kwargs
             parameters for the `score()` method.
         """
         series = _check_input(series, name="series", num_series_expected=1)[0]
+        predict_kwargs = predict_kwargs if predict_kwargs is not None else {}
         pred_scores, pred_series = self.score(
             series,
             return_model_prediction=True,
@@ -297,11 +306,11 @@ class AnomalyModel(ABC):
 
         return show_anomalies_from_scores(
             series=series,
+            anomalies=anomalies,
             pred_series=pred_series,
             pred_scores=pred_scores,
             window=list_window,
             names_of_scorers=names_of_scorers,
-            anomalies=anomalies,
             title=title,
             metric=metric,
         )

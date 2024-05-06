@@ -33,15 +33,10 @@ class EnsembleSklearnAggregator(FittableAggregator):
             self.model.__str__().split("(")[0]
         )
 
-    def _fit_core(
-        self, series: Sequence[TimeSeries], pred_series: Sequence[TimeSeries]
-    ):
-        X = np.concatenate(
-            [s.values(copy=False) for s in pred_series],
-            axis=0,
-        )
+    def _fit_core(self, anomalies: Sequence[np.ndarray], series: Sequence[np.ndarray]):
+        X = np.concatenate(series, axis=0)
         y = np.concatenate(
-            [s.values(copy=False).flatten() for s in series],
+            [s.flatten() for s in anomalies],
             axis=0,
         )
         self.model.fit(y=y, X=X)
