@@ -647,6 +647,10 @@ def show_anomalies_from_scores(
 
         nbr_plots = nbr_plots + len(set(window))
     else:
+        if window is not None:
+            logger.warning(
+                "The parameter `window` is given, but the input `anomaly_scores` is None."
+            )
 
         if names_of_scorers is not None:
             logger.warning(
