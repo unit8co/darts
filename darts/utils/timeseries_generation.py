@@ -12,76 +12,20 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
-
-def generate_index(
-    start: Optional[Union[pd.Timestamp, int]] = None,
-    end: Optional[Union[pd.Timestamp, int]] = None,
-    length: Optional[int] = None,
-    freq: Union[str, int, pd.DateOffset] = None,
-    name: str = None,
-) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
-    """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
-    or a pandas RangeIndex. The index starts at
-
-    Parameters
-    ----------
-    start
-        The start of the returned index. If a pandas Timestamp is passed, the index will be a pandas
-        DatetimeIndex. If an integer is passed, the index will be a pandas RangeIndex index. Works only with
-        either `length` or `end`.
-    end
-        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
-        set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
-    length
-        Optionally, the length of the returned index. Works only with either `start` or `end`.
-    freq
-        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
-        a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
-        By default, "D" (daily) is used.
-        If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
-        The freq is optional for generating an integer index (if not specified, 1 is used).
-    name
-        Optionally, an index name.
-    """
-    constructors = [
-        arg_name
-        for arg, arg_name in zip([start, end, length], ["start", "end", "length"])
-        if arg is not None
-    ]
-    raise_if(
-        len(constructors) != 2,
-        "index can only be generated with exactly two of the following parameters: [`start`, `end`, `length`]. "
-        f"Observed parameters: {constructors}. For generating an index with `end` and `length` consider setting "
-        f"`start` to None.",
-        logger,
-    )
-    raise_if(
-        end is not None and start is not None and type(start) != type(end),
-        "index generation with `start` and `end` requires equal object types of `start` and `end`",
-        logger,
-    )
-
-    if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
-        index = pd.date_range(
-            start=start,
-            end=end,
-            periods=length,
-            freq="D" if freq is None else freq,
-            name=name,
-        )
-    else:  # int
-        step = 1 if freq is None else freq
-        index = pd.RangeIndex(
-            start=start if start is not None else end - step * length + step,
-            stop=end + step if end is not None else start + step * length,
-            step=step,
-            name=name,
-        )
-    return index
+ONE_INDEXED_FREQS = {
+    "day",
+    "month",
+    "quarter",
+    "dayofyear",
+    "day_of_year",
+    "week",
+    "weekofyear",
+    "week_of_year",
+}
 
 
 def constant_timeseries(
@@ -311,14 +255,14 @@ def gaussian_timeseries(
         A white noise TimeSeries created as indicated above.
     """
 
-    if type(mean) == np.ndarray:
+    if isinstance(mean, np.ndarray):
         raise_if_not(
             mean.shape == (length,),
             "If a vector of means is provided, "
             "it requires the same length as the TimeSeries.",
             logger,
         )
-    if type(std) == np.ndarray:
+    if isinstance(std, np.ndarray):
         raise_if_not(
             std.shape == (length, length),
             "If a matrix of standard deviations is provided, "
@@ -605,6 +549,7 @@ def datetime_attribute_timeseries(
     Returns a new TimeSeries with index `time_index` and one or more dimensions containing
     (optionally one-hot encoded or cyclic encoded) pd.DatatimeIndex attribute information derived from the index.
 
+    1-indexed attributes are shifted to enforce 0-indexing across all the encodings.
 
     Parameters
     ----------
@@ -693,6 +638,33 @@ def datetime_attribute_timeseries(
             .rename("time")
         )
 
+    # shift 1-indexed datetime attributes
+    if attribute in ONE_INDEXED_FREQS:
+        values -= 1
+
+    # leap years insert an additional day on the 29th of Feburary
+    if attribute in {"dayofyear", "day_of_year"} and any(time_index.is_leap_year):
+        num_values_dict[attribute] += 1
+
+    # years contain an additional week if they are :
+    # - a regular year starting on a thursday
+    # - a leap year starting on a wednesday
+    if attribute in {"week", "weekofyear", "week_of_year"}:
+        years = time_index.year.unique()
+        # check if year respect properties
+        additional_week_year = any(
+            ((not first_day.is_leap_year) and first_day.day_name() == "Thursday")
+            or (first_day.is_leap_year and first_day.day_name() == "Wednesday")
+            for first_day in [pd.Timestamp(f"{year}-01-01") for year in years]
+        )
+        # check if time index actually include the additional week
+        additional_week_in_index = time_index[-1] - time_index[0] + pd.Timedelta(
+            days=1
+        ) >= pd.Timedelta(days=365)
+
+        if additional_week_year and additional_week_in_index:
+            num_values_dict[attribute] += 1
+
     if one_hot or cyclic:
         raise_if_not(
             attribute in num_values_dict,
@@ -704,10 +676,11 @@ def datetime_attribute_timeseries(
     if one_hot:
         values_df = pd.get_dummies(values)
         # fill missing columns (in case not all values appear in time_index)
-        for i in range(1, num_values_dict[attribute] + 1):
-            if not (i in values_df.columns):
+        attribute_range = range(num_values_dict[attribute])
+        for i in attribute_range:
+            if i not in values_df.columns:
                 values_df[i] = 0
-        values_df = values_df[range(1, num_values_dict[attribute] + 1)]
+        values_df = values_df[attribute_range]
 
         if with_columns is None:
             with_columns = [

@@ -1,3 +1,4 @@
+import itertools
 import math
 from tempfile import NamedTemporaryFile
 from unittest.mock import patch
@@ -9,11 +10,8 @@ import xarray as xr
 from scipy.stats import kurtosis, skew
 
 from darts import TimeSeries, concatenate
-from darts.utils.timeseries_generation import (
-    constant_timeseries,
-    generate_index,
-    linear_timeseries,
-)
+from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
+from darts.utils.utils import freqs, generate_index
 
 
 class TestTimeSeries:
@@ -29,7 +27,7 @@ class TestTimeSeries:
         series_test = TimeSeries.from_series(self.pd_series1)
         assert series_test.pd_series().equals(self.pd_series1.astype(float))
 
-        # Creation with a well formed array:
+        # Creation with a well-formed array:
         ar = xr.DataArray(
             np.random.randn(10, 2, 3),
             dims=("time", "component", "sample"),
@@ -531,41 +529,6 @@ class TestTimeSeries:
         assert test_series.freq_str == seriesA.freq_str
         assert test_series.freq_str == seriesB.freq_str
 
-    @staticmethod
-    def helper_test_intersect(test_case, test_series: TimeSeries):
-        seriesA = TimeSeries.from_series(
-            pd.Series(range(2, 8), index=pd.date_range("20130102", "20130107"))
-        )
-
-        seriesB = test_series.slice_intersect(seriesA)
-        assert seriesB.start_time() == pd.Timestamp("20130102")
-        assert seriesB.end_time() == pd.Timestamp("20130107")
-
-        # Outside of range
-        seriesD = test_series.slice_intersect(
-            TimeSeries.from_series(
-                pd.Series(range(6, 13), index=pd.date_range("20130106", "20130112"))
-            )
-        )
-        assert seriesD.start_time() == pd.Timestamp("20130106")
-        assert seriesD.end_time() == pd.Timestamp("20130110")
-
-        # Small intersect
-        seriesE = test_series.slice_intersect(
-            TimeSeries.from_series(
-                pd.Series(range(9, 13), index=pd.date_range("20130109", "20130112"))
-            )
-        )
-        assert len(seriesE) == 2
-
-        # No intersect
-        with pytest.raises(ValueError):
-            test_series.slice_intersect(
-                TimeSeries(
-                    pd.Series(range(6, 13), index=pd.date_range("20130116", "20130122"))
-                )
-            )
-
     def test_rescale(self):
         with pytest.raises(ValueError):
             self.series1.rescale_with_value(1)
@@ -583,6 +546,101 @@ class TestTimeSeries:
             1e20
         )  # TODO: test will fail if value > 1e24 due to num imprecision
         assert self.series3 * 0.2e20 == seriesD
+
+    @staticmethod
+    def helper_test_intersect(
+        test_case, freq, is_mixed_freq: bool, is_univariate: bool
+    ):
+        start = pd.Timestamp("20130101") if isinstance(freq, str) else 0
+        freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
+
+        # handle identical and mixed frequency setup
+        if not is_mixed_freq:
+            freq_other = freq
+            n_steps = 11
+        elif "2" not in str(freq):  # 1 or "1D"
+            freq_other = freq * 2
+            n_steps = 21
+        else:  # 2 or "2D"
+            freq_other = freq / 2
+            n_steps = 11
+        freq_other = int(freq_other) if isinstance(freq_other, float) else freq_other
+        # if freq_other has a higher freq, we expect the slice to have the higher freq
+        freq_expected = freq if freq > freq_other else freq_other
+        idx = generate_index(start=start, freq=freq, length=n_steps)
+        end = idx[-1]
+
+        n_cols = 1 if is_univariate else 2
+        series = TimeSeries.from_times_and_values(
+            values=np.random.randn(n_steps, n_cols), times=idx
+        )
+
+        def check_intersect(other, start_, end_, freq_):
+            s_int = series.slice_intersect(other)
+            assert s_int.components.equals(series.components)
+            assert s_int.freq == freq_
+
+            if start_ is None:  # empty slice
+                assert len(s_int) == 0
+                return
+
+            assert s_int.start_time() == start_
+            assert s_int.end_time() == end_
+
+            s_int_vals = series.slice_intersect_values(other, copy=False)
+            np.testing.assert_array_equal(s_int.all_values(), s_int_vals)
+            # check that first and last values are as expected
+            start_ = series.get_index_at_point(start_)
+            end_ = series.get_index_at_point(end_)
+            np.testing.assert_array_equal(
+                series[start_].all_values(), s_int_vals[0:1, :, :]
+            )
+            np.testing.assert_array_equal(
+                series[end_].all_values(), s_int_vals[-1:, :, :]
+            )
+
+        # slice with exact range
+        startA = start
+        endA = end
+        idxA = generate_index(startA, endA, freq=freq_other)
+        seriesA = TimeSeries.from_series(pd.Series(range(len(idxA)), index=idxA))
+        check_intersect(seriesA, startA, endA, freq_expected)
+
+        # entire slice within the range
+        startA = start + freq
+        endA = startA + 6 * freq_other
+        idxA = generate_index(startA, endA, freq=freq_other)
+        seriesA = TimeSeries.from_series(pd.Series(range(len(idxA)), index=idxA))
+        check_intersect(seriesA, startA, endA, freq_expected)
+
+        # start outside of range
+        startC = start - 4 * freq
+        endC = start + 4 * freq_other
+        idxC = generate_index(startC, endC, freq=freq_other)
+        seriesC = TimeSeries.from_series(pd.Series(range(len(idxC)), index=idxC))
+        check_intersect(seriesC, start, endC, freq_expected)
+
+        # end outside of range
+        startC = start + 4 * freq
+        endC = end + 4 * freq_other
+        idxC = generate_index(startC, endC, freq=freq_other)
+        seriesC = TimeSeries.from_series(pd.Series(range(len(idxC)), index=idxC))
+        check_intersect(seriesC, startC, end, freq_expected)
+
+        # small intersect
+        startE = start + (n_steps - 1) * freq
+        endE = startE + 2 * freq_other
+        idxE = generate_index(startE, endE, freq=freq_other)
+        seriesE = TimeSeries.from_series(pd.Series(range(len(idxE)), index=idxE))
+        check_intersect(seriesE, startE, end, freq_expected)
+
+        # No intersect
+        startG = end + 3 * freq
+        endG = startG + 6 * freq_other
+        idxG = generate_index(startG, endG, freq=freq_other)
+        seriesG = TimeSeries.from_series(pd.Series(range(len(idxG)), index=idxG))
+        # for empty slices, we expect the original freq
+        check_intersect(seriesG, None, None, freq)
 
     @staticmethod
     def helper_test_shift(test_case, test_series: TimeSeries):
@@ -607,7 +665,7 @@ class TestTimeSeries:
             test_series.shift(1e6)
 
         seriesM = TimeSeries.from_times_and_values(
-            pd.date_range("20130101", "20130601", freq="m"), range(5)
+            pd.date_range("20130101", "20130601", freq=freqs["ME"]), range(5)
         )
         with pytest.raises(OverflowError):
             seriesM.shift(1e4)
@@ -627,9 +685,11 @@ class TestTimeSeries:
     def helper_test_append(test_case, test_series: TimeSeries):
         # reconstruct series
         seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
-        assert seriesA.append(seriesB) == test_series
-        assert seriesA.append(seriesB).freq == test_series.freq
-        assert test_series.time_index.equals(seriesA.append(seriesB).time_index)
+        appended = seriesA.append(seriesB)
+        assert appended == test_series
+        assert appended.freq == test_series.freq
+        assert test_series.time_index.equals(appended.time_index)
+        assert appended.components.equals(seriesA.components)
 
         # Creating a gap is not allowed
         seriesC = test_series.drop_before(pd.Timestamp("20130108"))
@@ -648,23 +708,26 @@ class TestTimeSeries:
         # reconstruct series
         seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
         arrayB = seriesB.all_values()
-        assert seriesA.append_values(arrayB) == test_series
-        assert test_series.time_index.equals(seriesA.append_values(arrayB).time_index)
+        appended = seriesA.append_values(arrayB)
+        assert appended == test_series
+        assert test_series.time_index.equals(appended.time_index)
 
         # arrayB shape shouldn't affect append_values output:
         squeezed_arrayB = arrayB.squeeze()
-        assert seriesA.append_values(squeezed_arrayB) == test_series
-        assert test_series.time_index.equals(
-            seriesA.append_values(squeezed_arrayB).time_index
-        )
+        appended_sq = seriesA.append_values(squeezed_arrayB)
+        assert appended_sq == test_series
+        assert test_series.time_index.equals(appended_sq.time_index)
+        assert appended_sq.components.equals(seriesA.components)
 
     @staticmethod
     def helper_test_prepend(test_case, test_series: TimeSeries):
         # reconstruct series
         seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
-        assert seriesB.prepend(seriesA) == test_series
-        assert seriesB.prepend(seriesA).freq == test_series.freq
-        assert test_series.time_index.equals(seriesB.prepend(seriesA).time_index)
+        prepended = seriesB.prepend(seriesA)
+        assert prepended == test_series
+        assert prepended.freq == test_series.freq
+        assert test_series.time_index.equals(prepended.time_index)
+        assert prepended.components.equals(seriesB.components)
 
         # Creating a gap is not allowed
         seriesC = test_series.drop_before(pd.Timestamp("20130108"))
@@ -683,15 +746,17 @@ class TestTimeSeries:
         # reconstruct series
         seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
         arrayA = seriesA.data_array().values
-        assert seriesB.prepend_values(arrayA) == test_series
-        assert test_series.time_index.equals(seriesB.prepend_values(arrayA).time_index)
+        prepended = seriesB.prepend_values(arrayA)
+        assert prepended == test_series
+        assert test_series.time_index.equals(prepended.time_index)
+        assert prepended.components.equals(test_series.components)
 
         # arrayB shape shouldn't affect append_values output:
         squeezed_arrayA = arrayA.squeeze()
-        assert seriesB.prepend_values(squeezed_arrayA) == test_series
-        assert test_series.time_index.equals(
-            seriesB.prepend_values(squeezed_arrayA).time_index
-        )
+        prepended_sq = seriesB.prepend_values(squeezed_arrayA)
+        assert prepended_sq == test_series
+        assert test_series.time_index.equals(prepended_sq.time_index)
+        assert prepended_sq.components.equals(test_series.components)
 
     def test_slice(self):
         TestTimeSeries.helper_test_slice(self, self.series1)
@@ -702,8 +767,14 @@ class TestTimeSeries:
     def test_drop(self):
         TestTimeSeries.helper_test_drop(self, self.series1)
 
-    def test_intersect(self):
-        TestTimeSeries.helper_test_intersect(self, self.series1)
+    @pytest.mark.parametrize(
+        "config", itertools.product(["D", "2D", 1, 2], [False, True])
+    )
+    def test_intersect(self, config):
+        """Tests slice intersection between two series with datetime or range index with identical and
+        mixed frequencies."""
+        freq, mixed_freq = config
+        self.helper_test_intersect(self, freq, mixed_freq, is_univariate=True)
 
     def test_shift(self):
         TestTimeSeries.helper_test_shift(self, self.series1)
@@ -711,8 +782,8 @@ class TestTimeSeries:
     def test_append(self):
         TestTimeSeries.helper_test_append(self, self.series1)
         # Check `append` deals with `RangeIndex` series correctly:
-        series_1 = linear_timeseries(start=1, length=5, freq=2)
-        series_2 = linear_timeseries(start=11, length=2, freq=2)
+        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name=freqs["YE"])
+        series_2 = linear_timeseries(start=11, length=2, freq=2, column_name="B")
         appended = series_1.append(series_2)
         expected_vals = np.concatenate(
             [series_1.all_values(), series_2.all_values()], axis=0
@@ -720,6 +791,7 @@ class TestTimeSeries:
         expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
         assert np.allclose(appended.all_values(), expected_vals)
         assert appended.time_index.equals(expected_idx)
+        assert appended.components.equals(series_1.components)
 
     def test_append_values(self):
         TestTimeSeries.helper_test_append_values(self, self.series1)
@@ -732,12 +804,13 @@ class TestTimeSeries:
         expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
         assert np.allclose(appended.all_values(), expected_vals)
         assert appended.time_index.equals(expected_idx)
+        assert appended.components.equals(series.components)
 
     def test_prepend(self):
         TestTimeSeries.helper_test_prepend(self, self.series1)
         # Check `prepend` deals with `RangeIndex` series correctly:
-        series_1 = linear_timeseries(start=1, length=5, freq=2)
-        series_2 = linear_timeseries(start=11, length=2, freq=2)
+        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name=freqs["YE"])
+        series_2 = linear_timeseries(start=11, length=2, freq=2, column_name="B")
         prepended = series_2.prepend(series_1)
         expected_vals = np.concatenate(
             [series_1.all_values(), series_2.all_values()], axis=0
@@ -745,6 +818,7 @@ class TestTimeSeries:
         expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
         assert np.allclose(prepended.all_values(), expected_vals)
         assert prepended.time_index.equals(expected_idx)
+        assert prepended.components.equals(series_1.components)
 
     def test_prepend_values(self):
         TestTimeSeries.helper_test_prepend_values(self, self.series1)
@@ -757,6 +831,7 @@ class TestTimeSeries:
         expected_idx = pd.RangeIndex(start=-3, stop=11, step=2)
         assert np.allclose(prepended.all_values(), expected_vals)
         assert prepended.time_index.equals(expected_idx)
+        assert prepended.components.equals(series.components)
 
     def test_with_values(self):
         vals = np.random.rand(5, 10, 3)
@@ -1026,56 +1101,51 @@ class TestTimeSeries:
             "C",
             "D",
             "W",
-            "M",
-            "SM",
-            "BM",
-            "CBM",
+            freqs["ME"],
+            freqs["SME"],
+            freqs["BME"],
+            freqs["CBME"],
             "MS",
             "SMS",
             "BMS",
             "CBMS",
-            "Q",
-            "BQ",
+            freqs["QE"],
+            freqs["BQE"],
             "QS",
             "BQS",
-            "A",
-            "Y",
-            "BA",
-            "BY",
-            "AS",
+            freqs["YE"],
+            freqs["BYE"],
+            freqs["YS"],
             "YS",
-            "BAS",
+            freqs["BYS"],
             "BYS",
-            "BH",
-            "H",
-            "T",
-            "min",
-            "S",
-            "L",
-            "U",
-            "us",
-            "N",
+            freqs["bh"],
+            freqs["h"],
+            freqs["min"],
+            freqs["s"],
+            freqs["ms"],
+            freqs["us"],
+            freqs["ns"],
         ]
         # fill_missing_dates will find multiple inferred frequencies (i.e. for 'B' it finds {'B', 'D'}) -> good
         offset_aliases_raise = [
             "B",
             "C",
-            "SM",
-            "BM",
-            "CBM",
+            freqs["SME"],
+            freqs["BME"],
+            freqs["CBME"],
             "SMS",
             "BMS",
             "CBMS",
-            "BQ",
-            "BA",
-            "BY",
-            "BAS",
+            freqs["BQE"],
+            freqs["BYE"],
+            freqs["BYS"],
             "BYS",
-            "BH",
+            freqs["bh"],
             "BQS",
         ]
         # frequency cannot be inferred for these types (finds '15D' instead of 'SM')
-        offset_not_supported = ["SM", "SMS"]
+        offset_not_supported = [freqs["SME"], "SMS"]
 
         ts_length = 25
         for offset_alias in offset_aliases:
@@ -1155,8 +1225,8 @@ class TestTimeSeries:
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries.from_series(pd_series)
 
-        resampled_timeseries = timeseries.resample("H")
-        assert resampled_timeseries.freq_str == "H"
+        resampled_timeseries = timeseries.resample(freqs["h"])
+        assert resampled_timeseries.freq_str == freqs["h"]
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101020000")] == 0
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130102020000")] == 1
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130109090000")] == 8
@@ -1171,12 +1241,12 @@ class TestTimeSeries:
 
         # using offset to avoid nan in the first value
         times = pd.date_range(
-            start=pd.Timestamp("20200101233000"), periods=10, freq="15T"
+            start=pd.Timestamp("20200101233000"), periods=10, freq="15" + freqs["min"]
         )
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries.from_series(pd_series)
         resampled_timeseries = timeseries.resample(
-            freq="1h", offset=pd.Timedelta("30T")
+            freq="1" + freqs["h"], offset=pd.Timedelta("30" + freqs["min"])
         )
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20200101233000")] == 0
 
@@ -1226,7 +1296,7 @@ class TestTimeSeries:
             pd.date_range("20130101", "20130105"),
             range(5),
             fill_missing_dates=False,
-            freq="M",
+            freq=freqs["ME"],
         )
         assert seriesA.freq == "D"
         # test successful instantiation of TimeSeries with length 2
@@ -1386,8 +1456,8 @@ class TestTimeSeries:
 
     def test_gaps(self):
         times1 = pd.date_range("20130101", "20130110")
-        times2 = pd.date_range("20120101", "20210301", freq="Q")
-        times3 = pd.date_range("20120101", "20210301", freq="AS")
+        times2 = pd.date_range("20120101", "20210301", freq=freqs["QE"])
+        times3 = pd.date_range("20120101", "20210301", freq=freqs["YS"])
         times4 = pd.date_range("20120101", "20210301", freq="2MS")
 
         pd_series1 = pd.Series(
@@ -2103,7 +2173,7 @@ class TestTimeSeriesFromDataFrame:
             ts = TimeSeries.from_dataframe(df=df, time_col="Time")
 
             # check type (should convert to RangeIndex):
-            assert type(ts.time_index) == pd.RangeIndex
+            assert type(ts.time_index) is pd.RangeIndex
 
             # check values inside the index (should be sorted correctly):
             assert list(ts.time_index) == sorted(expected)
@@ -2167,7 +2237,7 @@ class TestTimeSeriesFromDataFrame:
         assert ts.time_index.tz is None
 
         time_range_H = pd.date_range(
-            start="20200518", end="20200521", freq="H", tz="CET"
+            start="20200518", end="20200521", freq=freqs["h"], tz="CET"
         )
         values = np.random.uniform(low=-10, high=10, size=len(time_range_H))
 

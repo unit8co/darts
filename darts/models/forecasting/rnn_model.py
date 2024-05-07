@@ -62,7 +62,8 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
         """
         # RNNModule doesn't really need input and output_chunk_length for PLModule
         super().__init__(**kwargs)
@@ -111,9 +112,11 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
         # For the RNN we concatenate the past_target with the future_covariates
         # (they have the same length because we enforce a Shift dataset for RNNs)
         model_input = (
-            torch.cat([past_target, future_covariates], dim=2)
-            if future_covariates is not None
-            else past_target,
+            (
+                torch.cat([past_target, future_covariates], dim=2)
+                if future_covariates is not None
+                else past_target
+            ),
             static_covariates,
         )
         return self(model_input)[0]
@@ -215,7 +218,7 @@ class _RNNModule(CustomRNNModule):
         name
             The name of the specific PyTorch RNN module ("RNN", "GRU" or "LSTM").
         **kwargs
-            all parameters required for the :class:`darts.model.forecasting_models.CustomRNNModule` base class.
+            all parameters required for the :class:`darts.models.forecasting.CustomRNNModule` base class.
 
         Inputs
         ------
@@ -278,7 +281,6 @@ class RNNModel(DualCovariatesTorchModel):
         training_length: int = 24,
         **kwargs,
     ):
-
         """Recurrent Neural Network Model (RNNs).
 
         This class provides three variants of RNNs:
@@ -292,7 +294,7 @@ class RNNModel(DualCovariatesTorchModel):
         RNNModel is fully recurrent in the sense that, at prediction time, an output is computed using these inputs:
 
         - previous target value, which will be set to the last known target value for the first prediction,
-          and for all other predictions it will be set to the previous prediction (in an auto-regressive fashion),
+          and for all other predictions it will be set to the previous prediction (in an autoregressive fashion),
         - the previous hidden state,
         - the covariates at time `t` for forecasting the target at time `t` (if the model was trained with covariates),
 
@@ -319,9 +321,9 @@ class RNNModel(DualCovariatesTorchModel):
             Fraction of neurons afected by Dropout.
         training_length
             The length of both input (target and covariates) and output (target) time series used during
-            training. Generally speaking, `training_length` should have a higher value than `input_chunk_length`
-            because otherwise during training the RNN is never run for as many iterations as it will during
-            inference. For more information on this parameter, please see `darts.utils.data.ShiftedDataset`
+            training. Must have a larger value than `input_chunk_length`, because otherwise during training
+            the RNN is never run for as many iterations as it will during inference. For more information on
+            this parameter, please see `darts.utils.data.ShiftedDataset`.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -483,11 +485,23 @@ class RNNModel(DualCovariatesTorchModel):
             `RNN example notebook <https://unit8co.github.io/darts/examples/04-RNN-examples.html>`_ presents techniques
             that can be used to improve the forecasts quality compared to this simple usage example.
         """
+        if training_length < input_chunk_length:
+            raise_log(
+                ValueError(
+                    f"`training_length` ({training_length}) must be `>=input_chunk_length` ({input_chunk_length})."
+                ),
+                logger=logger,
+            )
         # create copy of model parameters
         model_kwargs = {key: val for key, val in self.model_params.items()}
 
         for kwarg, default_value in zip(
-            ["output_chunk_length", "use_reversible_instance_norm"], [1, False]
+            [
+                "output_chunk_length",
+                "use_reversible_instance_norm",
+                "output_chunk_shift",
+            ],
+            [1, False, 0],
         ):
             if model_kwargs.get(kwarg) is not None:
                 logger.warning(
@@ -578,3 +592,27 @@ class RNNModel(DualCovariatesTorchModel):
     @property
     def min_train_series_length(self) -> int:
         return self.training_length + 1
+
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        int,
+        Optional[int],
+    ]:
+        return (
+            -self.input_chunk_length,
+            self.output_chunk_length - 1,
+            None,
+            None,
+            -self.input_chunk_length,
+            self.output_chunk_length - 1,
+            self.output_chunk_shift,
+            self.training_length - self.input_chunk_length,
+        )

@@ -60,7 +60,6 @@ class _TFTModule(PLMixedCovariatesModule):
         norm_type: Union[str, nn.Module],
         **kwargs,
     ):
-
         """PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`_
         The implementation is built upon `pytorch-forecasting's TemporalFusionTransformer
         <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_.
@@ -108,7 +107,8 @@ class _TFTModule(PLMixedCovariatesModule):
         norm_type: str | nn.Module
             The type of LayerNorm variant to use.
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
         """
 
         super().__init__(**kwargs)
@@ -158,9 +158,11 @@ class _TFTModule(PLMixedCovariatesModule):
         # continuous variable processing
         self.prescalers_linear = {
             name: nn.Linear(
-                1
-                if name not in self.numeric_static_variables
-                else self.num_static_components,
+                (
+                    1
+                    if name not in self.numeric_static_variables
+                    else self.num_static_components
+                ),
                 self.hidden_continuous_size,
             )
             for name in self.reals
@@ -659,6 +661,7 @@ class TFTModel(MixedCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         hidden_size: Union[int, List[int]] = 16,
         lstm_layers: int = 1,
         num_attention_heads: int = 4,
@@ -705,11 +708,17 @@ class TFTModel(MixedCovariatesTorchModel):
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
             as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
-            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
             Also called: Decoder length
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         hidden_size
             Hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT
             architecture.
@@ -1173,6 +1182,7 @@ class TFTModel(MixedCovariatesTorchModel):
             future_covariates=future_covariates,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
         )

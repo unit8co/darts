@@ -122,7 +122,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         """
 
         raise_if_not(
-            type(allow_model_training) is bool,
+            type(allow_model_training) is bool,  # noqa: E721
             f"`allow_model_training` must be Boolean, found type: {type(allow_model_training)}.",
         )
 
@@ -221,7 +221,8 @@ class ForecastingAnomalyModel(AnomalyModel):
         series: Sequence[TimeSeries],
         name_covariates: str,
     ) -> Sequence[TimeSeries]:
-        """Convert `covariates` into Sequence, if not already, and checks if their length is equal to the one of `series`.
+        """Convert `covariates` into Sequence, if not already, and checks if their length is equal to the one of
+        `series`.
 
         Parameters
         ----------
@@ -413,7 +414,7 @@ class ForecastingAnomalyModel(AnomalyModel):
                   and inner sequence is over the scorers.
         """
         raise_if_not(
-            type(return_model_prediction) is bool,
+            type(return_model_prediction) is bool,  # noqa: E721
             f"`return_model_prediction` must be Boolean, found type: {type(return_model_prediction)}.",
         )
 
@@ -515,7 +516,6 @@ class ForecastingAnomalyModel(AnomalyModel):
         start: Union[pd.Timestamp, float, int] = None,
         num_samples: int = 1,
     ) -> TimeSeries:
-
         """Compute the historical forecasts that would have been obtained by this model on the `series`.
 
         `retrain` is set to False if possible (this is not supported by all models). If set to True, it will always

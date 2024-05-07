@@ -9,6 +9,7 @@ from darts.dataprocessing.transformers import Diff
 from darts.timeseries import TimeSeries
 from darts.timeseries import concatenate as darts_concat
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
+from darts.utils.utils import freqs
 
 
 class TestDiff:
@@ -27,7 +28,6 @@ class TestDiff:
         equal_nan: bool,
         to_compare: Optional[np.ndarray] = None,
     ):
-
         """
         Helper to compare series differenced by `Diff`.
 
@@ -97,7 +97,7 @@ class TestDiff:
 
         # Artifically truncate series:
         short_sine = self.sine_series.copy().drop_after(10)
-        for (lags, dropna) in test_cases:
+        for lags, dropna in test_cases:
             # Fit Diff to truncated series:
             diff = Diff(lags=lags, dropna=dropna)
             diff.fit(short_sine)
@@ -133,7 +133,7 @@ class TestDiff:
             (1, False, component_mask),
             ([1, 2, 3, 2, 1], False, component_mask),
         ]
-        for (lags, dropna, mask) in test_cases:
+        for lags, dropna, mask in test_cases:
             diff = Diff(lags=lags, dropna=dropna)
             transformed = diff.fit_transform(
                 [self.sine_series, self.sine_series], component_mask=mask
@@ -172,7 +172,7 @@ class TestDiff:
         vals = np.random.rand(10, 5, 10)
         series = TimeSeries.from_values(vals)
 
-        for (lags, dropna) in test_cases:
+        for lags, dropna in test_cases:
             transformer = Diff(lags=lags, dropna=dropna)
             new_series = transformer.fit_transform(series)
             series_back = transformer.inverse_transform(new_series)
@@ -247,7 +247,8 @@ class TestDiff:
             values=vals, times=pd.date_range(start="1/1/2018", freq="W", periods=10)
         )
         series2 = TimeSeries.from_times_and_values(
-            values=vals, times=pd.date_range(start="1/1/2018", freq="M", periods=10)
+            values=vals,
+            times=pd.date_range(start="1/1/2018", freq=freqs["ME"], periods=10),
         )
         diff = Diff(lags=1, dropna=True)
         diff.fit(series1)

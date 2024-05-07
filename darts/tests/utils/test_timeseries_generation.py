@@ -6,6 +6,7 @@ import pytest
 
 from darts import TimeSeries
 from darts.utils.timeseries_generation import (
+    ONE_INDEXED_FREQS,
     autoregressive_timeseries,
     constant_timeseries,
     datetime_attribute_timeseries,
@@ -16,6 +17,7 @@ from darts.utils.timeseries_generation import (
     random_walk_timeseries,
     sine_timeseries,
 )
+from darts.utils.utils import freqs
 
 
 class TestTimeSeriesGeneration:
@@ -148,7 +150,7 @@ class TestTimeSeriesGeneration:
             periods=365 * 3, freq="D", start=pd.Timestamp("2014-12-24")
         )
         time_index_3 = pd.date_range(
-            periods=10, freq="Y", start=pd.Timestamp("1950-01-01")
+            periods=10, freq=freqs["YE"], start=pd.Timestamp("1950-01-01")
         ) + pd.Timedelta(days=1)
 
         # testing we have at least one holiday flag in each year
@@ -161,7 +163,9 @@ class TestTimeSeriesGeneration:
             ts = holidays_timeseries(
                 time_index, country_code, until=until, add_length=add_length
             )
-            assert all(ts.pd_dataframe().groupby(pd.Grouper(freq="y")).sum().values)
+            assert all(
+                ts.pd_dataframe().groupby(pd.Grouper(freq=freqs["YE"])).sum().values
+            )
 
         for time_index in [time_index_1, time_index_2, time_index_3]:
             for country_code in ["US", "CH", "AR"]:
@@ -192,7 +196,7 @@ class TestTimeSeriesGeneration:
         # test holiday with and without time zone, 1st of August is national holiday in Switzerland
         # time zone naive (e.g. in UTC)
         idx = generate_index(
-            start=pd.Timestamp("2000-07-31 22:00:00"), length=3, freq="h"
+            start=pd.Timestamp("2000-07-31 22:00:00"), length=3, freq=freqs["h"]
         )
         ts = holidays_timeseries(idx, country_code="CH")
         np.testing.assert_array_almost_equal(ts.values()[:, 0], np.array([0, 0, 1]))
@@ -345,22 +349,26 @@ class TestTimeSeriesGeneration:
         for coef_assert in [[-1], [-1, 1.618], [1, 2, 3], list(range(10))]:
             test_calculation(coef=coef_assert)
 
-    def test_datetime_attribute_timeseries(self):
-        idx = generate_index(start=pd.Timestamp("2000-01-01"), length=48, freq="h")
+    @staticmethod
+    def helper_routine(idx, attr, vals_exp, **kwargs):
+        ts = datetime_attribute_timeseries(idx, attribute=attr, **kwargs)
+        vals_exp = np.array(vals_exp, dtype=ts.dtype)
+        if len(vals_exp.shape) == 1:
+            vals_act = ts.values()[:, 0]
+        else:
+            vals_act = ts.values()
+        np.testing.assert_array_almost_equal(vals_act, vals_exp)
 
-        def helper_routine(idx, attr, vals_exp, **kwargs):
-            ts = datetime_attribute_timeseries(idx, attribute=attr, **kwargs)
-            vals_exp = np.array(vals_exp, dtype=ts.dtype)
-            if len(vals_exp.shape) == 1:
-                vals_act = ts.values()[:, 0]
-            else:
-                vals_act = ts.values()
-            np.testing.assert_array_almost_equal(vals_act, vals_exp)
-
+    def test_datetime_attribute_timeseries_wrong_args(self):
+        idx = generate_index(
+            start=pd.Timestamp("2000-01-01"), length=48, freq=freqs["h"]
+        )
         # no pd.DatetimeIndex
         with pytest.raises(ValueError) as err:
-            helper_routine(
-                pd.RangeIndex(start=0, stop=len(idx)), "h", vals_exp=np.arange(len(idx))
+            self.helper_routine(
+                pd.RangeIndex(start=0, stop=len(idx)),
+                freqs["h"],
+                vals_exp=np.arange(len(idx)),
             )
         assert str(err.value).startswith(
             "`time_index` must be a pandas `DatetimeIndex`"
@@ -368,23 +376,29 @@ class TestTimeSeriesGeneration:
 
         # invalid attribute
         with pytest.raises(ValueError) as err:
-            helper_routine(idx, "h", vals_exp=np.arange(len(idx)))
+            self.helper_routine(idx, freqs["h"], vals_exp=np.arange(len(idx)))
         assert str(err.value).startswith(
-            "attribute `h` needs to be an attribute of pd.DatetimeIndex."
+            f"attribute `{freqs['h']}` needs to be an attribute of pd.DatetimeIndex."
         )
 
         # no time zone aware index
         with pytest.raises(ValueError) as err:
-            helper_routine(idx.tz_localize("UTC"), "h", vals_exp=np.arange(len(idx)))
+            self.helper_routine(
+                idx.tz_localize("UTC"), freqs["h"], vals_exp=np.arange(len(idx))
+            )
         assert "`time_index` must be time zone naive." == str(err.value)
 
+    def test_datetime_attribute_timeseries(self):
+        idx = generate_index(
+            start=pd.Timestamp("2000-01-01"), length=48, freq=freqs["h"]
+        )
         # ===> datetime attribute
         # hour
         vals = [i for i in range(24)] * 2
-        helper_routine(idx, "hour", vals_exp=vals)
+        self.helper_routine(idx, "hour", vals_exp=vals)
 
         # hour from TimeSeries
-        helper_routine(
+        self.helper_routine(
             TimeSeries.from_times_and_values(times=idx, values=np.arange(len(idx))),
             "hour",
             vals_exp=vals,
@@ -392,45 +406,235 @@ class TestTimeSeriesGeneration:
 
         # tz=CET is +1 hour to UTC
         vals = vals[1:] + [0]
-        helper_routine(idx, "hour", vals_exp=vals, tz="CET")
+        self.helper_routine(idx, "hour", vals_exp=vals, tz="CET")
 
-        # day
-        vals = [1] * 24 + [2] * 24
-        helper_routine(idx, "day", vals_exp=vals)
+        # day, 0-indexed
+        vals = [0] * 24 + [1] * 24
+        self.helper_routine(idx, "day", vals_exp=vals)
 
         # dayofweek
         vals = [5] * 24 + [6] * 24
-        helper_routine(idx, "dayofweek", vals_exp=vals)
+        self.helper_routine(idx, "dayofweek", vals_exp=vals)
 
-        # month
-        vals = [1] * 48
-        helper_routine(idx, "month", vals_exp=vals)
+        # month, 0-indexed
+        vals = [0] * 48
+        self.helper_routine(idx, "month", vals_exp=vals)
 
-        # ===> one hot encoded
-        # month
-        vals = [1] + [0] * 11
-        vals = [vals for _ in range(48)]
-        helper_routine(idx, "month", vals_exp=vals, one_hot=True)
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (freqs["ME"], "month", 12),
+            (freqs["h"], "hour", 24),
+            ("D", "weekday", 7),
+            (freqs["s"], "second", 60),
+            ("W", "weekofyear", 52),
+            ("D", "dayofyear", 365),
+            (freqs["QE"], "quarter", 4),
+        ],
+    )
+    def test_datetime_attribute_timeseries_indexing_shift(self, config):
+        """Check that the original indexing of the attribute is properly shifted to obtain 0-indexing when
+        the start timestamp of the index is the first possible value of the attribute
 
-        # tz=CET, month
-        vals = [1] + [0] * 11
-        vals = [vals for _ in range(48)]
-        helper_routine(idx, "month", vals_exp=vals, tz="CET", one_hot=True)
+        Note: 2001 is neither leap year nor a year with 53 weeks
+        """
+        (
+            base_freq,
+            attribute_freq,
+            period,
+        ) = config
+        start_timestamp = "2001-01-01 00:00:00"
 
-        # ===> sine/cosine cyclic encoding
-        # hour (period = 24 hours in one day)
-        period = 24
+        idx = generate_index(
+            start=pd.Timestamp(start_timestamp), length=1, freq=base_freq
+        )
+
+        # default encoding should be 0
+        vals_exp = np.zeros((1, 1))
+        self.helper_routine(
+            idx, attribute_freq, vals_exp=vals_exp, one_hot=False, cyclic=False
+        )
+
+        # one-hot encoding must be 1 in the first column
+        vals_exp = np.zeros((1, period))
+        vals_exp[0, 0] = 1
+        self.helper_routine(idx, attribute_freq, vals_exp=vals_exp, one_hot=True)
+
+        # cyclic encoding must start at t=0
+        vals_exp = np.array([[np.sin(0), np.cos(0)]])
+        self.helper_routine(idx, attribute_freq, vals_exp=vals_exp, cyclic=True)
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (freqs["ME"], "month", 12),
+            (freqs["h"], "hour", 24),
+            ("D", "weekday", 7),
+            (freqs["s"], "second", 60),
+            ("W", "weekofyear", 52),
+            (freqs["QE"], "quarter", 4),
+            ("D", "dayofyear", 365),
+        ],
+    )
+    def test_datetime_attribute_timeseries_one_hot(self, config):
+        """Verifying that proper one hot encoding is generated (not leap year)"""
+        base_freq, attribute_freq, period = config
+        # first quarter/year, month/year, week/year, day/year, day/week, hour/day, second/hour
+        simple_start = pd.Timestamp("2001-01-01 00:00:00")
+        idx = generate_index(start=simple_start, length=period, freq=base_freq)
+        vals = np.eye(period)
+
+        # simple start
+        self.helper_routine(idx, attribute_freq, vals_exp=vals, one_hot=True)
+        # with time-zone
+        if attribute_freq == "hour":
+            # shift to mimic conversion from UTC to CET
+            vals = np.roll(vals, shift=-1, axis=0)
+        self.helper_routine(idx, attribute_freq, vals_exp=vals, tz="CET", one_hot=True)
+
+        # missing values
+        cut_period = period // 3
+        idx = generate_index(start=simple_start, length=cut_period, freq=base_freq)
+        vals = np.eye(period)
+        # removing missing rows
+        vals = vals[:cut_period]
+        # mask missing attribute values
+        vals[:, cut_period:] = 0
+
+        self.helper_routine(idx, attribute_freq, vals_exp=vals, one_hot=True)
+
+        # shifted time index
+        shifted_start = pd.Timestamp("2001-05-05 05:00:05")
+        # 5th month/year, day/week, hour/day, second/hour
+        shift = 5
+        # 125th day of year
+        if attribute_freq == "dayofyear":
+            shift = 125
+        # 18th week of year
+        if attribute_freq == "weekofyear":
+            shift = 18
+        # 2nd quarter of the year
+        elif attribute_freq == "quarter":
+            shift = 2
+
+        # account for 1-indexing of the attribute
+        if attribute_freq in ONE_INDEXED_FREQS:
+            shift -= 1
+
+        idx = generate_index(start=shifted_start, length=period, freq=base_freq)
+        vals = np.eye(period)
+        # shift values
+        vals = np.roll(vals, shift=-shift, axis=0)
+
+        self.helper_routine(idx, attribute_freq, vals_exp=vals, one_hot=True)
+
+    @pytest.mark.parametrize(
+        "config", [(freqs["h"], "hour", 24), (freqs["ME"], "month", 12)]
+    )
+    def test_datetime_attribute_timeseries_cyclic(self, config):
+        base_freq, attribute_freq, period = config
+        idx = generate_index(
+            start=pd.Timestamp("2000-01-01"), length=2 * period, freq=base_freq
+        )
+
         freq = 2 * np.pi / period
-        vals_dta = [i for i in range(24)] * 2
+        vals_dta = [i for i in range(period)] * 2
         vals = np.array(vals_dta)
         sin_vals = np.sin(freq * vals)[:, None]
         cos_vals = np.cos(freq * vals)[:, None]
-        vals = np.concatenate([sin_vals, cos_vals], axis=1)
-        helper_routine(idx, "hour", vals_exp=vals, cyclic=True)
+        vals_exp = np.concatenate([sin_vals, cos_vals], axis=1)
+        self.helper_routine(idx, attribute_freq, vals_exp=vals_exp, cyclic=True)
 
-        # tz=CET, hour
-        vals = np.array(vals_dta[1:] + [0])
+        # with time-zone conversion
+        if attribute_freq == "hour":
+            # UTC to CET shift by 1 hour
+            vals = np.array(vals_dta[1:] + vals_dta[0:1])
         sin_vals = np.sin(freq * vals)[:, None]
         cos_vals = np.cos(freq * vals)[:, None]
-        vals = np.concatenate([sin_vals, cos_vals], axis=1)
-        helper_routine(idx, "hour", vals_exp=vals, tz="CET", cyclic=True)
+        vals_exp = np.concatenate([sin_vals, cos_vals], axis=1)
+        self.helper_routine(
+            idx, attribute_freq, vals_exp=vals_exp, tz="CET", cyclic=True
+        )
+
+    def test_datetime_attribute_timeseries_leap_years(self):
+        """Check that the additional day of leap years is properly handled"""
+        days_leap_year = 366
+        # 2000 is a leap year, contains 366 days
+        index = pd.date_range(
+            start=pd.Timestamp("2000-01-01"), end=pd.Timestamp("2000-12-31"), freq="D"
+        )
+        assert len(index) == days_leap_year
+        vals_exp = np.arange(days_leap_year)
+        self.helper_routine(index, "day_of_year", vals_exp=vals_exp)
+        # full leap year, the encoding is a diagonal matrix
+        vals_exp = np.eye(days_leap_year)
+        self.helper_routine(index, "day_of_year", vals_exp=vals_exp, one_hot=True)
+
+        # partial leap year, the encoding should still contain 366 columns
+        index_partial = index[30:72]
+        # remove the missing rows
+        vals_exp = vals_exp[30:72]
+        # mask the missing dates
+        vals_exp[:, :30] = 0
+        vals_exp[:, 73:] = 0
+        self.helper_routine(
+            index_partial, "day_of_year", vals_exp=vals_exp, one_hot=True
+        )
+
+        # index containing both a regular year and leap year, for a total of 731 days
+        index_long = pd.date_range(
+            start=pd.Timestamp("1999-01-01"), end=pd.Timestamp("2000-12-31"), freq="D"
+        )
+        assert len(index_long) == 731
+        # leap year encoding is a diagonal matrix
+        leap_year_oh = np.eye(days_leap_year)
+        # regular year drops the last day row
+        regular_year_oh = np.eye(days_leap_year)
+        regular_year_oh = regular_year_oh[:-1]
+        vals_exp = np.concatenate([regular_year_oh, leap_year_oh])
+        self.helper_routine(index_long, "day_of_year", vals_exp=vals_exp, one_hot=True)
+
+    @pytest.mark.parametrize("year", [1998, 2020])
+    def test_datetime_attribute_timeseries_special_years(self, year):
+        """Check that years with 53 weeks are is properly handled:
+        - 1998 is a regular year starting on a thursday
+        - 2020 is a leap year starting on a wednesday
+        """
+
+        start_date = pd.Timestamp(f"{year}-01-01")
+        end_date = pd.Timestamp(f"{year}-12-31")
+
+        # the 53th week appear when created with freq="D"
+        weeks_special_year = 53
+        index = pd.date_range(start=start_date, end=end_date, freq="D")
+        assert index[-1].week == weeks_special_year
+        vals_exp = np.zeros((len(index), weeks_special_year))
+        # first week is incomplete, its length depend on the first day of the year
+        week_shift = index[0].weekday()
+        for week_index in range(weeks_special_year):
+            week_start = max(7 * week_index - week_shift, 0)
+            week_end = 7 * (week_index + 1) - week_shift
+            vals_exp[week_start:week_end, week_index] = 1
+        self.helper_routine(index, "week_of_year", vals_exp=vals_exp, one_hot=True)
+
+        # the 53th week is omitted from index when created with freq="W"
+        index_weeks = pd.date_range(start=start_date, end=end_date, freq="W")
+        assert len(index_weeks) == weeks_special_year - 1
+        # and 53th week properly excluded from the encoding
+        vals_exp = np.eye(weeks_special_year - 1)[: len(index_weeks)]
+        assert vals_exp.shape[1] == weeks_special_year - 1
+        self.helper_routine(
+            index_weeks, "week_of_year", vals_exp=vals_exp, one_hot=True
+        )
+
+        # extending the time index with the days missing from the incomplete first week
+        index_weeks_ext = pd.date_range(
+            start=start_date, end=end_date + pd.Timedelta(days=6 - week_shift), freq="W"
+        )
+        assert len(index_weeks_ext) == weeks_special_year
+        # the 53th week is properly appearing in the encoding
+        vals_exp = np.eye(weeks_special_year)
+        assert vals_exp.shape[1] == weeks_special_year
+        self.helper_routine(
+            index_weeks_ext, "week_of_year", vals_exp=vals_exp, one_hot=True
+        )

@@ -5,6 +5,7 @@ Linear Regression model
 A forecasting model using a linear regression of some of the target series' lags, as well as optionally some
 covariate series lags in order to obtain a forecast.
 """
+
 from typing import List, Optional, Sequence, Union
 
 import numpy as np
@@ -30,6 +31,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         lags_past_covariates: Optional[LAGS_TYPE] = None,
         lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
         likelihood: Optional[str] = None,
         quantiles: Optional[List[float]] = None,
@@ -45,7 +47,8 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         lags
             Lagged target `series` values used to predict the next time step/s.
             If an integer, must be > 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`
-            corresponds the first predicted time step of each sample.
+            corresponds the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
             If a list of integers, each value must be < 0. Uses only the specified values as lags.
             If a dictionary, the keys correspond to the `series` component names (of the first series when
             using multiple series) and the values correspond to the component lags (integer or list of integers). The
@@ -54,17 +57,21 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         lags_past_covariates
             Lagged `past_covariates` values used to predict the next time step/s.
             If an integer, must be > 0. Uses the last `n=lags_past_covariates` past lags; e.g. `(-1, -2, ..., -lags)`,
-            where `0` corresponds to the first predicted time step of each sample.
+            where `0` corresponds to the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
             If a list of integers, each value must be < 0. Uses only the specified values as lags.
             If a dictionary, the keys correspond to the `past_covariates` component names (of the first series when
             using multiple series) and the values correspond to the component lags (integer or list of integers). The
             key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
             components are missing and the 'default_lags' key is not provided.
         lags_future_covariates
-            Lagged `future_covariates` values used to predict the next time step/s.
+            Lagged `future_covariates` values used to predict the next time step/s. The lags are always relative to the
+            first step in the output chunk, even when `output_chunk_shift > 0`.
             If a tuple of `(past, future)`, both values must be > 0. Uses the last `n=past` past lags and `n=future`
-            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0`
-            corresponds the first predicted time step of each sample.
+            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0` corresponds the first
+            predicted time step of each sample. If `output_chunk_shift > 0`, the position of negative lags differ from
+            those of `lags` and `lags_past_covariates`. In this case a future lag `-5` would point at the same
+            step as a target lag of `-5 + output_chunk_shift`.
             If a list of integers, uses only the specified values as lags.
             If a dictionary, the keys correspond to the `future_covariates` component names (of the first series when
             using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
@@ -73,10 +80,17 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
             horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
-            one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
+            one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
             useful when the covariates don't extend far enough into the future, or to prohibit the model from using
             future values of past and / or future covariates for prediction (depending on the model's covariate
             support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input (history of target and past covariates) and
+            output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first
+            step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the
+            target `series`. If `output_chunk_shift` is set, the model cannot generate autoregressive predictions
+            (`n > output_chunk_length`).
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -183,6 +197,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             model=model,
             multi_models=multi_models,
@@ -245,6 +260,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
 
             for quantile in self.quantiles:
                 self.kwargs["quantile"] = quantile
+                # assign the Quantile regressor to self.model to leverage existing logic
                 self.model = QuantileRegressor(**self.kwargs)
                 super().fit(
                     series=series,
@@ -255,6 +271,9 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
                 )
 
                 self._model_container[quantile] = self.model
+
+            # replace the last trained QuantileRegressor with the dictionnary of Regressors.
+            self.model = self._model_container
 
             return self
 
@@ -286,5 +305,5 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             )
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None

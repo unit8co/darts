@@ -7,17 +7,19 @@ from pyod.models.knn import KNN
 from scipy.stats import cauchy, expon, gamma, laplace, norm, poisson
 
 from darts import TimeSeries
-from darts.ad.scorers import CauchyNLLScorer
-from darts.ad.scorers import DifferenceScorer as Difference
 from darts.ad.scorers import (
+    CauchyNLLScorer,
     ExponentialNLLScorer,
     GammaNLLScorer,
     GaussianNLLScorer,
     KMeansScorer,
     LaplaceNLLScorer,
+    PoissonNLLScorer,
+    PyODScorer,
+    WassersteinScorer,
 )
+from darts.ad.scorers import DifferenceScorer as Difference
 from darts.ad.scorers import NormScorer as Norm
-from darts.ad.scorers import PoissonNLLScorer, PyODScorer, WassersteinScorer
 from darts.models import MovingAverageFilter
 
 list_NonFittableAnomalyScorer = [
@@ -312,7 +314,7 @@ class TestADAnomalyScorer:
         for scorer in [non_fittable_scorer, fittable_scorer]:
 
             # name must be of type str
-            assert type(scorer.__str__()) == str
+            assert isinstance(scorer.__str__(), str)
 
             # 'metric' must be str and "AUC_ROC" or "AUC_PR"
             with pytest.raises(ValueError):

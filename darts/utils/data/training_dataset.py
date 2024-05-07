@@ -11,8 +11,7 @@ from torch.utils.data import Dataset
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
-
-from .utils import CovariateType
+from darts.utils.data.utils import CovariateType
 
 logger = get_logger(__name__)
 SampleIndexType = Tuple[int, int, int, int, int, int]
@@ -241,9 +240,7 @@ class DualCovariatesTrainingDataset(TrainingDataset, ABC):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(
-        self, idx: int
-    ) -> Tuple[
+    def __getitem__(self, idx: int) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -264,9 +261,7 @@ class MixedCovariatesTrainingDataset(TrainingDataset, ABC):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(
-        self, idx: int
-    ) -> Tuple[
+    def __getitem__(self, idx: int) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -287,9 +282,7 @@ class SplitCovariatesTrainingDataset(TrainingDataset, ABC):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(
-        self, idx: int
-    ) -> Tuple[
+    def __getitem__(self, idx: int) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],

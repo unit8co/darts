@@ -65,7 +65,7 @@ def objective(trial):
         num_workers = 4
     else:
         num_workers = 0
-        
+
     pl_trainer_kwargs = {
         "accelerator": "auto",
         "callbacks": callbacks,
@@ -80,7 +80,7 @@ def objective(trial):
 
     # reproducibility
     torch.manual_seed(42)
-    
+
     # build the TCN model
     model = TCNModel(
         input_chunk_length=in_len,
@@ -101,8 +101,8 @@ def objective(trial):
         force_reset=True,
         save_checkpoints=True,
     )
-    
-    
+
+
     # when validating during training, we can use a slightly longer validation
     # set which also contains the first input_chunk_length time steps
     model_val_set = scaler.transform(series[-(VAL_LEN + in_len) :])
@@ -116,7 +116,7 @@ def objective(trial):
 
     # reload best model over course of training
     model = TCNModel.load_from_checkpoint("tcn_model")
-    
+
     # Evaluate how good it is on the validation set, using sMAPE
     preds = model.predict(series=train, n=VAL_LEN)
     smapes = smape(val, preds, n_jobs=-1, verbose=True)
@@ -140,7 +140,7 @@ if __name__ == "__main__":
 ## Hyperparameter optimization with Ray Tune
 [Ray Tune](https://docs.ray.io/en/latest/tune/examples/tune-pytorch-lightning.html) is another option for hyperparameter optimization with automatic pruning.
 
-Here is an example of how to use Ray Tune to with the `NBEATSModel` model using the [Asynchronous Hyperband scheduler](https://blog.ml.cmu.edu/2018/12/12/massively-parallel-hyperparameter-optimization/). 
+Here is an example of how to use Ray Tune to with the `NBEATSModel` model using the [Asynchronous Hyperband scheduler](https://blog.ml.cmu.edu/2018/12/12/massively-parallel-hyperparameter-optimization/).
 
 ```python
 import pandas as pd
@@ -224,13 +224,13 @@ train_fn_with_parameters = tune.with_parameters(
     train_model, callbacks=[my_stopper, tune_callback], train=train, val=val,
 )
 
-# optimize hyperparameters by minimizing the MAPE on the validation set 
+# optimize hyperparameters by minimizing the MAPE on the validation set
 analysis = tune.run(
     train_fn_with_parameters,
     resources_per_trial=resources_per_trial,
-    # Using a metric instead of loss allows for 
+    # Using a metric instead of loss allows for
     # comparison between different likelihood or loss functions.
-    metric="MAPE",  # any value in TuneReportCallback. 
+    metric="MAPE",  # any value in TuneReportCallback.
     mode="min",
     config=config,
     num_samples=num_samples,
