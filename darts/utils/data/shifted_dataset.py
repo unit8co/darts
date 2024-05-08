@@ -184,7 +184,7 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
         The "future_target" is the "past_target" target shifted by `shift` time steps forward.
         So if an emitted "past_target" goes from position `i` to `i+length`,
         the emitted "future_target" will go from position `i+shift` to `i+shift+length`.
-        The slicing "future_covariates" matches that of "futuretarget" and the slicing of "historic_future_covariates"
+        The slicing "future_covariates" matches that of "future_target" and the slicing of "historic_future_covariates"
         matches that of "past_target". The slicing itself relies on time indexes to align the series if they have
         unequal lengths.
 
@@ -259,11 +259,13 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
         Optional[np.ndarray],
         np.ndarray,
     ]:
-        past_target, past_covariate, static_covariate, future_target = self.ds_past[idx]
+        past_target, historic_future_covariate, static_covariate, future_target = (
+            self.ds_past[idx]
+        )
         _, future_covariate, _, _ = self.ds_future[idx]
         return (
             past_target,
-            past_covariate,
+            historic_future_covariate,
             future_covariate,
             static_covariate,
             future_target,

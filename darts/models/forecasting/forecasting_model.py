@@ -427,6 +427,56 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return 3
 
     @property
+    def min_train_past_covariates_series_length(self) -> int:
+        """
+        The minimum required length for the past covariates training series.
+
+        Assuming optimal alignement with target training series time index.
+        """
+        (
+            _,
+            _,
+            min_past_cov_lag,
+            max_past_cov_lag,
+            _,
+            _,
+            _,
+            _,
+        ) = self.extreme_lags
+
+        if min_past_cov_lag is None or max_past_cov_lag is None:
+            return 0
+
+        return self.min_train_series_length - min_past_cov_lag + max_past_cov_lag
+
+    @property
+    def min_train_future_covariates_series_length(self) -> int:
+        """
+        The minimum required length for the future covariates training series.
+
+        Assuming optimal alignement with target training series time index.
+        """
+        (
+            _,
+            _,
+            _,
+            _,
+            min_future_cov_lag,
+            max_future_cov_lag,
+            _,
+            _,
+        ) = self.extreme_lags
+
+        if min_future_cov_lag is None or max_future_cov_lag is None:
+            return 0
+
+        return (
+            self.min_train_series_length
+            - min(0, min_future_cov_lag)
+            + max_future_cov_lag
+        )
+
+    @property
     def min_train_samples(self) -> int:
         """
         The minimum number of samples for training the model.
@@ -806,13 +856,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
         elif (
             train_length is not None
-        ) and train_length < model._training_sample_time_index_length + (
-            model.min_train_samples - 1
-        ):
+        ) and train_length < model.min_train_series_length:
             raise_log(
                 ValueError(
                     "train_length is too small for the training requirements of this model. "
-                    f"Must be `>={model._training_sample_time_index_length + (model.min_train_samples - 1)}`."
+                    f"Must be `>={model.min_train_series_length}`."
                 ),
                 logger,
             )
@@ -956,7 +1004,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 # Look at both past and future, since the target lags must be taken in consideration
                 min_timestamp_series = (
                     historical_forecasts_time_index_train[0]
-                    - model._training_sample_time_index_length * series_.freq
+                    - model.min_train_series_length * series_.freq
                 )
 
                 # based on `retrain`, historical_forecasts_time_index is based either on train or predict
@@ -981,7 +1029,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 )
                 train_length_ = None
 
-            # based on `forecast_horizon` and `overlap_end`, historical_forecasts_time_index is shortened
+            # based on `start`, historical_forecasts_time_index is shortened
             historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
                 series=series_,
                 series_idx=idx,
@@ -992,7 +1040,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
             # adjust the start of the series depending on whether we train (at some point), or predict only
-            # must be performed after the operation on historical_foreacsts_time_index
+            # must be performed after the operation on historical_forecasts_time_index
             if min_timestamp_series > series_.time_index[0]:
                 series_ = series_.drop_before(min_timestamp_series - 1 * series_.freq)
 

@@ -478,19 +478,27 @@ class RegressionModel(GlobalForecastingModel):
 
     @property
     def min_train_series_length(self) -> int:
-        return max(
-            3,
-            (
-                -self.lags["target"][0] + self.output_chunk_length
-                if "target" in self.lags
-                else self.output_chunk_length
-            )
-            + self.output_chunk_shift,
+        """Override ForecastingModel implementation to account for lags and min_train_samples"""
+        (
+            min_target_lag,
+            max_target_lag,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+        ) = self.extreme_lags
+
+        return (
+            (0 if min_target_lag is None else -min_target_lag)
+            + max_target_lag  # predicted target (including gap between lags and target)
+            + self.min_train_samples  # account for lags shift/sliding window
         )
 
     @property
     def min_train_samples(self) -> int:
-        return 2
+        return 1
 
     @property
     def output_chunk_length(self) -> int:

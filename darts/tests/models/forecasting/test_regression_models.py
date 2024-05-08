@@ -1224,30 +1224,177 @@ class TestRegressionModels:
             ocl,
         )
 
-    @pytest.mark.parametrize("mode", [True, False])
-    def test_min_train_series_length(self, mode):
-        lgbm_cls = LightGBMModel if lgbm_available else XGBModel
-        cb_cls = CatBoostModel if cb_available else XGBModel
-        model = lgbm_cls(lags=4, multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
+    regression_model_classes = [
+        XGBModel,
+        LinearRegressionModel,
+        RandomForest,
+    ]
+
+    if lgbm_available:
+        regression_model_classes.append(LightGBMModel)
+
+    if cb_available:
+        regression_model_classes.append(CatBoostModel)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            regression_model_classes,
+            [3, [-5, -3]],
+            [1, 5],
+            [0, 5],
+            [True, False],
+        ),
+    )
+    def test_min_train_series_length(self, config):
+        """Make sure min_train_series_length is coherent with min_train_samples.
+
+        Exclude covariates as indexes mis-alignment can impact the lagged data creation.
+        """
+        model_cls, lags, ocl, ocs, multi_models = config
+
+        model = model_cls(
+            lags=lags,
+            output_chunk_length=ocl,
+            output_chunk_shift=ocs,
+            multi_models=multi_models,
         )
-        assert min_train_series_length_expected == model.min_train_series_length
-        model = cb_cls(lags=2, multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
+
+        # min_train_samples is overwritten in LGBM and Catboost
+        if (lgbm_available and isinstance(model, LightGBMModel)) or (
+            cb_available and isinstance(model, CatBoostModel)
+        ):
+            assert model.min_train_samples == 2
+        else:
+            assert model.min_train_samples == 1
+
+        # check the number of samples created for the (sub-)model(s)
+        ts = tg.sine_timeseries(length=model.min_train_series_length)
+        X, _ = model._create_lagged_data(
+            target_series=ts,
+            past_covariates=None,
+            future_covariates=None,
+            max_samples_per_ts=None,
         )
-        assert min_train_series_length_expected == model.min_train_series_length
-        model = lgbm_cls(lags=[-4, -3, -2], multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
+
+        # min_train_series_length should generate exactly the minimum number of samples
+        assert X.shape[0] == model.min_train_samples
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [3, [-5, -3], None],
+            [2, [-6, -2], None],
+            [[0], [-3, 0], [-3, -1], [-2, 3], None],
+            [1, 5],
+            [0, 5],
+            [True, False],
+        ),
+    )
+    def test_min_train_series_length_with_covs(self, config):
+        """Make sure min_train_[...]_series_length is coherent with min_train_samples.
+
+        Separated from `test_min_train_series_length` to limit redundancy.
+        """
+        lags, lags_pc, lags_fc, ocl, ocs, multi_models = config
+
+        if all(lags_ is None for lags_ in [lags, lags_pc, lags_fc]):
+            # this combination is not allowed in constructor
+            pytest.skip()
+
+        model = LinearRegressionModel(
+            lags=lags,
+            lags_past_covariates=lags_pc,
+            lags_future_covariates=lags_fc,
+            output_chunk_length=ocl,
+            output_chunk_shift=ocs,
+            multi_models=multi_models,
         )
-        assert min_train_series_length_expected == model.min_train_series_length
-        model = XGBModel(lags=[-4, -3, -2], multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
+
+        ts = tg.sine_timeseries(length=model.min_train_series_length)
+
+        # shift past covariates to align its start with first required lags
+        if model.supports_past_covariates:
+            ts_pc = tg.linear_timeseries(
+                start=ts.start_time() + model._get_lags("past")[0] * ts.freq,
+                length=model.min_train_past_covariates_series_length,
+            )
+        else:
+            ts_pc = None
+
+        # shift future covariates to align its start with first required lags
+        if model.supports_future_covariates:
+            ts_fc = tg.linear_timeseries(
+                start=ts.start_time() + model._get_lags("future")[0] * ts.freq,
+                length=model.min_train_future_covariates_series_length,
+            )
+        else:
+            ts_fc = None
+
+        X, _ = model._create_lagged_data(
+            target_series=ts,
+            past_covariates=ts_pc,
+            future_covariates=ts_fc,
+            max_samples_per_ts=None,
         )
-        assert min_train_series_length_expected == model.min_train_series_length
+
+        assert X.shape[0] == model.min_train_samples
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [LinearRegressionModel, CatBoostModel if cb_available else XGBModel],
+            [3, [-5, -3], None],
+            [2, [-6, -2], None],
+            [[0], [-3, 0], [-3, -1], [-2, 3], None],
+            [1, 5],
+            [0, 5],
+            [True, False],
+        ),
+    )
+    def test_min_train_covariates_series_length(self, config):
+        """Check that min_train_[past, future]_covariates_series_length computation are matching lags.
+
+        If CatBoost is not available, XGBModel is redundant with LinearRegressionModel as they both need
+        only one training sample.
+        """
+        model_cls, lags, lags_pc, lags_fc, ocl, ocs, multi_models = config
+
+        if all(lags_ is None for lags_ in [lags, lags_pc, lags_fc]):
+            # this combination is not allowed in constructor
+            pytest.skip()
+
+        model = model_cls(
+            lags=lags,
+            lags_past_covariates=lags_pc,
+            lags_future_covariates=lags_fc,
+            output_chunk_length=ocl,
+            output_chunk_shift=ocs,
+            multi_models=multi_models,
+        )
+
+        lags_tg = model.lags.get("target", [0])
+        # past target features + target + additional lags + oc_shift - 1 (count first sample only once)
+        expected_target_length = (
+            model.output_chunk_length - lags_tg[0] + model.min_train_samples + ocs - 1
+        )
+        assert model.min_train_series_length == expected_target_length
+
+        expected_pc_length = 0
+        if lags_pc:
+            lags_pc = model.lags["past"]
+            # tg reqs + greatest "look-behind" past covariates lag - smallest "look-behind" past covariate lag
+            expected_pc_length = expected_target_length - lags_pc[0] + lags_pc[-1]
+        assert model.min_train_past_covariates_series_length == expected_pc_length
+
+        expected_fc_length = 0
+        if lags_fc:
+            lags_fc = model.lags["future"]
+            # tg reqs + greatest "look-behind" future covariates lag - smallest "look-behind" future covariate lag
+            expected_fc_length = (
+                expected_target_length - min(lags_fc[0], 0) + lags_fc[-1]
+            )
+        assert model.min_train_future_covariates_series_length == expected_fc_length
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_historical_forecast(self, mode):
