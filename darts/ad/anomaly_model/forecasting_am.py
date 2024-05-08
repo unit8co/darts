@@ -570,13 +570,16 @@ class ForecastingAnomalyModel(AnomalyModel):
         # generate the historical_forecast() prediction of the model on the train set
         if self.scorers_are_trainable:
             historical_forecasts = self.predict_series(
-                series,
+                series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
                 forecast_horizon=forecast_horizon,
-                num_samples=num_samples,
                 start=start,
                 start_format=start_format,
+                num_samples=num_samples,
+                verbose=verbose,
+                show_warnings=show_warnings,
+                enable_optimization=enable_optimization,
             )
             # fit the scorers
             self._fit_scorers(series, historical_forecasts)

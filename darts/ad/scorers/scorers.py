@@ -215,10 +215,10 @@ class AnomalyScorer(ABC):
         pred_scores = self.score_from_prediction(series, pred_series)
 
         if title is None:
-            title = f"Anomaly results by scorer {self.__str__()}"
+            title = f"Anomaly results by scorer {str(self)}"
 
         if scorer_name is None:
-            scorer_name = [f"anomaly score by {self.__str__()}"]
+            scorer_name = [f"anomaly score by {str(self)}"]
 
         return show_anomalies_from_scores(
             series=series,
@@ -281,7 +281,7 @@ class AnomalyScorer(ABC):
             if self.is_univariate and not s.width == 1:
                 raise_log(
                     ValueError(
-                        f"Scorer {self.__str__()} will return a univariate anomaly score series (width=1). "
+                        f"Scorer {str(self)} will return a univariate anomaly score series (width=1). "
                         f"Found a multivariate `anomalies`. "
                         f"The evaluation of the accuracy cannot be computed between the two series."
                     ),
@@ -307,7 +307,7 @@ class AnomalyScorer(ABC):
         if not series.shape[2] > 1:
             raise_log(
                 ValueError(
-                    f"Scorer {self.__str__()} is expecting `{name_series}` to be a stochastic "
+                    f"Scorer {str(self)} is expecting `{name_series}` to be a stochastic "
                     f"timeseries (number of samples must be higher than 1, found: {series.shape[2]}).",
                 ),
                 logger=logger,
@@ -319,7 +319,7 @@ class AnomalyScorer(ABC):
             return series
 
         logger.warning(
-            f"Scorer {self.__str__()} is expecting `{name_series}` to be a (sequence of) deterministic "
+            f"Scorer {str(self)} is expecting `{name_series}` to be a (sequence of) deterministic "
             f"timeseries (number of samples must be equal to 1, found: {series.n_samples}). The series "
             f"will be converted to a deterministic series by taking the median of the samples.",
         )
@@ -331,7 +331,7 @@ class AnomalyScorer(ABC):
             return series
 
         logger.warning(
-            f"Scorer {self.__str__()} is expecting `{name_series}` to be a (sequence of) deterministic "
+            f"Scorer {str(self)} is expecting `{name_series}` to be a (sequence of) deterministic "
             f"timeseries (number of samples must be equal to 1, found: {series.shape[2]}). The series "
             f"will be converted to a deterministic series by taking the median of the samples.",
         )
@@ -614,10 +614,10 @@ class FittableAnomalyScorer(AnomalyScorer):
         pred_scores = self.score(series)
 
         if title is None:
-            title = f"Anomaly results by scorer {self.__str__()}"
+            title = f"Anomaly results by scorer {str(self)}"
 
         if scorer_name is None:
-            scorer_name = f"anomaly score by {self.__str__()}"
+            scorer_name = f"anomaly score by {str(self)}"
 
         if self.window_agg:
             window = 1
@@ -721,7 +721,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         if not self._fit_called:
             raise_log(
                 ValueError(
-                    f"The Scorer {self.__str__()} has not been fitted yet. Call `fit()` first."
+                    f"The Scorer {str(self)} has not been fitted yet. Call `fit()` first."
                 ),
                 logger=logger,
             )

@@ -91,7 +91,7 @@ class ThresholdDetector(Detector, _BoundedDetectorMixin):
                 low_threshold[component_idx],
                 high_threshold[component_idx],
             )
-        return series.with_values(np.expand_dims(detected, -1))
+        return series.with_values(np.expand_dims(detected, -1).astype(series.dtype))
 
     @property
     def low_threshold(self):
