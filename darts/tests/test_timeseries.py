@@ -11,7 +11,7 @@ from scipy.stats import kurtosis, skew
 
 from darts import TimeSeries, concatenate
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
-from darts.utils.utils import generate_index
+from darts.utils.utils import freqs, generate_index
 
 
 class TestTimeSeries:
@@ -665,7 +665,7 @@ class TestTimeSeries:
             test_series.shift(1e6)
 
         seriesM = TimeSeries.from_times_and_values(
-            pd.date_range("20130101", "20130601", freq="m"), range(5)
+            pd.date_range("20130101", "20130601", freq=freqs["ME"]), range(5)
         )
         with pytest.raises(OverflowError):
             seriesM.shift(1e4)
@@ -782,7 +782,7 @@ class TestTimeSeries:
     def test_append(self):
         TestTimeSeries.helper_test_append(self, self.series1)
         # Check `append` deals with `RangeIndex` series correctly:
-        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name="A")
+        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name=freqs["YE"])
         series_2 = linear_timeseries(start=11, length=2, freq=2, column_name="B")
         appended = series_1.append(series_2)
         expected_vals = np.concatenate(
@@ -809,7 +809,7 @@ class TestTimeSeries:
     def test_prepend(self):
         TestTimeSeries.helper_test_prepend(self, self.series1)
         # Check `prepend` deals with `RangeIndex` series correctly:
-        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name="A")
+        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name=freqs["YE"])
         series_2 = linear_timeseries(start=11, length=2, freq=2, column_name="B")
         prepended = series_2.prepend(series_1)
         expected_vals = np.concatenate(
@@ -1101,56 +1101,51 @@ class TestTimeSeries:
             "C",
             "D",
             "W",
-            "M",
-            "SM",
-            "BM",
-            "CBM",
+            freqs["ME"],
+            freqs["SME"],
+            freqs["BME"],
+            freqs["CBME"],
             "MS",
             "SMS",
             "BMS",
             "CBMS",
-            "Q",
-            "BQ",
+            freqs["QE"],
+            freqs["BQE"],
             "QS",
             "BQS",
-            "A",
-            "Y",
-            "BA",
-            "BY",
-            "AS",
+            freqs["YE"],
+            freqs["BYE"],
+            freqs["YS"],
             "YS",
-            "BAS",
+            freqs["BYS"],
             "BYS",
-            "BH",
-            "H",
-            "T",
-            "min",
-            "S",
-            "L",
-            "U",
-            "us",
-            "N",
+            freqs["bh"],
+            freqs["h"],
+            freqs["min"],
+            freqs["s"],
+            freqs["ms"],
+            freqs["us"],
+            freqs["ns"],
         ]
         # fill_missing_dates will find multiple inferred frequencies (i.e. for 'B' it finds {'B', 'D'}) -> good
         offset_aliases_raise = [
             "B",
             "C",
-            "SM",
-            "BM",
-            "CBM",
+            freqs["SME"],
+            freqs["BME"],
+            freqs["CBME"],
             "SMS",
             "BMS",
             "CBMS",
-            "BQ",
-            "BA",
-            "BY",
-            "BAS",
+            freqs["BQE"],
+            freqs["BYE"],
+            freqs["BYS"],
             "BYS",
-            "BH",
+            freqs["bh"],
             "BQS",
         ]
         # frequency cannot be inferred for these types (finds '15D' instead of 'SM')
-        offset_not_supported = ["SM", "SMS"]
+        offset_not_supported = [freqs["SME"], "SMS"]
 
         ts_length = 25
         for offset_alias in offset_aliases:
@@ -1230,8 +1225,8 @@ class TestTimeSeries:
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries.from_series(pd_series)
 
-        resampled_timeseries = timeseries.resample("h")
-        assert resampled_timeseries.freq_str.lower() == "h"
+        resampled_timeseries = timeseries.resample(freqs["h"])
+        assert resampled_timeseries.freq_str == freqs["h"]
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101020000")] == 0
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130102020000")] == 1
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130109090000")] == 8
@@ -1246,12 +1241,12 @@ class TestTimeSeries:
 
         # using offset to avoid nan in the first value
         times = pd.date_range(
-            start=pd.Timestamp("20200101233000"), periods=10, freq="15T"
+            start=pd.Timestamp("20200101233000"), periods=10, freq="15" + freqs["min"]
         )
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries.from_series(pd_series)
         resampled_timeseries = timeseries.resample(
-            freq="1h", offset=pd.Timedelta("30T")
+            freq="1" + freqs["h"], offset=pd.Timedelta("30" + freqs["min"])
         )
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20200101233000")] == 0
 
@@ -1301,7 +1296,7 @@ class TestTimeSeries:
             pd.date_range("20130101", "20130105"),
             range(5),
             fill_missing_dates=False,
-            freq="M",
+            freq=freqs["ME"],
         )
         assert seriesA.freq == "D"
         # test successful instantiation of TimeSeries with length 2
@@ -1461,8 +1456,8 @@ class TestTimeSeries:
 
     def test_gaps(self):
         times1 = pd.date_range("20130101", "20130110")
-        times2 = pd.date_range("20120101", "20210301", freq="Q")
-        times3 = pd.date_range("20120101", "20210301", freq="AS")
+        times2 = pd.date_range("20120101", "20210301", freq=freqs["QE"])
+        times3 = pd.date_range("20120101", "20210301", freq=freqs["YS"])
         times4 = pd.date_range("20120101", "20210301", freq="2MS")
 
         pd_series1 = pd.Series(
@@ -2242,7 +2237,7 @@ class TestTimeSeriesFromDataFrame:
         assert ts.time_index.tz is None
 
         time_range_H = pd.date_range(
-            start="20200518", end="20200521", freq="H", tz="CET"
+            start="20200518", end="20200521", freq=freqs["h"], tz="CET"
         )
         values = np.random.uniform(low=-10, high=10, size=len(time_range_H))
 

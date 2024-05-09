@@ -1668,6 +1668,29 @@ class TestTorchForecastingModel:
                 _ = model_fc_shift.predict(n=ocl, **add_covs)
             assert f"provided {cov_name} covariates at dataset index" in str(err.value)
 
+    @pytest.mark.parametrize("config", itertools.product(models, [2, 3, 4]))
+    def test_multi_ts_prediction(self, config):
+        (model_cls, model_kwargs), n = config
+        model_kwargs = copy.deepcopy(model_kwargs)
+        model_kwargs["output_chunk_length"] = 3
+        series = tg.linear_timeseries(
+            length=model_kwargs["input_chunk_length"]
+            + model_kwargs["output_chunk_length"]
+        )
+        model = model_cls(**model_kwargs)
+        model.fit(series)
+        # test with more series that `n`
+        n_series_more = 5
+        pred = model.predict(n=n, series=[series] * n_series_more)
+        assert len(pred) == n_series_more
+        assert all(len(p) == n for p in pred)
+
+        # test with less series that `n`
+        n_series_less = 1
+        pred = model.predict(n=n, series=[series] * n_series_less)
+        assert len(pred) == n_series_less
+        assert all(len(p) == n for p in pred)
+
     def helper_equality_encoders(
         self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
     ):
