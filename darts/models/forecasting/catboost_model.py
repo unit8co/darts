@@ -249,12 +249,13 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         """
 
         if val_series is not None:
-            kwargs["eval_set"] = self._create_lagged_data(
+            training_samples, training_labels, _ = self._create_lagged_data(
                 target_series=val_series,
                 past_covariates=val_past_covariates,
                 future_covariates=val_future_covariates,
                 max_samples_per_ts=max_samples_per_ts,
             )
+            kwargs["eval_set"] = training_samples, training_labels
 
         if self.likelihood == "quantile":
             # empty model container in case of multiple calls to fit, e.g. when backtesting
