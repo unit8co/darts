@@ -99,9 +99,7 @@ class TestTimeSeriesMultivariate:
     )
     def test_intersect(self, config):
         freq, mixed_freq = config
-        TestTimeSeries.helper_test_intersect(
-            self, freq, mixed_freq, is_univariate=False
-        )
+        TestTimeSeries.helper_test_intersect(freq, mixed_freq, is_univariate=False)
 
     def test_shift(self):
         TestTimeSeries.helper_test_shift(self, self.series1)

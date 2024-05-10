@@ -217,6 +217,16 @@ Gaussian process filter model example notebook:
 
    examples/11-GP-filter-examples.ipynb
 
+Anomaly Detection
+=======================================
+
+Anomaly detection example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/22-anomaly-detection-examples.ipynb
+
 Dynamic Time Warping (DTW)
 =============================
 

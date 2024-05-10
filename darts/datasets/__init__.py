@@ -489,6 +489,32 @@ class ETTm2Dataset(DatasetLoaderCSV):
         )
 
 
+class TaxiNewYorkDataset(DatasetLoaderCSV):
+    """
+    Taxi Passengers in New York, from 2014-07 to 2015-01.
+    The data consists of aggregated total number of
+    taxi passengers into 30 minute buckets.
+    Univariate series.
+    Source: [1]_
+
+    References
+    ----------
+    .. [1] https://www.kaggle.com/code/julienjta/nyc-taxi-traffic-analysis
+    """
+
+    def __init__(self):
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "taxi_new_york_passengers.csv",
+                uri=_DEFAULT_PATH + "/taxi_new_york_passengers.csv",
+                hash="0a81adf1b74354a8ec18c30e9e8fe5f0",
+                header_time="time",
+                format_time="%Y-%m-%d %H:%M:%S",
+                freq="30min",
+            ),
+        )
+
+
 class ElectricityDataset(DatasetLoaderCSV):
     """
     Measurements of electric power consumption in one household with 15 minute sampling rate.

@@ -88,7 +88,11 @@ class TestTorchForecastingModel:
     def test_save_model_parameters(self):
         # check if re-created model has same params as original
         model = RNNModel(12, "RNN", 10, 10, **tfm_kwargs)
-        assert model._model_params, model.untrained_model()._model_params
+        params_old = model.model_params
+        params_new = model.untrained_model().model_params
+
+        assert params_old.keys() == params_new.keys()
+        assert all([params_old[k] == params_new[k] for k in params_old])
 
     @patch(
         "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.save"
