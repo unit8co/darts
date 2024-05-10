@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 - Improvements to the Anomaly Detection Module through major refactor. The refactor includes major performance optimization for the majority of the processes and improvements to the API, consistency, reliability, and the documentation. Some of these necessary changes come at the cost of breaking changes : [#1477](https://github.com/unit8co/darts/pull/1477) by [Dennis Bader](https://github.com/dennisbader), [Samuele Giuliano Piazzetta](https://github.com/piaz97), [Antoine Madrona](https://github.com/madtoinou), [Julien Herzen](https://github.com/hrzn), [Julien Adda](https://github.com/julien12234).
   - 🚀 Added an example notebook that showcases how to use Darts for Time Series Anomaly Detection
+  - Added a new dataset for anomaly detection with the number of taxi passengers in New York from the year 2014 to 2015.
   - `FittableWindowScorer` (KMeans, PyOD, and Wasserstein Scorers) now accept any of darts "per-time" step metrics as difference function `diff_fn`.
   - `ForecastingAnomalyModel` is now much faster thanks to optimized historical forecasts to generate the prediction input for the scorers. We also added more control over the historical forecasts generation through additional parameters in all model methods.
   - 🔴 Breaking changes:
