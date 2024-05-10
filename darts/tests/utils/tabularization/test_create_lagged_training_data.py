@@ -860,19 +860,19 @@ class TestCreateLaggedTrainingData:
             if all(lags_is_none):
                 continue
 
-            X, y, times, _, _ = create_lagged_training_data(
-                target,
-                output_chunk_length,
-                past_covariates=past if lags_past else None,
-                future_covariates=future if lags_future else None,
-                lags=lags,
-                lags_past_covariates=lags_past,
-                lags_future_covariates=lags_future,
-                uses_static_covariates=False,
-                multi_models=multi_models,
-                max_samples_per_ts=max_samples_per_ts,
-                use_moving_windows=False,
-                output_chunk_shift=output_chunk_shift,
+            expected_X, expected_y, expected_times = (
+                self.helper_create_expected_lagged_data(
+                    target,
+                    past,
+                    future,
+                    lags,
+                    lags_past,
+                    lags_future,
+                    output_chunk_length,
+                    output_chunk_shift,
+                    multi_models,
+                    max_samples_per_ts,
+                )
             )
 
             kwargs = {
