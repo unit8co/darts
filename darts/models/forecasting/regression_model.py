@@ -630,7 +630,7 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates: Sequence[TimeSeries],
         future_covariates: Sequence[TimeSeries],
         max_samples_per_ts: int,
-        sample_weight: Optional[Union[TimeSeries, str]] = None,
+        sample_weight: Union[TimeSeries, str],
         **kwargs,
     ):
         """
@@ -1883,6 +1883,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         past_covariates,
         future_covariates,
         max_samples_per_ts,
+        sample_weight,
         **kwargs,
     ):
         """
@@ -1904,5 +1905,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             max_samples_per_ts=max_samples_per_ts,
+            sample_weight=sample_weight,
             **kwargs,
         )

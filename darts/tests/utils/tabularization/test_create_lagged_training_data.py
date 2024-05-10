@@ -524,7 +524,7 @@ class TestCreateLaggedTrainingData:
             else [expected_times_y]
         )
 
-        X, y, times, _ = create_lagged_training_data(
+        X, y, times, _, _ = create_lagged_training_data(
             target_series=target,
             output_chunk_length=output_chunk_length,
             past_covariates=past_cov if lags_past_ else None,
@@ -1070,6 +1070,7 @@ class TestCreateLaggedTrainingData:
         expected_X = np.concatenate(
             [expected_X_target, expected_X_past, expected_X_future], axis=1
         )
+        expected_X = np.expand_dims(expected_X, axis=-1)
 
         kwargs = {
             "expected_X": expected_X,
