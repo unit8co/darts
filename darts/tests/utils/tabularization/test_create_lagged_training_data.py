@@ -1069,7 +1069,7 @@ class TestCreateLaggedTrainingData:
         ]
         expected_X = np.concatenate(
             [expected_X_target, expected_X_past, expected_X_future], axis=1
-        )[:, :, np.newaxis]
+        )
 
         kwargs = {
             "expected_X": expected_X,
