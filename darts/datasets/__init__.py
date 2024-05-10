@@ -24,7 +24,7 @@ from darts.utils.utils import _build_tqdm_iterator, freqs
 
 logger = get_logger(__name__)
 
-_DEFAULT_PATH = "https://raw.githubusercontent.com/unit8co/darts/example/anomaly_detection_example/datasets"
+_DEFAULT_PATH = "https://raw.githubusercontent.com/unit8co/darts/master/datasets"
 
 
 class AirPassengersDataset(DatasetLoaderCSV):
