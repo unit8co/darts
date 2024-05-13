@@ -244,13 +244,16 @@ class TestTimeSeries:
             "0", "component"
         )
         mseries = concatenate([series] * 3, axis="component")
-        mseries = mseries.with_hierarchy(
-            {"component_1": ["component"], "component_2": ["component"]}
-        )
+        mseries = mseries.with_hierarchy({
+            "component_1": ["component"],
+            "component_2": ["component"],
+        })
 
-        static_cov = pd.DataFrame(
-            {"dim0": [1, 2, 3], "dim1": [-2, -1, 0], "dim2": [0.0, 0.1, 0.2]}
-        )
+        static_cov = pd.DataFrame({
+            "dim0": [1, 2, 3],
+            "dim1": [-2, -1, 0],
+            "dim2": [0.0, 0.1, 0.2],
+        })
 
         mseries = mseries.with_static_covariates(static_cov)
 
@@ -1567,23 +1570,19 @@ class TestTimeSeries:
         assert gaps6["gap_size"].values.tolist() == [1, 5, 9]
         assert (
             gaps6["gap_start"]
-            == pd.DatetimeIndex(
-                [
-                    pd.Timestamp("20130901"),
-                    pd.Timestamp("20160101"),
-                    pd.Timestamp("20191101"),
-                ]
-            )
+            == pd.DatetimeIndex([
+                pd.Timestamp("20130901"),
+                pd.Timestamp("20160101"),
+                pd.Timestamp("20191101"),
+            ])
         ).all()
         assert (
             gaps6["gap_end"]
-            == pd.DatetimeIndex(
-                [
-                    pd.Timestamp("20130901"),
-                    pd.Timestamp("20160901"),
-                    pd.Timestamp("20210301"),
-                ]
-            )
+            == pd.DatetimeIndex([
+                pd.Timestamp("20130901"),
+                pd.Timestamp("20160901"),
+                pd.Timestamp("20210301"),
+            ])
         ).all()
         gaps7 = series7.gaps()
         assert gaps7.empty

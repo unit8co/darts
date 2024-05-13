@@ -225,7 +225,6 @@ class TestDlinearNlinearModels:
         for model, lkl in product(
             [DLinearModel, NLinearModel], [None, GaussianLikelihood()]
         ):
-
             e1, e2 = _eval_model(
                 train1, train2, val1, val2, fut_cov1, fut_cov2, cls=model, lkl=lkl
             )

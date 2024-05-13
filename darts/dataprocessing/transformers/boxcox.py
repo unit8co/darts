@@ -138,7 +138,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         params: Mapping[str, Any],
         *args,
-        **kwargs
+        **kwargs,
     ) -> Union[Sequence[float], pd.Series]:
         lmbda, method = params["fixed"]["_lmbda"], params["fixed"]["_optim_method"]
         # If `global_fit` is `True`, then `series` will be ` Sequence[TimeSeries]`;
@@ -167,7 +167,6 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
     def ts_transform(
         series: TimeSeries, params: Mapping[str, Any], **kwargs
     ) -> TimeSeries:
-
         lmbda = params["fitted"]
 
         vals = BoxCox.stack_samples(series)
@@ -181,7 +180,6 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
     def ts_inverse_transform(
         series: TimeSeries, params: Mapping[str, Any], **kwargs
     ) -> TimeSeries:
-
         lmbda = params["fitted"]
 
         vals = BoxCox.stack_samples(series)

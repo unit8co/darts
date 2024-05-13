@@ -33,7 +33,6 @@ class OrAggregator(Aggregator):
     def _predict_core(
         self, series: Sequence[TimeSeries], *args, **kwargs
     ) -> Sequence[TimeSeries]:
-
         def _compononents_or(s: TimeSeries):
             return TimeSeries.from_times_and_values(
                 times=s.time_index,

@@ -28,14 +28,12 @@ def helper_create_test_cases(series_options: list):
     ]
     relative_index_options = [False, True]
     use_encoders_options = [False, True]
-    return itertools.product(
-        *[
-            series_options,
-            covariates_options,
-            relative_index_options,
-            use_encoders_options,
-        ]
-    )
+    return itertools.product(*[
+        series_options,
+        covariates_options,
+        relative_index_options,
+        use_encoders_options,
+    ])
 
 
 class TestTFTExplainer:
@@ -156,16 +154,14 @@ class TestTFTExplainer:
         imps = [enc_imp, dec_imp, stc_imp]
         assert all([isinstance(imp, pd.DataFrame) for imp in imps])
         # importances must sum up to 100 percent
-        assert all(
-            [imp.squeeze().sum() == pytest.approx(100.0, rel=0.2) for imp in imps]
-        )
+        assert all([
+            imp.squeeze().sum() == pytest.approx(100.0, rel=0.2) for imp in imps
+        ])
         # importances must have the expected number of columns
-        assert all(
-            [
-                len(imp.columns) == n
-                for imp, n in zip(imps, [n_enc_expected, n_dec_expected, n_sc_expected])
-            ]
-        )
+        assert all([
+            len(imp.columns) == n
+            for imp, n in zip(imps, [n_enc_expected, n_dec_expected, n_sc_expected])
+        ])
 
         attention = result.get_attention()
         assert isinstance(attention, TimeSeries)
@@ -259,21 +255,17 @@ class TestTFTExplainer:
         assert all([len(imp) == len(series) for imp in imps])
         assert all([isinstance(imp_, pd.DataFrame) for imp in imps for imp_ in imp])
         # importances must sum up to 100 percent
-        assert all(
-            [
-                imp_.squeeze().sum() == pytest.approx(100.0, abs=0.21)
-                for imp in imps
-                for imp_ in imp
-            ]
-        )
+        assert all([
+            imp_.squeeze().sum() == pytest.approx(100.0, abs=0.21)
+            for imp in imps
+            for imp_ in imp
+        ])
         # importances must have the expected number of columns
-        assert all(
-            [
-                len(imp_.columns) == n
-                for imp, n in zip(imps, [n_enc_expected, n_dec_expected, n_sc_expected])
-                for imp_ in imp
-            ]
-        )
+        assert all([
+            len(imp_.columns) == n
+            for imp, n in zip(imps, [n_enc_expected, n_dec_expected, n_sc_expected])
+            for imp_ in imp
+        ])
 
         attention = result.get_attention()
         assert isinstance(attention, list)
@@ -283,18 +275,14 @@ class TestTFTExplainer:
         icl, ocl = 5, 2
         freq = series[0].freq
         assert all([len(att) == icl + ocl for att in attention])
-        assert all(
-            [
-                att.start_time() == series_.end_time() - (icl - 1) * freq
-                for att, series_ in zip(attention, series)
-            ]
-        )
-        assert all(
-            [
-                att.end_time() == series_.end_time() + ocl * freq
-                for att, series_ in zip(attention, series)
-            ]
-        )
+        assert all([
+            att.start_time() == series_.end_time() - (icl - 1) * freq
+            for att, series_ in zip(attention, series)
+        ])
+        assert all([
+            att.end_time() == series_.end_time() + ocl * freq
+            for att, series_ in zip(attention, series)
+        ])
         assert all([att.n_components == ocl for att in attention])
 
     def test_variable_selection_explanation(self):
@@ -362,30 +350,26 @@ class TestTFTExplainer:
         """Test attention (feature importance) explanation results and plotting."""
         # past attention (full_attention=False) on attends to values in the past relative to each horizon
         # (look at the last 0 values in the array)
-        att_exp_past_att = np.array(
-            [
-                [1.0, 0.8],
-                [0.8, 0.7],
-                [0.6, 0.4],
-                [0.7, 0.3],
-                [0.9, 0.4],
-                [0.0, 1.3],
-                [0.0, 0.0],
-            ]
-        )
+        att_exp_past_att = np.array([
+            [1.0, 0.8],
+            [0.8, 0.7],
+            [0.6, 0.4],
+            [0.7, 0.3],
+            [0.9, 0.4],
+            [0.0, 1.3],
+            [0.0, 0.0],
+        ])
         # full attention (full_attention=True) attends to all values in past, present, and future
         # see the that all values are non-0
-        att_exp_full_att = np.array(
-            [
-                [0.8, 0.8],
-                [0.7, 0.6],
-                [0.4, 0.4],
-                [0.3, 0.3],
-                [0.3, 0.3],
-                [0.7, 0.8],
-                [0.8, 0.8],
-            ]
-        )
+        att_exp_full_att = np.array([
+            [0.8, 0.8],
+            [0.7, 0.6],
+            [0.4, 0.4],
+            [0.3, 0.3],
+            [0.3, 0.3],
+            [0.7, 0.8],
+            [0.8, 0.8],
+        ])
         for full_attention, att_exp in zip(
             [False, True], [att_exp_past_att, att_exp_full_att]
         ):

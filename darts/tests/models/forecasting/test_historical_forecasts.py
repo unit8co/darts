@@ -43,13 +43,19 @@ if TORCH_AVAILABLE:
 
 models_reg_no_cov_cls_kwargs = [(LinearRegressionModel, {"lags": 8}, {}, (8, 1))]
 if not isinstance(CatBoostModel, NotImportedModule):
-    models_reg_no_cov_cls_kwargs.append(
-        (CatBoostModel, {"lags": 6}, {"iterations": 1}, (6, 1))
-    )
+    models_reg_no_cov_cls_kwargs.append((
+        CatBoostModel,
+        {"lags": 6},
+        {"iterations": 1},
+        (6, 1),
+    ))
 if not isinstance(LightGBMModel, NotImportedModule):
-    models_reg_no_cov_cls_kwargs.append(
-        (LightGBMModel, {"lags": 4}, {"n_estimators": 1}, (4, 1))
-    )
+    models_reg_no_cov_cls_kwargs.append((
+        LightGBMModel,
+        {"lags": 4},
+        {"n_estimators": 1},
+        (4, 1),
+    ))
 
 models_reg_cov_cls_kwargs = [
     # target + past covariates
@@ -634,14 +640,12 @@ class TestHistoricalforecast:
 
         theorical_forecast_length = (
             self.ts_val_length
-            - max(
-                [
-                    (
-                        bounds[0] + bounds[1] + 1
-                    ),  # +1 as sklearn models require min 2 train samples
-                    train_length,
-                ]
-            )  # because we train
+            - max([
+                (
+                    bounds[0] + bounds[1] + 1
+                ),  # +1 as sklearn models require min 2 train samples
+                train_length,
+            ])  # because we train
             - forecast_horizon  # because we have overlap_end = False
             + 1  # because we include the first element
         )
@@ -682,14 +686,12 @@ class TestHistoricalforecast:
             (
                 (
                     self.ts_val_length
-                    - max(
-                        [
-                            (
-                                bounds[0] + bounds[1] + 1
-                            ),  # +1 as sklearn models require min 2 train samples
-                            train_length,
-                        ]
-                    )  # because we train
+                    - max([
+                        (
+                            bounds[0] + bounds[1] + 1
+                        ),  # +1 as sklearn models require min 2 train samples
+                        train_length,
+                    ])  # because we train
                     - forecast_horizon  # because we have overlap_end = False
                     + 1  # because we include the first element
                 )
@@ -719,14 +721,12 @@ class TestHistoricalforecast:
             (
                 (
                     self.ts_val_length
-                    - max(
-                        [
-                            (
-                                bounds[0] + bounds[1] + 1
-                            ),  # +1 as sklearn models require min 2 train samples
-                            train_length,
-                        ]
-                    )  # because we train
+                    - max([
+                        (
+                            bounds[0] + bounds[1] + 1
+                        ),  # +1 as sklearn models require min 2 train samples
+                        train_length,
+                    ])  # because we train
                     - forecast_horizon  # because we have overlap_end = False
                     + 1  # because we include the first element
                 )
@@ -756,14 +756,12 @@ class TestHistoricalforecast:
 
         theorical_forecast_length = (
             self.ts_val_length
-            - max(
-                [
-                    (
-                        bounds[0] + bounds[1] + 1
-                    ),  # +1 as sklearn models require min 2 train samples
-                    train_length,
-                ]
-            )  # because we train
+            - max([
+                (
+                    bounds[0] + bounds[1] + 1
+                ),  # +1 as sklearn models require min 2 train samples
+                train_length,
+            ])  # because we train
             - forecast_horizon  # because we have overlap_end = False
             + 1  # because we include the first element
         )
@@ -916,14 +914,12 @@ class TestHistoricalforecast:
 
         theorical_forecast_length = (
             self.ts_val_length
-            - max(
-                [
-                    (
-                        bounds[0] + bounds[1] + 1
-                    ),  # +1 as sklearn models require min 2 train samples
-                    train_length,
-                ]
-            )  # because we train
+            - max([
+                (
+                    bounds[0] + bounds[1] + 1
+                ),  # +1 as sklearn models require min 2 train samples
+                train_length,
+            ])  # because we train
             - forecast_horizon  # because we have overlap_end = False
             + 1  # because we include the first element
         )

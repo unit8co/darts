@@ -14,7 +14,6 @@ logger = get_logger(__name__)
 
 
 class TestResiduals:
-
     np.random.seed(42)
 
     @pytest.mark.parametrize(

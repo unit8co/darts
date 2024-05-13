@@ -449,17 +449,14 @@ def show_anomalies_from_scores(
     axs[index_ax][0].legend(loc="upper center", bbox_to_anchor=(0.5, 1.1), ncol=2)
 
     if pred_scores is not None:
-
         dict_input = {}
 
         for idx, (score, w) in enumerate(zip(pred_scores, window)):
-
             dict_input[idx] = {"series_score": score, "window": w, "name_id": idx}
 
         for index, elem in enumerate(
             sorted(dict_input.items(), key=lambda x: x[1]["window"])
         ):
-
             if index == 0:
                 current_window = elem[1]["window"]
                 index_ax = index_ax + 1
@@ -504,7 +501,6 @@ def show_anomalies_from_scores(
             axs[index_ax][0].set_xlabel("")
 
     if anomalies is not None:
-
         _plot_series(
             series=anomalies,
             ax_id=axs[index_ax + 1][0],

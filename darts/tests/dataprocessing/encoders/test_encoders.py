@@ -351,9 +351,9 @@ class TestEncoder:
                 base_comp_name = "darts_enc_pc_"
             else:
                 base_comp_name = "darts_enc_fc_"
-            comps_expected = pd.Index(
-                [base_comp_name + comp_name for comp_name in comps_expected]
-            )
+            comps_expected = pd.Index([
+                base_comp_name + comp_name for comp_name in comps_expected
+            ])
 
             assert not enc.fit_called
             # initially, no components
@@ -490,32 +490,28 @@ class TestEncoder:
             "tz": "CET",
         }
         # given `add_encoders` dict, we expect encoders to generate the following components
-        comps_expected_past = pd.Index(
-            [
-                "darts_enc_pc_cyc_month_sin",
-                "darts_enc_pc_cyc_month_cos",
-                "darts_enc_pc_cyc_day_sin",
-                "darts_enc_pc_cyc_day_cos",
-                "darts_enc_pc_dta_month",
-                "darts_enc_pc_dta_year",
-                "darts_enc_pc_pos_relative",
-                "darts_enc_pc_cus_custom",
-                "darts_enc_pc_cus_custom_1",
-            ]
-        )
-        comps_expected_future = pd.Index(
-            [
-                "darts_enc_fc_cyc_day_sin",
-                "darts_enc_fc_cyc_day_cos",
-                "darts_enc_fc_cyc_month_sin",
-                "darts_enc_fc_cyc_month_cos",
-                "darts_enc_fc_dta_year",
-                "darts_enc_fc_dta_month",
-                "darts_enc_fc_pos_relative",
-                "darts_enc_fc_cus_custom",
-                "darts_enc_fc_cus_custom_1",
-            ]
-        )
+        comps_expected_past = pd.Index([
+            "darts_enc_pc_cyc_month_sin",
+            "darts_enc_pc_cyc_month_cos",
+            "darts_enc_pc_cyc_day_sin",
+            "darts_enc_pc_cyc_day_cos",
+            "darts_enc_pc_dta_month",
+            "darts_enc_pc_dta_year",
+            "darts_enc_pc_pos_relative",
+            "darts_enc_pc_cus_custom",
+            "darts_enc_pc_cus_custom_1",
+        ])
+        comps_expected_future = pd.Index([
+            "darts_enc_fc_cyc_day_sin",
+            "darts_enc_fc_cyc_day_cos",
+            "darts_enc_fc_cyc_month_sin",
+            "darts_enc_fc_cyc_month_cos",
+            "darts_enc_fc_dta_year",
+            "darts_enc_fc_dta_month",
+            "darts_enc_fc_pos_relative",
+            "darts_enc_fc_cus_custom",
+            "darts_enc_fc_cus_custom_1",
+        ])
         kwargs = {
             "add_encoders": add_encoders,
             "input_chunk_length": input_chunk_length,

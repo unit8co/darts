@@ -530,9 +530,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             return trainer
 
         trainer_params = {key: val for key, val in self.trainer_params.items()}
-        has_progress_bar = any(
-            [isinstance(cb, ProgressBar) for cb in trainer_params.get("callbacks", [])]
-        )
+        has_progress_bar = any([
+            isinstance(cb, ProgressBar) for cb in trainer_params.get("callbacks", [])
+        ])
         # we ignore `verbose` if `trainer` has a progress bar, to avoid errors from lightning
         if verbose is not None and not has_progress_bar:
             trainer_params["enable_model_summary"] = (
@@ -726,10 +726,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Fitted model.
         """
         (
-            series,
-            past_covariates,
-            future_covariates,
-        ), params = self._setup_for_fit_from_dataset(
+            (
+                series,
+                past_covariates,
+                future_covariates,
+            ),
+            params,
+        ) = self._setup_for_fit_from_dataset(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -1014,19 +1017,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 f" previously trained on. Trained on tuples of length {len(self.train_sample)},"
                 f" received tuples of length {len(train_sample)}.",
             )
-            same_dims = tuple(
-                s.shape[1] if s is not None else None for s in train_sample
-            ) == tuple(s.shape[1] if s is not None else None for s in self.train_sample)
+            sample_shape = lambda sample: tuple(
+                s.shape[1] if s is not None else None for s in sample
+            )  # noqa: E731
             raise_if_not(
-                same_dims,
+                sample_shape(train_sample) == sample_shape(self.train_sample),
                 "The dimensionality of the series in the training set do not match the dimensionality"
                 " of the series the model has previously been trained on. "
-                "Model input/output dimensions = {}, provided input/output dimensions = {}".format(
-                    tuple(
-                        s.shape[1] if s is not None else None for s in self.train_sample
-                    ),
-                    tuple(s.shape[1] if s is not None else None for s in train_sample),
-                ),
+                f"Model input/output dimensions = {sample_shape(self.train_sample)},"
+                f" provided input/output dimensions = {sample_shape(train_sample)}",
             )
 
         # Setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
@@ -2244,23 +2243,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 missing_params.append((param_key, tfm_save.model_params[param_key]))
             # new param was used at loading model creation
             elif param_key not in tfm_save.model_params.keys():
-                incorrect_params.append(
-                    (
-                        param_key,
-                        None,
-                        self.model_params[param_key],
-                    )
-                )
+                incorrect_params.append((
+                    param_key,
+                    None,
+                    self.model_params[param_key],
+                ))
             # param was different at loading model creation
             elif self.model_params[param_key] != tfm_save.model_params[param_key]:
                 # NOTE: for TFTModel, default is None but converted to `QuantileRegression()`
-                incorrect_params.append(
-                    (
-                        param_key,
-                        tfm_save.model_params[param_key],
-                        self.model_params[param_key],
-                    )
-                )
+                incorrect_params.append((
+                    param_key,
+                    tfm_save.model_params[param_key],
+                    self.model_params[param_key],
+                ))
 
         # at least one discrepancy was detected
         if len(missing_params) + len(incorrect_params) > 0:

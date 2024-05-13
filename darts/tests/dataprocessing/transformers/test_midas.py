@@ -36,9 +36,11 @@ class TestMIDAS:
         columns=["values_midas_0", "values_midas_1", "values_midas_2"],
     )
 
-    quarterly_not_complete_values = np.array(
-        [[np.nan, np.nan, 3], [4, 5, 6], [7, 8, np.nan]]
-    )
+    quarterly_not_complete_values = np.array([
+        [np.nan, np.nan, 3],
+        [4, 5, 6],
+        [7, 8, np.nan],
+    ])
     quarterly_not_complete_ts = TimeSeries.from_times_and_values(
         times=quarterly_times,
         values=quarterly_not_complete_values,
@@ -192,9 +194,11 @@ class TestMIDAS:
         # component components are alternating
         expected_quarterly_ts = TimeSeries.from_times_and_values(
             times=self.quarterly_ts.time_index,
-            values=np.array(
-                [[1, 10, 2, 11, 3, 12], [4, 13, 5, 14, 6, 15], [7, 16, 8, 17, 9, 18]]
-            ),
+            values=np.array([
+                [1, 10, 2, 11, 3, 12],
+                [4, 13, 5, 14, 6, 15],
+                [7, 16, 8, 17, 9, 18],
+            ]),
             columns=[
                 "values_midas_0",
                 "other_midas_0",
@@ -239,9 +243,11 @@ class TestMIDAS:
         # component components are alternating
         quarterly_ts = TimeSeries.from_times_and_values(
             times=self.quarterly_ts.time_index,
-            values=np.array(
-                [[1, 10, 2, 11, 3, 12], [4, 13, 5, 14, 6, 15], [7, 16, 8, 17, 9, 18]]
-            ),
+            values=np.array([
+                [1, 10, 2, 11, 3, 12],
+                [4, 13, 5, 14, 6, 15],
+                [7, 16, 8, 17, 9, 18],
+            ]),
             columns=[
                 "values_midas_0",
                 "other_midas_0",
@@ -286,13 +292,11 @@ class TestMIDAS:
         # components are interleaved
         expected_quarterly_ts = TimeSeries.from_times_and_values(
             times=self.quarterly_ts.time_index,
-            values=np.array(
-                [
-                    [1, 10, 2, 11, 3, 12],
-                    [4, np.nan, 5, np.nan, 6, 15],
-                    [7, 16, 8, 17, 9, 18],
-                ]
-            ),
+            values=np.array([
+                [1, 10, 2, 11, 3, 12],
+                [4, np.nan, 5, np.nan, 6, 15],
+                [7, 16, 8, 17, 9, 18],
+            ]),
             columns=[
                 "values_midas_0",
                 "other_midas_0",
@@ -324,9 +328,10 @@ class TestMIDAS:
         )
 
         minute_times = pd.date_range(start="01-2020", periods=2, freq=freqs["min"])
-        minute_values = np.array(
-            [[i for i in range(1, 61)], [i for i in range(61, 121)]]
-        )
+        minute_values = np.array([
+            [i for i in range(1, 61)],
+            [i for i in range(61, 121)],
+        ])
         minute_ts = TimeSeries.from_times_and_values(
             times=minute_times,
             values=minute_values,

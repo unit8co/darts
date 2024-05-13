@@ -165,19 +165,15 @@ class Theta(LocalForecastingModel):
         forecast = self.model.forecast(n)
 
         # Forecast of the Linear Regression part.
-        drift = self.coef * np.array(
-            [
-                i + (1 - (1 - self.alpha) ** self.length) / self.alpha
-                for i in range(0, n)
-            ]
-        )
+        drift = self.coef * np.array([
+            i + (1 - (1 - self.alpha) ** self.length) / self.alpha for i in range(0, n)
+        ])
 
         # Combining the two forecasts
         forecast += drift
 
         # Re-apply the seasonal trend of the TimeSeries
         if self.is_seasonal:
-
             replicated_seasonality = np.tile(
                 self.seasonality.pd_series()[-self.season_period :],
                 math.ceil(n / self.season_period),
@@ -427,7 +423,6 @@ class FourTheta(LocalForecastingModel):
 
         # Re-apply the seasonal trend of the TimeSeries
         if self.is_seasonal:
-
             replicated_seasonality = np.tile(
                 self.seasonality.pd_series()[-self.season_period :],
                 math.ceil(n / self.season_period),

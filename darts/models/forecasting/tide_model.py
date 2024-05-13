@@ -54,7 +54,6 @@ class _ResidualBlock(nn.Module):
             self.layer_norm = None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-
         # residual connection
         x = self.dense(x) + self.skip(x)
 

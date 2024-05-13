@@ -33,7 +33,7 @@ class TestProphet:
                 "prior_scale": 1.0,
                 "mode": "additive",
                 "condition_name": "custom_condition",
-            }
+            },
         )
         model1 = Prophet(add_seasonalities=kwargs_all)
         model2 = Prophet()
@@ -109,32 +109,34 @@ class TestProphet:
         model = Prophet(suppress_stdout_stderror=False)
         model._execute_and_suppress_output = Mock(return_value=True)
         model._model_builder = Mock(return_value=Mock(fit=Mock(return_value=True)))
-        df = pd.DataFrame(
-            {
-                "ds": pd.date_range(start="2022-01-01", periods=30, freq="D"),
-                "y": np.linspace(0, 10, 30),
-            }
-        )
+        df = pd.DataFrame({
+            "ds": pd.date_range(start="2022-01-01", periods=30, freq="D"),
+            "y": np.linspace(0, 10, 30),
+        })
         ts = TimeSeries.from_dataframe(df, time_col="ds", value_cols="y")
         model.fit(ts)
 
-        model._execute_and_suppress_output.assert_not_called(), "Suppression should not be called"
+        (
+            model._execute_and_suppress_output.assert_not_called(),
+            "Suppression should not be called",
+        )
         model.model.fit.assert_called_once(), "Model should still be fitted"
 
     def test_prophet_model_with_stdout_suppression(self):
         model = Prophet(suppress_stdout_stderror=True)
         model._execute_and_suppress_output = Mock(return_value=True)
         model._model_builder = Mock(return_value=Mock(fit=Mock(return_value=True)))
-        df = pd.DataFrame(
-            {
-                "ds": pd.date_range(start="2022-01-01", periods=30, freq="D"),
-                "y": np.linspace(0, 10, 30),
-            }
-        )
+        df = pd.DataFrame({
+            "ds": pd.date_range(start="2022-01-01", periods=30, freq="D"),
+            "y": np.linspace(0, 10, 30),
+        })
         ts = TimeSeries.from_dataframe(df, time_col="ds", value_cols="y")
         model.fit(ts)
 
-        model._execute_and_suppress_output.assert_called_once(), "Suppression should be called once"
+        (
+            model._execute_and_suppress_output.assert_called_once(),
+            "Suppression should be called once",
+        )
 
     def test_prophet_model_default_with_prophet_constructor(self):
         from prophet import Prophet as FBProphet
@@ -219,7 +221,7 @@ class TestProphet:
         model = Prophet(
             add_seasonalities=custom_seasonality,
             seasonality_mode="additive",
-            **supress_auto_seasonality
+            **supress_auto_seasonality,
         )
 
         model.fit(train, future_covariates=train_cov)

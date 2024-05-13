@@ -175,7 +175,6 @@ class TestTiDEModel:
         ts_time_index = tg.sine_timeseries(length=2, freq="h")
 
         for enable_rin in [True, False]:
-
             # test with past_covariates timeseries
             model = TiDEModel(
                 input_chunk_length=1,

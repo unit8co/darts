@@ -277,7 +277,6 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
     def generate_train_idx(
         self, target: TimeSeries, covariates: Optional[TimeSeries] = None
     ) -> Tuple[SupportedIndex, pd.Timestamp]:
-
         super().generate_train_idx(target, covariates)
 
         # the returned index depends on the following cases:
@@ -319,7 +318,6 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
     def generate_inference_idx(
         self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
     ) -> Tuple[SupportedIndex, pd.Timestamp]:
-
         super().generate_inference_idx(n, target, covariates)
 
         # for prediction (`n` is given) with past covariates the returned index depends on the following cases:
@@ -378,7 +376,6 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
     def generate_train_idx(
         self, target: TimeSeries, covariates: Optional[TimeSeries] = None
     ) -> Tuple[SupportedIndex, pd.Timestamp]:
-
         super().generate_train_idx(target, covariates)
 
         # the returned index depends on the following cases:
@@ -429,7 +426,6 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
     def generate_inference_idx(
         self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
     ) -> Tuple[SupportedIndex, pd.Timestamp]:
-
         super().generate_inference_idx(n, target, covariates)
 
         # for prediction (`n` is given) with future covariates the returned index depends on the following cases:

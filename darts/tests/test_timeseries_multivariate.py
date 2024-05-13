@@ -10,7 +10,6 @@ from darts.utils.utils import freqs
 
 
 class TestTimeSeriesMultivariate:
-
     times1 = pd.date_range("20130101", "20130110")
     times2 = pd.date_range("20130206", "20130215")
     dataframe1 = pd.DataFrame(

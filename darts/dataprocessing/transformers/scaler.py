@@ -117,7 +117,6 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
     def ts_transform(
         series: TimeSeries, params: Mapping[str, Any], **kwargs
     ) -> TimeSeries:
-
         transformer = params["fitted"]
 
         tr_out = transformer.transform(Scaler.stack_samples(series))
@@ -142,7 +141,7 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         params: Mapping[str, Any],
         *args,
-        **kwargs
+        **kwargs,
     ) -> Any:
         transformer = deepcopy(params["fixed"]["transformer"])
         # If `global_fit` is `True`, then `series` will be ` Sequence[TimeSeries]`;

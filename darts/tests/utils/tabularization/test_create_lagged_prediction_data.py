@@ -138,9 +138,9 @@ class TestCreateLaggedPredictionData:
         """
         times = series.time_index
         min_lag = -max(lags)
-        times = times.union(
-            [times[-1] + i * series.freq for i in range(1, min_lag + 1)]
-        )
+        times = times.union([
+            times[-1] + i * series.freq for i in range(1, min_lag + 1)
+        ])
         max_lag = -min(lags)
         times = times[max_lag:]
         return times
@@ -195,20 +195,18 @@ class TestCreateLaggedPredictionData:
         # Case 1:
         if (min_lag > 0) and (max_lag > 0):
             # Can create features for times extending after the end of `future_covariates`:
-            times = times.union(
-                [times[-1] + i * future_covariates.freq for i in range(1, min_lag + 1)]
-            )
+            times = times.union([
+                times[-1] + i * future_covariates.freq for i in range(1, min_lag + 1)
+            ])
             # Can't create features for first `max_lag` times in series:
             times = times[max_lag:]
         # Case 2:
         elif (min_lag <= 0) and (max_lag <= 0):
             # Can create features for times before the start of `future_covariates`:
-            times = times.union(
-                [
-                    times[0] - i * future_covariates.freq
-                    for i in range(1, abs(max_lag) + 1)
-                ]
-            )
+            times = times.union([
+                times[0] - i * future_covariates.freq
+                for i in range(1, abs(max_lag) + 1)
+            ])
             # Can't create features for last `abs(min_lag)` times in series:
             times = times[:min_lag] if min_lag != 0 else times
         # Case 3:
@@ -731,13 +729,11 @@ class TestCreateLaggedPredictionData:
         # Only want to check very last generated observation:
         max_samples_per_ts = 1
         # Expect `X` to be constructed from the very last values of each series:
-        expected_X = np.concatenate(
-            [
-                target.all_values(copy=False)[-1, :, 0],
-                past.all_values(copy=False)[-1, :, 0],
-                future.all_values(copy=False)[-1, :, 0],
-            ]
-        ).reshape(1, -1)
+        expected_X = np.concatenate([
+            target.all_values(copy=False)[-1, :, 0],
+            past.all_values(copy=False)[-1, :, 0],
+            future.all_values(copy=False)[-1, :, 0],
+        ]).reshape(1, -1)
         # Check correctness for both 'moving window' method
         # and 'time intersection' method:
         X, times = create_lagged_prediction_data(

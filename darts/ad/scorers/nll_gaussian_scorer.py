@@ -15,7 +15,6 @@ from darts.ad.scorers.scorers import NLLScorer
 
 
 class GaussianNLLScorer(NLLScorer):
-
     def __init__(self, window: int = 1) -> None:
         """NLL Gaussian Scorer
 
