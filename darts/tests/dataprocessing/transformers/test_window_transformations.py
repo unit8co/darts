@@ -7,6 +7,7 @@ import pytest
 from darts import TimeSeries
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import Mapper, WindowTransformer
+from darts.utils.utils import freqs
 
 
 def helper_generate_ts_hierarchy(length: int):
@@ -617,7 +618,7 @@ class TestTimeSeriesWindowTransform:
 class TestWindowTransformer:
     times = pd.date_range("20130101", "20130110")
     target = TimeSeries.from_times_and_values(times, np.array(range(1, 11)))
-    times_hourly = pd.date_range(start="20130101", freq="1H", periods=10)
+    times_hourly = pd.date_range(start="20130101", freq="1" + freqs["h"], periods=10)
     target_hourly = TimeSeries.from_times_and_values(
         times_hourly, np.array(range(1, 11))
     )

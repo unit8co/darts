@@ -11,7 +11,7 @@ from scipy.stats import kurtosis, skew
 
 from darts import TimeSeries, concatenate
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
-from darts.utils.utils import generate_index
+from darts.utils.utils import freqs, generate_index
 
 
 class TestTimeSeries:
@@ -551,9 +551,7 @@ class TestTimeSeries:
         assert self.series3 * 0.2e20 == seriesD
 
     @staticmethod
-    def helper_test_intersect(
-        test_case, freq, is_mixed_freq: bool, is_univariate: bool
-    ):
+    def helper_test_intersect(freq, is_mixed_freq: bool, is_univariate: bool):
         start = pd.Timestamp("20130101") if isinstance(freq, str) else 0
         freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
 
@@ -601,6 +599,9 @@ class TestTimeSeries:
             np.testing.assert_array_equal(
                 series[end_].all_values(), s_int_vals[-1:, :, :]
             )
+            # check that the time index is the same with `slice_intersect_times`
+            s_int_idx = series.slice_intersect_times(other, copy=False)
+            assert s_int.time_index.equals(s_int_idx)
 
         # slice with exact range
         startA = start
@@ -668,7 +669,7 @@ class TestTimeSeries:
             test_series.shift(1e6)
 
         seriesM = TimeSeries.from_times_and_values(
-            pd.date_range("20130101", "20130601", freq="m"), range(5)
+            pd.date_range("20130101", "20130601", freq=freqs["ME"]), range(5)
         )
         with pytest.raises(OverflowError):
             seriesM.shift(1e4)
@@ -777,7 +778,7 @@ class TestTimeSeries:
         """Tests slice intersection between two series with datetime or range index with identical and
         mixed frequencies."""
         freq, mixed_freq = config
-        self.helper_test_intersect(self, freq, mixed_freq, is_univariate=True)
+        self.helper_test_intersect(freq, mixed_freq, is_univariate=True)
 
     def test_shift(self):
         TestTimeSeries.helper_test_shift(self, self.series1)
@@ -785,7 +786,7 @@ class TestTimeSeries:
     def test_append(self):
         TestTimeSeries.helper_test_append(self, self.series1)
         # Check `append` deals with `RangeIndex` series correctly:
-        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name="A")
+        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name=freqs["YE"])
         series_2 = linear_timeseries(start=11, length=2, freq=2, column_name="B")
         appended = series_1.append(series_2)
         expected_vals = np.concatenate(
@@ -812,7 +813,7 @@ class TestTimeSeries:
     def test_prepend(self):
         TestTimeSeries.helper_test_prepend(self, self.series1)
         # Check `prepend` deals with `RangeIndex` series correctly:
-        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name="A")
+        series_1 = linear_timeseries(start=1, length=5, freq=2, column_name=freqs["YE"])
         series_2 = linear_timeseries(start=11, length=2, freq=2, column_name="B")
         prepended = series_2.prepend(series_1)
         expected_vals = np.concatenate(
@@ -836,22 +837,50 @@ class TestTimeSeries:
         assert prepended.time_index.equals(expected_idx)
         assert prepended.components.equals(series.components)
 
-    def test_with_values(self):
+    @pytest.mark.parametrize(
+        "config",
+        [
+            ("with_values", True),
+            ("with_times_and_values", True),
+            ("with_times_and_values", False),
+        ],
+    )
+    def test_with_x_values(self, config):
+        """Test `with_values`, and `with_times_and_values`, where the latter can have identical or different times."""
+        method, use_entire_index = config
+        mask = slice(None) if use_entire_index else slice(1, 4)
+
         vals = np.random.rand(5, 10, 3)
         series = TimeSeries.from_values(vals)
-        series2 = series.with_values(vals + 1)
-        series3 = series2.with_values(series2.all_values() - 1)
+
+        vals = vals[mask]
+        series[::2]
+        kwargs = (
+            {"times": series.time_index[mask]}
+            if method == "with_times_and_values"
+            else dict()
+        )
+        series2 = getattr(series, method)(values=vals + 1, **kwargs)
+        series3 = getattr(series2, method)(values=series2.all_values() - 1, **kwargs)
 
         # values should work
-        np.testing.assert_allclose(series3.all_values(), series.all_values())
+        np.testing.assert_allclose(series3.all_values(), series[mask].all_values())
         np.testing.assert_allclose(series2.all_values(), vals + 1)
 
         # should fail if nr components is not the same:
         with pytest.raises(ValueError):
-            series.with_values(np.random.rand(5, 11, 3))
+            getattr(series, method)(values=np.random.rand(len(vals), 11, 3), **kwargs)
 
         # should not fail if nr samples is not the same:
-        series.with_values(np.random.rand(5, 10, 2))
+        getattr(series, method)(values=np.random.rand(len(vals), 10, 2), **kwargs)
+
+        # should not fail if nr samples is not the same:
+        getattr(series, method)(values=np.random.rand(len(vals), 10, 2), **kwargs)
+
+        # should not fail for univariate deterministic series if values is a 1D array
+        getattr(series[series.columns[0]], method)(
+            values=np.random.rand(len(vals)), **kwargs
+        )
 
     def test_cumsum(self):
         cumsum_expected = TimeSeries.from_dataframe(
@@ -947,23 +976,34 @@ class TestTimeSeries:
             self.series1 / 0
 
     def test_getitem_datetime_index(self):
-        seriesA: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
-        assert self.series1[pd.date_range("20130101", " 20130104")] == seriesA
-        assert self.series1[:4] == seriesA
+        series_short: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
+        series_stride_2: TimeSeries = self.series1.with_times_and_values(
+            times=self.series1.time_index[::2],
+            values=self.series1.all_values()[::2],
+        )
+        # getitem from slice
+        assert self.series1[:] == self.series1[::] == self.series1[::1] == self.series1
+        assert self.series1[::2] == series_stride_2
+        assert self.series1[::2].freq == self.series1.freq * 2
+        assert self.series1[:4] == series_short
+        # getitem from dates
+        assert self.series1[pd.date_range("20130101", " 20130104")] == series_short
         assert self.series1[pd.Timestamp("20130101")] == TimeSeries.from_dataframe(
             self.series1.pd_dataframe()[:1], freq=self.series1.freq
         )
         assert (
-            self.series1[pd.Timestamp("20130101") : pd.Timestamp("20130104")] == seriesA
+            self.series1[pd.Timestamp("20130101") : pd.Timestamp("20130104")]
+            == series_short
         )
 
+        # not all dates in index
         with pytest.raises(KeyError):
             self.series1[pd.date_range("19990101", "19990201")]
-
+        # date not in index
         with pytest.raises(KeyError):
             self.series1["19990101"]
-
-        with pytest.raises(IndexError):
+        # cannot reverse series
+        with pytest.raises(ValueError):
             self.series1[::-1]
 
     def test_getitem_integer_index(self):
@@ -978,6 +1018,15 @@ class TestTimeSeries:
         assert series.start_time() == start
         assert series.end_time() == end
         assert series[idx_int] == series == series[0 : len(series)]
+
+        # getitem from slice
+        series_stride_2 = self.series1.with_times_and_values(
+            times=series.time_index[::2],
+            values=series.all_values()[::2],
+        )
+        assert series[:] == series[::] == series[::1] == series
+        assert series[::2] == series_stride_2
+        assert series[::2].freq == series.freq * 2
 
         series_single = series.drop_after(start + 2 * freq)
         assert (
@@ -1013,10 +1062,8 @@ class TestTimeSeries:
     def test_getitem_frequency_inferrence(self):
         ts = self.series1
         assert ts.freq == "D"
-        ts_got = ts[1::2]
-        assert ts_got.freq == "2D"
-        ts_got = ts[pd.Timestamp("20130103") :: 2]
-        assert ts_got.freq == "2D"
+        assert ts[::2].freq == ts[1::2].freq == ts[:-1:2].freq == "2D"
+        assert ts[pd.Timestamp("20130103") :: 2].freq == "2D"
 
         idx = pd.DatetimeIndex(["20130102", "20130105", "20130108"])
         ts_idx = ts[idx]
@@ -1048,9 +1095,8 @@ class TestTimeSeries:
         )
 
         assert ts.freq == freq
-        ts_got = ts[1::2]
-        assert ts_got.start_time() == start + freq
-        assert ts_got.freq == 2 * freq
+        assert ts[::2].freq == ts[1::2].freq == ts[:-1:2].freq == 2 * freq
+        assert ts[1::2].start_time() == start + freq
 
         idx = pd.RangeIndex(
             start=start + 2 * freq, stop=start + 4 * freq, step=2 * freq
@@ -1104,56 +1150,51 @@ class TestTimeSeries:
             "C",
             "D",
             "W",
-            "M",
-            "SM",
-            "BM",
-            "CBM",
+            freqs["ME"],
+            freqs["SME"],
+            freqs["BME"],
+            freqs["CBME"],
             "MS",
             "SMS",
             "BMS",
             "CBMS",
-            "Q",
-            "BQ",
+            freqs["QE"],
+            freqs["BQE"],
             "QS",
             "BQS",
-            "A",
-            "Y",
-            "BA",
-            "BY",
-            "AS",
+            freqs["YE"],
+            freqs["BYE"],
+            freqs["YS"],
             "YS",
-            "BAS",
+            freqs["BYS"],
             "BYS",
-            "BH",
-            "H",
-            "T",
-            "min",
-            "S",
-            "L",
-            "U",
-            "us",
-            "N",
+            freqs["bh"],
+            freqs["h"],
+            freqs["min"],
+            freqs["s"],
+            freqs["ms"],
+            freqs["us"],
+            freqs["ns"],
         ]
         # fill_missing_dates will find multiple inferred frequencies (i.e. for 'B' it finds {'B', 'D'}) -> good
         offset_aliases_raise = [
             "B",
             "C",
-            "SM",
-            "BM",
-            "CBM",
+            freqs["SME"],
+            freqs["BME"],
+            freqs["CBME"],
             "SMS",
             "BMS",
             "CBMS",
-            "BQ",
-            "BA",
-            "BY",
-            "BAS",
+            freqs["BQE"],
+            freqs["BYE"],
+            freqs["BYS"],
             "BYS",
-            "BH",
+            freqs["bh"],
             "BQS",
         ]
         # frequency cannot be inferred for these types (finds '15D' instead of 'SM')
-        offset_not_supported = ["SM", "SMS"]
+        offset_not_supported = [freqs["SME"], "SMS"]
 
         ts_length = 25
         for offset_alias in offset_aliases:
@@ -1233,8 +1274,8 @@ class TestTimeSeries:
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries.from_series(pd_series)
 
-        resampled_timeseries = timeseries.resample("h")
-        assert resampled_timeseries.freq_str.lower() == "h"
+        resampled_timeseries = timeseries.resample(freqs["h"])
+        assert resampled_timeseries.freq_str == freqs["h"]
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101020000")] == 0
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130102020000")] == 1
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130109090000")] == 8
@@ -1249,12 +1290,12 @@ class TestTimeSeries:
 
         # using offset to avoid nan in the first value
         times = pd.date_range(
-            start=pd.Timestamp("20200101233000"), periods=10, freq="15T"
+            start=pd.Timestamp("20200101233000"), periods=10, freq="15" + freqs["min"]
         )
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries.from_series(pd_series)
         resampled_timeseries = timeseries.resample(
-            freq="1h", offset=pd.Timedelta("30T")
+            freq="1" + freqs["h"], offset=pd.Timedelta("30" + freqs["min"])
         )
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20200101233000")] == 0
 
@@ -1304,7 +1345,7 @@ class TestTimeSeries:
             pd.date_range("20130101", "20130105"),
             range(5),
             fill_missing_dates=False,
-            freq="M",
+            freq=freqs["ME"],
         )
         assert seriesA.freq == "D"
         # test successful instantiation of TimeSeries with length 2
@@ -1464,8 +1505,8 @@ class TestTimeSeries:
 
     def test_gaps(self):
         times1 = pd.date_range("20130101", "20130110")
-        times2 = pd.date_range("20120101", "20210301", freq="Q")
-        times3 = pd.date_range("20120101", "20210301", freq="AS")
+        times2 = pd.date_range("20120101", "20210301", freq=freqs["QE"])
+        times3 = pd.date_range("20120101", "20210301", freq=freqs["YS"])
         times4 = pd.date_range("20120101", "20210301", freq="2MS")
 
         pd_series1 = pd.Series(
@@ -2241,7 +2282,7 @@ class TestTimeSeriesFromDataFrame:
         assert ts.time_index.tz is None
 
         time_range_H = pd.date_range(
-            start="20200518", end="20200521", freq="H", tz="CET"
+            start="20200518", end="20200521", freq=freqs["h"], tz="CET"
         )
         values = np.random.uniform(low=-10, high=10, size=len(time_range_H))
 

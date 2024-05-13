@@ -751,9 +751,9 @@ def _build_forecast_series(
     custom_columns
         New names for the forecast TimeSeries, used when the number of components changes
     with_static_covs
-        If set to False, do not copy the input_series `static_covariates` attribute
+        If set to `False`, do not copy the input_series `static_covariates` attribute
     with_hierarchy
-        If set to False, do not copy the input_series `hierarchy` attribute
+        If set to `False`, do not copy the input_series `hierarchy` attribute
     pred_start
         Optionally, give a custom prediction start point.
 

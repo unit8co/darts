@@ -18,7 +18,7 @@ from darts.models import (
     NaiveSeasonal,
     Theta,
 )
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils.timeseries_generation import constant_timeseries as ct
 from darts.utils.timeseries_generation import gaussian_timeseries as gt
 from darts.utils.timeseries_generation import linear_timeseries as lt
@@ -28,20 +28,13 @@ from darts.utils.timeseries_generation import sine_timeseries as st
 logger = get_logger(__name__)
 
 
-try:
+if TORCH_AVAILABLE:
     from darts.models import (
         BlockRNNModel,
         LinearRegressionModel,
         RandomForest,
         TCNModel,
     )
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning(
-        "Torch models are not installed - will not be tested for backtesting"
-    )
-    TORCH_AVAILABLE = False
 
 
 def get_dummy_series(

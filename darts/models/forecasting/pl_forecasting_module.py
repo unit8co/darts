@@ -827,13 +827,15 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
         batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
 
-        while prediction_length < n:
-            # we want the last prediction to end exactly at `n` into the future.
+        # predict at least `output_chunk_length` points, so that we use the most recent target values
+        min_n = n if n >= self.output_chunk_length else self.output_chunk_length
+        while prediction_length < min_n:
+            # we want the last prediction to end exactly at `min_n` into the future.
             # this means we may have to truncate the previous prediction and step
             # back the roll size for the last chunk
-            if prediction_length + self.output_chunk_length > n:
+            if prediction_length + self.output_chunk_length > min_n:
                 spillover_prediction_length = (
-                    prediction_length + self.output_chunk_length - n
+                    prediction_length + self.output_chunk_length - min_n
                 )
                 roll_size -= spillover_prediction_length
                 prediction_length -= spillover_prediction_length

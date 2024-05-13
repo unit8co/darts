@@ -879,7 +879,7 @@ class RegressionModel(GlobalForecastingModel):
                 )
             series = self.training_series
 
-        called_with_single_series = True if isinstance(series, TimeSeries) else False
+        called_with_single_series = isinstance(series, TimeSeries)
 
         # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)

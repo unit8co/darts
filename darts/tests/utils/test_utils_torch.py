@@ -1,19 +1,16 @@
 import pytest
 from numpy.random import RandomState
 
-from darts.logging import get_logger
+from darts.tests.conftest import TORCH_AVAILABLE
 
-logger = get_logger(__name__)
-
-try:
-    import torch
-
-    from darts.utils.torch import random_method
-except ImportError:
+if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import torch
+
+from darts.utils.torch import random_method
 
 
 # use a simple torch model mock

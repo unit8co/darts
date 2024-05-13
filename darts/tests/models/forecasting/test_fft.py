@@ -2,6 +2,7 @@ import numpy as np
 
 from darts.models.forecasting.fft import _find_relevant_timestamp_attributes
 from darts.utils import timeseries_generation as tg
+from darts.utils.utils import freqs
 
 
 class TestFFT:
@@ -32,7 +33,7 @@ class TestFFT:
         np.random.seed(0)
 
         # monthly frequency
-        self.helper_relevant_attributes("M", 150, [(12, {"month"})])
+        self.helper_relevant_attributes(freqs["ME"], 150, [(12, {"month"})])
 
         # daily frequency
         self.helper_relevant_attributes(
@@ -41,7 +42,7 @@ class TestFFT:
 
         # hourly frequency
         self.helper_relevant_attributes(
-            "H",
+            freqs["h"],
             3000,
             [(730, {"day", "hour"}), (168, {"weekday", "hour"}), (24, {"hour"})],
         )

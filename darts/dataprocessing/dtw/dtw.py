@@ -11,11 +11,10 @@ import pandas as pd
 import xarray as xr
 
 from darts import TimeSeries
+from darts.dataprocessing.dtw.cost_matrix import CostMatrix
+from darts.dataprocessing.dtw.window import CRWindow, NoWindow, Window
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.timeseries import DIMS
-
-from .cost_matrix import CostMatrix
-from .window import CRWindow, NoWindow, Window
 
 logger = get_logger(__name__)
 

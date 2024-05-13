@@ -49,25 +49,27 @@ def _seasonality_from_freq(series: TimeSeries):
         return [5]
     elif freq == "D":
         return [7]
-    elif freq == "W":
+    elif freq == "W" or freq.startswith("W-"):
         return [52]
-    elif freq in ["M", "BM", "CBM", "SM"] or freq.startswith((
+    elif freq in [
         "M",
         "BM",
-        "BS",
         "CBM",
         "SM",
-    )):
+        "LWOM",
+        "WOM",
+    ] or freq.startswith(("M", "BM", "BS", "CBM", "SM", "LWOM", "WOM")):
         return [12]  # month
     elif freq in ["Q", "BQ", "REQ"] or freq.startswith(("Q", "BQ", "REQ")):
         return [4]  # quarter
-    elif freq in ["H", "BH", "CBH"]:
-        return [24]  # hour
-    elif freq in ["T", "min"]:
-        return [60]  # minute
-    elif freq == "S":
-        return [60]  # second
-
+    else:
+        freq_lower = freq.lower()
+        if freq_lower in ["h", "bh", "cbh"]:
+            return [24]  # hour
+        elif freq_lower in ["t", "min"]:
+            return [60]  # minute
+        elif freq_lower == "s":
+            return [60]  # second
     return None
 
 

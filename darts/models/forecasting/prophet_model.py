@@ -204,6 +204,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 self._floor = 0
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
         series = self.training_series
@@ -263,6 +264,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
     ) -> TimeSeries:
+
         _ = self._check_seasonality_conditions(future_covariates=future_covariates)
 
         super()._predict(n, future_covariates, num_samples)
@@ -348,11 +350,9 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             condition_name = attributes["condition_name"]
             if condition_name is not None:
                 if condition_name not in future_covariates_columns:
-                    invalid_conditional_seasonalities.append((
-                        seasonality_name,
-                        condition_name,
-                        "column missing",
-                    ))
+                    invalid_conditional_seasonalities.append(
+                        (seasonality_name, condition_name, "column missing")
+                    )
                     continue
                 if (
                     not future_covariates[condition_name]
@@ -360,11 +360,9 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     .isin([True, False])
                     .all()
                 ):
-                    invalid_conditional_seasonalities.append((
-                        seasonality_name,
-                        condition_name,
-                        "invalid values",
-                    ))
+                    invalid_conditional_seasonalities.append(
+                        (seasonality_name, condition_name, "invalid values")
+                    )
                     continue
                 conditional_seasonality_covariates.append(condition_name)
 
@@ -597,29 +595,26 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         seconds_per_day = 86400
         days = 0
-        if freq in ["A", "BA", "Y", "BY", "RE"] or freq.startswith((
-            "A",
-            "BA",
-            "Y",
-            "BY",
-            "RE",
-        )):  # year
+        if freq in ["A", "BA", "Y", "BY", "RE"] or freq.startswith(
+            ("A", "BA", "Y", "BY", "RE")
+        ):  # year
             days = 365.25
-        elif freq in ["Q", "BQ", "REQ"] or freq.startswith((
-            "Q",
-            "BQ",
-            "REQ",
-        )):  # quarter
+        elif freq in ["Q", "BQ", "REQ"] or freq.startswith(
+            ("Q", "BQ", "REQ")
+        ):  # quarter
             days = 3 * 30.4375
-        elif freq in ["M", "BM", "CBM", "SM"] or freq.startswith((
+        elif freq in [
             "M",
             "BM",
-            "BS",
             "CBM",
             "SM",
-        )):  # month
+            "LWOM",
+            "WOM",
+        ] or freq.startswith(
+            ("M", "BME", "BS", "CBM", "SM", "LWOM", "WOM")
+        ):  # month
             days = 30.4375
-        elif freq in ["W"]:  # week
+        elif freq == "W" or freq.startswith("W-"):  # week
             days = 7.0
         elif freq in ["B", "C"]:  # business day
             days = 1 * 7 / 5
@@ -638,7 +633,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 days = 1 / (seconds_per_day * 10**3)
             elif freq_lower in ["u", "us"]:  # microsecond
                 days = 1 / (seconds_per_day * 10**6)
-            elif freq_lower in ["n"]:  # nanosecond
+            elif freq_lower in ["n", "ns"]:  # nanosecond
                 days = 1 / (seconds_per_day * 10**9)
 
         if not days:

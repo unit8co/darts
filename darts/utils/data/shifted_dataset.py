@@ -9,8 +9,7 @@ import numpy as np
 
 from darts import TimeSeries
 from darts.logging import raise_if_not
-
-from .training_dataset import (
+from darts.utils.data.training_dataset import (
     DualCovariatesTrainingDataset,
     FutureCovariatesTrainingDataset,
     MixedCovariatesTrainingDataset,
@@ -18,7 +17,7 @@ from .training_dataset import (
     SplitCovariatesTrainingDataset,
     TrainingDataset,
 )
-from .utils import CovariateType
+from darts.utils.data.utils import CovariateType
 
 
 class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
