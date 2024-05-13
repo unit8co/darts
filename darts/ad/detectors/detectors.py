@@ -235,9 +235,9 @@ class _BoundedDetectorMixin(ABC):
         lower_bound = _prep_boundaries(lower_bound)
         upper_bound = _prep_boundaries(upper_bound)
 
-        if all([lo is None for lo in lower_bound]) and all(
-            [hi is None for hi in upper_bound]
-        ):
+        if all([lo is None for lo in lower_bound]) and all([
+            hi is None for hi in upper_bound
+        ]):
             raise_log(
                 ValueError("All provided upper and lower bounds values are None."),
                 logger=logger,
@@ -261,12 +261,10 @@ class _BoundedDetectorMixin(ABC):
                 ),
                 logger=logger,
             )
-        if not all(
-            [
-                lb is None or ub is None or lb <= ub
-                for (lb, ub) in zip(lower_bound, upper_bound)
-            ]
-        ):
+        if not all([
+            lb is None or ub is None or lb <= ub
+            for (lb, ub) in zip(lower_bound, upper_bound)
+        ]):
             raise_log(
                 ValueError(
                     f"All values in `{lower_bound_name}` must be lower or equal"

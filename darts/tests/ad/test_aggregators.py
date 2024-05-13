@@ -73,7 +73,6 @@ delta = 1e-05
 
 
 class TestAnomalyDetectionAggregator:
-
     np.random.seed(42)
 
     # univariate series

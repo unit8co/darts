@@ -1615,9 +1615,9 @@ class TestAnomalyDetectionScorer:
             pdf_kwargs = dist_kwargs
         self.helper_window_parameter(scorer_cls)
 
-        distribution = np.array(
-            [distribution(size=10000, **dist_kwargs) for _ in range(len(values))]
-        )
+        distribution = np.array([
+            distribution(size=10000, **dist_kwargs) for _ in range(len(values))
+        ])
         real_values = [-np.log(prob_dens_func(value, **pdf_kwargs)) for value in values]
 
         self.helper_evaluate_nll_scorer(scorer_cls, distribution, values, real_values)
