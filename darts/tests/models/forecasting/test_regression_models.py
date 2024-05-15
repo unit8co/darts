@@ -79,10 +79,8 @@ def dummy_timeseries(
     freq="D",
     integer_index=False,
 ):
-
     targets, pcovs, fcovs = [], [], []
     for series_idx in range(n_series):
-
         target_start_date = (
             series_idx * multiseries_offset
             if integer_index
@@ -179,7 +177,6 @@ cb_test_params = {
 
 
 class TestRegressionModels:
-
     np.random.seed(42)
     # default regression models
     models = [
@@ -211,14 +208,12 @@ class TestRegressionModels:
         **xgb_test_params,
     )
     # targets for poisson regression must be positive, so we exclude them for some tests
-    models.extend(
-        [
-            QuantileLinearRegressionModel,
-            PoissonLinearRegressionModel,
-            PoissonXGBModel,
-            QuantileXGBModel,
-        ]
-    )
+    models.extend([
+        QuantileLinearRegressionModel,
+        PoissonLinearRegressionModel,
+        PoissonXGBModel,
+        QuantileXGBModel,
+    ])
 
     univariate_accuracies = [
         0.03,  # RandomForest
@@ -406,18 +401,14 @@ class TestRegressionModels:
 
         date_range = pd.date_range(start="2020-01-01", end="2023-01-01", freq="D")
         df = (
-            pd.DataFrame(
-                {
-                    "date": date_range,
-                    "baseline": np.random.normal(100, 10, len(date_range)),
-                    "fut_cov_promo_mechanism": np.random.randint(
-                        0, 11, len(date_range)
-                    ),
-                    "fut_cov_dummy": np.random.normal(10, 2, len(date_range)),
-                    "past_cov_dummy": np.random.normal(10, 2, len(date_range)),
-                    "past_cov_cat_dummy": np.random.normal(10, 2, len(date_range)),
-                }
-            )
+            pd.DataFrame({
+                "date": date_range,
+                "baseline": np.random.normal(100, 10, len(date_range)),
+                "fut_cov_promo_mechanism": np.random.randint(0, 11, len(date_range)),
+                "fut_cov_dummy": np.random.normal(10, 2, len(date_range)),
+                "past_cov_dummy": np.random.normal(10, 2, len(date_range)),
+                "past_cov_cat_dummy": np.random.normal(10, 2, len(date_range)),
+            })
             .assign(
                 target_qty=lambda _df: _df.baseline
                 + _df.fut_cov_promo_mechanism.apply(_apply_promo_mechanism)
@@ -700,12 +691,10 @@ class TestRegressionModels:
 
         series_matrix = None
         if "target" in self.lags_1:
-            series_matrix = np.stack(
-                [
-                    ts.values(copy=False)[self.lags_1["target"][0] - shift :, :]
-                    for ts in series
-                ]
-            )
+            series_matrix = np.stack([
+                ts.values(copy=False)[self.lags_1["target"][0] - shift :, :]
+                for ts in series
+            ])
         # prediction preprocessing end
         assert all([lag >= 0 for lags in relative_cov_lags.values() for lag in lags])
 
@@ -862,12 +851,10 @@ class TestRegressionModels:
         # with `use_static_covariates=True`, all static covs must have same shape
         model = model_cls(lags=4, use_static_covariates=True)
         with pytest.raises(ValueError):
-            model.fit(
-                [
-                    series,
-                    series.with_static_covariates(pd.DataFrame({"a": [1], "b": [2]})),
-                ]
-            )
+            model.fit([
+                series,
+                series.with_static_covariates(pd.DataFrame({"a": [1], "b": [2]})),
+            ])
 
         # with `use_static_covariates=False`, static covariates are ignored and prediction works
         model = model_cls(lags=4, use_static_covariates=False)
@@ -1388,12 +1375,10 @@ class TestRegressionModels:
         # multivariate, one sub-model per position, per component
         ocl = 2
         ts = TimeSeries.from_values(
-            np.array(
-                [
-                    [0, 0, 0, 0, 2],
-                    [0, 0, 0, 1, 3],
-                ]
-            ).T
+            np.array([
+                [0, 0, 0, 0, 2],
+                [0, 0, 0, 1, 3],
+            ]).T
         )
         # estimators_[0] labels : [0]
         # estimators_[1] labels : [1]
@@ -1406,12 +1391,10 @@ class TestRegressionModels:
         # multivariate, one sub-model per component
         ocl = 2
         ts = TimeSeries.from_values(
-            np.array(
-                [
-                    [0, 0, 0, 0, 1],
-                    [0, 0, 0, 0, 2],
-                ]
-            ).T
+            np.array([
+                [0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 2],
+            ]).T
         )
         # estimators_[0] labels : [1]
         # estimators_[1] labels : [2]
@@ -2794,69 +2777,51 @@ class TestRegressionModels:
         if train_past is None:
             assert infer_past is None and refer_past is None
         else:
-            assert all(
-                [isinstance(el, list) for el in [train_past, infer_past, refer_past]]
-            )
+            assert all([
+                isinstance(el, list) for el in [train_past, infer_past, refer_past]
+            ])
             assert len(train_past) == len(infer_past) == len(refer_past)
-            assert all(
-                [
-                    t_p.start_time() == tp_s
-                    for t_p, tp_s in zip(train_past, t_train["pc_start"])
-                ]
-            )
-            assert all(
-                [
-                    t_p.end_time() == tp_e
-                    for t_p, tp_e in zip(train_past, t_train["pc_end"])
-                ]
-            )
-            assert all(
-                [
-                    i_p.start_time() == ip_s
-                    for i_p, ip_s in zip(infer_past, t_infer["pc_start"])
-                ]
-            )
-            assert all(
-                [
-                    i_p.end_time() == ip_e
-                    for i_p, ip_e in zip(infer_past, t_infer["pc_end"])
-                ]
-            )
+            assert all([
+                t_p.start_time() == tp_s
+                for t_p, tp_s in zip(train_past, t_train["pc_start"])
+            ])
+            assert all([
+                t_p.end_time() == tp_e
+                for t_p, tp_e in zip(train_past, t_train["pc_end"])
+            ])
+            assert all([
+                i_p.start_time() == ip_s
+                for i_p, ip_s in zip(infer_past, t_infer["pc_start"])
+            ])
+            assert all([
+                i_p.end_time() == ip_e
+                for i_p, ip_e in zip(infer_past, t_infer["pc_end"])
+            ])
 
         if train_future is None:
             assert infer_future is None and refer_future is None
         else:
-            assert all(
-                [
-                    isinstance(el, list)
-                    for el in [train_future, infer_future, refer_future]
-                ]
-            )
+            assert all([
+                isinstance(el, list)
+                for el in [train_future, infer_future, refer_future]
+            ])
             assert len(train_future) == len(infer_future) == len(refer_future)
-            assert all(
-                [
-                    t_f.start_time() == tf_s
-                    for t_f, tf_s in zip(train_future, t_train["fc_start"])
-                ]
-            )
-            assert all(
-                [
-                    t_f.end_time() == tf_e
-                    for t_f, tf_e in zip(train_future, t_train["fc_end"])
-                ]
-            )
-            assert all(
-                [
-                    i_f.start_time() == if_s
-                    for i_f, if_s in zip(infer_future, t_infer["fc_start"])
-                ]
-            )
-            assert all(
-                [
-                    i_f.end_time() == if_e
-                    for i_f, if_e in zip(infer_future, t_infer["fc_end"])
-                ]
-            )
+            assert all([
+                t_f.start_time() == tf_s
+                for t_f, tf_s in zip(train_future, t_train["fc_start"])
+            ])
+            assert all([
+                t_f.end_time() == tf_e
+                for t_f, tf_e in zip(train_future, t_train["fc_end"])
+            ])
+            assert all([
+                i_f.start_time() == if_s
+                for i_f, if_s in zip(infer_future, t_infer["fc_start"])
+            ])
+            assert all([
+                i_f.end_time() == if_e
+                for i_f, if_e in zip(infer_future, t_infer["fc_end"])
+            ])
 
     @staticmethod
     def helper_test_encoders_settings(model, example: str):
@@ -2979,12 +2944,10 @@ class TestRegressionModels:
             # categorical covariates make model aware of the underlying curve type -> improves rmse
             rmses_no_cat = rmse(train_series_cat, preds_no_cat)
             rmses_cat = rmse(train_series_cat, preds_cat)
-            assert all(
-                [
-                    rmse_no_cat > rmse_cat
-                    for rmse_no_cat, rmse_cat in zip(rmses_no_cat, rmses_cat)
-                ]
-            )
+            assert all([
+                rmse_no_cat > rmse_cat
+                for rmse_no_cat, rmse_cat in zip(rmses_no_cat, rmses_cat)
+            ])
 
     @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
     @pytest.mark.parametrize(

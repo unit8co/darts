@@ -8,6 +8,7 @@ from functools import wraps
 from inspect import Parameter, getcallargs, signature
 from typing import Callable, Iterator, List, Optional, Tuple, TypeVar, Union
 
+import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from pandas._libs.tslibs.offsets import BusinessMixin
@@ -514,3 +515,11 @@ def generate_index(
             name=name,
         )
     return index
+
+
+def expand_arr(arr: np.ndarray, ndim: int):
+    """Expands a np.ndarray to `ndim` dimensions (if not already satisfied)."""
+    shape = arr.shape
+    if len(shape) != ndim:
+        arr = arr.reshape(shape + tuple(1 for _ in range(ndim - len(shape))))
+    return arr

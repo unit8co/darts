@@ -164,13 +164,11 @@ class TestLocalForecastingModels:
             assert os.path.exists(p)
 
         assert (
-            len(
-                [
-                    p
-                    for p in os.listdir(tmpdir_module)
-                    if p.startswith(type(model).__name__)
-                ]
-            )
+            len([
+                p
+                for p in os.listdir(tmpdir_module)
+                if p.startswith(type(model).__name__)
+            ])
             == len(full_model_paths) + 1
         )
 

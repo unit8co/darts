@@ -10,7 +10,6 @@ from darts.utils.utils import freqs
 
 
 class TestTimeSeriesMultivariate:
-
     times1 = pd.date_range("20130101", "20130110")
     times2 = pd.date_range("20130206", "20130215")
     dataframe1 = pd.DataFrame(
@@ -99,9 +98,7 @@ class TestTimeSeriesMultivariate:
     )
     def test_intersect(self, config):
         freq, mixed_freq = config
-        TestTimeSeries.helper_test_intersect(
-            self, freq, mixed_freq, is_univariate=False
-        )
+        TestTimeSeries.helper_test_intersect(freq, mixed_freq, is_univariate=False)
 
     def test_shift(self):
         TestTimeSeries.helper_test_shift(self, self.series1)

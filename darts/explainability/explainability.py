@@ -178,7 +178,6 @@ class _ForecastingModelExplainer(ABC):
         horizons: Optional[Union[int, Sequence[int]]],
         target_components: Optional[Union[str, Sequence[str]]],
     ) -> Tuple[Sequence[int], Sequence[str]]:
-
         return process_horizons_and_targets(
             horizons=horizons,
             fallback_horizon=self.n,

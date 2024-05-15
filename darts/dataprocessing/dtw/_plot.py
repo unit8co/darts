@@ -71,7 +71,7 @@ def plot(
             interpolation="none",
             origin="lower",
             extent=[0, self.n, 0, self.m],
-            **args_cost
+            **args_cost,
         )
 
     show_path = True

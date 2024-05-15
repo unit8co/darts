@@ -913,7 +913,7 @@ class RegressionModel(GlobalForecastingModel):
                 )
             series = self.training_series
 
-        called_with_single_series = True if isinstance(series, TimeSeries) else False
+        called_with_single_series = isinstance(series, TimeSeries)
 
         # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
@@ -1029,12 +1029,10 @@ class RegressionModel(GlobalForecastingModel):
 
         series_matrix = None
         if "target" in self.lags:
-            series_matrix = np.stack(
-                [
-                    ts.values(copy=False)[self.lags["target"][0] - shift :, :]
-                    for ts in series
-                ]
-            )
+            series_matrix = np.stack([
+                ts.values(copy=False)[self.lags["target"][0] - shift :, :]
+                for ts in series
+            ])
 
         # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)
         # [series 0 sample 0, series 0 sample 1, ..., series n sample k]

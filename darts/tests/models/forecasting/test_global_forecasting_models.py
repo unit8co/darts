@@ -292,13 +292,11 @@ class TestGlobalForecastingModels:
 
         assert os.path.exists(full_model_path_str)
         assert (
-            len(
-                [
-                    p
-                    for p in os.listdir(tmpdir_module)
-                    if p.startswith(type(model).__name__)
-                ]
-            )
+            len([
+                p
+                for p in os.listdir(tmpdir_module)
+                if p.startswith(type(model).__name__)
+            ])
             == 4
         )
 

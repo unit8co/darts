@@ -88,7 +88,11 @@ class TestTorchForecastingModel:
     def test_save_model_parameters(self):
         # check if re-created model has same params as original
         model = RNNModel(12, "RNN", 10, 10, **tfm_kwargs)
-        assert model._model_params, model.untrained_model()._model_params
+        params_old = model.model_params
+        params_new = model.untrained_model().model_params
+
+        assert params_old.keys() == params_new.keys()
+        assert all([params_old[k] == params_new[k] for k in params_old])
 
     @patch(
         "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.save"
@@ -1157,7 +1161,6 @@ class TestTorchForecastingModel:
         assert len(loaded_model.model.train_metrics) == 1
 
     def test_optimizers(self):
-
         optimizers = [
             (torch.optim.Adam, {"lr": 0.001}),
             (torch.optim.SGD, {"lr": 0.001}),
@@ -1219,9 +1222,10 @@ class TestTorchForecastingModel:
 
     def test_metrics(self):
         metric = MeanAbsolutePercentageError()
-        metric_collection = MetricCollection(
-            [MeanAbsolutePercentageError(), MeanAbsoluteError()]
-        )
+        metric_collection = MetricCollection([
+            MeanAbsolutePercentageError(),
+            MeanAbsoluteError(),
+        ])
 
         model_kwargs = {
             "logger": DummyLogger(),
@@ -1266,9 +1270,10 @@ class TestTorchForecastingModel:
 
     def test_metrics_w_likelihood(self):
         metric = MeanAbsolutePercentageError()
-        metric_collection = MetricCollection(
-            [MeanAbsolutePercentageError(), MeanAbsoluteError()]
-        )
+        metric_collection = MetricCollection([
+            MeanAbsolutePercentageError(),
+            MeanAbsoluteError(),
+        ])
         model_kwargs = {
             "logger": DummyLogger(),
             "log_every_n_steps": 1,
@@ -1475,12 +1480,10 @@ class TestTorchForecastingModel:
             @staticmethod
             def _check_dropout_activity(pl_module, expected_active: bool):
                 dropouts = pl_module._get_mc_dropout_modules()
-                assert all(
-                    [
-                        dropout.mc_dropout_enabled is expected_active
-                        for dropout in dropouts
-                    ]
-                )
+                assert all([
+                    dropout.mc_dropout_enabled is expected_active
+                    for dropout in dropouts
+                ])
 
             def on_train_batch_start(self, *args, **kwargs) -> None:
                 self._check_dropout_activity(args[1], expected_active=True)

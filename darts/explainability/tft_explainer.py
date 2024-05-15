@@ -225,16 +225,14 @@ class TFTExplainer(_ForecastingModelExplainer):
                 times=times,
                 columns=[f"horizon {str(i)}" for i in horizons],
             )
-            results.append(
-                {
-                    "attention": attention,
-                    "encoder_importance": encoder_importance.iloc[idx : idx + 1],
-                    "decoder_importance": decoder_importance.iloc[idx : idx + 1],
-                    "static_covariates_importance": static_covariates_importance.iloc[
-                        idx : idx + 1
-                    ],
-                }
-            )
+            results.append({
+                "attention": attention,
+                "encoder_importance": encoder_importance.iloc[idx : idx + 1],
+                "decoder_importance": decoder_importance.iloc[idx : idx + 1],
+                "static_covariates_importance": static_covariates_importance.iloc[
+                    idx : idx + 1
+                ],
+            })
         return TFTExplainabilityResult(
             explanations=results[0] if len(results) == 1 else results
         )

@@ -84,13 +84,9 @@ class ModelMeta(ABCMeta):
     def __call__(cls, *args, **kwargs):
         # 1) get all default values from class' __init__ signature
         sig = inspect.signature(cls.__init__)
-        all_params = OrderedDict(
-            [
-                (p.name, p.default)
-                for p in sig.parameters.values()
-                if not p.name == "self"
-            ]
-        )
+        all_params = OrderedDict([
+            (p.name, p.default) for p in sig.parameters.values() if not p.name == "self"
+        ])
 
         # 2) fill params with positional args
         for param, arg in zip(all_params, args):
@@ -364,9 +360,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _fit_wrapper(
         self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         **kwargs,
     ):
         add_kwargs = {}
@@ -557,9 +553,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         custom_components
             New names for the forecast TimeSeries components, used when the number of components changes
         with_static_covs
-            If set to False, do not copy the input_series `static_covariates` attribute
+            If set to `False`, do not copy the input_series `static_covariates` attribute
         with_hierarchy
-            If set to False, do not copy the input_series `hierarchy` attribute
+            If set to `False`, do not copy the input_series `hierarchy` attribute
         pred_start
             Optionally, give a custom prediction start point.
 
@@ -654,11 +650,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         By default, this method will return one (or a sequence of) single time series made up of
         the last point of each historical forecast.
         This time series will thus have a frequency of ``series.freq * stride``.
-        If `last_points_only` is set to False, it will instead return one (or a sequence of) list of the
+        If `last_points_only` is set to `False`, it will instead return one (or a sequence of) list of the
         historical forecasts series.
 
         By default, this method always re-trains the models on the entire available history, corresponding to an
-        expanding window strategy. If `retrain` is set to False, the model must have been fit before. This is not
+        expanding window strategy. If `retrain` is set to `False`, the model must have been fit before. This is not
         supported by all models.
 
         Parameters
@@ -736,7 +732,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Whether the returned forecasts can go beyond the series' end or not.
         last_points_only
             Whether to retain only the last point of each historical forecast.
-            If set to True, the method returns a single ``TimeSeries`` containing the successive point forecasts.
+            If set to `True`, the method returns a single ``TimeSeries`` containing the successive point forecasts.
             Otherwise, returns a list of historical ``TimeSeries`` forecasts.
         verbose
             Whether to print progress.
@@ -1184,11 +1180,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Finally, the method returns a `reduction` (the mean by default) of all these metric scores.
 
         By default, this method uses each historical forecast (whole) to compute error scores.
-        If `last_points_only` is set to True, it will use only the last point of each historical
+        If `last_points_only` is set to `True`, it will use only the last point of each historical
         forecast. In this case, no reduction is used.
 
         By default, this method always re-trains the models on the entire available history, corresponding to an
-        expanding window strategy. If `retrain` is set to False (useful for models for which training might be
+        expanding window strategy. If `retrain` is set to `False` (useful for models for which training might be
         time-consuming, such as deep learning models), the trained model will be used directly to emit the forecasts.
 
         Parameters
@@ -1277,7 +1273,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             identical signature as Darts' metrics, uses decorators :func:`~darts.metrics.metrics.multi_ts_support` and
             :func:`~darts.metrics.metrics.multi_ts_support`, and returns the metric score.
         reduction
-            A function used to combine the individual error scores obtained when `last_points_only` is set to False.
+            A function used to combine the individual error scores obtained when `last_points_only` is set to `False`.
             When providing several metric functions, the function will receive the argument `axis = 1` to obtain single
             value for each metric function.
             If explicitly set to `None`, the method will return a list of the individual error scores instead.

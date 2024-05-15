@@ -416,6 +416,6 @@ class TestBaselineModels:
                 input_chunk_length=icl,
                 output_chunk_length=1,
                 agg_fn=agg_fn,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
         assert err_msg_content in str(err.value)

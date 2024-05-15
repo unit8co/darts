@@ -43,29 +43,31 @@ class TestStaticCovariatesTransformer:
 
     def test_scaling_single_series(self):
         # 3 categories for each categorical static covariate column (column idx 1 and 3)
-        test_values = np.array(
-            [[0.0, 0.0, 0.0, 0.0], [0.5, 1.0, 0.5, 1.0], [1.0, 2.0, 1.0, 2.0]]
-        )
+        test_values = np.array([
+            [0.0, 0.0, 0.0, 0.0],
+            [0.5, 1.0, 0.5, 1.0],
+            [1.0, 2.0, 1.0, 2.0],
+        ])
         for series in [self.series1, self.series2]:
             scaler = StaticCovariatesTransformer()
             self.helper_test_scaling(series, scaler, test_values)
 
-        test_values = np.array(
-            [[-1.0, 0.0, -1.0, 0.0], [0.0, 1.0, 0.0, 1.0], [1.0, 2.0, 1.0, 2.0]]
-        )
+        test_values = np.array([
+            [-1.0, 0.0, -1.0, 0.0],
+            [0.0, 1.0, 0.0, 1.0],
+            [1.0, 2.0, 1.0, 2.0],
+        ])
         for series in [self.series1, self.series2]:
             scaler = StaticCovariatesTransformer(
                 transformer_num=MinMaxScaler(feature_range=(-1, 1))
             )
             self.helper_test_scaling(series, scaler, test_values)
 
-        test_values = np.array(
-            [
-                [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
-                [0.5, 0.0, 1.0, 0.0, 0.5, 0.0, 1.0, 0.0],
-                [1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0],
-            ]
-        )
+        test_values = np.array([
+            [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+            [0.5, 0.0, 1.0, 0.0, 0.5, 0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0],
+        ])
         for series in [self.series1, self.series2]:
             scaler = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
             self.helper_test_scaling(series, scaler, test_values)
@@ -150,9 +152,11 @@ class TestStaticCovariatesTransformer:
 
         np.testing.assert_almost_equal(
             series_tr2[0].static_covariates_values(),
-            np.array(
-                [[0.0, 0.0, 0.0, 0.0], [0.25, 1.0, 0.25, 1.0], [0.5, 2.0, 0.5, 2.0]]
-            ),
+            np.array([
+                [0.0, 0.0, 0.0, 0.0],
+                [0.25, 1.0, 0.25, 1.0],
+                [0.5, 2.0, 0.5, 2.0],
+            ]),
         )
         series_recovered2 = scaler.inverse_transform(series_tr2[0])
         assert self.series1.static_covariates.equals(
@@ -161,9 +165,11 @@ class TestStaticCovariatesTransformer:
 
         np.testing.assert_almost_equal(
             series_tr2[1].static_covariates_values(),
-            np.array(
-                [[0.5, 2.0, 0.5, 2.0], [0.75, 3.0, 0.75, 3.0], [1.0, 4.0, 1.0, 4.0]]
-            ),
+            np.array([
+                [0.5, 2.0, 0.5, 2.0],
+                [0.75, 3.0, 0.75, 3.0],
+                [1.0, 4.0, 1.0, 4.0],
+            ]),
         )
         series_recovered3 = scaler.inverse_transform(series_tr2[1])
         assert self.series2.static_covariates.equals(
@@ -180,15 +186,13 @@ class TestStaticCovariatesTransformer:
 
     def helper_test_scaling(self, series, scaler, test_values):
         series_tr = scaler.fit_transform(series)
-        assert all(
-            [
-                a == b
-                for a, b in zip(
-                    series_tr.static_covariates_values().flatten(),
-                    test_values.flatten(),
-                )
-            ]
-        )
+        assert all([
+            a == b
+            for a, b in zip(
+                series_tr.static_covariates_values().flatten(),
+                test_values.flatten(),
+            )
+        ])
 
         series_recovered = scaler.inverse_transform(series_tr)
         assert series.static_covariates.equals(series_recovered.static_covariates)

@@ -79,6 +79,19 @@ from darts.metrics.metrics import (
     sse,
 )
 
+TIME_DEPENDENT_METRICS = {
+    ae,
+    ape,
+    arre,
+    ase,
+    err,
+    ql,
+    sape,
+    se,
+    sle,
+    sse,
+}
+
 __all__ = [
     "ae",
     "ape",

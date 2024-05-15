@@ -276,7 +276,7 @@ class TestDiff:
             diff.inverse_transform(series_rm_comp.diff(n=1, periods=1, dropna=True))
         assert (
             f"Expected series to have {series.n_components} components; "
-            f"instead, it has {series.n_components-1}." == str(e.value)
+            f"instead, it has {series.n_components - 1}." == str(e.value)
         )
         series_rm_samp = TimeSeries.from_times_and_values(
             values=vals[:, :, 1:], times=dates
@@ -285,7 +285,7 @@ class TestDiff:
             diff.inverse_transform(series_rm_samp.diff(n=1, periods=1, dropna=True))
         assert (
             f"Expected series to have {series.n_samples} samples; "
-            f"instead, it has {series.n_samples-1}." == str(e.value)
+            f"instead, it has {series.n_samples - 1}." == str(e.value)
         )
 
     def test_diff_multiple_calls_to_fit(self):

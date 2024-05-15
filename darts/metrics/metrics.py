@@ -53,7 +53,9 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         pred_series = (
             kwargs["pred_series"]
             if "pred_series" in kwargs
-            else args[0] if "actual_series" in kwargs else args[1]
+            else args[0]
+            if "actual_series" in kwargs
+            else args[1]
         )
 
         params = signature(func).parameters
@@ -368,7 +370,7 @@ def _get_values_or_raise(
 
 
 def _get_wrapped_metric(
-    func: Callable[..., METRIC_OUTPUT_TYPE]
+    func: Callable[..., METRIC_OUTPUT_TYPE],
 ) -> Callable[..., METRIC_OUTPUT_TYPE]:
     """Returns the inner metric function `func` which bypasses the decorators `multi_ts_support` and
     `multivariate_support`. It significantly decreases process time compared to calling `func` directly.
@@ -2172,8 +2174,9 @@ def ope(
     y_true, y_pred = _get_values_or_raise(
         actual_series, pred_series, intersect, remove_nan_union=True
     )
-    y_true_sum, y_pred_sum = np.nansum(y_true, axis=TIME_AX), np.nansum(
-        y_pred, axis=TIME_AX
+    y_true_sum, y_pred_sum = (
+        np.nansum(y_true, axis=TIME_AX),
+        np.nansum(y_pred, axis=TIME_AX),
     )
     if not (y_true_sum > 0).all():
         raise_log(

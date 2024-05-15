@@ -6,7 +6,6 @@ from darts.timeseries import TimeSeries
 
 
 class TestMissingValuesFiller:
-
     time = pd.date_range("20130101", "20130130")
     static_covariate = pd.DataFrame({"0": [1]})
 

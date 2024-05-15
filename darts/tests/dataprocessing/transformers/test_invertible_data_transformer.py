@@ -335,9 +335,11 @@ class TestInvertibleDataTransformer:
         assert inv[1][1] == test_input_2
 
         # more list of lists than used during transform works
-        inv = mock.inverse_transform(
-            [[transformed_1], [transformed_2], [transformed_2]]
-        )
+        inv = mock.inverse_transform([
+            [transformed_1],
+            [transformed_2],
+            [transformed_2],
+        ])
         assert len(inv) == 3
         assert all(
             isinstance(series_list, list) and len(series_list) == 1

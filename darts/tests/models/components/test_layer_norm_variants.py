@@ -26,7 +26,6 @@ class TestLayerNormVariants:
             ln(inputs)
 
     def test_rin(self):
-
         np.random.seed(42)
         torch.manual_seed(42)
 
@@ -35,7 +34,6 @@ class TestLayerNormVariants:
 
         # test with and without affine and correct input dim
         for affine in affine_options:
-
             rin = RINorm(input_dim=7, affine=affine)
             x_norm = rin(x)
 

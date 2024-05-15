@@ -160,9 +160,9 @@ class TestCreateLaggedTrainingData:
         times = past_covariates.time_index
         min_lag = -max(past_covariates_lags)
         # Add times after end of series for which we can create features:
-        times = times.union(
-            [times[-1] + i * past_covariates.freq for i in range(1, min_lag + 1)]
-        )
+        times = times.union([
+            times[-1] + i * past_covariates.freq for i in range(1, min_lag + 1)
+        ])
         max_lag = -min(past_covariates_lags)
         times = times[max_lag:]
         return times
@@ -217,20 +217,18 @@ class TestCreateLaggedTrainingData:
         # Case 1:
         if (min_lag > 0) and (max_lag > 0):
             # Can create features for times extending after the end of `future_covariates`:
-            times = times.union(
-                [times[-1] + i * future_covariates.freq for i in range(1, min_lag + 1)]
-            )
+            times = times.union([
+                times[-1] + i * future_covariates.freq for i in range(1, min_lag + 1)
+            ])
             # Can't create features for first `max_lag` times in series:
             times = times[max_lag:]
         # Case 2:
         elif (min_lag <= 0) and (max_lag <= 0):
             # Can create features for times before the start of `future_covariates`:
-            times = times.union(
-                [
-                    times[0] - i * future_covariates.freq
-                    for i in range(1, abs(max_lag) + 1)
-                ]
-            )
+            times = times.union([
+                times[0] - i * future_covariates.freq
+                for i in range(1, abs(max_lag) + 1)
+            ])
             # Can't create features for last `abs(min_lag)` times in series:
             times = times[:min_lag] if min_lag != 0 else times
         # Case 3:
@@ -600,17 +598,15 @@ class TestCreateLaggedTrainingData:
         pd.DataFrame({"dummy": [1]})  # leads to "global" static cov component name
     )
     target_with_static_cov2 = target_with_static_cov.with_static_covariates(
-        pd.DataFrame(
-            {"dummy": [i for i in range(n_comp)]}
-        )  # leads to sharing target component names
+        pd.DataFrame({
+            "dummy": [i for i in range(n_comp)]
+        })  # leads to sharing target component names
     )
     target_with_static_cov3 = target_with_static_cov.with_static_covariates(
-        pd.DataFrame(
-            {
-                "dummy": [i for i in range(n_comp)],
-                "dummy1": [i for i in range(n_comp)],
-            }
-        )  # leads to sharing target component names
+        pd.DataFrame({
+            "dummy": [i for i in range(n_comp)],
+            "dummy1": [i for i in range(n_comp)],
+        })  # leads to sharing target component names
     )
 
     past = helper_create_multivariate_linear_timeseries(
@@ -1165,13 +1161,11 @@ class TestCreateLaggedTrainingData:
         # Expect `X` to be constructed from second-to-last value of `target` (i.e.
         # the value immediately prior to the label), and the very last values of
         # `past` and `future`:
-        expected_X = np.concatenate(
-            [
-                target.all_values(copy=False)[-2 - output_chunk_shift, :, 0],
-                past.all_values(copy=False)[-1 - output_chunk_shift, :, 0],
-                future.all_values(copy=False)[-1 - output_chunk_shift, :, 0],
-            ]
-        ).reshape(1, -1, 1)
+        expected_X = np.concatenate([
+            target.all_values(copy=False)[-2 - output_chunk_shift, :, 0],
+            past.all_values(copy=False)[-1 - output_chunk_shift, :, 0],
+            future.all_values(copy=False)[-1 - output_chunk_shift, :, 0],
+        ]).reshape(1, -1, 1)
         # Label is very last value of `target`:
         expected_y = target.all_values(copy=False)[-1:, :, :]
 

@@ -555,12 +555,10 @@ class TestDataset:
             batch_shift = batch_shift[:future_idx] + batch_shift[future_idx + 1 :]
 
         # without future part, the input will be identical between regular, and shifted dataset
-        assert all(
-            [
-                np.all(el_reg == el_shift)
-                for el_reg, el_shift in zip(batch_reg[:-1], batch_shift[:-1])
-            ]
-        )
+        assert all([
+            np.all(el_reg == el_shift)
+            for el_reg, el_shift in zip(batch_reg[:-1], batch_shift[:-1])
+        ])
 
     def test_past_covariates_sequential_dataset(self):
         # one target series
@@ -1414,12 +1412,10 @@ class TestDataset:
         batch_reg = batch_reg[:-1] + (batch_reg[-1][ocs:],)
 
         # without future part, the input will be identical between regular, and shifted dataset
-        assert all(
-            [
-                np.all(el_reg == el_shift)
-                for el_reg, el_shift in zip(batch_reg[:-1], batch_shift[:-1])
-            ]
-        )
+        assert all([
+            np.all(el_reg == el_shift)
+            for el_reg, el_shift in zip(batch_reg[:-1], batch_shift[:-1])
+        ])
 
     def test_get_matching_index(self):
         from darts.utils.data.utils import _get_matching_index
