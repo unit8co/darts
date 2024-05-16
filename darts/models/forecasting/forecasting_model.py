@@ -84,13 +84,9 @@ class ModelMeta(ABCMeta):
     def __call__(cls, *args, **kwargs):
         # 1) get all default values from class' __init__ signature
         sig = inspect.signature(cls.__init__)
-        all_params = OrderedDict(
-            [
-                (p.name, p.default)
-                for p in sig.parameters.values()
-                if not p.name == "self"
-            ]
-        )
+        all_params = OrderedDict([
+            (p.name, p.default) for p in sig.parameters.values() if not p.name == "self"
+        ])
 
         # 2) fill params with positional args
         for param, arg in zip(all_params, args):

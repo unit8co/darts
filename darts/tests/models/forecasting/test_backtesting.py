@@ -48,7 +48,6 @@ def get_dummy_series(
 
 
 def compare_best_against_random(model_class, params, series, stride=1):
-
     # instantiate best model in expanding window mode
     np.random.seed(1)
     best_model_1, _, _ = model_class.gridsearch(
@@ -96,7 +95,6 @@ def compare_best_against_random(model_class, params, series, stride=1):
 
 
 class TestBacktesting:
-
     @pytest.mark.parametrize(
         "config",
         itertools.product(
@@ -1037,7 +1035,6 @@ class TestBacktesting:
         ]
 
         for test in test_cases:
-
             model = test["model"]
             parameters = test["parameters"]
 
@@ -1168,9 +1165,10 @@ class TestBacktesting:
         metric_kwargs = [{"component_reduction": np.median}]
         if len(metric) > 1:
             # give metric specific kwargs
-            metric_kwargs.append(
-                {"component_reduction": np.median, "time_reduction": np.mean}
-            )
+            metric_kwargs.append({
+                "component_reduction": np.median,
+                "time_reduction": np.mean,
+            })
 
         model = NaiveDrift()
         # backtest should fail with invalid metric kwargs (mae does not support time reduction)

@@ -188,7 +188,6 @@ def extract_trend_and_seasonality(
     )
 
     if method == "naive":
-
         decomp = seasonal_decompose(
             ts.pd_series(), period=freq, model=model.value, extrapolate_trend="freq"
         )
@@ -767,7 +766,9 @@ def plot_pacf(
             color=(
                 "#b512b8"
                 if m is not None and i == m
-                else "black" if default_formatting else None
+                else "black"
+                if default_formatting
+                else None
             ),
             lw=(1 if m is not None and i == m else 0.5),
         )
@@ -1038,11 +1039,13 @@ def plot_residuals_analysis(
     ax1.set_title("Residual values")
 
     # plot histogram and distribution
-    res_mean, res_std = np.mean(residuals.univariate_values()), np.std(
-        residuals.univariate_values()
+    res_mean, res_std = (
+        np.mean(residuals.univariate_values()),
+        np.std(residuals.univariate_values()),
     )
-    res_min, res_max = min(residuals.univariate_values()), max(
-        residuals.univariate_values()
+    res_min, res_max = (
+        min(residuals.univariate_values()),
+        max(residuals.univariate_values()),
     )
     x = np.linspace(res_min, res_max, 100)
     ax2 = fig.add_subplot(gs[1:, 1:])

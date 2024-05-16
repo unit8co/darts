@@ -407,7 +407,6 @@ def _extend_time_index_until(
     until: Optional[Union[int, str, pd.Timestamp]],
     add_length: int,
 ) -> pd.DatetimeIndex:
-
     if not add_length and not until:
         return time_index
 
@@ -713,12 +712,10 @@ def datetime_attribute_timeseries(
                 "The first string for the sine component name, the second for the cosine component name.",
                 logger=logger,
             )
-            values_df = pd.DataFrame(
-                {
-                    with_columns[0]: np.sin(freq * values),
-                    with_columns[1]: np.cos(freq * values),
-                }
-            )
+            values_df = pd.DataFrame({
+                with_columns[0]: np.sin(freq * values),
+                with_columns[1]: np.cos(freq * values),
+            })
         else:
             if with_columns is None:
                 with_columns = attribute

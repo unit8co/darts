@@ -29,30 +29,24 @@ class TestLosses:
 
     def test_smape_loss(self):
         exp_val = torch.tensor(0.7753)
-        exp_grad = torch.tensor(
-            [
-                [-0.2843, -0.5685, -0.1640, 0.3711],
-                [-0.5859, -1.1718, -0.3380, 0.7649],
-            ]
-        )
+        exp_grad = torch.tensor([
+            [-0.2843, -0.5685, -0.1640, 0.3711],
+            [-0.5859, -1.1718, -0.3380, 0.7649],
+        ])
         self.helper_test_loss(exp_val, exp_grad, SmapeLoss())
 
     def test_mape_loss(self):
         exp_val = torch.tensor(1.2937)
-        exp_grad = torch.tensor(
-            [
-                [-0.3667, -0.7333, -0.2115, 0.4787],
-                [-1.1000, -2.2000, -0.6345, 1.4360],
-            ]
-        )
+        exp_grad = torch.tensor([
+            [-0.3667, -0.7333, -0.2115, 0.4787],
+            [-1.1000, -2.2000, -0.6345, 1.4360],
+        ])
         self.helper_test_loss(exp_val, exp_grad, MapeLoss())
 
     def test_mae_loss(self):
         exp_val = torch.tensor(1.0020)
-        exp_grad = torch.tensor(
-            [
-                [-0.5500, -1.1000, -0.3173, 0.7180],
-                [-0.5500, -1.1000, -0.3173, 0.7180],
-            ]
-        )
+        exp_grad = torch.tensor([
+            [-0.5500, -1.1000, -0.3173, 0.7180],
+            [-0.5500, -1.1000, -0.3173, 0.7180],
+        ])
         self.helper_test_loss(exp_val, exp_grad, MAELoss())

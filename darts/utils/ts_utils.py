@@ -146,7 +146,7 @@ def series2seq(
 
 
 def seq2series(
-    ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]]
+    ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
 ) -> Optional[TimeSeries]:
     """If `ts` is a Sequence with only a single series, return the single series as TimeSeries.
 
@@ -166,7 +166,7 @@ def seq2series(
 def get_single_series(
     ts: Optional[
         Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
-    ]
+    ],
 ) -> Optional[TimeSeries]:
     """Returns a single (first) TimeSeries or `None` from `ts`. Returns `ts` if  `ts` is a TimeSeries, `ts[0]` if
     `ts` is a `Sequence[TimeSeries]`, and `ts[0][0]` if `ts` is a `Sequence[Sequence[TimeSeries]]`.

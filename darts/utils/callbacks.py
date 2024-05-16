@@ -12,7 +12,7 @@ class TFMProgressBar(TQDMProgressBar):
         enable_validation_bar: bool = True,
         enable_prediction_bar: bool = True,
         enable_train_bar_only: bool = False,
-        **kwargs
+        **kwargs,
     ):
         """Darts' Progress Bar for `TorchForecastingModels`.
 

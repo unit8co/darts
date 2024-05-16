@@ -182,9 +182,11 @@ class Likelihood(ABC):
         else:
             # interleave the predicted parameters to group them by input series component
             num_samples, n_times, n_components, n_params = model_output.shape
-            return torch.stack(params, dim=3).reshape(
-                (num_samples, n_times, n_components * n_params)
-            )
+            return torch.stack(params, dim=3).reshape((
+                num_samples,
+                n_times,
+                n_components * n_params,
+            ))
 
     @abstractmethod
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
@@ -241,13 +243,11 @@ class Likelihood(ABC):
         cls_name = self.__class__.__name__
         # only display the constructor parameters as user cannot change the other attributes
         init_signature = inspect.signature(self.__class__.__init__)
-        params_string = ", ".join(
-            [
-                f"{str(v)}"
-                for _, v in init_signature.parameters.items()
-                if str(v) != "self"
-            ]
-        )
+        params_string = ", ".join([
+            f"{str(v)}"
+            for _, v in init_signature.parameters.items()
+            if str(v) != "self"
+        ])
         return f"{cls_name}({params_string})"
 
 

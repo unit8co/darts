@@ -141,13 +141,11 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                     ),
                     logger=logger,
                 )
-            fitted_params.append(
-                {
-                    "high_freq": high_freq,
-                    "start": ts.start_time(),
-                    "end": ts.end_time(),
-                }
-            )
+            fitted_params.append({
+                "high_freq": high_freq,
+                "start": ts.start_time(),
+                "end": ts.end_time(),
+            })
         return fitted_params[0] if is_single_series else fitted_params
 
     @staticmethod

@@ -286,7 +286,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # repeat prediction procedure for every needed sample
         batch_predictions = []
         while sample_count < self.pred_num_samples:
-
             # make sure we don't produce too many samples
             if sample_count + batch_sample_size > self.pred_num_samples:
                 batch_sample_size = self.pred_num_samples - sample_count
@@ -561,7 +560,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     @staticmethod
     def configure_torch_metrics(
-        torch_metrics: Union[torchmetrics.Metric, torchmetrics.MetricCollection]
+        torch_metrics: Union[torchmetrics.Metric, torchmetrics.MetricCollection],
     ) -> torchmetrics.MetricCollection:
         """process the torch_metrics parameter."""
         if torch_metrics is None:
@@ -809,19 +808,17 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             else 0
         )
 
-        input_past, input_future, input_static = self._process_input_batch(
+        input_past, input_future, input_static = self._process_input_batch((
+            past_target,
+            past_covariates,
+            historic_future_covariates,
             (
-                past_target,
-                past_covariates,
-                historic_future_covariates,
-                (
-                    future_covariates[:, :roll_size, :]
-                    if future_covariates is not None
-                    else None
-                ),
-                static_covariates,
-            )
-        )
+                future_covariates[:, :roll_size, :]
+                if future_covariates is not None
+                else None
+            ),
+            static_covariates,
+        ))
 
         out = self._produce_predict_output(x=(input_past, input_future, input_static))[
             :, self.first_prediction_index :, :

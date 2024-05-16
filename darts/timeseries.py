@@ -402,9 +402,9 @@ class TimeSeries:
 
         # clean components (columns) names if needed (if names are not unique, or not strings)
         components = xa_.get_index(DIMS[1])
-        if len(set(components)) != len(components) or any(
-            [not isinstance(s, str) for s in components]
-        ):
+        if len(set(components)) != len(components) or any([
+            not isinstance(s, str) for s in components
+        ]):
 
             def _clean_component_list(columns) -> List[str]:
                 # return a list of string containing column names
@@ -3466,23 +3466,17 @@ class TimeSeries:
         elif num_args == 2:  # map function uses timestamp f(timestamp, x)
             # go over shortest amount of iterations, either over time steps or components and samples
             if self.n_timesteps <= self.n_components * self.n_samples:
-                new_vals = np.vstack(
-                    [
-                        np.expand_dims(
-                            fn(self.time_index[i], self._xa[i, :, :]), axis=0
-                        )
-                        for i in range(self.n_timesteps)
-                    ]
-                )
+                new_vals = np.vstack([
+                    np.expand_dims(fn(self.time_index[i], self._xa[i, :, :]), axis=0)
+                    for i in range(self.n_timesteps)
+                ])
             else:
                 new_vals = np.stack(
                     [
-                        np.column_stack(
-                            [
-                                fn(self.time_index, self._xa[:, i, j])
-                                for j in range(self.n_samples)
-                            ]
-                        )
+                        np.column_stack([
+                            fn(self.time_index, self._xa[:, i, j])
+                            for j in range(self.n_samples)
+                        ])
                         for i in range(self.n_components)
                     ],
                     axis=1,
@@ -3877,8 +3871,8 @@ class TimeSeries:
                 function_name = fn if fn != "apply" else "udf"
             name_prefix = (
                 f"{window_mode}_{function_name}"
-                f"{'_'+str(transformation['window']) if 'window' in transformation else ''}"
-                f"{'_'+str(min_periods) if min_periods>1 else ''}"
+                f"{'_' + str(transformation['window']) if 'window' in transformation else ''}"
+                f"{'_' + str(min_periods) if min_periods > 1 else ''}"
             )
 
             if keep_names:
@@ -3889,25 +3883,20 @@ class TimeSeries:
                 ]
                 new_columns.extend(names_w_prefix)
                 if convert_hierarchy:
-                    comp_names_map.update(
-                        {
-                            c_name: new_c_name
-                            for c_name, new_c_name in zip(
-                                comps_to_transform, names_w_prefix
-                            )
-                        }
-                    )
+                    comp_names_map.update({
+                        c_name: new_c_name
+                        for c_name, new_c_name in zip(
+                            comps_to_transform, names_w_prefix
+                        )
+                    })
 
             # track how many NaN rows are added by each transformation on each transformed column
             # NaNs would appear only if user changes "min_periods" to else than 1, if not,
             # by default there should be no NaNs unless the original series starts with NaNs (those would be maintained)
             total_na = min_periods + shifts + (closed == "left")
-            added_na.extend(
-                [
-                    total_na - 1 if min_periods > 0 else total_na
-                    for _ in filter_df_columns
-                ]
-            )
+            added_na.extend([
+                total_na - 1 if min_periods > 0 else total_na for _ in filter_df_columns
+            ])
 
         # keep all original components
         if keep_non_transformed:
@@ -5292,15 +5281,13 @@ class TimeSeries:
             if pd.api.types.is_integer_dtype(time_idx) and not isinstance(
                 time_idx, pd.RangeIndex
             ):
-                xa_ = xa_.assign_coords(
-                    {
-                        self._time_dim: pd.RangeIndex(
-                            start=time_idx[0],
-                            stop=time_idx[0] + self.freq,
-                            step=self.freq,
-                        )
-                    }
-                )
+                xa_ = xa_.assign_coords({
+                    self._time_dim: pd.RangeIndex(
+                        start=time_idx[0],
+                        stop=time_idx[0] + self.freq,
+                        step=self.freq,
+                    )
+                })
             # indexing may discard the freq, so we restore it...
             _set_freq_in_xa(xa_, freq=self.freq)
             return self.__class__(xa_)
@@ -5401,9 +5388,9 @@ def _concat_static_covs(series: Sequence[TimeSeries]) -> Optional[pd.DataFrame]:
     if not any([ts.has_static_covariates for ts in series]):
         return None
 
-    only_first = series[0].has_static_covariates and not any(
-        [ts.has_static_covariates for ts in series[1:]]
-    )
+    only_first = series[0].has_static_covariates and not any([
+        ts.has_static_covariates for ts in series[1:]
+    ])
     all_have = all([ts.has_static_covariates for ts in series])
 
     raise_if_not(
@@ -5417,12 +5404,10 @@ def _concat_static_covs(series: Sequence[TimeSeries]) -> Optional[pd.DataFrame]:
 
     raise_if_not(
         all([len(ts.static_covariates) == ts.n_components for ts in series])
-        and all(
-            [
-                ts.static_covariates.columns.equals(series[0].static_covariates.columns)
-                for ts in series
-            ]
-        ),
+        and all([
+            ts.static_covariates.columns.equals(series[0].static_covariates.columns)
+            for ts in series
+        ]),
         "Concatenation of multiple TimeSeries with static covariates requires all `static_covariates` "
         "DataFrames to have identical columns (static variable names), and the number of each TimeSeries' "
         "components must match the number of corresponding static covariate components (the number of rows "
@@ -5582,9 +5567,9 @@ def concatenate(
         if axis == 1:
             # When concatenating along component dimension, we have to re-create a component index
             # we rely on the factory method of TimeSeries to disambiguate names later on if needed.
-            component_index = pd.Index(
-                [c for cl in [ts.components for ts in series] for c in cl]
-            )
+            component_index = pd.Index([
+                c for cl in [ts.components for ts in series] for c in cl
+            ])
             static_covariates = (
                 _concat_static_covs(series)
                 if not ignore_static_covariates

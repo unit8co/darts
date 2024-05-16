@@ -1043,7 +1043,6 @@ class TestMetrics:
         insample = self.series_train
         test_cases, _ = self.get_test_cases()
         for s1, s2 in test_cases:
-
             # multivariate, series as args
             np.testing.assert_array_almost_equal(
                 metric(s1.stack(s1), s2.stack(s2), insample.stack(insample), **kwargs),
@@ -1403,13 +1402,11 @@ class TestMetrics:
         metric, scores_exp, q_param, kwargs = config
         np.random.seed(0)
         x = np.random.normal(loc=0.0, scale=1.0, size=10000)
-        y = np.array(
-            [
-                [0.0, 10.0],
-                [1.0, 11.0],
-                [2.0, 12.0],
-            ]
-        ).reshape(3, 2, 1)
+        y = np.array([
+            [0.0, 10.0],
+            [1.0, 11.0],
+            [2.0, 12.0],
+        ]).reshape(3, 2, 1)
 
         y_true = [TimeSeries.from_values(y)] * 2
         y_pred = [TimeSeries.from_values(y + x)] * 2

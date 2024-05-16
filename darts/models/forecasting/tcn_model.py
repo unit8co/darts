@@ -97,9 +97,10 @@ class _ResidualBlock(nn.Module):
             dilation=(dilation_base**nr_blocks_below),
         )
         if weight_norm:
-            self.conv1, self.conv2 = nn.utils.weight_norm(
-                self.conv1
-            ), nn.utils.weight_norm(self.conv2)
+            self.conv1, self.conv2 = (
+                nn.utils.weight_norm(self.conv1),
+                nn.utils.weight_norm(self.conv2),
+            )
 
         if input_dim != output_dim:
             self.conv3 = nn.Conv1d(input_dim, output_dim, 1)
@@ -142,7 +143,7 @@ class _TCNModule(PLPastCovariatesModule):
         nr_params: int,
         target_length: int,
         dropout: float,
-        **kwargs
+        **kwargs,
     ):
         """PyTorch module implementing a dilated TCN module used in `TCNModel`.
 
@@ -268,7 +269,7 @@ class TCNModel(PastCovariatesTorchModel):
         dilation_base: int = 2,
         weight_norm: bool = False,
         dropout: float = 0.2,
-        **kwargs
+        **kwargs,
     ):
         """Temporal Convolutional Network Model (TCN).
 
@@ -536,7 +537,6 @@ class TCNModel(PastCovariatesTorchModel):
         future_covariates: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> PastCovariatesShiftedDataset:
-
         return PastCovariatesShiftedDataset(
             target_series=target,
             covariates=past_covariates,

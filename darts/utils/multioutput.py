@@ -89,7 +89,7 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
                         if isinstance(eval_set, list)
                         else (eval_set[0], eval_set[1][:, i])
                     ),
-                    **fit_params_validated
+                    **fit_params_validated,
                 )
                 for i in range(y.shape[1])
             )

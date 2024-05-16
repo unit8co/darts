@@ -7,13 +7,11 @@ from darts.utils.utils import freqs
 
 class TestFFT:
     def helper_relevant_attributes(self, freq, length, period_attributes_tuples):
-
         # test random walk
         random_walk_ts = tg.random_walk_timeseries(freq=freq, length=length)
         assert _find_relevant_timestamp_attributes(random_walk_ts) == set()
 
         for period, relevant_attributes in period_attributes_tuples:
-
             # test seasonal period with no noise
             seasonal_ts = tg.sine_timeseries(
                 freq=freq, value_frequency=1 / period, length=length
@@ -32,7 +30,6 @@ class TestFFT:
             ), "failed to recognize season in noisy timeseries"
 
     def test_find_relevant_timestamp_attributes(self):
-
         np.random.seed(0)
 
         # monthly frequency

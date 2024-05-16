@@ -163,14 +163,14 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
             cov_future = None
 
         batch_prediction = []
-        out, last_hidden_state = self._produce_predict_output(
-            (input_series, static_covariates)
-        )
+        out, last_hidden_state = self._produce_predict_output((
+            input_series,
+            static_covariates,
+        ))
         batch_prediction.append(out[:, -1:, :])
         prediction_length = 1
 
         while prediction_length < n:
-
             # create new input to model from last prediction and current covariates, if available
             new_input = (
                 torch.cat(
@@ -565,7 +565,6 @@ class RNNModel(DualCovariatesTorchModel):
         future_covariates: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> DualCovariatesShiftedDataset:
-
         return DualCovariatesShiftedDataset(
             target_series=target,
             covariates=future_covariates,

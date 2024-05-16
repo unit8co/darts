@@ -294,9 +294,9 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
             ).shape[-1]
             # transformer generates same number of features -> make a 1-1 column map
             if n_cat_out == sum(mask_cat):
-                col_map_cat = inv_col_map_cat = OrderedDict(
-                    {col: [col] for col in cols_cat}
-                )
+                col_map_cat = inv_col_map_cat = OrderedDict({
+                    col: [col] for col in cols_cat
+                })
             # transformer generates more features (i.e. OneHotEncoder) -> create a 1-many column map
             else:
                 col_map_cat = OrderedDict()

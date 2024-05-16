@@ -44,7 +44,6 @@ class TestTimeSeriesGeneration:
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
 
     def test_linear_timeseries(self):
-
         # testing parameters
         start_value = 5
         end_value = 12
@@ -83,7 +82,6 @@ class TestTimeSeriesGeneration:
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
 
     def test_sine_timeseries(self):
-
         # testing parameters
         value_amplitude = 5
         value_y_offset = -3
@@ -111,7 +109,6 @@ class TestTimeSeriesGeneration:
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
 
     def test_gaussian_timeseries(self):
-
         # testing for correct length
         def test_routine(start, end=None, length=None):
             gaussian_ts = gaussian_timeseries(start=start, end=end, length=length)
@@ -127,7 +124,6 @@ class TestTimeSeriesGeneration:
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
 
     def test_random_walk_timeseries(self):
-
         # testing for correct length
         def test_routine(start, end=None, length=None):
             random_walk_ts = random_walk_timeseries(start=start, end=end, length=length)
@@ -227,7 +223,6 @@ class TestTimeSeriesGeneration:
 
         for length in [1, 2, 5, 50]:
             for start in [0, 1, 9]:
-
                 # test pd.RangeIndex with varying step sizes
                 for step in [1, 2, 4]:
                     expected_start = start

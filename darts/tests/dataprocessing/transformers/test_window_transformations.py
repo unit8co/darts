@@ -35,7 +35,6 @@ def helper_generate_ts_hierarchy(length: int):
 
 
 class TestTimeSeriesWindowTransform:
-
     times = pd.date_range("20130101", "20130110")
     series_from_values = TimeSeries.from_values(
         np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
@@ -391,7 +390,6 @@ class TestTimeSeriesWindowTransform:
             self.target.window_transform(window_transformations, treat_na="bfill")
 
     def test_tranformed_ts_index(self):
-
         # DateTimeIndex
         transformed_series = self.target.window_transform({"function": "sum"})
         assert (
@@ -401,9 +399,9 @@ class TestTimeSeriesWindowTransform:
         # length index should not change for default transformation configurations
         assert len(self.target._time_index) == len(transformed_series._time_index)
         # RangeIndex
-        transformed_series = self.series_from_values.window_transform(
-            {"function": "sum"}
-        )
+        transformed_series = self.series_from_values.window_transform({
+            "function": "sum"
+        })
         assert (
             self.series_from_values._time_index.__class__
             == transformed_series._time_index.__class__
@@ -448,20 +446,18 @@ class TestTimeSeriesWindowTransform:
         ]
         expected_transformed_series = TimeSeries.from_times_and_values(
             self.times,
-            np.array(
-                [
-                    ["NaN", "NaN"],
-                    [1, 1],
-                    [2, 2],
-                    [3, 3],
-                    [4, 4],
-                    [5, 5],
-                    [6, 6],
-                    [7, 7],
-                    [8, 8],
-                    [9, 9],
-                ]
-            ),
+            np.array([
+                ["NaN", "NaN"],
+                [1, 1],
+                [2, 2],
+                [3, 3],
+                [4, 4],
+                [5, 5],
+                [6, 6],
+                [7, 7],
+                [8, 8],
+                [9, 9],
+            ]),
             columns=["rolling_sum_1_0", "ewm_sum_0"],
         )
         transformed_ts = self.target.window_transform(
@@ -471,20 +467,18 @@ class TestTimeSeriesWindowTransform:
 
         expected_transformed_series = TimeSeries.from_times_and_values(
             self.times,
-            np.array(
-                [
-                    [1, 1],
-                    [1, 1],
-                    [2, 2],
-                    [3, 3],
-                    [4, 4],
-                    [5, 5],
-                    [6, 6],
-                    [7, 7],
-                    [8, 8],
-                    [9, 9],
-                ]
-            ),
+            np.array([
+                [1, 1],
+                [1, 1],
+                [2, 2],
+                [3, 3],
+                [4, 4],
+                [5, 5],
+                [6, 6],
+                [7, 7],
+                [8, 8],
+                [9, 9],
+            ]),
             columns=["rolling_sum_1_0", "ewm_sum_0"],
         )
         transformed_ts = self.target.window_transform(
@@ -508,20 +502,18 @@ class TestTimeSeriesWindowTransform:
 
         expected_transformed_series = TimeSeries.from_times_and_values(
             self.times,
-            np.array(
-                [
-                    ["NaN", "NaN"],
-                    ["NaN", "NaN"],
-                    [3, 2],
-                    [5, 3],
-                    [7, 4],
-                    [9, 5],
-                    [11, 6],
-                    [13, 7],
-                    [15, 8],
-                    [17, 9],
-                ]
-            ),
+            np.array([
+                ["NaN", "NaN"],
+                ["NaN", "NaN"],
+                [3, 2],
+                [5, 3],
+                [7, 4],
+                [9, 5],
+                [11, 6],
+                [13, 7],
+                [15, 8],
+                [17, 9],
+            ]),
             columns=["rolling_sum_2_2_0", "ewm_sum_2_0"],
         )
 
@@ -624,7 +616,6 @@ class TestTimeSeriesWindowTransform:
 
 
 class TestWindowTransformer:
-
     times = pd.date_range("20130101", "20130110")
     target = TimeSeries.from_times_and_values(times, np.array(range(1, 11)))
     times_hourly = pd.date_range(start="20130101", freq="1" + freqs["h"], periods=10)

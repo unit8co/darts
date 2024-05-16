@@ -26,7 +26,6 @@ DistanceFunc = Callable[[SeriesValue, SeriesValue], float]
 def _dtw_cost_matrix(
     x: np.ndarray, y: np.ndarray, dist: DistanceFunc, window: Window
 ) -> CostMatrix:
-
     dtw = CostMatrix._from_window(window)
 
     dtw.fill(np.inf)

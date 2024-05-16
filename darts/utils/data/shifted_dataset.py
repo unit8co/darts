@@ -252,7 +252,9 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[
+    def __getitem__(
+        self, idx
+    ) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -353,7 +355,9 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[
+    def __getitem__(
+        self, idx
+    ) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -361,7 +365,6 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
         Optional[np.ndarray],
         np.ndarray,
     ]:
-
         past_target, past_covariate, static_covariate, future_target = self.ds_past[idx]
         _, historic_future_covariate, future_covariate, _, _ = self.ds_dual[idx]
         return (
@@ -461,7 +464,9 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[
+    def __getitem__(
+        self, idx
+    ) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],

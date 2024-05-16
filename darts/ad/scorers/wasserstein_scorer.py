@@ -26,7 +26,6 @@ logger = get_logger(__name__)
 
 
 class WassersteinScorer(WindowedAnomalyScorer):
-
     def __init__(
         self,
         window: int = 10,

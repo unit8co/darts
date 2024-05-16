@@ -482,9 +482,11 @@ class TestProbabilisticModels:
                     loc=0, scale=1, size=(n_times, n_comp, n_samples)
                 )
             else:
-                values = lkl._distr_from_params(lkl_params).sample(
-                    (n_times, n_comp, n_samples)
-                )
+                values = lkl._distr_from_params(lkl_params).sample((
+                    n_times,
+                    n_comp,
+                    n_samples,
+                ))
 
                 # Dirichlet must be handled sligthly differently since its multivariate
                 if isinstance(lkl, DirichletLikelihood):
@@ -563,9 +565,11 @@ class TestProbabilisticModels:
                     loc=0, scale=1, size=(n_times, n_comp, n_samples)
                 )
             else:
-                values = lkl._distr_from_params(lkl_params).sample(
-                    (n_times, n_comp, n_samples)
-                )
+                values = lkl._distr_from_params(lkl_params).sample((
+                    n_times,
+                    n_comp,
+                    n_samples,
+                ))
             ts = TimeSeries.from_values(
                 values, columns=[f"dummy_{i}" for i in range(values.shape[1])]
             )

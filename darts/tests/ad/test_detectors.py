@@ -21,7 +21,6 @@ delta = 1e-05
 
 
 class TestAnomalyDetectionDetector:
-
     np.random.seed(42)
 
     # univariate series
@@ -190,7 +189,6 @@ class TestAnomalyDetectionDetector:
             detector2.detect(self.train)
 
     def test_QuantileDetector_constructor(self):
-
         # Need to have at least one parameter (low, high) not None
         with pytest.raises(ValueError):
             QuantileDetector()
