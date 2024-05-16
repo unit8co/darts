@@ -534,7 +534,7 @@ class TestRegressionModels:
         max_samples_per_ts = 17
 
         training_samples, training_labels = model_instance._create_lagged_data(
-            target_series=self.target_series,
+            series=self.target_series,
             past_covariates=self.past_covariates,
             future_covariates=self.future_covariates,
             max_samples_per_ts=max_samples_per_ts,
@@ -585,7 +585,7 @@ class TestRegressionModels:
 
         # using only one series of each
         training_samples, training_labels = model_instance._create_lagged_data(
-            target_series=self.target_series[0],
+            series=self.target_series[0],
             past_covariates=self.past_covariates[0],
             future_covariates=self.future_covariates[0],
             max_samples_per_ts=max_samples_per_ts,

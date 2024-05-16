@@ -255,41 +255,36 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
          **kwargs
             Additional kwargs passed to `lightgbm.LGBRegressor.fit()`
         """
-        if val_series is not None:
-            kwargs["eval_set"] = self._create_lagged_data(
-                target_series=val_series,
-                past_covariates=val_past_covariates,
-                future_covariates=val_future_covariates,
-                max_samples_per_ts=max_samples_per_ts,
-            )
-
         if self.likelihood == "quantile":
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
             for quantile in self.quantiles:
                 self.kwargs["alpha"] = quantile
                 self.model = lgb.LGBMRegressor(**self.kwargs)
-
                 super().fit(
                     series=series,
                     past_covariates=past_covariates,
                     future_covariates=future_covariates,
+                    val_series=val_series,
+                    val_past_covariates=val_past_covariates,
+                    val_future_covariates=val_future_covariates,
                     max_samples_per_ts=max_samples_per_ts,
                     **kwargs,
                 )
 
                 self._model_container[quantile] = self.model
-
             return self
 
         super().fit(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            val_series=val_series,
+            val_past_covariates=val_past_covariates,
+            val_future_covariates=val_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
             **kwargs,
         )
-
         return self
 
     def _predict_and_sample(
@@ -312,6 +307,10 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
     @property
     def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None
+
+    @property
+    def supports_val_set(self):
+        return True
 
     @property
     def min_train_series_length(self) -> int:

@@ -812,7 +812,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if future_covariates is not None:
             self._uses_future_covariates = True
 
-        # Check that dimensions of train and val set match; on first series only
+        # check that dimensions of train and val set match; on first series only
         if val_series is not None:
             if self.encoders.encoding_available:
                 (
@@ -831,31 +831,37 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 self._verify_static_covariates(
                     get_single_series(val_series).static_covariates
                 )
-
-            match = (
-                series[0].width == val_series[0].width
-                and (past_covariates[0].width if past_covariates is not None else None)
-                == (
-                    val_past_covariates[0].width
-                    if val_past_covariates is not None
-                    else None
-                )
-                and (
-                    future_covariates[0].width
-                    if future_covariates is not None
-                    else None
-                )
-                == (
-                    val_future_covariates[0].width
-                    if val_future_covariates is not None
-                    else None
-                )
+            match_series = series[0].width == val_series[0].width
+            match_past_covariates = (
+                past_covariates[0].width if past_covariates is not None else None
+            ) == (
+                val_past_covariates[0].width
+                if val_past_covariates is not None
+                else None
             )
-            raise_if_not(
-                match,
-                "The dimensions of the series in the training set "
-                "and the validation set do not match.",
+            match_future_covariates = (
+                future_covariates[0].width if future_covariates is not None else None
+            ) == (
+                val_future_covariates[0].width
+                if val_future_covariates is not None
+                else None
             )
+            if not match_series and match_past_covariates and match_future_covariates:
+                invalid_series = [
+                    name
+                    for match, name in zip(
+                        [match_series, match_past_covariates, match_future_covariates],
+                        ["`series`", "`past_covariates`", "`future_covariates`"],
+                    )
+                    if not match
+                ]
+                raise_log(
+                    ValueError(
+                        f"The dimensions of the {', '.join(invalid_series)} in the training set and the "
+                        "validation set do not match."
+                    ),
+                    logger=logger,
+                )
 
         train_dataset = self._build_train_dataset(
             target=series,
@@ -874,7 +880,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         else:
             val_dataset = None
 
-        # Pro-actively catch length exceptions to display nicer messages
+        # proactively catch length exceptions to display nicer messages
         length_ok = True
         try:
             len(train_dataset)
