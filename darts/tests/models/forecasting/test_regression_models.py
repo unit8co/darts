@@ -1684,7 +1684,7 @@ class TestRegressionModels:
         ),
     )
     def test_val_set(self, config):
-        """Test whether these evaluation set parameters are passed to CatBoostRegressor"""
+        """Test whether the evaluation set parameters are passed to the wrapped regression model."""
         model_cls, model_kwargs, model_loc = config
         with patch(f"darts.models.forecasting.{model_loc}.fit") as fit_patch:
             self.helper_check_val_set(model_cls, model_kwargs, fit_patch)
