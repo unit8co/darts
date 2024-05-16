@@ -8,7 +8,7 @@ This implementation comes with the ability to produce probabilistic forecasts.
 """
 
 from functools import partial
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
 import xgboost as xgb
@@ -322,7 +322,6 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         val_past_covariates: Optional[Sequence[TimeSeries]],
         val_future_covariates: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: int,
-        training_set: Tuple[np.ndarray, np.ndarray],
     ):
         # XGBRegressor.fit() requires a list of eval sets
         kwargs = super()._add_val_set_to_kwargs(
@@ -331,7 +330,6 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             val_past_covariates=val_past_covariates,
             val_future_covariates=val_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
-            training_set=training_set,
         )
         kwargs["eval_set"] = [kwargs["eval_set"]]
         return kwargs

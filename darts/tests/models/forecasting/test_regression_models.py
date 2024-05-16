@@ -1669,44 +1669,109 @@ class TestRegressionModels:
                 future_covariates=future_covariates[: -26 + req_future_offset],
             )
 
-    @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
-    @patch.object(
-        (
-            darts.models.forecasting.lgbm.lgb.LGBMRegressor
+    @pytest.mark.parametrize(
+        "config",
+        [(XGBModel, xgb_test_params, "xgboost.xgb.XGBRegressor")]
+        + (
+            [(LightGBMModel, lgbm_test_params, "lgbm.lgb.LGBMRegressor")]
             if lgbm_available
-            else darts.models.utils.NotImportedModule
+            else []
+        )
+        + (
+            [(CatBoostModel, cb_test_params, "catboost_model.CatBoostRegressor")]
+            if cb_available
+            else []
         ),
-        "fit",
     )
-    def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
-        """Test whether these evaluation set parameters are passed to LGBRegressor"""
-        model = LightGBMModel(lags=4, lags_past_covariates=2)
-        model.fit(
-            series=self.sine_univariate1,
-            past_covariates=self.sine_multivariate1,
-            val_series=self.sine_univariate1,
-            val_past_covariates=self.sine_multivariate1,
-            early_stopping_rounds=2,
+    def test_val_set(self, config):
+        """Test whether these evaluation set parameters are passed to CatBoostRegressor"""
+        model_cls, model_kwargs, model_loc = config
+        with patch(f"darts.models.forecasting.{model_loc}.fit") as fit_patch:
+            self.helper_check_val_set(model_cls, model_kwargs, fit_patch)
+
+    def helper_check_val_set(self, model_cls, model_kwargs, fit_patch):
+        series1 = tg.sine_timeseries(length=10, column_name="tg_1")
+        series2 = tg.sine_timeseries(length=10, column_name="tg_2") / 2 + 10
+        series = series1.stack(series2)
+        series = series.with_static_covariates(
+            pd.DataFrame({"sc1": [0, 1], "sc2": [3, 4]})
+        )
+        pc = series1 * 10 - 3
+        fc = TimeSeries.from_times_and_values(
+            times=series.time_index, values=series.values() * -1, columns=["fc1", "fc2"]
+        )
+        model = model_cls(
+            lags={"default_lags": [-4, -3, -2, -1]},
+            lags_past_covariates=3,
+            lags_future_covariates={
+                "default_lags": [-1, 0],
+                "fc1": [0],
+            },
+            likelihood="quantile",
+            add_encoders={"cyclic": {"future": ["month"]}},
+            quantiles=[0.1, 0.5, 0.9],
+            **model_kwargs,
         )
 
-        lgb_fit_patch.assert_called_once()
-        assert lgb_fit_patch.call_args[1]["eval_set"] is not None
-        assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
+        # check that an error is raised with an invalid validation series
+        with pytest.raises(ValueError) as err:
+            model.fit(
+                series=series,
+                past_covariates=pc,
+                future_covariates=fc,
+                val_series=series["tg_1"],
+                val_past_covariates=pc,
+                val_future_covariates=fc["fc1"],
+                early_stopping_rounds=2,
+            )
+        msg_expected = (
+            "The dimensions of the (`series`, `future_covariates`, `static_covariates`) between "
+            "the training and validation set do not match."
+        )
+        assert str(err.value) == msg_expected
 
-    @patch.object(darts.models.forecasting.xgboost.xgb.XGBRegressor, "fit")
-    def test_xgboost_with_eval_set(self, xgb_fit_patch):
-        model = XGBModel(lags=4, lags_past_covariates=2)
+        # check that an error is raised if only second validation series are invalid
+        with pytest.raises(ValueError) as err:
+            model.fit(
+                series=series,
+                past_covariates=pc,
+                future_covariates=fc,
+                val_series=[series, series["tg_1"]],
+                val_past_covariates=[pc, pc],
+                val_future_covariates=[fc, fc["fc1"]],
+                early_stopping_rounds=2,
+            )
+        msg_expected = (
+            "The dimensions of the (`series`, `future_covariates`, `static_covariates`) between "
+            "the training and validation set at sequence/list index `1` do not match."
+        )
+        assert str(err.value) == msg_expected
+
         model.fit(
-            series=self.sine_univariate1,
-            past_covariates=self.sine_multivariate1,
-            val_series=self.sine_univariate1,
-            val_past_covariates=self.sine_multivariate1,
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            val_series=series,
+            val_past_covariates=pc,
+            val_future_covariates=fc,
             early_stopping_rounds=2,
         )
+        # fit called 6 times (3 quantiles * 2 target features)
+        assert fit_patch.call_count == 6
 
-        xgb_fit_patch.assert_called_once()
-        assert xgb_fit_patch.call_args[1]["eval_set"] is not None
-        assert xgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
+        train_set = fit_patch.call_args[0]
+        eval_set = fit_patch.call_args[1]["eval_set"]
+        assert eval_set is not None
+        # xbg requires a list of eval sets
+        if issubclass(model_cls, XGBModel):
+            assert isinstance(eval_set, list)
+            eval_set = eval_set[0]
+        assert isinstance(eval_set, tuple) and len(eval_set) == 2
+
+        # check same number of features for each dataset
+        assert eval_set[0].shape[1:] == train_set[0].shape[1:]
+        assert eval_set[1].shape[1:] == train_set[1].shape[1:]
+        assert fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_integer_indexed_series(self, mode):
@@ -2684,31 +2749,6 @@ class TestRegressionModels:
             assert model.encoders.takes_future_covariates
             assert len(model.encoders.future_encoders) == 1
             assert isinstance(model.encoders.future_encoders[0], FutureCyclicEncoder)
-
-    @pytest.mark.skipif(not cb_available, reason="requires catboost")
-    @patch.object(
-        (
-            darts.models.forecasting.catboost_model.CatBoostRegressor
-            if cb_available
-            else darts.models.utils.NotImportedModule
-        ),
-        "fit",
-    )
-    def test_catboost_model_with_eval_set(self, lgb_fit_patch):
-        """Test whether these evaluation set parameters are passed to CatBoostRegressor"""
-        model = CatBoostModel(lags=4, lags_past_covariates=2)
-        model.fit(
-            series=self.sine_univariate1,
-            past_covariates=self.sine_multivariate1,
-            val_series=self.sine_univariate1,
-            val_past_covariates=self.sine_multivariate1,
-            early_stopping_rounds=2,
-        )
-
-        lgb_fit_patch.assert_called_once()
-
-        assert lgb_fit_patch.call_args[1]["eval_set"] is not None
-        assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
     @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
     def test_quality_forecast_with_categorical_covariates(self):

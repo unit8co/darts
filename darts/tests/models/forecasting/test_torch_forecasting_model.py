@@ -47,6 +47,7 @@ from darts.models import (
     TSMixerModel,
 )
 from darts.models.components.layer_norm_variants import RINorm
+from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
 from darts.utils.likelihood_models import (
     GaussianLikelihood,
     LaplaceLikelihood,
@@ -1439,6 +1440,107 @@ class TestTorchForecastingModel:
             _ = model.predict(n=n, past_covariates=pc)
             _ = model.predict(n=n, future_covariates=fc)
             _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
+
+    @pytest.mark.parametrize("model_config", models)
+    def test_val_set(self, model_config):
+        """Test whether these evaluation set parameters are passed to the PyTorch Lightning Trainer"""
+        with patch("pytorch_lightning.Trainer.fit") as fit_patch:
+            self.helper_check_val_set(*model_config, fit_patch)
+
+    def helper_check_val_set(self, model_cls, model_kwargs, fit_patch):
+        # naive models don't call the Trainer
+        if issubclass(model_cls, _GlobalNaiveModel):
+            return
+
+        series1 = tg.sine_timeseries(length=11, column_name="tg_1")
+        series2 = tg.sine_timeseries(length=11, column_name="tg_2") / 2 + 10
+        series = series1.stack(series2)
+        series = series.with_static_covariates(
+            pd.DataFrame({"sc1": [0, 1], "sc2": [3, 4]})
+        )
+        pc = series1 * 10 - 3
+        fc = TimeSeries.from_times_and_values(
+            times=series.time_index, values=series.values() * -1, columns=["fc1", "fc2"]
+        )
+        model = model_cls(**model_kwargs)
+
+        # check that an error is raised with an invalid validation series
+        fit_kwargs = {
+            "series": series,
+            "val_series": series["tg_1"],
+        }
+        invalid_series_txt = "`series`"
+        if model.supports_past_covariates:
+            fit_kwargs["past_covariates"] = pc
+            fit_kwargs["val_past_covariates"] = pc
+        if model.supports_future_covariates:
+            fit_kwargs["future_covariates"] = fc
+            fit_kwargs["val_future_covariates"] = fc["fc1"]
+            invalid_series_txt += ", `future_covariates`"
+        if model.supports_static_covariates:
+            invalid_series_txt += ", `static_covariates`"
+
+        with pytest.raises(ValueError) as err:
+            model.fit(**fit_kwargs)
+        msg_expected = (
+            f"The dimensions of the ({invalid_series_txt}) between "
+            "the training and validation set do not match."
+        )
+        assert str(err.value) == msg_expected
+
+        # check that an error is raised if only second validation series are invalid
+        fit_kwargs = {
+            "series": series,
+            "val_series": [series, series["tg_1"]],
+        }
+        invalid_series_txt = "`series`"
+        if model.supports_past_covariates:
+            fit_kwargs["past_covariates"] = pc
+            fit_kwargs["val_past_covariates"] = [pc, pc]
+        if model.supports_future_covariates:
+            fit_kwargs["future_covariates"] = fc
+            fit_kwargs["val_future_covariates"] = [fc, fc["fc1"]]
+            invalid_series_txt += ", `future_covariates`"
+        if model.supports_static_covariates:
+            invalid_series_txt += ", `static_covariates`"
+
+        with pytest.raises(ValueError) as err:
+            model.fit(**fit_kwargs)
+        msg_expected = (
+            f"The dimensions of the ({invalid_series_txt}) between "
+            "the training and validation set at sequence/list index `1` do not match."
+        )
+        assert str(err.value) == msg_expected
+
+        fit_kwargs = {"series": series, "val_series": series}
+        if model.supports_past_covariates:
+            fit_kwargs["past_covariates"] = pc
+            fit_kwargs["val_past_covariates"] = pc
+        if model.supports_future_covariates:
+            fit_kwargs["future_covariates"] = fc
+            fit_kwargs["val_future_covariates"] = fc
+
+        model.fit(**fit_kwargs)
+        # fit called only once
+        assert fit_patch.call_count == 1
+
+        train_ds = fit_patch.call_args[1]["train_dataloaders"].dataset
+        val_dl = fit_patch.call_args[1]["val_dataloaders"]
+        assert val_dl is not None
+        val_ds = val_dl.dataset
+
+        # check same dataset type
+        assert isinstance(val_ds, train_ds.__class__)
+
+        # check that input in first batch have same dimensions
+        train_sample = train_ds[0]
+        val_sample = val_ds[0]
+        assert len(val_sample) == len(train_sample)
+        for x_train, x_val in zip(train_sample, val_sample):
+            if x_train is None:
+                assert x_val is None
+            else:
+                assert x_val.shape[1:] == x_train.shape[1:]
 
     @pytest.mark.parametrize("model_config", models)
     def test_rin(self, model_config):

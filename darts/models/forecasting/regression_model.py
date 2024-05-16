@@ -564,29 +564,15 @@ class RegressionModel(GlobalForecastingModel):
         val_past_covariates: Optional[Sequence[TimeSeries]],
         val_future_covariates: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: int,
-        training_set: Tuple[np.ndarray, np.ndarray],
     ):
-        """Creates a validation set, checks the dimensions against the training set, and returns a new set of kwargs
-        passed to `self.model.fit()` including the validation set. This method can be overridden if the model requires
-        a different logic to add the eval set."""
+        """Creates a validation set and returns a new set of kwargs passed to `self.model.fit()` including the
+        validation set. This method can be overridden if the model requires a different logic to add the eval set."""
         val_samples, val_labels = self._create_lagged_data(
             series=val_series,
             past_covariates=val_past_covariates,
             future_covariates=val_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
         )
-        # sanity checks
-        train_samples, train_labels = training_set
-        if not (
-            val_samples.shape[1:] == train_samples.shape[1:]
-            or val_labels.shape[1:] == train_labels.shape[1:]
-        ):
-            raise_log(
-                ValueError(
-                    "There was a mismatch between the features/labels extracted for validation set and training set"
-                ),
-                logger=logger,
-            )
         return dict(kwargs, **{"eval_set": (val_samples, val_labels)})
 
     def _create_lagged_data(
@@ -680,7 +666,6 @@ class RegressionModel(GlobalForecastingModel):
                 val_past_covariates=val_past_covariates,
                 val_future_covariates=val_future_covariates,
                 max_samples_per_ts=max_samples_per_ts,
-                training_set=training_set,
             )
         self.model.fit(*training_set, **kwargs)
 
@@ -773,52 +758,17 @@ class RegressionModel(GlobalForecastingModel):
                 "constructor.",
             )
 
-        # check that dimensions of train and val set match; on first series only
-        if self.supports_val_set and val_series is not None:
-            if self.encoders.encoding_available:
-                (
-                    val_past_covariates,
-                    val_future_covariates,
-                ) = self.generate_fit_encodings(
-                    series=val_series,
-                    past_covariates=val_past_covariates,
-                    future_covariates=val_future_covariates,
+        if self.supports_val_set:
+            val_series, val_past_covariates, val_future_covariates = (
+                self._process_validation_set(
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                    val_series=val_series,
+                    val_past_covariates=val_past_covariates,
+                    val_future_covariates=val_future_covariates,
                 )
-            if self.uses_static_covariates:
-                self._verify_static_covariates(
-                    get_single_series(val_series).static_covariates
-                )
-            match_series = series[0].width == val_series[0].width
-            match_past_covariates = (
-                past_covariates[0].width if past_covariates is not None else None
-            ) == (
-                val_past_covariates[0].width
-                if val_past_covariates is not None
-                else None
             )
-            match_future_covariates = (
-                future_covariates[0].width if future_covariates is not None else None
-            ) == (
-                val_future_covariates[0].width
-                if val_future_covariates is not None
-                else None
-            )
-            if not match_series and match_past_covariates and match_future_covariates:
-                invalid_series = [
-                    name
-                    for match, name in zip(
-                        [match_series, match_past_covariates, match_future_covariates],
-                        ["`series`", "`past_covariates`", "`future_covariates`"],
-                    )
-                    if not match
-                ]
-                raise_log(
-                    ValueError(
-                        f"The dimensions of the {', '.join(invalid_series)} in the training set and the "
-                        "validation set do not match."
-                    ),
-                    logger=logger,
-                )
 
         # saving the dims of all input series to check at prediction time
         self.input_dim = {
