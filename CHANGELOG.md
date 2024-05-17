@@ -28,7 +28,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - renamed method `eval_accuracy_from_prediction()` to `eval_metric_from_prediction()`
       - renamed params `actual_series` to `series`, and `actual_anomalies` to `anomalies`
     - `darts.ad.utils.eval_accuracy_from_scores` :
-      - renamed function to `eval_metric_from_scores`\
+      - renamed function to `eval_metric_from_scores`
       - renamed params `actual_anoamlies` to `anomalies`, and `anomaly_score` to `pred_scores`
     - `darts.ad.utils.eval_accuracy_from_binary_prediction` :
       - renamed function to `eval_metric_from_binary_prediction`
