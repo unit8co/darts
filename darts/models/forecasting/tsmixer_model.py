@@ -21,8 +21,8 @@ Time-Series Mixer (TSMixer)
 # The above copyright notice and this permission notice shall be included in all copies or substantial
 # portions of the Software.
 # '
-
-from typing import Callable, Optional, Tuple, Union
+import abc
+from typing import Callable, List, Optional, Tuple, Union
 
 import torch
 from torch import nn
@@ -59,6 +59,7 @@ NORMS = [
     "LayerNorm",
     "LayerNormNoBias",
     "TimeBatchNorm2d",
+    "TimeInstanceNorm2d",
 ]
 
 
@@ -67,9 +68,8 @@ def _time_to_feature(x: torch.Tensor) -> torch.Tensor:
     return x.permute(0, 2, 1)
 
 
-class TimeBatchNorm2d(nn.BatchNorm2d):
+class _Norm2d(abc.ABC):
     def __init__(self, *args, **kwargs):
-        """A batch normalization layer that normalizes over the last two dimensions of a Tensor."""
         super().__init__(num_features=1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -85,6 +85,18 @@ class TimeBatchNorm2d(nn.BatchNorm2d):
         output = super().forward(x.unsqueeze(1))
         # reshape back to (batch_size, timepoints, features)
         return output.squeeze(1)
+
+
+class TimeInstanceNorm2d(_Norm2d, nn.InstanceNorm2d):
+    """A batch normalization layer that normalizes over the last two dimensions of a Tensor using InstanceNorm2d."""
+
+    pass
+
+
+class TimeBatchNorm2d(_Norm2d, nn.BatchNorm2d):
+    """A batch normalization layer that normalizes over the last two dimensions of a Tensor using BatchNorm2d."""
+
+    pass
 
 
 class _FeatureMixing(nn.Module):
@@ -379,20 +391,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
             )
         activation = getattr(nn, activation)()
 
-        if isinstance(norm_type, str):
-            if norm_type not in NORMS:
-                raise_log(
-                    ValueError(
-                        f"Invalid `norm_type={norm_type}`. Must be on of {NORMS}."
-                    ),
-                    logger=logger,
-                )
-            if norm_type == "TimeBatchNorm2d":
-                norm_type = TimeBatchNorm2d
-            else:
-                norm_type = getattr(layer_norm_variants, norm_type)
-        else:
-            norm_type = norm_type
+        norm_type = self._get_norm_class(norm_type, NORMS)
 
         mixer_params = {
             "ff_size": ff_size,
@@ -456,6 +455,26 @@ class _TSMixerModule(PLMixedCovariatesModule):
             # after the first block, `x` consists of previous block output with size `hidden_size`
             input_dim_block = hidden_size
         return mixer_layers
+
+    @staticmethod
+    def _get_norm_class(
+        norm_type: Union[str, nn.Module], allowed_norm_strings: List[str]
+    ) -> nn.Module:
+        if isinstance(norm_type, str):
+            if norm_type not in allowed_norm_strings:
+                raise_log(
+                    ValueError(
+                        f"Invalid `norm_type={norm_type}`. Must be one of {allowed_norm_strings}."
+                    ),
+                    logger=logger,
+                )
+            if norm_type in ["TimeBatchNorm2d", "TimeInstanceNorm2d"]:
+                norm_type = globals()[norm_type]
+            else:
+                norm_type = getattr(layer_norm_variants, norm_type)
+        else:
+            norm_type = norm_type
+        return norm_type
 
     @io_processor
     def forward(
@@ -588,7 +607,8 @@ class TSMixerModel(MixedCovariatesTorchModel):
             for model uncertainty estimation (enabled with ``mc_dropout=True`` at prediction time).
         norm_type
             The type of `LayerNorm` variant to use.  Default: `"LayerNorm"`. If a string, must be one of
-            `"LayerNormNoBias", "LayerNorm", "TimeBatchNorm2d"`. Otherwise, must be a custom `nn.Module`.
+            `"LayerNormNoBias", "LayerNorm", "TimeBatchNorm2d", "TimeInstanceNorm2d"`.
+            Otherwise, must be a custom `nn.Module`.
         normalize_before
             Whether to apply layer normalization before or after mixer layer.
         use_static_covariates

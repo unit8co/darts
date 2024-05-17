@@ -267,6 +267,7 @@ class TestTSMixerModel:
             ("LayerNormNoBias", False),
             (nn.LayerNorm, False),
             ("TimeBatchNorm2d", False),
+            ("TimeInstanceNorm2d", False),
             ("invalid", True),
         ],
     )
