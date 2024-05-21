@@ -224,7 +224,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             prog_bar=True,
             sync_dist=True,
         )
-        self._calculate_metrics(output, target, self.train_metrics)
+        self._update_metrics(output, target, self.train_metrics)
         return loss
 
     def validation_step(self, val_batch, batch_idx) -> torch.Tensor:
@@ -239,8 +239,26 @@ class PLForecastingModule(pl.LightningModule, ABC):
             prog_bar=True,
             sync_dist=True,
         )
-        self._calculate_metrics(output, target, self.val_metrics)
+        self._update_metrics(output, target, self.val_metrics)
         return loss
+
+    def _compute_metrics(self, metrics):
+        res = metrics.compute()
+        self.log_dict(
+            res,
+            on_epoch=True,
+            on_step=False,
+            logger=True,
+            prog_bar=True,
+            sync_dist=True,
+        )
+        metrics.reset()
+
+    def on_train_epoch_end(self):
+        self._compute_metrics(self.train_metrics)
+
+    def on_validation_epoch_end(self):
+        self._compute_metrics(self.val_metrics)
 
     def on_predict_start(self) -> None:
         # optionally, activate monte carlo dropout for prediction
@@ -367,25 +385,16 @@ class PLForecastingModule(pl.LightningModule, ABC):
             # last dimension of model output, for properly computing the loss.
             return self.criterion(output.squeeze(dim=-1), target)
 
-    def _calculate_metrics(self, output, target, metrics):
+    def _update_metrics(self, output, target, metrics):
         if not len(metrics):
             return
 
         if self.likelihood:
-            _metric = metrics(self.likelihood.sample(output), target)
+            metrics.update(self.likelihood.sample(output), target)
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
             # last dimension of model output, for properly computing the metric.
-            _metric = metrics(output.squeeze(dim=-1), target)
-
-        self.log_dict(
-            _metric,
-            on_epoch=True,
-            on_step=False,
-            logger=True,
-            prog_bar=True,
-            sync_dist=True,
-        )
+            metrics.update(output.squeeze(dim=-1), target)
 
     def configure_optimizers(self):
         """configures optimizers and learning rate schedulers for model optimization."""
