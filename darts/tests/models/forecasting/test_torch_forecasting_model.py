@@ -86,7 +86,10 @@ class NumsCalled(Metric):
 
     def update(self, preds, target) -> None:
         if preds.shape != target.shape:
-            raise ValueError("preds and target must have the same shape")
+            raise ValueError(
+                "preds and target must have the same shape "
+                f"but got {preds.shape} for preds and {target.shape} for target."
+            )
         self.preds.append(preds)
 
     def compute(self):
