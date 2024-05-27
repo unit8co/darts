@@ -80,16 +80,11 @@ models = [
 
 
 class NumsCalled(Metric):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        super().__init__()
         self.add_state("preds", default=[], dist_reduce_fx="cat")
 
     def update(self, preds, target) -> None:
-        if preds.shape != target.shape:
-            raise ValueError(
-                "preds and target must have the same shape "
-                f"but got {preds.shape} for preds and {target.shape} for target."
-            )
         self.preds.append(preds)
 
     def compute(self):
