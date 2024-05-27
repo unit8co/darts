@@ -27,6 +27,7 @@ from pytorch_lightning.tuner.lr_finder import _LRFinder
 from torchmetrics import (
     MeanAbsoluteError,
     MeanAbsolutePercentageError,
+    Metric,
     MetricCollection,
 )
 
@@ -76,6 +77,18 @@ models = [
     (GlobalNaiveAggregate, kwargs),
     (GlobalNaiveDrift, kwargs),
 ]
+
+
+class NumsCalled(Metric):
+    def __init__(self):
+        super().__init__()
+        self.add_state("preds", default=[], dist_reduce_fx="cat")
+
+    def update(self, preds, target) -> None:
+        self.preds.append(preds)
+
+    def compute(self):
+        return len(self.preds)
 
 
 class TestTorchForecastingModel:
@@ -1332,6 +1345,20 @@ class TestTorchForecastingModel:
                 **tfm_kwargs,
             )
             model.fit(self.series)
+
+    def test_stateful_metrics(self):
+        torch_metrics = NumsCalled()
+        model = RNNModel(
+            12,
+            "RNN",
+            10,
+            10,
+            n_epochs=1,
+            torch_metrics=torch_metrics,
+            **tfm_kwargs,
+        )
+        model.fit(self.series)
+        assert model.model.trainer.logged_metrics["train_NumsCalled"] > 1
 
     @pytest.mark.slow
     def test_lr_find(self):
