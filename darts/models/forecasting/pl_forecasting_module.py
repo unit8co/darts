@@ -387,6 +387,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def _compute_metrics(self, metrics):
         if not len(metrics):
             return
+
         res = metrics.compute()
         self.log_dict(
             res,
