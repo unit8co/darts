@@ -1358,7 +1358,7 @@ class TestTorchForecastingModel:
             **tfm_kwargs,
         )
         model.fit(self.series)
-        assert model.model.trainer.logged_metrics["train_NumsCalled"] != 1
+        assert model.model.trainer.logged_metrics["train_NumsCalled"] > 1
 
     @pytest.mark.slow
     def test_lr_find(self):
