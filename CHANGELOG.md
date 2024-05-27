@@ -45,7 +45,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug when using a `RegressionModel` (that supports validation series) with a validation set, and encoders and/or component-specific lags, where the encodings and component specific lags were not added to the set. [#2383](https://github.com/unit8co/darts/pull/2383) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug where `n_steps_between` did not work properly with custom business frequencies. This affected metrics computation. [#2357](https://github.com/unit8co/darts/pull/2357) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when calling `predict()` with a `MixedCovariatesTorchModel` (e.g. TiDE, N/DLinear, ...) `n<output_chunk_length` and a list of series with length `len(series) < n`, where the predictions did not return the correct number of series. [#2374](https://github.com/unit8co/darts/pull/2374) by [Dennis Bader](https://github.com/dennisbader).
-- Fixed a bug in torch metric evaluation loop that caused stateful metrics to be computed incorrectly as non-stateful. [#2391](https://github.com/unit8co/darts/pull/2391) by [Tim Rosenflanz](https://github.com/tRosenflanz)
+- Fixed a bug when using a `TorchForecastingModel` with stateful torch metrics, where the metrics were incorrectly computed as non-stateful. [#2391](https://github.com/unit8co/darts/pull/2391) by [Tim Rosenflanz](https://github.com/tRosenflanz)
 
 **Dependencies**
 - Improvements to linting via updated pre-commit configurations: [#2324](https://github.com/unit8co/darts/pull/2324) by [Jirka Borovec](https://github.com/borda).
