@@ -660,10 +660,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
-        pin_memory: bool = False,
-        num_loader_workers: int = 0,
-        prefetch_factor: Optional[int] = None,
-        persistent_workers: bool = False,
+        dataloader_kwargs: Optional[Dict[str, Any]] = None,
     ) -> "TorchForecastingModel":
         """Fit/train the model on one or multiple series.
 
@@ -717,25 +714,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             large number of training samples. This parameter upper-bounds the number of training samples per time
             series (taking only the most recent samples in each series). Leaving to None does not apply any
             upper bound.
-        pin_memory
-            Whether to use ``pin_memory`` in PyTorch ``DataLoader`` instances. This can speed up training on GPUs.
-             If True, the data loader will copy Tensors into device/CUDA pinned memory before returning them.
-        num_loader_workers
-            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            A larger number of workers can sometimes increase performance, but can also incur extra overheads
-            and increase memory usage, as more batches are loaded in parallel.
-        prefetch_factor
-            Optionally, an integer specifying the ``prefetch_factor`` to use in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            Number of batches loaded in advance by each worker. 2 means there will be a total of 2 * num_workers batches
-            prefetched across all workers. (default value depends on the set value for num_workers. If value of
-            num_workers=0 default is None. Otherwise, if value of num_workers > 0 default is 2).
-        persistent_workers
-            Optionally, a boolean specifying whether to use persistent workers in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            If True, the data loader will not shut down the worker processes after a dataset has been consumed once.
-            This allows to maintain the workers Dataset instances alive. (default: False)
+        dataloader_kwargs
+            Optionally, a dictionary of keyword arguments to pass to the PyTorch DataLoader instances used to load the
+            training and validation datasets. For more information on DataLoader, check out `this link
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
 
         Returns
         -------
@@ -760,10 +742,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             epochs=epochs,
             max_samples_per_ts=max_samples_per_ts,
-            pin_memory=pin_memory,
-            num_loader_workers=num_loader_workers,
-            prefetch_factor=prefetch_factor,
-            persistent_workers=persistent_workers,
+            dataloader_kwargs=dataloader_kwargs,
         )
         # call super fit only if user is actually fitting the model
         super().fit(
@@ -785,10 +764,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
-        pin_memory: bool = False,
-        num_loader_workers: int = 0,
-        prefetch_factor: Optional[int] = None,
-        persistent_workers: bool = False,
+        dataloader_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Tuple[
         Tuple[
             Sequence[TimeSeries],
@@ -801,10 +777,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optional[pl.Trainer],
             Optional[bool],
             int,
-            bool,
-            int,
-            Optional[int],
-            bool,
+            Optional[Dict[str, Any]],
         ],
     ]:
         """This method acts on `TimeSeries` inputs. It performs sanity checks, and sets up / returns the datasets and
@@ -890,10 +863,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             trainer,
             verbose,
             epochs,
-            pin_memory,
-            num_loader_workers,
-            prefetch_factor,
-            persistent_workers,
+            dataloader_kwargs,
         )
         return series_input, fit_from_ds_params
 
@@ -905,10 +875,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         trainer: Optional[pl.Trainer] = None,
         verbose: Optional[bool] = None,
         epochs: int = 0,
-        pin_memory: bool = False,
-        num_loader_workers: int = 0,
-        prefetch_factor: Optional[int] = None,
-        persistent_workers: bool = False,
+        dataloader_kwargs: Optional[Dict[str, Any]] = None,
     ) -> "TorchForecastingModel":
         """
         Train the model with a specific :class:`darts.utils.data.TrainingDataset` instance.
@@ -941,25 +908,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs
             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
             was provided to the model constructor.
-        pin_memory
-            Whether to use ``pin_memory`` in PyTorch ``DataLoader`` instances. This can speed up training on GPUs.
-             If True, the data loader will copy Tensors into device/CUDA pinned memory before returning them.
-        num_loader_workers
-            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            A larger number of workers can sometimes increase performance, but can also incur extra overheads
-            and increase memory usage, as more batches are loaded in parallel.
-        prefetch_factor
-            Optionally, an integer specifying the ``prefetch_factor`` to use in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            Number of batches loaded in advance by each worker. 2 means there will be a total of 2 * num_workers batches
-            prefetched across all workers. (default value depends on the set value for num_workers. If value of
-            num_workers=0 default is None. Otherwise, if value of num_workers > 0 default is 2).
-        persistent_workers
-            Optionally, a boolean specifying whether to use persistent workers in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            If True, the data loader will not shut down the worker processes after a dataset has been consumed once.
-            This allows to maintain the workers Dataset instances alive. (default: False)
+        dataloader_kwargs
+            Optionally, a dictionary of keyword arguments to pass to the PyTorch DataLoader instances used to load the
+            training and validation datasets. For more information on DataLoader, check out `this link
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
 
         Returns
         -------
@@ -973,10 +925,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 trainer=trainer,
                 verbose=verbose,
                 epochs=epochs,
-                pin_memory=pin_memory,
-                num_loader_workers=num_loader_workers,
-                prefetch_factor=prefetch_factor,
-                persistent_workers=persistent_workers,
+                dataloader_kwargs=dataloader_kwargs,
             )
         )
         return self
@@ -988,10 +937,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         trainer: Optional[pl.Trainer] = None,
         verbose: Optional[bool] = None,
         epochs: int = 0,
-        pin_memory: bool = False,
-        num_loader_workers: int = 0,
-        prefetch_factor: Optional[int] = None,
-        persistent_workers: bool = False,
+        dataloader_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Tuple[pl.Trainer, PLForecastingModule, DataLoader, Optional[DataLoader]]:
         """This method acts on `TrainingDataset` inputs. It performs sanity checks, and sets up / returns the trainer,
         model, and dataset loaders required for training the model with `_train()`.
@@ -1046,19 +992,22 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 f" provided input/output dimensions = {sample_shape(train_sample)}",
             )
 
+        if dataloader_kwargs is None:
+            dataloader_kwargs = {}
+
+        dataloader_kwargs["shuffle"] = True
+        dataloader_kwargs["batch_size"] = self.batch_size
+        dataloader_kwargs["drop_last"] = False
+        dataloader_kwargs["collate_fn"] = self._batch_collate_fn
+
         # Setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
         # least one batch no matter the chosen batch size
         train_loader = DataLoader(
             train_dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
-            num_workers=num_loader_workers,
-            prefetch_factor=prefetch_factor,
-            persistent_workers=persistent_workers,
-            pin_memory=pin_memory,
-            drop_last=False,
-            collate_fn=self._batch_collate_fn,
+            **dataloader_kwargs,
         )
+
+        dataloader_kwargs["shuffle"] = False
 
         # Prepare validation data
         val_loader = (
@@ -1066,14 +1015,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             if val_dataset is None
             else DataLoader(
                 val_dataset,
-                batch_size=self.batch_size,
-                shuffle=False,
-                num_workers=num_loader_workers,
-                prefetch_factor=prefetch_factor,
-                persistent_workers=persistent_workers,
-                pin_memory=pin_memory,
-                drop_last=False,
-                collate_fn=self._batch_collate_fn,
+                **dataloader_kwargs,
             )
         )
 
@@ -1138,10 +1080,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
-        pin_memory: bool = False,
-        num_loader_workers: int = 0,
-        prefetch_factor: Optional[int] = None,
-        persistent_workers: bool = False,
+        dataloader_kwargs: Optional[Dict[str, Any]] = None,
         min_lr: float = 1e-08,
         max_lr: float = 1,
         num_training: int = 100,
@@ -1149,108 +1088,93 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         early_stop_threshold: float = 4.0,
     ):
         """
-        A wrapper around PyTorch Lightning's `Tuner.lr_find()`. Performs a range test of good initial learning rates,
-        to reduce the amount of guesswork in picking a good starting learning rate. For more information on PyTorch
-        Lightning's Tuner check out
-        `this link <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html>`_.
-        It is recommended to increase the number of `epochs` if the tuner did not give satisfactory results.
-        Consider creating a new model object with the suggested learning rate for example using model creation
-        parameters `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, and `lr_scheduler_kwargs`.
+         A wrapper around PyTorch Lightning's `Tuner.lr_find()`. Performs a range test of good initial learning rates,
+         to reduce the amount of guesswork in picking a good starting learning rate. For more information on PyTorch
+         Lightning's Tuner check out
+         `this link <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html>`_.
+         It is recommended to increase the number of `epochs` if the tuner did not give satisfactory results.
+         Consider creating a new model object with the suggested learning rate for example using model creation
+         parameters `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, and `lr_scheduler_kwargs`.
 
-        Example using a :class:`RNNModel`:
+         Example using a :class:`RNNModel`:
 
-            .. highlight:: python
-            .. code-block:: python
+             .. highlight:: python
+             .. code-block:: python
 
-                import torch
-                from darts.datasets import AirPassengersDataset
-                from darts.models import NBEATSModel
+                 import torch
+                 from darts.datasets import AirPassengersDataset
+                 from darts.models import NBEATSModel
 
-                series = AirPassengersDataset().load()
-                train, val = series[:-18], series[-18:]
-                model = NBEATSModel(input_chunk_length=12, output_chunk_length=6, random_state=42)
-                # run the learning rate tuner
-                results = model.lr_find(series=train, val_series=val)
-                # plot the results
-                results.plot(suggest=True, show=True)
-                # create a new model with the suggested learning rate
-                model = NBEATSModel(
-                    input_chunk_length=12,
-                    output_chunk_length=6,
-                    random_state=42,
-                    optimizer_cls=torch.optim.Adam,
-                    optimizer_kwargs={"lr": results.suggestion()}
-                )
-            ..
+                 series = AirPassengersDataset().load()
+                 train, val = series[:-18], series[-18:]
+                 model = NBEATSModel(input_chunk_length=12, output_chunk_length=6, random_state=42)
+                 # run the learning rate tuner
+                 results = model.lr_find(series=train, val_series=val)
+                 # plot the results
+                 results.plot(suggest=True, show=True)
+                 # create a new model with the suggested learning rate
+                 model = NBEATSModel(
+                     input_chunk_length=12,
+                     output_chunk_length=6,
+                     random_state=42,
+                     optimizer_cls=torch.optim.Adam,
+                     optimizer_kwargs={"lr": results.suggestion()}
+                 )
+             ..
 
-        Parameters
-        ----------
-        series
-            A series or sequence of series serving as target (i.e. what the model will be trained to forecast)
-        past_covariates
-            Optionally, a series or sequence of series specifying past-observed covariates
-        future_covariates
-            Optionally, a series or sequence of series specifying future-known covariates
-        val_series
-            Optionally, one or a sequence of validation target series, which will be used to compute the validation
-            loss throughout training and keep track of the best performing models.
-        val_past_covariates
-            Optionally, the past covariates corresponding to the validation series (must match ``covariates``)
-        val_future_covariates
-            Optionally, the future covariates corresponding to the validation series (must match ``covariates``)
-        trainer
-            Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom ``trainer`` will
-            override Darts' default trainer.
-        verbose
-            Optionally, whether to print the progress. Ignored if there is a `ProgressBar` callback in
-            `pl_trainer_kwargs`.
-        epochs
-            If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
-            was provided to the model constructor.
-        max_samples_per_ts
-            Optionally, a maximum number of samples to use per time series. Models are trained in a supervised fashion
-            by constructing slices of (input, output) examples. On long time series, this can result in unnecessarily
-            large number of training samples. This parameter upper-bounds the number of training samples per time
-            series (taking only the most recent samples in each series). Leaving to None does not apply any
-            upper bound.
-        pin_memory
-            Whether to use ``pin_memory`` in PyTorch ``DataLoader`` instances. This can speed up training on GPUs.
-             If True, the data loader will copy Tensors into device/CUDA pinned memory before returning them.
-        num_loader_workers
-            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            A larger number of workers can sometimes increase performance, but can also incur extra overheads
-            and increase memory usage, as more batches are loaded in parallel.
-        prefetch_factor
-            Optionally, an integer specifying the ``prefetch_factor`` to use in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            Number of batches loaded in advance by each worker. 2 means there will be a total of 2 * num_workers batches
-            prefetched across all workers. (default value depends on the set value for num_workers. If value of
-            num_workers=0 default is None. Otherwise, if value of num_workers > 0 default is 2).
-        persistent_workers
-            Optionally, a boolean specifying whether to use persistent workers in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            If True, the data loader will not shut down the worker processes after a dataset has been consumed once.
-            This allows to maintain the workers Dataset instances alive. (default: False)
-        min_lr
-            minimum learning rate to investigate
-        max_lr
-            maximum learning rate to investigate
-        num_training
-            number of learning rates to test
-        mode
-            Search strategy to update learning rate after each batch:
-            'exponential': Increases the learning rate exponentially.
-            'linear': Increases the learning rate linearly.
-        early_stop_threshold
-            Threshold for stopping the search. If the loss at any point is larger
-            than early_stop_threshold*best_loss then the search is stopped.
-            To disable, set to `None`
+         Parameters
+         ----------
+         series
+             A series or sequence of series serving as target (i.e. what the model will be trained to forecast)
+         past_covariates
+             Optionally, a series or sequence of series specifying past-observed covariates
+         future_covariates
+             Optionally, a series or sequence of series specifying future-known covariates
+         val_series
+             Optionally, one or a sequence of validation target series, which will be used to compute the validation
+             loss throughout training and keep track of the best performing models.
+         val_past_covariates
+             Optionally, the past covariates corresponding to the validation series (must match ``covariates``)
+         val_future_covariates
+             Optionally, the future covariates corresponding to the validation series (must match ``covariates``)
+         trainer
+             Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom ``trainer`` will
+             override Darts' default trainer.
+         verbose
+             Optionally, whether to print the progress. Ignored if there is a `ProgressBar` callback in
+             `pl_trainer_kwargs`.
+         epochs
+             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
+             was provided to the model constructor.
+         max_samples_per_ts
+             Optionally, a maximum number of samples to use per time series. Models are trained in a supervised fashion
+             by constructing slices of (input, output) examples. On long time series, this can result in unnecessarily
+             large number of training samples. This parameter upper-bounds the number of training samples per time
+             series (taking only the most recent samples in each series). Leaving to None does not apply any
+             upper bound.
+        dataloader_kwargs
+             Optionally, a dictionary of keyword arguments to pass to the PyTorch DataLoader instances used to load the
+             training and validation datasets. For more information on DataLoader, check out `this link
+             <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+         min_lr
+             minimum learning rate to investigate
+         max_lr
+             maximum learning rate to investigate
+         num_training
+             number of learning rates to test
+         mode
+             Search strategy to update learning rate after each batch:
+             'exponential': Increases the learning rate exponentially.
+             'linear': Increases the learning rate linearly.
+         early_stop_threshold
+             Threshold for stopping the search. If the loss at any point is larger
+             than early_stop_threshold*best_loss then the search is stopped.
+             To disable, set to `None`
 
-        Returns
-        -------
-        lr_finder
-            `_LRFinder` object of Lightning containing the results of the LR sweep.
+         Returns
+         -------
+         lr_finder
+             `_LRFinder` object of Lightning containing the results of the LR sweep.
         """
         _, params = self._setup_for_fit_from_dataset(
             series=series,
@@ -1263,10 +1187,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             epochs=epochs,
             max_samples_per_ts=max_samples_per_ts,
-            pin_memory=pin_memory,
-            num_loader_workers=num_loader_workers,
-            prefetch_factor=prefetch_factor,
-            persistent_workers=persistent_workers,
+            dataloader_kwargs=dataloader_kwargs,
         )
         trainer, model, train_loader, val_loader = self._setup_for_train(*params)
         return Tuner(trainer).lr_find(
@@ -1295,10 +1216,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         n_jobs: int = 1,
         roll_size: Optional[int] = None,
         num_samples: int = 1,
-        pin_memory: bool = False,
-        num_loader_workers: int = 0,
-        prefetch_factor: Optional[int] = None,
-        persistent_workers: bool = False,
+        data_loader_kwargs: Optional[Dict[str, Any]] = None,
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
@@ -1360,25 +1278,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
-        pin_memory
-            Whether to use ``pin_memory`` in PyTorch ``DataLoader`` instances. This can speed up training on GPUs.
-             If True, the data loader will copy Tensors into device/CUDA pinned memory before returning them.
-        num_loader_workers
-            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            A larger number of workers can sometimes increase performance, but can also incur extra overheads
-            and increase memory usage, as more batches are loaded in parallel.
-        prefetch_factor
-            Optionally, an integer specifying the ``prefetch_factor`` to use in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            Number of batches loaded in advance by each worker. 2 means there will be a total of 2 * num_workers batches
-            prefetched across all workers. (default value depends on the set value for num_workers. If value of
-            num_workers=0 default is None. Otherwise, if value of num_workers > 0 default is 2).
-        persistent_workers
-            Optionally, a boolean specifying whether to use persistent workers in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            If True, the data loader will not shut down the worker processes after a dataset has been consumed once.
-            This allows to maintain the workers Dataset instances alive. (default: False)
+        data_loader_kwargs
+            Optionally, a dictionary of keyword arguments to pass to the PyTorch DataLoader instances used to load the
+            training and validation datasets. For more information on DataLoader, check out `this link
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
         mc_dropout
             Optionally, enable monte carlo dropout for predictions using neural network based models.
             This allows bayesian approximation by specifying an implicit prior over learned models.
@@ -1462,10 +1365,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             n_jobs=n_jobs,
             roll_size=roll_size,
             num_samples=num_samples,
-            pin_memory=pin_memory,
-            num_loader_workers=num_loader_workers,
-            prefetch_factor=prefetch_factor,
-            persistent_workers=persistent_workers,
+            data_loader_kwargs=data_loader_kwargs,
             mc_dropout=mc_dropout,
             predict_likelihood_parameters=predict_likelihood_parameters,
         )
@@ -1483,10 +1383,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         n_jobs: int = 1,
         roll_size: Optional[int] = None,
         num_samples: int = 1,
-        pin_memory: bool = False,
-        num_loader_workers: int = 0,
-        prefetch_factor: Optional[int] = None,
-        persistent_workers: bool = False,
+        data_loader_kwargs: Optional[Dict[str, Any]] = None,
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
     ) -> Sequence[TimeSeries]:
@@ -1527,25 +1424,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
-        pin_memory
-            Whether to use ``pin_memory`` in PyTorch ``DataLoader`` instances. This can speed up training on GPUs.
-             If True, the data loader will copy Tensors into device/CUDA pinned memory before returning them.
-        num_loader_workers
-            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            A larger number of workers can sometimes increase performance, but can also incur extra overheads
-            and increase memory usage, as more batches are loaded in parallel.
-        prefetch_factor
-            Optionally, an integer specifying the ``prefetch_factor`` to use in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            Number of batches loaded in advance by each worker. 2 means there will be a total of 2 * num_workers batches
-            prefetched across all workers. (default value depends on the set value for num_workers. If value of
-            num_workers=0 default is None. Otherwise, if value of num_workers > 0 default is 2).
-        persistent_workers
-            Optionally, a boolean specifying whether to use persistent workers in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            If True, the data loader will not shut down the worker processes after a dataset has been consumed once.
-            This allows to maintain the workers Dataset instances alive. (default: False)
+        data_loader_kwargs
+            Optionally, a dictionary of keyword arguments to pass to the PyTorch DataLoader instances used to load the
+            training and validation datasets. For more information on DataLoader, check out `this link
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
         mc_dropout
             Optionally, enable monte carlo dropout for predictions using neural network based models.
             This allows bayesian approximation by specifying an implicit prior over learned models.
@@ -1600,16 +1482,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             mc_dropout=mc_dropout,
         )
 
+        if data_loader_kwargs is None:
+            data_loader_kwargs = {}
+
+        data_loader_kwargs["batch_size"] = batch_size
+        data_loader_kwargs["collate_fn"] = self._batch_collate_fn
+        data_loader_kwargs["shuffle"] = False
+        data_loader_kwargs["drop_last"] = False
+
         pred_loader = DataLoader(
             input_series_dataset,
-            batch_size=batch_size,
-            shuffle=False,
-            num_workers=num_loader_workers,
-            pin_memory=pin_memory,
-            prefetch_factor=prefetch_factor,
-            persistent_workers=persistent_workers,
-            drop_last=False,
-            collate_fn=self._batch_collate_fn,
+            **data_loader_kwargs,
         )
 
         # set up trainer. use user supplied trainer or create a new trainer from scratch
