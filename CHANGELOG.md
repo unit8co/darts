@@ -117,6 +117,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - 🔴 Moved around utils functions to clearly separate Darts-specific from non-Darts-specific logic, [#2284](https://github.com/unit8co/darts/pull/2284) by [Dennis Bader](https://github.com/dennisbader):
     - Moved function `generate_index()` from `darts.utils.timeseries_generation` to `darts.utils.utils`
     - Moved functions `retain_period_common_to_all()`, `series2seq()`, `seq2series()`, `get_single_series()` from `darts.utils.utils` to `darts.utils.ts_utils`.
+- Improvements to `TorchForecastingModel`:
+  - New method `TorchForecastingModel.scale_batch_size()` to find the maximum batch size for fit and predict before memory would run out. [#2318](https://github.com/unit8co/darts/pull/2318) by [Bohdan Bilonoh](https://github.com/BohdanBilonoh)
 
 **Fixed**
 - Fixed the order of the features when using component-specific lags so that they are grouped by values, then by components (before, they were grouped by components, then by values). [#2272](https://github.com/unit8co/darts/pull/2272) by [Antoine Madrona](https://github.com/madtoinou).
