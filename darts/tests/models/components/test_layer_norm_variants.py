@@ -1,24 +1,21 @@
 import numpy as np
 import pytest
 
-from darts.logging import get_logger
+from darts.tests.conftest import TORCH_AVAILABLE
 
-logger = get_logger(__name__)
-
-try:
-    import torch
-
-    from darts.models.components.layer_norm_variants import (
-        LayerNorm,
-        LayerNormNoBias,
-        RINorm,
-        RMSNorm,
-    )
-except ImportError:
+if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import torch
+
+from darts.models.components.layer_norm_variants import (
+    LayerNorm,
+    LayerNormNoBias,
+    RINorm,
+    RMSNorm,
+)
 
 
 class TestLayerNormVariants:
@@ -29,7 +26,6 @@ class TestLayerNormVariants:
             ln(inputs)
 
     def test_rin(self):
-
         np.random.seed(42)
         torch.manual_seed(42)
 
@@ -38,7 +34,6 @@ class TestLayerNormVariants:
 
         # test with and without affine and correct input dim
         for affine in affine_options:
-
             rin = RINorm(input_dim=7, affine=affine)
             x_norm = rin(x)
 

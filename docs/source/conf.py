@@ -48,6 +48,7 @@ extensions = [
 autodoc_default_options = {
     "inherited-members": None,
     "show-inheritance": None,
+    "ignore-module-all": True,
     "exclude-members": "ForecastingModel,LocalForecastingModel,FutureCovariatesLocalForecastingModel,"
     + "TransferableFutureCovariatesLocalForecastingModel,GlobalForecastingModel,TorchForecastingModel,"
     + "PastCovariatesTorchModel,FutureCovariatesTorchModel,DualCovariatesTorchModel,MixedCovariatesTorchModel,"

@@ -84,13 +84,9 @@ class ModelMeta(ABCMeta):
     def __call__(cls, *args, **kwargs):
         # 1) get all default values from class' __init__ signature
         sig = inspect.signature(cls.__init__)
-        all_params = OrderedDict(
-            [
-                (p.name, p.default)
-                for p in sig.parameters.values()
-                if not p.name == "self"
-            ]
-        )
+        all_params = OrderedDict([
+            (p.name, p.default) for p in sig.parameters.values() if not p.name == "self"
+        ])
 
         # 2) fill params with positional args
         for param, arg in zip(all_params, args):
@@ -364,9 +360,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _fit_wrapper(
         self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         **kwargs,
     ):
         add_kwargs = {}
@@ -557,9 +553,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         custom_components
             New names for the forecast TimeSeries components, used when the number of components changes
         with_static_covs
-            If set to False, do not copy the input_series `static_covariates` attribute
+            If set to `False`, do not copy the input_series `static_covariates` attribute
         with_hierarchy
-            If set to False, do not copy the input_series `hierarchy` attribute
+            If set to `False`, do not copy the input_series `hierarchy` attribute
         pred_start
             Optionally, give a custom prediction start point.
 
@@ -654,11 +650,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         By default, this method will return one (or a sequence of) single time series made up of
         the last point of each historical forecast.
         This time series will thus have a frequency of ``series.freq * stride``.
-        If `last_points_only` is set to False, it will instead return one (or a sequence of) list of the
+        If `last_points_only` is set to `False`, it will instead return one (or a sequence of) list of the
         historical forecasts series.
 
         By default, this method always re-trains the models on the entire available history, corresponding to an
-        expanding window strategy. If `retrain` is set to False, the model must have been fit before. This is not
+        expanding window strategy. If `retrain` is set to `False`, the model must have been fit before. This is not
         supported by all models.
 
         Parameters
@@ -736,7 +732,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Whether the returned forecasts can go beyond the series' end or not.
         last_points_only
             Whether to retain only the last point of each historical forecast.
-            If set to True, the method returns a single ``TimeSeries`` containing the successive point forecasts.
+            If set to `True`, the method returns a single ``TimeSeries`` containing the successive point forecasts.
             Otherwise, returns a list of historical ``TimeSeries`` forecasts.
         verbose
             Whether to print progress.
@@ -1184,11 +1180,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Finally, the method returns a `reduction` (the mean by default) of all these metric scores.
 
         By default, this method uses each historical forecast (whole) to compute error scores.
-        If `last_points_only` is set to True, it will use only the last point of each historical
+        If `last_points_only` is set to `True`, it will use only the last point of each historical
         forecast. In this case, no reduction is used.
 
         By default, this method always re-trains the models on the entire available history, corresponding to an
-        expanding window strategy. If `retrain` is set to False (useful for models for which training might be
+        expanding window strategy. If `retrain` is set to `False` (useful for models for which training might be
         time-consuming, such as deep learning models), the trained model will be used directly to emit the forecasts.
 
         Parameters
@@ -1277,7 +1273,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             identical signature as Darts' metrics, uses decorators :func:`~darts.metrics.metrics.multi_ts_support` and
             :func:`~darts.metrics.metrics.multi_ts_support`, and returns the metric score.
         reduction
-            A function used to combine the individual error scores obtained when `last_points_only` is set to False.
+            A function used to combine the individual error scores obtained when `last_points_only` is set to `False`.
             When providing several metric functions, the function will receive the argument `axis = 1` to obtain single
             value for each metric function.
             If explicitly set to `None`, the method will return a list of the individual error scores instead.
@@ -2164,6 +2160,99 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
+
+    def _process_validation_set(
+        self,
+        series: Sequence[TimeSeries],
+        past_covariates: Optional[Sequence[TimeSeries]],
+        future_covariates: Optional[Sequence[TimeSeries]],
+        val_series: Optional[Sequence[TimeSeries]],
+        val_past_covariates: Optional[Sequence[TimeSeries]],
+        val_future_covariates: Optional[Sequence[TimeSeries]],
+    ) -> Tuple[
+        Optional[Sequence[TimeSeries]],
+        Optional[Sequence[TimeSeries]],
+        Optional[Sequence[TimeSeries]],
+    ]:
+        """Validates the validation set and generates/adds the required encodings."""
+        if val_series is None:
+            return None, None, None
+
+        # generate encodings for the val set covariates
+        if self.encoders.encoding_available:
+            (
+                val_past_covariates,
+                val_future_covariates,
+            ) = self.generate_fit_encodings(
+                series=val_series,
+                past_covariates=val_past_covariates,
+                future_covariates=val_future_covariates,
+            )
+
+        for idx in range(len(val_series)):
+            val_s = val_series[idx]
+            val_pc = (
+                val_past_covariates[idx] if val_past_covariates is not None else None
+            )
+            val_fc = (
+                val_future_covariates[idx]
+                if val_future_covariates is not None
+                else None
+            )
+
+            # check that val set has same number of features as train set
+            match_series = series[0].width == val_s.width
+            match_past_covariates = (
+                past_covariates[0].width if past_covariates is not None else None
+            ) == (val_pc.width if val_pc is not None else None)
+            match_future_covariates = (
+                future_covariates[0].width if future_covariates is not None else None
+            ) == (val_fc.width if val_fc is not None else None)
+
+            if self.uses_static_covariates:
+                self._verify_static_covariates(val_s.static_covariates)
+                match_static_covariates = (
+                    series[0].static_covariates.shape
+                    if series[0].static_covariates is not None
+                    else None
+                ) == (
+                    val_s.static_covariates.shape
+                    if val_s.static_covariates is not None
+                    else None
+                )
+            else:
+                match_static_covariates = True
+
+            matches = [
+                match_series,
+                match_past_covariates,
+                match_future_covariates,
+                match_static_covariates,
+            ]
+            if not all(matches):
+                invalid_series = [
+                    name
+                    for match, name in zip(
+                        matches,
+                        [
+                            "`series`",
+                            "`past_covariates`",
+                            "`future_covariates`",
+                            "`static_covariates`",
+                        ],
+                    )
+                    if not match
+                ]
+                raise_log(
+                    ValueError(
+                        f"The dimensions of the ({', '.join(invalid_series)}) between the training and "
+                        f"validation set "
+                        f"{'' if len(val_series) == 1 else 'at sequence/list index `' + str(idx) + '` '}"
+                        f"do not match."
+                    ),
+                    logger=logger,
+                )
+        return val_series, val_past_covariates, val_future_covariates
 
     @property
     @abstractmethod

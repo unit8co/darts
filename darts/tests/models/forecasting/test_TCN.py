@@ -1,21 +1,17 @@
 import pytest
 
-from darts.logging import get_logger
 from darts.metrics import mae
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
-logger = get_logger(__name__)
-
-try:
-    import torch
-
-    from darts.models.forecasting.tcn_model import TCNModel
-except ImportError:
+if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import torch
+
+from darts.models.forecasting.tcn_model import TCNModel
 
 
 class TestTCNModel:
@@ -86,7 +82,6 @@ class TestTCNModel:
                 if dilation_base > kernel_size:
                     continue
                 for input_chunk_length in input_chunk_lengths:
-
                     # create model with all weights set to one
                     model = TCNModel(
                         input_chunk_length=input_chunk_length,

@@ -5,18 +5,16 @@ Datasets
 A few popular time series datasets
 """
 
-import os
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import List
 
 import numpy as np
 import pandas as pd
 
 from darts import TimeSeries
+from darts.datasets.dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
 from darts.logging import get_logger, raise_if_not
-from darts.utils.utils import _build_tqdm_iterator
-
-from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
+from darts.utils.utils import _build_tqdm_iterator, freqs
 
 """
     Overall usage of this package:
@@ -491,6 +489,32 @@ class ETTm2Dataset(DatasetLoaderCSV):
         )
 
 
+class TaxiNewYorkDataset(DatasetLoaderCSV):
+    """
+    Taxi Passengers in New York, from 2014-07 to 2015-01.
+    The data consists of aggregated total number of
+    taxi passengers into 30 minute buckets.
+    Univariate series.
+    Source: [1]_
+
+    References
+    ----------
+    .. [1] https://www.kaggle.com/code/julienjta/nyc-taxi-traffic-analysis
+    """
+
+    def __init__(self):
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "taxi_new_york_passengers.csv",
+                uri=_DEFAULT_PATH + "/taxi_new_york_passengers.csv",
+                hash="0a81adf1b74354a8ec18c30e9e8fe5f0",
+                header_time="time",
+                format_time="%Y-%m-%d %H:%M:%S",
+                freq="30min",
+            ),
+        )
+
+
 class ElectricityDataset(DatasetLoaderCSV):
     """
     Measurements of electric power consumption in one household with 15 minute sampling rate.
@@ -604,7 +628,7 @@ class UberTLCDataset(DatasetLoaderCSV):
             )
 
             output_dict = {}
-            freq_setting = "1H" if "hourly" in str(dataset_path) else "1D"
+            freq_setting = "1" + freqs["h"] if "hourly" in str(dataset_path) else "1D"
             time_series_of_locations = list(df.groupby(by="locationID"))
             for locationID, df in time_series_of_locations:
                 df.sort_index()
@@ -776,7 +800,7 @@ class TrafficDataset(DatasetLoaderCSV):
                 hash="a2105f364ef70aec06c757304833f72a",
                 header_time="Date",
                 format_time="%Y-%m-%d %H:%M:%S",
-                freq="1H",
+                freq="1" + freqs["h"],
                 multivariate=multivariate,
             )
         )

@@ -3,22 +3,18 @@ import pandas as pd
 import pytest
 
 from darts import concatenate
-from darts.logging import get_logger
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
-logger = get_logger(__name__)
-
-try:
-    import torch
-
-    from darts.models.forecasting.tide_model import TiDEModel
-    from darts.utils.likelihood_models import GaussianLikelihood
-except ImportError:
+if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import torch
+
+from darts.models.forecasting.tide_model import TiDEModel
+from darts.utils.likelihood_models import GaussianLikelihood
 
 
 class TestTiDEModel:
@@ -179,7 +175,6 @@ class TestTiDEModel:
         ts_time_index = tg.sine_timeseries(length=2, freq="h")
 
         for enable_rin in [True, False]:
-
             # test with past_covariates timeseries
             model = TiDEModel(
                 input_chunk_length=1,

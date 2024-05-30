@@ -1,21 +1,17 @@
 import numpy as np
 import pytest
 
-from darts.logging import get_logger
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils.timeseries_generation import linear_timeseries
 
-logger = get_logger(__name__)
-
-try:
-    import pytorch_lightning as pl
-
-    from darts.models.forecasting.rnn_model import RNNModel
-except ImportError:
+if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import pytorch_lightning as pl
+
+from darts.models.forecasting.rnn_model import RNNModel
 
 
 class TestPTLTrainer:

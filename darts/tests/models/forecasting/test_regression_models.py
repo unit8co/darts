@@ -79,10 +79,8 @@ def dummy_timeseries(
     freq="D",
     integer_index=False,
 ):
-
     targets, pcovs, fcovs = [], [], []
     for series_idx in range(n_series):
-
         target_start_date = (
             series_idx * multiseries_offset
             if integer_index
@@ -161,7 +159,6 @@ xgb_test_params = {
     "n_estimators": 1,
     "max_depth": 1,
     "max_leaves": 1,
-    "verbose": -1,
     "random_state": 42,
 }
 lgbm_test_params = {
@@ -180,7 +177,6 @@ cb_test_params = {
 
 
 class TestRegressionModels:
-
     np.random.seed(42)
     # default regression models
     models = [
@@ -212,14 +208,12 @@ class TestRegressionModels:
         **xgb_test_params,
     )
     # targets for poisson regression must be positive, so we exclude them for some tests
-    models.extend(
-        [
-            QuantileLinearRegressionModel,
-            PoissonLinearRegressionModel,
-            PoissonXGBModel,
-            QuantileXGBModel,
-        ]
-    )
+    models.extend([
+        QuantileLinearRegressionModel,
+        PoissonLinearRegressionModel,
+        PoissonXGBModel,
+        QuantileXGBModel,
+    ])
 
     univariate_accuracies = [
         0.03,  # RandomForest
@@ -407,18 +401,14 @@ class TestRegressionModels:
 
         date_range = pd.date_range(start="2020-01-01", end="2023-01-01", freq="D")
         df = (
-            pd.DataFrame(
-                {
-                    "date": date_range,
-                    "baseline": np.random.normal(100, 10, len(date_range)),
-                    "fut_cov_promo_mechanism": np.random.randint(
-                        0, 11, len(date_range)
-                    ),
-                    "fut_cov_dummy": np.random.normal(10, 2, len(date_range)),
-                    "past_cov_dummy": np.random.normal(10, 2, len(date_range)),
-                    "past_cov_cat_dummy": np.random.normal(10, 2, len(date_range)),
-                }
-            )
+            pd.DataFrame({
+                "date": date_range,
+                "baseline": np.random.normal(100, 10, len(date_range)),
+                "fut_cov_promo_mechanism": np.random.randint(0, 11, len(date_range)),
+                "fut_cov_dummy": np.random.normal(10, 2, len(date_range)),
+                "past_cov_dummy": np.random.normal(10, 2, len(date_range)),
+                "past_cov_cat_dummy": np.random.normal(10, 2, len(date_range)),
+            })
             .assign(
                 target_qty=lambda _df: _df.baseline
                 + _df.fut_cov_promo_mechanism.apply(_apply_promo_mechanism)
@@ -535,7 +525,7 @@ class TestRegressionModels:
         max_samples_per_ts = 17
 
         training_samples, training_labels = model_instance._create_lagged_data(
-            target_series=self.target_series,
+            series=self.target_series,
             past_covariates=self.past_covariates,
             future_covariates=self.future_covariates,
             max_samples_per_ts=max_samples_per_ts,
@@ -586,7 +576,7 @@ class TestRegressionModels:
 
         # using only one series of each
         training_samples, training_labels = model_instance._create_lagged_data(
-            target_series=self.target_series[0],
+            series=self.target_series[0],
             past_covariates=self.past_covariates[0],
             future_covariates=self.future_covariates[0],
             max_samples_per_ts=max_samples_per_ts,
@@ -701,12 +691,10 @@ class TestRegressionModels:
 
         series_matrix = None
         if "target" in self.lags_1:
-            series_matrix = np.stack(
-                [
-                    ts.values(copy=False)[self.lags_1["target"][0] - shift :, :]
-                    for ts in series
-                ]
-            )
+            series_matrix = np.stack([
+                ts.values(copy=False)[self.lags_1["target"][0] - shift :, :]
+                for ts in series
+            ])
         # prediction preprocessing end
         assert all([lag >= 0 for lags in relative_cov_lags.values() for lag in lags])
 
@@ -863,12 +851,10 @@ class TestRegressionModels:
         # with `use_static_covariates=True`, all static covs must have same shape
         model = model_cls(lags=4, use_static_covariates=True)
         with pytest.raises(ValueError):
-            model.fit(
-                [
-                    series,
-                    series.with_static_covariates(pd.DataFrame({"a": [1], "b": [2]})),
-                ]
-            )
+            model.fit([
+                series,
+                series.with_static_covariates(pd.DataFrame({"a": [1], "b": [2]})),
+            ])
 
         # with `use_static_covariates=False`, static covariates are ignored and prediction works
         model = model_cls(lags=4, use_static_covariates=False)
@@ -1389,12 +1375,10 @@ class TestRegressionModels:
         # multivariate, one sub-model per position, per component
         ocl = 2
         ts = TimeSeries.from_values(
-            np.array(
-                [
-                    [0, 0, 0, 0, 2],
-                    [0, 0, 0, 1, 3],
-                ]
-            ).T
+            np.array([
+                [0, 0, 0, 0, 2],
+                [0, 0, 0, 1, 3],
+            ]).T
         )
         # estimators_[0] labels : [0]
         # estimators_[1] labels : [1]
@@ -1407,12 +1391,10 @@ class TestRegressionModels:
         # multivariate, one sub-model per component
         ocl = 2
         ts = TimeSeries.from_values(
-            np.array(
-                [
-                    [0, 0, 0, 0, 1],
-                    [0, 0, 0, 0, 2],
-                ]
-            ).T
+            np.array([
+                [0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 2],
+            ]).T
         )
         # estimators_[0] labels : [1]
         # estimators_[1] labels : [2]
@@ -1687,44 +1669,109 @@ class TestRegressionModels:
                 future_covariates=future_covariates[: -26 + req_future_offset],
             )
 
-    @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
-    @patch.object(
-        (
-            darts.models.forecasting.lgbm.lgb.LGBMRegressor
+    @pytest.mark.parametrize(
+        "config",
+        [(XGBModel, xgb_test_params, "xgboost.xgb.XGBRegressor")]
+        + (
+            [(LightGBMModel, lgbm_test_params, "lgbm.lgb.LGBMRegressor")]
             if lgbm_available
-            else darts.models.utils.NotImportedModule
+            else []
+        )
+        + (
+            [(CatBoostModel, cb_test_params, "catboost_model.CatBoostRegressor")]
+            if cb_available
+            else []
         ),
-        "fit",
     )
-    def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
-        """Test whether these evaluation set parameters are passed to LGBRegressor"""
-        model = LightGBMModel(lags=4, lags_past_covariates=2)
-        model.fit(
-            series=self.sine_univariate1,
-            past_covariates=self.sine_multivariate1,
-            val_series=self.sine_univariate1,
-            val_past_covariates=self.sine_multivariate1,
-            early_stopping_rounds=2,
+    def test_val_set(self, config):
+        """Test whether the evaluation set parameters are passed to the wrapped regression model."""
+        model_cls, model_kwargs, model_loc = config
+        with patch(f"darts.models.forecasting.{model_loc}.fit") as fit_patch:
+            self.helper_check_val_set(model_cls, model_kwargs, fit_patch)
+
+    def helper_check_val_set(self, model_cls, model_kwargs, fit_patch):
+        series1 = tg.sine_timeseries(length=10, column_name="tg_1")
+        series2 = tg.sine_timeseries(length=10, column_name="tg_2") / 2 + 10
+        series = series1.stack(series2)
+        series = series.with_static_covariates(
+            pd.DataFrame({"sc1": [0, 1], "sc2": [3, 4]})
+        )
+        pc = series1 * 10 - 3
+        fc = TimeSeries.from_times_and_values(
+            times=series.time_index, values=series.values() * -1, columns=["fc1", "fc2"]
+        )
+        model = model_cls(
+            lags={"default_lags": [-4, -3, -2, -1]},
+            lags_past_covariates=3,
+            lags_future_covariates={
+                "default_lags": [-1, 0],
+                "fc1": [0],
+            },
+            likelihood="quantile",
+            add_encoders={"cyclic": {"future": ["month"]}},
+            quantiles=[0.1, 0.5, 0.9],
+            **model_kwargs,
         )
 
-        lgb_fit_patch.assert_called_once()
-        assert lgb_fit_patch.call_args[1]["eval_set"] is not None
-        assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
+        # check that an error is raised with an invalid validation series
+        with pytest.raises(ValueError) as err:
+            model.fit(
+                series=series,
+                past_covariates=pc,
+                future_covariates=fc,
+                val_series=series["tg_1"],
+                val_past_covariates=pc,
+                val_future_covariates=fc["fc1"],
+                early_stopping_rounds=2,
+            )
+        msg_expected = (
+            "The dimensions of the (`series`, `future_covariates`, `static_covariates`) between "
+            "the training and validation set do not match."
+        )
+        assert str(err.value) == msg_expected
 
-    @patch.object(darts.models.forecasting.xgboost.xgb.XGBRegressor, "fit")
-    def test_xgboost_with_eval_set(self, xgb_fit_patch):
-        model = XGBModel(lags=4, lags_past_covariates=2)
+        # check that an error is raised if only second validation series are invalid
+        with pytest.raises(ValueError) as err:
+            model.fit(
+                series=series,
+                past_covariates=pc,
+                future_covariates=fc,
+                val_series=[series, series["tg_1"]],
+                val_past_covariates=[pc, pc],
+                val_future_covariates=[fc, fc["fc1"]],
+                early_stopping_rounds=2,
+            )
+        msg_expected = (
+            "The dimensions of the (`series`, `future_covariates`, `static_covariates`) between "
+            "the training and validation set at sequence/list index `1` do not match."
+        )
+        assert str(err.value) == msg_expected
+
         model.fit(
-            series=self.sine_univariate1,
-            past_covariates=self.sine_multivariate1,
-            val_series=self.sine_univariate1,
-            val_past_covariates=self.sine_multivariate1,
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            val_series=series,
+            val_past_covariates=pc,
+            val_future_covariates=fc,
             early_stopping_rounds=2,
         )
+        # fit called 6 times (3 quantiles * 2 target features)
+        assert fit_patch.call_count == 6
 
-        xgb_fit_patch.assert_called_once()
-        assert xgb_fit_patch.call_args[1]["eval_set"] is not None
-        assert xgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
+        train_set = fit_patch.call_args[0]
+        eval_set = fit_patch.call_args[1]["eval_set"]
+        assert eval_set is not None
+        # xbg requires a list of eval sets
+        if issubclass(model_cls, XGBModel):
+            assert isinstance(eval_set, list)
+            eval_set = eval_set[0]
+        assert isinstance(eval_set, tuple) and len(eval_set) == 2
+
+        # check same number of features for each dataset
+        assert eval_set[0].shape[1:] == train_set[0].shape[1:]
+        assert eval_set[1].shape[1:] == train_set[1].shape[1:]
+        assert fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_integer_indexed_series(self, mode):
@@ -2631,69 +2678,51 @@ class TestRegressionModels:
         if train_past is None:
             assert infer_past is None and refer_past is None
         else:
-            assert all(
-                [isinstance(el, list) for el in [train_past, infer_past, refer_past]]
-            )
+            assert all([
+                isinstance(el, list) for el in [train_past, infer_past, refer_past]
+            ])
             assert len(train_past) == len(infer_past) == len(refer_past)
-            assert all(
-                [
-                    t_p.start_time() == tp_s
-                    for t_p, tp_s in zip(train_past, t_train["pc_start"])
-                ]
-            )
-            assert all(
-                [
-                    t_p.end_time() == tp_e
-                    for t_p, tp_e in zip(train_past, t_train["pc_end"])
-                ]
-            )
-            assert all(
-                [
-                    i_p.start_time() == ip_s
-                    for i_p, ip_s in zip(infer_past, t_infer["pc_start"])
-                ]
-            )
-            assert all(
-                [
-                    i_p.end_time() == ip_e
-                    for i_p, ip_e in zip(infer_past, t_infer["pc_end"])
-                ]
-            )
+            assert all([
+                t_p.start_time() == tp_s
+                for t_p, tp_s in zip(train_past, t_train["pc_start"])
+            ])
+            assert all([
+                t_p.end_time() == tp_e
+                for t_p, tp_e in zip(train_past, t_train["pc_end"])
+            ])
+            assert all([
+                i_p.start_time() == ip_s
+                for i_p, ip_s in zip(infer_past, t_infer["pc_start"])
+            ])
+            assert all([
+                i_p.end_time() == ip_e
+                for i_p, ip_e in zip(infer_past, t_infer["pc_end"])
+            ])
 
         if train_future is None:
             assert infer_future is None and refer_future is None
         else:
-            assert all(
-                [
-                    isinstance(el, list)
-                    for el in [train_future, infer_future, refer_future]
-                ]
-            )
+            assert all([
+                isinstance(el, list)
+                for el in [train_future, infer_future, refer_future]
+            ])
             assert len(train_future) == len(infer_future) == len(refer_future)
-            assert all(
-                [
-                    t_f.start_time() == tf_s
-                    for t_f, tf_s in zip(train_future, t_train["fc_start"])
-                ]
-            )
-            assert all(
-                [
-                    t_f.end_time() == tf_e
-                    for t_f, tf_e in zip(train_future, t_train["fc_end"])
-                ]
-            )
-            assert all(
-                [
-                    i_f.start_time() == if_s
-                    for i_f, if_s in zip(infer_future, t_infer["fc_start"])
-                ]
-            )
-            assert all(
-                [
-                    i_f.end_time() == if_e
-                    for i_f, if_e in zip(infer_future, t_infer["fc_end"])
-                ]
-            )
+            assert all([
+                t_f.start_time() == tf_s
+                for t_f, tf_s in zip(train_future, t_train["fc_start"])
+            ])
+            assert all([
+                t_f.end_time() == tf_e
+                for t_f, tf_e in zip(train_future, t_train["fc_end"])
+            ])
+            assert all([
+                i_f.start_time() == if_s
+                for i_f, if_s in zip(infer_future, t_infer["fc_start"])
+            ])
+            assert all([
+                i_f.end_time() == if_e
+                for i_f, if_e in zip(infer_future, t_infer["fc_end"])
+            ])
 
     @staticmethod
     def helper_test_encoders_settings(model, example: str):
@@ -2720,31 +2749,6 @@ class TestRegressionModels:
             assert model.encoders.takes_future_covariates
             assert len(model.encoders.future_encoders) == 1
             assert isinstance(model.encoders.future_encoders[0], FutureCyclicEncoder)
-
-    @pytest.mark.skipif(not cb_available, reason="requires catboost")
-    @patch.object(
-        (
-            darts.models.forecasting.catboost_model.CatBoostRegressor
-            if cb_available
-            else darts.models.utils.NotImportedModule
-        ),
-        "fit",
-    )
-    def test_catboost_model_with_eval_set(self, lgb_fit_patch):
-        """Test whether these evaluation set parameters are passed to CatBoostRegressor"""
-        model = CatBoostModel(lags=4, lags_past_covariates=2)
-        model.fit(
-            series=self.sine_univariate1,
-            past_covariates=self.sine_multivariate1,
-            val_series=self.sine_univariate1,
-            val_past_covariates=self.sine_multivariate1,
-            early_stopping_rounds=2,
-        )
-
-        lgb_fit_patch.assert_called_once()
-
-        assert lgb_fit_patch.call_args[1]["eval_set"] is not None
-        assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
     @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
     def test_quality_forecast_with_categorical_covariates(self):
@@ -2816,12 +2820,10 @@ class TestRegressionModels:
             # categorical covariates make model aware of the underlying curve type -> improves rmse
             rmses_no_cat = rmse(train_series_cat, preds_no_cat)
             rmses_cat = rmse(train_series_cat, preds_cat)
-            assert all(
-                [
-                    rmse_no_cat > rmse_cat
-                    for rmse_no_cat, rmse_cat in zip(rmses_no_cat, rmses_cat)
-                ]
-            )
+            assert all([
+                rmse_no_cat > rmse_cat
+                for rmse_no_cat, rmse_cat in zip(rmses_no_cat, rmses_cat)
+            ])
 
     @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
     @pytest.mark.parametrize(

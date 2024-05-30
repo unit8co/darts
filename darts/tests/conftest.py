@@ -4,6 +4,18 @@ import tempfile
 
 import pytest
 
+from darts.logging import get_logger
+
+logger = get_logger(__name__)
+
+try:
+    import torch  # noqa: F401
+
+    TORCH_AVAILABLE = True
+except ImportError:
+    logger.warning("Torch not installed - Some tests will be skipped.")
+    TORCH_AVAILABLE = False
+
 tfm_kwargs = {
     "pl_trainer_kwargs": {
         "accelerator": "cpu",

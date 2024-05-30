@@ -311,7 +311,6 @@ class ShapExplainer(_ForecastingModelExplainer):
         feature_values_list = []
         shap_explanation_object_list = []
         for idx, foreground_ts in enumerate(foreground_series):
-
             foreground_past_cov_ts = None
             foreground_future_cov_ts = None
 
@@ -573,7 +572,6 @@ class _RegressionShapExplainers:
         background_num_samples: Optional[int] = None,
         **kwargs,
     ):
-
         self.model = model
         self.target_dim = self.model.input_dim["target"]
         self.is_multioutputregressor = isinstance(
@@ -645,7 +643,6 @@ class _RegressionShapExplainers:
         # native multiOutput estimators
         shap_explanations = {}
         if self.is_multioutputregressor:
-
             for h in horizons:
                 tmp_n = {}
                 for t_idx, t in enumerate(self.target_components):
@@ -692,7 +689,6 @@ class _RegressionShapExplainers:
         shap_method: Optional[ShapMethod] = None,
         **kwargs,
     ):
-
         model_name = type(model_sklearn).__name__
 
         # no shap methods - we need to take the default one

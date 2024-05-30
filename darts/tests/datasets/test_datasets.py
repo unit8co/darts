@@ -5,35 +5,34 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
-from darts.logging import get_logger
+from darts.tests.conftest import TORCH_AVAILABLE
 from darts.utils.timeseries_generation import gaussian_timeseries
+from darts.utils.utils import freqs
 
-logger = get_logger(__name__)
-
-try:
-    from darts.utils.data import (  # noqa: F401
-        DualCovariatesInferenceDataset,
-        DualCovariatesSequentialDataset,
-        DualCovariatesShiftedDataset,
-        FutureCovariatesInferenceDataset,
-        FutureCovariatesSequentialDataset,
-        FutureCovariatesShiftedDataset,
-        HorizonBasedDataset,
-        MixedCovariatesInferenceDataset,
-        MixedCovariatesSequentialDataset,
-        MixedCovariatesShiftedDataset,
-        PastCovariatesInferenceDataset,
-        PastCovariatesSequentialDataset,
-        PastCovariatesShiftedDataset,
-        SplitCovariatesInferenceDataset,
-        SplitCovariatesSequentialDataset,
-        SplitCovariatesShiftedDataset,
-    )
-except ImportError:
+if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+
+from darts.utils.data import (  # noqa: F401
+    DualCovariatesInferenceDataset,
+    DualCovariatesSequentialDataset,
+    DualCovariatesShiftedDataset,
+    FutureCovariatesInferenceDataset,
+    FutureCovariatesSequentialDataset,
+    FutureCovariatesShiftedDataset,
+    HorizonBasedDataset,
+    MixedCovariatesInferenceDataset,
+    MixedCovariatesSequentialDataset,
+    MixedCovariatesShiftedDataset,
+    PastCovariatesInferenceDataset,
+    PastCovariatesSequentialDataset,
+    PastCovariatesShiftedDataset,
+    SplitCovariatesInferenceDataset,
+    SplitCovariatesSequentialDataset,
+    SplitCovariatesShiftedDataset,
+)
 
 
 class TestDataset:
@@ -556,12 +555,10 @@ class TestDataset:
             batch_shift = batch_shift[:future_idx] + batch_shift[future_idx + 1 :]
 
         # without future part, the input will be identical between regular, and shifted dataset
-        assert all(
-            [
-                np.all(el_reg == el_shift)
-                for el_reg, el_shift in zip(batch_reg[:-1], batch_shift[:-1])
-            ]
-        )
+        assert all([
+            np.all(el_reg == el_shift)
+            for el_reg, el_shift in zip(batch_reg[:-1], batch_shift[:-1])
+        ])
 
     def test_past_covariates_sequential_dataset(self):
         # one target series
@@ -1415,12 +1412,10 @@ class TestDataset:
         batch_reg = batch_reg[:-1] + (batch_reg[-1][ocs:],)
 
         # without future part, the input will be identical between regular, and shifted dataset
-        assert all(
-            [
-                np.all(el_reg == el_shift)
-                for el_reg, el_shift in zip(batch_reg[:-1], batch_shift[:-1])
-            ]
-        )
+        assert all([
+            np.all(el_reg == el_shift)
+            for el_reg, el_shift in zip(batch_reg[:-1], batch_shift[:-1])
+        ])
 
     def test_get_matching_index(self):
         from darts.utils.data.utils import _get_matching_index
@@ -1435,8 +1430,8 @@ class TestDataset:
         assert _get_matching_index(target, cov, idx=15) == 5
 
         # check non-dividable freq
-        times1 = pd.date_range(start="20100101", end="20120101", freq="M")
-        times2 = pd.date_range(start="20090101", end="20110601", freq="M")
+        times1 = pd.date_range(start="20100101", end="20120101", freq=freqs["ME"])
+        times2 = pd.date_range(start="20090101", end="20110601", freq=freqs["ME"])
         target = TimeSeries.from_times_and_values(
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)

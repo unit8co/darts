@@ -151,9 +151,10 @@ class TestLocalFittableDataTransformer:
 
         # Don't have different params for different jobs:
         mock = self.DataTransformerMock(scale=2, translation=10, parallel_params=False)
-        (transformed_1, transformed_2) = mock.fit_transform(
-            (test_input_1, test_input_2)
-        )
+        (transformed_1, transformed_2) = mock.fit_transform((
+            test_input_1,
+            test_input_2,
+        ))
         # 2 * 1 + 10 = 12
         assert transformed_1 == constant_timeseries(value=12, length=10)
         # 2 * 2 + 10 = 14
@@ -163,9 +164,10 @@ class TestLocalFittableDataTransformer:
         mock = self.DataTransformerMock(
             scale=(2, 3), translation=10, parallel_params=["_scale"]
         )
-        (transformed_1, transformed_2) = mock.fit_transform(
-            (test_input_1, test_input_2)
-        )
+        (transformed_1, transformed_2) = mock.fit_transform((
+            test_input_1,
+            test_input_2,
+        ))
         # 2 * 1 + 10 = 12
         assert transformed_1 == constant_timeseries(value=12, length=10)
         # 3 * 2 + 10 = 16
@@ -184,9 +186,10 @@ class TestLocalFittableDataTransformer:
             mask_components=(False, False),
             parallel_params=True,
         )
-        (transformed_1, transformed_2) = mock.fit_transform(
-            (test_input_1, test_input_2)
-        )
+        (transformed_1, transformed_2) = mock.fit_transform((
+            test_input_1,
+            test_input_2,
+        ))
         # 2 * 1 + 10 = 12
         assert transformed_1 == constant_timeseries(value=12, length=10)
         # 3 * 2 + 11 = 17
@@ -303,7 +306,7 @@ class TestGlobalFittableDataTransformer:
         def ts_fit(
             series: Union[TimeSeries, Sequence[TimeSeries]],
             params: Mapping[str, Any],
-            **kwargs
+            **kwargs,
         ):
             """
             'Fits' transform by computing time-average of each sample and

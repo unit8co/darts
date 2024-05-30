@@ -12,73 +12,83 @@ import darts.utils.timeseries_generation as tg
 from darts import TimeSeries
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.transformers import BoxCox, Scaler
-from darts.logging import get_logger
 from darts.metrics import mape
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 
-logger = get_logger(__name__)
-
-try:
-    import torch
-    from pytorch_lightning.callbacks import Callback
-    from pytorch_lightning.loggers.logger import DummyLogger
-    from pytorch_lightning.tuner.lr_finder import _LRFinder
-    from torchmetrics import (
-        MeanAbsoluteError,
-        MeanAbsolutePercentageError,
-        MetricCollection,
-    )
-
-    from darts.models import (
-        BlockRNNModel,
-        DLinearModel,
-        GlobalNaiveAggregate,
-        GlobalNaiveDrift,
-        GlobalNaiveSeasonal,
-        NBEATSModel,
-        NHiTSModel,
-        NLinearModel,
-        RNNModel,
-        TCNModel,
-        TFTModel,
-        TiDEModel,
-        TransformerModel,
-        TSMixerModel,
-    )
-    from darts.models.components.layer_norm_variants import RINorm
-    from darts.utils.likelihood_models import (
-        GaussianLikelihood,
-        LaplaceLikelihood,
-        Likelihood,
-    )
-
-    kwargs = {
-        "input_chunk_length": 10,
-        "output_chunk_length": 1,
-        "n_epochs": 1,
-        "pl_trainer_kwargs": {"fast_dev_run": True, **tfm_kwargs["pl_trainer_kwargs"]},
-    }
-    models = [
-        (BlockRNNModel, kwargs),
-        (DLinearModel, kwargs),
-        (NBEATSModel, kwargs),
-        (NHiTSModel, kwargs),
-        (NLinearModel, kwargs),
-        (RNNModel, {"training_length": 10, **kwargs}),
-        (TCNModel, kwargs),
-        (TFTModel, {"add_relative_index": 2, **kwargs}),
-        (TiDEModel, kwargs),
-        (TransformerModel, kwargs),
-        (TSMixerModel, kwargs),
-        (GlobalNaiveSeasonal, kwargs),
-        (GlobalNaiveAggregate, kwargs),
-        (GlobalNaiveDrift, kwargs),
-    ]
-except ImportError:
+if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import torch
+from pytorch_lightning.callbacks import Callback
+from pytorch_lightning.loggers.logger import DummyLogger
+from pytorch_lightning.tuner.lr_finder import _LRFinder
+from torchmetrics import (
+    MeanAbsoluteError,
+    MeanAbsolutePercentageError,
+    Metric,
+    MetricCollection,
+)
+
+from darts.models import (
+    BlockRNNModel,
+    DLinearModel,
+    GlobalNaiveAggregate,
+    GlobalNaiveDrift,
+    GlobalNaiveSeasonal,
+    NBEATSModel,
+    NHiTSModel,
+    NLinearModel,
+    RNNModel,
+    TCNModel,
+    TFTModel,
+    TiDEModel,
+    TransformerModel,
+    TSMixerModel,
+)
+from darts.models.components.layer_norm_variants import RINorm
+from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
+from darts.utils.likelihood_models import (
+    GaussianLikelihood,
+    LaplaceLikelihood,
+    Likelihood,
+)
+
+kwargs = {
+    "input_chunk_length": 10,
+    "output_chunk_length": 1,
+    "n_epochs": 1,
+    "pl_trainer_kwargs": {"fast_dev_run": True, **tfm_kwargs["pl_trainer_kwargs"]},
+}
+models = [
+    (BlockRNNModel, kwargs),
+    (DLinearModel, kwargs),
+    (NBEATSModel, kwargs),
+    (NHiTSModel, kwargs),
+    (NLinearModel, kwargs),
+    (RNNModel, {"training_length": 10, **kwargs}),
+    (TCNModel, kwargs),
+    (TFTModel, {"add_relative_index": 2, **kwargs}),
+    (TiDEModel, kwargs),
+    (TransformerModel, kwargs),
+    (TSMixerModel, kwargs),
+    (GlobalNaiveSeasonal, kwargs),
+    (GlobalNaiveAggregate, kwargs),
+    (GlobalNaiveDrift, kwargs),
+]
+
+
+class NumsCalled(Metric):
+    def __init__(self):
+        super().__init__()
+        self.add_state("preds", default=[], dist_reduce_fx="cat")
+
+    def update(self, preds, target) -> None:
+        self.preds.append(preds)
+
+    def compute(self):
+        return len(self.preds)
 
 
 class TestTorchForecastingModel:
@@ -92,7 +102,11 @@ class TestTorchForecastingModel:
     def test_save_model_parameters(self):
         # check if re-created model has same params as original
         model = RNNModel(12, "RNN", 10, 10, **tfm_kwargs)
-        assert model._model_params, model.untrained_model()._model_params
+        params_old = model.model_params
+        params_new = model.untrained_model().model_params
+
+        assert params_old.keys() == params_new.keys()
+        assert all([params_old[k] == params_new[k] for k in params_old])
 
     @patch(
         "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.save"
@@ -1161,7 +1175,6 @@ class TestTorchForecastingModel:
         assert len(loaded_model.model.train_metrics) == 1
 
     def test_optimizers(self):
-
         optimizers = [
             (torch.optim.Adam, {"lr": 0.001}),
             (torch.optim.SGD, {"lr": 0.001}),
@@ -1223,9 +1236,10 @@ class TestTorchForecastingModel:
 
     def test_metrics(self):
         metric = MeanAbsolutePercentageError()
-        metric_collection = MetricCollection(
-            [MeanAbsolutePercentageError(), MeanAbsoluteError()]
-        )
+        metric_collection = MetricCollection([
+            MeanAbsolutePercentageError(),
+            MeanAbsoluteError(),
+        ])
 
         model_kwargs = {
             "logger": DummyLogger(),
@@ -1270,9 +1284,10 @@ class TestTorchForecastingModel:
 
     def test_metrics_w_likelihood(self):
         metric = MeanAbsolutePercentageError()
-        metric_collection = MetricCollection(
-            [MeanAbsolutePercentageError(), MeanAbsoluteError()]
-        )
+        metric_collection = MetricCollection([
+            MeanAbsolutePercentageError(),
+            MeanAbsoluteError(),
+        ])
         model_kwargs = {
             "logger": DummyLogger(),
             "log_every_n_steps": 1,
@@ -1330,6 +1345,20 @@ class TestTorchForecastingModel:
                 **tfm_kwargs,
             )
             model.fit(self.series)
+
+    def test_stateful_metrics(self):
+        torch_metrics = NumsCalled()
+        model = RNNModel(
+            12,
+            "RNN",
+            10,
+            10,
+            n_epochs=1,
+            torch_metrics=torch_metrics,
+            **tfm_kwargs,
+        )
+        model.fit(self.series)
+        assert model.model.trainer.logged_metrics["train_NumsCalled"] > 1
 
     @pytest.mark.slow
     def test_lr_find(self):
@@ -1440,6 +1469,107 @@ class TestTorchForecastingModel:
             _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
 
     @pytest.mark.parametrize("model_config", models)
+    def test_val_set(self, model_config):
+        """Test whether these evaluation set parameters are passed to the PyTorch Lightning Trainer"""
+        with patch("pytorch_lightning.Trainer.fit") as fit_patch:
+            self.helper_check_val_set(*model_config, fit_patch)
+
+    def helper_check_val_set(self, model_cls, model_kwargs, fit_patch):
+        # naive models don't call the Trainer
+        if issubclass(model_cls, _GlobalNaiveModel):
+            return
+
+        series1 = tg.sine_timeseries(length=11, column_name="tg_1")
+        series2 = tg.sine_timeseries(length=11, column_name="tg_2") / 2 + 10
+        series = series1.stack(series2)
+        series = series.with_static_covariates(
+            pd.DataFrame({"sc1": [0, 1], "sc2": [3, 4]})
+        )
+        pc = series1 * 10 - 3
+        fc = TimeSeries.from_times_and_values(
+            times=series.time_index, values=series.values() * -1, columns=["fc1", "fc2"]
+        )
+        model = model_cls(**model_kwargs)
+
+        # check that an error is raised with an invalid validation series
+        fit_kwargs = {
+            "series": series,
+            "val_series": series["tg_1"],
+        }
+        invalid_series_txt = "`series`"
+        if model.supports_past_covariates:
+            fit_kwargs["past_covariates"] = pc
+            fit_kwargs["val_past_covariates"] = pc
+        if model.supports_future_covariates:
+            fit_kwargs["future_covariates"] = fc
+            fit_kwargs["val_future_covariates"] = fc["fc1"]
+            invalid_series_txt += ", `future_covariates`"
+        if model.supports_static_covariates:
+            invalid_series_txt += ", `static_covariates`"
+
+        with pytest.raises(ValueError) as err:
+            model.fit(**fit_kwargs)
+        msg_expected = (
+            f"The dimensions of the ({invalid_series_txt}) between "
+            "the training and validation set do not match."
+        )
+        assert str(err.value) == msg_expected
+
+        # check that an error is raised if only second validation series are invalid
+        fit_kwargs = {
+            "series": series,
+            "val_series": [series, series["tg_1"]],
+        }
+        invalid_series_txt = "`series`"
+        if model.supports_past_covariates:
+            fit_kwargs["past_covariates"] = pc
+            fit_kwargs["val_past_covariates"] = [pc, pc]
+        if model.supports_future_covariates:
+            fit_kwargs["future_covariates"] = fc
+            fit_kwargs["val_future_covariates"] = [fc, fc["fc1"]]
+            invalid_series_txt += ", `future_covariates`"
+        if model.supports_static_covariates:
+            invalid_series_txt += ", `static_covariates`"
+
+        with pytest.raises(ValueError) as err:
+            model.fit(**fit_kwargs)
+        msg_expected = (
+            f"The dimensions of the ({invalid_series_txt}) between "
+            "the training and validation set at sequence/list index `1` do not match."
+        )
+        assert str(err.value) == msg_expected
+
+        fit_kwargs = {"series": series, "val_series": series}
+        if model.supports_past_covariates:
+            fit_kwargs["past_covariates"] = pc
+            fit_kwargs["val_past_covariates"] = pc
+        if model.supports_future_covariates:
+            fit_kwargs["future_covariates"] = fc
+            fit_kwargs["val_future_covariates"] = fc
+
+        model.fit(**fit_kwargs)
+        # fit called only once
+        assert fit_patch.call_count == 1
+
+        train_ds = fit_patch.call_args[1]["train_dataloaders"].dataset
+        val_dl = fit_patch.call_args[1]["val_dataloaders"]
+        assert val_dl is not None
+        val_ds = val_dl.dataset
+
+        # check same dataset type
+        assert isinstance(val_ds, train_ds.__class__)
+
+        # check that input in first batch have same dimensions
+        train_sample = train_ds[0]
+        val_sample = val_ds[0]
+        assert len(val_sample) == len(train_sample)
+        for x_train, x_val in zip(train_sample, val_sample):
+            if x_train is None:
+                assert x_val is None
+            else:
+                assert x_val.shape[1:] == x_train.shape[1:]
+
+    @pytest.mark.parametrize("model_config", models)
     def test_rin(self, model_config):
         model_cls, kwargs = model_config
         model_no_rin = model_cls(use_reversible_instance_norm=False, **kwargs)
@@ -1479,12 +1609,10 @@ class TestTorchForecastingModel:
             @staticmethod
             def _check_dropout_activity(pl_module, expected_active: bool):
                 dropouts = pl_module._get_mc_dropout_modules()
-                assert all(
-                    [
-                        dropout.mc_dropout_enabled is expected_active
-                        for dropout in dropouts
-                    ]
-                )
+                assert all([
+                    dropout.mc_dropout_enabled is expected_active
+                    for dropout in dropouts
+                ])
 
             def on_train_batch_start(self, *args, **kwargs) -> None:
                 self._check_dropout_activity(args[1], expected_active=True)
@@ -1671,6 +1799,29 @@ class TestTorchForecastingModel:
                 }
                 _ = model_fc_shift.predict(n=ocl, **add_covs)
             assert f"provided {cov_name} covariates at dataset index" in str(err.value)
+
+    @pytest.mark.parametrize("config", itertools.product(models, [2, 3, 4]))
+    def test_multi_ts_prediction(self, config):
+        (model_cls, model_kwargs), n = config
+        model_kwargs = copy.deepcopy(model_kwargs)
+        model_kwargs["output_chunk_length"] = 3
+        series = tg.linear_timeseries(
+            length=model_kwargs["input_chunk_length"]
+            + model_kwargs["output_chunk_length"]
+        )
+        model = model_cls(**model_kwargs)
+        model.fit(series)
+        # test with more series that `n`
+        n_series_more = 5
+        pred = model.predict(n=n, series=[series] * n_series_more)
+        assert len(pred) == n_series_more
+        assert all(len(p) == n for p in pred)
+
+        # test with less series that `n`
+        n_series_less = 1
+        pred = model.predict(n=n, series=[series] * n_series_less)
+        assert len(pred) == n_series_less
+        assert all(len(p) == n for p in pred)
 
     def helper_equality_encoders(
         self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]

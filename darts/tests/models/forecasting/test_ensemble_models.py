@@ -13,19 +13,14 @@ from darts.models import (
     StatsForecastAutoARIMA,
     Theta,
 )
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
-try:
+if TORCH_AVAILABLE:
     from darts.models import DLinearModel, NBEATSModel, RNNModel, TCNModel
     from darts.utils.likelihood_models import QuantileRegression
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning("Torch not installed - Some ensemble models tests will be skipped.")
-    TORCH_AVAILABLE = False
 
 
 def _make_ts(start_value=0, n=100):
@@ -121,9 +116,10 @@ class TestEnsembleModels:
             lags=5, lags_past_covariates=6, lags_future_covariates=[6, 9]
         )
 
-        ensemble = NaiveEnsembleModel(
-            [model1, model2]
-        )  # test if infers extreme lags is okay
+        ensemble = NaiveEnsembleModel([
+            model1,
+            model2,
+        ])  # test if infers extreme lags is okay
         expected = (-5, 0, -6, -1, 6, 9, 0, None)
         assert expected == ensemble.extreme_lags
 
@@ -147,12 +143,18 @@ class TestEnsembleModels:
             NaiveEnsembleModel([NaiveDrift, NaiveSeasonal, Theta, ExponentialSmoothing])
         # one model is not instantiated
         with pytest.raises(ValueError):
-            NaiveEnsembleModel(
-                [NaiveDrift(), NaiveSeasonal, Theta(), ExponentialSmoothing()]
-            )
-        NaiveEnsembleModel(
-            [NaiveDrift(), NaiveSeasonal(), Theta(), ExponentialSmoothing()]
-        )
+            NaiveEnsembleModel([
+                NaiveDrift(),
+                NaiveSeasonal,
+                Theta(),
+                ExponentialSmoothing(),
+            ])
+        NaiveEnsembleModel([
+            NaiveDrift(),
+            NaiveSeasonal(),
+            Theta(),
+            ExponentialSmoothing(),
+        ])
 
     def test_call_predict_local_models(self):
         naive_ensemble = NaiveEnsembleModel([NaiveSeasonal(), Theta()])
@@ -268,17 +270,19 @@ class TestEnsembleModels:
             naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
 
         # one model has a different likelihood
-        naive_ensemble = NaiveEnsembleModel(
-            [m_proba_quantile1.untrained_model(), m_proba_poisson]
-        )
+        naive_ensemble = NaiveEnsembleModel([
+            m_proba_quantile1.untrained_model(),
+            m_proba_poisson,
+        ])
         naive_ensemble.fit(self.series1 + self.series2)
         with pytest.raises(ValueError):
             naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
 
         # n > shortest output_chunk_length
-        naive_ensemble = NaiveEnsembleModel(
-            [m_proba_quantile1.untrained_model(), m_proba_quantile2]
-        )
+        naive_ensemble = NaiveEnsembleModel([
+            m_proba_quantile1.untrained_model(),
+            m_proba_quantile2,
+        ])
         naive_ensemble.fit(self.series1 + self.series2)
         with pytest.raises(ValueError):
             naive_ensemble.predict(n=4, predict_likelihood_parameters=True)
@@ -301,15 +305,16 @@ class TestEnsembleModels:
             input_chunk_length=4,
             output_chunk_length=2,
             likelihood=QuantileRegression([0.05, 0.5, 0.95]),
-            **tfm_kwargs
+            **tfm_kwargs,
         )
 
         naive_ensemble = NaiveEnsembleModel([m_proba_quantile1, m_proba_quantile2])
         naive_ensemble.fit(self.series1)
         pred_ens = naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
-        naive_ensemble = NaiveEnsembleModel(
-            [m_proba_quantile2.untrained_model(), m_proba_quantile3.untrained_model()]
-        )
+        naive_ensemble = NaiveEnsembleModel([
+            m_proba_quantile2.untrained_model(),
+            m_proba_quantile3.untrained_model(),
+        ])
         naive_ensemble.fit(self.series1)
         pred_mix_ens = naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
         assert pred_ens.time_index == pred_mix_ens.time_index
@@ -338,7 +343,7 @@ class TestEnsembleModels:
             input_chunk_length=4,
             output_chunk_length=2,
             likelihood=QuantileRegression([0.05, 0.5, 0.95]),
-            **tfm_kwargs
+            **tfm_kwargs,
         )
 
         multivariate_series = self.series1.stack(self.series2)
@@ -346,9 +351,10 @@ class TestEnsembleModels:
         naive_ensemble = NaiveEnsembleModel([m_proba_quantile1, m_proba_quantile2])
         naive_ensemble.fit(multivariate_series)
         pred_ens = naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
-        naive_ensemble = NaiveEnsembleModel(
-            [m_proba_quantile2.untrained_model(), m_proba_quantile3.untrained_model()]
-        )
+        naive_ensemble = NaiveEnsembleModel([
+            m_proba_quantile2.untrained_model(),
+            m_proba_quantile3.untrained_model(),
+        ])
         naive_ensemble.fit(multivariate_series)
         pred_mix_ens = naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
         assert pred_ens.time_index == pred_mix_ens.time_index
@@ -384,13 +390,11 @@ class TestEnsembleModels:
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_call_predict_global_models_univariate_input_no_covariates(self):
-        naive_ensemble = NaiveEnsembleModel(
-            [
-                RNNModel(12, n_epochs=1, **tfm_kwargs),
-                TCNModel(10, 2, n_epochs=1, **tfm_kwargs),
-                NBEATSModel(10, 2, n_epochs=1, **tfm_kwargs),
-            ]
-        )
+        naive_ensemble = NaiveEnsembleModel([
+            RNNModel(12, n_epochs=1, **tfm_kwargs),
+            TCNModel(10, 2, n_epochs=1, **tfm_kwargs),
+            NBEATSModel(10, 2, n_epochs=1, **tfm_kwargs),
+        ])
         with pytest.raises(Exception):
             naive_ensemble.predict(5)
 
@@ -399,25 +403,21 @@ class TestEnsembleModels:
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_call_predict_global_models_multivariate_input_no_covariates(self):
-        naive_ensemble = NaiveEnsembleModel(
-            [
-                RNNModel(12, n_epochs=1, **tfm_kwargs),
-                TCNModel(10, 2, n_epochs=1, **tfm_kwargs),
-                NBEATSModel(10, 2, n_epochs=1, **tfm_kwargs),
-            ]
-        )
+        naive_ensemble = NaiveEnsembleModel([
+            RNNModel(12, n_epochs=1, **tfm_kwargs),
+            TCNModel(10, 2, n_epochs=1, **tfm_kwargs),
+            NBEATSModel(10, 2, n_epochs=1, **tfm_kwargs),
+        ])
         naive_ensemble.fit(self.seq1)
         naive_ensemble.predict(n=5, series=self.seq1)
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_call_predict_global_models_multivariate_input_with_covariates(self):
-        naive_ensemble = NaiveEnsembleModel(
-            [
-                RNNModel(12, n_epochs=1, **tfm_kwargs),
-                TCNModel(10, 2, n_epochs=1, **tfm_kwargs),
-                NBEATSModel(10, 2, n_epochs=1, **tfm_kwargs),
-            ]
-        )
+        naive_ensemble = NaiveEnsembleModel([
+            RNNModel(12, n_epochs=1, **tfm_kwargs),
+            TCNModel(10, 2, n_epochs=1, **tfm_kwargs),
+            NBEATSModel(10, 2, n_epochs=1, **tfm_kwargs),
+        ])
         naive_ensemble.fit(self.seq1, self.cov1)
         predict_series = [s[:12] for s in self.seq1]
         predict_covariates = [c[:14] for c in self.cov1]
@@ -428,9 +428,10 @@ class TestEnsembleModels:
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_input_models_mixed(self):
         # NaiveDrift is local, RNNModel is global
-        naive_ensemble = NaiveEnsembleModel(
-            [NaiveDrift(), RNNModel(12, n_epochs=1, **tfm_kwargs)]
-        )
+        naive_ensemble = NaiveEnsembleModel([
+            NaiveDrift(),
+            RNNModel(12, n_epochs=1, **tfm_kwargs),
+        ])
         # ensemble is neither local, nor global
         assert not naive_ensemble.is_local_ensemble
         assert not naive_ensemble.is_global_ensemble
@@ -442,39 +443,37 @@ class TestEnsembleModels:
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_call_predict_different_covariates_support(self):
         # AutoARIMA support future covariates only
-        local_ensemble_one_covs = NaiveEnsembleModel(
-            [NaiveDrift(), StatsForecastAutoARIMA()]
-        )
+        local_ensemble_one_covs = NaiveEnsembleModel([
+            NaiveDrift(),
+            StatsForecastAutoARIMA(),
+        ])
         with pytest.raises(ValueError):
             local_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
         local_ensemble_one_covs.fit(self.series1, future_covariates=self.series2)
 
         # RNN support future covariates only
-        mixed_ensemble_one_covs = NaiveEnsembleModel(
-            [NaiveDrift(), RNNModel(12, n_epochs=1, **tfm_kwargs)]
-        )
+        mixed_ensemble_one_covs = NaiveEnsembleModel([
+            NaiveDrift(),
+            RNNModel(12, n_epochs=1, **tfm_kwargs),
+        ])
         with pytest.raises(ValueError):
             mixed_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
         mixed_ensemble_one_covs.fit(self.series1, future_covariates=self.series2)
 
         # both models support future covariates only
-        mixed_ensemble_future_covs = NaiveEnsembleModel(
-            [
-                StatsForecastAutoARIMA(),
-                RNNModel(12, n_epochs=1, **tfm_kwargs),
-            ]
-        )
+        mixed_ensemble_future_covs = NaiveEnsembleModel([
+            StatsForecastAutoARIMA(),
+            RNNModel(12, n_epochs=1, **tfm_kwargs),
+        ])
         mixed_ensemble_future_covs.fit(self.series1, future_covariates=self.series2)
         with pytest.raises(ValueError):
             mixed_ensemble_future_covs.fit(self.series1, past_covariates=self.series2)
 
         # RegressionModels with different covariates
-        global_ensemble_both_covs = NaiveEnsembleModel(
-            [
-                LinearRegressionModel(lags=1, lags_past_covariates=[-1]),
-                LinearRegressionModel(lags=1, lags_future_covariates=[1]),
-            ]
-        )
+        global_ensemble_both_covs = NaiveEnsembleModel([
+            LinearRegressionModel(lags=1, lags_past_covariates=[-1]),
+            LinearRegressionModel(lags=1, lags_future_covariates=[1]),
+        ])
         # missing future covariates
         with pytest.raises(ValueError):
             global_ensemble_both_covs.fit(self.series1, past_covariates=self.series2)
@@ -486,16 +485,22 @@ class TestEnsembleModels:
         )
 
     def test_fit_multivar_ts_with_local_models(self):
-        naive = NaiveEnsembleModel(
-            [NaiveDrift(), NaiveSeasonal(), Theta(), ExponentialSmoothing()]
-        )
+        naive = NaiveEnsembleModel([
+            NaiveDrift(),
+            NaiveSeasonal(),
+            Theta(),
+            ExponentialSmoothing(),
+        ])
         with pytest.raises(ValueError):
             naive.fit(self.seq1)
 
     def test_fit_univar_ts_with_covariates_for_local_models(self):
-        naive = NaiveEnsembleModel(
-            [NaiveDrift(), NaiveSeasonal(), Theta(), ExponentialSmoothing()]
-        )
+        naive = NaiveEnsembleModel([
+            NaiveDrift(),
+            NaiveSeasonal(),
+            Theta(),
+            ExponentialSmoothing(),
+        ])
         with pytest.raises(ValueError):
             naive.fit(self.series1, self.series2)
 

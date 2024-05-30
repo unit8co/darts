@@ -9,8 +9,7 @@ import numpy as np
 
 from darts import TimeSeries
 from darts.logging import raise_if_not
-
-from .training_dataset import (
+from darts.utils.data.training_dataset import (
     DualCovariatesTrainingDataset,
     FutureCovariatesTrainingDataset,
     MixedCovariatesTrainingDataset,
@@ -18,7 +17,7 @@ from .training_dataset import (
     SplitCovariatesTrainingDataset,
     TrainingDataset,
 )
-from .utils import CovariateType
+from darts.utils.data.utils import CovariateType
 
 
 class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
@@ -253,7 +252,9 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[
+    def __getitem__(
+        self, idx
+    ) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -354,7 +355,9 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[
+    def __getitem__(
+        self, idx
+    ) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -362,7 +365,6 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
         Optional[np.ndarray],
         np.ndarray,
     ]:
-
         past_target, past_covariate, static_covariate, future_target = self.ds_past[idx]
         _, historic_future_covariate, future_covariate, _, _ = self.ds_dual[idx]
         return (
@@ -462,7 +464,9 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[
+    def __getitem__(
+        self, idx
+    ) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],

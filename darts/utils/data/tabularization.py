@@ -718,12 +718,10 @@ def add_static_covariates_to_lagged_data(
                 if len(features[idx].shape) == 2
                 else (len(features[idx]), len(static_covs), 1)
             )
-            features[idx] = np.hstack(
-                [
-                    features[idx],
-                    np.broadcast_to(static_covs, shape_out[:2]).reshape(shape_out),
-                ]
-            )
+            features[idx] = np.hstack([
+                features[idx],
+                np.broadcast_to(static_covs, shape_out[:2]).reshape(shape_out),
+            ])
 
     if input_not_list:
         features = features[0]
@@ -822,12 +820,9 @@ def create_lagged_component_names(
                 )
 
             # combine all the lags and sort them in ascending order across all the components
-            comp_lags_reordered = np.concatenate(
-                [
-                    np.array(variate_lags[comp_name], dtype=int)
-                    for comp_name in components
-                ]
-            ).argsort()
+            comp_lags_reordered = np.concatenate([
+                np.array(variate_lags[comp_name], dtype=int) for comp_name in components
+            ]).argsort()
             tmp_lagged_feats_names = []
             for name in components:
                 tmp_lagged_feats_names += [
@@ -1337,9 +1332,9 @@ def _extract_component_lags_autoregression(
     identical to tabularization.
     """
     # prepare index to reorder features by lags across components
-    comp_lags_reordered = np.concatenate(
-        [comp_lags for comp_lags in component_lags[series_type].values()]
-    ).argsort()
+    comp_lags_reordered = np.concatenate([
+        comp_lags for comp_lags in component_lags[series_type].values()
+    ]).argsort()
 
     # convert relative lags to absolute
     if series_type == "target":
@@ -1694,7 +1689,7 @@ def get_shared_times(
 
 
 def get_shared_times_bounds(
-    *series_or_times: Sequence[Union[TimeSeries, pd.Index, None]]
+    *series_or_times: Sequence[Union[TimeSeries, pd.Index, None]],
 ) -> Union[Tuple[pd.Index, pd.Index], None]:
     """
     Returns the latest `start_time` and the earliest `end_time` among all non-`None` `series_or_times`;

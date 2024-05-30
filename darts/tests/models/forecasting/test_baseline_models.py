@@ -10,7 +10,7 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
     LocalForecastingModel,
 )
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
@@ -26,12 +26,10 @@ local_models = [
 global_models = []
 
 
-try:
+if TORCH_AVAILABLE:
     import torch
 
     from darts.models import GlobalNaiveAggregate, GlobalNaiveDrift, GlobalNaiveSeasonal
-
-    TORCH_AVAILABLE = True
 
     global_models += [
         (
@@ -72,10 +70,7 @@ try:
     def custom_mean_invalid_output_type(x, dim):
         return torch.mean(x, dim=1).detach().numpy()
 
-except ImportError:
-    logger.warning("Torch not installed - will be skipping Torch models tests")
-    TORCH_AVAILABLE = False
-
+else:
     custom_mean_valid = None
     custom_mean_invalid_out_shape = None
     custom_mean_invalid_signature = None
@@ -421,6 +416,6 @@ class TestBaselineModels:
                 input_chunk_length=icl,
                 output_chunk_length=1,
                 agg_fn=agg_fn,
-                **tfm_kwargs
+                **tfm_kwargs,
             )
         assert err_msg_content in str(err.value)

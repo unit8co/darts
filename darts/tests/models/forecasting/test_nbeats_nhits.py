@@ -1,20 +1,16 @@
 import numpy as np
 import pytest
 
-from darts.logging import get_logger
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
-logger = get_logger(__name__)
-
-try:
-    from darts.models.forecasting.nbeats import NBEATSModel
-    from darts.models.forecasting.nhits import NHiTSModel
-except ImportError:
+if not TORCH_AVAILABLE:
     pytest.skip(
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+from darts.models.forecasting.nbeats import NBEATSModel
+from darts.models.forecasting.nhits import NHiTSModel
 
 
 class TestNbeatsNhitsModel:
@@ -119,7 +115,6 @@ class TestNbeatsNhitsModel:
     def test_nhits_sampling_sizes(self):
         # providing bad sizes or shapes should fail
         with pytest.raises(ValueError):
-
             # wrong number of coeffs for stacks and blocks
             NHiTSModel(
                 input_chunk_length=1,

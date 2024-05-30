@@ -224,7 +224,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             prog_bar=True,
             sync_dist=True,
         )
-        self._calculate_metrics(output, target, self.train_metrics)
+        self._update_metrics(output, target, self.train_metrics)
         return loss
 
     def validation_step(self, val_batch, batch_idx) -> torch.Tensor:
@@ -239,8 +239,14 @@ class PLForecastingModule(pl.LightningModule, ABC):
             prog_bar=True,
             sync_dist=True,
         )
-        self._calculate_metrics(output, target, self.val_metrics)
+        self._update_metrics(output, target, self.val_metrics)
         return loss
+
+    def on_train_epoch_end(self):
+        self._compute_metrics(self.train_metrics)
+
+    def on_validation_epoch_end(self):
+        self._compute_metrics(self.val_metrics)
 
     def on_predict_start(self) -> None:
         # optionally, activate monte carlo dropout for prediction
@@ -286,7 +292,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # repeat prediction procedure for every needed sample
         batch_predictions = []
         while sample_count < self.pred_num_samples:
-
             # make sure we don't produce too many samples
             if sample_count + batch_sample_size > self.pred_num_samples:
                 batch_sample_size = self.pred_num_samples - sample_count
@@ -368,25 +373,31 @@ class PLForecastingModule(pl.LightningModule, ABC):
             # last dimension of model output, for properly computing the loss.
             return self.criterion(output.squeeze(dim=-1), target)
 
-    def _calculate_metrics(self, output, target, metrics):
+    def _update_metrics(self, output, target, metrics):
         if not len(metrics):
             return
 
         if self.likelihood:
-            _metric = metrics(self.likelihood.sample(output), target)
+            metrics.update(self.likelihood.sample(output), target)
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
             # last dimension of model output, for properly computing the metric.
-            _metric = metrics(output.squeeze(dim=-1), target)
+            metrics.update(output.squeeze(dim=-1), target)
 
+    def _compute_metrics(self, metrics):
+        if not len(metrics):
+            return
+
+        res = metrics.compute()
         self.log_dict(
-            _metric,
+            res,
             on_epoch=True,
             on_step=False,
             logger=True,
             prog_bar=True,
             sync_dist=True,
         )
+        metrics.reset()
 
     def configure_optimizers(self):
         """configures optimizers and learning rate schedulers for model optimization."""
@@ -561,7 +572,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     @staticmethod
     def configure_torch_metrics(
-        torch_metrics: Union[torchmetrics.Metric, torchmetrics.MetricCollection]
+        torch_metrics: Union[torchmetrics.Metric, torchmetrics.MetricCollection],
     ) -> torchmetrics.MetricCollection:
         """process the torch_metrics parameter."""
         if torch_metrics is None:
@@ -809,19 +820,17 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             else 0
         )
 
-        input_past, input_future, input_static = self._process_input_batch(
+        input_past, input_future, input_static = self._process_input_batch((
+            past_target,
+            past_covariates,
+            historic_future_covariates,
             (
-                past_target,
-                past_covariates,
-                historic_future_covariates,
-                (
-                    future_covariates[:, :roll_size, :]
-                    if future_covariates is not None
-                    else None
-                ),
-                static_covariates,
-            )
-        )
+                future_covariates[:, :roll_size, :]
+                if future_covariates is not None
+                else None
+            ),
+            static_covariates,
+        ))
 
         out = self._produce_predict_output(x=(input_past, input_future, input_static))[
             :, self.first_prediction_index :, :
@@ -830,13 +839,15 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
         batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
 
-        while prediction_length < n:
-            # we want the last prediction to end exactly at `n` into the future.
+        # predict at least `output_chunk_length` points, so that we use the most recent target values
+        min_n = n if n >= self.output_chunk_length else self.output_chunk_length
+        while prediction_length < min_n:
+            # we want the last prediction to end exactly at `min_n` into the future.
             # this means we may have to truncate the previous prediction and step
             # back the roll size for the last chunk
-            if prediction_length + self.output_chunk_length > n:
+            if prediction_length + self.output_chunk_length > min_n:
                 spillover_prediction_length = (
-                    prediction_length + self.output_chunk_length - n
+                    prediction_length + self.output_chunk_length - min_n
                 )
                 roll_size -= spillover_prediction_length
                 prediction_length -= spillover_prediction_length

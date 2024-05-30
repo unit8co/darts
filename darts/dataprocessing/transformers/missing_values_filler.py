@@ -6,10 +6,9 @@ Missing Values Filler
 from typing import Any, Mapping, Union
 
 from darts import TimeSeries
+from darts.dataprocessing.transformers.base_data_transformer import BaseDataTransformer
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.utils.missing_values import fill_missing_values
-
-from .base_data_transformer import BaseDataTransformer
 
 logger = get_logger(__name__)
 

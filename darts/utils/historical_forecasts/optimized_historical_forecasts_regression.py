@@ -148,8 +148,7 @@ def _optimized_historical_forecasts_last_points_only(
         if model.multi_models:
             forecast = forecast[
                 :,
-                (forecast_horizon - 1)
-                * len(forecast_components) : (forecast_horizon)
+                (forecast_horizon - 1) * len(forecast_components) : (forecast_horizon)
                 * len(forecast_components),
                 :,
             ]

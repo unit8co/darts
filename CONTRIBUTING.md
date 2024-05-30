@@ -64,15 +64,14 @@ and discuss it with some of the core team.
 
 ### Code Formatting and Linting
 
-Darts uses [Black](https://black.readthedocs.io/en/stable/index.html) with default values for automatic code formatting, along with [ruff](https://docs.astral.sh/ruff/).
+Darts uses [Black via Ruff](https://docs.astral.sh/ruff/formatter/) with default values for automatic code formatting, along with [ruff](https://docs.astral.sh/ruff/).
 As part of the checks on pull requests, it is checked whether the code still adheres to the code style.
 To ensure you don't need to worry about formatting and linting when contributing, it is recommended to set up at least one of the following:
 - Integration in git (recommended):
     1. Install the pre-commit hook using `pre-commit install`
-    2. This will install Black formatting and `ruff` linting hooks
+    2. This will install `ruff` linting hooks
     3. The formatters will automatically fix all files and in case of some non-trivial case `ruff` will highlight any remaining problems before committing
 - Integration in your editor:
-    - For [Black](https://black.readthedocs.io/en/stable/integrations/editors.html)
     - For other integrations please look at the documentation for your editor
 
 ### Development environment on Mac with Apple Silicon M1 processor (arm64 architecture)
