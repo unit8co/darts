@@ -992,16 +992,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 f" provided input/output dimensions = {sample_shape(train_sample)}",
             )
 
-        if dataloader_kwargs is None:
-            dataloader_kwargs = {}
-
-        dataloader_kwargs["shuffle"] = True
-        dataloader_kwargs["batch_size"] = self.batch_size
-        dataloader_kwargs["drop_last"] = False
-        dataloader_kwargs["collate_fn"] = self._batch_collate_fn
-
         # Setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
         # least one batch no matter the chosen batch size
+        dataloader_kwargs = {
+            **{
+                "shuffle": True,
+                "batch_size": self.batch_size,
+                "drop_last": False,
+                "collate_fn": self._batch_collate_fn,
+            },
+            **(dataloader_kwargs or {}),
+        }
+
         train_loader = DataLoader(
             train_dataset,
             **dataloader_kwargs,
