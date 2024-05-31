@@ -35,6 +35,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - renamed params `actual_anoamlies` to `anomalies`, and `binary_pred_anomalies` to `pred_anomalies`
     - `darts.ad.utils.show_anomalies_from_scores`:
       - renamed params `series` to `actual_series`, `actual_anomalies` to `anomalies`, `model_output` to `pred_series`, and `anomaly_scores` to `pred_scores`
+    - `TorchForecastingModel` methods `fit()`, `predict()`, `find_lr()` now accept `dataloader_kwargs` parameters instead of `num_loader_workers`
 - Improvements to `TimeSeries` : [#1477](https://github.com/unit8co/darts/pull/1477) by [Dennis Bader](https://github.com/dennisbader).
   - New method `with_times_and_values()`, which returns a new series with a new time index and new values but with identical columns and metadata as the series called from (static covariates, hierarchy).
   - New method `slice_intersect_times()`, which returns the sliced time index of a series, where the index has been intersected with another series.

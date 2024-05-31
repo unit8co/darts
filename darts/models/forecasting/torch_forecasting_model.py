@@ -1218,7 +1218,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         n_jobs: int = 1,
         roll_size: Optional[int] = None,
         num_samples: int = 1,
-        data_loader_kwargs: Optional[Dict[str, Any]] = None,
+        dataloader_kwargs: Optional[Dict[str, Any]] = None,
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
@@ -1280,7 +1280,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
-        data_loader_kwargs
+        dataloader_kwargs
             Optionally, a dictionary of keyword arguments to pass to the PyTorch DataLoader instances used to load the
             training and validation datasets. For more information on DataLoader, check out `this link
             <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
@@ -1367,7 +1367,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             n_jobs=n_jobs,
             roll_size=roll_size,
             num_samples=num_samples,
-            data_loader_kwargs=data_loader_kwargs,
+            dataloader_kwargs=dataloader_kwargs,
             mc_dropout=mc_dropout,
             predict_likelihood_parameters=predict_likelihood_parameters,
         )
@@ -1385,7 +1385,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         n_jobs: int = 1,
         roll_size: Optional[int] = None,
         num_samples: int = 1,
-        data_loader_kwargs: Optional[Dict[str, Any]] = None,
+        dataloader_kwargs: Optional[Dict[str, Any]] = None,
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
     ) -> Sequence[TimeSeries]:
@@ -1426,7 +1426,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
-        data_loader_kwargs
+        dataloader_kwargs
             Optionally, a dictionary of keyword arguments to pass to the PyTorch DataLoader instances used to load the
             training and validation datasets. For more information on DataLoader, check out `this link
             <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
@@ -1484,17 +1484,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             mc_dropout=mc_dropout,
         )
 
-        if data_loader_kwargs is None:
-            data_loader_kwargs = {}
-
-        data_loader_kwargs["batch_size"] = batch_size
-        data_loader_kwargs["collate_fn"] = self._batch_collate_fn
-        data_loader_kwargs["shuffle"] = False
-        data_loader_kwargs["drop_last"] = False
+        dataloader_kwargs = {
+            **{
+                "batch_size": batch_size,
+                "drop_last": False,
+                "collate_fn": self._batch_collate_fn,
+            },
+            **(dataloader_kwargs or {}),
+            **{"shuffle": False},
+        }
 
         pred_loader = DataLoader(
             input_series_dataset,
-            **data_loader_kwargs,
+            **dataloader_kwargs,
         )
 
         # set up trainer. use user supplied trainer or create a new trainer from scratch
