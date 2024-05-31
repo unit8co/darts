@@ -1090,93 +1090,93 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         early_stop_threshold: float = 4.0,
     ):
         """
-         A wrapper around PyTorch Lightning's `Tuner.lr_find()`. Performs a range test of good initial learning rates,
-         to reduce the amount of guesswork in picking a good starting learning rate. For more information on PyTorch
-         Lightning's Tuner check out
-         `this link <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html>`_.
-         It is recommended to increase the number of `epochs` if the tuner did not give satisfactory results.
-         Consider creating a new model object with the suggested learning rate for example using model creation
-         parameters `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, and `lr_scheduler_kwargs`.
+        A wrapper around PyTorch Lightning's `Tuner.lr_find()`. Performs a range test of good initial learning rates,
+        to reduce the amount of guesswork in picking a good starting learning rate. For more information on PyTorch
+        Lightning's Tuner check out
+        `this link <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html>`_.
+        It is recommended to increase the number of `epochs` if the tuner did not give satisfactory results.
+        Consider creating a new model object with the suggested learning rate for example using model creation
+        parameters `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, and `lr_scheduler_kwargs`.
 
-         Example using a :class:`RNNModel`:
+        Example using a :class:`RNNModel`:
 
-             .. highlight:: python
-             .. code-block:: python
+            .. highlight:: python
+            .. code-block:: python
 
-                 import torch
-                 from darts.datasets import AirPassengersDataset
-                 from darts.models import NBEATSModel
+                import torch
+                from darts.datasets import AirPassengersDataset
+                from darts.models import NBEATSModel
 
-                 series = AirPassengersDataset().load()
-                 train, val = series[:-18], series[-18:]
-                 model = NBEATSModel(input_chunk_length=12, output_chunk_length=6, random_state=42)
-                 # run the learning rate tuner
-                 results = model.lr_find(series=train, val_series=val)
-                 # plot the results
-                 results.plot(suggest=True, show=True)
-                 # create a new model with the suggested learning rate
-                 model = NBEATSModel(
-                     input_chunk_length=12,
-                     output_chunk_length=6,
-                     random_state=42,
-                     optimizer_cls=torch.optim.Adam,
-                     optimizer_kwargs={"lr": results.suggestion()}
-                 )
-             ..
+                series = AirPassengersDataset().load()
+                train, val = series[:-18], series[-18:]
+                model = NBEATSModel(input_chunk_length=12, output_chunk_length=6, random_state=42)
+                # run the learning rate tuner
+                results = model.lr_find(series=train, val_series=val)
+                # plot the results
+                results.plot(suggest=True, show=True)
+                # create a new model with the suggested learning rate
+                model = NBEATSModel(
+                    input_chunk_length=12,
+                    output_chunk_length=6,
+                    random_state=42,
+                    optimizer_cls=torch.optim.Adam,
+                    optimizer_kwargs={"lr": results.suggestion()}
+                )
+            ..
 
-         Parameters
-         ----------
-         series
-             A series or sequence of series serving as target (i.e. what the model will be trained to forecast)
-         past_covariates
-             Optionally, a series or sequence of series specifying past-observed covariates
-         future_covariates
-             Optionally, a series or sequence of series specifying future-known covariates
-         val_series
-             Optionally, one or a sequence of validation target series, which will be used to compute the validation
-             loss throughout training and keep track of the best performing models.
-         val_past_covariates
-             Optionally, the past covariates corresponding to the validation series (must match ``covariates``)
-         val_future_covariates
-             Optionally, the future covariates corresponding to the validation series (must match ``covariates``)
-         trainer
-             Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom ``trainer`` will
-             override Darts' default trainer.
-         verbose
-             Optionally, whether to print the progress. Ignored if there is a `ProgressBar` callback in
-             `pl_trainer_kwargs`.
-         epochs
-             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
-             was provided to the model constructor.
-         max_samples_per_ts
-             Optionally, a maximum number of samples to use per time series. Models are trained in a supervised fashion
-             by constructing slices of (input, output) examples. On long time series, this can result in unnecessarily
-             large number of training samples. This parameter upper-bounds the number of training samples per time
-             series (taking only the most recent samples in each series). Leaving to None does not apply any
-             upper bound.
+        Parameters
+        ----------
+        series
+            A series or sequence of series serving as target (i.e. what the model will be trained to forecast)
+        past_covariates
+            Optionally, a series or sequence of series specifying past-observed covariates
+        future_covariates
+            Optionally, a series or sequence of series specifying future-known covariates
+        val_series
+            Optionally, one or a sequence of validation target series, which will be used to compute the validation
+            loss throughout training and keep track of the best performing models.
+        val_past_covariates
+            Optionally, the past covariates corresponding to the validation series (must match ``covariates``)
+        val_future_covariates
+            Optionally, the future covariates corresponding to the validation series (must match ``covariates``)
+        trainer
+            Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom ``trainer`` will
+            override Darts' default trainer.
+        verbose
+            Optionally, whether to print the progress. Ignored if there is a `ProgressBar` callback in
+            `pl_trainer_kwargs`.
+        epochs
+            If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
+            was provided to the model constructor.
+        max_samples_per_ts
+            Optionally, a maximum number of samples to use per time series. Models are trained in a supervised fashion
+            by constructing slices of (input, output) examples. On long time series, this can result in unnecessarily
+            large number of training samples. This parameter upper-bounds the number of training samples per time
+            series (taking only the most recent samples in each series). Leaving to None does not apply any
+            upper bound.
         dataloader_kwargs
-             Optionally, a dictionary of keyword arguments to pass to the PyTorch DataLoader instances used to load the
-             training and validation datasets. For more information on DataLoader, check out `this link
-             <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
-         min_lr
-             minimum learning rate to investigate
-         max_lr
-             maximum learning rate to investigate
-         num_training
-             number of learning rates to test
-         mode
-             Search strategy to update learning rate after each batch:
-             'exponential': Increases the learning rate exponentially.
-             'linear': Increases the learning rate linearly.
-         early_stop_threshold
-             Threshold for stopping the search. If the loss at any point is larger
-             than early_stop_threshold*best_loss then the search is stopped.
-             To disable, set to `None`
+            Optionally, a dictionary of keyword arguments to pass to the PyTorch DataLoader instances used to load the
+            training and validation datasets. For more information on DataLoader, check out `this link
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+        min_lr
+            minimum learning rate to investigate
+        max_lr
+            maximum learning rate to investigate
+        num_training
+            number of learning rates to test
+        mode
+            Search strategy to update learning rate after each batch:
+            'exponential': Increases the learning rate exponentially.
+            'linear': Increases the learning rate linearly.
+        early_stop_threshold
+            Threshold for stopping the search. If the loss at any point is larger
+            than early_stop_threshold*best_loss then the search is stopped.
+            To disable, set to `None`
 
-         Returns
-         -------
-         lr_finder
-             `_LRFinder` object of Lightning containing the results of the LR sweep.
+        Returns
+        -------
+        lr_finder
+            `_LRFinder` object of Lightning containing the results of the LR sweep.
         """
         _, params = self._setup_for_fit_from_dataset(
             series=series,
