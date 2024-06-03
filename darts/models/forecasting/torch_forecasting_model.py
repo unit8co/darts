@@ -715,9 +715,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             series (taking only the most recent samples in each series). Leaving to None does not apply any
             upper bound.
         dataloader_kwargs
-            Optionally, a dictionary of keyword arguments to pass to the PyTorch DataLoader instances used to load the
-            training and validation datasets. For more information on DataLoader, check out `this link
+            Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances for the
+            training and validation datasets. For more information on `DataLoader`, check out `this link
             <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
+            for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
 
         Returns
         -------
@@ -909,9 +911,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
             was provided to the model constructor.
         dataloader_kwargs
-            Optionally, a dictionary of keyword arguments to pass to the PyTorch DataLoader instances used to load the
-            training and validation datasets. For more information on DataLoader, check out `this link
+            Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances for the
+            training and validation datasets. For more information on `DataLoader`, check out `this link
             <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
+            for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
 
         Returns
         -------
@@ -994,24 +998,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # Setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
         # least one batch no matter the chosen batch size
-        dataloader_kwargs = {
-            **{
-                "shuffle": True,
+        dataloader_kwargs = dict(
+            {
                 "batch_size": self.batch_size,
+                "shuffle": True,
+                "pin_memory": True,
                 "drop_last": False,
                 "collate_fn": self._batch_collate_fn,
             },
-            **(dataloader_kwargs or {}),
-        }
+            **(dataloader_kwargs or dict()),
+        )
 
         train_loader = DataLoader(
             train_dataset,
             **dataloader_kwargs,
         )
 
-        dataloader_kwargs["shuffle"] = False
-
         # Prepare validation data
+        dataloader_kwargs["shuffle"] = False
         val_loader = (
             None
             if val_dataset is None
@@ -1155,9 +1159,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             series (taking only the most recent samples in each series). Leaving to None does not apply any
             upper bound.
         dataloader_kwargs
-            Optionally, a dictionary of keyword arguments to pass to the PyTorch DataLoader instances used to load the
-            training and validation datasets. For more information on DataLoader, check out `this link
+            Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances for the
+            training and validation datasets. For more information on `DataLoader`, check out `this link
             <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
+            for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         min_lr
             minimum learning rate to investigate
         max_lr
@@ -1281,9 +1287,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
         dataloader_kwargs
-            Optionally, a dictionary of keyword arguments to pass to the PyTorch DataLoader instances used to load the
-            training and validation datasets. For more information on DataLoader, check out `this link
+            Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instance for the
+            inference/prediction dataset. For more information on `DataLoader`, check out `this link
             <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
+            for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         mc_dropout
             Optionally, enable monte carlo dropout for predictions using neural network based models.
             This allows bayesian approximation by specifying an implicit prior over learned models.
@@ -1427,9 +1435,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
         dataloader_kwargs
-            Optionally, a dictionary of keyword arguments to pass to the PyTorch DataLoader instances used to load the
-            training and validation datasets. For more information on DataLoader, check out `this link
+            Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instance for the
+            inference/prediction dataset. For more information on `DataLoader`, check out `this link
             <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
+            for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         mc_dropout
             Optionally, enable monte carlo dropout for predictions using neural network based models.
             This allows bayesian approximation by specifying an implicit prior over learned models.
@@ -1484,15 +1494,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             mc_dropout=mc_dropout,
         )
 
-        dataloader_kwargs = {
-            **{
+        dataloader_kwargs = dict(
+            {
                 "batch_size": batch_size,
+                "pin_memory": True,
                 "drop_last": False,
                 "collate_fn": self._batch_collate_fn,
             },
             **(dataloader_kwargs or {}),
             **{"shuffle": False},
-        }
+        )
 
         pred_loader = DataLoader(
             input_series_dataset,
