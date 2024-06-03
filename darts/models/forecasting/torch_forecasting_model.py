@@ -1516,7 +1516,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         # prediction output comes as nested list: list of predicted `TimeSeries` for each batch.
-        predictions = self.trainer.predict(self.model, pred_loader)
+        predictions = self.trainer.predict(model=self.model, dataloaders=pred_loader)
         # flatten and return
         return [ts for batch in predictions for ts in batch]
 

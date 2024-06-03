@@ -24,6 +24,7 @@ import torch
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.loggers.logger import DummyLogger
 from pytorch_lightning.tuner.lr_finder import _LRFinder
+from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 from torchmetrics import (
     MeanAbsoluteError,
     MeanAbsolutePercentageError,
@@ -1473,6 +1474,82 @@ class TestTorchForecastingModel:
         """Test whether these evaluation set parameters are passed to the PyTorch Lightning Trainer"""
         with patch("pytorch_lightning.Trainer.fit") as fit_patch:
             self.helper_check_val_set(*model_config, fit_patch)
+
+    def test_dataloader_kwargs_setup(self):
+        train_series, val_series = self.series[:-40], self.series[-40:]
+        model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
+
+        with patch("pytorch_lightning.Trainer.fit") as fit_patch:
+            model.fit(train_series, val_series=val_series)
+            assert "train_dataloaders" in fit_patch.call_args.kwargs
+            assert "val_dataloaders" in fit_patch.call_args.kwargs
+
+            train_dl = fit_patch.call_args.kwargs["train_dataloaders"]
+            assert isinstance(train_dl, DataLoader)
+            val_dl = fit_patch.call_args.kwargs["val_dataloaders"]
+            assert isinstance(val_dl, DataLoader)
+
+            dl_defaults = {
+                "batch_size": model.batch_size,
+                "pin_memory": True,
+                "drop_last": False,
+                "collate_fn": model._batch_collate_fn,
+            }
+            assert all([getattr(train_dl, k) == v for k, v in dl_defaults.items()])
+            # shuffle=True gives random sampler
+            assert isinstance(train_dl.sampler, RandomSampler)
+
+            assert all([getattr(val_dl, k) == v for k, v in dl_defaults.items()])
+            # shuffle=False gives sequential sampler
+            assert isinstance(val_dl.sampler, SequentialSampler)
+
+            # check that overwriting the dataloader kwargs works
+            dl_custom = dict(dl_defaults, **{"batch_size": 50, "drop_last": True})
+            model.fit(train_series, val_series=val_series, dataloader_kwargs=dl_custom)
+            train_dl = fit_patch.call_args.kwargs["train_dataloaders"]
+            val_dl = fit_patch.call_args.kwargs["val_dataloaders"]
+            assert all([getattr(train_dl, k) == v for k, v in dl_custom.items()])
+            assert all([getattr(val_dl, k) == v for k, v in dl_custom.items()])
+
+        with patch("pytorch_lightning.Trainer.predict") as pred_patch:
+            # calling predict with the patch will raise an error, but we only need to
+            # check the dataloader setup
+            with pytest.raises(Exception):
+                model.predict(n=1)
+            assert "dataloaders" in pred_patch.call_args.kwargs
+            pred_dl = pred_patch.call_args.kwargs["dataloaders"]
+            assert isinstance(pred_dl, DataLoader)
+            assert all([getattr(pred_dl, k) == v for k, v in dl_defaults.items()])
+            # shuffle=False gives sequential sampler
+            assert isinstance(val_dl.sampler, SequentialSampler)
+
+            # check that overwriting the dataloader kwargs works
+            with pytest.raises(Exception):
+                model.predict(n=1, dataloader_kwargs=dl_custom)
+            pred_dl = pred_patch.call_args.kwargs["dataloaders"]
+            assert all([getattr(pred_dl, k) == v for k, v in dl_custom.items()])
+
+    def test_dataloader_kwargs_fit_predict(self):
+        train_series, val_series = self.series[:-40], self.series[-40:]
+        model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
+
+        # with drop_last=True and batch_size=100, the model will not be trained at all
+        model.fit(
+            train_series,
+            val_series=val_series,
+            dataloader_kwargs={"batch_size": 100, "drop_last": True},
+        )
+
+        preds_default = model.predict(
+            n=2,
+            series=[train_series, val_series],
+            dataloader_kwargs={"batch_size": 100},
+        )
+        # check that generating each prediction in separate batches gives same results
+        preds_custom = model.predict(
+            n=2, series=[train_series, val_series], dataloader_kwargs={"batch_size": 1}
+        )
+        assert preds_default == preds_custom
 
     def helper_check_val_set(self, model_cls, model_kwargs, fit_patch):
         # naive models don't call the Trainer
