@@ -1533,21 +1533,21 @@ class TestTorchForecastingModel:
         train_series, val_series = self.series[:-40], self.series[-40:]
         model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
 
-        # with drop_last=True and batch_size=100, the model will not be trained at all
         model.fit(
             train_series,
             val_series=val_series,
-            dataloader_kwargs={"batch_size": 100, "drop_last": True},
+            dataloader_kwargs={"batch_size": 100, "shuffle": False},
         )
 
+        # check same results with default batch size (32) and custom batch size
         preds_default = model.predict(
             n=2,
             series=[train_series, val_series],
-            dataloader_kwargs={"batch_size": 100},
         )
-        # check that generating each prediction in separate batches gives same results
         preds_custom = model.predict(
-            n=2, series=[train_series, val_series], dataloader_kwargs={"batch_size": 1}
+            n=2,
+            series=[train_series, val_series],
+            dataloader_kwargs={"batch_size": 100},
         )
         assert preds_default == preds_custom
 
