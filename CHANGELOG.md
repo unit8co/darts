@@ -42,6 +42,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to `TorchForecastingModel`: [#2295](https://github.com/unit8co/darts/pull/2295) by [Bohdan Bilonoh](https://github.com/BohdanBilonoh).
   - Added `dataloader_kwargs` parameters to `fit*()`, `predict*()`, and `find_lr()` for more control over the PyTorch `DataLoader` setup.
   - 🔴 Removed parameter `num_loader_workers` from `fit*()`, `predict*()`, `find_lr()`. You can now set the parameter through the `dataloader_kwargs` dict.
+- Improvements to `DataTransformers`:
+  - Significant speed up when using `fit`, `fit_transform`, `transform`, and `inverse_transform` with a large number of series. The component masking logic was moved into the parallelized transform methods. [#2401](https://github.com/unit8co/darts/pull/2401) by [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
 - Fixed a bug when using a `RegressionModel` (that supports validation series) with a validation set, and encoders and/or component-specific lags, where the encodings and component specific lags were not added to the set. [#2383](https://github.com/unit8co/darts/pull/2383) by [Dennis Bader](https://github.com/dennisbader).
