@@ -3,7 +3,9 @@ Data Transformer Base Class
 ---------------------------
 """
 
+import copy
 from abc import ABC, abstractmethod
+from functools import wraps
 from typing import Any, Generator, Iterable, List, Mapping, Optional, Sequence, Union
 
 import numpy as np
@@ -13,6 +15,43 @@ from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 logger = get_logger(__name__)
+
+
+def component_masking(transform_method):
+    """Applies component masking to the series fed to any `transform` method, and then reverts the masking for the
+    final output series.
+    """
+
+    @wraps(transform_method)
+    def transform_wrapper(
+        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+    ):
+        kwargs = copy.deepcopy(kwargs)
+        # `mask_components` and `component_mask` must be in `kwargs`
+        mask_components = kwargs.pop("mask_components")
+        mask_components_apply_only = kwargs.pop("mask_components_apply_only")
+        component_mask = kwargs.pop("component_mask")
+
+        # remove non-transform columns
+        if mask_components and component_mask is not None:
+            series_proc = BaseDataTransformer.apply_component_mask(
+                series, component_mask, return_ts=True, copy=False
+            )
+        else:
+            series_proc = series
+            if component_mask is not None:
+                kwargs["component_mask"] = component_mask
+
+        transformed = transform_method(series_proc, params, *args, **kwargs)
+
+        # add back non-transformed columns
+        if mask_components and not mask_components_apply_only:
+            transformed = BaseDataTransformer.unapply_component_mask(
+                series, transformed, component_mask
+            )
+        return transformed
+
+    return transform_wrapper
 
 
 class BaseDataTransformer(ABC):
@@ -312,23 +351,11 @@ class BaseDataTransformer(ABC):
 
         # Take note of original input for unmasking purposes:
         if isinstance(series, TimeSeries):
-            input_series = [series]
             data = [series]
             transformer_selector = [0]
         else:
-            input_series = series
             data = series
             transformer_selector = range(len(series))
-
-        if self._mask_components and component_mask is not None:
-            data = [
-                self.apply_component_mask(
-                    ts, component_mask, return_ts=True, copy=False
-                )
-                for ts in data
-            ]
-        elif component_mask is not None:
-            kwargs["component_mask"] = component_mask
 
         input_iterator = _build_tqdm_iterator(
             zip(data, self._get_params(transformer_selector=transformer_selector)),
@@ -337,16 +364,18 @@ class BaseDataTransformer(ABC):
             total=len(data),
         )
 
+        # apply & unapply component masking to the transform method
+        kwargs["mask_components"] = self._mask_components
+        kwargs["mask_components_apply_only"] = False
+        kwargs["component_mask"] = component_mask
+
+        @component_masking
+        def ts_transform(*fn_args, **fn_kwargs):
+            return self.__class__.ts_transform(*fn_args, **fn_kwargs)
+
         transformed_data = _parallel_apply(
-            input_iterator, self.__class__.ts_transform, self._n_jobs, args, kwargs
+            input_iterator, ts_transform, self._n_jobs, args, kwargs
         )
-
-        if self._mask_components:
-            transformed_data = [
-                self.unapply_component_mask(ts, transformed_ts, component_mask)
-                for ts, transformed_ts in zip(input_series, transformed_data)
-            ]
-
         return (
             transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
         )

@@ -9,7 +9,10 @@ from typing import Any, Generator, Iterable, List, Mapping, Optional, Sequence, 
 import numpy as np
 
 from darts import TimeSeries
-from darts.dataprocessing.transformers.base_data_transformer import BaseDataTransformer
+from darts.dataprocessing.transformers.base_data_transformer import (
+    BaseDataTransformer,
+    component_masking,
+)
 from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
@@ -260,14 +263,6 @@ class FittableDataTransformer(BaseDataTransformer):
             data = series
             transformer_selector = range(len(series))
 
-        if self._mask_components:
-            data = [
-                self.apply_component_mask(ts, component_mask, return_ts=True)
-                for ts in data
-            ]
-        else:
-            kwargs["component_mask"] = component_mask
-
         params_iterator = self._get_params(
             transformer_selector=transformer_selector, calling_fit=True
         )
@@ -281,10 +276,18 @@ class FittableDataTransformer(BaseDataTransformer):
             fit_iterator, verbose=self._verbose, desc=desc, total=n_jobs
         )
 
-        self._fitted_params = _parallel_apply(
-            input_iterator, self.__class__.ts_fit, self._n_jobs, args, kwargs
-        )
+        # apply component masking to the fit method
+        kwargs["mask_components"] = self._mask_components
+        kwargs["mask_components_apply_only"] = True
+        kwargs["component_mask"] = component_mask
 
+        @component_masking
+        def ts_fit(*fn_args, **fn_kwargs):
+            return self.__class__.ts_fit(*fn_args, **fn_kwargs)
+
+        self._fitted_params = _parallel_apply(
+            input_iterator, ts_fit, self._n_jobs, args, kwargs
+        )
         return self
 
     def fit_transform(

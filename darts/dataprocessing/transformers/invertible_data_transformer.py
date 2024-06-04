@@ -9,7 +9,10 @@ from typing import Any, List, Mapping, Optional, Sequence, Union
 import numpy as np
 
 from darts import TimeSeries
-from darts.dataprocessing.transformers.base_data_transformer import BaseDataTransformer
+from darts.dataprocessing.transformers.base_data_transformer import (
+    BaseDataTransformer,
+    component_masking,
+)
 from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
@@ -313,31 +316,19 @@ class InvertibleDataTransformer(BaseDataTransformer):
         called_with_single_series = False
         called_with_sequence_series = False
         if isinstance(series, TimeSeries):
-            input_series = [series]
             data = [series]
             transformer_selector = [0]
             called_with_single_series = True
         elif isinstance(series[0], TimeSeries):  # Sequence[TimeSeries]
-            input_series = series
             data = series
             transformer_selector = range(len(series))
             called_with_sequence_series = True
         else:  # Sequence[Sequence[TimeSeries]]
-            input_series = []
             data = []
             transformer_selector = []
             for idx, series_list in enumerate(series):
-                input_series.extend(series_list)
                 data.extend(series_list)
                 transformer_selector += [idx] * len(series_list)
-
-        if self._mask_components:
-            data = [
-                self.apply_component_mask(ts, component_mask, return_ts=True)
-                for ts in data
-            ]
-        else:
-            kwargs["component_mask"] = component_mask
 
         input_iterator = _build_tqdm_iterator(
             zip(data, self._get_params(transformer_selector=transformer_selector)),
@@ -346,21 +337,22 @@ class InvertibleDataTransformer(BaseDataTransformer):
             total=len(transformer_selector),
         )
 
+        # apply & unapply component masking to the transform method
+        kwargs["mask_components"] = self._mask_components
+        kwargs["mask_components_apply_only"] = False
+        kwargs["component_mask"] = component_mask
+
+        @component_masking
+        def ts_inverse_transform(*fn_args, **fn_kwargs):
+            return self.__class__.ts_inverse_transform(*fn_args, **fn_kwargs)
+
         transformed_data = _parallel_apply(
             input_iterator,
-            self.__class__.ts_inverse_transform,
+            ts_inverse_transform,
             self._n_jobs,
             args,
             kwargs,
         )
-
-        if self._mask_components:
-            unmasked = []
-            for ts, transformed_ts in zip(input_series, transformed_data):
-                unmasked.append(
-                    self.unapply_component_mask(ts, transformed_ts, component_mask)
-                )
-            transformed_data = unmasked
 
         if called_with_single_series:
             return transformed_data[0]
