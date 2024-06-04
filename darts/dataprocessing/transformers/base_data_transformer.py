@@ -7,7 +7,6 @@ from abc import ABC, abstractmethod
 from typing import Any, Generator, Iterable, List, Mapping, Optional, Sequence, Union
 
 import numpy as np
-import xarray as xr
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
@@ -321,12 +320,14 @@ class BaseDataTransformer(ABC):
             data = series
             transformer_selector = range(len(series))
 
-        if self._mask_components:
+        if self._mask_components and component_mask is not None:
             data = [
-                self.apply_component_mask(ts, component_mask, return_ts=True)
+                self.apply_component_mask(
+                    ts, component_mask, return_ts=True, copy=False
+                )
                 for ts in data
             ]
-        else:
+        elif component_mask is not None:
             kwargs["component_mask"] = component_mask
 
         input_iterator = _build_tqdm_iterator(
@@ -341,12 +342,10 @@ class BaseDataTransformer(ABC):
         )
 
         if self._mask_components:
-            unmasked = []
-            for ts, transformed_ts in zip(input_series, transformed_data):
-                unmasked.append(
-                    self.unapply_component_mask(ts, transformed_ts, component_mask)
-                )
-            transformed_data = unmasked
+            transformed_data = [
+                self.unapply_component_mask(ts, transformed_ts, component_mask)
+                for ts, transformed_ts in zip(input_series, transformed_data)
+            ]
 
         return (
             transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
@@ -409,8 +408,11 @@ class BaseDataTransformer(ABC):
 
     @staticmethod
     def apply_component_mask(
-        series: TimeSeries, component_mask: Optional[np.ndarray] = None, return_ts=False
-    ) -> np.ndarray:
+        series: TimeSeries,
+        component_mask: Optional[np.ndarray] = None,
+        return_ts: bool = False,
+        copy: bool = True,
+    ) -> Union[TimeSeries, np.ndarray]:
         """
         Extracts components specified by `component_mask` from `series`
 
@@ -424,6 +426,8 @@ class BaseDataTransformer(ABC):
             If not specified, no masking is performed.
         return_ts
             Optionally, specifies that a `TimeSeries` should be returned, rather than an `np.ndarray`.
+        copy
+            Whether to return a copy of the values or `TimeSeries`.
 
         Returns
         -------
@@ -433,34 +437,32 @@ class BaseDataTransformer(ABC):
 
         """
         if component_mask is None:
-            masked = series.copy() if return_ts else series.all_values()
-        else:
-            if not (
-                isinstance(component_mask, np.ndarray) and component_mask.dtype == bool
-            ):
-                raise_log(
-                    ValueError(
-                        f"`component_mask` must be a boolean `np.ndarray`, not a {type(component_mask)}."
-                    ),
-                    logger=logger,
-                )
-            if not series.width == len(component_mask):
-                raise_log(
-                    ValueError(
-                        "mismatch between number of components in `series` and length of `component_mask`"
-                    ),
-                    logger=logger,
-                )
-            masked = series.all_values(copy=False)[:, component_mask, :]
             if return_ts:
-                # Remove masked components from coords:
-                coords = dict(series._xa.coords)
-                coords["component"] = coords["component"][component_mask]
-                new_xa = xr.DataArray(
-                    masked, dims=series._xa.dims, coords=coords, attrs=series._xa.attrs
-                )
-                masked = TimeSeries(new_xa)
-        return masked
+                return series if not copy else series.copy()
+            else:
+                return series.all_values(copy=copy)
+
+        if not (
+            isinstance(component_mask, np.ndarray) and component_mask.dtype == bool
+        ):
+            raise_log(
+                ValueError(
+                    f"`component_mask` must be a boolean `np.ndarray`, not a {type(component_mask)}."
+                ),
+                logger=logger,
+            )
+        if not series.width == len(component_mask):
+            raise_log(
+                ValueError(
+                    "mismatch between number of components in `series` and length of `component_mask`"
+                ),
+                logger=logger,
+            )
+
+        if return_ts:
+            return series[series.columns[component_mask].tolist()]
+
+        return series.all_values(copy=False)[:, component_mask, :]
 
     @staticmethod
     def unapply_component_mask(
@@ -488,33 +490,32 @@ class BaseDataTransformer(ABC):
             `TimeSeries` (if `vals` is a `TimeSeries`) or `np.ndarray` (if `vals` is an `np.ndarray`) with those
             components previously removed by `component_mask` now 'added back'.
         """
-
         if component_mask is None:
-            unmasked = vals
+            return vals
+
+        if not (
+            isinstance(component_mask, np.ndarray) and component_mask.dtype == bool
+        ):
+            raise_log(
+                ValueError(
+                    "If `component_mask` is given, must be a boolean np.ndarray`"
+                ),
+                logger=logger,
+            )
+        if not series.width == len(component_mask):
+            raise_log(
+                ValueError(
+                    "mismatch between number of components in `series` and length of `component_mask`"
+                ),
+                logger=logger,
+            )
+        unmasked = series.all_values()
+        if isinstance(vals, TimeSeries):
+            unmasked[:, component_mask, :] = vals.all_values()
+            # Remove timepoints not present in transformed data:
+            unmasked = series.slice_intersect(vals).with_values(unmasked)
         else:
-            if not (
-                isinstance(component_mask, np.ndarray) and component_mask.dtype == bool
-            ):
-                raise_log(
-                    ValueError(
-                        "If `component_mask` is given, must be a boolean np.ndarray`"
-                    ),
-                    logger=logger,
-                )
-            if not series.width == len(component_mask):
-                raise_log(
-                    ValueError(
-                        "mismatch between number of components in `series` and length of `component_mask`"
-                    ),
-                    logger=logger,
-                )
-            unmasked = series.all_values()
-            if isinstance(vals, TimeSeries):
-                unmasked[:, component_mask, :] = vals.all_values()
-                # Remove timepoints not present in transformed data:
-                unmasked = series.slice_intersect(vals).with_values(unmasked)
-            else:
-                unmasked[:, component_mask, :] = vals
+            unmasked[:, component_mask, :] = vals
         return unmasked
 
     @staticmethod
