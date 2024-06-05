@@ -660,7 +660,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
-        num_loader_workers: int = 0,
+        dataloader_kwargs: Optional[Dict[str, Any]] = None,
     ) -> "TorchForecastingModel":
         """Fit/train the model on one or multiple series.
 
@@ -714,11 +714,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             large number of training samples. This parameter upper-bounds the number of training samples per time
             series (taking only the most recent samples in each series). Leaving to None does not apply any
             upper bound.
-        num_loader_workers
-            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            A larger number of workers can sometimes increase performance, but can also incur extra overheads
-            and increase memory usage, as more batches are loaded in parallel.
+        dataloader_kwargs
+            Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances for the
+            training and validation datasets. For more information on `DataLoader`, check out `this link
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
+            for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
 
         Returns
         -------
@@ -743,7 +744,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             epochs=epochs,
             max_samples_per_ts=max_samples_per_ts,
-            num_loader_workers=num_loader_workers,
+            dataloader_kwargs=dataloader_kwargs,
         )
         # call super fit only if user is actually fitting the model
         super().fit(
@@ -765,7 +766,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
-        num_loader_workers: int = 0,
+        dataloader_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Tuple[
         Tuple[
             Sequence[TimeSeries],
@@ -778,7 +779,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optional[pl.Trainer],
             Optional[bool],
             int,
-            int,
+            Optional[Dict[str, Any]],
         ],
     ]:
         """This method acts on `TimeSeries` inputs. It performs sanity checks, and sets up / returns the datasets and
@@ -815,50 +816,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if future_covariates is not None:
             self._uses_future_covariates = True
 
-        # Check that dimensions of train and val set match; on first series only
-        if val_series is not None:
-            if self.encoders.encoding_available:
-                (
-                    val_past_covariates,
-                    val_future_covariates,
-                ) = self.generate_fit_encodings(
-                    series=val_series,
-                    past_covariates=val_past_covariates,
-                    future_covariates=val_future_covariates,
-                )
-            self._verify_past_future_covariates(
-                past_covariates=val_past_covariates,
-                future_covariates=val_future_covariates,
+        val_series, val_past_covariates, val_future_covariates = (
+            self._process_validation_set(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                val_series=val_series,
+                val_past_covariates=val_past_covariates,
+                val_future_covariates=val_future_covariates,
             )
-            if self.uses_static_covariates:
-                self._verify_static_covariates(
-                    get_single_series(val_series).static_covariates
-                )
-
-            match = (
-                series[0].width == val_series[0].width
-                and (past_covariates[0].width if past_covariates is not None else None)
-                == (
-                    val_past_covariates[0].width
-                    if val_past_covariates is not None
-                    else None
-                )
-                and (
-                    future_covariates[0].width
-                    if future_covariates is not None
-                    else None
-                )
-                == (
-                    val_future_covariates[0].width
-                    if val_future_covariates is not None
-                    else None
-                )
-            )
-            raise_if_not(
-                match,
-                "The dimensions of the series in the training set "
-                "and the validation set do not match.",
-            )
+        )
 
         train_dataset = self._build_train_dataset(
             target=series,
@@ -877,7 +844,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         else:
             val_dataset = None
 
-        # Pro-actively catch length exceptions to display nicer messages
+        # proactively catch length exceptions to display nicer messages
         length_ok = True
         try:
             len(train_dataset)
@@ -898,7 +865,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             trainer,
             verbose,
             epochs,
-            num_loader_workers,
+            dataloader_kwargs,
         )
         return series_input, fit_from_ds_params
 
@@ -910,7 +877,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         trainer: Optional[pl.Trainer] = None,
         verbose: Optional[bool] = None,
         epochs: int = 0,
-        num_loader_workers: int = 0,
+        dataloader_kwargs: Optional[Dict[str, Any]] = None,
     ) -> "TorchForecastingModel":
         """
         Train the model with a specific :class:`darts.utils.data.TrainingDataset` instance.
@@ -943,11 +910,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs
             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
             was provided to the model constructor.
-        num_loader_workers
-            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            A larger number of workers can sometimes increase performance, but can also incur extra overheads
-            and increase memory usage, as more batches are loaded in parallel.
+        dataloader_kwargs
+            Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances for the
+            training and validation datasets. For more information on `DataLoader`, check out `this link
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
+            for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
 
         Returns
         -------
@@ -961,7 +929,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 trainer=trainer,
                 verbose=verbose,
                 epochs=epochs,
-                num_loader_workers=num_loader_workers,
+                dataloader_kwargs=dataloader_kwargs,
             )
         )
         return self
@@ -973,7 +941,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         trainer: Optional[pl.Trainer] = None,
         verbose: Optional[bool] = None,
         epochs: int = 0,
-        num_loader_workers: int = 0,
+        dataloader_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Tuple[pl.Trainer, PLForecastingModule, DataLoader, Optional[DataLoader]]:
         """This method acts on `TrainingDataset` inputs. It performs sanity checks, and sets up / returns the trainer,
         model, and dataset loaders required for training the model with `_train()`.
@@ -1030,28 +998,30 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # Setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
         # least one batch no matter the chosen batch size
+        dataloader_kwargs = dict(
+            {
+                "batch_size": self.batch_size,
+                "shuffle": True,
+                "pin_memory": True,
+                "drop_last": False,
+                "collate_fn": self._batch_collate_fn,
+            },
+            **(dataloader_kwargs or dict()),
+        )
+
         train_loader = DataLoader(
             train_dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
-            num_workers=num_loader_workers,
-            pin_memory=True,
-            drop_last=False,
-            collate_fn=self._batch_collate_fn,
+            **dataloader_kwargs,
         )
 
         # Prepare validation data
+        dataloader_kwargs["shuffle"] = False
         val_loader = (
             None
             if val_dataset is None
             else DataLoader(
                 val_dataset,
-                batch_size=self.batch_size,
-                shuffle=False,
-                num_workers=num_loader_workers,
-                pin_memory=True,
-                drop_last=False,
-                collate_fn=self._batch_collate_fn,
+                **dataloader_kwargs,
             )
         )
 
@@ -1116,7 +1086,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
-        num_loader_workers: int = 0,
+        dataloader_kwargs: Optional[Dict[str, Any]] = None,
         min_lr: float = 1e-08,
         max_lr: float = 1,
         num_training: int = 100,
@@ -1188,11 +1158,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             large number of training samples. This parameter upper-bounds the number of training samples per time
             series (taking only the most recent samples in each series). Leaving to None does not apply any
             upper bound.
-        num_loader_workers
-            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
-            A larger number of workers can sometimes increase performance, but can also incur extra overheads
-            and increase memory usage, as more batches are loaded in parallel.
+        dataloader_kwargs
+            Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances for the
+            training and validation datasets. For more information on `DataLoader`, check out `this link
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
+            for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         min_lr
             minimum learning rate to investigate
         max_lr
@@ -1224,7 +1195,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             epochs=epochs,
             max_samples_per_ts=max_samples_per_ts,
-            num_loader_workers=num_loader_workers,
+            dataloader_kwargs=dataloader_kwargs,
         )
         trainer, model, train_loader, val_loader = self._setup_for_train(*params)
         return Tuner(trainer).lr_find(
@@ -1253,7 +1224,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         n_jobs: int = 1,
         roll_size: Optional[int] = None,
         num_samples: int = 1,
-        num_loader_workers: int = 0,
+        dataloader_kwargs: Optional[Dict[str, Any]] = None,
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
@@ -1315,11 +1286,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
-        num_loader_workers
-            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
-            for the inference/prediction dataset loaders (if any).
-            A larger number of workers can sometimes increase performance, but can also incur extra overheads
-            and increase memory usage, as more batches are loaded in parallel.
+        dataloader_kwargs
+            Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instance for the
+            inference/prediction dataset. For more information on `DataLoader`, check out `this link
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
+            for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         mc_dropout
             Optionally, enable monte carlo dropout for predictions using neural network based models.
             This allows bayesian approximation by specifying an implicit prior over learned models.
@@ -1403,7 +1375,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             n_jobs=n_jobs,
             roll_size=roll_size,
             num_samples=num_samples,
-            num_loader_workers=num_loader_workers,
+            dataloader_kwargs=dataloader_kwargs,
             mc_dropout=mc_dropout,
             predict_likelihood_parameters=predict_likelihood_parameters,
         )
@@ -1421,7 +1393,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         n_jobs: int = 1,
         roll_size: Optional[int] = None,
         num_samples: int = 1,
-        num_loader_workers: int = 0,
+        dataloader_kwargs: Optional[Dict[str, Any]] = None,
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
     ) -> Sequence[TimeSeries]:
@@ -1462,11 +1434,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
-        num_loader_workers
-            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
-            for the inference/prediction dataset loaders (if any).
-            A larger number of workers can sometimes increase performance, but can also incur extra overheads
-            and increase memory usage, as more batches are loaded in parallel.
+        dataloader_kwargs
+            Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instance for the
+            inference/prediction dataset. For more information on `DataLoader`, check out `this link
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
+            for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         mc_dropout
             Optionally, enable monte carlo dropout for predictions using neural network based models.
             This allows bayesian approximation by specifying an implicit prior over learned models.
@@ -1521,14 +1494,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             mc_dropout=mc_dropout,
         )
 
+        dataloader_kwargs = dict(
+            {
+                "batch_size": batch_size,
+                "pin_memory": True,
+                "drop_last": False,
+                "collate_fn": self._batch_collate_fn,
+            },
+            **(dataloader_kwargs or {}),
+            **{"shuffle": False},
+        )
+
         pred_loader = DataLoader(
             input_series_dataset,
-            batch_size=batch_size,
-            shuffle=False,
-            num_workers=num_loader_workers,
-            pin_memory=True,
-            drop_last=False,
-            collate_fn=self._batch_collate_fn,
+            **dataloader_kwargs,
         )
 
         # set up trainer. use user supplied trainer or create a new trainer from scratch
@@ -1537,7 +1516,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         # prediction output comes as nested list: list of predicted `TimeSeries` for each batch.
-        predictions = self.trainer.predict(self.model, pred_loader)
+        predictions = self.trainer.predict(model=self.model, dataloaders=pred_loader)
         # flatten and return
         return [ts for batch in predictions for ts in batch]
 

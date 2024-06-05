@@ -24,9 +24,11 @@ import torch
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.loggers.logger import DummyLogger
 from pytorch_lightning.tuner.lr_finder import _LRFinder
+from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 from torchmetrics import (
     MeanAbsoluteError,
     MeanAbsolutePercentageError,
+    Metric,
     MetricCollection,
 )
 
@@ -47,6 +49,7 @@ from darts.models import (
     TSMixerModel,
 )
 from darts.models.components.layer_norm_variants import RINorm
+from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
 from darts.utils.likelihood_models import (
     GaussianLikelihood,
     LaplaceLikelihood,
@@ -75,6 +78,18 @@ models = [
     (GlobalNaiveAggregate, kwargs),
     (GlobalNaiveDrift, kwargs),
 ]
+
+
+class NumsCalled(Metric):
+    def __init__(self):
+        super().__init__()
+        self.add_state("preds", default=[], dist_reduce_fx="cat")
+
+    def update(self, preds, target) -> None:
+        self.preds.append(preds)
+
+    def compute(self):
+        return len(self.preds)
 
 
 class TestTorchForecastingModel:
@@ -1332,6 +1347,20 @@ class TestTorchForecastingModel:
             )
             model.fit(self.series)
 
+    def test_stateful_metrics(self):
+        torch_metrics = NumsCalled()
+        model = RNNModel(
+            12,
+            "RNN",
+            10,
+            10,
+            n_epochs=1,
+            torch_metrics=torch_metrics,
+            **tfm_kwargs,
+        )
+        model.fit(self.series)
+        assert model.model.trainer.logged_metrics["train_NumsCalled"] > 1
+
     @pytest.mark.slow
     def test_lr_find(self):
         train_series, val_series = self.series[:-40], self.series[-40:]
@@ -1439,6 +1468,183 @@ class TestTorchForecastingModel:
             _ = model.predict(n=n, past_covariates=pc)
             _ = model.predict(n=n, future_covariates=fc)
             _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
+
+    @pytest.mark.parametrize("model_config", models)
+    def test_val_set(self, model_config):
+        """Test whether these evaluation set parameters are passed to the PyTorch Lightning Trainer"""
+        with patch("pytorch_lightning.Trainer.fit") as fit_patch:
+            self.helper_check_val_set(*model_config, fit_patch)
+
+    def test_dataloader_kwargs_setup(self):
+        train_series, val_series = self.series[:-40], self.series[-40:]
+        model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
+
+        with patch("pytorch_lightning.Trainer.fit") as fit_patch:
+            model.fit(train_series, val_series=val_series)
+            assert "train_dataloaders" in fit_patch.call_args.kwargs
+            assert "val_dataloaders" in fit_patch.call_args.kwargs
+
+            train_dl = fit_patch.call_args.kwargs["train_dataloaders"]
+            assert isinstance(train_dl, DataLoader)
+            val_dl = fit_patch.call_args.kwargs["val_dataloaders"]
+            assert isinstance(val_dl, DataLoader)
+
+            dl_defaults = {
+                "batch_size": model.batch_size,
+                "pin_memory": True,
+                "drop_last": False,
+                "collate_fn": model._batch_collate_fn,
+            }
+            assert all([getattr(train_dl, k) == v for k, v in dl_defaults.items()])
+            # shuffle=True gives random sampler
+            assert isinstance(train_dl.sampler, RandomSampler)
+
+            assert all([getattr(val_dl, k) == v for k, v in dl_defaults.items()])
+            # shuffle=False gives sequential sampler
+            assert isinstance(val_dl.sampler, SequentialSampler)
+
+            # check that overwriting the dataloader kwargs works
+            dl_custom = dict(dl_defaults, **{"batch_size": 50, "drop_last": True})
+            model.fit(train_series, val_series=val_series, dataloader_kwargs=dl_custom)
+            train_dl = fit_patch.call_args.kwargs["train_dataloaders"]
+            val_dl = fit_patch.call_args.kwargs["val_dataloaders"]
+            assert all([getattr(train_dl, k) == v for k, v in dl_custom.items()])
+            assert all([getattr(val_dl, k) == v for k, v in dl_custom.items()])
+
+        with patch("pytorch_lightning.Trainer.predict") as pred_patch:
+            # calling predict with the patch will raise an error, but we only need to
+            # check the dataloader setup
+            with pytest.raises(Exception):
+                model.predict(n=1)
+            assert "dataloaders" in pred_patch.call_args.kwargs
+            pred_dl = pred_patch.call_args.kwargs["dataloaders"]
+            assert isinstance(pred_dl, DataLoader)
+            assert all([getattr(pred_dl, k) == v for k, v in dl_defaults.items()])
+            # shuffle=False gives sequential sampler
+            assert isinstance(val_dl.sampler, SequentialSampler)
+
+            # check that overwriting the dataloader kwargs works
+            with pytest.raises(Exception):
+                model.predict(n=1, dataloader_kwargs=dl_custom)
+            pred_dl = pred_patch.call_args.kwargs["dataloaders"]
+            assert all([getattr(pred_dl, k) == v for k, v in dl_custom.items()])
+
+    def test_dataloader_kwargs_fit_predict(self):
+        train_series, val_series = self.series[:-40], self.series[-40:]
+        model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
+
+        model.fit(
+            train_series,
+            val_series=val_series,
+            dataloader_kwargs={"batch_size": 100, "shuffle": False},
+        )
+
+        # check same results with default batch size (32) and custom batch size
+        preds_default = model.predict(
+            n=2,
+            series=[train_series, val_series],
+        )
+        preds_custom = model.predict(
+            n=2,
+            series=[train_series, val_series],
+            dataloader_kwargs={"batch_size": 100},
+        )
+        assert preds_default == preds_custom
+
+    def helper_check_val_set(self, model_cls, model_kwargs, fit_patch):
+        # naive models don't call the Trainer
+        if issubclass(model_cls, _GlobalNaiveModel):
+            return
+
+        series1 = tg.sine_timeseries(length=11, column_name="tg_1")
+        series2 = tg.sine_timeseries(length=11, column_name="tg_2") / 2 + 10
+        series = series1.stack(series2)
+        series = series.with_static_covariates(
+            pd.DataFrame({"sc1": [0, 1], "sc2": [3, 4]})
+        )
+        pc = series1 * 10 - 3
+        fc = TimeSeries.from_times_and_values(
+            times=series.time_index, values=series.values() * -1, columns=["fc1", "fc2"]
+        )
+        model = model_cls(**model_kwargs)
+
+        # check that an error is raised with an invalid validation series
+        fit_kwargs = {
+            "series": series,
+            "val_series": series["tg_1"],
+        }
+        invalid_series_txt = "`series`"
+        if model.supports_past_covariates:
+            fit_kwargs["past_covariates"] = pc
+            fit_kwargs["val_past_covariates"] = pc
+        if model.supports_future_covariates:
+            fit_kwargs["future_covariates"] = fc
+            fit_kwargs["val_future_covariates"] = fc["fc1"]
+            invalid_series_txt += ", `future_covariates`"
+        if model.supports_static_covariates:
+            invalid_series_txt += ", `static_covariates`"
+
+        with pytest.raises(ValueError) as err:
+            model.fit(**fit_kwargs)
+        msg_expected = (
+            f"The dimensions of the ({invalid_series_txt}) between "
+            "the training and validation set do not match."
+        )
+        assert str(err.value) == msg_expected
+
+        # check that an error is raised if only second validation series are invalid
+        fit_kwargs = {
+            "series": series,
+            "val_series": [series, series["tg_1"]],
+        }
+        invalid_series_txt = "`series`"
+        if model.supports_past_covariates:
+            fit_kwargs["past_covariates"] = pc
+            fit_kwargs["val_past_covariates"] = [pc, pc]
+        if model.supports_future_covariates:
+            fit_kwargs["future_covariates"] = fc
+            fit_kwargs["val_future_covariates"] = [fc, fc["fc1"]]
+            invalid_series_txt += ", `future_covariates`"
+        if model.supports_static_covariates:
+            invalid_series_txt += ", `static_covariates`"
+
+        with pytest.raises(ValueError) as err:
+            model.fit(**fit_kwargs)
+        msg_expected = (
+            f"The dimensions of the ({invalid_series_txt}) between "
+            "the training and validation set at sequence/list index `1` do not match."
+        )
+        assert str(err.value) == msg_expected
+
+        fit_kwargs = {"series": series, "val_series": series}
+        if model.supports_past_covariates:
+            fit_kwargs["past_covariates"] = pc
+            fit_kwargs["val_past_covariates"] = pc
+        if model.supports_future_covariates:
+            fit_kwargs["future_covariates"] = fc
+            fit_kwargs["val_future_covariates"] = fc
+
+        model.fit(**fit_kwargs)
+        # fit called only once
+        assert fit_patch.call_count == 1
+
+        train_ds = fit_patch.call_args[1]["train_dataloaders"].dataset
+        val_dl = fit_patch.call_args[1]["val_dataloaders"]
+        assert val_dl is not None
+        val_ds = val_dl.dataset
+
+        # check same dataset type
+        assert isinstance(val_ds, train_ds.__class__)
+
+        # check that input in first batch have same dimensions
+        train_sample = train_ds[0]
+        val_sample = val_ds[0]
+        assert len(val_sample) == len(train_sample)
+        for x_train, x_val in zip(train_sample, val_sample):
+            if x_train is None:
+                assert x_val is None
+            else:
+                assert x_val.shape[1:] == x_train.shape[1:]
 
     @pytest.mark.parametrize("model_config", models)
     def test_rin(self, model_config):

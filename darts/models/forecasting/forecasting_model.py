@@ -2161,6 +2161,99 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             future_covariates=future_covariates,
         )
 
+    def _process_validation_set(
+        self,
+        series: Sequence[TimeSeries],
+        past_covariates: Optional[Sequence[TimeSeries]],
+        future_covariates: Optional[Sequence[TimeSeries]],
+        val_series: Optional[Sequence[TimeSeries]],
+        val_past_covariates: Optional[Sequence[TimeSeries]],
+        val_future_covariates: Optional[Sequence[TimeSeries]],
+    ) -> Tuple[
+        Optional[Sequence[TimeSeries]],
+        Optional[Sequence[TimeSeries]],
+        Optional[Sequence[TimeSeries]],
+    ]:
+        """Validates the validation set and generates/adds the required encodings."""
+        if val_series is None:
+            return None, None, None
+
+        # generate encodings for the val set covariates
+        if self.encoders.encoding_available:
+            (
+                val_past_covariates,
+                val_future_covariates,
+            ) = self.generate_fit_encodings(
+                series=val_series,
+                past_covariates=val_past_covariates,
+                future_covariates=val_future_covariates,
+            )
+
+        for idx in range(len(val_series)):
+            val_s = val_series[idx]
+            val_pc = (
+                val_past_covariates[idx] if val_past_covariates is not None else None
+            )
+            val_fc = (
+                val_future_covariates[idx]
+                if val_future_covariates is not None
+                else None
+            )
+
+            # check that val set has same number of features as train set
+            match_series = series[0].width == val_s.width
+            match_past_covariates = (
+                past_covariates[0].width if past_covariates is not None else None
+            ) == (val_pc.width if val_pc is not None else None)
+            match_future_covariates = (
+                future_covariates[0].width if future_covariates is not None else None
+            ) == (val_fc.width if val_fc is not None else None)
+
+            if self.uses_static_covariates:
+                self._verify_static_covariates(val_s.static_covariates)
+                match_static_covariates = (
+                    series[0].static_covariates.shape
+                    if series[0].static_covariates is not None
+                    else None
+                ) == (
+                    val_s.static_covariates.shape
+                    if val_s.static_covariates is not None
+                    else None
+                )
+            else:
+                match_static_covariates = True
+
+            matches = [
+                match_series,
+                match_past_covariates,
+                match_future_covariates,
+                match_static_covariates,
+            ]
+            if not all(matches):
+                invalid_series = [
+                    name
+                    for match, name in zip(
+                        matches,
+                        [
+                            "`series`",
+                            "`past_covariates`",
+                            "`future_covariates`",
+                            "`static_covariates`",
+                        ],
+                    )
+                    if not match
+                ]
+                raise_log(
+                    ValueError(
+                        f"The dimensions of the ({', '.join(invalid_series)}) between the training and "
+                        f"validation set "
+                        f"{'' if len(val_series) == 1 else 'at sequence/list index `' + str(idx) + '` '}"
+                        f"do not match."
+                    ),
+                    logger=logger,
+                )
+        return val_series, val_past_covariates, val_future_covariates
+
     @property
     @abstractmethod
     def _model_encoder_settings(

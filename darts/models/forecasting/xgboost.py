@@ -8,7 +8,7 @@ This implementation comes with the ability to produce probabilistic forecasts.
 """
 
 from functools import partial
-from typing import List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
 import xgboost as xgb
@@ -261,19 +261,6 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         **kwargs
             Additional kwargs passed to `xgb.XGBRegressor.fit()`
         """
-
-        if val_series is not None:
-            # Note: we create a list here as it's what's expected by XGBRegressor.fit()
-            # This is handled as a separate case in multioutput.py
-            kwargs["eval_set"] = [
-                self._create_lagged_data(
-                    target_series=val_series,
-                    past_covariates=val_past_covariates,
-                    future_covariates=val_future_covariates,
-                    max_samples_per_ts=max_samples_per_ts,
-                )[:2]
-            ]
-
         # TODO: XGBRegressor supports multi quantile reqression which we could leverage in the future
         #  see https://xgboost.readthedocs.io/en/latest/python/examples/quantile_regression.html
         if self.likelihood == "quantile":
@@ -286,27 +273,29 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
                     objective = partial(xgb_quantile_loss, quantile=quantile)
                     self.kwargs["objective"] = objective
                 self.model = xgb.XGBRegressor(**self.kwargs)
-
                 super().fit(
                     series=series,
                     past_covariates=past_covariates,
                     future_covariates=future_covariates,
+                    val_series=val_series,
+                    val_past_covariates=val_past_covariates,
+                    val_future_covariates=val_future_covariates,
                     max_samples_per_ts=max_samples_per_ts,
                     **kwargs,
                 )
-
                 self._model_container[quantile] = self.model
-
             return self
 
         super().fit(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            val_series=val_series,
+            val_past_covariates=val_past_covariates,
+            val_future_covariates=val_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
             **kwargs,
         )
-
         return self
 
     def _predict_and_sample(
@@ -326,9 +315,32 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
                 x, num_samples, predict_likelihood_parameters, **kwargs
             )
 
+    def _add_val_set_to_kwargs(
+        self,
+        kwargs: Dict,
+        val_series: Sequence[TimeSeries],
+        val_past_covariates: Optional[Sequence[TimeSeries]],
+        val_future_covariates: Optional[Sequence[TimeSeries]],
+        max_samples_per_ts: int,
+    ):
+        # XGBRegressor.fit() requires a list of eval sets
+        kwargs = super()._add_val_set_to_kwargs(
+            kwargs=kwargs,
+            val_series=val_series,
+            val_past_covariates=val_past_covariates,
+            val_future_covariates=val_future_covariates,
+            max_samples_per_ts=max_samples_per_ts,
+        )
+        kwargs["eval_set"] = [kwargs["eval_set"]]
+        return kwargs
+
     @property
     def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None
+
+    @property
+    def supports_val_set(self):
+        return True
 
     @property
     def min_train_series_length(self) -> int:

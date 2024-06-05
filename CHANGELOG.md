@@ -39,11 +39,17 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - New method `with_times_and_values()`, which returns a new series with a new time index and new values but with identical columns and metadata as the series called from (static covariates, hierarchy).
   - New method `slice_intersect_times()`, which returns the sliced time index of a series, where the index has been intersected with another series.
   - Method `with_values()` now also acts on array-like `values` rather than only on numpy arrays.
-
+- Improvements to `TorchForecastingModel`: [#2295](https://github.com/unit8co/darts/pull/2295) by [Bohdan Bilonoh](https://github.com/BohdanBilonoh).
+  - Added `dataloader_kwargs` parameters to `fit*()`, `predict*()`, and `find_lr()` for more control over the PyTorch `DataLoader` setup.
+  - 🔴 Removed parameter `num_loader_workers` from `fit*()`, `predict*()`, `find_lr()`. You can now set the parameter through the `dataloader_kwargs` dict.
+- Improvements to `DataTransformers`:
+  - Significant speed up when using `fit`, `fit_transform`, `transform`, and `inverse_transform` with a large number of series. The component masking logic was moved into the parallelized transform methods. [#2401](https://github.com/unit8co/darts/pull/2401) by [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
+- Fixed a bug when using a `RegressionModel` (that supports validation series) with a validation set, and encoders and/or component-specific lags, where the encodings and component specific lags were not added to the set. [#2383](https://github.com/unit8co/darts/pull/2383) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug where `n_steps_between` did not work properly with custom business frequencies. This affected metrics computation. [#2357](https://github.com/unit8co/darts/pull/2357) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when calling `predict()` with a `MixedCovariatesTorchModel` (e.g. TiDE, N/DLinear, ...) `n<output_chunk_length` and a list of series with length `len(series) < n`, where the predictions did not return the correct number of series. [#2374](https://github.com/unit8co/darts/pull/2374) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug when using a `TorchForecastingModel` with stateful torch metrics, where the metrics were incorrectly computed as non-stateful. [#2391](https://github.com/unit8co/darts/pull/2391) by [Tim Rosenflanz](https://github.com/tRosenflanz)
 
 **Dependencies**
 - Improvements to linting via updated pre-commit configurations: [#2324](https://github.com/unit8co/darts/pull/2324) by [Jirka Borovec](https://github.com/borda).
