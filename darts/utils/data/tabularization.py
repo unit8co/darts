@@ -213,6 +213,10 @@ def create_lagged_data(
         when `Sequence[TimeSeries]` are provided, then `X` and `y` will be arrays created by concatenating all
         feature/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
+    sample_weight
+        Optionally, sample weights.
+        If a `TimeSeries`, then those weights are used.
+        If a string, then pre-defined weights are used ("linear", "linear_decay", "exponential_decay").
 
     Returns
     -------
@@ -235,7 +239,7 @@ def create_lagged_data(
     last_static_covariates_shape
         The last observed shape of the static covariates. This is ``None`` when `uses_static_covariates`
         is ``False``.
-    sample_weights
+    sample_weight
         The sample weights for each observation in `X`, returned as a `Sequence` of `np.ndarray`s.
 
 
@@ -367,32 +371,21 @@ def create_lagged_data(
         y.append(y_i)
         times.append(times_i)
 
+        # TODO: apply them globally to max series length
         if sample_weight:
-            weights = None
             if sample_weight == "equal":
-                # weights = constant_timeseries(
-                #    1, start=times_i[0], end=times_i[-1], freq=times_i.freq
-                # ).values()
                 weights = np.full(len(y_i), 1)
             elif sample_weight == "linear_decay":
-                # weights = non_zero_linear_timeseries(
-                #    start=times_i[0], end=times_i[-1], freq=times_i.freq
-                # ).values()
                 weights = np.linspace(0, 1, len(y_i))
             elif sample_weight == "exponential_decay":
-                # weights = exponential_timeseries(
-                #    start=times_i[0], end=times_i[-1], freq=times_i.freq
-                # ).values()[::-1]
                 time_steps = np.linspace(0, 1, len(y_i))
                 weights = np.exp(-10 * (1 - time_steps))
             elif isinstance(sample_weight, TimeSeries):
-                weights = sample_weight.values()
+                weights = sample_weight.values(copy=False)
             else:
                 raise ValueError(f"sample_weight {sample_weight} is not supported.")
 
             sample_weights.append(weights)
-
-        # if instance of TimeSeries, convert to np.ndarray and append
 
     if concatenate:
         X = np.concatenate(X, axis=0)

@@ -643,6 +643,12 @@ class RegressionModel(GlobalForecastingModel):
         # if labels are of shape (n_samples, 1) flatten it to shape (n_samples,)
         if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
             training_labels = training_labels.ravel()
+        if (
+            sample_weights_values is not None
+            and len(sample_weights_values.shape) == 2
+            and sample_weights_values.shape[1] == 1
+        ):
+            sample_weights_values = sample_weights_values.ravel()
 
         return training_samples, training_labels, sample_weights_values
 
@@ -730,7 +736,7 @@ class RegressionModel(GlobalForecastingModel):
             support multi-output regression natively.
         sample_weight
             Optionally, sample weights.
-            If a TimeSeries is passed, then those weights are used.
+            If a `TimeSeries`, then those weights are used.
             If a string, then pre-defined weights are used ("linear", "linear_decay", "exponential_decay").
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
@@ -828,15 +834,18 @@ class RegressionModel(GlobalForecastingModel):
             logger.warning("Provided `n_jobs_multioutput_wrapper` wasn't used.")
 
         # Checking for correct values the provided sample weights
-        if isinstance(sample_weight, str):
-            raise_if(
-                sample_weight not in ["equal", "linear_decay", "exponential_decay"],
-                f"Invalid value for `sample_weight`: {sample_weight}."
-                f"Possible values are: equal, linear_decay, exponential_decay.",
+        if isinstance(sample_weight, str) and sample_weight not in [
+            "equal",
+            "linear_decay",
+            "exponential_decay",
+        ]:
+            raise_log(
+                ValueError(
+                    f"Invalid value for `sample_weight`: {sample_weight}."
+                    f"Possible values are: equal, linear_decay, exponential_decay."
+                ),
+                logger=logger,
             )
-        elif isinstance(sample_weight, TimeSeries):
-            # The error is caught later, should we still verify it here?
-            pass
 
         super().fit(
             series=seq2series(series),
