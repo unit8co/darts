@@ -216,7 +216,7 @@ def create_lagged_data(
     sample_weight
         Optionally, sample weights.
         If a `TimeSeries`, then those weights are used.
-        If a string, then pre-defined weights are used ("linear", "linear_decay", "exponential_decay").
+        If a string, then pre-defined weights are used ("equal", "linear_decay", "exponential_decay").
 
     Returns
     -------
@@ -497,6 +497,10 @@ def create_lagged_training_data(
         when `Sequence[TimeSeries]` are provided, then `X` and `y` will be arrays created by concatenating all
         feature/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
+    sample_weight
+        Optionally, sample weights.
+        If a `TimeSeries`, then those weights are used.
+        If a string, then pre-defined weights are used ("equal", "linear_decay", "exponential_decay").
 
     Returns
     -------
@@ -516,6 +520,8 @@ def create_lagged_training_data(
         gives the times of those observations formed using the `i`th `TimeSeries` object in each
         `Sequence`. Otherwise, if the series inputs were specified as `TimeSeries`, the only
         element is the times of those observations formed from the lone `TimeSeries` inputs.
+    sample_weight
+        The sample weights for each observation in `X`, returned as a `Sequence` of `np.ndarray`s.
 
     Raises
     ------
