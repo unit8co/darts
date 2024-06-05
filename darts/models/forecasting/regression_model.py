@@ -629,28 +629,25 @@ class RegressionModel(GlobalForecastingModel):
                 raise_log(ValueError("\n".join(shape_error_msg)), logger)
             features[i] = X_i[:, :, 0]
             labels[i] = y_i[:, :, 0]
+            if sample_weights is not None:
+                sample_weights[i] = sample_weights[i][:, 0]
 
+        features = np.concatenate(features, axis=0)
+        labels = np.concatenate(labels, axis=0)
         if sample_weights is not None:
-            for i, w_i in enumerate(sample_weights):
-                sample_weights[i] = w_i[:, 0]
-            sample_weights_values = np.concatenate(sample_weights, axis=0)
-        else:
-            sample_weights_values = None
-
-        training_samples = np.concatenate(features, axis=0)
-        training_labels = np.concatenate(labels, axis=0)
+            sample_weights = np.concatenate(sample_weights, axis=0)
 
         # if labels are of shape (n_samples, 1) flatten it to shape (n_samples,)
-        if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
-            training_labels = training_labels.ravel()
+        if labels.ndim == 2 and labels.shape[1] == 1:
+            labels = labels.ravel()
         if (
-            sample_weights_values is not None
-            and len(sample_weights_values.shape) == 2
-            and sample_weights_values.shape[1] == 1
+            sample_weights is not None
+            and sample_weights.ndim == 2
+            and sample_weights.shape[1] == 1
         ):
-            sample_weights_values = sample_weights_values.ravel()
+            sample_weights = sample_weights.ravel()
 
-        return training_samples, training_labels, sample_weights_values
+        return features, labels, sample_weights
 
     def _fit_model(
         self,
@@ -832,20 +829,6 @@ class RegressionModel(GlobalForecastingModel):
             and n_jobs_multioutput_wrapper is not None
         ):
             logger.warning("Provided `n_jobs_multioutput_wrapper` wasn't used.")
-
-        # Checking for correct values the provided sample weights
-        if isinstance(sample_weight, str) and sample_weight not in [
-            "equal",
-            "linear_decay",
-            "exponential_decay",
-        ]:
-            raise_log(
-                ValueError(
-                    f"Invalid value for `sample_weight`: {sample_weight}."
-                    f"Possible values are: equal, linear_decay, exponential_decay."
-                ),
-                logger=logger,
-            )
 
         super().fit(
             series=seq2series(series),

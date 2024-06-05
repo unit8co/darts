@@ -22,6 +22,7 @@ from darts.utils.utils import n_steps_between
 logger = get_logger(__name__)
 
 ArrayOrArraySequence = Union[np.ndarray, Sequence[np.ndarray]]
+SUPPORTED_SAMPLE_WEIGHT = {"equal", "linear_decay", "exponential_decay"}
 
 
 def create_lagged_data(
@@ -41,7 +42,7 @@ def create_lagged_data(
     use_moving_windows: bool = True,
     is_training: bool = True,
     concatenate: bool = True,
-    sample_weight: Optional[str] = None,
+    sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
 ) -> Tuple[
     ArrayOrArraySequence,
     Union[None, ArrayOrArraySequence],
@@ -274,14 +275,27 @@ def create_lagged_data(
         "Must specify `target_series` if `is_training = True`.",
     )
 
+    # Checking for correct values the provided sample weights
+    if isinstance(sample_weight, str) and sample_weight not in SUPPORTED_SAMPLE_WEIGHT:
+        raise_log(
+            ValueError(
+                f"Invalid `sample_weight` value: {sample_weight}. "
+                f"If a string, must be one of: {SUPPORTED_SAMPLE_WEIGHT}."
+            ),
+            logger=logger,
+        )
+    if sample_weight is not None and not isinstance(sample_weight, str):
+        sample_weight = series2seq(sample_weight)
+
     # ensure list of TimeSeries format
     target_series = series2seq(target_series)
     past_covariates = series2seq(past_covariates)
     future_covariates = series2seq(future_covariates)
+
     seq_ts_lens = [
         len(seq_ts)
-        for seq_ts in (target_series, past_covariates, future_covariates)
-        if seq_ts is not None
+        for seq_ts in (target_series, past_covariates, future_covariates, sample_weight)
+        if seq_ts is not None and not isinstance(seq_ts, str)
     ]
     seq_ts_lens = set(seq_ts_lens)
     if len(seq_ts_lens) > 1:
@@ -380,10 +394,11 @@ def create_lagged_data(
             elif sample_weight == "exponential_decay":
                 time_steps = np.linspace(0, 1, len(y_i))
                 weights = np.exp(-10 * (1 - time_steps))
-            elif isinstance(sample_weight, TimeSeries):
-                weights = sample_weight.values(copy=False)
             else:
-                raise ValueError(f"sample_weight {sample_weight} is not supported.")
+                weights = sample_weight[i].values(copy=False)
+
+            if weights.ndim == 1:
+                weights = np.expand_dims(weights, -1)
 
             sample_weights.append(weights)
 
