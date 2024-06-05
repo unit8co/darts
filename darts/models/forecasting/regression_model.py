@@ -567,7 +567,7 @@ class RegressionModel(GlobalForecastingModel):
     ):
         """Creates a validation set and returns a new set of kwargs passed to `self.model.fit()` including the
         validation set. This method can be overridden if the model requires a different logic to add the eval set."""
-        val_samples, val_labels = self._create_lagged_data(
+        val_samples, val_labels, _ = self._create_lagged_data(
             series=val_series,
             past_covariates=val_past_covariates,
             future_covariates=val_future_covariates,
@@ -679,7 +679,7 @@ class RegressionModel(GlobalForecastingModel):
                 max_samples_per_ts=max_samples_per_ts,
             )
         self.model.fit(
-            training_samples, training_labels, sample_weights=sample_weights, **kwargs
+            training_samples, training_labels, sample_weight=sample_weights, **kwargs
         )
 
         # generate and store the lagged components names (for feature importance analysis)
