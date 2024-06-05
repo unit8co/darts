@@ -300,7 +300,9 @@ class TestGlobalFittableDataTransformer:
             global_fit
                 Whether global fitting should be performed.
             """
-            super().__init__(name="DataTransformerMock", global_fit=global_fit)
+            super().__init__(
+                name="DataTransformerMock", global_fit=global_fit, mask_components=True
+            )
 
         @staticmethod
         def ts_fit(
@@ -359,3 +361,47 @@ class TestGlobalFittableDataTransformer:
         ).fit_transform([series_1, series_2])
         assert transformed_1 == TimeSeries.from_values(-0.5 * np.ones((3, 2, 1)))
         assert transformed_2 == TimeSeries.from_values(0.5 * np.ones((3, 2, 1)))
+
+    def test_global_fitting_component_masking(self):
+        cols_1 = ["A", "B"]
+        cols_2 = ["C", "D"]
+        series_1_ = TimeSeries.from_values(np.ones((3, 2, 1)), columns=cols_1)
+        series_2_ = TimeSeries.from_values(2 * np.ones((3, 2, 1)), columns=cols_2)
+        series_1 = series_1_.stack(series_2_)
+        series_2 = series_2_.stack(series_1_)
+
+        component_mask = np.array([True] * len(cols_1) + [False] * len(cols_2))
+        # Local fitting - subtracting mean of each series from itself should return
+        # zero-valued series:
+        transformed_1, transformed_2 = self.DataTransformerMock(
+            global_fit=False
+        ).fit_transform([series_1, series_2], component_mask=component_mask)
+        # transformed components
+        assert transformed_1[cols_1] == TimeSeries.from_values(
+            np.zeros((3, 2, 1)), columns=cols_1
+        )
+        assert transformed_2[cols_2] == TimeSeries.from_values(
+            np.zeros((3, 2, 1)), columns=cols_2
+        )
+
+        # non-transformed components
+        assert transformed_1[cols_2] == series_2_
+        assert transformed_2[cols_1] == series_1_
+
+        # Global fitting - mean of `series_1` and `series_2` should be `1.5`, so
+        # `series_1` values should be transformed to `-0.5` and `series_2` values
+        # should be transformed to `1.5`:
+        transformed_1, transformed_2 = self.DataTransformerMock(
+            global_fit=True
+        ).fit_transform([series_1, series_2], component_mask=component_mask)
+        # transformed components
+        assert transformed_1[cols_1] == TimeSeries.from_values(
+            -0.5 * np.ones((3, 2, 1)), columns=cols_1
+        )
+        assert transformed_2[cols_2] == TimeSeries.from_values(
+            0.5 * np.ones((3, 2, 1)), columns=cols_2
+        )
+
+        # non-transformed components
+        assert transformed_1[cols_2] == series_2_
+        assert transformed_2[cols_1] == series_1_
