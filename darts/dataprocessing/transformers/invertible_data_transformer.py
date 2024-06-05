@@ -173,6 +173,12 @@ class InvertibleDataTransformer(BaseDataTransformer):
             mask_components=mask_components,
         )
 
+    @classmethod
+    @component_masking
+    def _ts_inverse_transform(cls, *args, **kwargs):
+        """Applies component masking to `ts_inverse_transform`."""
+        return cls.ts_inverse_transform(*args, **kwargs)
+
     @staticmethod
     @abstractmethod
     def ts_inverse_transform(
@@ -342,13 +348,9 @@ class InvertibleDataTransformer(BaseDataTransformer):
         kwargs["mask_components_apply_only"] = False
         kwargs["component_mask"] = component_mask
 
-        @component_masking
-        def ts_inverse_transform(*fn_args, **fn_kwargs):
-            return self.__class__.ts_inverse_transform(*fn_args, **fn_kwargs)
-
         transformed_data = _parallel_apply(
             input_iterator,
-            ts_inverse_transform,
+            self._ts_inverse_transform,
             self._n_jobs,
             args,
             kwargs,

@@ -175,6 +175,12 @@ class FittableDataTransformer(BaseDataTransformer):
         self._fitted_params = None  # stores the fitted parameters/objects
         self._global_fit = global_fit
 
+    @classmethod
+    @component_masking
+    def _ts_fit(cls, *args, **kwargs):
+        """Applies component masking to `ts_fit`."""
+        return cls.ts_fit(*args, **kwargs)
+
     @staticmethod
     @abstractmethod
     def ts_fit(
@@ -281,12 +287,8 @@ class FittableDataTransformer(BaseDataTransformer):
         kwargs["mask_components_apply_only"] = True
         kwargs["component_mask"] = component_mask
 
-        @component_masking
-        def ts_fit(*fn_args, **fn_kwargs):
-            return self.__class__.ts_fit(*fn_args, **fn_kwargs)
-
         self._fitted_params = _parallel_apply(
-            input_iterator, ts_fit, self._n_jobs, args, kwargs
+            input_iterator, self._ts_fit, self._n_jobs, args, kwargs
         )
         return self
 

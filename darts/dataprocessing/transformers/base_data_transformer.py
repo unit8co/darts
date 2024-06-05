@@ -13,18 +13,19 @@ import numpy as np
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
+from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
 
 logger = get_logger(__name__)
 
 
-def component_masking(transform_method):
+def component_masking(transformer_method):
     """Applies component masking to the series fed to any `transform` method, and then reverts the masking for the
     final output series.
     """
 
-    @wraps(transform_method)
+    @wraps(transformer_method)
     def transform_wrapper(
-        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+        cls, series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
     ):
         kwargs = copy.deepcopy(kwargs)
         # `mask_components` and `component_mask` must be in `kwargs`
@@ -35,21 +36,21 @@ def component_masking(transform_method):
         # remove non-transform columns
         if mask_components and component_mask is not None:
             series_proc = BaseDataTransformer.apply_component_mask(
-                series, component_mask, return_ts=True, copy=False
+                series, component_mask, return_ts=True
             )
         else:
             series_proc = series
             if component_mask is not None:
                 kwargs["component_mask"] = component_mask
 
-        transformed = transform_method(series_proc, params, *args, **kwargs)
+        out = transformer_method(cls, series_proc, params, *args, **kwargs)
 
         # add back non-transformed columns
         if mask_components and not mask_components_apply_only:
-            transformed = BaseDataTransformer.unapply_component_mask(
-                series, transformed, component_mask
+            out = BaseDataTransformer.unapply_component_mask(
+                series, out, component_mask
             )
-        return transformed
+        return out
 
     return transform_wrapper
 
@@ -223,6 +224,12 @@ class BaseDataTransformer(ABC):
             raise_log(ValueError("n_jobs must be an integer"), logger=logger)
         self._n_jobs = value
 
+    @classmethod
+    @component_masking
+    def _ts_transform(cls, *args, **kwargs):
+        """Applies component masking to `ts_transform`."""
+        return cls.ts_transform(*args, **kwargs)
+
     @staticmethod
     @abstractmethod
     def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
@@ -369,12 +376,8 @@ class BaseDataTransformer(ABC):
         kwargs["mask_components_apply_only"] = False
         kwargs["component_mask"] = component_mask
 
-        @component_masking
-        def ts_transform(*fn_args, **fn_kwargs):
-            return self.__class__.ts_transform(*fn_args, **fn_kwargs)
-
         transformed_data = _parallel_apply(
-            input_iterator, ts_transform, self._n_jobs, args, kwargs
+            input_iterator, self._ts_transform, self._n_jobs, args, kwargs
         )
         return (
             transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
@@ -440,8 +443,7 @@ class BaseDataTransformer(ABC):
         series: TimeSeries,
         component_mask: Optional[np.ndarray] = None,
         return_ts: bool = False,
-        copy: bool = True,
-    ) -> Union[TimeSeries, np.ndarray]:
+    ) -> Union[TimeSeries, Sequence[TimeSeries], np.ndarray, Sequence[np.ndarray]]:
         """
         Extracts components specified by `component_mask` from `series`
 
@@ -455,8 +457,6 @@ class BaseDataTransformer(ABC):
             If not specified, no masking is performed.
         return_ts
             Optionally, specifies that a `TimeSeries` should be returned, rather than an `np.ndarray`.
-        copy
-            Whether to return a copy of the values or `TimeSeries`.
 
         Returns
         -------
@@ -465,11 +465,16 @@ class BaseDataTransformer(ABC):
             specified by `component_mask` remaining.
 
         """
+        sequence_type_in = get_series_seq_type(series)
+        called_with_single_series = sequence_type_in == SeriesType.SINGLE
+        series = series2seq(series)
+
         if component_mask is None:
             if return_ts:
-                return series if not copy else series.copy()
+                out = series.copy()
             else:
-                return series.all_values(copy=copy)
+                out = [series_.all_values() for series_ in series]
+            return out[0] if called_with_single_series else out
 
         if not (
             isinstance(component_mask, np.ndarray) and component_mask.dtype == bool
@@ -480,25 +485,29 @@ class BaseDataTransformer(ABC):
                 ),
                 logger=logger,
             )
-        if not series.width == len(component_mask):
-            raise_log(
-                ValueError(
-                    "mismatch between number of components in `series` and length of `component_mask`"
-                ),
-                logger=logger,
-            )
 
-        if return_ts:
-            return series[series.columns[component_mask].tolist()]
-
-        return series.all_values(copy=False)[:, component_mask, :]
+        out = []
+        for series_ in series:
+            if not series_.width == len(component_mask):
+                raise_log(
+                    ValueError(
+                        "mismatch between number of components in `series` and length of `component_mask`"
+                    ),
+                    logger=logger,
+                )
+            if return_ts:
+                out_ = series_[series_.columns[component_mask].tolist()]
+            else:
+                out_ = series_.all_values(copy=False)[:, component_mask, :]
+            out.append(out_)
+        return out[0] if called_with_single_series else out
 
     @staticmethod
     def unapply_component_mask(
-        series: TimeSeries,
-        vals: Union[np.ndarray, TimeSeries],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        vals: Union[np.ndarray, Sequence[np.ndarray], TimeSeries, Sequence[TimeSeries]],
         component_mask: Optional[np.ndarray] = None,
-    ) -> Union[np.ndarray, TimeSeries]:
+    ) -> Union[np.ndarray, Sequence[np.ndarray], TimeSeries, Sequence[TimeSeries]]:
         """
         Adds back components previously removed by `component_mask` in `apply_component_mask` method.
 
@@ -531,21 +540,32 @@ class BaseDataTransformer(ABC):
                 ),
                 logger=logger,
             )
-        if not series.width == len(component_mask):
-            raise_log(
-                ValueError(
-                    "mismatch between number of components in `series` and length of `component_mask`"
-                ),
-                logger=logger,
-            )
-        unmasked = series.all_values()
-        if isinstance(vals, TimeSeries):
-            unmasked[:, component_mask, :] = vals.all_values()
-            # Remove timepoints not present in transformed data:
-            unmasked = series.slice_intersect(vals).with_values(unmasked)
-        else:
-            unmasked[:, component_mask, :] = vals
-        return unmasked
+
+        sequence_type_in = get_series_seq_type(series)
+        called_with_single_series = sequence_type_in == SeriesType.SINGLE
+        series = series2seq(series)
+        if called_with_single_series:
+            vals = [vals]
+
+        out = []
+        for series_, vals_ in zip(series, vals):
+            if not series_.width == len(component_mask):
+                raise_log(
+                    ValueError(
+                        "mismatch between number of components in `series` and length of `component_mask`"
+                    ),
+                    logger=logger,
+                )
+            unmasked = series_.all_values()
+            if isinstance(vals_, TimeSeries):
+                unmasked[:, component_mask, :] = vals_.all_values()
+                # Remove timepoints not present in transformed data:
+                unmasked = series_.slice_intersect(vals_).with_values(unmasked)
+            else:
+                unmasked[:, component_mask, :] = vals_
+
+            out.append(unmasked)
+        return out[0] if called_with_single_series else out
 
     @staticmethod
     def stack_samples(vals: Union[np.ndarray, TimeSeries]) -> np.ndarray:
