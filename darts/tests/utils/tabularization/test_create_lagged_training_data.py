@@ -2648,7 +2648,7 @@ class TestCreateLaggedTrainingData:
             output_chunk_shift=0,
         )
 
-        expected_weights = np.linspace(0, 1, len(y))
+        expected_weights = np.linspace(0, 1, len(train_y))[-len(y) :]
 
         assert len(weights) == len(y)
         np.testing.assert_array_almost_equal(weights[:, 0], expected_weights)
@@ -2669,8 +2669,8 @@ class TestCreateLaggedTrainingData:
             output_chunk_shift=0,
         )
 
-        time_steps = np.linspace(0, 1, len(y))
-        expected_weights = np.exp(-10 * (1 - time_steps))
+        time_steps = np.linspace(0, 1, len(train_y))
+        expected_weights = np.exp(-10 * (1 - time_steps))[-len(y) :]
 
         assert len(weights) == len(y)
         np.testing.assert_array_almost_equal(weights[:, 0], expected_weights)
