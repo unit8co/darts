@@ -2618,7 +2618,7 @@ class TestCreateLaggedTrainingData:
         itertools.product(
             [10, 50],
             [True, False],
-            ["equal", "linear_decay", "exponential_decay"],
+            ["linear_decay", "exponential_decay"],
             ["D", "2D", 2],
             [True, False],
         ),

@@ -22,7 +22,7 @@ from darts.utils.utils import n_steps_between
 logger = get_logger(__name__)
 
 ArrayOrArraySequence = Union[np.ndarray, Sequence[np.ndarray]]
-SUPPORTED_SAMPLE_WEIGHT = {"equal", "linear_decay", "exponential_decay"}
+SUPPORTED_SAMPLE_WEIGHT = {"linear_decay", "exponential_decay"}
 
 
 def create_lagged_data(
@@ -215,9 +215,12 @@ def create_lagged_data(
         feature/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
     sample_weight
-        Optionally, sample weights.
-        If a `TimeSeries`, then those weights are used.
-        If a string, then pre-defined weights are used ("equal", "linear_decay", "exponential_decay").
+        Optionally, some sample weights to apply to the target `series` labels.
+        If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of weights series must
+        match the number of target `series` and each weight series must contain at least all time steps from the
+        corresponding target `series`.
+        If a string, then the weights are generated using built-in weighting functions. The available options are
+        `"linear_decay"` or `"exponential_decay"`.
 
     Returns
     -------
@@ -241,8 +244,7 @@ def create_lagged_data(
         The last observed shape of the static covariates. This is ``None`` when `uses_static_covariates`
         is ``False``.
     sample_weight
-        The sample weights for each observation in `X`, returned as a `Sequence` of `np.ndarray`s.
-
+        The weights to apply to each observation in `X` and output step `y`, returned as a `Sequence` of `np.ndarray`.
 
     Raises
     ------
@@ -298,9 +300,7 @@ def create_lagged_data(
             )
         # create global time weights based on the longest target series
         max_len = max(len(target_i) for target_i in target_series)
-        if sample_weight == "equal":
-            weights = np.full(max_len, 1)
-        elif sample_weight == "linear_decay":
+        if sample_weight == "linear_decay":
             weights = np.linspace(0, 1, max_len)
         else:  # "exponential_decay"
             time_steps = np.linspace(0, 1, max_len)
@@ -526,9 +526,12 @@ def create_lagged_training_data(
         feature/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
     sample_weight
-        Optionally, sample weights.
-        If a `TimeSeries`, then those weights are used.
-        If a string, then pre-defined weights are used ("equal", "linear_decay", "exponential_decay").
+        Optionally, some sample weights to apply to the target `series` labels.
+        If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of weights series must
+        match the number of target `series` and each weight series must contain at least all time steps from the
+        corresponding target `series`.
+        If a string, then the weights are generated using built-in weighting functions. The available options are
+        `"linear_decay"` or `"exponential_decay"`.
 
     Returns
     -------
@@ -549,7 +552,7 @@ def create_lagged_training_data(
         `Sequence`. Otherwise, if the series inputs were specified as `TimeSeries`, the only
         element is the times of those observations formed from the lone `TimeSeries` inputs.
     sample_weight
-        The sample weights for each observation in `X`, returned as a `Sequence` of `np.ndarray`s.
+        The weights to apply to each observation in `X` and output step `y`, returned as a `Sequence` of `np.ndarray`.
 
     Raises
     ------

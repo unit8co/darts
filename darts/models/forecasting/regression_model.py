@@ -707,7 +707,7 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
         n_jobs_multioutput_wrapper: Optional[int] = None,
-        sample_weight: Optional[Union[TimeSeries, str]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         **kwargs,
     ):
         """
@@ -732,9 +732,12 @@ class RegressionModel(GlobalForecastingModel):
             Number of jobs of the MultiOutputRegressor wrapper to run in parallel. Only used if the model doesn't
             support multi-output regression natively.
         sample_weight
-            Optionally, sample weights.
-            If a `TimeSeries`, then those weights are used.
-            If a string, then pre-defined weights are used ("equal", "linear_decay", "exponential_decay").
+            Optionally, some sample weights to apply to the target `series` labels.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of weights series must
+            match the number of target `series` and each weight series must contain at least all time steps from the
+            corresponding target `series`.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear_decay"` or `"exponential_decay"`.
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
