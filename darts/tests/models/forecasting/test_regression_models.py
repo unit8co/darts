@@ -1568,36 +1568,101 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        [
-            (LinearRegressionModel, {}),
-            (RandomForest, {"bootstrap": False}),
-            (XGBModel, {}),
-        ]
-        + ([(CatBoostModel, {"allow_const_label": True})] if cb_available else [])
-        + ([(LightGBMModel, {})] if lgbm_available else []),
+        itertools.product(
+            [
+                (LinearRegressionModel, {}),
+                (RandomForest, {"bootstrap": False}),
+                (XGBModel, xgb_test_params),
+            ]
+            + (
+                [(CatBoostModel, dict({"allow_const_label": True}, **cb_test_params))]
+                if cb_available
+                else []
+            )
+            + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else []),
+            [True, False],
+        ),
+    )
+    def test_weights_built_in(self, config):
+        (model_cls, model_kwargs), single_series = config
+
+        ts = TimeSeries.from_values(values=np.array([0, 0, 0, 0, 1, 0, 0]))
+
+        model = model_cls(lags=3, output_chunk_length=1, **model_kwargs)
+        model.fit(
+            ts if single_series else [ts] * 2,
+            sample_weight="linear_decay",
+        )
+        preds = model.predict(n=3, series=ts if single_series else [ts] * 2)
+
+        model_no_weight = model_cls(lags=3, output_chunk_length=1, **model_kwargs)
+        model_no_weight.fit(
+            ts if single_series else [ts] * 2,
+            sample_weight=None,
+        )
+        preds_no_weight = model_no_weight.predict(
+            n=3, series=ts if single_series else [ts] * 2
+        )
+
+        if single_series:
+            preds = [preds]
+            preds_no_weight = [preds_no_weight]
+
+        for pred, pred_no_weight in zip(preds, preds_no_weight):
+            with pytest.raises(AssertionError):
+                np.testing.assert_array_almost_equal(
+                    pred.all_values(), pred_no_weight.all_values()
+                )
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [
+                (LinearRegressionModel, {}),
+                (RandomForest, {"bootstrap": False}),
+                (XGBModel, xgb_test_params),
+            ]
+            + (
+                [(CatBoostModel, dict({"allow_const_label": True}, **cb_test_params))]
+                if cb_available
+                else []
+            )
+            + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else []),
+            [True, False],
+        ),
     )
     def test_weights_single_step_horizon(self, config):
-        model_cls, model_kwargs = config
+        (model_cls, model_kwargs), single_series = config
         model = model_cls(lags=3, output_chunk_length=1, **model_kwargs)
 
         weights = TimeSeries.from_values(np.array([0, 0, 0, 0, 1, 0, 0]))
 
         ts = TimeSeries.from_values(values=np.array([0, 0, 0, 0, 1, 0, 0]))
 
-        model.fit(ts, sample_weight=weights)
+        model.fit(
+            ts if single_series else [ts] * 2,
+            sample_weight=weights if single_series else [weights] * 2,
+        )
 
-        pred = model.predict(n=3)
-        np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
+        preds = model.predict(n=3, series=ts if single_series else [ts] * 2)
+
+        preds = [preds] if single_series else preds
+        for pred in preds:
+            np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
 
     @pytest.mark.parametrize(
         "config",
         [
             (LinearRegressionModel, {}),
             (RandomForest, {"bootstrap": False}),
-            (XGBModel, {}),
+            (XGBModel, xgb_test_params),
         ]
-        + ([(CatBoostModel, {"allow_const_label": True})] if cb_available else [])
-        + ([(LightGBMModel, {})] if lgbm_available else []),
+        + (
+            [(CatBoostModel, dict({"allow_const_label": True}, **cb_test_params))]
+            if cb_available
+            else []
+        )
+        + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else []),
     )
     def test_weights_multi_horizon(self, config):
         (model_cls, model_kwargs) = config
