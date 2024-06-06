@@ -1627,19 +1627,6 @@ class TestRegressionModels:
 
         np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
 
-    # def test_weights_ignore_missing_values(self):
-    #     model = LinearRegressionModel(lags=3, output_chunk_length=3, multi_models=False)
-    #
-    #     weights = TimeSeries.from_values(np.array([0, 0, 0, 0, 0, 1, 0, 0]))
-    #
-    #     ts = TimeSeries.from_values(values=np.array([0, 0, 0, 0, 0, 1, np.nan, np.nan]))
-    #
-    #     model.fit(ts, sample_weight=weights)
-    #
-    #     pred = model.predict(n=3)
-    #
-    #     np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
-
     @pytest.mark.parametrize("mode", [True, False])
     def test_only_future_covariates(self, mode):
         model = RegressionModel(lags_future_covariates=[-2], multi_models=mode)
