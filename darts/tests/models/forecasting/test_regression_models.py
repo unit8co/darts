@@ -1566,102 +1566,17 @@ class TestRegressionModels:
 
         assert error_both > error_both_multi_ts
 
-    """
-    @pytest.mark.parametrize(
-        "config",
-        [
-            (RegressionModel(lags=4), 10),
-            (RegressionModel(lags=8, model=LinearRegression()), 20),
-            (RegressionModel(lags=16, model=RandomForestRegressor()), 50),
-            (
-                RegressionModel(lags=2, model=HistGradientBoostingRegressor()),
-                100,
-            ),
-        ],
-    )
-    def test_correct_generated_weights_equal(self, config):
-        model, training_size = config
-        train_y = self.sine_univariate1[:training_size]
-        _, _, weights = model._create_lagged_data(
-            target_series=train_y,
-            past_covariates=None,
-            future_covariates=None,
-            max_samples_per_ts=None,
-            sample_weight="equal",
-        )
-
-        weights_size = training_size - len(model.lags["target"])
-
-        assert len(weights) == weights_size
-        assert (weights == [1] * weights_size).all()
-
-    @pytest.mark.parametrize(
-        "config",
-        [
-            (RegressionModel(lags=4), 10),
-            (RegressionModel(lags=8, model=LinearRegression()), 20),
-            (RegressionModel(lags=16, model=RandomForestRegressor()), 50),
-            (
-                RegressionModel(lags=2, model=HistGradientBoostingRegressor()),
-                100,
-            ),
-        ],
-    )
-    def test_correct_generated_weights_linear(self, config):
-        model, training_size = config
-        weights_size = training_size - len(model.lags["target"])
-
-        expected_weights = np.linspace(0, 1, weights_size + 1)[1:]
-
-        train_y = self.sine_univariate1[:training_size]
-        _, _, weights = model._create_lagged_data(
-            target_series=train_y,
-            past_covariates=None,
-            future_covariates=None,
-            max_samples_per_ts=None,
-            sample_weight="linear_decay",
-        )
-
-        assert len(weights) == weights_size
-        assert (weights == expected_weights).all()
-
-    @pytest.mark.parametrize(
-        "config",
-        [
-            (RegressionModel(lags=4), 10, 10),
-            (RegressionModel(lags=8, model=LinearRegression()), 20, 10),
-            (RegressionModel(lags=16, model=RandomForestRegressor()), 50, 10),
-            (RegressionModel(lags=2, model=HistGradientBoostingRegressor()), 100, 10),
-        ],
-    )
-    def test_correct_generated_weights_exponential(self, config):
-        model, training_size, decay_rate = config
-        weights_size = training_size - len(model.lags["target"])
-
-        time_steps = np.linspace(0, 1, weights_size)
-        expected_weights = np.exp(-decay_rate * (1 - time_steps))
-
-        train_y = self.sine_univariate1[:training_size]
-        _, _, weights = model._create_lagged_data(
-            target_series=train_y,
-            past_covariates=None,
-            future_covariates=None,
-            max_samples_per_ts=None,
-            sample_weight="exponential_decay",
-        )
-
-        assert len(weights) == weights_size
-        np.testing.assert_array_almost_equal(weights, expected_weights)"""
-
     @pytest.mark.parametrize(
         "config",
         [
             (LinearRegressionModel, {}),
             (RandomForest, {"bootstrap": False}),
             (XGBModel, {}),
-        ],
+        ]
+        + ([(CatBoostModel, {"allow_const_label": True})] if cb_available else [])
+        + ([(LightGBMModel, {})] if lgbm_available else []),
     )
-    def test_weight_single_sample(self, config):
+    def test_weights_single_step_horizon(self, config):
         model_cls, model_kwargs = config
         model = model_cls(lags=3, output_chunk_length=1, **model_kwargs)
 
@@ -1684,7 +1599,7 @@ class TestRegressionModels:
         + ([(CatBoostModel, {"allow_const_label": True})] if cb_available else [])
         + ([(LightGBMModel, {})] if lgbm_available else []),
     )
-    def test_weights_multimodel_single_sample(self, config):
+    def test_weights_multi_horizon(self, config):
         (model_cls, model_kwargs) = config
         model = model_cls(lags=3, output_chunk_length=3, **model_kwargs)
 
@@ -1699,18 +1614,8 @@ class TestRegressionModels:
 
         np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
 
-    @pytest.mark.parametrize(
-        "config",
-        [
-            (
-                LinearRegressionModel,
-                {"lags": 3, "output_chunk_length": 3, "multi_models": False},
-            )
-        ],
-    )
-    def test_weights_multimodel_false_single_sample(self, config):
-        (model_cls, model_kwargs) = config
-        model = model_cls(**model_kwargs)
+    def test_weights_multimodel_false_multi_horizon(self):
+        model = LinearRegressionModel(lags=3, output_chunk_length=3, multi_models=False)
 
         weights = TimeSeries.from_values(np.array([0, 0, 0, 0, 0, 1, 0, 0]))
 
@@ -1721,6 +1626,19 @@ class TestRegressionModels:
         pred = model.predict(n=3)
 
         np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
+
+    # def test_weights_ignore_missing_values(self):
+    #     model = LinearRegressionModel(lags=3, output_chunk_length=3, multi_models=False)
+    #
+    #     weights = TimeSeries.from_values(np.array([0, 0, 0, 0, 0, 1, 0, 0]))
+    #
+    #     ts = TimeSeries.from_values(values=np.array([0, 0, 0, 0, 0, 1, np.nan, np.nan]))
+    #
+    #     model.fit(ts, sample_weight=weights)
+    #
+    #     pred = model.predict(n=3)
+    #
+    #     np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_only_future_covariates(self, mode):
