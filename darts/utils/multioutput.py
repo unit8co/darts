@@ -5,6 +5,8 @@ from sklearn.multioutput import _fit_estimator
 from sklearn.utils.multiclass import check_classification_targets
 from sklearn.utils.validation import has_fit_parameter
 
+from darts.logging import get_logger, raise_log
+
 if sklearn_version >= "1.4":
     # sklearn renamed `_check_fit_params` to `_check_method_params` in v1.4
     from sklearn.utils.validation import _check_method_params
@@ -18,12 +20,20 @@ else:
     from joblib import Parallel
     from sklearn.utils.fixes import delayed
 
+logger = get_logger(__name__)
+
 
 class MultiOutputRegressor(sk_MultiOutputRegressor):
     """
     :class:`sklearn.utils.multioutput.MultiOutputRegressor` with a modified ``fit()`` method that also slices
     validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.estimators_ = None
+        self.n_features_in_ = None
+        self.feature_names_in_ = None
 
     def fit(self, X, y, sample_weight=None, **fit_params):
         """Fit the model to data, separately for each output variable.
@@ -37,7 +47,7 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
             Multi-output targets. An indicator matrix turns on multilabel
             estimation.
 
-        sample_weight : array-like of shape (n_samples,), default=None
+        sample_weight : array-like of shape (n_samples, n_outputs), default=None
             Sample weights. If `None`, then samples are equally weighted.
             Only supported if the underlying regressor supports sample
             weights.
@@ -54,7 +64,10 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
         """
 
         if not hasattr(self.estimator, "fit"):
-            raise ValueError("The base estimator should implement a fit method")
+            raise_log(
+                ValueError("The base estimator should implement a fit method"),
+                logger=logger,
+            )
 
         y = self._validate_data(X="no_validation", y=y, multi_output=True)
 
@@ -62,18 +75,29 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
             check_classification_targets(y)
 
         if y.ndim == 1:
-            raise ValueError(
-                "y must have at least two dimensions for "
-                "multi-output regression but has only one."
+            raise_log(
+                ValueError(
+                    "`y` must have at least two dimensions for multi-output regression but has only one."
+                ),
+                logger=logger,
+            )
+        if sample_weight is not None and (
+            sample_weight.ndim == 1 or sample_weight.shape[1] != y.shape[1]
+        ):
+            raise_log(
+                ValueError("`sample_weight` must have the same dimensions as `y`."),
+                logger=logger,
             )
 
         if sample_weight is not None and not has_fit_parameter(
             self.estimator, "sample_weight"
         ):
-            raise ValueError("Underlying estimator does not support sample weights.")
+            raise_log(
+                ValueError("Underlying estimator does not support sample weights."),
+                logger=logger,
+            )
 
         fit_params_validated = _check_method_params(X, fit_params)
-
         if "eval_set" in fit_params_validated.keys():
             # with validation set
             eval_set = fit_params_validated.pop("eval_set")
@@ -82,7 +106,9 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
                     self.estimator,
                     X,
                     y[:, i],
-                    sample_weight,
+                    sample_weight=sample_weight[:, i]
+                    if sample_weight is not None
+                    else None,
                     # eval set may be a list (for XGBRegressor), in which case we have to keep it as a list
                     eval_set=(
                         [(eval_set[0][0], eval_set[0][1][:, i])]
@@ -97,7 +123,13 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
             # without validation set
             self.estimators_ = Parallel(n_jobs=self.n_jobs)(
                 delayed(_fit_estimator)(
-                    self.estimator, X, y[:, i], sample_weight, **fit_params_validated
+                    self.estimator,
+                    X,
+                    y[:, i],
+                    sample_weight=sample_weight[:, i]
+                    if sample_weight is not None
+                    else None,
+                    **fit_params_validated,
                 )
                 for i in range(y.shape[1])
             )

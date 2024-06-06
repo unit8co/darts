@@ -630,7 +630,7 @@ class RegressionModel(GlobalForecastingModel):
             features[i] = X_i[:, :, 0]
             labels[i] = y_i[:, :, 0]
             if sample_weights is not None:
-                sample_weights[i] = sample_weights[i][:, 0]
+                sample_weights[i] = sample_weights[i][:, :, 0]
 
         features = np.concatenate(features, axis=0)
         labels = np.concatenate(labels, axis=0)
@@ -800,28 +800,29 @@ class RegressionModel(GlobalForecastingModel):
 
         # if multi-output regression
         if not series[0].is_univariate or (
-            self.output_chunk_length > 1 and self.multi_models
+            self.output_chunk_length > 1
+            and self.multi_models
+            and not isinstance(self.model, MultiOutputRegressor)
         ):
-            # and model isn't wrapped already
-            if not isinstance(self.model, MultiOutputRegressor):
-                # check whether model supports multi-output regression natively
-                if not (
-                    callable(getattr(self.model, "_get_tags", None))
-                    and isinstance(self.model._get_tags(), dict)
-                    and self.model._get_tags().get("multioutput")
-                ):
-                    # if not, wrap model with MultiOutputRegressor
+            if sample_weight is not None:
+                # we have 2D sample (and time) weights, only supported in Darts
+                self.model = MultiOutputRegressor(
+                    self.model, n_jobs=n_jobs_multioutput_wrapper
+                )
+            elif not (
+                callable(getattr(self.model, "_get_tags", None))
+                and isinstance(self.model._get_tags(), dict)
+                and self.model._get_tags().get("multioutput")
+            ):
+                # model does not support multi-output regression natively
+                self.model = MultiOutputRegressor(
+                    self.model, n_jobs=n_jobs_multioutput_wrapper
+                )
+            elif self.model.__class__.__name__ == "CatBoostRegressor":
+                if self.model.get_params()["loss_function"] == "RMSEWithUncertainty":
                     self.model = MultiOutputRegressor(
                         self.model, n_jobs=n_jobs_multioutput_wrapper
                     )
-                elif self.model.__class__.__name__ == "CatBoostRegressor":
-                    if (
-                        self.model.get_params()["loss_function"]
-                        == "RMSEWithUncertainty"
-                    ):
-                        self.model = MultiOutputRegressor(
-                            self.model, n_jobs=n_jobs_multioutput_wrapper
-                        )
 
         # warn if n_jobs_multioutput_wrapper was provided but not used
         if (

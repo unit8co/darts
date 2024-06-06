@@ -2628,9 +2628,9 @@ class TestCreateLaggedTrainingData:
             sample_weight="equal",
             output_chunk_shift=0,
         )
-        expected_weights = np.ones(len(y))
+        expected_weights = np.ones((len(y), 1, 1))
         assert len(weights) == len(y)
-        np.testing.assert_array_almost_equal(weights[:, 0], expected_weights)
+        np.testing.assert_array_almost_equal(weights, expected_weights)
 
     @pytest.mark.parametrize(
         "config", itertools.product([10, 50, 100], [[-3, -2, -1], [-4, -1]])
@@ -2648,10 +2648,10 @@ class TestCreateLaggedTrainingData:
             output_chunk_shift=0,
         )
 
-        expected_weights = np.linspace(0, 1, len(train_y))[-len(y) :]
+        expected_weights = np.linspace(0, 1, len(train_y))[-len(y) :, None, None]
 
         assert len(weights) == len(y)
-        np.testing.assert_array_almost_equal(weights[:, 0], expected_weights)
+        np.testing.assert_array_almost_equal(weights, expected_weights)
 
     @pytest.mark.parametrize(
         "config", itertools.product([10, 50, 100], [[-3, -2, -1], [-4, -1]])
@@ -2670,7 +2670,7 @@ class TestCreateLaggedTrainingData:
         )
 
         time_steps = np.linspace(0, 1, len(train_y))
-        expected_weights = np.exp(-10 * (1 - time_steps))[-len(y) :]
+        expected_weights = np.exp(-10 * (1 - time_steps))[-len(y) :, None, None]
 
         assert len(weights) == len(y)
-        np.testing.assert_array_almost_equal(weights[:, 0], expected_weights)
+        np.testing.assert_array_almost_equal(weights, expected_weights)

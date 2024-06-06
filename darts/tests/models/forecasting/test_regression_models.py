@@ -1665,7 +1665,7 @@ class TestRegressionModels:
         model_cls, model_kwargs = config
         model = model_cls(**model_kwargs)
 
-        weights = TimeSeries.from_values(np.array([0, 1, 0, 0]))
+        weights = TimeSeries.from_values(np.array([0, 0, 0, 0, 1, 0, 0]))
 
         ts = TimeSeries.from_values(values=np.array([0, 0, 0, 0, 1, 0, 0]))
 
@@ -1697,7 +1697,7 @@ class TestRegressionModels:
         (model_cls, model_kwargs) = config
         model = model_cls(**model_kwargs)
 
-        weights = TimeSeries.from_values(np.array([0, 1]))
+        weights = TimeSeries.from_values(np.array([0, 0, 0, 0, 1, 1, 1]))
 
         ts = TimeSeries.from_values(values=np.array([0, 0, 0, 0, 1, 0, 0]))
 
@@ -1705,7 +1705,7 @@ class TestRegressionModels:
 
         pred = model.predict(n=3)
 
-        np.testing.assert_array_almost_equal(pred.values(), np.array([[1, 0, 0]]).T)
+        np.testing.assert_array_almost_equal(pred.values(), np.array([[1, 0.5, 0.0]]).T)
 
     @pytest.mark.parametrize(
         "config",
@@ -1720,7 +1720,7 @@ class TestRegressionModels:
         (model_cls, model_kwargs) = config
         model = model_cls(**model_kwargs)
 
-        weights = TimeSeries.from_values(np.array([1, 0, 0]))
+        weights = TimeSeries.from_values(np.array([0, 0, 0, 0, 0, 1, 0, 0]))
 
         ts = TimeSeries.from_values(values=np.array([0, 0, 0, 0, 0, 1, 0, 0]))
 
