@@ -331,7 +331,6 @@ def create_lagged_data(
             ),
             logger,
         )
-
     lags_passed_as_dict = any(
         isinstance(lags_, dict)
         for lags_ in [lags, lags_past_covariates, lags_future_covariates]
@@ -354,7 +353,6 @@ def create_lagged_data(
         lags_past_covariates,
         lags_future_covariates,
     )
-
     X, y, times, sample_weights = [], [], [], []
     for i in range(max(seq_ts_lens)):
         target_i = target_series[i] if target_series else None
@@ -391,8 +389,7 @@ def create_lagged_data(
                 is_training=is_training,
             )
         else:
-            weights_i = None
-            X_i, y_i, times_i = _create_lagged_data_by_intersecting_times(
+            X_i, y_i, times_i, weights_i = _create_lagged_data_by_intersecting_times(
                 target_series=target_i,
                 output_chunk_length=output_chunk_length,
                 output_chunk_shift=output_chunk_shift,
@@ -1239,7 +1236,12 @@ def _create_lagged_data_by_intersecting_times(
     multi_models: bool,
     check_inputs: bool,
     is_training: bool,
-) -> Tuple[np.ndarray, np.ndarray, Union[pd.RangeIndex, pd.DatetimeIndex]]:
+) -> Tuple[
+    np.ndarray,
+    Optional[np.ndarray],
+    Union[pd.RangeIndex, pd.DatetimeIndex],
+    Optional[np.ndarray],
+]:
     """
     Helper function called by `_create_lagged_data` that computes `X`, `y`, and `times` by
     first finding the time points in each series that *could* be used to create features/labels,
@@ -1268,6 +1270,25 @@ def _create_lagged_data_by_intersecting_times(
             raise_log(
                 ValueError("Must specify at least one series-lags pair."), logger=logger
             )
+    if sample_weight is not None:
+        if target_series is None:
+            raise_log(
+                ValueError("Must supply `target_series` when using `sample_weight`."),
+                logger=logger,
+            )
+        sample_weight_vals = sample_weight.slice_intersect_values(
+            target_series, copy=False
+        )
+        if len(sample_weight_vals) != len(target_series):
+            raise_log(
+                ValueError(
+                    "The `sample_weight` series must have at least the same times as the target `series`."
+                ),
+                logger=logger,
+            )
+    else:
+        sample_weight_vals = None
+
     shared_times = get_shared_times(*feature_times, sort=True)
     if shared_times is None:
         raise_log(
@@ -1341,13 +1362,23 @@ def _create_lagged_data_by_intersecting_times(
             idx_to_get = (
                 label_shared_time_idx + output_chunk_length + output_chunk_shift - 1
             )
-        # Before reshaping: lagged_vals.shape = (n_observations, num_lags, n_components, n_samples)
-        lagged_vals = target_series.all_values(copy=False)[idx_to_get, :, :]
-        # After reshaping: lagged_vals.shape = (n_observations, num_lags*n_components, n_samples)
-        y = lagged_vals.reshape(lagged_vals.shape[0], -1, lagged_vals.shape[-1])
+
+        # extract target labels and sample weights
+        y_and_weights = []
+        for vals in [target_series.all_values(copy=False), sample_weight_vals]:
+            if vals is None:
+                y_and_weights.append(None)
+                continue
+
+            # Before reshaping: lagged_vals.shape = (n_observations, num_lags, n_components, n_samples)
+            vals = vals[idx_to_get, :, :]
+            # After reshaping: lagged_vals.shape = (n_observations, num_lags*n_components, n_samples)
+            vals = vals.reshape(vals.shape[0], -1, vals.shape[-1])
+            y_and_weights.append(vals)
+        y, weights = y_and_weights
     else:
-        y = None
-    return X, y, shared_times
+        y, weights = None, None
+    return X, y, shared_times, weights
 
 
 def _create_lagged_data_autoregression(
