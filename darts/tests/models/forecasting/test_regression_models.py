@@ -1656,14 +1656,14 @@ class TestRegressionModels:
     @pytest.mark.parametrize(
         "config",
         [
-            (LinearRegressionModel, {"lags": 3, "output_chunk_length": 1}),
-            (RandomForest, {"lags": 3, "output_chunk_length": 1, "bootstrap": False}),
-            (XGBModel, {"lags": 3, "output_chunk_length": 1}),
+            (LinearRegressionModel, {}),
+            (RandomForest, {"bootstrap": False}),
+            (XGBModel, {}),
         ],
     )
     def test_weight_single_sample(self, config):
         model_cls, model_kwargs = config
-        model = model_cls(**model_kwargs)
+        model = model_cls(lags=3, output_chunk_length=1, **model_kwargs)
 
         weights = TimeSeries.from_values(np.array([0, 0, 0, 0, 1, 0, 0]))
 
@@ -1671,41 +1671,33 @@ class TestRegressionModels:
 
         model.fit(ts, sample_weight=weights)
 
-        pred = model.predict(n=1)
-
-        """
-        X, y, weights = model._create_lagged_data(
-            target_series=train_y,
-            past_covariates=None,
-            future_covariates=None,
-            max_samples_per_ts=None,
-            sample_weight="linear_decay",
-        )
-        """
-
-        assert pred.values()[0] == 1
+        pred = model.predict(n=3)
+        np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
 
     @pytest.mark.parametrize(
         "config",
         [
-            (LinearRegressionModel, {"lags": 3, "output_chunk_length": 3}),
-            (RandomForest, {"lags": 3, "output_chunk_length": 3, "bootstrap": False}),
-            (XGBModel, {"lags": 3, "output_chunk_length": 3}),
-        ],
+            (LinearRegressionModel, {}),
+            (RandomForest, {"bootstrap": False}),
+            (XGBModel, {}),
+        ]
+        + ([(CatBoostModel, {"allow_const_label": True})] if cb_available else [])
+        + ([(LightGBMModel, {})] if lgbm_available else []),
     )
     def test_weights_multimodel_single_sample(self, config):
         (model_cls, model_kwargs) = config
-        model = model_cls(**model_kwargs)
+        model = model_cls(lags=3, output_chunk_length=3, **model_kwargs)
 
-        weights = TimeSeries.from_values(np.array([0, 0, 0, 0, 1, 1, 1]))
+        weights = TimeSeries.from_values(np.array([0, 0, 0, 1, 1, 1, 0, 0, 0]))
 
-        ts = TimeSeries.from_values(values=np.array([0, 0, 0, 0, 1, 0, 0]))
+        # model should only fit on ones in the middle
+        ts = TimeSeries.from_values(values=np.array([0, 0, 0, 1, 1, 1, 2, 2, 2]))
 
         model.fit(ts, sample_weight=weights)
 
         pred = model.predict(n=3)
 
-        np.testing.assert_array_almost_equal(pred.values(), np.array([[1, 0.5, 0.0]]).T)
+        np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
 
     @pytest.mark.parametrize(
         "config",
@@ -1728,7 +1720,7 @@ class TestRegressionModels:
 
         pred = model.predict(n=3)
 
-        np.testing.assert_array_almost_equal(pred.values(), np.array([[1, 1, 1]]).T)
+        np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_only_future_covariates(self, mode):
