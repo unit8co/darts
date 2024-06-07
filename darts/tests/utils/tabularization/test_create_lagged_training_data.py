@@ -2676,6 +2676,7 @@ class TestCreateLaggedTrainingData:
             [0, 1],
             ["D", "2D", 2],
             [True, False],
+            [True, False],
         ),
     )
     def test_correct_user_weights(self, config):
@@ -2687,6 +2688,7 @@ class TestCreateLaggedTrainingData:
         - with and without output chunk shift
         - datetime and integer index
         - single and multiple series
+        - uni- and multivariate series
         """
         (
             training_size,
@@ -2696,6 +2698,7 @@ class TestCreateLaggedTrainingData:
             ocs,
             freq,
             single_series,
+            univar_series,
         ) = config
         if not isinstance(freq, int):
             freq = pd.tseries.frequencies.to_offset(freq)
@@ -2704,6 +2707,8 @@ class TestCreateLaggedTrainingData:
             start = 1
 
         train_y = linear_timeseries(start=start, length=training_size, freq=freq)
+        if not univar_series:
+            train_y.stack(train_y)
 
         # weights are either longer or have the exact time index as the target series
         n_weights = len(train_y) + 2 * int(weights_longer)
@@ -2715,6 +2720,8 @@ class TestCreateLaggedTrainingData:
             ),
             values=np.linspace(0, 1, n_weights),
         )
+        if not univar_series:
+            ts_weights.stack(ts_weights + 1.0)
 
         _, y, _, _, weights = create_lagged_training_data(
             lags=[-4, -1],
@@ -2755,13 +2762,14 @@ class TestCreateLaggedTrainingData:
         - too short series
         - not enough series
         - invalid string
+        - weights shape does not match number of `series` components
         """
         training_size = 10
 
         train_y = linear_timeseries(length=training_size)
         weights_too_short = train_y[:-2]
         with pytest.raises(ValueError) as err:
-            _, y, _, _, weights = create_lagged_training_data(
+            _ = create_lagged_training_data(
                 lags=[-4, -1],
                 target_series=train_y,
                 output_chunk_length=1,
@@ -2776,7 +2784,7 @@ class TestCreateLaggedTrainingData:
         )
 
         with pytest.raises(ValueError) as err:
-            _, y, _, _, weights = create_lagged_training_data(
+            _ = create_lagged_training_data(
                 lags=[-4, -1],
                 target_series=[train_y] * 2,
                 output_chunk_length=1,
@@ -2791,7 +2799,7 @@ class TestCreateLaggedTrainingData:
         )
 
         with pytest.raises(ValueError) as err:
-            _, y, _, _, weights = create_lagged_training_data(
+            _ = create_lagged_training_data(
                 lags=[-4, -1],
                 target_series=[train_y] * 2,
                 output_chunk_length=1,
@@ -2801,3 +2809,18 @@ class TestCreateLaggedTrainingData:
                 use_moving_windows=use_moving_windows,
             )
         assert str(err.value).startswith("Invalid `sample_weight` value: invalid. ")
+
+        with pytest.raises(ValueError) as err:
+            _ = create_lagged_training_data(
+                lags=[-4, -1],
+                target_series=train_y,
+                output_chunk_length=1,
+                uses_static_covariates=False,
+                sample_weight=train_y.stack(train_y),
+                output_chunk_shift=0,
+                use_moving_windows=use_moving_windows,
+            )
+        assert str(err.value) == (
+            "The number of components in `sample_weight` must either be `1` or "
+            "match the number of target series components `1`"
+        )

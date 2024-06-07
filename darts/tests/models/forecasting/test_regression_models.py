@@ -1,5 +1,7 @@
 import copy
 import functools
+import importlib
+import inspect
 import itertools
 import math
 from unittest.mock import patch
@@ -1797,25 +1799,58 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        [(XGBModel, xgb_test_params, "xgboost.xgb.XGBRegressor")]
-        + (
-            [(LightGBMModel, lgbm_test_params, "lgbm.lgb.LGBMRegressor")]
-            if lgbm_available
-            else []
-        )
-        + (
-            [(CatBoostModel, cb_test_params, "catboost_model.CatBoostRegressor")]
-            if cb_available
-            else []
+        itertools.product(
+            [
+                (
+                    XGBModel,
+                    xgb_test_params,
+                    "xgboost.xgb.XGBRegressor",
+                    "xgboost.XGBRegressor",
+                )
+            ]
+            + (
+                [
+                    (
+                        LightGBMModel,
+                        lgbm_test_params,
+                        "lgbm.lgb.LGBMRegressor",
+                        "lightgbm.LGBMRegressor",
+                    )
+                ]
+                if lgbm_available
+                else []
+            )
+            + (
+                [
+                    (
+                        CatBoostModel,
+                        cb_test_params,
+                        "catboost_model.CatBoostRegressor",
+                        "catboost.CatBoostRegressor",
+                    )
+                ]
+                if cb_available
+                else []
+            ),
+            [False, True],
         ),
     )
     def test_val_set(self, config):
         """Test whether the evaluation set parameters are passed to the wrapped regression model."""
-        model_cls, model_kwargs, model_loc = config
+        (model_cls, model_kwargs, model_loc, model_import), use_weights = config
+        module_name, model_name = model_import.split(".")
+        # mocking `fit` loses function signature. MultiOutputRegressor checks the function signature
+        # internally, so we have to overwrite the mocked function signature with the original one.
+        fit_sig = inspect.signature(
+            getattr(importlib.import_module(module_name), model_name).fit
+        )
         with patch(f"darts.models.forecasting.{model_loc}.fit") as fit_patch:
-            self.helper_check_val_set(model_cls, model_kwargs, fit_patch)
+            fit_patch.__signature__ = fit_sig
+            self.helper_check_val_set(
+                model_cls, model_kwargs, fit_patch, use_weights=use_weights
+            )
 
-    def helper_check_val_set(self, model_cls, model_kwargs, fit_patch):
+    def helper_check_val_set(self, model_cls, model_kwargs, fit_patch, use_weights):
         series1 = tg.sine_timeseries(length=10, column_name="tg_1")
         series2 = tg.sine_timeseries(length=10, column_name="tg_2") / 2 + 10
         series = series1.stack(series2)
@@ -1826,6 +1861,16 @@ class TestRegressionModels:
         fc = TimeSeries.from_times_and_values(
             times=series.time_index, values=series.values() * -1, columns=["fc1", "fc2"]
         )
+
+        weights_kwargs = (
+            {
+                "sample_weight": tg.linear_timeseries(length=10),
+                "val_sample_weight": tg.linear_timeseries(length=10),
+            }
+            if use_weights
+            else {}
+        )
+
         model = model_cls(
             lags={"default_lags": [-4, -3, -2, -1]},
             lags_past_covariates=3,
@@ -1849,6 +1894,7 @@ class TestRegressionModels:
                 val_past_covariates=pc,
                 val_future_covariates=fc["fc1"],
                 early_stopping_rounds=2,
+                **weights_kwargs,
             )
         msg_expected = (
             "The dimensions of the (`series`, `future_covariates`, `static_covariates`) between "
@@ -1866,6 +1912,7 @@ class TestRegressionModels:
                 val_past_covariates=[pc, pc],
                 val_future_covariates=[fc, fc["fc1"]],
                 early_stopping_rounds=2,
+                **weights_kwargs,
             )
         msg_expected = (
             "The dimensions of the (`series`, `future_covariates`, `static_covariates`) between "
@@ -1881,23 +1928,53 @@ class TestRegressionModels:
             val_past_covariates=pc,
             val_future_covariates=fc,
             early_stopping_rounds=2,
+            **weights_kwargs,
         )
         # fit called 6 times (3 quantiles * 2 target features)
         assert fit_patch.call_count == 6
 
-        train_set = fit_patch.call_args[0]
+        X_train, y_train = fit_patch.call_args[0]
+
+        # check weights in training set
+        weight_train = None
+        if use_weights:
+            assert "sample_weight" in fit_patch.call_args[1]
+            weight_train = fit_patch.call_args[1]["sample_weight"]
+
+        # check eval set
+        eval_set_name, eval_weight_name = model.val_set_params
+        assert eval_set_name in fit_patch.call_args[1]
         eval_set = fit_patch.call_args[1]["eval_set"]
         assert eval_set is not None
-        # xbg requires a list of eval sets
-        if issubclass(model_cls, XGBModel):
-            assert isinstance(eval_set, list)
-            eval_set = eval_set[0]
-        assert isinstance(eval_set, tuple) and len(eval_set) == 2
+        assert isinstance(eval_set, list)
+        eval_set = eval_set[0]
+
+        weight = None
+        if cb_available and isinstance(model, CatBoostModel):
+            # CatBoost requires eval set as `Pool`
+            from catboost import Pool
+
+            assert isinstance(eval_set, Pool)
+            X, y = eval_set.get_features(), eval_set.get_label()
+            if use_weights:
+                weight = np.array(eval_set.get_weight())
+
+        else:
+            assert isinstance(eval_set, tuple) and len(eval_set) == 2
+            X, y = eval_set
+            if use_weights:
+                assert eval_weight_name in fit_patch.call_args[1]
+                weight = fit_patch.call_args[1][eval_weight_name]
+                assert isinstance(weight, list)
+                weight = weight[0]
 
         # check same number of features for each dataset
-        assert eval_set[0].shape[1:] == train_set[0].shape[1:]
-        assert eval_set[1].shape[1:] == train_set[1].shape[1:]
+        assert X.shape[1:] == X_train.shape[1:]
+        assert y.shape[1:] == y_train.shape[1:]
         assert fit_patch.call_args[1]["early_stopping_rounds"] == 2
+        if use_weights:
+            assert weight_train.shape == y_train.shape
+            assert weight.shape == y.shape
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_integer_indexed_series(self, mode):

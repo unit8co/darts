@@ -7,10 +7,10 @@ CatBoost based regression model.
 This implementation comes with the ability to produce probabilistic forecasts.
 """
 
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from catboost import CatBoostRegressor
+from catboost import CatBoostRegressor, Pool
 
 from darts.logging import get_logger
 from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
@@ -318,13 +318,51 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         else:
             return None
 
+    def _add_val_set_to_kwargs(
+        self,
+        kwargs: Dict,
+        val_series: Sequence[TimeSeries],
+        val_past_covariates: Optional[Sequence[TimeSeries]],
+        val_future_covariates: Optional[Sequence[TimeSeries]],
+        val_sample_weight: Optional[Union[Sequence[TimeSeries], str]],
+        max_samples_per_ts: int,
+    ) -> dict:
+        # CatBoostRegressor requires sample weights to be passed with a validation set `Pool`
+        kwargs = super()._add_val_set_to_kwargs(
+            kwargs=kwargs,
+            val_series=val_series,
+            val_past_covariates=val_past_covariates,
+            val_future_covariates=val_future_covariates,
+            val_sample_weight=val_sample_weight,
+            max_samples_per_ts=max_samples_per_ts,
+        )
+        val_set_name, val_weight_name = self.val_set_params
+        val_sets = kwargs[val_set_name]
+        # CatBoost requires eval set Pool with sample weights -> remove from kwargs
+        val_weights = kwargs.pop(val_weight_name)
+        val_pools = []
+        for i, val_set in enumerate(val_sets):
+            val_pools.append(
+                Pool(
+                    data=val_set[0],
+                    label=val_set[1],
+                    weight=val_weights[i] if val_weights is not None else None,
+                )
+            )
+        kwargs[val_set_name] = val_pools
+        return kwargs
+
     @property
     def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None
 
     @property
-    def supports_val_set(self):
+    def supports_val_set(self) -> bool:
         return True
+
+    @property
+    def val_set_params(self) -> Tuple[Optional[str], Optional[str]]:
+        return "eval_set", "eval_sample_weight"
 
     @property
     def min_train_series_length(self) -> int:

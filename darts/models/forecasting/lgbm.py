@@ -10,7 +10,7 @@ To enable LightGBM support in Darts, follow the detailed install instructions fo
 https://github.com/unit8co/darts/blob/master/INSTALL.md
 """
 
-from typing import List, Optional, Sequence, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import lightgbm as lgb
 import numpy as np
@@ -309,8 +309,12 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         return self.likelihood is not None
 
     @property
-    def supports_val_set(self):
+    def supports_val_set(self) -> bool:
         return True
+
+    @property
+    def val_set_params(self) -> Tuple[Optional[str], Optional[str]]:
+        return "eval_set", "eval_sample_weight"
 
     @property
     def min_train_series_length(self) -> int:

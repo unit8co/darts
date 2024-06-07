@@ -8,7 +8,7 @@ This implementation comes with the ability to produce probabilistic forecasts.
 """
 
 from functools import partial
-from typing import Dict, List, Optional, Sequence, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import xgboost as xgb
@@ -315,32 +315,17 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
                 x, num_samples, predict_likelihood_parameters, **kwargs
             )
 
-    def _add_val_set_to_kwargs(
-        self,
-        kwargs: Dict,
-        val_series: Sequence[TimeSeries],
-        val_past_covariates: Optional[Sequence[TimeSeries]],
-        val_future_covariates: Optional[Sequence[TimeSeries]],
-        max_samples_per_ts: int,
-    ):
-        # XGBRegressor.fit() requires a list of eval sets
-        kwargs = super()._add_val_set_to_kwargs(
-            kwargs=kwargs,
-            val_series=val_series,
-            val_past_covariates=val_past_covariates,
-            val_future_covariates=val_future_covariates,
-            max_samples_per_ts=max_samples_per_ts,
-        )
-        kwargs["eval_set"] = [kwargs["eval_set"]]
-        return kwargs
-
     @property
     def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None
 
     @property
-    def supports_val_set(self):
+    def supports_val_set(self) -> bool:
         return True
+
+    @property
+    def val_set_params(self) -> Tuple[Optional[str], Optional[str]]:
+        return "eval_set", "sample_weight_eval_set"
 
     @property
     def min_train_series_length(self) -> int:

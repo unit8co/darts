@@ -1023,24 +1023,7 @@ def _create_lagged_data_by_moving_window(
             raise_log(
                 ValueError("Must specify at least one series-lags pair."), logger=logger
             )
-    if sample_weight is not None:
-        if target_series is None:
-            raise_log(
-                ValueError("Must supply `target_series` when using `sample_weight`."),
-                logger=logger,
-            )
-        sample_weight_vals = sample_weight.slice_intersect_values(
-            target_series, copy=False
-        )
-        if len(sample_weight_vals) != len(target_series):
-            raise_log(
-                ValueError(
-                    "The `sample_weight` series must have at least the same times as the target `series`."
-                ),
-                logger=logger,
-            )
-    else:
-        sample_weight_vals = None
+    sample_weight_vals = _process_sample_weight(sample_weight, target_series)
 
     time_bounds = get_shared_times_bounds(*feature_times)
     if time_bounds is None:
@@ -1273,25 +1256,7 @@ def _create_lagged_data_by_intersecting_times(
             raise_log(
                 ValueError("Must specify at least one series-lags pair."), logger=logger
             )
-    if sample_weight is not None:
-        if target_series is None:
-            raise_log(
-                ValueError("Must supply `target_series` when using `sample_weight`."),
-                logger=logger,
-            )
-        sample_weight_vals = sample_weight.slice_intersect_values(
-            target_series, copy=False
-        )
-        if len(sample_weight_vals) != len(target_series):
-            raise_log(
-                ValueError(
-                    "The `sample_weight` series must have at least the same times as the target `series`."
-                ),
-                logger=logger,
-            )
-    else:
-        sample_weight_vals = None
-
+    sample_weight_vals = _process_sample_weight(sample_weight, target_series)
     shared_times = get_shared_times(*feature_times, sort=True)
     if shared_times is None:
         raise_log(
@@ -2119,3 +2084,36 @@ def _check_series_length(
                 logger=logger,
             )
     return None
+
+
+def _process_sample_weight(sample_weight, target_series):
+    """Checks that sample weights are valid, and returns the values of the weights."""
+    if sample_weight is None:
+        return None
+
+    if target_series is None:
+        raise_log(
+            ValueError("Must supply `target_series` when using `sample_weight`."),
+            logger=logger,
+        )
+    sample_weight_vals = sample_weight.slice_intersect_values(target_series, copy=False)
+    if len(sample_weight_vals) != len(target_series):
+        raise_log(
+            ValueError(
+                "The `sample_weight` series must have at least the same times as the target `series`."
+            ),
+            logger=logger,
+        )
+    weight_n_comp = sample_weight_vals.shape[1]
+    series_n_comp = target_series.n_components
+    if weight_n_comp > 1 and weight_n_comp != series_n_comp:
+        raise_log(
+            ValueError(
+                "The number of components in `sample_weight` must either be `1` or match "
+                f"the number of target series components `{series_n_comp}`"
+            ),
+            logger=logger,
+        )
+    elif weight_n_comp != series_n_comp:
+        sample_weight_vals = sample_weight_vals.repeat(series_n_comp, axis=1)
+    return sample_weight_vals

@@ -563,17 +563,32 @@ class RegressionModel(GlobalForecastingModel):
         val_series: Sequence[TimeSeries],
         val_past_covariates: Optional[Sequence[TimeSeries]],
         val_future_covariates: Optional[Sequence[TimeSeries]],
+        val_sample_weight: Optional[Union[Sequence[TimeSeries], str]],
         max_samples_per_ts: int,
-    ):
+    ) -> dict:
         """Creates a validation set and returns a new set of kwargs passed to `self.model.fit()` including the
         validation set. This method can be overridden if the model requires a different logic to add the eval set."""
-        val_samples, val_labels, _ = self._create_lagged_data(
+        val_samples, val_labels, val_weight = self._create_lagged_data(
             series=val_series,
             past_covariates=val_past_covariates,
             future_covariates=val_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
+            sample_weight=val_sample_weight,
         )
-        return dict(kwargs, **{"eval_set": (val_samples, val_labels)})
+        # create validation sets for MultiOutputRegressor
+        if val_labels.ndim == 2 and isinstance(self.model, MultiOutputRegressor):
+            val_sets, val_weights = [], []
+            for i in range(val_labels.shape[1]):
+                val_sets.append((val_samples, val_labels[:, i]))
+                if val_weight is not None:
+                    val_weights.append(val_weight[:, i])
+            val_weights = val_weights or None
+        else:
+            val_sets = [(val_samples, val_labels)]
+            val_weights = val_weight
+
+        val_set_name, val_weight_name = self.val_set_params
+        return dict(kwargs, **{val_set_name: val_sets, val_weight_name: val_weights})
 
     def _create_lagged_data(
         self,
@@ -655,10 +670,11 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates: Sequence[TimeSeries],
         future_covariates: Sequence[TimeSeries],
         max_samples_per_ts: int,
-        sample_weight: Union[TimeSeries, str],
+        sample_weight: Optional[Union[Sequence[TimeSeries], str]],
         val_series: Optional[Sequence[TimeSeries]] = None,
         val_past_covariates: Optional[Sequence[TimeSeries]] = None,
         val_future_covariates: Optional[Sequence[TimeSeries]] = None,
+        val_sample_weight: Optional[Union[Sequence[TimeSeries], str]] = None,
         **kwargs,
     ):
         """
@@ -679,6 +695,7 @@ class RegressionModel(GlobalForecastingModel):
                 val_series=val_series,
                 val_past_covariates=val_past_covariates,
                 val_future_covariates=val_future_covariates,
+                val_sample_weight=val_sample_weight,
                 max_samples_per_ts=max_samples_per_ts,
             )
         self.model.fit(
@@ -749,6 +766,12 @@ class RegressionModel(GlobalForecastingModel):
         val_past_covariates = series2seq(kwargs.pop("val_past_covariates", None))
         val_future_covariates = series2seq(kwargs.pop("val_future_covariates", None))
 
+        if not isinstance(sample_weight, str):
+            sample_weight = series2seq(sample_weight)
+        val_sample_weight = kwargs.pop("val_sample_weight", None)
+        if not isinstance(val_sample_weight, str):
+            val_sample_weight = series2seq(val_sample_weight)
+
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
             past_covariates, future_covariates = self.generate_fit_encodings(
@@ -807,25 +830,25 @@ class RegressionModel(GlobalForecastingModel):
             and self.multi_models
             and not isinstance(self.model, MultiOutputRegressor)
         ):
+            val_set_name, val_weight_name = self.val_set_params
+            mor_kwargs = {
+                "eval_set_name": val_set_name,
+                "eval_weight_name": val_weight_name,
+                "n_jobs": n_jobs_multioutput_wrapper,
+            }
             if sample_weight is not None:
                 # we have 2D sample (and time) weights, only supported in Darts
-                self.model = MultiOutputRegressor(
-                    self.model, n_jobs=n_jobs_multioutput_wrapper
-                )
+                self.model = MultiOutputRegressor(self.model, **mor_kwargs)
             elif not (
                 callable(getattr(self.model, "_get_tags", None))
                 and isinstance(self.model._get_tags(), dict)
                 and self.model._get_tags().get("multioutput")
             ):
                 # model does not support multi-output regression natively
-                self.model = MultiOutputRegressor(
-                    self.model, n_jobs=n_jobs_multioutput_wrapper
-                )
+                self.model = MultiOutputRegressor(self.model, **mor_kwargs)
             elif self.model.__class__.__name__ == "CatBoostRegressor":
                 if self.model.get_params()["loss_function"] == "RMSEWithUncertainty":
-                    self.model = MultiOutputRegressor(
-                        self.model, n_jobs=n_jobs_multioutput_wrapper
-                    )
+                    self.model = MultiOutputRegressor(self.model, **mor_kwargs)
 
         # warn if n_jobs_multioutput_wrapper was provided but not used
         if (
@@ -896,6 +919,7 @@ class RegressionModel(GlobalForecastingModel):
             val_past_covariates=val_past_covariates,
             val_future_covariates=val_future_covariates,
             sample_weight=sample_weight,
+            val_sample_weight=val_sample_weight,
             max_samples_per_ts=max_samples_per_ts,
             **kwargs,
         )
@@ -1209,9 +1233,15 @@ class RegressionModel(GlobalForecastingModel):
         return True
 
     @property
-    def supports_val_set(self):
+    def supports_val_set(self) -> bool:
         """Whether the model supports a validation set during training."""
         return False
+
+    @property
+    def val_set_params(self) -> Tuple[Optional[str], Optional[str]]:
+        """Returns the parameter names for the validation set, and validation sample weights if it supports
+        a validation set."""
+        return None, None
 
     def _check_optimizable_historical_forecasts(
         self,

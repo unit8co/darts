@@ -1,3 +1,5 @@
+from typing import Optional
+
 from sklearn import __version__ as sklearn_version
 from sklearn.base import is_classifier
 from sklearn.multioutput import MultiOutputRegressor as sk_MultiOutputRegressor
@@ -29,8 +31,16 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
     validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        *args,
+        eval_set_name: Optional[str] = None,
+        eval_weight_name: Optional[str] = None,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
+        self.eval_set_name_ = eval_set_name
+        self.eval_weight_name_ = eval_weight_name
         self.estimators_ = None
         self.n_features_in_ = None
         self.feature_names_in_ = None
@@ -98,41 +108,29 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
             )
 
         fit_params_validated = _check_method_params(X, fit_params)
-        if "eval_set" in fit_params_validated.keys():
-            # with validation set
-            eval_set = fit_params_validated.pop("eval_set")
-            self.estimators_ = Parallel(n_jobs=self.n_jobs)(
-                delayed(_fit_estimator)(
-                    self.estimator,
-                    X,
-                    y[:, i],
-                    sample_weight=sample_weight[:, i]
-                    if sample_weight is not None
-                    else None,
-                    # eval set may be a list (for XGBRegressor), in which case we have to keep it as a list
-                    eval_set=(
-                        [(eval_set[0][0], eval_set[0][1][:, i])]
-                        if isinstance(eval_set, list)
-                        else (eval_set[0], eval_set[1][:, i])
-                    ),
-                    **fit_params_validated,
-                )
-                for i in range(y.shape[1])
+        eval_set = fit_params_validated.pop(self.eval_set_name_, None)
+        eval_weight = fit_params_validated.pop(self.eval_weight_name_, None)
+
+        self.estimators_ = Parallel(n_jobs=self.n_jobs)(
+            delayed(_fit_estimator)(
+                self.estimator,
+                X,
+                y[:, i],
+                sample_weight=sample_weight[:, i]
+                if sample_weight is not None
+                else None,
+                **(
+                    {self.eval_set_name_: [eval_set[i]]} if eval_set is not None else {}
+                ),
+                **(
+                    {self.eval_weight_name_: [eval_weight[i]]}
+                    if eval_weight is not None
+                    else {}
+                ),
+                **fit_params_validated,
             )
-        else:
-            # without validation set
-            self.estimators_ = Parallel(n_jobs=self.n_jobs)(
-                delayed(_fit_estimator)(
-                    self.estimator,
-                    X,
-                    y[:, i],
-                    sample_weight=sample_weight[:, i]
-                    if sample_weight is not None
-                    else None,
-                    **fit_params_validated,
-                )
-                for i in range(y.shape[1])
-            )
+            for i in range(y.shape[1])
+        )
 
         if hasattr(self.estimators_[0], "n_features_in_"):
             self.n_features_in_ = self.estimators_[0].n_features_in_
