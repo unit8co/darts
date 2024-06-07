@@ -574,6 +574,7 @@ class RegressionModel(GlobalForecastingModel):
             future_covariates=val_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
             sample_weight=val_sample_weight,
+            last_static_covariates_shape=self._static_covariates_shape,
         )
         # create validation sets for MultiOutputRegressor
         if val_labels.ndim == 2 and isinstance(self.model, MultiOutputRegressor):
@@ -597,6 +598,7 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates: Sequence[TimeSeries],
         max_samples_per_ts: int,
         sample_weight: Optional[Union[TimeSeries, str]] = None,
+        last_static_covariates_shape: Optional[Tuple[int, int]] = None,
     ):
         (
             features,
@@ -614,7 +616,7 @@ class RegressionModel(GlobalForecastingModel):
             lags_past_covariates=self._get_lags("past"),
             lags_future_covariates=self._get_lags("future"),
             uses_static_covariates=self.uses_static_covariates,
-            last_static_covariates_shape=None,
+            last_static_covariates_shape=last_static_covariates_shape,
             max_samples_per_ts=max_samples_per_ts,
             multi_models=self.multi_models,
             check_inputs=False,
@@ -687,6 +689,7 @@ class RegressionModel(GlobalForecastingModel):
             future_covariates=future_covariates,
             max_samples_per_ts=max_samples_per_ts,
             sample_weight=sample_weight,
+            last_static_covariates_shape=None,
         )
 
         if self.supports_val_set and val_series is not None:
