@@ -211,33 +211,9 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
         n_jobs_multioutput_wrapper: Optional[int] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         **kwargs,
     ):
-        """
-        Fit/train the model on one or multiple series.
-
-        Parameters
-        ----------
-        series
-            TimeSeries or Sequence[TimeSeries] object containing the target values.
-        past_covariates
-            Optionally, a series or sequence of series specifying past-observed covariates
-        future_covariates
-            Optionally, a series or sequence of series specifying future-known covariates
-        max_samples_per_ts
-            This is an integer upper bound on the number of tuples that can be produced
-            per time series. It can be used in order to have an upper bound on the total size of the dataset and
-            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset
-            creation) to know their sizes, which might be expensive on big datasets.
-            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
-            most recent `max_samples_per_ts` samples will be considered.
-        n_jobs_multioutput_wrapper
-            Number of jobs of the MultiOutputRegressor wrapper to run in parallel. Only used if the model doesn't
-            support multi-output regression natively.
-        **kwargs
-            Additional keyword arguments passed to the `fit` method of the model.
-        """
-
         if self.likelihood == "quantile":
             # set solver for linear program
             if "solver" not in self.kwargs:
@@ -267,6 +243,8 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
                     past_covariates=past_covariates,
                     future_covariates=future_covariates,
                     max_samples_per_ts=max_samples_per_ts,
+                    n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+                    sample_weight=sample_weight,
                     **kwargs,
                 )
 
@@ -283,6 +261,8 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
                 max_samples_per_ts=max_samples_per_ts,
+                n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+                sample_weight=sample_weight,
                 **kwargs,
             )
 

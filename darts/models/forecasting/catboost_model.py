@@ -215,6 +215,11 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
+        n_jobs_multioutput_wrapper: Optional[int] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        val_sample_weight: Optional[
+            Union[TimeSeries, Sequence[TimeSeries], str]
+        ] = None,
         verbose: Optional[Union[int, bool]] = 0,
         **kwargs,
     ):
@@ -242,6 +247,22 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        n_jobs_multioutput_wrapper
+            Number of jobs of the MultiOutputRegressor wrapper to run in parallel. Only used if the model doesn't
+            support multi-output regression natively.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels.
+            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
+            and then applied globally to all `series` to have a common time weighting.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
+            match the number of target `series` and each series must contain at least all time steps from the
+            corresponding target `series`. If the weight series only have a single component / column, then the weights
+            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
+            of components must match those of `series`.
+        val_sample_weight
+            Same as for `sample_weight` but for the evaluation dataset.
         verbose
             An integer or a boolean that can be set to 1 to display catboost's default verbose output
         **kwargs
@@ -263,6 +284,9 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
                     val_past_covariates=val_past_covariates,
                     val_future_covariates=val_future_covariates,
                     max_samples_per_ts=max_samples_per_ts,
+                    n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+                    sample_weight=sample_weight,
+                    val_sample_weight=val_sample_weight,
                     verbose=verbose,
                     **kwargs,
                 )
@@ -277,6 +301,9 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             val_past_covariates=val_past_covariates,
             val_future_covariates=val_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
+            n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+            sample_weight=sample_weight,
+            val_sample_weight=val_sample_weight,
             verbose=verbose,
             **kwargs,
         )

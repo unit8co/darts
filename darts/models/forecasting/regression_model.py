@@ -753,11 +753,15 @@ class RegressionModel(GlobalForecastingModel):
             support multi-output regression natively.
         sample_weight
             Optionally, some sample weights to apply to the target `series` labels.
-            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of weights series must
-            match the number of target `series` and each weight series must contain at least all time steps from the
-            corresponding target `series`.
+            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
             If a string, then the weights are generated using built-in weighting functions. The available options are
-            `"linear_decay"` or `"exponential_decay"`.
+            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
+            and then applied globally to all `series` to have a common time weighting.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
+            match the number of target `series` and each series must contain at least all time steps from the
+            corresponding target `series`. If the weight series only have a single component / column, then the weights
+            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
+            of components must match those of `series`.
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
@@ -1793,6 +1797,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
         n_jobs_multioutput_wrapper: Optional[int] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         **kwargs,
     ):
         self._validate_categorical_covariates(
@@ -1806,6 +1811,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             future_covariates=future_covariates,
             max_samples_per_ts=max_samples_per_ts,
             n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+            sample_weight=sample_weight,
             **kwargs,
         )
 
