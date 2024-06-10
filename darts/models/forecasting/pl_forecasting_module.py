@@ -212,10 +212,10 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     def training_step(self, train_batch, batch_idx) -> torch.Tensor:
         """performs the training step"""
-        output = self._produce_train_output(train_batch[:-1])
-        target = train_batch[
-            -1
-        ]  # By convention target is always the last element returned by datasets
+        # by convention, the last two elements are sample weights and future target
+        output = self._produce_train_output(train_batch[:-2])
+        # sample_weight = train_batch[-2]
+        target = train_batch[-1]
         loss = self._compute_loss(output, target)
         self.log(
             "train_loss",
@@ -229,7 +229,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     def validation_step(self, val_batch, batch_idx) -> torch.Tensor:
         """performs the validation step"""
-        output = self._produce_train_output(val_batch[:-1])
+        # the last two elements are sample weights and future target
+        output = self._produce_train_output(val_batch[:-2])
+        # sample_weight = val_batch[-2]
         target = val_batch[-1]
         loss = self._compute_loss(output, target)
         self.log(

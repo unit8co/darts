@@ -29,9 +29,11 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
         output_chunk_shift: int = 0,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
+        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     ):
         """
-        A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target).
+        A time series dataset containing tuples of (past_target, past_covariates, static_covariates, sample weights,
+        future_target).
         The "past" series have length `input_chunk_length` and the "future" series have
         length `output_chunk_length`. The "future" series are immediately consecutive to the "past" series.
         The slicing of past and future covariates matches that of past and future targets, respectively. The slicing
@@ -70,6 +72,17 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
             most recent `max_samples_per_ts` samples will be considered.
         use_static_covariates
             Whether to use/include static covariate data from input series.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels.
+            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
+            and then applied globally to all `series` to have a common time weighting.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
+            match the number of target `series` and each series must contain at least all time steps from the
+            corresponding target `series`. If the weight series only have a single component / column, then the weights
+            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
+            of components must match those of `series`.
         """
 
         super().__init__()
@@ -84,6 +97,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
+            sample_weight=sample_weight,
         )
 
     def __len__(self):
@@ -91,7 +105,13 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    ) -> Tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        np.ndarray,
+    ]:
         return self.ds[idx]
 
 
@@ -105,9 +125,11 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
         output_chunk_shift: int = 0,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
+        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     ):
         """
-        A time series dataset containing tuples of (past_target, future_covariates, static_covariates, future_target).
+        A time series dataset containing tuples of (past_target, future_covariates, static_covariates, sample weights,
+        future_target).
         The "past" series have length `input_chunk_length` and the "future" series have
         length `output_chunk_length`. The "future" series are immediately consecutive to the "past" series.
         The slicing of past and future covariates matches that of past and future targets, respectively. The slicing
@@ -146,6 +168,17 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
             most recent `max_samples_per_ts` samples will be considered.
         use_static_covariates
             Whether to use/include static covariate data from input series.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels.
+            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
+            and then applied globally to all `series` to have a common time weighting.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
+            match the number of target `series` and each series must contain at least all time steps from the
+            corresponding target `series`. If the weight series only have a single component / column, then the weights
+            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
+            of components must match those of `series`.
         """
 
         super().__init__()
@@ -160,6 +193,7 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.FUTURE,
             use_static_covariates=use_static_covariates,
+            sample_weight=sample_weight,
         )
 
     def __len__(self):
@@ -167,7 +201,13 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    ) -> Tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        np.ndarray,
+    ]:
         return self.ds[idx]
 
 
@@ -181,10 +221,12 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
         output_chunk_shift: int = 0,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
+        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     ):
         """
         A time series dataset containing tuples of
-        (past_target, historic_future_covariates, future_covariates, static_covariates, future_target).
+        (past_target, historic_future_covariates, future_covariates, static_covariates, sample weights,
+        future_target).
         The "past" series (incl `historic_future_covariates`) have length `input_chunk_length`
         and the "future" series have length `output_chunk_length`. The "future" series are immediately consecutive
         to the "past" series. The slicing of past and future covariates matches that of past and future targets,
@@ -223,6 +265,17 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
             most recent `max_samples_per_ts` samples will be considered.
         use_static_covariates
             Whether to use/include static covariate data from input series.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels.
+            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
+            and then applied globally to all `series` to have a common time weighting.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
+            match the number of target `series` and each series must contain at least all time steps from the
+            corresponding target `series`. If the weight series only have a single component / column, then the weights
+            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
+            of components must match those of `series`.
         """
 
         super().__init__()
@@ -238,6 +291,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.HISTORIC_FUTURE,
             use_static_covariates=use_static_covariates,
+            sample_weight=sample_weight,
         )
 
         # This dataset is in charge of serving future covariates
@@ -263,15 +317,19 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
+        Optional[np.ndarray],
         np.ndarray,
     ]:
-        past_target, past_covariate, static_covariate, future_target = self.ds_past[idx]
-        _, future_covariate, _, _ = self.ds_future[idx]
+        past_target, past_covariate, static_covariate, sample_weight, future_target = (
+            self.ds_past[idx]
+        )
+        _, future_covariate, _, _, _ = self.ds_future[idx]
         return (
             past_target,
             past_covariate,
             future_covariate,
             static_covariate,
+            sample_weight,
             future_target,
         )
 
@@ -287,10 +345,12 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
         output_chunk_shift: int = 0,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
+        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     ):
         """
         A time series dataset containing tuples of
-        (past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates, future_target).
+        (past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates,
+        sample weights, future_target).
         The "past" series (incl `historic_future_covariates`) have length `input_chunk_length`
         and the "future" series have length `output_chunk_length`. The "future" series are immediately consecutive
         to the "past" series. The slicing of past and future covariates matches that of past and future targets,
@@ -332,6 +392,17 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
             most recent `max_samples_per_ts` samples will be considered.
         use_static_covariates
             Whether to use/include static covariate data from input series.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels.
+            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
+            and then applied globally to all `series` to have a common time weighting.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
+            match the number of target `series` and each series must contain at least all time steps from the
+            corresponding target `series`. If the weight series only have a single component / column, then the weights
+            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
+            of components must match those of `series`.
         """
 
         super().__init__()
@@ -347,6 +418,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
+            sample_weight=sample_weight,
         )
 
         # This dataset is in charge of serving historical and future future covariates
@@ -371,16 +443,20 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
+        Optional[np.ndarray],
         np.ndarray,
     ]:
-        past_target, past_covariate, static_covariate, future_target = self.ds_past[idx]
-        _, historic_future_covariate, future_covariate, _, _ = self.ds_dual[idx]
+        past_target, past_covariate, static_covariate, sample_weight, future_target = (
+            self.ds_past[idx]
+        )
+        _, historic_future_covariate, future_covariate, _, _, _ = self.ds_dual[idx]
         return (
             past_target,
             past_covariate,
             historic_future_covariate,
             future_covariate,
             static_covariate,
+            sample_weight,
             future_target,
         )
 
@@ -396,10 +472,11 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
         output_chunk_shift: int = 0,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
+        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_covariates, static_covariates,
-        future_target).
+        sample weights, future_target).
         The "past" series have length `input_chunk_length` and the "future" series have
         length `output_chunk_length`. The "future" series are immediately consecutive to the "past" series.
         The slicing of past and future covariates matches that of past and future targets, respectively. The slicing
@@ -441,6 +518,17 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
             most recent `max_samples_per_ts` samples will be considered.
         use_static_covariates
             Whether to use/include static covariate data from input series.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels.
+            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
+            and then applied globally to all `series` to have a common time weighting.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
+            match the number of target `series` and each series must contain at least all time steps from the
+            corresponding target `series`. If the weight series only have a single component / column, then the weights
+            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
+            of components must match those of `series`.
         """
         super().__init__()
         shift = input_chunk_length + output_chunk_shift
@@ -455,6 +543,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
+            sample_weight=sample_weight,
         )
 
         # This dataset is in charge of serving future covariates
@@ -480,14 +569,18 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
+        Optional[np.ndarray],
         np.ndarray,
     ]:
-        past_target, past_covariate, static_covariate, future_target = self.ds_past[idx]
-        _, future_covariate, _, _ = self.ds_future[idx]
+        past_target, past_covariate, static_covariate, sample_weight, future_target = (
+            self.ds_past[idx]
+        )
+        _, future_covariate, _, _, _ = self.ds_future[idx]
         return (
             past_target,
             past_covariate,
             future_covariate,
             static_covariate,
+            sample_weight,
             future_target,
         )

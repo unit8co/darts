@@ -572,6 +572,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         target: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> TrainingDataset:
         """
@@ -661,6 +662,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
         dataloader_kwargs: Optional[Dict[str, Any]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        val_sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ) -> "TorchForecastingModel":
         """Fit/train the model on one or multiple series.
 
@@ -699,6 +702,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, the past covariates corresponding to the validation series (must match ``covariates``)
         val_future_covariates
             Optionally, the future covariates corresponding to the validation series (must match ``covariates``)
+        val_sample_weight
+            Same as for `sample_weight` but for the evaluation dataset.
         trainer
             Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom ``trainer`` will
             override Darts' default trainer.
@@ -720,6 +725,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels.
+            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
+            and then applied globally to all `series` to have a common time weighting.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
+            match the number of target `series` and each series must contain at least all time steps from the
+            corresponding target `series`. If the weight series only have a single component / column, then the weights
+            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
+            of components must match those of `series`.
+        val_sample_weight
+            Same as for `sample_weight` but for the evaluation dataset.
 
         Returns
         -------
@@ -737,9 +755,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            sample_weight=sample_weight,
             val_series=val_series,
             val_past_covariates=val_past_covariates,
             val_future_covariates=val_future_covariates,
+            val_sample_weight=val_sample_weight,
             trainer=trainer,
             verbose=verbose,
             epochs=epochs,
@@ -759,9 +779,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        val_sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         trainer: Optional[pl.Trainer] = None,
         verbose: Optional[bool] = None,
         epochs: int = 0,
@@ -792,6 +814,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         val_series = series2seq(val_series)
         val_past_covariates = series2seq(val_past_covariates)
         val_future_covariates = series2seq(val_future_covariates)
+        if not isinstance(sample_weight, str):
+            sample_weight = series2seq(sample_weight)
+        if not isinstance(val_sample_weight, str):
+            val_sample_weight = series2seq(val_sample_weight)
 
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
@@ -831,6 +857,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             target=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            sample_weight=sample_weight,
             max_samples_per_ts=max_samples_per_ts,
         )
 
@@ -839,6 +866,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 target=val_series,
                 past_covariates=val_past_covariates,
                 future_covariates=val_future_covariates,
+                sample_weight=val_sample_weight,
                 max_samples_per_ts=max_samples_per_ts,
             )
         else:
@@ -974,7 +1002,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         train_sample = train_dataset[0]
         if self.model is None:
             # Build model, based on the dimensions of the first series in the train set.
-            self.train_sample, self.output_dim = train_sample, train_sample[-1].shape[1]
+            # the last two elements are sample weights and future target
+            self.train_sample = train_sample[:-2] + train_sample[-1:]
+            self.output_dim = train_sample[-1].shape[1]
             model = self._init_model(trainer)
         else:
             model = self.model
@@ -1082,6 +1112,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        val_sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         trainer: Optional[pl.Trainer] = None,
         verbose: Optional[bool] = None,
         epochs: int = 0,
@@ -1143,6 +1175,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, the past covariates corresponding to the validation series (must match ``covariates``)
         val_future_covariates
             Optionally, the future covariates corresponding to the validation series (must match ``covariates``)
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels.
+            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
+            and then applied globally to all `series` to have a common time weighting.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
+            match the number of target `series` and each series must contain at least all time steps from the
+            corresponding target `series`. If the weight series only have a single component / column, then the weights
+            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
+            of components must match those of `series`.
+        val_sample_weight
+            Same as for `sample_weight` but for the evaluation dataset.
         trainer
             Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom ``trainer`` will
             override Darts' default trainer.
@@ -1188,9 +1233,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            sample_weight=sample_weight,
             val_series=val_series,
             val_past_covariates=val_past_covariates,
             val_future_covariates=val_future_covariates,
+            val_sample_weight=val_sample_weight,
             trainer=trainer,
             verbose=verbose,
             epochs=epochs,
@@ -2395,6 +2442,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         target: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> PastCovariatesTrainingDataset:
         return PastCovariatesSequentialDataset(
@@ -2405,6 +2453,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
+            sample_weight=sample_weight,
         )
 
     def _build_inference_dataset(
@@ -2487,6 +2536,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         target: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> FutureCovariatesTrainingDataset:
         return FutureCovariatesSequentialDataset(
@@ -2497,6 +2547,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
+            sample_weight=sample_weight,
         )
 
     def _build_inference_dataset(
@@ -2578,6 +2629,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         target: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> DualCovariatesTrainingDataset:
         return DualCovariatesSequentialDataset(
@@ -2588,6 +2640,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
+            sample_weight=sample_weight,
         )
 
     def _build_inference_dataset(
@@ -2668,6 +2721,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         target: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> MixedCovariatesTrainingDataset:
         return MixedCovariatesSequentialDataset(
@@ -2679,6 +2733,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
+            sample_weight=sample_weight,
         )
 
     def _build_inference_dataset(
@@ -2760,6 +2815,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         target: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> SplitCovariatesTrainingDataset:
         return SplitCovariatesSequentialDataset(
@@ -2771,6 +2827,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
+            sample_weight=sample_weight,
         )
 
     def _build_inference_dataset(

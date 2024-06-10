@@ -8,7 +8,7 @@ from typing import Optional, Sequence, Tuple, Union
 import numpy as np
 
 from darts import TimeSeries
-from darts.logging import raise_if_not
+from darts.logging import get_logger, raise_log
 from darts.utils.data.training_dataset import (
     DualCovariatesTrainingDataset,
     FutureCovariatesTrainingDataset,
@@ -17,7 +17,10 @@ from darts.utils.data.training_dataset import (
     SplitCovariatesTrainingDataset,
     TrainingDataset,
 )
-from darts.utils.data.utils import CovariateType
+from darts.utils.data.utils import CovariateType, _process_sample_weight
+from darts.utils.ts_utils import series2seq
+
+logger = get_logger(__name__)
 
 
 class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
@@ -29,9 +32,11 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
+        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     ):
         """
-        A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target)
+        A time series dataset containing tuples of (past_target, past_covariates, static_covariates, sample weights,
+        future_target)
         arrays, which all have length `length`.
         The "future_target" is the "past_target" target shifted by `shift` time steps forward.
         So if an emitted "past_target" (and "past_covariates") goes from position `i` to `i+length`,
@@ -68,6 +73,17 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
             most recent `max_samples_per_ts` samples will be considered.
         use_static_covariates
             Whether to use/include static covariate data from input series.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels.
+            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
+            and then applied globally to all `series` to have a common time weighting.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
+            match the number of target `series` and each series must contain at least all time steps from the
+            corresponding target `series`. If the weight series only have a single component / column, then the weights
+            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
+            of components must match those of `series`.
         """
         super().__init__()
 
@@ -81,6 +97,7 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
+            sample_weight=sample_weight,
         )
 
     def __len__(self):
@@ -88,7 +105,13 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    ) -> Tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        np.ndarray,
+    ]:
         return self.ds[idx]
 
 
@@ -101,9 +124,11 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
+        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     ):
         """
-        A time series dataset containing tuples of (past_target, future_covariates, static_covariates, future_target)
+        A time series dataset containing tuples of (past_target, future_covariates, static_covariates, sample weights,
+        future_target)
         arrays, which all have length `length`.
         The "future_target" is the "past_target" target shifted by `shift` time steps forward.
         So if an emitted "past_target" goes from position `i` to `i+length`,
@@ -142,6 +167,17 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
             most recent `max_samples_per_ts` samples will be considered.
         use_static_covariates
             Whether to use/include static covariate data from input series.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels.
+            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
+            and then applied globally to all `series` to have a common time weighting.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
+            match the number of target `series` and each series must contain at least all time steps from the
+            corresponding target `series`. If the weight series only have a single component / column, then the weights
+            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
+            of components must match those of `series`.
         """
 
         super().__init__()
@@ -156,6 +192,7 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.FUTURE,
             use_static_covariates=use_static_covariates,
+            sample_weight=sample_weight,
         )
 
     def __len__(self):
@@ -163,7 +200,13 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    ) -> Tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        np.ndarray,
+    ]:
         return self.ds[idx]
 
 
@@ -176,10 +219,12 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
+        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     ):
         """
         A time series dataset containing tuples of
-        (past_target, historic_future_covariates, future_covariates, static_covariates, future_target)
+        (past_target, historic_future_covariates, future_covariates, static_covariates, sample weights,
+        future_target)
         arrays, which all have length `length`.
         The "future_target" is the "past_target" target shifted by `shift` time steps forward.
         So if an emitted "past_target" goes from position `i` to `i+length`,
@@ -219,6 +264,17 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
             most recent `max_samples_per_ts` samples will be considered.
         use_static_covariates
             Whether to use/include static covariate data from input series.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels.
+            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
+            and then applied globally to all `series` to have a common time weighting.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
+            match the number of target `series` and each series must contain at least all time steps from the
+            corresponding target `series`. If the weight series only have a single component / column, then the weights
+            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
+            of components must match those of `series`.
         """
 
         super().__init__()
@@ -234,6 +290,7 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.HISTORIC_FUTURE,
             use_static_covariates=use_static_covariates,
+            sample_weight=sample_weight,
         )
 
         # This dataset is in charge of serving future covariates
@@ -259,15 +316,19 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
+        Optional[np.ndarray],
         np.ndarray,
     ]:
-        past_target, past_covariate, static_covariate, future_target = self.ds_past[idx]
-        _, future_covariate, _, _ = self.ds_future[idx]
+        past_target, past_covariate, static_covariate, sample_weight, future_target = (
+            self.ds_past[idx]
+        )
+        _, future_covariate, _, _, _ = self.ds_future[idx]
         return (
             past_target,
             past_covariate,
             future_covariate,
             static_covariate,
+            sample_weight,
             future_target,
         )
 
@@ -282,10 +343,11 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
+        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, historic_future_covariates,
-        future_covariates, static_covariates, future_target) arrays, which all have length `length`.
+        future_covariates, static_covariates, sample weights, future_target) arrays, which all have length `length`.
         The "future_target" is the "past_target" target shifted by `shift` time steps forward.
         So if an emitted "past_target" goes from position `i` to `i+length`,
         the emitted "future_target" will go from position `i+shift` to `i+shift+length`.
@@ -326,6 +388,17 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
             most recent `max_samples_per_ts` samples will be considered.
         use_static_covariates
             Whether to use/include static covariate data from input series.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels.
+            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
+            and then applied globally to all `series` to have a common time weighting.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
+            match the number of target `series` and each series must contain at least all time steps from the
+            corresponding target `series`. If the weight series only have a single component / column, then the weights
+            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
+            of components must match those of `series`.
         """
         super().__init__()
 
@@ -340,6 +413,7 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
+            sample_weight=sample_weight,
         )
 
         # The dual dataset serves both historical and future future covariates
@@ -363,16 +437,20 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
+        Optional[np.ndarray],
         np.ndarray,
     ]:
-        past_target, past_covariate, static_covariate, future_target = self.ds_past[idx]
-        _, historic_future_covariate, future_covariate, _, _ = self.ds_dual[idx]
+        past_target, past_covariate, static_covariate, sample_weight, future_target = (
+            self.ds_past[idx]
+        )
+        _, historic_future_covariate, future_covariate, _, _, _ = self.ds_dual[idx]
         return (
             past_target,
             past_covariate,
             historic_future_covariate,
             future_covariate,
             static_covariate,
+            sample_weight,
             future_target,
         )
 
@@ -387,10 +465,11 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
+        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_covariates, static_covariates,
-        future_target) arrays, which all have length `length`.
+        sample weights, future_target) arrays, which all have length `length`.
         The "future_target" is the "past_target" target shifted by `shift` time steps forward.
         So if an emitted "past_target" goes from position `i` to `i+length`,
         the emitted "future_target" will go from position `i+shift` to `i+shift+length`.
@@ -431,6 +510,17 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
             most recent `max_samples_per_ts` samples will be considered.
         use_static_covariates
             Whether to use/include static covariate data from input series.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels.
+            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
+            and then applied globally to all `series` to have a common time weighting.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
+            match the number of target `series` and each series must contain at least all time steps from the
+            corresponding target `series`. If the weight series only have a single component / column, then the weights
+            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
+            of components must match those of `series`.
         """
 
         super().__init__()
@@ -446,6 +536,7 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
+            sample_weight=sample_weight,
         )
 
         # This dataset is in charge of serving future covariates
@@ -471,15 +562,19 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
+        Optional[np.ndarray],
         np.ndarray,
     ]:
-        past_target, past_covariate, static_covariate, future_target = self.ds_past[idx]
-        _, future_covariate, _, _ = self.ds_future[idx]
+        past_target, past_covariate, static_covariate, sample_weight, future_target = (
+            self.ds_past[idx]
+        )
+        _, future_covariate, _, _, _ = self.ds_future[idx]
         return (
             past_target,
             past_covariate,
             future_covariate,
             static_covariate,
+            sample_weight,
             future_target,
         )
 
@@ -496,10 +591,11 @@ class GenericShiftedDataset(TrainingDataset):
         max_samples_per_ts: Optional[int] = None,
         covariate_type: CovariateType = CovariateType.NONE,
         use_static_covariates: bool = True,
+        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     ):
         """
-        Contains (past_target, <X>_covariates, static_covariates, future_target), where "<X>" is past if
-        `shift_covariates = False` and future otherwise.
+        Contains (past_target, <X>_covariates, static_covariates, sample weights, future_target), where "<X>" is past
+        if `shift_covariates = False` and future otherwise.
         The past chunks have length `input_chunk_length` and the future chunks have length `output_chunk_length`.
         The future chunks start `shift` after the past chunks' start.
 
@@ -532,22 +628,33 @@ class GenericShiftedDataset(TrainingDataset):
             An instance of `CovariateType` describing the type of `covariates`.
         use_static_covariates
             Whether to use/include static covariate data from input series.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels.
+            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
+            and then applied globally to all `series` to have a common time weighting.
+            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
+            match the number of target `series` and each series must contain at least all time steps from the
+            corresponding target `series`. If the weight series only have a single component / column, then the weights
+            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
+            of components must match those of `series`.
         """
         super().__init__()
 
-        self.target_series = (
-            [target_series] if isinstance(target_series, TimeSeries) else target_series
-        )
-        self.covariates = (
-            [covariates] if isinstance(covariates, TimeSeries) else covariates
-        )
+        self.target_series = series2seq(target_series)
+        self.covariates = series2seq(covariates)
         self.covariate_type = covariate_type
 
-        raise_if_not(
-            covariates is None or len(self.target_series) == len(self.covariates),
-            "The provided sequence of target series must have the same length as "
-            "the provided sequence of covariate series.",
-        )
+        if covariates is not None and len(self.target_series) != len(self.covariates):
+            raise_log(
+                ValueError(
+                    "The provided sequence of target series must have the same length as "
+                    "the provided sequence of covariate series."
+                ),
+                logger=logger,
+            )
+        self.sample_weight = _process_sample_weight(sample_weight, target_series)
 
         self.input_chunk_length, self.output_chunk_length = (
             input_chunk_length,
@@ -575,7 +682,11 @@ class GenericShiftedDataset(TrainingDataset):
     def __getitem__(
         self, idx
     ) -> Tuple[
-        np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        np.ndarray,
     ]:
         # determine the index of the time series.
         target_idx = idx // self.max_samples_per_ts
@@ -585,12 +696,15 @@ class GenericShiftedDataset(TrainingDataset):
         # determine the actual number of possible samples in this time series
         n_samples_in_ts = len(target_vals) - self.size_of_both_chunks + 1
 
-        raise_if_not(
-            n_samples_in_ts >= 1,
-            "The dataset contains some time series that are too short to contain "
-            "`max(self.input_chunk_length, self.shift + self.output_chunk_length)` "
-            f"({target_idx}-th series)",
-        )
+        if n_samples_in_ts < 1:
+            raise_log(
+                ValueError(
+                    "The dataset contains some time series that are too short to contain "
+                    "`max(self.input_chunk_length, self.shift + self.output_chunk_length)` "
+                    f"({target_idx}-th series)"
+                ),
+                logger=logger,
+            )
 
         # determine the index at the end of the output chunk
         # it is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
@@ -610,6 +724,11 @@ class GenericShiftedDataset(TrainingDataset):
                 CovariateType.FUTURE if self.shift_covariates else CovariateType.PAST
             )
 
+        # optionally, load sample weight
+        sample_weight = (
+            self.sample_weight[target_idx] if self.sample_weight is not None else None
+        )
+
         # get all indices for the current sample
         (
             past_start,
@@ -618,6 +737,8 @@ class GenericShiftedDataset(TrainingDataset):
             future_end,
             covariate_start,
             covariate_end,
+            weight_start,
+            weight_end,
         ) = self._memory_indexer(
             target_idx=target_idx,
             target_series=target_series,
@@ -627,6 +748,7 @@ class GenericShiftedDataset(TrainingDataset):
             end_of_output_idx=end_of_output_idx,
             covariate_series=covariate_series,
             covariate_type=main_covariate_type,
+            sample_weight=sample_weight,
         )
 
         # extract sample target
@@ -636,30 +758,35 @@ class GenericShiftedDataset(TrainingDataset):
         # optionally, extract sample covariates
         covariate = None
         if self.covariates is not None:
-            raise_if_not(
-                covariate_end <= len(covariate_series),
-                f"The dataset contains {main_covariate_type.value} covariates "
-                f"that don't extend far enough into the future. ({idx}-th sample)",
-            )
+            if covariate_end > len(covariate_series):
+                raise_log(
+                    ValueError(
+                        f"The dataset contains {main_covariate_type.value} covariates "
+                        f"that don't extend far enough into the future. ({idx}-th sample)"
+                    ),
+                    logger=logger,
+                )
 
             covariate = covariate_series.random_component_values(copy=False)[
                 covariate_start:covariate_end
             ]
 
-            raise_if_not(
-                len(covariate)
-                == (
-                    self.output_chunk_length
-                    if self.shift_covariates
-                    else self.input_chunk_length
-                ),
-                f"The dataset contains {main_covariate_type.value} covariates "
-                f"whose time axis doesn't allow to obtain the input (or output) chunk relative to the "
-                f"target series.",
-            )
+            if len(covariate) != (
+                self.output_chunk_length
+                if self.shift_covariates
+                else self.input_chunk_length
+            ):
+                raise_log(
+                    ValueError(
+                        f"The dataset contains {main_covariate_type.value} covariates "
+                        f"whose time axis doesn't allow to obtain the input (or output) chunk relative to the "
+                        f"target series."
+                    ),
+                    logger=logger,
+                )
 
         if self.use_static_covariates:
             static_covariate = target_series.static_covariates_values(copy=False)
         else:
             static_covariate = None
-        return past_target, covariate, static_covariate, future_target
+        return past_target, covariate, static_covariate, None, future_target
