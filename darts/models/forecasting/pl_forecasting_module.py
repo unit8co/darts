@@ -370,12 +370,14 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def _compute_loss(self, output, target, sample_weight):
         # output is of shape (batch_size, n_timesteps, n_components, n_params)
         if self.likelihood:
-            return self.likelihood.compute_loss(output, target)
+            loss = self.likelihood.compute_loss(output, target, sample_weight)
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
             # last dimension of model output, for properly computing the loss.
             loss = self.criterion(output.squeeze(dim=-1), target)
-            return loss if sample_weight is None else (loss * sample_weight).mean()
+            if sample_weight is not None:
+                loss = (loss * sample_weight).mean()
+        return loss
 
     def _update_metrics(self, output, target, metrics):
         if not len(metrics):

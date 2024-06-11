@@ -93,7 +93,7 @@ def _process_sample_weight(sample_weight, target_series):
         else:  # "exponential_decay"
             time_steps = np.linspace(0, 1, max_len)
             weights = np.exp(-10 * (1 - time_steps))
-        weights = np.expand_dims(weights, -1)
+        weights = np.expand_dims(weights, -1).astype(target_series[0].dtype)
 
         # create sequence of series for tabularization
         sample_weight = [
