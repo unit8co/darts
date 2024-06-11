@@ -1026,6 +1026,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 f" provided input/output dimensions = {sample_shape(train_sample)}",
             )
 
+        # loss must not reduce the output when using sample weight
+        sample_weight = train_sample[-2]
+        if model.criterion is not None and sample_weight is not None:
+            shape_out = (2, 2)
+            loss = model.criterion(torch.ones(shape_out), torch.zeros(shape_out))
+            if not loss.shape == shape_out:
+                raise_log(
+                    ValueError(
+                        "When using `sample_weight`, the loss function `loss_fn` must not reduce the output. "
+                        "Consider setting `reduction='none'` when using a torch loss function and pass that "
+                        "at model creation with `loss_fn`. E.g. `loss_fn=torch.nn.MSELoss(reduction='none')`"
+                    ),
+                    logger=logger,
+                )
+
         # Setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
         # least one batch no matter the chosen batch size
         dataloader_kwargs = dict(

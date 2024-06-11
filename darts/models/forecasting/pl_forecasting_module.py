@@ -161,6 +161,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         # define the loss function
         self.criterion = loss_fn
+
         # by default models are deterministic (i.e. not probabilistic)
         self.likelihood = likelihood
 
@@ -214,9 +215,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
         """performs the training step"""
         # by convention, the last two elements are sample weights and future target
         output = self._produce_train_output(train_batch[:-2])
-        # sample_weight = train_batch[-2]
+        sample_weight = train_batch[-2]
         target = train_batch[-1]
-        loss = self._compute_loss(output, target)
+        loss = self._compute_loss(output, target, sample_weight)
         self.log(
             "train_loss",
             loss,
@@ -231,9 +232,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
         """performs the validation step"""
         # the last two elements are sample weights and future target
         output = self._produce_train_output(val_batch[:-2])
-        # sample_weight = val_batch[-2]
+        sample_weight = val_batch[-2]
         target = val_batch[-1]
-        loss = self._compute_loss(output, target)
+        loss = self._compute_loss(output, target, sample_weight)
         self.log(
             "val_loss",
             loss,
@@ -366,14 +367,15 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.predict_likelihood_parameters = predict_likelihood_parameters
         self.pred_mc_dropout = mc_dropout
 
-    def _compute_loss(self, output, target):
+    def _compute_loss(self, output, target, sample_weight):
         # output is of shape (batch_size, n_timesteps, n_components, n_params)
         if self.likelihood:
             return self.likelihood.compute_loss(output, target)
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
             # last dimension of model output, for properly computing the loss.
-            return self.criterion(output.squeeze(dim=-1), target)
+            loss = self.criterion(output.squeeze(dim=-1), target)
+            return loss if sample_weight is None else (loss * sample_weight).mean()
 
     def _update_metrics(self, output, target, metrics):
         if not len(metrics):
