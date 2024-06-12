@@ -1031,11 +1031,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
 
         # loss must not reduce the output when using sample weight
-        sample_weight = train_sample[-2]
-        if model.criterion is not None and sample_weight is not None:
+        train_sample_weight = train_sample[-2]
+        val_sample_weight = val_dataset[0][-2] if val_dataset is not None else None
+        for sample_weight, criterion, set_name in [
+            (train_sample_weight, model.train_criterion, "train"),
+            (val_sample_weight, model.val_criterion, "val"),
+        ]:
+            if sample_weight is None:
+                continue
+
             # we need to check that loss has a reduction param that we can change when calling
             # `fit()` with sample weights
-            if not hasattr(model.criterion, "reduction"):
+            if not hasattr(criterion, "reduction"):
                 raise_log(
                     ValueError(
                         "torch loss function `loss_fn` must have an attribute `reduction` which controls how "
@@ -1044,17 +1051,22 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     logger=logger,
                 )
 
-            model.criterion_reduction = model.criterion.reduction
-            model.criterion.reduction = "none"
+            # remember the original reduction (reset in `PLForecastingModule.on_fit_end()`
+            if set_name == "train":
+                model.train_criterion_reduction = criterion.reduction
+            else:
+                model.val_criterion_reduction = criterion.reduction
+            # overwrite criterion to not reduce the loss for sample weights
+            criterion.reduction = "none"
 
             shape_out = (2, 2)
-            loss = model.criterion(torch.ones(shape_out), torch.zeros(shape_out))
+            loss = criterion(torch.ones(shape_out), torch.zeros(shape_out))
             if not loss.shape == shape_out:
                 raise_log(
                     ValueError(
-                        "When using `sample_weight`, the loss function `loss_fn` must not reduce the output. "
-                        "Consider setting `reduction='none'` when using a torch loss function and pass that "
-                        "at model creation with `loss_fn`. E.g. `loss_fn=torch.nn.MSELoss(reduction='none')`"
+                        "Failed to make `loss_fn` not reduce the loss output when using `(val)_sample_weight`. "
+                        "The loss function `loss_fn` must have an attribute `reduction` which when setting it to "
+                        "`'none'`, must not reduce the output."
                     ),
                     logger=logger,
                 )
@@ -1841,6 +1853,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         loss_fn = model.model_params.get("loss_fn")
         if loss_fn is not None:
             model.model.criterion = loss_fn
+            model.model.train_criterion = copy.deepcopy(loss_fn)
+            model.model.val_criterion = copy.deepcopy(loss_fn)
         # train and val metrics also need to be restored
         torch_metrics = model.model.configure_torch_metrics(
             model.model_params.get("torch_metrics")

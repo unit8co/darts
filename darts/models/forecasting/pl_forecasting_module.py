@@ -2,6 +2,7 @@
 This file contains abstract classes for deterministic and probabilistic PyTorch Lightning Modules
 """
 
+import copy
 from abc import ABC, abstractmethod
 from functools import wraps
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
@@ -161,9 +162,12 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         # define the loss function
         self.criterion = loss_fn
+        self.train_criterion = copy.deepcopy(loss_fn)
+        self.val_criterion = copy.deepcopy(loss_fn)
         # reduction will be set to `None` when calling `TFM.fit()` with sample weights;
         # reset the actual criterion in method `on_fit_end()`
-        self.criterion_reduction: Optional[str] = None
+        self.train_criterion_reduction: Optional[str] = None
+        self.val_criterion_reduction: Optional[str] = None
 
         # by default models are deterministic (i.e. not probabilistic)
         self.likelihood = likelihood
@@ -220,7 +224,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         output = self._produce_train_output(train_batch[:-2])
         sample_weight = train_batch[-2]
         target = train_batch[-1]
-        loss = self._compute_loss(output, target, sample_weight)
+        loss = self._compute_loss(output, target, self.train_criterion, sample_weight)
         self.log(
             "train_loss",
             loss,
@@ -237,7 +241,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         output = self._produce_train_output(val_batch[:-2])
         sample_weight = val_batch[-2]
         target = val_batch[-1]
-        loss = self._compute_loss(output, target, sample_weight)
+        loss = self._compute_loss(output, target, self.val_criterion, sample_weight)
         self.log(
             "val_loss",
             loss,
@@ -249,10 +253,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
         return loss
 
     def on_fit_end(self) -> None:
-        if self.criterion_reduction is not None:
-            # revert the loss function reduction change when sample weights were used
-            self.criterion.reduction = self.criterion_reduction
-            self.criterion_reduction = None
+        # revert the loss function reduction change when sample weights were used
+        if self.train_criterion_reduction is not None:
+            self.train_criterion.reduction = self.train_criterion_reduction
+            self.train_criterion_reduction = None
+        if self.val_criterion_reduction is not None:
+            self.val_criterion.reduction = self.val_criterion_reduction
+            self.val_criterion_reduction = None
 
     def on_train_epoch_end(self):
         self._compute_metrics(self.train_metrics)
@@ -376,14 +383,14 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.predict_likelihood_parameters = predict_likelihood_parameters
         self.pred_mc_dropout = mc_dropout
 
-    def _compute_loss(self, output, target, sample_weight):
+    def _compute_loss(self, output, target, criterion, sample_weight):
         # output is of shape (batch_size, n_timesteps, n_components, n_params)
         if self.likelihood:
             loss = self.likelihood.compute_loss(output, target, sample_weight)
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
             # last dimension of model output, for properly computing the loss.
-            loss = self.criterion(output.squeeze(dim=-1), target)
+            loss = criterion(output.squeeze(dim=-1), target)
             if sample_weight is not None:
                 loss = (loss * sample_weight).mean()
         return loss
@@ -526,7 +533,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         checkpoint["train_sample_shape"] = self.train_sample_shape
         # we must save the loss to properly restore it when resuming training
         checkpoint["loss_fn"] = self.criterion
-        # we must save the metrics to continue outputing them when resuming training
+        # we must save the metrics to continue logging them when resuming training
         checkpoint["torch_metrics_train"] = self.train_metrics
         checkpoint["torch_metrics_val"] = self.val_metrics
 

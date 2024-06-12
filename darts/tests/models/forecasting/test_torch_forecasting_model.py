@@ -1134,11 +1134,14 @@ class TestTorchForecastingModel:
             model_name, tmpdir_fn, best=False, map_location="cpu"
         )
         # custom loss function should be properly restored from ckpt
-        assert isinstance(loaded_model.model.criterion, torch.nn.L1Loss)
+        loss_fn_attrs = ["criterion", "train_criterion", "val_criterion"]
+        for attr in loss_fn_attrs:
+            assert isinstance(getattr(loaded_model.model, attr), torch.nn.L1Loss)
 
         loaded_model.fit(self.series, epochs=2)
         # calling fit() should not impact the loss function
-        assert isinstance(loaded_model.model.criterion, torch.nn.L1Loss)
+        for attr in loss_fn_attrs:
+            assert isinstance(getattr(loaded_model.model, attr), torch.nn.L1Loss)
 
     def test_load_from_checkpoint_w_metrics(self, tmpdir_fn):
         model_name = "pretraining_metrics"
