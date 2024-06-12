@@ -161,6 +161,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         # define the loss function
         self.criterion = loss_fn
+        # reduction will be set to `None` when calling `TFM.fit()` with sample weights;
+        # reset the actual criterion in method `on_fit_end()`
+        self.criterion_reduction: Optional[str] = None
 
         # by default models are deterministic (i.e. not probabilistic)
         self.likelihood = likelihood
@@ -244,6 +247,12 @@ class PLForecastingModule(pl.LightningModule, ABC):
         )
         self._update_metrics(output, target, self.val_metrics)
         return loss
+
+    def on_fit_end(self) -> None:
+        if self.criterion_reduction is not None:
+            # revert the loss function reduction change when sample weights were used
+            self.criterion.reduction = self.criterion_reduction
+            self.criterion_reduction = None
 
     def on_train_epoch_end(self):
         self._compute_metrics(self.train_metrics)

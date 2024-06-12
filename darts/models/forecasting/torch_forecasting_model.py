@@ -1000,35 +1000,53 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         train_sample = train_dataset[0]
+        train_sample_no_weight = train_sample[:-2] + train_sample[-1:]
         if self.model is None:
             # Build model, based on the dimensions of the first series in the train set.
             # the last two elements are sample weights and future target
-            self.train_sample = train_sample[:-2] + train_sample[-1:]
+            self.train_sample = train_sample_no_weight
             self.output_dim = train_sample[-1].shape[1]
             model = self._init_model(trainer)
         else:
             model = self.model
             # Check existing model has input/output dims matching what's provided in the training set.
             raise_if_not(
-                len(train_sample) == len(self.train_sample),
+                len(train_sample_no_weight) == len(self.train_sample),
                 "The size of the training set samples (tuples) does not match what the model has been"
                 f" previously trained on. Trained on tuples of length {len(self.train_sample)},"
-                f" received tuples of length {len(train_sample)}.",
+                f" received tuples of length {len(train_sample_no_weight)}.",
             )
-            sample_shape = lambda sample: tuple(
-                s.shape[1] if s is not None else None for s in sample
-            )  # noqa: E731
+            sample_shapes_last = [
+                s.shape[1] if s is not None else None for s in self.train_sample
+            ]
+            sample_shapes = [
+                s.shape[1] if s is not None else None for s in train_sample_no_weight
+            ]
             raise_if_not(
-                sample_shape(train_sample) == sample_shape(self.train_sample),
+                sample_shapes == sample_shapes_last,
                 "The dimensionality of the series in the training set do not match the dimensionality"
                 " of the series the model has previously been trained on. "
-                f"Model input/output dimensions = {sample_shape(self.train_sample)},"
-                f" provided input/output dimensions = {sample_shape(train_sample)}",
+                f"Model input/output dimensions = {sample_shapes_last},"
+                f" provided input/output dimensions = {sample_shapes}",
             )
 
         # loss must not reduce the output when using sample weight
         sample_weight = train_sample[-2]
         if model.criterion is not None and sample_weight is not None:
+            # we need to check that loss has a reduction param that we can change when calling
+            # `fit()` with sample weights
+            if not hasattr(model.criterion, "reduction"):
+                raise_log(
+                    ValueError(
+                        "torch loss function `loss_fn` must have an attribute `reduction` which controls how "
+                        "to reduce the loss over each batch. With `reduction='none'` it must not reduce the loss."
+                    ),
+                    logger=logger,
+                )
+
+            model.criterion_reduction = model.criterion.reduction
+            model.criterion.reduction = "none"
+
             shape_out = (2, 2)
             loss = model.criterion(torch.ones(shape_out), torch.zeros(shape_out))
             if not loss.shape == shape_out:
