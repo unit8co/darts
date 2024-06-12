@@ -62,17 +62,30 @@ kwargs = {
     "n_epochs": 1,
     "pl_trainer_kwargs": {"fast_dev_run": True, **tfm_kwargs["pl_trainer_kwargs"]},
 }
+nbeats_light_kwargs = {
+    "num_stacks": 2,
+    "num_blocks": 1,
+    "num_layers": 1,
+    "layer_widths": 16,
+}
+trafo_light_kwargs = {
+    "d_model": 16,
+    "nhead": 2,
+    "num_encoder_layers": 1,
+    "num_decoder_layers": 1,
+    "dim_feedforward": 16,
+}
 models = [
     (BlockRNNModel, kwargs),
     (DLinearModel, kwargs),
-    (NBEATSModel, kwargs),
-    (NHiTSModel, kwargs),
+    (NBEATSModel, dict(kwargs, **nbeats_light_kwargs)),
+    (NHiTSModel, dict(kwargs, **nbeats_light_kwargs)),
     (NLinearModel, kwargs),
     (RNNModel, {"training_length": 10, **kwargs}),
     (TCNModel, kwargs),
     (TFTModel, {"add_relative_index": 2, **kwargs}),
     (TiDEModel, kwargs),
-    (TransformerModel, kwargs),
+    (TransformerModel, dict(kwargs, **trafo_light_kwargs)),
     (TSMixerModel, kwargs),
     (GlobalNaiveSeasonal, kwargs),
     (GlobalNaiveAggregate, kwargs),
@@ -1743,28 +1756,7 @@ class TestTorchForecastingModel:
     @pytest.mark.parametrize(
         "config",
         itertools.product(
-            [
-                (
-                    TFTModel,
-                    {
-                        "add_relative_index": True,
-                        "likelihood": None,
-                        "loss_fn": torch.nn.MSELoss(),
-                    },
-                ),
-                (TiDEModel, {}),
-                (NLinearModel, {}),
-                (DLinearModel, {}),
-                (NBEATSModel, {}),
-                (NHiTSModel, {}),
-                (TransformerModel, {}),
-                (TCNModel, {}),
-                (TSMixerModel, {}),
-                (BlockRNNModel, {}),
-                (GlobalNaiveSeasonal, {}),
-                (GlobalNaiveAggregate, {}),
-                (GlobalNaiveDrift, {}),
-            ],
+            models,
             [3, 7, 10],
         ),
     )
@@ -1773,14 +1765,26 @@ class TestTorchForecastingModel:
         RNNModel does not support shift output chunk.
         """
         np.random.seed(0)
-        (model_cls, add_params), shift = config
+        (model_cls, model_kwargs), shift = config
+        if issubclass(model_cls, RNNModel):
+            return
+
+        model_kwargs = copy.deepcopy(model_kwargs)
+        model_kwargs.pop("input_chunk_length")
+        model_kwargs.pop("output_chunk_length")
+
+        if issubclass(model_cls, TFTModel):
+            model_kwargs.update({"likelihood": None, "loss_fn": torch.nn.MSELoss()})
+
         icl = 8
         ocl = 7
         series = tg.gaussian_timeseries(
             length=28, start=pd.Timestamp("2000-01-01"), freq="d"
         )
 
-        model = self.helper_create_torch_model(model_cls, icl, ocl, shift, **add_params)
+        model = self.helper_create_torch_model(
+            model_cls, icl, ocl, shift, **model_kwargs
+        )
         model.fit(series)
 
         # no auto-regression with shifted output
@@ -1823,13 +1827,13 @@ class TestTorchForecastingModel:
             "datetime_attribute": {cov: ["dayofweek"] for cov in cov_support}
         }
         model_enc_shift = self.helper_create_torch_model(
-            model_cls, icl, ocl, shift, add_encoders=add_encoders, **add_params
+            model_cls, icl, ocl, shift, add_encoders=add_encoders, **model_kwargs
         )
         model_enc_shift.fit(series)
 
         # model trained with identical covariates
         model_fc_shift = self.helper_create_torch_model(
-            model_cls, icl, ocl, shift, **add_params
+            model_cls, icl, ocl, shift, **model_kwargs
         )
 
         model_fc_shift.fit(series, **covs)
@@ -1947,6 +1951,64 @@ class TestTorchForecastingModel:
                     np.testing.assert_array_almost_equal(
                         pred.all_values(), pred_no_weight.all_values()
                     )
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(models, [True, False], [True, False], [True, False]),
+    )
+    def test_weights(self, config):
+        (model_cls, model_kwargs), built_in_weight, single_series, univ_series = config
+        ts = tg.linear_timeseries(
+            length=model_kwargs["input_chunk_length"]
+            + model_kwargs["output_chunk_length"]
+        )
+        if not univ_series:
+            ts = ts.stack(ts)
+
+        if built_in_weight:
+            weights = "linear_decay"
+        else:
+            weights = np.ones((len(ts), ts.n_components))
+            weights[: len(weights) - 3] = 1.5
+            weights = ts.with_values(weights)
+
+        if not single_series:
+            ts = [ts] * 2
+            weights = weights if built_in_weight else [weights] * 2
+
+        model = model_cls(**model_kwargs)
+        model.fit(ts, sample_weight=weights)
+        preds = model.predict(n=3, series=ts)
+
+        model_no_weight = model_cls(**model_kwargs)
+        model_no_weight.fit(ts, sample_weight=None)
+        preds_no_weight = model_no_weight.predict(n=3, series=ts)
+
+        if single_series:
+            preds = [preds]
+            preds_no_weight = [preds_no_weight]
+
+        for pred, pred_no_weight in zip(preds, preds_no_weight):
+            if isinstance(model, _GlobalNaiveModel):
+                # naive models don't learn, so output should be the same
+                np.testing.assert_array_almost_equal(
+                    pred.all_values(), pred_no_weight.all_values()
+                )
+            else:
+                # all other models should have different results from sample weights
+                with pytest.raises(AssertionError):
+                    np.testing.assert_array_almost_equal(
+                        pred.all_values(), pred_no_weight.all_values()
+                    )
+
+        # try with validation series and only train weights
+        model.fit(ts, val_series=ts, sample_weight=weights)
+
+        # try with validation series and only val weights
+        model.fit(ts, val_series=ts, val_sample_weight=weights)
+
+        # try with validation series and train and val weights
+        model.fit(ts, val_series=ts, sample_weight=weights, val_sample_weight=weights)
 
     def helper_equality_encoders(
         self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
