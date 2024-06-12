@@ -656,10 +656,8 @@ class GenericShiftedDataset(TrainingDataset):
             )
         self.sample_weight = _process_sample_weight(sample_weight, target_series)
 
-        self.input_chunk_length, self.output_chunk_length = (
-            input_chunk_length,
-            output_chunk_length,
-        )
+        self.input_chunk_length = input_chunk_length
+        self.output_chunk_length = output_chunk_length
         self.shift, self.shift_covariates = shift, shift_covariates
         self.max_samples_per_ts = max_samples_per_ts
 
@@ -755,8 +753,8 @@ class GenericShiftedDataset(TrainingDataset):
         future_target = target_vals[future_start:future_end]
         past_target = target_vals[past_start:past_end]
 
-        # optionally, extract sample covariates
-        covariate, sample_weight = None, None
+        # extract sample covariates
+        covariate = None
         if self.covariates is not None:
             if covariate_end > len(covariate_series):
                 raise_log(
@@ -785,6 +783,8 @@ class GenericShiftedDataset(TrainingDataset):
                     logger=logger,
                 )
 
+        # extract sample weights
+        sample_weight = None
         if self.sample_weight is not None:
             if sample_weight_end > len(sample_weight_series):
                 raise_log(
@@ -808,6 +808,7 @@ class GenericShiftedDataset(TrainingDataset):
                     logger=logger,
                 )
 
+        # extract sample static covariates
         if self.use_static_covariates:
             static_covariate = target_series.static_covariates_values(copy=False)
         else:

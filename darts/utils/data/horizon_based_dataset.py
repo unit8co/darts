@@ -90,6 +90,15 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         self.target_series = series2seq(target_series)
         self.covariates = series2seq(covariates)
         self.covariate_type = CovariateType.PAST
+
+        if covariates is not None and len(self.target_series) != len(self.covariates):
+            raise_log(
+                ValueError(
+                    "The provided sequence of target series must have the same length as "
+                    "the provided sequence of covariate series."
+                ),
+                logger=logger,
+            )
         self.sample_weight = _process_sample_weight(sample_weight, self.target_series)
 
         self.output_chunk_length = output_chunk_length
@@ -102,14 +111,6 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
                 ValueError(
                     "The lh parameter should be an int tuple (min_lh, max_lh), "
                     "with 1 <= min_lh <= max_lh"
-                ),
-                logger=logger,
-            )
-        if covariates is not None and len(self.target_series) != len(self.covariates):
-            raise_log(
-                ValueError(
-                    "The provided sequence of target series must have the same length as "
-                    "the provided sequence of covariate series."
                 ),
                 logger=logger,
             )
@@ -163,6 +164,11 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
             CovariateType.NONE if self.covariates is None else CovariateType.PAST
         )
 
+        # optionally, load sample weight
+        sample_weight_series = (
+            self.sample_weight[target_idx] if self.sample_weight is not None else None
+        )
+
         shift = self.lookback * self.output_chunk_length
         input_chunk_length = shift
 
@@ -174,6 +180,8 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
             future_end,
             cov_start,
             cov_end,
+            sample_weight_start,
+            sample_weight_end,
         ) = self._memory_indexer(
             target_idx=target_idx,
             target_series=target_series,
@@ -183,19 +191,20 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
             end_of_output_idx=end_of_output_idx,
             covariate_series=covariate_series,
             covariate_type=main_covariate_type,
+            sample_weight_series=sample_weight_series,
         )
 
         # extract sample target
         future_target = target_vals[future_start:future_end]
         past_target = target_vals[past_start:past_end]
 
-        # optionally, extract sample covariates
+        # extract sample covariates
         covariate = None
         if self.covariates is not None:
             if cov_end > len(covariate_series):
                 raise_log(
                     ValueError(
-                        f"The dataset contains 'past' covariates that don't extend far enough into the future. "
+                        f"The dataset contains past covariates that don't extend far enough into the future. "
                         f"({idx}-th sample)"
                     ),
                     logger=logger,
@@ -206,14 +215,40 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
             if len(covariate) != len(past_target):
                 raise_log(
                     ValueError(
-                        "The dataset contains 'past' covariates whose time axis doesn't allow to obtain the "
+                        "The dataset contains past covariates whose time axis doesn't allow to obtain the "
                         "input (or output) chunk relative to the target series."
                     ),
                     logger=logger,
                 )
 
+        # extract sample weights
+        sample_weight = None
+        if self.sample_weight is not None:
+            if sample_weight_end > len(sample_weight_series):
+                raise_log(
+                    ValueError(
+                        f"The dataset contains sample weights "
+                        f"that don't extend far enough into the future. ({idx}-th sample)"
+                    ),
+                    logger=logger,
+                )
+
+            sample_weight = sample_weight_series.random_component_values(copy=False)[
+                sample_weight_start:sample_weight_end
+            ]
+
+            if len(sample_weight) != self.output_chunk_length:
+                raise_log(
+                    ValueError(
+                        "The dataset contains sample weights whose time axis doesn't allow to obtain "
+                        "the input (or output) chunk relative to the target series."
+                    ),
+                    logger=logger,
+                )
+
+        # extract sample static covariates
         if self.use_static_covariates:
             static_covariate = target_series.static_covariates_values(copy=False)
         else:
             static_covariate = None
-        return past_target, covariate, static_covariate, None, future_target
+        return past_target, covariate, static_covariate, sample_weight, future_target

@@ -405,7 +405,13 @@ class PastCovariatesTrainingDataset(TrainingDataset, ABC):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    ) -> Tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        np.ndarray,
+    ]:
         pass
 
 
@@ -421,7 +427,13 @@ class FutureCovariatesTrainingDataset(TrainingDataset, ABC):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    ) -> Tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        np.ndarray,
+    ]:
         pass
 
 
@@ -439,6 +451,7 @@ class DualCovariatesTrainingDataset(TrainingDataset, ABC):
         self, idx: int
     ) -> Tuple[
         np.ndarray,
+        Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -466,6 +479,7 @@ class MixedCovariatesTrainingDataset(TrainingDataset, ABC):
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
+        Optional[np.ndarray],
         np.ndarray,
     ]:
         pass
@@ -485,6 +499,7 @@ class SplitCovariatesTrainingDataset(TrainingDataset, ABC):
         self, idx: int
     ) -> Tuple[
         np.ndarray,
+        Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
