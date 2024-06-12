@@ -642,15 +642,6 @@ class GenericShiftedDataset(TrainingDataset):
         """
         super().__init__()
 
-        if covariates is not None and len(target_series) != len(covariates):
-            raise_log(
-                ValueError(
-                    "The provided sequence of target series must have the same length as "
-                    "the provided sequence of covariate series."
-                ),
-                logger=logger,
-            )
-
         # setup target and sequence
         self.target_series = series2seq(target_series)
         self.input_chunk_length = input_chunk_length
@@ -681,6 +672,17 @@ class GenericShiftedDataset(TrainingDataset):
             self.covariate_type = CovariateType.NONE
             self.shift_covariates = 0
         self.use_static_covariates = use_static_covariates
+
+        if self.covariates is not None and len(self.target_series) != len(
+            self.covariates
+        ):
+            raise_log(
+                ValueError(
+                    "The provided sequence of target series must have the same length as "
+                    "the provided sequence of covariate series."
+                ),
+                logger=logger,
+            )
 
         # setup sample weights; ignore weights when `ocl==0`
         self.sample_weight = None
