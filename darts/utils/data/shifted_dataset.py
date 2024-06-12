@@ -745,9 +745,20 @@ class GenericShiftedDataset(TrainingDataset):
         )
 
         # optionally, load sample weight
-        sample_weight_series = (
-            self.sample_weight[target_idx] if self.sample_weight is not None else None
-        )
+        if self.sample_weight is not None:
+            sample_weight_series = self.sample_weight[target_idx]
+            weight_n_comp = sample_weight_series.n_components
+            if weight_n_comp > 1 and weight_n_comp != target_series.n_components:
+                raise_log(
+                    ValueError(
+                        "The number of components in `sample_weight` must either be `1` or match "
+                        f"the number of target series components `{target_series.n_components}`. "
+                        f"({target_idx}-th series)"
+                    ),
+                    logger=logger,
+                )
+        else:
+            sample_weight_series = None
 
         # get all indices for the current sample
         (

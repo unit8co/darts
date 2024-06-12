@@ -51,15 +51,18 @@ from darts.models import (
 from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
 from darts.utils.likelihood_models import (
+    CauchyLikelihood,
     GaussianLikelihood,
     LaplaceLikelihood,
     Likelihood,
+    QuantileRegression,
 )
 
 kwargs = {
     "input_chunk_length": 10,
     "output_chunk_length": 1,
     "n_epochs": 1,
+    "random_state": 42,
     "pl_trainer_kwargs": {"fast_dev_run": True, **tfm_kwargs["pl_trainer_kwargs"]},
 }
 nbeats_light_kwargs = {
@@ -1909,51 +1912,6 @@ class TestTorchForecastingModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(models, [True, False]),
-    )
-    def test_weights_built_in(self, config):
-        (model_cls, model_kwargs), single_series = config
-        ts = tg.linear_timeseries(
-            length=model_kwargs["input_chunk_length"]
-            + model_kwargs["output_chunk_length"]
-            + 3
-        )
-
-        model = model_cls(**model_kwargs)
-        model.fit(
-            ts if single_series else [ts] * 2,
-            sample_weight="linear_decay",
-        )
-        preds = model.predict(n=3, series=ts if single_series else [ts] * 2)
-
-        model_no_weight = model_cls(**model_kwargs)
-        model_no_weight.fit(
-            ts if single_series else [ts] * 2,
-            sample_weight=None,
-        )
-        preds_no_weight = model_no_weight.predict(
-            n=3, series=ts if single_series else [ts] * 2
-        )
-
-        if single_series:
-            preds = [preds]
-            preds_no_weight = [preds_no_weight]
-
-        for pred, pred_no_weight in zip(preds, preds_no_weight):
-            if isinstance(model, _GlobalNaiveModel):
-                # naive models don't learn, so output should be the same
-                np.testing.assert_array_almost_equal(
-                    pred.all_values(), pred_no_weight.all_values()
-                )
-            else:
-                # all other models should have different results from sample weights
-                with pytest.raises(AssertionError):
-                    np.testing.assert_array_almost_equal(
-                        pred.all_values(), pred_no_weight.all_values()
-                    )
-
-    @pytest.mark.parametrize(
-        "config",
         itertools.product(models, [True, False], [True, False], [True, False]),
     )
     def test_weights(self, config):
@@ -2009,6 +1967,96 @@ class TestTorchForecastingModel:
 
         # try with validation series and train and val weights
         model.fit(ts, val_series=ts, sample_weight=weights, val_sample_weight=weights)
+
+    def test_invalid_weights(self):
+        model_cls, model_kwargs = models[0]
+        ts = tg.linear_timeseries(
+            length=model_kwargs["input_chunk_length"]
+            + model_kwargs["output_chunk_length"]
+        )
+
+        # weights too short
+        model = model_cls(**model_kwargs)
+        with pytest.raises(ValueError) as err:
+            model.fit(ts, sample_weight=ts[:-1])
+        assert (
+            str(err.value)
+            == "Missing sample weights; could not find sample weights in index value range: "
+            "2000-01-11 00:00:00 - 2000-01-11 00:00:00."
+        )
+
+        # same number of series
+        model = model_cls(**model_kwargs)
+        with pytest.raises(ValueError) as err:
+            model.fit(ts, sample_weight=[ts, ts])
+        assert (
+            str(err.value)
+            == "The provided sequence of target series must have the same length as the "
+            "provided sequence of sample weights."
+        )
+
+        # same number of components
+        model = model_cls(**model_kwargs)
+        with pytest.raises(ValueError) as err:
+            model.fit(ts, sample_weight=ts.stack(ts))
+        assert (
+            str(err.value)
+            == "The number of components in `sample_weight` must either be `1` or match the "
+            "number of target series components `1`. (0-th series)"
+        )
+        # with correct number it works
+        model = model_cls(**model_kwargs)
+        model.fit(ts.stack(ts), sample_weight=ts.stack(ts))
+        # or with multivar ts and single component weights (globally applied)
+        model = model_cls(**model_kwargs)
+        model.fit(ts.stack(ts), sample_weight=ts)
+
+        # invalid string
+        model = model_cls(**model_kwargs)
+        with pytest.raises(ValueError) as err:
+            model.fit(ts, sample_weight="invalid")
+        assert str(err.value).startswith("Invalid `sample_weight` value: invalid. ")
+
+    @pytest.mark.parametrize(
+        "likelihood",
+        [
+            QuantileRegression([0.1, 0.5, 0.9]),
+            LaplaceLikelihood(),
+            GaussianLikelihood(),
+            CauchyLikelihood(),
+        ],
+    )
+    def test_weights_probabilistic(self, likelihood):
+        model_cls, model_kwargs = models[0]
+        ts = tg.linear_timeseries(
+            length=model_kwargs["input_chunk_length"]
+            + model_kwargs["output_chunk_length"]
+        )
+
+        model_kwargs = copy.deepcopy(model_kwargs)
+        model_kwargs["likelihood"] = likelihood
+        model_kwargs["loss_fn"] = None
+
+        model = model_cls(**model_kwargs)
+        model.fit(ts, sample_weight=ts)
+        pred = model.predict(n=3, num_samples=10)
+
+        # check results are deterministic with same sample weights
+        model_same = model_cls(**model_kwargs)
+        model_same.fit(ts, sample_weight=ts)
+        pred_same = model_same.predict(n=3, num_samples=10)
+        np.testing.assert_array_almost_equal(pred.all_values(), pred_same.all_values())
+
+        # check different results without sample weights
+        model_no_weight = model_cls(**model_kwargs)
+        model_no_weight.fit(ts, sample_weight=ts)
+        pred_no_weight = model.predict(n=3, num_samples=10)
+
+        # all other models should have different results from sample weights
+        with pytest.raises(AssertionError):
+            np.testing.assert_array_almost_equal(
+                pred.all_values(), pred_no_weight.all_values()
+            )
 
     def helper_equality_encoders(
         self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
