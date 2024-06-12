@@ -642,11 +642,7 @@ class GenericShiftedDataset(TrainingDataset):
         """
         super().__init__()
 
-        self.target_series = series2seq(target_series)
-        self.covariates = series2seq(covariates)
-        self.covariate_type = covariate_type
-
-        if covariates is not None and len(self.target_series) != len(self.covariates):
+        if covariates is not None and len(target_series) != len(covariates):
             raise_log(
                 ValueError(
                     "The provided sequence of target series must have the same length as "
@@ -654,25 +650,55 @@ class GenericShiftedDataset(TrainingDataset):
                 ),
                 logger=logger,
             )
-        self.sample_weight = _process_sample_weight(sample_weight, target_series)
 
+        # setup target and sequence
+        self.target_series = series2seq(target_series)
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
-        self.shift, self.shift_covariates = shift, shift_covariates
+        self.shift = shift
         self.max_samples_per_ts = max_samples_per_ts
-
         self.size_of_both_chunks = max(
             self.input_chunk_length, self.shift + self.output_chunk_length
         )
 
+        # setup covariates; ignore past/historic covariates when `icl==0` and future covariates when `ocl==0`
+        main_covariate_type = CovariateType.NONE
+        if covariates is not None:
+            if shift_covariates and output_chunk_length > 0:
+                main_covariate_type = CovariateType.FUTURE
+            elif not shift_covariates and input_chunk_length > 0:
+                main_covariate_type = CovariateType.PAST
+            else:
+                main_covariate_type = CovariateType.NONE
+
+        self.main_covariate_type = main_covariate_type
+        if main_covariate_type is not CovariateType.NONE:
+            self.covariates = series2seq(covariates)
+            self.covariate_type = covariate_type
+            self.shift_covariates = shift_covariates
+        else:
+            self.covariates = None
+            self.covariate_type = CovariateType.NONE
+            self.shift_covariates = 0
+        self.use_static_covariates = use_static_covariates
+
+        # setup sample weights; ignore weights when `ocl==0`
+        self.sample_weight = None
+        if sample_weight is not None:
+            if output_chunk_length > 0:
+                self.sample_weight = _process_sample_weight(
+                    sample_weight, target_series
+                )
+            else:
+                self.sample_weight = None
+
+        # setup samples
         if self.max_samples_per_ts is None:
             # read all time series to get the maximum size
             self.max_samples_per_ts = (
                 max(len(ts) for ts in self.target_series) - self.size_of_both_chunks + 1
             )
-
         self.ideal_nr_samples = len(self.target_series) * self.max_samples_per_ts
-        self.use_static_covariates = use_static_covariates
 
     def __len__(self):
         return self.ideal_nr_samples
@@ -716,12 +742,6 @@ class GenericShiftedDataset(TrainingDataset):
             self.covariates[target_idx] if self.covariates is not None else None
         )
 
-        main_covariate_type = CovariateType.NONE
-        if self.covariates is not None:
-            main_covariate_type = (
-                CovariateType.FUTURE if self.shift_covariates else CovariateType.PAST
-            )
-
         # optionally, load sample weight
         sample_weight_series = (
             self.sample_weight[target_idx] if self.sample_weight is not None else None
@@ -745,7 +765,7 @@ class GenericShiftedDataset(TrainingDataset):
             output_chunk_length=self.output_chunk_length,
             end_of_output_idx=end_of_output_idx,
             covariate_series=covariate_series,
-            covariate_type=main_covariate_type,
+            covariate_type=self.main_covariate_type,
             sample_weight_series=sample_weight_series,
         )
 
@@ -759,7 +779,7 @@ class GenericShiftedDataset(TrainingDataset):
             if covariate_end > len(covariate_series):
                 raise_log(
                     ValueError(
-                        f"The dataset contains {main_covariate_type.value} covariates "
+                        f"The dataset contains {self.main_covariate_type.value} covariates "
                         f"that don't extend far enough into the future. ({idx}-th sample)"
                     ),
                     logger=logger,
@@ -776,7 +796,7 @@ class GenericShiftedDataset(TrainingDataset):
             ):
                 raise_log(
                     ValueError(
-                        f"The dataset contains {main_covariate_type.value} covariates "
+                        f"The dataset contains {self.main_covariate_type.value} covariates "
                         f"whose time axis doesn't allow to obtain the input (or output) chunk relative to the "
                         f"target series."
                     ),

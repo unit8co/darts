@@ -141,10 +141,7 @@ class TrainingDataset(ABC, Dataset):
             )
 
             if covariate_type is not CovariateType.NONE:
-                target_time_index = target_series._time_index
-                covariate_time_index = covariate_series._time_index
-
-                # not CovariateType.Future -> both CovariateType.PAST and CovariateType.HISTORIC_FUTURE
+                # not CovariateType.FUTURE -> both CovariateType.PAST and CovariateType.HISTORIC_FUTURE
                 start = (
                     future_start
                     if covariate_type is CovariateType.FUTURE
@@ -154,8 +151,10 @@ class TrainingDataset(ABC, Dataset):
 
                 # we need to be careful with getting ranges and indexes:
                 # to get entire range, full_range = ts[:len(ts)]; to get last index: last_idx = ts[len(ts) - 1]
-
-                # extract actual index value (respects datetime- and integer-based indexes; also from non-zero start)
+                # extract actual index value (respects datetime- and integer-based indexes; also from non-zero
+                # start)
+                target_time_index = target_series._time_index
+                covariate_time_index = covariate_series._time_index
                 start_time = target_time_index[start]
                 end_time = target_time_index[end - 1]
 

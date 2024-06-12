@@ -1903,6 +1903,51 @@ class TestTorchForecastingModel:
         assert len(pred) == n_series_less
         assert all(len(p) == n for p in pred)
 
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(models, [True, False]),
+    )
+    def test_weights_built_in(self, config):
+        (model_cls, model_kwargs), single_series = config
+        ts = tg.linear_timeseries(
+            length=model_kwargs["input_chunk_length"]
+            + model_kwargs["output_chunk_length"]
+            + 3
+        )
+
+        model = model_cls(**model_kwargs)
+        model.fit(
+            ts if single_series else [ts] * 2,
+            sample_weight="linear_decay",
+        )
+        preds = model.predict(n=3, series=ts if single_series else [ts] * 2)
+
+        model_no_weight = model_cls(**model_kwargs)
+        model_no_weight.fit(
+            ts if single_series else [ts] * 2,
+            sample_weight=None,
+        )
+        preds_no_weight = model_no_weight.predict(
+            n=3, series=ts if single_series else [ts] * 2
+        )
+
+        if single_series:
+            preds = [preds]
+            preds_no_weight = [preds_no_weight]
+
+        for pred, pred_no_weight in zip(preds, preds_no_weight):
+            if isinstance(model, _GlobalNaiveModel):
+                # naive models don't learn, so output should be the same
+                np.testing.assert_array_almost_equal(
+                    pred.all_values(), pred_no_weight.all_values()
+                )
+            else:
+                # all other models should have different results from sample weights
+                with pytest.raises(AssertionError):
+                    np.testing.assert_array_almost_equal(
+                        pred.all_values(), pred_no_weight.all_values()
+                    )
+
     def helper_equality_encoders(
         self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
     ):

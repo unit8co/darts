@@ -1037,7 +1037,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             (train_sample_weight, model.train_criterion, "train"),
             (val_sample_weight, model.val_criterion, "val"),
         ]:
-            if sample_weight is None:
+            if criterion is None or sample_weight is None:
                 continue
 
             # we need to check that loss has a reduction param that we can change when calling
