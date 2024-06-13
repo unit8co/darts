@@ -1,4 +1,5 @@
 import inspect
+import itertools
 
 import numpy as np
 import pandas as pd
@@ -1319,33 +1320,52 @@ class TestDataset:
         with pytest.raises(ValueError):
             _ = ds[0]
 
-    def test_horizon_based_dataset(self):
+    @pytest.mark.parametrize("use_weight", [False, True])
+    def test_horizon_based_dataset(self, use_weight):
+        weight1 = self.target1 + 1
+        weight2 = self.target2 + 1
+
+        weight = weight1 if use_weight else None
+        weight_exp = weight1[85:95] if use_weight else None
         # one target series
         ds = HorizonBasedDataset(
             target_series=self.target1,
             output_chunk_length=10,
             lh=(1, 3),
             lookback=2,
+            sample_weight=weight,
         )
         assert len(ds) == 20
         self._assert_eq(
-            ds[5], (self.target1[65:85], None, self.cov_st1, None, self.target1[85:95])
+            ds[5],
+            (self.target1[65:85], None, self.cov_st1, weight_exp, self.target1[85:95]),
         )
 
         # two target series
+        weight = [weight1, weight2] if use_weight else None
+        weight_exp1 = weight1[85:95] if use_weight else None
+        weight_exp2 = weight2[135:145] if use_weight else None
         ds = HorizonBasedDataset(
             target_series=[self.target1, self.target2],
             output_chunk_length=10,
             lh=(1, 3),
             lookback=2,
+            sample_weight=weight,
         )
         assert len(ds) == 40
         self._assert_eq(
-            ds[5], (self.target1[65:85], None, self.cov_st1, None, self.target1[85:95])
+            ds[5],
+            (self.target1[65:85], None, self.cov_st1, weight_exp1, self.target1[85:95]),
         )
         self._assert_eq(
             ds[25],
-            (self.target2[115:135], None, self.cov_st2, None, self.target2[135:145]),
+            (
+                self.target2[115:135],
+                None,
+                self.cov_st2,
+                weight_exp2,
+                self.target2[135:145],
+            ),
         )
 
         # two targets and one covariate
@@ -1355,12 +1375,16 @@ class TestDataset:
             )
 
         # two targets and two covariates
+        weight = [weight1, weight2] if use_weight else None
+        weight_exp1 = weight1[85:95] if use_weight else None
+        weight_exp2 = weight2[135:145] if use_weight else None
         ds = HorizonBasedDataset(
             target_series=[self.target1, self.target2],
             covariates=[self.cov1, self.cov2],
             output_chunk_length=10,
             lh=(1, 3),
             lookback=2,
+            sample_weight=weight,
         )
         self._assert_eq(
             ds[5],
@@ -1368,7 +1392,7 @@ class TestDataset:
                 self.target1[65:85],
                 self.cov1[65:85],
                 self.cov_st1,
-                None,
+                weight_exp1,
                 self.target1[85:95],
             ),
         )
@@ -1378,7 +1402,7 @@ class TestDataset:
                 self.target2[115:135],
                 self.cov2[115:135],
                 self.cov_st2,
-                None,
+                weight_exp2,
                 self.target2[135:145],
             ),
         )
@@ -1399,6 +1423,7 @@ class TestDataset:
         ocl = 1
         ocs = 2
         target = self.target1[: -(ocl + ocs)]
+        sample_weight = target + 1
 
         ds_covs = {}
         ds_init_params = set(inspect.signature(ds_cls.__init__).parameters)
@@ -1413,6 +1438,7 @@ class TestDataset:
             input_chunk_length=1,
             output_chunk_length=3,
             output_chunk_shift=0,
+            sample_weight=sample_weight,
             **ds_covs,
         )
 
@@ -1421,6 +1447,7 @@ class TestDataset:
             input_chunk_length=1,
             output_chunk_length=1,
             output_chunk_shift=ocs,
+            sample_weight=sample_weight,
             **ds_covs,
         )
 
@@ -1434,15 +1461,250 @@ class TestDataset:
             batch_reg = batch_reg[:future_idx] + batch_reg[future_idx + 1 :]
             batch_shift = batch_shift[:future_idx] + batch_shift[future_idx + 1 :]
 
-        # last element is the output chunk of the target series.
+        # last two elements are (sample weight, output chunk of the target series).
         # 3rd future values of regular ds must be identical to the 1st future values of shifted dataset
-        batch_reg = batch_reg[:-1] + (batch_reg[-1][ocs:],)
+        batch_reg = batch_reg[:-2] + (batch_reg[-2][ocs:], batch_reg[-1][ocs:])
 
         # without future part, the input will be identical between regular, and shifted dataset
         assert all([
             np.all(el_reg == el_shift)
             for el_reg, el_shift in zip(batch_reg[:-1], batch_shift[:-1])
         ])
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [
+                PastCovariatesSequentialDataset,
+                FutureCovariatesSequentialDataset,
+                DualCovariatesSequentialDataset,
+                MixedCovariatesSequentialDataset,
+                SplitCovariatesSequentialDataset,
+            ],
+            [True, False],
+        ),
+    )
+    def test_sequential_training_dataset_weight(self, config):
+        ds_cls, manual_weight = config
+
+        def get_built_in_weigths(targets):
+            if isinstance(targets, list):
+                max_steps = max([len(ts) for ts in targets])
+            else:
+                max_steps = len(targets)
+            weight_expected = np.linspace(0, 1, max_steps)[-3:]
+            return np.expand_dims(weight_expected, -1)
+
+        target1 = self.target1
+        target2 = self.target2
+        weight1 = target1 + 1
+        weight2 = target2 + 1
+        built_in_weight = "linear_decay"
+
+        ds_covs = {}
+        ds_init_params = set(inspect.signature(ds_cls.__init__).parameters)
+        for cov_type in ["covariates", "past_covariates", "future_covariates"]:
+            if cov_type in ds_init_params:
+                ds_covs[cov_type] = self.cov1
+
+        # no sample weight
+        ds = ds_cls(
+            target_series=target1,
+            input_chunk_length=1,
+            output_chunk_length=3,
+            sample_weight=None,
+            **ds_covs,
+        )
+        assert ds[0][-2] is None
+
+        # whenever we use sample weight, the weight are extracted from the same time frame as the target labels
+        # since we set the weight to be `target + 1`, the returned batch weight must also be `batch_target_label + 1`
+
+        # single univariate
+        target = target1
+        weight = weight1 if manual_weight else built_in_weight
+        ds = ds_cls(
+            target_series=target,
+            input_chunk_length=1,
+            output_chunk_length=3,
+            sample_weight=weight,
+            **ds_covs,
+        )
+        weight_exp = ds[0][-1] + 1 if manual_weight else get_built_in_weigths(target)
+        assert np.all(ds[0][-2] == weight_exp)
+
+        # single univariate with longer weight
+        target = target1
+        weight = (
+            weight1.prepend_values([0.0]).append_values([0.0])
+            if manual_weight
+            else built_in_weight
+        )
+        ds = ds_cls(
+            target_series=target,
+            input_chunk_length=1,
+            output_chunk_length=3,
+            sample_weight=weight,
+            **ds_covs,
+        )
+        weight_exp = ds[0][-1] + 1 if manual_weight else get_built_in_weigths(target)
+        assert np.all(ds[0][-2] == weight_exp)
+
+        # single multivariate with multivariate weight
+        target = target1.stack(target1 + 1)
+        weight = weight1.stack(weight1 + 1) if manual_weight else built_in_weight
+        ds = ds_cls(
+            target_series=target,
+            input_chunk_length=1,
+            output_chunk_length=3,
+            sample_weight=weight,
+            **ds_covs,
+        )
+        weight_exp = ds[0][-1] + 1 if manual_weight else get_built_in_weigths(target)
+        assert np.all(ds[0][-2] == weight_exp)
+
+        # single multivariate with univariate (global) weight
+        target = target1.stack(target1 + 1)
+        weight = weight1 if manual_weight else built_in_weight
+        ds = ds_cls(
+            target_series=target,
+            input_chunk_length=1,
+            output_chunk_length=3,
+            sample_weight=weight,
+            **ds_covs,
+        )
+        # output weight corresponds to first target component + 1 (e.g. weight1)
+        weight_exp = (
+            ds[0][-1][:, 0:1] + 1 if manual_weight else get_built_in_weigths(target)
+        )
+        assert np.all(ds[0][-2] == weight_exp)
+
+        # single univariate and list of single weight
+        target = target1
+        weight = [weight1] if manual_weight else built_in_weight
+        ds = ds_cls(
+            target_series=target,
+            input_chunk_length=1,
+            output_chunk_length=3,
+            sample_weight=weight,
+            **ds_covs,
+        )
+        weight_exp = ds[0][-1] + 1 if manual_weight else get_built_in_weigths(target)
+        assert np.all(ds[0][-2] == weight_exp)
+
+        # multiple univariate
+        target = [target1, target2]
+        weight = [weight1, weight2] if manual_weight else built_in_weight
+        ds = ds_cls(
+            target_series=target,
+            input_chunk_length=1,
+            output_chunk_length=3,
+            sample_weight=weight,
+            **{k: [v] * 2 for k, v in ds_covs.items()},
+        )
+        weight_exp = ds[0][-1] + 1 if manual_weight else get_built_in_weigths(target)
+        assert np.all(ds[0][-2] == weight_exp)
+
+        # multiple multivariate
+        target = [target1.stack(target1 + 1), target2.stack(target2 + 1)]
+        weight = (
+            [weight1.stack(weight1 + 1), weight2.stack(weight2 + 1)]
+            if manual_weight
+            else built_in_weight
+        )
+        ds = ds_cls(
+            target_series=target,
+            input_chunk_length=1,
+            output_chunk_length=3,
+            sample_weight=weight,
+            **{k: [v] * 2 for k, v in ds_covs.items()},
+        )
+        weight_exp = ds[0][-1] + 1 if manual_weight else get_built_in_weigths(target)
+        assert np.all(ds[0][-2] == weight_exp)
+
+    @pytest.mark.parametrize(
+        "ds_cls",
+        [
+            PastCovariatesSequentialDataset,
+            FutureCovariatesSequentialDataset,
+            DualCovariatesSequentialDataset,
+            MixedCovariatesSequentialDataset,
+            SplitCovariatesSequentialDataset,
+        ],
+    )
+    def test_sequential_training_dataset_invalid_weight(self, ds_cls):
+        ts = self.target1
+
+        # invalid built-in weight
+        with pytest.raises(ValueError) as err:
+            _ = ds_cls(
+                target_series=[ts, ts],
+                input_chunk_length=1,
+                output_chunk_length=3,
+                sample_weight="invalid",
+            )
+        assert str(err.value).startswith(
+            "Invalid `sample_weight` value: `'invalid'`. If a string, must be one of: "
+        )
+
+        # mismatch number of target and weight series
+        with pytest.raises(ValueError) as err:
+            _ = ds_cls(
+                target_series=[ts, ts],
+                input_chunk_length=1,
+                output_chunk_length=3,
+                sample_weight=[ts],
+            )
+        assert (
+            str(err.value)
+            == "The provided sequence of target series must have the same "
+            "length as the provided sequence of sample weights."
+        )
+
+        # too many weight components
+        ds = ds_cls(
+            target_series=ts,
+            input_chunk_length=1,
+            output_chunk_length=3,
+            sample_weight=ts.stack(ts + 1),
+        )
+        with pytest.raises(ValueError) as err:
+            _ = ds[0]
+        assert (
+            str(err.value)
+            == "The number of components in `sample_weight` must either be `1` or match "
+            "the number of target series components `1`. (0-th series)"
+        )
+
+        # weight too short end
+        ds = ds_cls(
+            target_series=ts,
+            input_chunk_length=1,
+            output_chunk_length=3,
+            sample_weight=ts[:-1],
+        )
+        with pytest.raises(ValueError) as err:
+            _ = ds[0]
+        assert (
+            str(err.value)
+            == "Missing sample weights; could not find sample weights in index value range: "
+            "2000-04-07 00:00:00 - 2000-04-09 00:00:00."
+        )
+
+        # weight too short start
+        ds = ds_cls(
+            target_series=ts,
+            input_chunk_length=1,
+            output_chunk_length=3,
+            sample_weight=ts[2:],
+        )
+        with pytest.raises(ValueError) as err:
+            _ = ds[len(ds) - 1]
+        assert (
+            str(err.value)
+            == "Missing sample weights; could not find sample weights in index value range: "
+            "2000-01-02 00:00:00 - 2000-01-04 00:00:00."
+        )
 
     def test_get_matching_index(self):
         from darts.utils.data.utils import _get_matching_index

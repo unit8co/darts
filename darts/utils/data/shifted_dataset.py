@@ -689,7 +689,7 @@ class GenericShiftedDataset(TrainingDataset):
         if sample_weight is not None:
             if output_chunk_length > 0:
                 self.sample_weight = _process_sample_weight(
-                    sample_weight, target_series
+                    sample_weight, self.target_series
                 )
             else:
                 self.sample_weight = None

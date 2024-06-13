@@ -71,12 +71,15 @@ def _index_diff(
 
 
 def _process_sample_weight(sample_weight, target_series):
+    if sample_weight is None:
+        return None
+
     # get sample weights
     if isinstance(sample_weight, str):
         if sample_weight not in SUPPORTED_SAMPLE_WEIGHT:
             raise_log(
                 ValueError(
-                    f"Invalid `sample_weight` value: {sample_weight}. "
+                    f"Invalid `sample_weight` value: `'{sample_weight}'`. "
                     f"If a string, must be one of: {SUPPORTED_SAMPLE_WEIGHT}."
                 ),
                 logger=logger,
@@ -103,10 +106,9 @@ def _process_sample_weight(sample_weight, target_series):
             )
             for target_i in target_series
         ]
-    if sample_weight is not None:
-        sample_weight = series2seq(sample_weight)
 
-    if sample_weight is not None and len(target_series) != len(sample_weight):
+    sample_weight = series2seq(sample_weight)
+    if len(target_series) != len(sample_weight):
         raise_log(
             ValueError(
                 "The provided sequence of target series must have the same length as "
