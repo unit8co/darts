@@ -65,28 +65,41 @@ kwargs = {
     "random_state": 42,
     "pl_trainer_kwargs": {"fast_dev_run": True, **tfm_kwargs["pl_trainer_kwargs"]},
 }
+# make models light weight
+dlinear_light_kwargs = {"kernel_size": 2}
 nbeats_light_kwargs = {
-    "num_stacks": 2,
+    "num_stacks": 1,
     "num_blocks": 1,
     "num_layers": 1,
-    "layer_widths": 16,
+    "layer_widths": 2,
+}
+tcn_light_kwargs = {
+    "kernel_size": 2,
+    "num_filters": 1,
+    "dilation_base": 1,
 }
 trafo_light_kwargs = {
-    "d_model": 16,
-    "nhead": 2,
+    "d_model": 2,
+    "nhead": 1,
     "num_encoder_layers": 1,
     "num_decoder_layers": 1,
-    "dim_feedforward": 16,
+    "dim_feedforward": 2,
+}
+tft_light_kwargs = {
+    "hidden_size": 2,
+    "lstm_layers": 1,
+    "num_attention_heads": 1,
+    "hidden_continuous_size": 2,
 }
 models = [
     (BlockRNNModel, kwargs),
-    (DLinearModel, kwargs),
+    (DLinearModel, dict(kwargs, **dlinear_light_kwargs)),
     (NBEATSModel, dict(kwargs, **nbeats_light_kwargs)),
     (NHiTSModel, dict(kwargs, **nbeats_light_kwargs)),
     (NLinearModel, kwargs),
     (RNNModel, {"training_length": 10, **kwargs}),
-    (TCNModel, kwargs),
-    (TFTModel, {"add_relative_index": 2, **kwargs}),
+    (TCNModel, dict(kwargs, **tcn_light_kwargs)),
+    (TFTModel, {"add_relative_index": 2, **kwargs, **tft_light_kwargs}),
     (TiDEModel, kwargs),
     (TransformerModel, dict(kwargs, **trafo_light_kwargs)),
     (TSMixerModel, kwargs),
@@ -1916,9 +1929,16 @@ class TestTorchForecastingModel:
     )
     def test_weights(self, config):
         (model_cls, model_kwargs), built_in_weight, single_series, univ_series = config
+        model_kwargs = copy.deepcopy(model_kwargs)
+        # take larger learning rate to make network weights updates more pronounced
+        model_kwargs["optimizer_kwargs"] = {"lr": 0.1}
+        model_kwargs["pl_trainer_kwargs"]["max_epochs"] = 2
+        model_kwargs["pl_trainer_kwargs"]["fast_dev_run"] = False
+        # create more than one batch sample as otherwise linear sample weight would always be `1.`
         ts = tg.linear_timeseries(
             length=model_kwargs["input_chunk_length"]
             + model_kwargs["output_chunk_length"]
+            + 1
         )
         if not univ_series:
             ts = ts.stack(ts)
@@ -1926,8 +1946,9 @@ class TestTorchForecastingModel:
         if built_in_weight:
             weights = "linear_decay"
         else:
-            weights = np.ones((len(ts), ts.n_components))
-            weights[: len(weights) - 3] = 1.5
+            weights = np.expand_dims(np.linspace(0, 1, len(ts)), -1)
+            if not univ_series:
+                weights = np.concatenate([weights] * ts.n_components, axis=1)
             weights = ts.with_values(weights)
 
         if not single_series:
@@ -1938,12 +1959,25 @@ class TestTorchForecastingModel:
         model.fit(ts, sample_weight=weights)
         preds = model.predict(n=3, series=ts)
 
+        # check deterministic results
+        model_identical = model_cls(**model_kwargs)
+        model_identical.fit(ts, sample_weight=weights)
+        preds_identical = model_identical.predict(n=3, series=ts)
+
+        if single_series:
+            preds = [preds]
+            preds_identical = [preds_identical]
+
+        for pred, preds_identical in zip(preds, preds_identical):
+            np.testing.assert_array_almost_equal(
+                pred.all_values(), preds_identical.all_values()
+            )
+
         model_no_weight = model_cls(**model_kwargs)
         model_no_weight.fit(ts, sample_weight=None)
         preds_no_weight = model_no_weight.predict(n=3, series=ts)
 
         if single_series:
-            preds = [preds]
             preds_no_weight = [preds_no_weight]
 
         for pred, pred_no_weight in zip(preds, preds_no_weight):
@@ -1959,6 +1993,9 @@ class TestTorchForecastingModel:
                         pred.all_values(), pred_no_weight.all_values()
                     )
 
+        model_kwargs["pl_trainer_kwargs"]["max_epochs"] = 1
+        model_kwargs["pl_trainer_kwargs"]["fast_dev_run"] = True
+        model = model_cls(**model_kwargs)
         # try with validation series and only train weights
         model.fit(ts, val_series=ts, sample_weight=weights)
 
@@ -2015,7 +2052,7 @@ class TestTorchForecastingModel:
         model = model_cls(**model_kwargs)
         with pytest.raises(ValueError) as err:
             model.fit(ts, sample_weight="invalid")
-        assert str(err.value).startswith("Invalid `sample_weight` value: invalid. ")
+        assert str(err.value).startswith("Invalid `sample_weight` value: `'invalid'`. ")
 
     @pytest.mark.parametrize(
         "likelihood",
