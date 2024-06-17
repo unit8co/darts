@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 # Those freqs can be used to divide Time deltas (the others can't):
 DIVISIBLE_FREQS = {"D", "h", "H", "T", "min", "s", "S", "L", "ms", "U", "us", "N", "ns"}
 # supported built-in sample weight generators for regression and torch models
-SUPPORTED_SAMPLE_WEIGHT = {"linear_decay", "exponential_decay"}
+SUPPORTED_SAMPLE_WEIGHT = {"linear", "exponential"}
 
 
 class CovariateType(Enum):
@@ -74,6 +74,12 @@ def _process_sample_weight(sample_weight, target_series):
     if sample_weight is None:
         return None
 
+    if target_series is None:
+        raise_log(
+            ValueError("Must supply target `series` when using `sample_weight`."),
+            logger=logger,
+        )
+
     # get sample weights
     if isinstance(sample_weight, str):
         if sample_weight not in SUPPORTED_SAMPLE_WEIGHT:
@@ -84,16 +90,11 @@ def _process_sample_weight(sample_weight, target_series):
                 ),
                 logger=logger,
             )
-        if target_series is None:
-            raise_log(
-                ValueError("Must supply `target_series` when using `sample_weight`."),
-                logger=logger,
-            )
         # create global time weights based on the longest target series
         max_len = max(len(target_i) for target_i in target_series)
-        if sample_weight == "linear_decay":
+        if sample_weight == "linear":
             weights = np.linspace(0, 1, max_len)
-        else:  # "exponential_decay"
+        else:  # "exponential"
             time_steps = np.linspace(0, 1, max_len)
             weights = np.exp(-10 * (1 - time_steps))
         weights = np.expand_dims(weights, -1).astype(target_series[0].dtype)

@@ -1499,7 +1499,7 @@ class TestDataset:
         target2 = self.target2
         weight1 = target1 + 1
         weight2 = target2 + 1
-        built_in_weight = "linear_decay"
+        built_in_weight = "linear"
 
         ds_covs = {}
         ds_init_params = set(inspect.signature(ds_cls.__init__).parameters)

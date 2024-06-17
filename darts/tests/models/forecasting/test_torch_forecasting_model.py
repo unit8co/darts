@@ -1944,7 +1944,7 @@ class TestTorchForecastingModel:
             ts = ts.stack(ts)
 
         if built_in_weight:
-            weights = "linear_decay"
+            weights = "linear"
         else:
             weights = np.expand_dims(np.linspace(0, 1, len(ts)), -1)
             if not univ_series:

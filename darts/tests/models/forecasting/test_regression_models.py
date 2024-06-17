@@ -1593,7 +1593,7 @@ class TestRegressionModels:
         model = model_cls(lags=3, output_chunk_length=1, **model_kwargs)
         model.fit(
             ts if single_series else [ts] * 2,
-            sample_weight="linear_decay",
+            sample_weight="linear",
         )
         preds = model.predict(n=3, series=ts if single_series else [ts] * 2)
 

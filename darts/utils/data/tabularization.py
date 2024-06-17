@@ -16,13 +16,13 @@ from numpy.lib.stride_tricks import as_strided
 
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries
+from darts.utils.data.utils import _process_sample_weight
 from darts.utils.ts_utils import get_single_series, series2seq
 from darts.utils.utils import n_steps_between
 
 logger = get_logger(__name__)
 
 ArrayOrArraySequence = Union[np.ndarray, Sequence[np.ndarray]]
-SUPPORTED_SAMPLE_WEIGHT = {"linear_decay", "exponential_decay"}
 
 
 def create_lagged_data(
@@ -215,12 +215,15 @@ def create_lagged_data(
         feature/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
     sample_weight
-        Optionally, some sample weights to apply to the target `series` labels.
-        If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of weights series must
-        match the number of target `series` and each weight series must contain at least all time steps from the
-        corresponding target `series`.
+        Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
+        per label (each step in `output_chunk_length`), and per component.
+        If a series or sequence of series, then those weights are used. If the weight series only have a single
+        component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+        component-specific weights, the number of components must match those of `series`.
         If a string, then the weights are generated using built-in weighting functions. The available options are
-        `"linear_decay"` or `"exponential_decay"`.
+        `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+        computed globally based on the length of the longest series in `series`. Then for each series, the weights
+        are extracted from the end of the global weights. This gives a common time weighting across all series.
 
     Returns
     -------
@@ -283,44 +286,9 @@ def create_lagged_data(
     past_covariates = series2seq(past_covariates)
     future_covariates = series2seq(future_covariates)
 
-    # get sample weights
-    if isinstance(sample_weight, str):
-        if sample_weight not in SUPPORTED_SAMPLE_WEIGHT:
-            raise_log(
-                ValueError(
-                    f"Invalid `sample_weight` value: {sample_weight}. "
-                    f"If a string, must be one of: {SUPPORTED_SAMPLE_WEIGHT}."
-                ),
-                logger=logger,
-            )
-        if target_series is None:
-            raise_log(
-                ValueError("Must supply `target_series` when using `sample_weight`."),
-                logger=logger,
-            )
-        # create global time weights based on the longest target series
-        max_len = max(len(target_i) for target_i in target_series)
-        if sample_weight == "linear_decay":
-            weights = np.linspace(0, 1, max_len)
-        else:  # "exponential_decay"
-            time_steps = np.linspace(0, 1, max_len)
-            weights = np.exp(-10 * (1 - time_steps))
-        weights = np.expand_dims(weights, -1)
-
-        # create sequence of series for tabularization
-        sample_weight = [
-            TimeSeries.from_times_and_values(
-                times=target_i.time_index,
-                values=weights[-len(target_i) :],
-            )
-            for target_i in target_series
-        ]
-    if sample_weight is not None:
-        sample_weight = series2seq(sample_weight)
-
     seq_ts_lens = [
         len(seq_ts)
-        for seq_ts in (target_series, past_covariates, future_covariates, sample_weight)
+        for seq_ts in (target_series, past_covariates, future_covariates)
         if seq_ts is not None
     ]
     seq_ts_lens = set(seq_ts_lens)
@@ -331,6 +299,10 @@ def create_lagged_data(
             ),
             logger,
         )
+
+    # process / check sample weight and generate series in case of built-in weight generator
+    sample_weight = _process_sample_weight(sample_weight, target_series)
+
     lags_passed_as_dict = any(
         isinstance(lags_, dict)
         for lags_ in [lags, lags_past_covariates, lags_future_covariates]
@@ -526,12 +498,15 @@ def create_lagged_training_data(
         feature/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
     sample_weight
-        Optionally, some sample weights to apply to the target `series` labels.
-        If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of weights series must
-        match the number of target `series` and each weight series must contain at least all time steps from the
-        corresponding target `series`.
+        Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
+        per label (each step in `output_chunk_length`), and per component.
+        If a series or sequence of series, then those weights are used. If the weight series only have a single
+        component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+        component-specific weights, the number of components must match those of `series`.
         If a string, then the weights are generated using built-in weighting functions. The available options are
-        `"linear_decay"` or `"exponential_decay"`.
+        `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+        computed globally based on the length of the longest series in `series`. Then for each series, the weights
+        are extracted from the end of the global weights. This gives a common time weighting across all series.
 
     Returns
     -------
@@ -1023,7 +998,7 @@ def _create_lagged_data_by_moving_window(
             raise_log(
                 ValueError("Must specify at least one series-lags pair."), logger=logger
             )
-    sample_weight_vals = _process_sample_weight(sample_weight, target_series)
+    sample_weight_vals = _extract_sample_weight(sample_weight, target_series)
 
     time_bounds = get_shared_times_bounds(*feature_times)
     if time_bounds is None:
@@ -1256,7 +1231,7 @@ def _create_lagged_data_by_intersecting_times(
             raise_log(
                 ValueError("Must specify at least one series-lags pair."), logger=logger
             )
-    sample_weight_vals = _process_sample_weight(sample_weight, target_series)
+    sample_weight_vals = _extract_sample_weight(sample_weight, target_series)
     shared_times = get_shared_times(*feature_times, sort=True)
     if shared_times is None:
         raise_log(
@@ -2086,16 +2061,11 @@ def _check_series_length(
     return None
 
 
-def _process_sample_weight(sample_weight, target_series):
-    """Checks that sample weights are valid, and returns the values of the weights."""
+def _extract_sample_weight(sample_weight, target_series):
+    """Extracts sample weights values from the time intersection with the target labels."""
     if sample_weight is None:
         return None
 
-    if target_series is None:
-        raise_log(
-            ValueError("Must supply `target_series` when using `sample_weight`."),
-            logger=logger,
-        )
     sample_weight_vals = sample_weight.slice_intersect_values(target_series, copy=False)
     if len(sample_weight_vals) != len(target_series):
         raise_log(
@@ -2104,6 +2074,7 @@ def _process_sample_weight(sample_weight, target_series):
             ),
             logger=logger,
         )
+
     weight_n_comp = sample_weight_vals.shape[1]
     series_n_comp = target_series.n_components
     if weight_n_comp > 1 and weight_n_comp != series_n_comp:
