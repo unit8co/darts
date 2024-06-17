@@ -267,16 +267,15 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             Number of jobs of the MultiOutputRegressor wrapper to run in parallel. Only used if the model doesn't
             support multi-output regression natively.
         sample_weight
-            Optionally, some sample weights to apply to the target `series` labels.
-            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
+            per label (each step in `output_chunk_length`), and per component.
+            If a series or sequence of series, then those weights are used. If the weight series only have a single
+            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+            component-specific weights, the number of components must match those of `series`.
             If a string, then the weights are generated using built-in weighting functions. The available options are
-            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
-            and then applied globally to all `series` to have a common time weighting.
-            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
-            match the number of target `series` and each series must contain at least all time steps from the
-            corresponding target `series`. If the weight series only have a single component / column, then the weights
-            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
-            of components must match those of `series`.
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+            computed globally based on the length of the longest series in `series`. Then for each series, the weights
+            are extracted from the end of the global weights. This gives a common time weighting across all series.
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
         **kwargs
