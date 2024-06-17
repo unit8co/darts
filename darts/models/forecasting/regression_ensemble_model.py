@@ -316,9 +316,9 @@ class RegressionEnsembleModel(EnsembleModel):
             # shift by the forecasting models' largest input length
             all_shifts = []
             # when it's not clearly defined, extreme_lags returns
-            # min_train_serie_length for the LocalForecastingModels
+            # `min_train_series_length` for the LocalForecastingModels
             for model in self.forecasting_models:
-                min_target_lag, _, _, _, _, _, _ = model.extreme_lags
+                min_target_lag, _, _, _, _, _, _, _ = model.extreme_lags
                 if min_target_lag is not None:
                     all_shifts.append(-min_target_lag)
 
@@ -350,9 +350,9 @@ class RegressionEnsembleModel(EnsembleModel):
             if is_single_series:
                 train_n_points_too_big = len(series) <= self.train_n_points
             else:
-                train_n_points_too_big = any(
-                    [len(s) <= self.train_n_points for s in series]
-                )
+                train_n_points_too_big = any([
+                    len(s) <= self.train_n_points for s in series
+                ])
 
         raise_if(
             train_n_points_too_big,
@@ -459,6 +459,7 @@ class RegressionEnsembleModel(EnsembleModel):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
         extreme_lags_ = super().extreme_lags
         # shift min_target_lag in the past to account for the regression model training set

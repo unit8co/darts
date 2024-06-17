@@ -600,13 +600,12 @@ class TSMixerModel(MixedCovariatesTorchModel):
             Darts' :class:`TorchForecastingModel`.
 
         loss_fn
-            PyTorch loss function used for training. By default, the TFT
-            model is probabilistic and uses a ``likelihood`` instead
-            (``QuantileRegression``). To make the model deterministic, you
-            can set the ``likelihood`` to None and give a ``loss_fn``
-            argument.
+            PyTorch loss function used for training.
+            This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
+            Default: ``torch.nn.MSELoss()``.
         likelihood
-            The likelihood model to be used for probabilistic forecasts.
+            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
+            probabilistic forecasts. Default: ``None``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
             at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.

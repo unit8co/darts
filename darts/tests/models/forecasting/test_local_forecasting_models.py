@@ -164,13 +164,11 @@ class TestLocalForecastingModels:
             assert os.path.exists(p)
 
         assert (
-            len(
-                [
-                    p
-                    for p in os.listdir(tmpdir_module)
-                    if p.startswith(type(model).__name__)
-                ]
-            )
+            len([
+                p
+                for p in os.listdir(tmpdir_module)
+                if p.startswith(type(model).__name__)
+            ])
             == len(full_model_paths) + 1
         )
 
@@ -222,10 +220,9 @@ class TestLocalForecastingModels:
         model.fit(self.ts_pass_train)
         prediction = model.predict(len(self.ts_pass_val))
         current_mape = mape(self.ts_pass_val, prediction)
-        assert (
-            current_mape < max_mape
-        ), "{} model exceeded the maximum MAPE of {}. " "with a MAPE of {}".format(
-            str(model), max_mape, current_mape
+        assert current_mape < max_mape, (
+            f"{str(model)} model exceeded the maximum MAPE of {max_mape}. "
+            f"with a MAPE of {current_mape}"
         )
 
     @pytest.mark.parametrize("config", multivariate_models)
@@ -236,10 +233,9 @@ class TestLocalForecastingModels:
         model.fit(self.ts_ice_heater_train)
         prediction = model.predict(len(self.ts_ice_heater_val))
         current_mape = mape(self.ts_ice_heater_val, prediction)
-        assert (
-            current_mape < max_mape
-        ), "{} model exceeded the maximum MAPE of {}. " "with a MAPE of {}".format(
-            str(model), max_mape, current_mape
+        assert current_mape < max_mape, (
+            f"{str(model)} model exceeded the maximum MAPE of {max_mape}. "
+            f"with a MAPE of {current_mape}"
         )
 
     def test_multivariate_input(self):

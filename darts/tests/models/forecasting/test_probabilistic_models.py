@@ -18,12 +18,12 @@ from darts.models import (
     NotImportedModule,
     XGBModel,
 )
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
-try:
+if TORCH_AVAILABLE:
     import torch
 
     from darts.models import (
@@ -57,13 +57,6 @@ try:
         QuantileRegression,
         WeibullLikelihood,
     )
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning(
-        "Torch not available. Tests related to torch-based models will be skipped."
-    )
-    TORCH_AVAILABLE = False
 
 lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
 cb_available = not isinstance(CatBoostModel, NotImportedModule)
@@ -431,11 +424,11 @@ class TestProbabilisticModels:
             avgs_orig, avgs_pred = _get_avgs(series), _get_avgs(pred)
             assert abs(avgs_orig[0] - avgs_pred[0]) < diff1, (
                 "The difference between the mean forecast and the mean series is larger "
-                "than expected on component 0 for distribution {}".format(lkl)
+                f"than expected on component 0 for distribution {lkl}"
             )
             assert abs(avgs_orig[1] - avgs_pred[1]) < diff2, (
                 "The difference between the mean forecast and the mean series is larger "
-                "than expected on component 1 for distribution {}".format(lkl)
+                f"than expected on component 1 for distribution {lkl}"
             )
 
         @pytest.mark.parametrize(
@@ -489,9 +482,11 @@ class TestProbabilisticModels:
                     loc=0, scale=1, size=(n_times, n_comp, n_samples)
                 )
             else:
-                values = lkl._distr_from_params(lkl_params).sample(
-                    (n_times, n_comp, n_samples)
-                )
+                values = lkl._distr_from_params(lkl_params).sample((
+                    n_times,
+                    n_comp,
+                    n_samples,
+                ))
 
                 # Dirichlet must be handled sligthly differently since its multivariate
                 if isinstance(lkl, DirichletLikelihood):
@@ -570,9 +565,11 @@ class TestProbabilisticModels:
                     loc=0, scale=1, size=(n_times, n_comp, n_samples)
                 )
             else:
-                values = lkl._distr_from_params(lkl_params).sample(
-                    (n_times, n_comp, n_samples)
-                )
+                values = lkl._distr_from_params(lkl_params).sample((
+                    n_times,
+                    n_comp,
+                    n_samples,
+                ))
             ts = TimeSeries.from_values(
                 values, columns=[f"dummy_{i}" for i in range(values.shape[1])]
             )

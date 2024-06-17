@@ -407,7 +407,6 @@ def _extend_time_index_until(
     until: Optional[Union[int, str, pd.Timestamp]],
     add_length: int,
 ) -> pd.DatetimeIndex:
-
     if not add_length and not until:
         return time_index
 
@@ -678,7 +677,7 @@ def datetime_attribute_timeseries(
         # fill missing columns (in case not all values appear in time_index)
         attribute_range = range(num_values_dict[attribute])
         for i in attribute_range:
-            if not (i in values_df.columns):
+            if i not in values_df.columns:
                 values_df[i] = 0
         values_df = values_df[attribute_range]
 
@@ -713,12 +712,10 @@ def datetime_attribute_timeseries(
                 "The first string for the sine component name, the second for the cosine component name.",
                 logger=logger,
             )
-            values_df = pd.DataFrame(
-                {
-                    with_columns[0]: np.sin(freq * values),
-                    with_columns[1]: np.cos(freq * values),
-                }
-            )
+            values_df = pd.DataFrame({
+                with_columns[0]: np.sin(freq * values),
+                with_columns[1]: np.cos(freq * values),
+            })
         else:
             if with_columns is None:
                 with_columns = attribute
@@ -754,9 +751,9 @@ def _build_forecast_series(
     custom_columns
         New names for the forecast TimeSeries, used when the number of components changes
     with_static_covs
-        If set to False, do not copy the input_series `static_covariates` attribute
+        If set to `False`, do not copy the input_series `static_covariates` attribute
     with_hierarchy
-        If set to False, do not copy the input_series `hierarchy` attribute
+        If set to `False`, do not copy the input_series `hierarchy` attribute
     pred_start
         Optionally, give a custom prediction start point.
 

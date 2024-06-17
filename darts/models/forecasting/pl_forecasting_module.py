@@ -2,6 +2,7 @@
 This file contains abstract classes for deterministic and probabilistic PyTorch Lightning Modules
 """
 
+import copy
 from abc import ABC, abstractmethod
 from functools import wraps
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
@@ -161,6 +162,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         # define the loss function
         self.criterion = loss_fn
+        self.train_criterion = copy.deepcopy(loss_fn)
+        self.val_criterion = copy.deepcopy(loss_fn)
+        # reduction will be set to `None` when calling `TFM.fit()` with sample weights;
+        # reset the actual criterion in method `on_fit_end()`
+        self.train_criterion_reduction: Optional[str] = None
+        self.val_criterion_reduction: Optional[str] = None
+
         # by default models are deterministic (i.e. not probabilistic)
         self.likelihood = likelihood
 
@@ -197,6 +205,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_batch_size: Optional[int] = None
         self.pred_n_jobs: Optional[int] = None
         self.predict_likelihood_parameters: Optional[bool] = None
+        self.pred_mc_dropout: Optional[bool] = None
 
     @property
     def first_prediction_index(self) -> int:
@@ -211,11 +220,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     def training_step(self, train_batch, batch_idx) -> torch.Tensor:
         """performs the training step"""
-        output = self._produce_train_output(train_batch[:-1])
-        target = train_batch[
-            -1
-        ]  # By convention target is always the last element returned by datasets
-        loss = self._compute_loss(output, target)
+        # by convention, the last two elements are sample weights and future target
+        output = self._produce_train_output(train_batch[:-2])
+        sample_weight = train_batch[-2]
+        target = train_batch[-1]
+        loss = self._compute_loss(output, target, self.train_criterion, sample_weight)
         self.log(
             "train_loss",
             loss,
@@ -223,14 +232,16 @@ class PLForecastingModule(pl.LightningModule, ABC):
             prog_bar=True,
             sync_dist=True,
         )
-        self._calculate_metrics(output, target, self.train_metrics)
+        self._update_metrics(output, target, self.train_metrics)
         return loss
 
     def validation_step(self, val_batch, batch_idx) -> torch.Tensor:
         """performs the validation step"""
-        output = self._produce_train_output(val_batch[:-1])
+        # the last two elements are sample weights and future target
+        output = self._produce_train_output(val_batch[:-2])
+        sample_weight = val_batch[-2]
         target = val_batch[-1]
-        loss = self._compute_loss(output, target)
+        loss = self._compute_loss(output, target, self.val_criterion, sample_weight)
         self.log(
             "val_loss",
             loss,
@@ -238,8 +249,31 @@ class PLForecastingModule(pl.LightningModule, ABC):
             prog_bar=True,
             sync_dist=True,
         )
-        self._calculate_metrics(output, target, self.val_metrics)
+        self._update_metrics(output, target, self.val_metrics)
         return loss
+
+    def on_fit_end(self) -> None:
+        # revert the loss function reduction change when sample weights were used
+        if self.train_criterion_reduction is not None:
+            self.train_criterion.reduction = self.train_criterion_reduction
+            self.train_criterion_reduction = None
+        if self.val_criterion_reduction is not None:
+            self.val_criterion.reduction = self.val_criterion_reduction
+            self.val_criterion_reduction = None
+
+    def on_train_epoch_end(self):
+        self._compute_metrics(self.train_metrics)
+
+    def on_validation_epoch_end(self):
+        self._compute_metrics(self.val_metrics)
+
+    def on_predict_start(self) -> None:
+        # optionally, activate monte carlo dropout for prediction
+        self.set_mc_dropout(active=self.pred_mc_dropout)
+
+    def on_predict_end(self) -> None:
+        # deactivate, monte carlo dropout for any downstream task
+        self.set_mc_dropout(active=False)
 
     def predict_step(
         self, batch: Tuple, batch_idx: int, dataloader_idx: Optional[int] = None
@@ -277,7 +311,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # repeat prediction procedure for every needed sample
         batch_predictions = []
         while sample_count < self.pred_num_samples:
-
             # make sure we don't produce too many samples
             if sample_count + batch_sample_size > self.pred_num_samples:
                 batch_sample_size = self.pred_num_samples - sample_count
@@ -339,6 +372,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         batch_size: int,
         n_jobs: int,
         predict_likelihood_parameters: bool,
+        mc_dropout: bool,
     ) -> None:
         """to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()"""
         self.pred_n = n
@@ -347,35 +381,45 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_batch_size = batch_size
         self.pred_n_jobs = n_jobs
         self.predict_likelihood_parameters = predict_likelihood_parameters
+        self.pred_mc_dropout = mc_dropout
 
-    def _compute_loss(self, output, target):
+    def _compute_loss(self, output, target, criterion, sample_weight):
         # output is of shape (batch_size, n_timesteps, n_components, n_params)
         if self.likelihood:
-            return self.likelihood.compute_loss(output, target)
+            loss = self.likelihood.compute_loss(output, target, sample_weight)
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
             # last dimension of model output, for properly computing the loss.
-            return self.criterion(output.squeeze(dim=-1), target)
+            loss = criterion(output.squeeze(dim=-1), target)
+            if sample_weight is not None:
+                loss = (loss * sample_weight).mean()
+        return loss
 
-    def _calculate_metrics(self, output, target, metrics):
+    def _update_metrics(self, output, target, metrics):
         if not len(metrics):
             return
 
         if self.likelihood:
-            _metric = metrics(self.likelihood.sample(output), target)
+            metrics.update(self.likelihood.sample(output), target)
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
             # last dimension of model output, for properly computing the metric.
-            _metric = metrics(output.squeeze(dim=-1), target)
+            metrics.update(output.squeeze(dim=-1), target)
 
+    def _compute_metrics(self, metrics):
+        if not len(metrics):
+            return
+
+        res = metrics.compute()
         self.log_dict(
-            _metric,
+            res,
             on_epoch=True,
             on_step=False,
             logger=True,
             prog_bar=True,
             sync_dist=True,
         )
+        metrics.reset()
 
     def configure_optimizers(self):
         """configures optimizers and learning rate schedulers for model optimization."""
@@ -389,9 +433,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
                     ValueError(
                         "Error when building the optimizer or learning rate scheduler;"
                         "please check the provided class and arguments"
-                        "\nclass: {}"
-                        "\narguments (kwargs): {}"
-                        "\nerror:\n{}".format(cls, kws, e)
+                        f"\nclass: {cls}"
+                        f"\narguments (kwargs): {kws}"
+                        f"\nerror:\n{e}"
                     ),
                     logger,
                 )
@@ -464,8 +508,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
         return recurse_children(self.children(), set())
 
     def set_mc_dropout(self, active: bool):
+        # optionally, activate dropout in all MonteCarloDropout modules
         for module in self._get_mc_dropout_modules():
-            module.mc_dropout_enabled = active
+            module._mc_dropout_enabled = active
 
     @property
     def supports_probabilistic_prediction(self) -> bool:
@@ -488,7 +533,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         checkpoint["train_sample_shape"] = self.train_sample_shape
         # we must save the loss to properly restore it when resuming training
         checkpoint["loss_fn"] = self.criterion
-        # we must save the metrics to continue outputing them when resuming training
+        # we must save the metrics to continue logging them when resuming training
         checkpoint["torch_metrics_train"] = self.train_metrics
         checkpoint["torch_metrics_val"] = self.val_metrics
 
@@ -549,7 +594,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     @staticmethod
     def configure_torch_metrics(
-        torch_metrics: Union[torchmetrics.Metric, torchmetrics.MetricCollection]
+        torch_metrics: Union[torchmetrics.Metric, torchmetrics.MetricCollection],
     ) -> torchmetrics.MetricCollection:
         """process the torch_metrics parameter."""
         if torch_metrics is None:
@@ -797,19 +842,17 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             else 0
         )
 
-        input_past, input_future, input_static = self._process_input_batch(
+        input_past, input_future, input_static = self._process_input_batch((
+            past_target,
+            past_covariates,
+            historic_future_covariates,
             (
-                past_target,
-                past_covariates,
-                historic_future_covariates,
-                (
-                    future_covariates[:, :roll_size, :]
-                    if future_covariates is not None
-                    else None
-                ),
-                static_covariates,
-            )
-        )
+                future_covariates[:, :roll_size, :]
+                if future_covariates is not None
+                else None
+            ),
+            static_covariates,
+        ))
 
         out = self._produce_predict_output(x=(input_past, input_future, input_static))[
             :, self.first_prediction_index :, :
@@ -818,13 +861,15 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
         batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
 
-        while prediction_length < n:
-            # we want the last prediction to end exactly at `n` into the future.
+        # predict at least `output_chunk_length` points, so that we use the most recent target values
+        min_n = n if n >= self.output_chunk_length else self.output_chunk_length
+        while prediction_length < min_n:
+            # we want the last prediction to end exactly at `min_n` into the future.
             # this means we may have to truncate the previous prediction and step
             # back the roll size for the last chunk
-            if prediction_length + self.output_chunk_length > n:
+            if prediction_length + self.output_chunk_length > min_n:
                 spillover_prediction_length = (
-                    prediction_length + self.output_chunk_length - n
+                    prediction_length + self.output_chunk_length - min_n
                 )
                 roll_size -= spillover_prediction_length
                 prediction_length -= spillover_prediction_length

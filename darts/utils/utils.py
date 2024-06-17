@@ -8,8 +8,10 @@ from functools import wraps
 from inspect import Parameter, getcallargs, signature
 from typing import Callable, Iterator, List, Optional, Tuple, TypeVar, Union
 
+import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
+from pandas._libs.tslibs.offsets import BusinessMixin
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
 
@@ -39,6 +41,30 @@ class ModelMode(Enum):
     MULTIPLICATIVE = "multiplicative"
     ADDITIVE = "additive"
     NONE = None
+
+
+# TODO: remove this once bumping min python version from 3.8 to 3.9 (pandas v2.2.0 not available for p38)
+pd_above_v22 = pd.__version__ >= "2.2"
+freqs = {
+    "YE": "YE" if pd_above_v22 else "A",
+    "YS": "YS" if pd_above_v22 else "AS",
+    "BYS": "BYS" if pd_above_v22 else "BAS",
+    "BYE": "BYE" if pd_above_v22 else "BA",
+    "QE": "QE" if pd_above_v22 else "Q",
+    "BQE": "BQE" if pd_above_v22 else "BQ",
+    "ME": "ME" if pd_above_v22 else "M",
+    "SME": "SME" if pd_above_v22 else "SM",
+    "BME": "BME" if pd_above_v22 else "BM",
+    "CBME": "CBME" if pd_above_v22 else "CBM",
+    "h": "h" if pd_above_v22 else "H",
+    "bh": "bh" if pd_above_v22 else "BH",
+    "cbh": "cbh" if pd_above_v22 else "CBH",
+    "min": "min" if pd_above_v22 else "T",
+    "s": "s" if pd_above_v22 else "S",
+    "ms": "ms" if pd_above_v22 else "L",
+    "us": "us" if pd_above_v22 else "U",
+    "ns": "ns" if pd_above_v22 else "N",
+}
 
 
 def _build_tqdm_iterator(iterable, verbose, **kwargs):
@@ -314,7 +340,7 @@ def n_steps_between(
     Works for both integers and time stamps.
 
     * if `end`, `start`, `freq` are all integers, we can simple divide the difference by the frequency.
-    * if `freq` is a pandas Dateoffset with non-ambiguous timedelate (e.g. "d", "h", ..., and not "M", "Y", ...),
+    * if `freq` is a pandas Dateoffset with non-ambiguous timedelate (e.g. "d", "h", ..., and not "ME", "YE", ...),
         we can simply divide by the frequency
     * otherwise, we take the period difference between the two time stamps.
 
@@ -334,7 +360,7 @@ def n_steps_between(
 
     Examples
     --------
-    >>> n_steps_between(start=pd.Timestamp("2000-01-01"), end=pd.Timestamp("2000-03-01"), freq="M")
+    >>> n_steps_between(start=pd.Timestamp("2000-01-01"), end=pd.Timestamp("2000-03-01"), freq="ME")
     2
     >>> n_steps_between(start=0, end=2, freq=1)
     2
@@ -342,6 +368,12 @@ def n_steps_between(
     1
     """
     freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
+    valid_freq = freq >= 0 if isinstance(freq, int) else freq.n >= 0
+    if not valid_freq:
+        raise_log(
+            ValueError(f"`freq` must be positive/increasing, received freq={freq}."),
+            logger=logger,
+        )
     valid_int = (
         isinstance(start, int) and isinstance(end, int) and isinstance(freq, int)
     )
@@ -358,21 +390,41 @@ def n_steps_between(
             ),
             logger=logger,
         )
-    # Series frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’)
+    # Series frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W')
     if pd.to_timedelta(freq, errors="coerce") is not pd.NaT:
-        n_steps = (end - start) // freq
+        diff = end - start
+        if abs(diff) != diff:
+            # (A) when diff is negative, not perfectly divisible by freq, and freq is a multiple of a base frequency
+            # (e.g., "2D" or step=2), then computing `diff // freq` can be one off
+            # Example: `end=1, start=2, freq=2` -> then `diff // freq` gives `-1`, but should be `0`.
+            diff += diff % freq
+        n_steps = diff // freq
     else:
-        period_alias = pd.tseries.frequencies.get_period_alias(freq.freqstr)
-        if period_alias is None:
-            raise_log(
-                ValueError(
-                    f"Cannot infer period alias for `freq={freq}`. "
-                    f"Is it a valid pandas offset/frequency alias?"
-                ),
-                logger=logger,
-            )
-        # Create a temporary DatetimeIndex to extract the actual start index.
-        n_steps = (end.to_period(period_alias) - start.to_period(period_alias)).n
+        period_alias = pd.tseries.frequencies.get_period_alias(freq.name)
+        if isinstance(freq, BusinessMixin) or period_alias is None:
+            # for lower pandas versions ~1.5.0, business frequencies wrongly have a period alias.
+            # taking the period difference as computed in `else` gives wrong results.
+            # in this (worst) case for special frequencies (e.g "C*"), we must generate the index
+            is_reversed = end < start
+            if is_reversed:
+                # always generate an increasing index, since pandas (v2.2.1) gives inconsistent result for
+                # negative/decreasing frequencies. Then reverse the index in case of negative/decreasing
+                # input frequency
+                start, end = end, start
+            n_steps = len(generate_index(start=start, end=end, freq=freq))
+            if n_steps:
+                # index includes end, take away for difference
+                n_steps -= 1
+            if is_reversed:
+                n_steps *= -1
+        else:
+            # get the number of base periods ("2MS" has base freq "MS") between the two time steps
+            diff = (end.to_period(period_alias) - start.to_period(period_alias)).n
+            if abs(diff) != diff:
+                # similar case as with (A)
+                diff += diff % freq.n
+            # floor division by the frequency multiplier ("2MS" has multiplier 2)
+            n_steps = diff // freq.n
     return n_steps
 
 
@@ -426,19 +478,48 @@ def generate_index(
     )
 
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
+        freq = "D" if freq is None else freq
+        freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
         index = pd.date_range(
             start=start,
             end=end,
             periods=length,
-            freq="D" if freq is None else freq,
+            freq=freq,
             name=name,
         )
+        if freq.n < 0:
+            if start is not None and not freq.is_on_offset(start):
+                # for anchored negative frequencies, and `start` does not intersect with `freq`:
+                # pandas (v2.2.1) generates an index that starts one step before `start` -> remove this step
+                index = index[1:]
+            elif end is not None and not freq.is_on_offset(end):
+                # if `start` intersects with `freq`, then the same can happen for `end` -> remove this step
+                index = index[:-1]
     else:  # int
         step = 1 if freq is None else freq
+        if start is None:
+            start_ = end - step * length + step
+        else:
+            start_ = start
+
+        if end is None:
+            end_ = start + step * length
+        else:
+            # make end inclusive
+            end_ = end + 1 if step >= 0 else end - 1
+
         index = pd.RangeIndex(
-            start=start if start is not None else end - step * length + step,
-            stop=end + step if end is not None else start + step * length,
+            start=start_,
+            stop=end_,
             step=step,
             name=name,
         )
     return index
+
+
+def expand_arr(arr: np.ndarray, ndim: int):
+    """Expands a np.ndarray to `ndim` dimensions (if not already satisfied)."""
+    shape = arr.shape
+    if len(shape) != ndim:
+        arr = arr.reshape(shape + tuple(1 for _ in range(ndim - len(shape))))
+    return arr

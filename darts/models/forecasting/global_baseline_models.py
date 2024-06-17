@@ -229,9 +229,6 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         # have to match the training sample
         pass
 
-    def min_train_series_length(self) -> int:
-        return self.input_chunk_length
-
     def supports_likelihood_parameter_prediction(self) -> bool:
         return False
 
@@ -256,6 +253,7 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         target: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> MixedCovariatesTrainingDataset:
         return MixedCovariatesSequentialDataset(
@@ -267,6 +265,7 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
             output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
+            sample_weight=sample_weight,
         )
 
 

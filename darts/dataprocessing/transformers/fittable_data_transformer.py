@@ -9,10 +9,12 @@ from typing import Any, Generator, Iterable, List, Mapping, Optional, Sequence, 
 import numpy as np
 
 from darts import TimeSeries
+from darts.dataprocessing.transformers.base_data_transformer import (
+    BaseDataTransformer,
+    component_masking,
+)
 from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
-
-from .base_data_transformer import BaseDataTransformer
 
 logger = get_logger(__name__)
 
@@ -173,6 +175,12 @@ class FittableDataTransformer(BaseDataTransformer):
         self._fitted_params = None  # stores the fitted parameters/objects
         self._global_fit = global_fit
 
+    @classmethod
+    @component_masking
+    def _ts_fit(cls, *args, **kwargs):
+        """Applies component masking to `ts_fit`."""
+        return cls.ts_fit(*args, **kwargs)
+
     @staticmethod
     @abstractmethod
     def ts_fit(
@@ -261,14 +269,6 @@ class FittableDataTransformer(BaseDataTransformer):
             data = series
             transformer_selector = range(len(series))
 
-        if self._mask_components:
-            data = [
-                self.apply_component_mask(ts, component_mask, return_ts=True)
-                for ts in data
-            ]
-        else:
-            kwargs["component_mask"] = component_mask
-
         params_iterator = self._get_params(
             transformer_selector=transformer_selector, calling_fit=True
         )
@@ -282,10 +282,14 @@ class FittableDataTransformer(BaseDataTransformer):
             fit_iterator, verbose=self._verbose, desc=desc, total=n_jobs
         )
 
-        self._fitted_params = _parallel_apply(
-            input_iterator, self.__class__.ts_fit, self._n_jobs, args, kwargs
-        )
+        # apply component masking to the fit method
+        kwargs["mask_components"] = self._mask_components
+        kwargs["mask_components_apply_only"] = True
+        kwargs["component_mask"] = component_mask
 
+        self._fitted_params = _parallel_apply(
+            input_iterator, self._ts_fit, self._n_jobs, args, kwargs
+        )
         return self
 
     def fit_transform(

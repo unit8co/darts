@@ -11,6 +11,7 @@ from numpy.lib.stride_tricks import sliding_window_view
 
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
+from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
 from darts.utils.utils import generate_index
@@ -30,6 +31,7 @@ def _optimized_historical_forecasts_last_points_only(
     stride: int = 1,
     overlap_end: bool = False,
     show_warnings: bool = True,
+    verbose: bool = False,
     predict_likelihood_parameters: bool = False,
     **kwargs,
 ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
@@ -39,7 +41,8 @@ def _optimized_historical_forecasts_last_points_only(
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
     forecasts_list = []
-    for idx, series_ in enumerate(series):
+    iterator = _build_tqdm_iterator(series, verbose)
+    for idx, series_ in enumerate(iterator):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
@@ -145,8 +148,7 @@ def _optimized_historical_forecasts_last_points_only(
         if model.multi_models:
             forecast = forecast[
                 :,
-                (forecast_horizon - 1)
-                * len(forecast_components) : (forecast_horizon)
+                (forecast_horizon - 1) * len(forecast_components) : (forecast_horizon)
                 * len(forecast_components),
                 :,
             ]
@@ -185,6 +187,7 @@ def _optimized_historical_forecasts_all_points(
     stride: int = 1,
     overlap_end: bool = False,
     show_warnings: bool = True,
+    verbose: bool = False,
     predict_likelihood_parameters: bool = False,
     **kwargs,
 ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
@@ -194,7 +197,8 @@ def _optimized_historical_forecasts_all_points(
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
     forecasts_list = []
-    for idx, series_ in enumerate(series):
+    iterator = _build_tqdm_iterator(series, verbose)
+    for idx, series_ in enumerate(iterator):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None

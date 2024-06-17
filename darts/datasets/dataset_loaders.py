@@ -204,7 +204,6 @@ class DatasetLoaderCSV(DatasetLoader):
     def _load_from_disk(
         self, path_to_file: Path, metadata: DatasetLoaderMetadata
     ) -> Union[TimeSeries, List[TimeSeries]]:
-
         df = pd.read_csv(path_to_file)
         if metadata.header_time is not None:
             df = self._format_time_column(df)

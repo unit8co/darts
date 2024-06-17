@@ -18,7 +18,7 @@ from darts.models import (
     NaiveSeasonal,
     Theta,
 )
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils.timeseries_generation import constant_timeseries as ct
 from darts.utils.timeseries_generation import gaussian_timeseries as gt
 from darts.utils.timeseries_generation import linear_timeseries as lt
@@ -28,20 +28,13 @@ from darts.utils.timeseries_generation import sine_timeseries as st
 logger = get_logger(__name__)
 
 
-try:
+if TORCH_AVAILABLE:
     from darts.models import (
         BlockRNNModel,
         LinearRegressionModel,
         RandomForest,
         TCNModel,
     )
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning(
-        "Torch models are not installed - will not be tested for backtesting"
-    )
-    TORCH_AVAILABLE = False
 
 
 def get_dummy_series(
@@ -55,7 +48,6 @@ def get_dummy_series(
 
 
 def compare_best_against_random(model_class, params, series, stride=1):
-
     # instantiate best model in expanding window mode
     np.random.seed(1)
     best_model_1, _, _ = model_class.gridsearch(
@@ -103,7 +95,6 @@ def compare_best_against_random(model_class, params, series, stride=1):
 
 
 class TestBacktesting:
-
     @pytest.mark.parametrize(
         "config",
         itertools.product(
@@ -1044,7 +1035,6 @@ class TestBacktesting:
         ]
 
         for test in test_cases:
-
             model = test["model"]
             parameters = test["parameters"]
 
@@ -1175,9 +1165,10 @@ class TestBacktesting:
         metric_kwargs = [{"component_reduction": np.median}]
         if len(metric) > 1:
             # give metric specific kwargs
-            metric_kwargs.append(
-                {"component_reduction": np.median, "time_reduction": np.mean}
-            )
+            metric_kwargs.append({
+                "component_reduction": np.median,
+                "time_reduction": np.mean,
+            })
 
         model = NaiveDrift()
         # backtest should fail with invalid metric kwargs (mae does not support time reduction)

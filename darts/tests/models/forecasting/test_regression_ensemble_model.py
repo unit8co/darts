@@ -7,7 +7,6 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 
 from darts import TimeSeries
-from darts.logging import get_logger
 from darts.metrics import mape, rmse
 from darts.models import (
     LinearRegressionModel,
@@ -18,22 +17,15 @@ from darts.models import (
     RegressionModel,
     Theta,
 )
-from darts.tests.conftest import tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
 from darts.tests.models.forecasting.test_regression_models import train_test_split
 from darts.utils import timeseries_generation as tg
 
-logger = get_logger(__name__)
-
-try:
+if TORCH_AVAILABLE:
     import torch
 
     from darts.models import BlockRNNModel, RNNModel
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning("Torch not available. Some tests will be skipped.")
-    TORCH_AVAILABLE = False
 
 
 class TestRegressionEnsembleModels:
@@ -70,17 +62,19 @@ class TestRegressionEnsembleModels:
         return [NaiveDrift(), NaiveSeasonal(5), NaiveSeasonal(10)]
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
-    def get_global_models(self, output_chunk_length=5):
+    def get_global_models(
+        self, output_chunk_length=5, input_chunk_length=20, training_length=24
+    ):
         return [
             RNNModel(
-                input_chunk_length=20,
-                output_chunk_length=output_chunk_length,
+                input_chunk_length=input_chunk_length,
+                training_length=training_length,
                 n_epochs=1,
                 random_state=42,
                 **tfm_kwargs,
             ),
             BlockRNNModel(
-                input_chunk_length=20,
+                input_chunk_length=input_chunk_length,
                 output_chunk_length=output_chunk_length,
                 n_epochs=1,
                 random_state=42,
@@ -559,6 +553,7 @@ class TestRegressionEnsembleModels:
             None,
             None,
             0,
+            None,
         )
         ensemble.backtest(self.sine_series)
 
@@ -574,7 +569,7 @@ class TestRegressionEnsembleModels:
             regression_train_n_points=train_n_points,
         )
 
-        assert model.extreme_lags == (-train_n_points, 0, -3, -1, 0, 0, 0)
+        assert model.extreme_lags == (-train_n_points, 0, -3, -1, 0, 0, 0, None)
 
         # mix of all the lags
         model3 = RandomForest(
@@ -586,7 +581,29 @@ class TestRegressionEnsembleModels:
             regression_train_n_points=train_n_points,
         )
 
-        assert model.extreme_lags == (-7 - train_n_points, 0, -3, -1, -2, 5, 0)
+        assert model.extreme_lags == (-7 - train_n_points, 0, -3, -1, -2, 5, 0, None)
+
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
+    def test_extreme_lags_torch(self):
+        # test RNN case which has the 8th extreme lags element (max_target_lag_train)
+        train_n_points = 10
+        icl = 20
+        ocl = 5
+        training_length = 24
+        model = RegressionEnsembleModel(
+            forecasting_models=self.get_global_models(ocl, icl, training_length),
+            regression_train_n_points=train_n_points,
+        )
+        assert model.extreme_lags == (
+            -icl - train_n_points,
+            ocl - 1,
+            -icl,  # past covs from BlockRNN
+            -1,  # past covs from BlockRNN
+            -icl,  # future covs from RNN
+            0,  # future covs from RNN
+            0,
+            training_length - icl,  # training length from RNN
+        )
 
     def test_stochastic_regression_ensemble_model(self):
         quantiles = [0.25, 0.5, 0.75]

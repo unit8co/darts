@@ -14,6 +14,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.utils.torch import MonteCarloDropout
 
 MixedCovariatesTrainTensorType = Tuple[
     torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
@@ -40,7 +41,7 @@ class _ResidualBlock(nn.Module):
             nn.Linear(input_dim, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, output_dim),
-            nn.Dropout(dropout),
+            MonteCarloDropout(dropout),
         )
 
         # linear skip connection from input to output of self.dense
@@ -53,7 +54,6 @@ class _ResidualBlock(nn.Module):
             self.layer_norm = None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-
         # residual connection
         x = self.dense(x) + self.skip(x)
 

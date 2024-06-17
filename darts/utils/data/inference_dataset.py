@@ -13,9 +13,8 @@ from torch.utils.data import Dataset
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.utils.data.utils import CovariateType
 from darts.utils.historical_forecasts.utils import _process_predict_start_points_bounds
-
-from .utils import CovariateType
 
 logger = get_logger(__name__)
 
@@ -240,7 +239,9 @@ class GenericInferenceDataset(InferenceDataset):
             stride_idx = (index - cumulative_lengths[list_index - 1]) * stride
         return list_index, bound_left + stride_idx
 
-    def __getitem__(self, idx: int) -> Tuple[
+    def __getitem__(
+        self, idx: int
+    ) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -404,7 +405,9 @@ class PastCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx: int) -> Tuple[
+    def __getitem__(
+        self, idx: int
+    ) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -476,7 +479,9 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx: int) -> Tuple[
+    def __getitem__(
+        self, idx: int
+    ) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -574,7 +579,9 @@ class DualCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[
+    def __getitem__(
+        self, idx
+    ) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -681,7 +688,9 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[
+    def __getitem__(
+        self, idx
+    ) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -691,7 +700,6 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
         TimeSeries,
         Union[pd.Timestamp, int],
     ]:
-
         (
             past_target,
             past_covariate,
@@ -793,7 +801,9 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[
+    def __getitem__(
+        self, idx
+    ) -> Tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -802,7 +812,6 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
         TimeSeries,
         Union[pd.Timestamp, int],
     ]:
-
         (
             past_target,
             past_covariate,

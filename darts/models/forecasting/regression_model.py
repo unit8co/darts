@@ -43,7 +43,7 @@ from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import (
-    add_static_covariates_to_lagged_data,
+    _create_lagged_data_autoregression,
     create_lagged_component_names,
     create_lagged_training_data,
 )
@@ -449,6 +449,7 @@ class RegressionModel(GlobalForecastingModel):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
         min_target_lag = self.lags["target"][0] if "target" in self.lags else None
         max_target_lag = self.output_chunk_length - 1 + self.output_chunk_shift
@@ -464,6 +465,7 @@ class RegressionModel(GlobalForecastingModel):
             min_future_cov_lag,
             max_future_cov_lag,
             self.output_chunk_shift,
+            None,
         )
 
     @property
@@ -555,20 +557,57 @@ class RegressionModel(GlobalForecastingModel):
             )
             return self.model
 
+    def _add_val_set_to_kwargs(
+        self,
+        kwargs: Dict,
+        val_series: Sequence[TimeSeries],
+        val_past_covariates: Optional[Sequence[TimeSeries]],
+        val_future_covariates: Optional[Sequence[TimeSeries]],
+        val_sample_weight: Optional[Union[Sequence[TimeSeries], str]],
+        max_samples_per_ts: int,
+    ) -> dict:
+        """Creates a validation set and returns a new set of kwargs passed to `self.model.fit()` including the
+        validation set. This method can be overridden if the model requires a different logic to add the eval set."""
+        val_samples, val_labels, val_weight = self._create_lagged_data(
+            series=val_series,
+            past_covariates=val_past_covariates,
+            future_covariates=val_future_covariates,
+            max_samples_per_ts=max_samples_per_ts,
+            sample_weight=val_sample_weight,
+            last_static_covariates_shape=self._static_covariates_shape,
+        )
+        # create validation sets for MultiOutputRegressor
+        if val_labels.ndim == 2 and isinstance(self.model, MultiOutputRegressor):
+            val_sets, val_weights = [], []
+            for i in range(val_labels.shape[1]):
+                val_sets.append((val_samples, val_labels[:, i]))
+                if val_weight is not None:
+                    val_weights.append(val_weight[:, i])
+            val_weights = val_weights or None
+        else:
+            val_sets = [(val_samples, val_labels)]
+            val_weights = val_weight
+
+        val_set_name, val_weight_name = self.val_set_params
+        return dict(kwargs, **{val_set_name: val_sets, val_weight_name: val_weights})
+
     def _create_lagged_data(
         self,
-        target_series: Sequence[TimeSeries],
+        series: Sequence[TimeSeries],
         past_covariates: Sequence[TimeSeries],
         future_covariates: Sequence[TimeSeries],
         max_samples_per_ts: int,
+        sample_weight: Optional[Union[TimeSeries, str]] = None,
+        last_static_covariates_shape: Optional[Tuple[int, int]] = None,
     ):
         (
             features,
             labels,
             _,
             self._static_covariates_shape,
+            sample_weights,
         ) = create_lagged_training_data(
-            target_series=target_series,
+            target_series=series,
             output_chunk_length=self.output_chunk_length,
             output_chunk_shift=self.output_chunk_shift,
             past_covariates=past_covariates,
@@ -577,11 +616,12 @@ class RegressionModel(GlobalForecastingModel):
             lags_past_covariates=self._get_lags("past"),
             lags_future_covariates=self._get_lags("future"),
             uses_static_covariates=self.uses_static_covariates,
-            last_static_covariates_shape=None,
+            last_static_covariates_shape=last_static_covariates_shape,
             max_samples_per_ts=max_samples_per_ts,
             multi_models=self.multi_models,
             check_inputs=False,
             concatenate=False,
+            sample_weight=sample_weight,
         )
 
         expected_nb_feat = (
@@ -594,7 +634,7 @@ class RegressionModel(GlobalForecastingModel):
             if expected_nb_feat != X_i.shape[1]:
                 shape_error_msg = []
                 for ts, cov_name, arg_name in zip(
-                    [target_series, past_covariates, future_covariates],
+                    [series, past_covariates, future_covariates],
                     ["target", "past", "future"],
                     ["series", "past_covariates", "future_covariates"],
                 ):
@@ -606,41 +646,69 @@ class RegressionModel(GlobalForecastingModel):
                 raise_log(ValueError("\n".join(shape_error_msg)), logger)
             features[i] = X_i[:, :, 0]
             labels[i] = y_i[:, :, 0]
+            if sample_weights is not None:
+                sample_weights[i] = sample_weights[i][:, :, 0]
 
-        training_samples = np.concatenate(features, axis=0)
-        training_labels = np.concatenate(labels, axis=0)
+        features = np.concatenate(features, axis=0)
+        labels = np.concatenate(labels, axis=0)
+        if sample_weights is not None:
+            sample_weights = np.concatenate(sample_weights, axis=0)
 
-        return training_samples, training_labels
+        # if labels are of shape (n_samples, 1) flatten it to shape (n_samples,)
+        if labels.ndim == 2 and labels.shape[1] == 1:
+            labels = labels.ravel()
+        if (
+            sample_weights is not None
+            and sample_weights.ndim == 2
+            and sample_weights.shape[1] == 1
+        ):
+            sample_weights = sample_weights.ravel()
+
+        return features, labels, sample_weights
 
     def _fit_model(
         self,
-        target_series: Sequence[TimeSeries],
+        series: Sequence[TimeSeries],
         past_covariates: Sequence[TimeSeries],
         future_covariates: Sequence[TimeSeries],
         max_samples_per_ts: int,
+        sample_weight: Optional[Union[Sequence[TimeSeries], str]],
+        val_series: Optional[Sequence[TimeSeries]] = None,
+        val_past_covariates: Optional[Sequence[TimeSeries]] = None,
+        val_future_covariates: Optional[Sequence[TimeSeries]] = None,
+        val_sample_weight: Optional[Union[Sequence[TimeSeries], str]] = None,
         **kwargs,
     ):
         """
-        Function that fit the model. Deriving classes can override this method for adding additional parameters (e.g.,
-        adding validation data), keeping the sanity checks on series performed by fit().
+        Function that fit the model. Deriving classes can override this method for adding additional
+        parameters (e.g., adding validation data), keeping the sanity checks on series performed by fit().
         """
-
-        training_samples, training_labels = self._create_lagged_data(
-            target_series,
-            past_covariates,
-            future_covariates,
-            max_samples_per_ts,
+        training_samples, training_labels, sample_weights = self._create_lagged_data(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            max_samples_per_ts=max_samples_per_ts,
+            sample_weight=sample_weight,
+            last_static_covariates_shape=None,
         )
 
-        # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)
-        if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
-            training_labels = training_labels.ravel()
-        self.model.fit(training_samples, training_labels, **kwargs)
+        if self.supports_val_set and val_series is not None:
+            kwargs = self._add_val_set_to_kwargs(
+                kwargs=kwargs,
+                val_series=val_series,
+                val_past_covariates=val_past_covariates,
+                val_future_covariates=val_future_covariates,
+                val_sample_weight=val_sample_weight,
+                max_samples_per_ts=max_samples_per_ts,
+            )
+        self.model.fit(
+            training_samples, training_labels, sample_weight=sample_weights, **kwargs
+        )
 
         # generate and store the lagged components names (for feature importance analysis)
         self._lagged_feature_names, self._lagged_label_names = (
             create_lagged_component_names(
-                target_series=target_series,
+                target_series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
                 lags=self._get_lags("target"),
@@ -659,6 +727,7 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
         n_jobs_multioutput_wrapper: Optional[int] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         **kwargs,
     ):
         """
@@ -682,6 +751,16 @@ class RegressionModel(GlobalForecastingModel):
         n_jobs_multioutput_wrapper
             Number of jobs of the MultiOutputRegressor wrapper to run in parallel. Only used if the model doesn't
             support multi-output regression natively.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
+            per label (each step in `output_chunk_length`), and per component.
+            If a series or sequence of series, then those weights are used. If the weight series only have a single
+            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+            component-specific weights, the number of components must match those of `series`.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+            computed globally based on the length of the longest series in `series`. Then for each series, the weights
+            are extracted from the end of the global weights. This gives a common time weighting across all series.
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
@@ -689,6 +768,15 @@ class RegressionModel(GlobalForecastingModel):
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
+        val_series = series2seq(kwargs.pop("val_series", None))
+        val_past_covariates = series2seq(kwargs.pop("val_past_covariates", None))
+        val_future_covariates = series2seq(kwargs.pop("val_future_covariates", None))
+
+        if not isinstance(sample_weight, str):
+            sample_weight = series2seq(sample_weight)
+        val_sample_weight = kwargs.pop("val_sample_weight", None)
+        if not isinstance(val_sample_weight, str):
+            val_sample_weight = series2seq(val_sample_weight)
 
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
@@ -723,6 +811,18 @@ class RegressionModel(GlobalForecastingModel):
                 "constructor.",
             )
 
+        if self.supports_val_set:
+            val_series, val_past_covariates, val_future_covariates = (
+                self._process_validation_set(
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                    val_series=val_series,
+                    val_past_covariates=val_past_covariates,
+                    val_future_covariates=val_future_covariates,
+                )
+            )
+
         # saving the dims of all input series to check at prediction time
         self.input_dim = {
             "target": series[0].width,
@@ -732,28 +832,29 @@ class RegressionModel(GlobalForecastingModel):
 
         # if multi-output regression
         if not series[0].is_univariate or (
-            self.output_chunk_length > 1 and self.multi_models
+            self.output_chunk_length > 1
+            and self.multi_models
+            and not isinstance(self.model, MultiOutputRegressor)
         ):
-            # and model isn't wrapped already
-            if not isinstance(self.model, MultiOutputRegressor):
-                # check whether model supports multi-output regression natively
-                if not (
-                    callable(getattr(self.model, "_get_tags", None))
-                    and isinstance(self.model._get_tags(), dict)
-                    and self.model._get_tags().get("multioutput")
-                ):
-                    # if not, wrap model with MultiOutputRegressor
-                    self.model = MultiOutputRegressor(
-                        self.model, n_jobs=n_jobs_multioutput_wrapper
-                    )
-                elif self.model.__class__.__name__ == "CatBoostRegressor":
-                    if (
-                        self.model.get_params()["loss_function"]
-                        == "RMSEWithUncertainty"
-                    ):
-                        self.model = MultiOutputRegressor(
-                            self.model, n_jobs=n_jobs_multioutput_wrapper
-                        )
+            val_set_name, val_weight_name = self.val_set_params
+            mor_kwargs = {
+                "eval_set_name": val_set_name,
+                "eval_weight_name": val_weight_name,
+                "n_jobs": n_jobs_multioutput_wrapper,
+            }
+            if sample_weight is not None:
+                # we have 2D sample (and time) weights, only supported in Darts
+                self.model = MultiOutputRegressor(self.model, **mor_kwargs)
+            elif not (
+                callable(getattr(self.model, "_get_tags", None))
+                and isinstance(self.model._get_tags(), dict)
+                and self.model._get_tags().get("multioutput")
+            ):
+                # model does not support multi-output regression natively
+                self.model = MultiOutputRegressor(self.model, **mor_kwargs)
+            elif self.model.__class__.__name__ == "CatBoostRegressor":
+                if self.model.get_params()["loss_function"] == "RMSEWithUncertainty":
+                    self.model = MultiOutputRegressor(self.model, **mor_kwargs)
 
         # warn if n_jobs_multioutput_wrapper was provided but not used
         if (
@@ -817,9 +918,17 @@ class RegressionModel(GlobalForecastingModel):
             raise_log(ValueError("\n".join(component_lags_error_msg)), logger)
 
         self._fit_model(
-            series, past_covariates, future_covariates, max_samples_per_ts, **kwargs
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            val_series=val_series,
+            val_past_covariates=val_past_covariates,
+            val_future_covariates=val_future_covariates,
+            sample_weight=sample_weight,
+            val_sample_weight=val_sample_weight,
+            max_samples_per_ts=max_samples_per_ts,
+            **kwargs,
         )
-
         return self
 
     def predict(
@@ -877,7 +986,7 @@ class RegressionModel(GlobalForecastingModel):
                 )
             series = self.training_series
 
-        called_with_single_series = True if isinstance(series, TimeSeries) else False
+        called_with_single_series = isinstance(series, TimeSeries)
 
         # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
@@ -993,12 +1102,10 @@ class RegressionModel(GlobalForecastingModel):
 
         series_matrix = None
         if "target" in self.lags:
-            series_matrix = np.stack(
-                [
-                    ts.values(copy=False)[self.lags["target"][0] - shift :, :]
-                    for ts in series
-                ]
-            )
+            series_matrix = np.stack([
+                ts.values(copy=False)[self.lags["target"][0] - shift :, :]
+                for ts in series
+            ])
 
         # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)
         # [series 0 sample 0, series 0 sample 1, ..., series n sample k]
@@ -1019,83 +1126,25 @@ class RegressionModel(GlobalForecastingModel):
                 last_step_shift = t_pred - (n - step)
                 t_pred = n - step
 
-            np_X = []
-            # retrieve target lags
-            if "target" in self.lags:
-                if predictions:
-                    series_matrix = np.concatenate(
-                        [series_matrix, predictions[-1]], axis=1
-                    )
-                # component-wise lags
-                if "target" in self.component_lags:
-                    tmp_X = [
-                        series_matrix[
-                            :,
-                            [lag - (shift + last_step_shift) for lag in comp_lags],
-                            comp_i,
-                        ]
-                        for comp_i, (comp, comp_lags) in enumerate(
-                            self.component_lags["target"].items()
-                        )
-                    ]
-                    # values are grouped by component
-                    np_X.append(
-                        np.concatenate(tmp_X, axis=1).reshape(
-                            len(series) * num_samples, -1
-                        )
-                    )
-                else:
-                    # values are grouped by lags
-                    np_X.append(
-                        series_matrix[
-                            :,
-                            [
-                                lag - (shift + last_step_shift)
-                                for lag in self.lags["target"]
-                            ],
-                        ].reshape(len(series) * num_samples, -1)
-                    )
-            # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
-            for cov_type in ["past", "future"]:
-                if cov_type in covariate_matrices:
-                    # component-wise lags
-                    if cov_type in self.component_lags:
-                        tmp_X = [
-                            covariate_matrices[cov_type][
-                                :,
-                                np.array(comp_lags) - self.lags[cov_type][0] + t_pred,
-                                comp_i,
-                            ]
-                            for comp_i, (comp, comp_lags) in enumerate(
-                                self.component_lags[cov_type].items()
-                            )
-                        ]
-                        np_X.append(
-                            np.concatenate(tmp_X, axis=1).reshape(
-                                len(series) * num_samples, -1
-                            )
-                        )
-                    else:
-                        np_X.append(
-                            covariate_matrices[cov_type][
-                                :, relative_cov_lags[cov_type] + t_pred
-                            ].reshape(len(series) * num_samples, -1)
-                        )
+            # concatenate previous iteration forecasts
+            if "target" in self.lags and predictions:
+                series_matrix = np.concatenate([series_matrix, predictions[-1]], axis=1)
 
-            # concatenate retrieved lags
-            X = np.concatenate(np_X, axis=1)
-            # Need to split up `X` into three equally-sized sub-blocks
-            # corresponding to each timeseries in `series`, so that
-            # static covariates can be added to each block; valid since
-            # each block contains same number of observations:
-            X_blocks = np.split(X, len(series), axis=0)
-            X_blocks, _ = add_static_covariates_to_lagged_data(
-                X_blocks,
-                series,
+            # extract and concatenate lags from target and covariates series
+            X = _create_lagged_data_autoregression(
+                target_series=series,
+                t_pred=t_pred,
+                shift=shift,
+                last_step_shift=last_step_shift,
+                series_matrix=series_matrix,
+                covariate_matrices=covariate_matrices,
+                lags=self.lags,
+                component_lags=self.component_lags,
+                relative_cov_lags=relative_cov_lags,
+                num_samples=num_samples,
                 uses_static_covariates=self.uses_static_covariates,
-                last_shape=self._static_covariates_shape,
+                last_static_covariates_shape=self._static_covariates_shape,
             )
-            X = np.concatenate(X_blocks, axis=0)
 
             # X has shape (n_series * n_samples, n_regression_features)
             prediction = self._predict_and_sample(
@@ -1189,6 +1238,17 @@ class RegressionModel(GlobalForecastingModel):
     def supports_static_covariates(self) -> bool:
         return True
 
+    @property
+    def supports_val_set(self) -> bool:
+        """Whether the model supports a validation set during training."""
+        return False
+
+    @property
+    def val_set_params(self) -> Tuple[Optional[str], Optional[str]]:
+        """Returns the parameter names for the validation set, and validation sample weights if it supports
+        a validation set."""
+        return None, None
+
     def _check_optimizable_historical_forecasts(
         self,
         forecast_horizon: int,
@@ -1257,6 +1317,7 @@ class RegressionModel(GlobalForecastingModel):
                 stride=stride,
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
+                verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 **kwargs,
             )
@@ -1273,6 +1334,7 @@ class RegressionModel(GlobalForecastingModel):
                 stride=stride,
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
+                verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 **kwargs,
             )
@@ -1734,6 +1796,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
         n_jobs_multioutput_wrapper: Optional[int] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         **kwargs,
     ):
         self._validate_categorical_covariates(
@@ -1747,6 +1810,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             future_covariates=future_covariates,
             max_samples_per_ts=max_samples_per_ts,
             n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+            sample_weight=sample_weight,
             **kwargs,
         )
 
@@ -1824,9 +1888,9 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
 
     def _get_categorical_features(
         self,
-        series: Union[List[TimeSeries], TimeSeries],
-        past_covariates: Optional[Union[List[TimeSeries], TimeSeries]] = None,
-        future_covariates: Optional[Union[List[TimeSeries], TimeSeries]] = None,
+        series: Union[Sequence[TimeSeries], TimeSeries],
+        past_covariates: Optional[Union[Sequence[TimeSeries], TimeSeries]] = None,
+        future_covariates: Optional[Union[Sequence[TimeSeries], TimeSeries]] = None,
     ) -> Tuple[List[int], List[str]]:
         """
         Returns the indices and column names of the categorical features in the regression model.
@@ -1899,10 +1963,11 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
 
     def _fit_model(
         self,
-        target_series,
+        series,
         past_covariates,
         future_covariates,
         max_samples_per_ts,
+        sample_weight,
         **kwargs,
     ):
         """
@@ -1910,9 +1975,9 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         handle categorical features directly.
         """
         cat_col_indices, _ = self._get_categorical_features(
-            target_series,
-            past_covariates,
-            future_covariates,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
         )
 
         cat_param_name, cat_param_default = self._categorical_fit_param
@@ -1920,9 +1985,10 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             cat_col_indices if cat_col_indices else cat_param_default
         )
         super()._fit_model(
-            target_series=target_series,
+            series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             max_samples_per_ts=max_samples_per_ts,
+            sample_weight=sample_weight,
             **kwargs,
         )

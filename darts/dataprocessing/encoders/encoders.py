@@ -1550,6 +1550,6 @@ class SequentialEncoder(Encoder):
 
     @property
     def requires_fit(self) -> bool:
-        return any(
-            [enc.requires_fit for cov_enc in self.encoders for enc in cov_enc]
-        ) or any([tf is not None for tf in self.transformers()])
+        return any([
+            enc.requires_fit for cov_enc in self.encoders for enc in cov_enc
+        ]) or any([tf is not None for tf in self.transformers()])

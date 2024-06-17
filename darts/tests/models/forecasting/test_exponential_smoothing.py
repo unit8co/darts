@@ -4,19 +4,20 @@ import pytest
 from darts import TimeSeries
 from darts.models import ExponentialSmoothing
 from darts.utils import timeseries_generation as tg
+from darts.utils.utils import freqs
 
 
 class TestExponentialSmoothing:
-    series = tg.sine_timeseries(length=100, freq="H")
+    series = tg.sine_timeseries(length=100, freq=freqs["h"])
 
     @pytest.mark.parametrize(
         "freq_string,expected_seasonal_periods",
         [
             ("D", 7),
-            ("H", 24),
-            ("M", 12),
+            (freqs["h"], 24),
+            (freqs["ME"], 12),
             ("W", 52),
-            ("Q", 4),
+            (freqs["QE"], 4),
             ("B", 5),
         ],
     )
@@ -37,7 +38,7 @@ class TestExponentialSmoothing:
 
     def test_multiple_fit(self):
         """Test whether a model that inferred a seasonality period before will do it again for a new series"""
-        series1 = tg.sine_timeseries(length=100, freq="M")
+        series1 = tg.sine_timeseries(length=100, freq=freqs["ME"])
         series2 = tg.sine_timeseries(length=100, freq="D")
         model = ExponentialSmoothing()
         model.fit(series1)
