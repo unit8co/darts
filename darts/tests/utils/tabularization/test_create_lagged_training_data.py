@@ -2793,7 +2793,8 @@ class TestCreateLaggedTrainingData:
             )
         assert (
             str(err.value)
-            == "Must specify the same number of `TimeSeries` for each series input."
+            == "The provided sequence of target `series` must have the same length as the provided sequence "
+            "of `sample_weight`."
         )
 
         with pytest.raises(ValueError) as err:
@@ -2806,7 +2807,7 @@ class TestCreateLaggedTrainingData:
                 output_chunk_shift=0,
                 use_moving_windows=use_moving_windows,
             )
-        assert str(err.value).startswith("Invalid `sample_weight` value: invalid. ")
+        assert str(err.value).startswith("Invalid `sample_weight` value: `'invalid'`. ")
 
         with pytest.raises(ValueError) as err:
             _ = create_lagged_training_data(

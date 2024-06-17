@@ -112,8 +112,8 @@ def _process_sample_weight(sample_weight, target_series):
     if len(target_series) != len(sample_weight):
         raise_log(
             ValueError(
-                "The provided sequence of target series must have the same length as "
-                "the provided sequence of sample weights."
+                "The provided sequence of target `series` must have the same length as "
+                "the provided sequence of `sample_weight`."
             ),
             logger=logger,
         )
