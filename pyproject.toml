@@ -30,7 +30,9 @@ select = [
     "F", # see: https://pypi.org/project/pyflakes
     "I", #see: https://pypi.org/project/isort/
     "UP", # see: https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "NPY201", # see: https://numpy.org/devdocs/numpy_2_0_migration_guide.html#numpy-2-migration-guide
 #    "D", # see: https://pypi.org/project/pydocstyle
+
 ]
 ignore = [
     "E203",
