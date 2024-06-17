@@ -1,5 +1,7 @@
 import copy
 import functools
+import importlib
+import inspect
 import itertools
 import math
 from unittest.mock import patch
@@ -524,7 +526,7 @@ class TestRegressionModels:
 
         max_samples_per_ts = 17
 
-        training_samples, training_labels = model_instance._create_lagged_data(
+        training_samples, training_labels, _ = model_instance._create_lagged_data(
             series=self.target_series,
             past_covariates=self.past_covariates,
             future_covariates=self.future_covariates,
@@ -575,7 +577,7 @@ class TestRegressionModels:
         max_samples_per_ts = 3
 
         # using only one series of each
-        training_samples, training_labels = model_instance._create_lagged_data(
+        training_samples, training_labels, _ = model_instance._create_lagged_data(
             series=self.target_series[0],
             past_covariates=self.past_covariates[0],
             future_covariates=self.future_covariates[0],
@@ -1566,6 +1568,132 @@ class TestRegressionModels:
 
         assert error_both > error_both_multi_ts
 
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [
+                (LinearRegressionModel, {}),
+                (RandomForest, {"bootstrap": False}),
+                (XGBModel, xgb_test_params),
+            ]
+            + (
+                [(CatBoostModel, dict({"allow_const_label": True}, **cb_test_params))]
+                if cb_available
+                else []
+            )
+            + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else []),
+            [True, False],
+        ),
+    )
+    def test_weights_built_in(self, config):
+        (model_cls, model_kwargs), single_series = config
+
+        ts = TimeSeries.from_values(values=np.array([0, 0, 0, 0, 1, 0, 0]))
+
+        model = model_cls(lags=3, output_chunk_length=1, **model_kwargs)
+        model.fit(
+            ts if single_series else [ts] * 2,
+            sample_weight="linear_decay",
+        )
+        preds = model.predict(n=3, series=ts if single_series else [ts] * 2)
+
+        model_no_weight = model_cls(lags=3, output_chunk_length=1, **model_kwargs)
+        model_no_weight.fit(
+            ts if single_series else [ts] * 2,
+            sample_weight=None,
+        )
+        preds_no_weight = model_no_weight.predict(
+            n=3, series=ts if single_series else [ts] * 2
+        )
+
+        if single_series:
+            preds = [preds]
+            preds_no_weight = [preds_no_weight]
+
+        for pred, pred_no_weight in zip(preds, preds_no_weight):
+            with pytest.raises(AssertionError):
+                np.testing.assert_array_almost_equal(
+                    pred.all_values(), pred_no_weight.all_values()
+                )
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [
+                (LinearRegressionModel, {}),
+                (RandomForest, {"bootstrap": False}),
+                (XGBModel, xgb_test_params),
+            ]
+            + (
+                [(CatBoostModel, dict({"allow_const_label": True}, **cb_test_params))]
+                if cb_available
+                else []
+            )
+            + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else []),
+            [True, False],
+        ),
+    )
+    def test_weights_single_step_horizon(self, config):
+        (model_cls, model_kwargs), single_series = config
+        model = model_cls(lags=3, output_chunk_length=1, **model_kwargs)
+
+        weights = TimeSeries.from_values(np.array([0, 0, 0, 0, 1, 0, 0]))
+
+        ts = TimeSeries.from_values(values=np.array([0, 0, 0, 0, 1, 0, 0]))
+
+        model.fit(
+            ts if single_series else [ts] * 2,
+            sample_weight=weights if single_series else [weights] * 2,
+        )
+
+        preds = model.predict(n=3, series=ts if single_series else [ts] * 2)
+
+        preds = [preds] if single_series else preds
+        for pred in preds:
+            np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (LinearRegressionModel, {}),
+            (RandomForest, {"bootstrap": False}),
+            (XGBModel, xgb_test_params),
+        ]
+        + (
+            [(CatBoostModel, dict({"allow_const_label": True}, **cb_test_params))]
+            if cb_available
+            else []
+        )
+        + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else []),
+    )
+    def test_weights_multi_horizon(self, config):
+        (model_cls, model_kwargs) = config
+        model = model_cls(lags=3, output_chunk_length=3, **model_kwargs)
+
+        weights = TimeSeries.from_values(np.array([0, 0, 0, 1, 1, 1, 0, 0, 0]))
+
+        # model should only fit on ones in the middle
+        ts = TimeSeries.from_values(values=np.array([0, 0, 0, 1, 1, 1, 2, 2, 2]))
+
+        model.fit(ts, sample_weight=weights)
+
+        pred = model.predict(n=3)
+
+        np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
+
+    def test_weights_multimodel_false_multi_horizon(self):
+        model = LinearRegressionModel(lags=3, output_chunk_length=3, multi_models=False)
+
+        weights = TimeSeries.from_values(np.array([0, 0, 0, 0, 0, 1, 0, 0]))
+
+        ts = TimeSeries.from_values(values=np.array([0, 0, 0, 0, 0, 1, 0, 0]))
+
+        model.fit(ts, sample_weight=weights)
+
+        pred = model.predict(n=3)
+
+        np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
+
     @pytest.mark.parametrize("mode", [True, False])
     def test_only_future_covariates(self, mode):
         model = RegressionModel(lags_future_covariates=[-2], multi_models=mode)
@@ -1671,25 +1799,58 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        [(XGBModel, xgb_test_params, "xgboost.xgb.XGBRegressor")]
-        + (
-            [(LightGBMModel, lgbm_test_params, "lgbm.lgb.LGBMRegressor")]
-            if lgbm_available
-            else []
-        )
-        + (
-            [(CatBoostModel, cb_test_params, "catboost_model.CatBoostRegressor")]
-            if cb_available
-            else []
+        itertools.product(
+            [
+                (
+                    XGBModel,
+                    xgb_test_params,
+                    "xgboost.xgb.XGBRegressor",
+                    "xgboost.XGBRegressor",
+                )
+            ]
+            + (
+                [
+                    (
+                        LightGBMModel,
+                        lgbm_test_params,
+                        "lgbm.lgb.LGBMRegressor",
+                        "lightgbm.LGBMRegressor",
+                    )
+                ]
+                if lgbm_available
+                else []
+            )
+            + (
+                [
+                    (
+                        CatBoostModel,
+                        cb_test_params,
+                        "catboost_model.CatBoostRegressor",
+                        "catboost.CatBoostRegressor",
+                    )
+                ]
+                if cb_available
+                else []
+            ),
+            [False, True],
         ),
     )
     def test_val_set(self, config):
         """Test whether the evaluation set parameters are passed to the wrapped regression model."""
-        model_cls, model_kwargs, model_loc = config
+        (model_cls, model_kwargs, model_loc, model_import), use_weights = config
+        module_name, model_name = model_import.split(".")
+        # mocking `fit` loses function signature. MultiOutputRegressor checks the function signature
+        # internally, so we have to overwrite the mocked function signature with the original one.
+        fit_sig = inspect.signature(
+            getattr(importlib.import_module(module_name), model_name).fit
+        )
         with patch(f"darts.models.forecasting.{model_loc}.fit") as fit_patch:
-            self.helper_check_val_set(model_cls, model_kwargs, fit_patch)
+            fit_patch.__signature__ = fit_sig
+            self.helper_check_val_set(
+                model_cls, model_kwargs, fit_patch, use_weights=use_weights
+            )
 
-    def helper_check_val_set(self, model_cls, model_kwargs, fit_patch):
+    def helper_check_val_set(self, model_cls, model_kwargs, fit_patch, use_weights):
         series1 = tg.sine_timeseries(length=10, column_name="tg_1")
         series2 = tg.sine_timeseries(length=10, column_name="tg_2") / 2 + 10
         series = series1.stack(series2)
@@ -1700,6 +1861,16 @@ class TestRegressionModels:
         fc = TimeSeries.from_times_and_values(
             times=series.time_index, values=series.values() * -1, columns=["fc1", "fc2"]
         )
+
+        weights_kwargs = (
+            {
+                "sample_weight": tg.linear_timeseries(length=10),
+                "val_sample_weight": tg.linear_timeseries(length=10),
+            }
+            if use_weights
+            else {}
+        )
+
         model = model_cls(
             lags={"default_lags": [-4, -3, -2, -1]},
             lags_past_covariates=3,
@@ -1723,6 +1894,7 @@ class TestRegressionModels:
                 val_past_covariates=pc,
                 val_future_covariates=fc["fc1"],
                 early_stopping_rounds=2,
+                **weights_kwargs,
             )
         msg_expected = (
             "The dimensions of the (`series`, `future_covariates`, `static_covariates`) between "
@@ -1740,6 +1912,7 @@ class TestRegressionModels:
                 val_past_covariates=[pc, pc],
                 val_future_covariates=[fc, fc["fc1"]],
                 early_stopping_rounds=2,
+                **weights_kwargs,
             )
         msg_expected = (
             "The dimensions of the (`series`, `future_covariates`, `static_covariates`) between "
@@ -1755,23 +1928,53 @@ class TestRegressionModels:
             val_past_covariates=pc,
             val_future_covariates=fc,
             early_stopping_rounds=2,
+            **weights_kwargs,
         )
         # fit called 6 times (3 quantiles * 2 target features)
         assert fit_patch.call_count == 6
 
-        train_set = fit_patch.call_args[0]
+        X_train, y_train = fit_patch.call_args[0]
+
+        # check weights in training set
+        weight_train = None
+        if use_weights:
+            assert "sample_weight" in fit_patch.call_args[1]
+            weight_train = fit_patch.call_args[1]["sample_weight"]
+
+        # check eval set
+        eval_set_name, eval_weight_name = model.val_set_params
+        assert eval_set_name in fit_patch.call_args[1]
         eval_set = fit_patch.call_args[1]["eval_set"]
         assert eval_set is not None
-        # xbg requires a list of eval sets
-        if issubclass(model_cls, XGBModel):
-            assert isinstance(eval_set, list)
-            eval_set = eval_set[0]
-        assert isinstance(eval_set, tuple) and len(eval_set) == 2
+        assert isinstance(eval_set, list)
+        eval_set = eval_set[0]
+
+        weight = None
+        if cb_available and isinstance(model, CatBoostModel):
+            # CatBoost requires eval set as `Pool`
+            from catboost import Pool
+
+            assert isinstance(eval_set, Pool)
+            X, y = eval_set.get_features(), eval_set.get_label()
+            if use_weights:
+                weight = np.array(eval_set.get_weight())
+
+        else:
+            assert isinstance(eval_set, tuple) and len(eval_set) == 2
+            X, y = eval_set
+            if use_weights:
+                assert eval_weight_name in fit_patch.call_args[1]
+                weight = fit_patch.call_args[1][eval_weight_name]
+                assert isinstance(weight, list)
+                weight = weight[0]
 
         # check same number of features for each dataset
-        assert eval_set[0].shape[1:] == train_set[0].shape[1:]
-        assert eval_set[1].shape[1:] == train_set[1].shape[1:]
+        assert X.shape[1:] == X_train.shape[1:]
+        assert y.shape[1:] == y_train.shape[1:]
         assert fit_patch.call_args[1]["early_stopping_rounds"] == 2
+        if use_weights:
+            assert weight_train.shape == y_train.shape
+            assert weight.shape == y.shape
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_integer_indexed_series(self, mode):

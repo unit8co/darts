@@ -37,6 +37,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - renamed params `actual_anoamlies` to `anomalies`, and `binary_pred_anomalies` to `pred_anomalies`
     - `darts.ad.utils.show_anomalies_from_scores`:
       - renamed params `series` to `actual_series`, `actual_anomalies` to `anomalies`, `model_output` to `pred_series`, and `anomaly_scores` to `pred_scores`
+- Improvements to `RegressionModel` : [#2404](https://github.com/unit8co/darts/pull/2404) by [Anton Ragot](https://github.com/AntonRagot) and [Dennis Bader](https://github.com/dennisbader).
+  - Added parameters `sample_weight` and `val_sample_weight` to `fit()` to apply weights to each observation with the corresponding output step, and target component in the training and evaluation set.
 - Improvements to `TimeSeries` : [#1477](https://github.com/unit8co/darts/pull/1477) by [Dennis Bader](https://github.com/dennisbader).
   - New method `with_times_and_values()`, which returns a new series with a new time index and new values but with identical columns and metadata as the series called from (static covariates, hierarchy).
   - New method `slice_intersect_times()`, which returns the sliced time index of a series, where the index has been intersected with another series.
@@ -58,6 +60,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to unified linting by switch `isort` to Ruff's rule I. [#2339](https://github.com/unit8co/darts/pull/2339) by [Jirka Borovec](https://github.com/borda)
 - Improvements to unified linting by switch `pyupgrade` to Ruff's rule UP. [#2340](https://github.com/unit8co/darts/pull/2340) by [Jirka Borovec](https://github.com/borda)
 - Improvements to CI, running lint locally via pre-commit instead of particular tools. [#2327](https://github.com/unit8co/darts/pull/2327) by [Jirka Borovec](https://github.com/borda)
+- We set an upper version cap on `numpy<2.0.0` until all dependencies have migrated. [#2413](https://github.com/unit8co/darts/pull/2413) by [Dennis Bader](https://github.com/dennisbader).
 
 
 ### For developers of the library:
