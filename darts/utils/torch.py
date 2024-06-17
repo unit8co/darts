@@ -58,8 +58,9 @@ class MonteCarloDropout(nn.Dropout):
         # NOTE: we could use the following line in case a different rate
         # is used for inference:
         # return F.dropout(input, self.applied_rate, True, self.inplace)
+        apply_dropout = self.training or self.mc_dropout_enabled
 
-        return F.dropout(input, self.p, self.mc_dropout_enabled, self.inplace)
+        return F.dropout(input, self.p, apply_dropout, self.inplace)
 
 
 def _is_method(func: Callable[..., Any]) -> bool:
