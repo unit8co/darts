@@ -726,16 +726,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         sample_weight
-            Optionally, some sample weights to apply to the target `series` labels.
-            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
+            per label (each step in `output_chunk_length`), and per component.
+            If a series or sequence of series, then those weights are used. If the weight series only have a single
+            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+            component-specific weights, the number of components must match those of `series`.
             If a string, then the weights are generated using built-in weighting functions. The available options are
-            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
-            and then applied globally to all `series` to have a common time weighting.
-            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
-            match the number of target `series` and each series must contain at least all time steps from the
-            corresponding target `series`. If the weight series only have a single component / column, then the weights
-            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
-            of components must match those of `series`.
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+            computed globally based on the length of the longest series in `series`. Then for each series, the weights
+            are extracted from the end of the global weights. This gives a common time weighting across all series.
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
 
@@ -976,7 +975,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         self._verify_train_dataset_type(train_dataset)
 
-        # Pro-actively catch length exceptions to display nicer messages
+        # proactively catch length exceptions to display nicer messages
         train_length_ok, val_length_ok = True, True
         try:
             len(train_dataset)
@@ -1000,16 +999,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         train_sample = train_dataset[0]
+        # ignore sample weights [-2] for model dimensions
         train_sample_no_weight = train_sample[:-2] + train_sample[-1:]
         if self.model is None:
-            # Build model, based on the dimensions of the first series in the train set.
-            # the last two elements are sample weights and future target
+            # build model based on the dimensions of the first series in the train set.
             self.train_sample = train_sample_no_weight
             self.output_dim = train_sample[-1].shape[1]
             model = self._init_model(trainer)
         else:
             model = self.model
-            # Check existing model has input/output dims matching what's provided in the training set.
+            # check existing model has input/output dims matching what's provided in the training set.
             raise_if_not(
                 len(train_sample_no_weight) == len(self.train_sample),
                 "The size of the training set samples (tuples) does not match what the model has been"
@@ -1071,7 +1070,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     logger=logger,
                 )
 
-        # Setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
+        # setting drop_last to False makes the model see each sample at least once, and guarantee the presence of at
         # least one batch no matter the chosen batch size
         dataloader_kwargs = dict(
             {
@@ -1089,7 +1088,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             **dataloader_kwargs,
         )
 
-        # Prepare validation data
+        # prepare validation data
         dataloader_kwargs["shuffle"] = False
         val_loader = (
             None
@@ -1221,16 +1220,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         val_future_covariates
             Optionally, the future covariates corresponding to the validation series (must match ``covariates``)
         sample_weight
-            Optionally, some sample weights to apply to the target `series` labels.
-            They are applied per observation, per label (each step in `output_chunk_length`), and per component.
+            Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
+            per label (each step in `output_chunk_length`), and per component.
+            If a series or sequence of series, then those weights are used. If the weight series only have a single
+            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+            component-specific weights, the number of components must match those of `series`.
             If a string, then the weights are generated using built-in weighting functions. The available options are
-            `"linear_decay"` or `"exponential_decay"`. The weights are only computed the longest series in `series`,
-            and then applied globally to all `series` to have a common time weighting.
-            If a `TimeSeries` or `Sequence[TimeSeries]`, then those weights are used. The number of series must
-            match the number of target `series` and each series must contain at least all time steps from the
-            corresponding target `series`. If the weight series only have a single component / column, then the weights
-            are applied globally to all components in `series`. Otherwise, for component-specific weights, the number
-            of components must match those of `series`.
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+            computed globally based on the length of the longest series in `series`. Then for each series, the weights
+            are extracted from the end of the global weights. This gives a common time weighting across all series.
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
         trainer
@@ -1546,7 +1544,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Returns one or more forecasts for time series.
         """
 
-        # We need to call super's super's method directly, because GlobalForecastingModel expects series:
+        # we need to call super's super's method directly, because GlobalForecastingModel expects series:
         ForecastingModel.predict(self, n, num_samples)
 
         self._verify_inference_dataset_type(input_series_dataset)
@@ -2016,7 +2014,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # meaningful error message if parameters are incompatible with the ckpt weights
             self._check_ckpt_parameters(tfm_save)
 
-        # instanciate the model without having to call `fit_from_dataset`
+        # instantiate the model without having to call `fit_from_dataset`
         self.model = self._init_model()
         # cast model precision to correct type
         self.model.to_dtype(ckpt["model_dtype"])
@@ -2336,7 +2334,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 "The values of the hyper-parameters in the model and loaded checkpoint should be identical."
             ]
 
-            # warning messages formated to facilate copy-pasting
+            # warning messages formatted to facilitate copy-pasting
             if len(missing_params) > 0:
                 msg += ["missing :"]
                 msg += [
