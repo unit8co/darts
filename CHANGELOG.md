@@ -56,6 +56,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to unified linting by switch `isort` to Ruff's rule I. [#2339](https://github.com/unit8co/darts/pull/2339) by [Jirka Borovec](https://github.com/borda)
 - Improvements to unified linting by switch `pyupgrade` to Ruff's rule UP. [#2340](https://github.com/unit8co/darts/pull/2340) by [Jirka Borovec](https://github.com/borda)
 - Improvements to CI, running lint locally via pre-commit instead of particular tools. [#2327](https://github.com/unit8co/darts/pull/2327) by [Jirka Borovec](https://github.com/borda)
+- We set an upper version cap on `numpy<2.0.0` until all dependencies have migrated. [#2413](https://github.com/unit8co/darts/pull/2413) by [Dennis Bader](https://github.com/dennisbader).
 
 
 ### For developers of the library:
