@@ -98,13 +98,18 @@ class Likelihood(ABC):
         # used for equality operator between likelihood objects
         self.ignore_attrs_equality = []
 
-    def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor):
+    def compute_loss(
+        self,
+        model_output: torch.Tensor,
+        target: torch.Tensor,
+        sample_weight: torch.Tensor,
+    ):
         """
         Computes a loss from a `model_output`, which represents the parameters of a given probability
         distribution for every ground truth value in `target`, and the `target` itself.
         """
         params_out = self._params_from_output(model_output)
-        loss = self._nllloss(params_out, target)
+        loss = self._nllloss(params_out, target, sample_weight)
 
         prior_params = self._prior_params
         use_prior = prior_params is not None and any(
@@ -131,13 +136,16 @@ class Likelihood(ABC):
 
         return loss
 
-    def _nllloss(self, params_out, target):
+    def _nllloss(self, params_out, target, sample_weight):
         """
         This is the basic way to compute the NLL loss. It can be overwritten by likelihoods for which
         PyTorch proposes a numerically better NLL loss.
         """
         out_distr = self._distr_from_params(params_out)
-        return -out_distr.log_prob(target).mean()
+        loss = -out_distr.log_prob(target)
+        if sample_weight is not None:
+            loss = loss * sample_weight
+        return loss.mean()
 
     @property
     def _prior_params(self):
@@ -293,14 +301,12 @@ class GaussianLikelihood(Likelihood):
         self.beta_nll = beta_nll
         _check_strict_positive(self.prior_sigma, "sigma")
 
-        self.nllloss = nn.GaussianNLLLoss(
-            reduction="none" if self.beta_nll > 0.0 else "mean", full=True
-        )
+        self.nllloss = nn.GaussianNLLLoss(full=True, reduction="none")
         self.softplus = nn.Softplus()
 
         super().__init__(prior_strength)
 
-    def _nllloss(self, params_out, target):
+    def _nllloss(self, params_out, target, sample_weight):
         means_out, sigmas_out = params_out
         # Note: GaussianNLLLoss expects variance (and not stdev)
         cont_var = sigmas_out.contiguous() ** 2
@@ -308,8 +314,10 @@ class GaussianLikelihood(Likelihood):
         # apply Beta-NLL
         if self.beta_nll > 0.0:
             # Note: there is no mean reduction if beta_nll > 0, so we compute it here
-            loss = (loss * (cont_var.detach() ** self.beta_nll)).mean()
-        return loss
+            loss = loss * (cont_var.detach() ** self.beta_nll)
+        if sample_weight is not None:
+            loss = loss * sample_weight
+        return loss.mean()
 
     @property
     def _prior_params(self):
@@ -361,13 +369,16 @@ class PoissonLikelihood(Likelihood):
         self.prior_lambda = prior_lambda
         _check_strict_positive(self.prior_lambda, "lambda")
 
-        self.nllloss = nn.PoissonNLLLoss(log_input=False, full=True)
+        self.nllloss = nn.PoissonNLLLoss(log_input=False, full=True, reduction="none")
         self.softplus = nn.Softplus()
         super().__init__(prior_strength)
 
-    def _nllloss(self, params_out, target):
+    def _nllloss(self, params_out, target, sample_weight):
         lambda_out = params_out
-        return self.nllloss(lambda_out, target)
+        loss = self.nllloss(lambda_out, target)
+        if sample_weight is not None:
+            loss = loss * sample_weight
+        return loss.mean()
 
     @property
     def _prior_params(self):
@@ -1288,7 +1299,12 @@ class QuantileRegression(Likelihood):
     def num_parameters(self) -> int:
         return len(self.quantiles)
 
-    def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor):
+    def compute_loss(
+        self,
+        model_output: torch.Tensor,
+        target: torch.Tensor,
+        sample_weight: torch.Tensor,
+    ):
         """
         We are re-defining a custom loss (which is not a likelihood loss) compared to Likelihood
 
@@ -1298,11 +1314,10 @@ class QuantileRegression(Likelihood):
             must be of shape (batch_size, n_timesteps, n_target_variables, n_quantiles)
         target
             must be of shape (n_samples, n_timesteps, n_target_variables)
+        sample_weight
+            must be of shape (n_samples, n_timesteps, n_target_variables)
         """
-
         dim_q = 3
-
-        batch_size, length = model_output.shape[:2]
         device = model_output.device
 
         # test if torch model forward produces correct output and store quantiles tensor
@@ -1323,9 +1338,11 @@ class QuantileRegression(Likelihood):
         errors = target.unsqueeze(-1) - model_output
         losses = torch.max(
             (self.quantiles_tensor - 1) * errors, self.quantiles_tensor * errors
-        )
+        ).sum(dim=dim_q)
 
-        return losses.sum(dim=dim_q).mean()
+        if sample_weight is not None:
+            losses = losses * sample_weight
+        return losses.mean()
 
     def _distr_from_params(self, params: Tuple) -> None:
         # This should not be called in this class (we are abusing Likelihood)

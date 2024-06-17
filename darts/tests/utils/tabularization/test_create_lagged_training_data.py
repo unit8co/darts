@@ -2618,7 +2618,7 @@ class TestCreateLaggedTrainingData:
         itertools.product(
             [10, 50],
             [True, False],
-            ["linear_decay", "exponential_decay"],
+            ["linear", "exponential"],
             ["D", "2D", 2],
             [True, False],
         ),
@@ -2652,9 +2652,7 @@ class TestCreateLaggedTrainingData:
         )
 
         len_y = len(y) if single_series else int(len(y) / 2)
-        if sample_weight == "equal":
-            expected_weights = np.ones((len_y, 1, 1))
-        elif sample_weight == "linear_decay":
+        if sample_weight == "linear":
             expected_weights = np.linspace(0, 1, len(train_y))[-len_y:, None, None]
         else:  # exponential decay
             time_steps = np.linspace(0, 1, len(train_y))

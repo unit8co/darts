@@ -727,6 +727,7 @@ class TestGlobalForecastingModels:
             multiple_ts,
             past_covariates=None,
             future_covariates=None,
+            sample_weight=None,
             max_samples_per_ts=None,
         )
         epochs = 3
@@ -750,6 +751,7 @@ class TestGlobalForecastingModels:
             multiple_ts,
             past_covariates=None,
             future_covariates=None,
+            sample_weight=None,
             max_samples_per_ts=None,
         )
         model.fit_from_dataset(train_dataset, epochs=1)

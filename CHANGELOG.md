@@ -9,8 +9,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 **Improved**
+- 🚀🚀 Improvements to `GlobalForecastingModel` : [#2404](https://github.com/unit8co/darts/pull/2404) and [#2410](https://github.com/unit8co/darts/pull/2410) by [Anton Ragot](https://github.com/AntonRagot) and [Dennis Bader](https://github.com/dennisbader).
+  - Added parameters `sample_weight` and `val_sample_weight` to `fit()` to apply weights to each observation with the corresponding output step, and target component in the training and evaluation set. Supported by both deterministic and probabilistic models. The sample weight can either be `TimeSeries` themselves or built-in weight generators "linear" and "exponential" decay. In case of a `TimeSeries` it is handled identically as the covariates (e.g. pass multiple weight series with multiple target series, relevant time frame extraction is handled automatically for you, ...).
 - Improvements to the Anomaly Detection Module through major refactor. The refactor includes major performance optimization for the majority of the processes and improvements to the API, consistency, reliability, and the documentation. Some of these necessary changes come at the cost of breaking changes : [#1477](https://github.com/unit8co/darts/pull/1477) by [Dennis Bader](https://github.com/dennisbader), [Samuele Giuliano Piazzetta](https://github.com/piaz97), [Antoine Madrona](https://github.com/madtoinou), [Julien Herzen](https://github.com/hrzn), [Julien Adda](https://github.com/julien12234).
-  - 🚀 Added an example notebook that showcases how to use Darts for Time Series Anomaly Detection
+  - 🚀🚀 Added an example notebook that showcases how to use Darts for Time Series Anomaly Detection
   - Added a new dataset for anomaly detection with the number of taxi passengers in New York from the year 2014 to 2015.
   - `FittableWindowScorer` (KMeans, PyOD, and Wasserstein Scorers) now accept any of darts "per-time" step metrics as difference function `diff_fn`.
   - `ForecastingAnomalyModel` is now much faster thanks to optimized historical forecasts to generate the prediction input for the scorers. We also added more control over the historical forecasts generation through additional parameters in all model methods.
@@ -35,8 +37,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
       - renamed params `actual_anoamlies` to `anomalies`, and `binary_pred_anomalies` to `pred_anomalies`
     - `darts.ad.utils.show_anomalies_from_scores`:
       - renamed params `series` to `actual_series`, `actual_anomalies` to `anomalies`, `model_output` to `pred_series`, and `anomaly_scores` to `pred_scores`
-- Improvements to `RegressionModel` : [#2404](https://github.com/unit8co/darts/pull/2404) by [Anton Ragot](https://github.com/AntonRagot) and [Dennis Bader](https://github.com/dennisbader).
-  - Added parameters `sample_weight` and `val_sample_weight` to `fit()` to apply weights to each observation with the corresponding output step, and target component in the training and evaluation set.
 - Improvements to `TimeSeries` : [#1477](https://github.com/unit8co/darts/pull/1477) by [Dennis Bader](https://github.com/dennisbader).
   - New method `with_times_and_values()`, which returns a new series with a new time index and new values but with identical columns and metadata as the series called from (static covariates, hierarchy).
   - New method `slice_intersect_times()`, which returns the sliced time index of a series, where the index has been intersected with another series.
