@@ -2834,13 +2834,6 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         return True
 
     @property
-    def supports_sample_weight(self) -> bool:
-        """
-        Whether model supports sample weight for training.
-        """
-        return True
-
-    @property
     def supports_optimized_historical_forecasts(self) -> bool:
         """
         Whether the model supports optimized historical forecasts

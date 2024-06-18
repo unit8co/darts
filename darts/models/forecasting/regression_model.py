@@ -1239,6 +1239,13 @@ class RegressionModel(GlobalForecastingModel):
         return True
 
     @property
+    def supports_sample_weight(self) -> bool:
+        """
+        Whether model supports sample weight for training.
+        """
+        return True
+
+    @property
     def supports_val_set(self) -> bool:
         """Whether the model supports a validation set during training."""
         return False
