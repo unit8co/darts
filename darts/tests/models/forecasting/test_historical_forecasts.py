@@ -2494,3 +2494,21 @@ class TestHistoricalforecast:
                 np.testing.assert_array_almost_equal(
                     hfc_w.all_values(), hfc_nw.all_values()
                 )
+
+        if manual_weight:
+            if multi_series:
+                sample_weight[1] = sample_weight[1][1:]
+                invalid_idx = 1
+            else:
+                sample_weight = sample_weight[:-1]
+                invalid_idx = 0
+
+            with pytest.raises(ValueError) as err:
+                _ = model.historical_forecasts(
+                    series=ts, sample_weight=sample_weight, **start_kwargs
+                )
+            assert (
+                str(err.value)
+                == f"`sample_weight` at series index {invalid_idx} must contain "
+                f"at least all times of the corresponding target `series`."
+            )
