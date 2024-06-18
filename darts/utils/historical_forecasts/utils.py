@@ -810,12 +810,12 @@ def _check_optimizable_historical_forecasts_global_models(
     if show_warnings:
         if not retrain_off:
             logger.warning(
-                "`enable_optimization=True` is ignored because `retrain` is not `False` or `0`."
+                "`enable_optimization=True` is ignored because `retrain` is not `False` or `0`. "
                 "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
             )
         if is_autoregressive:
             logger.warning(
-                "`enable_optimization=True` is ignored because `forecast_horizon > model.output_chunk_length`."
+                "`enable_optimization=True` is ignored because `forecast_horizon > model.output_chunk_length`. "
                 "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
             )
 

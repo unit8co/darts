@@ -1112,6 +1112,38 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
+        itertools.product([True, False], [True, False]),
+    )
+    def test_gridsearch_sample_weight(self, config):
+        """check that passing sample weights work and that it yields different results than without sample weights."""
+        manual_weight, use_val_series = config
+        ts = AirPassengersDataset().load()
+        if manual_weight:
+            sample_weight = np.linspace(0, 1, len(ts))
+            sample_weight = ts.with_values(np.expand_dims(sample_weight, -1))
+        else:
+            sample_weight = "linear"
+
+        paramameters = {"lags": [3], "output_chunk_length": [1]}
+        start_kwargs = {"start": -1, "start_format": "position"}
+        gs_kwargs = {"val_series": ts} if use_val_series else {"forecast_horizon": 1}
+        gs_non_weighted = LinearRegressionModel.gridsearch(
+            paramameters, series=ts[:-1], **start_kwargs, **gs_kwargs
+        )[-1]
+
+        gs_weighted = LinearRegressionModel.gridsearch(
+            paramameters,
+            series=ts[:-1],
+            sample_weight=sample_weight,
+            **start_kwargs,
+            **gs_kwargs,
+        )[-1]
+
+        # check that the predictions are different
+        assert gs_weighted != gs_non_weighted
+
+    @pytest.mark.parametrize(
+        "config",
         itertools.product(
             [
                 metrics.ase,
@@ -1222,3 +1254,38 @@ class TestBacktesting:
         for bt_list in bts:
             for bt in bt_list:
                 np.testing.assert_array_almost_equal(bt, bt_expected)
+
+    @pytest.mark.parametrize(
+        "config",
+        product([True, False], [True, False]),
+    )
+    def test_sample_weight(self, config):
+        """check that passing sample weights work and that it yields different results than without sample weights."""
+        manual_weight, multi_series = config
+        ts = AirPassengersDataset().load()
+        if manual_weight:
+            sample_weight = np.linspace(0, 1, len(ts))
+            sample_weight = ts.with_values(np.expand_dims(sample_weight, -1))
+        else:
+            sample_weight = "linear"
+
+        if multi_series:
+            ts = [ts] * 2
+            sample_weight = [sample_weight] * 2 if manual_weight else sample_weight
+
+        model = LinearRegressionModel(lags=3, output_chunk_length=1)
+        start_kwargs = {"start": -1, "start_format": "position"}
+        bt_non_weighted = model.backtest(series=ts, **start_kwargs)
+
+        model = LinearRegressionModel(lags=3, output_chunk_length=1)
+        bt_weighted = model.backtest(
+            series=ts, sample_weight=sample_weight, **start_kwargs
+        )
+
+        if not multi_series:
+            bt_weighted = [bt_weighted]
+            bt_non_weighted = [bt_non_weighted]
+
+        # check that the predictions are different
+        for bt_nw, bt_w in zip(bt_non_weighted, bt_weighted):
+            assert bt_w != bt_nw
