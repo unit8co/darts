@@ -1259,7 +1259,7 @@ class TestBacktesting:
         "config",
         product([True, False], [True, False]),
     )
-    def test_sample_weight(self, config):
+    def test_backtest_sample_weight(self, config):
         """check that passing sample weights work and that it yields different results than without sample weights."""
         manual_weight, multi_series = config
         ts = AirPassengersDataset().load()
