@@ -508,44 +508,8 @@ class TestEnsembleModels:
         with pytest.raises(ValueError):
             naive.fit(self.series1, self.series2)
 
-    def test_sample_weight_mixed_models(self):
-        """Check sample weights.
-
-        Sample weights will only be passed to global models.
-        A weighted linear model that ignores `1000` should learn that y_t = y_(t-1) + 1. When calling predict():
-        - linear model should predict y_(t,lin) = 1000 + 1 = 1001
-        - naive seasonal should predict y_(t,ns) = y_(t-1) = 1000
-
-        The ensemble takes the average:
-        - y_t = 0.5 * y_(t,lin) + 0.5 * y_(t,ns) = 1001 + 1000 = 1000.5
-        """
-        series = TimeSeries.from_values(np.array([0.0, 1.0, 2.0, 3.0, 1000]))
-        weights = TimeSeries.from_values(np.array([1.0, 1.0, 1.0, 1.0, 0.0]))
-
-        model = NaiveEnsembleModel([
-            LinearRegressionModel(lags=[-1]),
-            NaiveSeasonal(K=1),
-        ])
-        model.fit(series, sample_weight=weights)
-        preds_weighted = model.predict(n=1)
-        np.testing.assert_array_almost_equal(
-            preds_weighted.values(), np.array([[1000.5]])
-        )
-
-        # make sure that without weights we get different results
-        model = NaiveEnsembleModel([
-            LinearRegressionModel(lags=[-1]),
-            NaiveSeasonal(K=1),
-        ])
-        model.fit(series)
-        preds = model.predict(n=1)
-        with pytest.raises(AssertionError):
-            np.testing.assert_array_almost_equal(
-                preds_weighted.values(), preds.values()
-            )
-
     @pytest.mark.parametrize("model_cls", [NaiveEnsembleModel, RegressionEnsembleModel])
-    def test_sample_weight_mixed_models2(self, model_cls):
+    def test_sample_weight_mixed_models(self, model_cls):
         """Check sample weights for ensemble models with mixed forecasting models.
 
         NaiveEnsembleModel
