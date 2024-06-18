@@ -2847,6 +2847,13 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         """
         return True
 
+    @property
+    def supports_sample_weight(self) -> bool:
+        """
+        Whether model supports sample weight for training.
+        """
+        return True
+
     def _sanity_check_predict_likelihood_parameters(
         self, n: int, output_chunk_length: Union[int, None], num_samples: int
     ):

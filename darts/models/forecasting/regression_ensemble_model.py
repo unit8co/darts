@@ -183,7 +183,6 @@ class RegressionEnsembleModel(EnsembleModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         For GlobalForecastingModel, when predicting n > output_chunk_length, `historical_forecasts()` generally
@@ -221,7 +220,6 @@ class RegressionEnsembleModel(EnsembleModel):
                 future_covariates=(
                     future_covariates if model.supports_future_covariates else None
                 ),
-                sample_weight=sample_weight if model.supports_sample_weight else None,
                 forecast_horizon=model.output_chunk_length,
                 stride=model.output_chunk_length,
                 num_samples=(
@@ -416,7 +414,6 @@ class RegressionEnsembleModel(EnsembleModel):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
                 num_samples=self.train_num_samples,
-                sample_weight=sample_weight,
             )
 
         # train the regression model on the individual models' predictions
@@ -514,10 +511,3 @@ class RegressionEnsembleModel(EnsembleModel):
         model is probabilistic (ensembling layer)
         """
         return self.regression_model.supports_probabilistic_prediction
-
-    @property
-    def supports_sample_weight(self) -> bool:
-        """
-        Whether model supports sample weight for training.
-        """
-        return True

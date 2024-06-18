@@ -2130,13 +2130,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @property
-    def supports_sample_weight(self) -> bool:
-        """
-        Whether model supports sample weight for training.
-        """
-        return True
-
-    @property
     def _requires_training(self) -> bool:
         """Whether the model should be trained when calling a `fit*` method."""
         return True
