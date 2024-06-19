@@ -5,6 +5,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
+- Added hyperparameters controlling the hidden layer sizes for the feature encoders in `TiDEModel`. [#2408](https://github.com/unit8co/darts/issues/2408)
+
 [Full Changelog](https://github.com/unit8co/darts/compare/0.29.0...master)
 
 ### For users of the library:
