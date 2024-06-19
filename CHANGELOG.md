@@ -19,7 +19,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [0.30.0](https://github.com/unit8co/darts/tree/0.30.0) (2024-06-07)
 ### For users of the library:
 **Improved**
-- 🚀🚀 Improvements to `GlobalForecastingModel` (regression-, ensemble-, and neural network models) : [#2404](https://github.com/unit8co/darts/pull/2404), [#2410](https://github.com/unit8co/darts/pull/2410) and [#2417](https://github.com/unit8co/darts/pull/2417) by [Anton Ragot](https://github.com/AntonRagot) and [Dennis Bader](https://github.com/dennisbader).
+- 🚀🚀 Improvements to `GlobalForecastingModel` (regression-, ensemble-, and neural network models) : [#2404](https://github.com/unit8co/darts/pull/2404), [#2410](https://github.com/unit8co/darts/pull/2410), [#2417](https://github.com/unit8co/darts/pull/2417) and [#2418](https://github.com/unit8co/darts/pull/2418) by [Anton Ragot](https://github.com/AntonRagot) and [Dennis Bader](https://github.com/dennisbader).
   - Added parameters `sample_weight` and `val_sample_weight` to `fit()`, `historical_forecasts()`, `backtest()`, `residuals`, and `gridsearch()` to apply weights to each observation, label (each step in the output chunk), and target component in the training and evaluation set. Supported by both deterministic and probabilistic models. The sample weight can either be `TimeSeries` themselves or built-in weight generators "linear" and "exponential" decay. In case of a `TimeSeries` it is handled identically as the covariates (e.g. pass multiple weight series with multiple target series, relevant time frame extraction is handled automatically for you, ...).
 - 🚀🚀 Improvements to the Anomaly Detection Module through major refactor. The refactor includes major performance optimization for the majority of processes and improvements to the API, consistency, reliability, and the documentation. Some of these necessary changes come at the cost of breaking changes : [#1477](https://github.com/unit8co/darts/pull/1477) by [Dennis Bader](https://github.com/dennisbader), [Samuele Giuliano Piazzetta](https://github.com/piaz97), [Antoine Madrona](https://github.com/madtoinou), [Julien Herzen](https://github.com/hrzn), [Julien Adda](https://github.com/julien12234).
   - Added an example notebook that showcases how to use Darts for Time Series Anomaly Detection
@@ -56,6 +56,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - New method `with_times_and_values()`, which returns a new series with a new time index and new values but with identical columns and metadata as the series called from (static covariates, hierarchy).
   - New method `slice_intersect_times()`, which returns the sliced time index of a series, where the index has been intersected with another series.
   - Method `with_values()` now also acts on array-like `values` rather than only on numpy arrays.
+- Improvements to quick start notebook : [#2418](https://github.com/unit8co/darts/pull/2418) by [Dennis Bader](https://github.com/dennisbader).
+  - Added examples for using sample weights, forecast start shifting, direct likelihood parameter predictions.
+  - Enhanced examples for historical forecasts, backtest and residuals.
 
 **Fixed**
 - Fixed a bug when using a `RegressionModel` (that supports validation series) with a validation set: encoders, static covariates, and component-specific lags are now correctly applied to the validation set. [#2383](https://github.com/unit8co/darts/pull/2383) by [Dennis Bader](https://github.com/dennisbader).
