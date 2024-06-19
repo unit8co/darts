@@ -14,8 +14,10 @@ from darts.models import (
     ARIMA,
     FFT,
     ExponentialSmoothing,
+    LinearRegressionModel,
     NaiveDrift,
     NaiveSeasonal,
+    RandomForest,
     Theta,
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
@@ -29,12 +31,7 @@ logger = get_logger(__name__)
 
 
 if TORCH_AVAILABLE:
-    from darts.models import (
-        BlockRNNModel,
-        LinearRegressionModel,
-        RandomForest,
-        TCNModel,
-    )
+    from darts.models import BlockRNNModel, TCNModel
 
 
 def get_dummy_series(
