@@ -2821,5 +2821,5 @@ class TestCreateLaggedTrainingData:
             )
         assert str(err.value) == (
             "The number of components in `sample_weight` must either be `1` or "
-            "match the number of target series components `1`"
+            "match the number of target series components `1`."
         )
