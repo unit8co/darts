@@ -1657,8 +1657,8 @@ class TestDataset:
             )
         assert (
             str(err.value)
-            == "The provided sequence of target series must have the same "
-            "length as the provided sequence of sample weights."
+            == "The provided sequence of target `series` must have the same "
+            "length as the provided sequence of `sample_weight`."
         )
 
         # too many weight components

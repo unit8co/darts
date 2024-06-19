@@ -326,6 +326,7 @@ class NaiveEnsembleModel(EnsembleModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
         super().fit(
             series=series,
@@ -342,8 +343,10 @@ class NaiveEnsembleModel(EnsembleModel):
                     future_covariates=(
                         future_covariates if model.supports_future_covariates else None
                     ),
+                    sample_weight=sample_weight
+                    if model.supports_sample_weight
+                    else None,
                 )
-
         return self
 
     def ensemble(

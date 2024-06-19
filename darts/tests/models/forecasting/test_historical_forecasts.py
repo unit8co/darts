@@ -379,13 +379,14 @@ class TestHistoricalforecast:
     ts_covs = tg.gaussian_timeseries(length=30, start=start_ts)
 
     @staticmethod
-    def create_model(ocl, use_ll=True, model_type="regression"):
+    def create_model(ocl, use_ll=True, model_type="regression", n_epochs=1, **kwargs):
         if model_type == "regression":
             return LinearRegressionModel(
                 lags=3,
                 likelihood="quantile" if use_ll else None,
                 quantiles=[0.05, 0.4, 0.5, 0.6, 0.95] if use_ll else None,
                 output_chunk_length=ocl,
+                **kwargs,
             )
         else:  # model_type == "torch"
             if not TORCH_AVAILABLE:
@@ -395,10 +396,12 @@ class TestHistoricalforecast:
                 likelihood=(
                     QuantileRegression([0.05, 0.4, 0.5, 0.6, 0.95]) if use_ll else None
                 ),
+                loss_fn=torch.nn.MSELoss() if not use_ll else None,
                 output_chunk_length=ocl,
-                n_epochs=1,
+                n_epochs=n_epochs,
                 random_state=42,
                 **tfm_kwargs,
+                **kwargs,
             )
 
     @pytest.mark.parametrize(
@@ -2441,3 +2444,71 @@ class TestHistoricalforecast:
         assert str(msg.value).startswith(
             "The following parameters cannot be passed in `predict_kwargs`"
         )
+
+    @pytest.mark.parametrize(
+        "config",
+        product(["regression", "torch"], [True, False], [True, False]),
+    )
+    def test_sample_weight(self, config):
+        """check that passing sample weights work and that it yields different results than without sample weights."""
+        model_type, manual_weight, multi_series = config
+        ts = self.ts_pass_train
+        if manual_weight:
+            sample_weight = np.linspace(0, 1, len(ts))
+            sample_weight = ts.with_values(np.expand_dims(sample_weight, -1))
+        else:
+            sample_weight = "linear"
+
+        if multi_series:
+            ts = [ts] * 2
+            sample_weight = [sample_weight] * 2 if manual_weight else sample_weight
+
+        model_kwargs = (
+            {"n_epochs": 3, "optimizer_kwargs": {"lr": 0.1}}
+            if model_type == "torch"
+            else {}
+        )
+        model = self.create_model(
+            1, use_ll=False, model_type=model_type, **model_kwargs
+        )
+
+        # torch not available
+        if model is None:
+            return
+
+        start_kwargs = {"start": -1, "start_format": "position"}
+        hfc_non_weighted = model.historical_forecasts(series=ts, **start_kwargs)
+
+        model = self.create_model(1, use_ll=False, model_type=model_type)
+        hfc_weighted = model.historical_forecasts(
+            series=ts, sample_weight=sample_weight, **start_kwargs
+        )
+
+        if not multi_series:
+            hfc_weighted = [hfc_weighted]
+            hfc_non_weighted = [hfc_non_weighted]
+
+        # check that the predictions are different
+        for hfc_nw, hfc_w in zip(hfc_non_weighted, hfc_weighted):
+            with pytest.raises(AssertionError):
+                np.testing.assert_array_almost_equal(
+                    hfc_w.all_values(), hfc_nw.all_values()
+                )
+
+        if manual_weight:
+            if multi_series:
+                sample_weight[1] = sample_weight[1][1:]
+                invalid_idx = 1
+            else:
+                sample_weight = sample_weight[:-1]
+                invalid_idx = 0
+
+            with pytest.raises(ValueError) as err:
+                _ = model.historical_forecasts(
+                    series=ts, sample_weight=sample_weight, **start_kwargs
+                )
+            assert (
+                str(err.value)
+                == f"`sample_weight` at series index {invalid_idx} must contain "
+                f"at least all times of the corresponding target `series`."
+            )
