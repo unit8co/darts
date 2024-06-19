@@ -46,6 +46,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - 🔴 Removed parameter `num_loader_workers` from `fit*()`, `predict*()`, `find_lr()`. You can now set the parameter through the `dataloader_kwargs` dict.
 - Improvements to `DataTransformers`:
   - Significant speed up when using `fit`, `fit_transform`, `transform`, and `inverse_transform` with a large number of series. The component masking logic was moved into the parallelized transform methods. [#2401](https://github.com/unit8co/darts/pull/2401) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to quick start notebook : [#2418](https://github.com/unit8co/darts/pull/2418) by [Dennis Bader](https://github.com/dennisbader).
+  - Added examples for using sample weights, forecast start shifting, direct likelihood parameter predictions.
+  - Enhanced examples for historical forecasts, backtest and residuals.
 
 **Fixed**
 - Fixed a bug when using a `RegressionModel` (that supports validation series) with a validation set, and encoders and/or component-specific lags, where the encodings and component specific lags were not added to the set. [#2383](https://github.com/unit8co/darts/pull/2383) by [Dennis Bader](https://github.com/dennisbader).
