@@ -16,14 +16,14 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
-## [0.30.0](https://github.com/unit8co/darts/tree/0.30.0) (2024-06-07)
+## [0.30.0](https://github.com/unit8co/darts/tree/0.30.0) (2024-06-19)
 ### For users of the library:
 **Improved**
-- 🚀🚀 Improvements to `GlobalForecastingModel` (regression-, ensemble-, and neural network models) : [#2404](https://github.com/unit8co/darts/pull/2404), [#2410](https://github.com/unit8co/darts/pull/2410), [#2417](https://github.com/unit8co/darts/pull/2417) and [#2418](https://github.com/unit8co/darts/pull/2418) by [Anton Ragot](https://github.com/AntonRagot) and [Dennis Bader](https://github.com/dennisbader).
-  - Added parameters `sample_weight` and `val_sample_weight` to `fit()`, `historical_forecasts()`, `backtest()`, `residuals`, and `gridsearch()` to apply weights to each observation, label (each step in the output chunk), and target component in the training and evaluation set. Supported by both deterministic and probabilistic models. The sample weight can either be `TimeSeries` themselves or built-in weight generators "linear" and "exponential" decay. In case of a `TimeSeries` it is handled identically as the covariates (e.g. pass multiple weight series with multiple target series, relevant time frame extraction is handled automatically for you, ...).
+- 🚀🚀 All `GlobalForecastingModel` now support being trained with sample weights (regression-, ensemble-, and neural network models) : [#2404](https://github.com/unit8co/darts/pull/2404), [#2410](https://github.com/unit8co/darts/pull/2410), [#2417](https://github.com/unit8co/darts/pull/2417) and [#2418](https://github.com/unit8co/darts/pull/2418) by [Anton Ragot](https://github.com/AntonRagot) and [Dennis Bader](https://github.com/dennisbader).
+  - Added parameters `sample_weight` and `val_sample_weight` to `fit()`, `historical_forecasts()`, `backtest()`, `residuals`, and `gridsearch()` to apply weights to each observation, label (each step in the output chunk), and target component in the training and evaluation set. Supported by both deterministic and probabilistic models. The sample weight can either be `TimeSeries` themselves or built-in weight generators "linear" and "exponential" decay. In case of a `TimeSeries` it is handled identically as the covariates (e.g. pass multiple weight series with multiple target series, relevant time frame extraction is handled automatically for you, ...). You can find an example [here](https://unit8co.github.io/darts/quickstart/00-quickstart.html#Sample-Weights).
 - 🚀🚀 Improvements to the Anomaly Detection Module through major refactor. The refactor includes major performance optimization for the majority of processes and improvements to the API, consistency, reliability, and the documentation. Some of these necessary changes come at the cost of breaking changes : [#1477](https://github.com/unit8co/darts/pull/1477) by [Dennis Bader](https://github.com/dennisbader), [Samuele Giuliano Piazzetta](https://github.com/piaz97), [Antoine Madrona](https://github.com/madtoinou), [Julien Herzen](https://github.com/hrzn), [Julien Adda](https://github.com/julien12234).
-  - Added an example notebook that showcases how to use Darts for Time Series Anomaly Detection
-  - Added a new dataset for anomaly detection with the number of taxi passengers in New York from the year 2014 to 2015.
+  - Added an [example notebook](https://unit8co.github.io/darts/examples/22-anomaly-detection-examples.html) that showcases how to use Darts for Time Series Anomaly Detection.
+  - Added a new dataset `TaxiNewYorkDataset` for anomaly detection with the number of taxi passengers in New York from the years 2014 and 2015.
   - `FittableWindowScorer` (KMeans, PyOD, and Wasserstein Scorers) now accept any of darts ["per-time" step metrics](https://unit8co.github.io/darts/generated_api/darts.metrics.html) as difference function `diff_fn`.
   - `ForecastingAnomalyModel` is now much faster in generating forecasts (input for the scorers) thanks to optimized historical forecasts. We also added more control over the historical forecasts generation through additional parameters in all model methods.
   - 🔴 Breaking changes:
@@ -66,13 +66,15 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug when calling `predict()` with a `MixedCovariatesTorchModel` (e.g. TiDE, N/DLinear, ...), `n<output_chunk_length` and a list of series with length `len(series) < n`, where the predictions did not return the correct number of series. [#2374](https://github.com/unit8co/darts/pull/2374) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when using a `TorchForecastingModel` with stateful torch metrics, where the metrics were incorrectly computed as non-stateful. [#2391](https://github.com/unit8co/darts/pull/2391) by [Tim Rosenflanz](https://github.com/tRosenflanz)
 
+**Dependencies**
+- We set an upper version cap on `numpy<2.0.0` until all dependencies have migrated. [#2413](https://github.com/unit8co/darts/pull/2413) by [Dennis Bader](https://github.com/dennisbader).
+
 ### For developers of the library:
 **Dependencies**
 - Improvements to linting via updated pre-commit configurations: [#2324](https://github.com/unit8co/darts/pull/2324) by [Jirka Borovec](https://github.com/borda).
 - Improvements to unified linting by switch `isort` to Ruff's rule I. [#2339](https://github.com/unit8co/darts/pull/2339) by [Jirka Borovec](https://github.com/borda)
 - Improvements to unified linting by switch `pyupgrade` to Ruff's rule UP. [#2340](https://github.com/unit8co/darts/pull/2340) by [Jirka Borovec](https://github.com/borda)
 - Improvements to CI, running lint locally via pre-commit instead of particular tools. [#2327](https://github.com/unit8co/darts/pull/2327) by [Jirka Borovec](https://github.com/borda)
-- We set an upper version cap on `numpy<2.0.0` until all dependencies have migrated. [#2413](https://github.com/unit8co/darts/pull/2413) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.29.0](https://github.com/unit8co/darts/tree/0.29.0) (2024-04-17)
 ### For users of the library:
