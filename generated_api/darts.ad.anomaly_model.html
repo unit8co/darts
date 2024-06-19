@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -856,23 +857,20 @@
                 
   <span class="target" id="module-darts.ad.anomaly_model"></span><section id="anomaly-models">
 <h1>Anomaly Models<a class="headerlink" href="#anomaly-models" title="Permalink to this heading">¶</a></h1>
-<p>Anomaly models make it possible to use any of Darts’ forecasting
-or filtering models to detect anomalies in time series.</p>
-<p>The basic idea is to compare the predictions produced by a fitted model (the forecasts
-or the filtered series) with the actual observations, and to emit an anomaly score
-describing how “different” the observations are from the predictions.</p>
-<p>An anomaly model takes as parameters a model and one or multiple scorer objects.
-The key method is <code class="docutils literal notranslate"><span class="pre">score()</span></code>, which takes as input one (or multiple)
-time series and produces one or multiple anomaly scores time series, for each provided series.</p>
-<p><code class="xref py py-class docutils literal notranslate"><span class="pre">ForecastingAnomalyModel</span></code> works with Darts forecasting models, and <code class="xref py py-class docutils literal notranslate"><span class="pre">FilteringAnomalyModel</span></code>
-works with Darts filtering models.
-The anomaly models can also be fitted by calling <code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code>, which trains the scorer(s)
-(in case some are trainable), and potentially the model as well.</p>
-<p>The function <code class="xref py py-func docutils literal notranslate"><span class="pre">eval_accuracy()</span></code> is the same as <code class="xref py py-func docutils literal notranslate"><span class="pre">score()</span></code>, but outputs the score of an agnostic
-threshold metric (“AUC-ROC” or “AUC-PR”), between the predicted anomaly score time series, and some known binary
-ground-truth time series indicating the presence of actual anomalies.
-Finally, the function <code class="xref py py-func docutils literal notranslate"><span class="pre">show_anomalies()</span></code> can also be used to visualize the predictions
-(in-sample predictions and anomaly scores) of the anomaly model.</p>
+<p>Anomaly models make it possible to use any of Darts’ forecasting or filtering models to detect anomalies in time series.</p>
+<p>The basic idea is to compare the predictions produced by a fitted model (the forecasts or the filtered series) with the
+actual observations, and to emit an anomaly score describing how “different” the observations are from the predictions.</p>
+<p>An anomaly model takes as parameters a model and one or multiple scorer objects. The key method is <cite>score()</cite>, which
+takes as input one (or multiple) time series and produces one or multiple anomaly scores time series, for each provided
+series.</p>
+<p><a class="reference internal" href="darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel" title="darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">ForecastingAnomalyModel</span></code></a> works with Darts forecasting models, and
+<a class="reference internal" href="darts.ad.anomaly_model.filtering_am.html#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">FilteringAnomalyModel</span></code></a> works with Darts filtering models. The anomaly
+models can also be fitted by calling <code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code>, which trains the scorer(s) (in case some are trainable), and
+potentially the model as well.</p>
+<p>The function <code class="xref py py-func docutils literal notranslate"><span class="pre">eval_metric()</span></code> is the same as <code class="xref py py-func docutils literal notranslate"><span class="pre">score()</span></code>, but outputs the score of an agnostic threshold
+metric (“AUC-ROC” or “AUC-PR”), between the predicted anomaly score time series, and some known binary ground-truth
+time series indicating the presence of actual anomalies. Finally, the function <code class="xref py py-func docutils literal notranslate"><span class="pre">show_anomalies()</span></code> can also be
+used to visualize the predictions (in-sample predictions and anomaly scores) of the anomaly model.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="darts.ad.anomaly_model.filtering_am.html">Filtering Anomaly Model</a></li>

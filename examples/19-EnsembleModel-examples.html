@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -303,6 +304,13 @@
  <li class="toctree-l1">
   <a class="reference internal" href="11-GP-filter-examples.html">
    Filtering and predicting using the Gaussian Process filter
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="22-anomaly-detection-examples.html">
+   Anomaly Detection Darts Module
   </a>
  </li>
 </ul>
@@ -1305,7 +1313,7 @@ TCNModel(kernel_size=5, num_filters=3, num_layers=None, dilation_base=2, weight_
 <img alt="../_images/examples_19-EnsembleModel-examples_31_0.png" src="../_images/examples_19-EnsembleModel-examples_31_0.png" />
 </div>
 </div>
-<p>Now that we have a good idea of the individual performance of each of these models, we can ensemble them. We must make sure to set <code class="docutils literal notranslate"><span class="pre">retrain_forecasting_models=False</span></code> or the ensemble will need to be fitted before being able to call <code class="docutils literal notranslate"><span class="pre">predict()</span></code>.</p>
+<p>Now that we have a good idea of the individual performance of each of these models, we can ensemble them. We must make sure to set <code class="docutils literal notranslate"><span class="pre">train_forecasting_models=False</span></code> or the ensemble will need to be fitted before being able to call <code class="docutils literal notranslate"><span class="pre">predict()</span></code>.</p>
 <p><strong>Advice</strong> : Use the <code class="docutils literal notranslate"><span class="pre">save()</span></code> method to export your model and keep a copy of your weights.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:

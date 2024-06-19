@@ -34,6 +34,7 @@
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -197,9 +198,8 @@
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
-
-<span class="kn">from</span> <span class="nn">.missing_values</span> <span class="kn">import</span> <span class="n">fill_missing_values</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">ModelMode</span><span class="p">,</span> <span class="n">SeasonalityMode</span>
+<span class="kn">from</span> <span class="nn">darts.utils.missing_values</span> <span class="kn">import</span> <span class="n">fill_missing_values</span>
+<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">ModelMode</span><span class="p">,</span> <span class="n">SeasonalityMode</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -363,7 +363,6 @@
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;naive&quot;</span><span class="p">:</span>
-
         <span class="n">decomp</span> <span class="o">=</span> <span class="n">seasonal_decompose</span><span class="p">(</span>
             <span class="n">ts</span><span class="o">.</span><span class="n">pd_series</span><span class="p">(),</span> <span class="n">period</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">extrapolate_trend</span><span class="o">=</span><span class="s2">&quot;freq&quot;</span>
         <span class="p">)</span>
@@ -452,9 +451,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">raise_log</span><span class="p">(</span>
             <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">model</span>
-                <span class="p">)</span>
+                <span class="sa">f</span><span class="s2">&quot;Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: </span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">new_ts</span></div>
@@ -795,9 +792,9 @@
 <span class="sd">        The confidence interval to display.</span>
 <span class="sd">    bartlett_confint</span>
 <span class="sd">        The boolean value indicating whether the confidence interval should be</span>
-<span class="sd">        calculated using Bartlett&#39;s formula. If set to True, the confidence interval</span>
+<span class="sd">        calculated using Bartlett&#39;s formula. If set to `True`, the confidence interval</span>
 <span class="sd">        can be used in the model identification stage for fitting ARIMA models.</span>
-<span class="sd">        If set to False, the confidence interval can be used to test for randomness</span>
+<span class="sd">        If set to `False`, the confidence interval can be used to test for randomness</span>
 <span class="sd">        (i.e. there is no time dependence in the data) of the data.</span>
 <span class="sd">    fig_size</span>
 <span class="sd">        The size of the figure to be displayed.</span>
@@ -944,7 +941,9 @@
             <span class="n">color</span><span class="o">=</span><span class="p">(</span>
                 <span class="s2">&quot;#b512b8&quot;</span>
                 <span class="k">if</span> <span class="n">m</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">==</span> <span class="n">m</span>
-                <span class="k">else</span> <span class="s2">&quot;black&quot;</span> <span class="k">if</span> <span class="n">default_formatting</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="s2">&quot;black&quot;</span>
+                <span class="k">if</span> <span class="n">default_formatting</span>
+                <span class="k">else</span> <span class="kc">None</span>
             <span class="p">),</span>
             <span class="n">lw</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">m</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">==</span> <span class="n">m</span> <span class="k">else</span> <span class="mf">0.5</span><span class="p">),</span>
         <span class="p">)</span>
@@ -1110,7 +1109,7 @@
 <span class="sd">        Optionally, either an integer value for the number of bins to be displayed</span>
 <span class="sd">        or an array-like of floats determining the position of bins.</span>
 <span class="sd">    density</span>
-<span class="sd">        bool, if `density` is set to True, the bin counts will be converted to probability density</span>
+<span class="sd">        bool, if `density` is set to `True`, the bin counts will be converted to probability density</span>
 <span class="sd">    title</span>
 <span class="sd">        The title of the figure to be displayed</span>
 <span class="sd">    fig_size</span>
@@ -1183,7 +1182,7 @@
 <span class="sd">    This function takes a univariate TimeSeries instance of residuals and plots their values,</span>
 <span class="sd">    their distribution and their ACF.</span>
 <span class="sd">    Please note that if the residual TimeSeries instance contains NaN values, the plots</span>
-<span class="sd">    might be displayed incorrectly. If `fill_nan` is set to True, the missing values will</span>
+<span class="sd">    might be displayed incorrectly. If `fill_nan` is set to `True`, the missing values will</span>
 <span class="sd">    be interpolated.</span>
 
 <span class="sd">    Parameters</span>
@@ -1215,11 +1214,13 @@
     <span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Residual values&quot;</span><span class="p">)</span>
 
     <span class="c1"># plot histogram and distribution</span>
-    <span class="n">res_mean</span><span class="p">,</span> <span class="n">res_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()),</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span>
-        <span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()</span>
+    <span class="n">res_mean</span><span class="p">,</span> <span class="n">res_std</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()),</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()),</span>
     <span class="p">)</span>
-    <span class="n">res_min</span><span class="p">,</span> <span class="n">res_max</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()),</span> <span class="nb">max</span><span class="p">(</span>
-        <span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()</span>
+    <span class="n">res_min</span><span class="p">,</span> <span class="n">res_max</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">min</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()),</span>
+        <span class="nb">max</span><span class="p">(</span><span class="n">residuals</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()),</span>
     <span class="p">)</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">res_min</span><span class="p">,</span> <span class="n">res_max</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
     <span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="mi">1</span><span class="p">:])</span>

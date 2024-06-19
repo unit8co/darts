@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -175,9 +176,6 @@
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Ensemble scikit-learn aggregator</span>
 <span class="sd">--------------------------------</span>
-
-<span class="sd">Aggregator wrapped around the Ensemble model of sklearn.</span>
-<span class="sd">`sklearn https://scikit-learn.org/stable/modules/ensemble.html`_.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span>
@@ -191,8 +189,17 @@
 
 
 <div class="viewcode-block" id="EnsembleSklearnAggregator"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.ensemble_sklearn_aggregator.html#darts.ad.aggregators.ensemble_sklearn_aggregator.EnsembleSklearnAggregator">[docs]</a><span class="k">class</span> <span class="nc">EnsembleSklearnAggregator</span><span class="p">(</span><span class="n">FittableAggregator</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">BaseEnsemble</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensemble scikit-learn aggregator</span>
 
+<span class="sd">        Aggregator wrapped around the sklearn ensemble model `sklearn ensemble model</span>
+<span class="sd">        &lt;https://scikit-learn.org/stable/modules/ensemble.html&gt;`_.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model</span>
+<span class="sd">            The sklearn ensemble model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">BaseEnsemble</span><span class="p">),</span>
             <span class="sa">f</span><span class="s2">&quot;Scorer is expecting a model of type BaseEnsemble (from sklearn ensemble), </span><span class="se">\</span>
@@ -202,36 +209,25 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;EnsembleSklearnAggregator: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_fit_core</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">actual_anomalies</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-    <span class="p">):</span>
-
-        <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series</span><span class="p">],</span>
-            <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="p">)</span>
-
+    <span class="k">def</span> <span class="nf">_fit_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">anomalies</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]):</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">))</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">actual_anomalies</span><span class="p">],</span>
+            <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">anomalies</span><span class="p">],</span>
             <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
         <span class="p">)</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span>
 
     <span class="k">def</span> <span class="nf">_predict_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
-
+        <span class="c1"># assume that parallelization occurs at sklearn model level</span>
         <span class="k">return</span> <span class="p">[</span>
             <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
                 <span class="n">s</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">((</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)),</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series</span>
         <span class="p">]</span></div>

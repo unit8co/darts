@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -183,20 +184,39 @@
 <span class="c1">#     - decision tree</span>
 <span class="c1"># - create show_all_combined (info about correlation, and from what path did</span>
 <span class="c1">#   the anomaly alarm came from)</span>
-
-<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Self</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Self</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.ad.utils</span> <span class="kn">import</span> <span class="n">_to_list</span><span class="p">,</span> <span class="n">eval_accuracy_from_binary_prediction</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.ad.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_assert_fit_called</span><span class="p">,</span>
+    <span class="n">_check_input</span><span class="p">,</span>
+    <span class="n">eval_metric_from_binary_prediction</span><span class="p">,</span>
+    <span class="n">series2seq</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="Aggregator"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.Aggregator">[docs]</a><span class="k">class</span> <span class="nc">Aggregator</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">pass</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for Aggregators.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -204,13 +224,27 @@
         <span class="k">pass</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_predict_core</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;returns the aggregated results&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">_predict_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Aggregates the sequence of multivariate binary series given as</span>
+<span class="sd">        input into a sequence of univariate binary series. assuming the input is</span>
+<span class="sd">        in the correct shape.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        series</span>
+<span class="sd">            The sequence of multivariate binary series to aggregate</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TimeSeries</span>
+<span class="sd">            Sequence of aggregated results</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
-<div class="viewcode-block" id="Aggregator.predict"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.Aggregator.predict">[docs]</a>    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
+<div class="viewcode-block" id="Aggregator.predict"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.Aggregator.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;series&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Aggregates the (sequence of) multivariate binary series given as</span>
 <span class="sd">        input into a (sequence of) univariate binary series.</span>
@@ -218,260 +252,143 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        series</span>
-<span class="sd">            The (sequence of) multivariate binary series to aggregate</span>
+<span class="sd">            The (sequence of) multivariate binary series to aggregate.</span>
+<span class="sd">        name</span>
+<span class="sd">            The name of `series`.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        TimeSeries</span>
-<span class="sd">            (Sequence of) aggregated results</span>
+<span class="sd">            (Sequence of) aggregated results.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div>
-
-    <span class="k">def</span> <span class="nf">_check_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Checks for input if:</span>
-<span class="sd">            - it is a (sequence of) multivariate series (width&gt;1)</span>
-<span class="sd">            - (sequence of) series must be:</span>
-<span class="sd">                * a deterministic TimeSeries</span>
-<span class="sd">                * binary (only values equal to 0 or 1)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">list_series</span> <span class="o">=</span> <span class="n">_to_list</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_series</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `series` must be of type TimeSeries.&quot;</span><span class="p">,</span>
+        <span class="n">called_with_single_series</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">_check_input</span><span class="p">(</span>
+            <span class="n">series</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">width_expected</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span><span class="p">,</span>
+            <span class="n">check_deterministic</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">check_binary</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">check_multivariate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="n">pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_core</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pred</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">called_with_single_series</span> <span class="k">else</span> <span class="n">pred</span></div>
 
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">width</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_series</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `series` must be multivariate (width&gt;1).&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">is_deterministic</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_series</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `series` must be deterministic (number of samples=1).&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span>
-                        <span class="n">s</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">s</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
-                    <span class="p">)</span>
-                    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_series</span>
-                <span class="p">]</span>
-            <span class="p">),</span>
-            <span class="s2">&quot;all series in `series` must be binary (only 0 and 1 values).&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">list_series</span>
-
-<div class="viewcode-block" id="Aggregator.eval_accuracy"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.Aggregator.eval_accuracy">[docs]</a>    <span class="k">def</span> <span class="nf">eval_accuracy</span><span class="p">(</span>
+<div class="viewcode-block" id="Aggregator.eval_metric"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.Aggregator.eval_metric">[docs]</a>    <span class="k">def</span> <span class="nf">eval_metric</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">actual_anomalies</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+        <span class="n">anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;recall&quot;</span><span class="p">,</span>
+        <span class="n">metric</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;recall&quot;</span><span class="p">,</span> <span class="s2">&quot;precision&quot;</span><span class="p">,</span> <span class="s2">&quot;f1&quot;</span><span class="p">,</span> <span class="s2">&quot;accuracy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;recall&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Aggregates the (sequence of) multivariate series given as input into one (sequence of)</span>
-<span class="sd">        series and evaluates the results against true anomalies.</span>
+<span class="sd">        series and evaluates the results against the ground truth anomaly labels.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        actual_anomalies</span>
-<span class="sd">            The (sequence of) ground truth of the anomalies (1 if it is an anomaly and 0 if not)</span>
+<span class="sd">        anomalies</span>
+<span class="sd">            The (sequence of) binary ground truth anomaly labels (1 if it is an anomaly and 0 if not).</span>
 <span class="sd">        series</span>
-<span class="sd">            The (sequence of) multivariate binary series to aggregate</span>
+<span class="sd">            The (sequence of) predicted multivariate binary series to aggregate.</span>
 <span class="sd">        window</span>
 <span class="sd">            (Sequence of) integer value indicating the number of past samples each point</span>
 <span class="sd">            represents in the (sequence of) series. The parameter will be used by the</span>
-<span class="sd">            function ``_window_adjustment_anomalies()`` in darts.ad.utils to transform</span>
-<span class="sd">            actual_anomalies.</span>
+<span class="sd">            function `_window_adjustment_anomalies()` in darts.ad.utils to transform</span>
+<span class="sd">            anomalies.</span>
 <span class="sd">        metric</span>
-<span class="sd">            Metric function to use. Must be one of &quot;recall&quot;, &quot;precision&quot;,</span>
-<span class="sd">            &quot;f1&quot;, and &quot;accuracy&quot;.</span>
-<span class="sd">            Default: &quot;recall&quot;</span>
+<span class="sd">            The name of the metric function to use. Must be one of &quot;recall&quot;, &quot;precision&quot;, &quot;f1&quot;, and &quot;accuracy&quot;.</span>
+<span class="sd">            Default: &quot;recall&quot;.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Union[float, Sequence[float]]</span>
-<span class="sd">            (Sequence of) score for the (sequence of) series</span>
+<span class="sd">            (Sequence of) score for the (sequence of) series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">list_actual_anomalies</span> <span class="o">=</span> <span class="n">_to_list</span><span class="p">(</span><span class="n">actual_anomalies</span><span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_actual_anomalies</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `actual_anomalies` must be of type TimeSeries.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">is_deterministic</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_actual_anomalies</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `actual_anomalies` must be deterministic (number of samples=1).&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_actual_anomalies</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `actual_anomalies` must be univariate (width=1).&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">len</span><span class="p">(</span><span class="n">list_actual_anomalies</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">_to_list</span><span class="p">(</span><span class="n">series</span><span class="p">)),</span>
-            <span class="s2">&quot;`actual_anomalies` and `series` must contain the same number of series.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">eval_accuracy_from_binary_prediction</span><span class="p">(</span>
-            <span class="n">list_actual_anomalies</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="n">window</span><span class="p">,</span> <span class="n">metric</span>
+        <span class="n">pred_anomalies</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">eval_metric_from_binary_prediction</span><span class="p">(</span>
+            <span class="n">anomalies</span><span class="o">=</span><span class="n">anomalies</span><span class="p">,</span>
+            <span class="n">pred_anomalies</span><span class="o">=</span><span class="n">pred_anomalies</span><span class="p">,</span>
+            <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span>
+            <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
         <span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="NonFittableAggregator"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.NonFittableAggregator">[docs]</a><span class="k">class</span> <span class="nc">NonFittableAggregator</span><span class="p">(</span><span class="n">Aggregator</span><span class="p">):</span>
-    <span class="s2">&quot;Base class of Aggregators that do not need training.&quot;</span>
+<div class="viewcode-block" id="FittableAggregator"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.FittableAggregator">[docs]</a><span class="k">class</span> <span class="nc">FittableAggregator</span><span class="p">(</span><span class="n">Aggregator</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for Aggregators that require training.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">False</span>
 
-        <span class="c1"># indicates if the Aggregator is trainable or not</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">trainable</span> <span class="o">=</span> <span class="kc">False</span>
-
-<div class="viewcode-block" id="NonFittableAggregator.predict"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.NonFittableAggregator.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Aggregates the (sequence of) multivariate binary series given as</span>
-<span class="sd">        input into a (sequence of) univariate binary series.</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_fit_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">anomalies</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fits the aggregator, assuming the input is in the correct shape.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
+<span class="sd">        anomalies</span>
+<span class="sd">            The (sequence of) binary ground truth anomaly labels (1 if it is an anomaly and 0 if not).</span>
 <span class="sd">        series</span>
-<span class="sd">            The (sequence of) multivariate binary series to aggregate</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        TimeSeries</span>
-<span class="sd">            (Sequence of) aggregated results</span>
+<span class="sd">            The (sequence of) multivariate binary anomalies (predicted labels) to aggregate.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">list_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_input</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_core</span><span class="p">(</span><span class="n">list_series</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_core</span><span class="p">(</span><span class="n">list_series</span><span class="p">)</span></div></div>
-
-
-<div class="viewcode-block" id="FittableAggregator"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.FittableAggregator">[docs]</a><span class="k">class</span> <span class="nc">FittableAggregator</span><span class="p">(</span><span class="n">Aggregator</span><span class="p">):</span>
-    <span class="s2">&quot;Base class of Aggregators that do need training.&quot;</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-
-        <span class="c1"># indicates if the Aggregator is trainable or not</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">trainable</span> <span class="o">=</span> <span class="kc">True</span>
-
-        <span class="c1"># indicates if the Aggregator has been trained yet</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">False</span>
-
-    <span class="k">def</span> <span class="nf">_assert_fit_called</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the Aggregator has been fitted before calling its `score()` function.&quot;&quot;&quot;</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">&quot;The Aggregator </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span><span class="si">}</span><span class="s2"> has not been fitted yet. Call `fit()` first.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">pass</span>
 
 <div class="viewcode-block" id="FittableAggregator.fit"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.FittableAggregator.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">actual_anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
-    <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit the aggregators on the (sequence of) multivariate binary series.</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit the aggregators on the (sequence of) multivariate binary anomaly series.</span>
 
 <span class="sd">        If a list of series is given, they must have the same number of components.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        actual_anomalies</span>
-<span class="sd">            The (sequence of) ground truth of the anomalies (1 if it is an anomaly and 0 if not)</span>
+<span class="sd">        anomalies</span>
+<span class="sd">            The (sequence of) binary ground truth anomaly labels (1 if it is an anomaly and 0 if not).</span>
 <span class="sd">        series</span>
-<span class="sd">            The (sequence of) multivariate binary series</span>
+<span class="sd">            The (sequence of) multivariate binary series (predicted labels) to aggregate.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">list_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_input</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span> <span class="o">=</span> <span class="n">list_series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_series</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `list_series` must have the same number of components.&quot;</span><span class="p">,</span>
+        <span class="n">pred_width</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">series</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">_check_input</span><span class="p">(</span>
+            <span class="n">series</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;series&quot;</span><span class="p">,</span>
+            <span class="n">width_expected</span><span class="o">=</span><span class="n">pred_width</span><span class="p">,</span>
+            <span class="n">check_deterministic</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">check_binary</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">check_multivariate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span> <span class="o">=</span> <span class="n">pred_width</span>
 
-        <span class="n">list_actual_anomalies</span> <span class="o">=</span> <span class="n">_to_list</span><span class="p">(</span><span class="n">actual_anomalies</span><span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_actual_anomalies</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `actual_anomalies` must be of type TimeSeries.&quot;</span><span class="p">,</span>
+        <span class="n">anomalies</span> <span class="o">=</span> <span class="n">_check_input</span><span class="p">(</span>
+            <span class="n">anomalies</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;anomalies&quot;</span><span class="p">,</span>
+            <span class="n">width_expected</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">check_deterministic</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">check_binary</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">check_multivariate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">is_deterministic</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_actual_anomalies</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `actual_anomalies` must be deterministic (width=1).&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_actual_anomalies</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `actual_anomalies` must be univariate (width=1).&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">len</span><span class="p">(</span><span class="n">list_actual_anomalies</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_series</span><span class="p">),</span>
-            <span class="s2">&quot;`actual_anomalies` and `series` must contain the same number of series.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">same_intersection</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-            <span class="nb">zip</span><span class="p">(</span>
-                <span class="o">*</span><span class="p">[</span>
-                    <span class="p">[</span><span class="n">anomalies</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">series</span><span class="p">),</span> <span class="n">series</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">series</span><span class="p">)]</span>
-                    <span class="k">for</span> <span class="p">(</span><span class="n">anomalies</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">list_actual_anomalies</span><span class="p">,</span> <span class="n">list_series</span><span class="p">)</span>
-                <span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">anomalies</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;`anomalies` and `series` must contain the same number of series.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="p">)</span>
-        <span class="n">list_actual_anomalies</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">same_intersection</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-        <span class="n">list_series</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">same_intersection</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-
-        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_core</span><span class="p">(</span><span class="n">list_actual_anomalies</span><span class="p">,</span> <span class="n">list_series</span><span class="p">)</span>
+        <span class="n">anomalies_vals</span><span class="p">,</span> <span class="n">series_vals</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">anom</span><span class="p">,</span> <span class="n">pred_anom</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">anomalies</span><span class="p">,</span> <span class="n">series</span><span class="p">):</span>
+            <span class="n">anomalies_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">anom</span><span class="o">.</span><span class="n">slice_intersect_values</span><span class="p">(</span><span class="n">pred_anom</span><span class="p">)[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>
+            <span class="n">series_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred_anom</span><span class="o">.</span><span class="n">slice_intersect_values</span><span class="p">(</span><span class="n">anom</span><span class="p">)[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fit_core</span><span class="p">(</span><span class="n">anomalies_vals</span><span class="p">,</span> <span class="n">series_vals</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">return</span> <span class="n">ret</span></div>
+        <span class="k">return</span> <span class="bp">self</span></div>
 
 <div class="viewcode-block" id="FittableAggregator.predict"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.FittableAggregator.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;series&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Aggregates the (sequence of) multivariate binary series given as</span>
-<span class="sd">        input into a (sequence of) univariate binary series.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        series</span>
-<span class="sd">            The (sequence of) multivariate binary series to aggregate</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        TimeSeries</span>
-<span class="sd">            (Sequence of) aggregated results</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_assert_fit_called</span><span class="p">()</span>
-        <span class="n">list_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_input</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_series</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `series` must have the same number of components as the data&quot;</span>
-            <span class="o">+</span> <span class="s2">&quot; used for training the detector model, number of components in training:&quot;</span>
-            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_core</span><span class="p">(</span><span class="n">list_series</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_core</span><span class="p">(</span><span class="n">list_series</span><span class="p">)</span></div></div>
+        <span class="n">_assert_fit_called</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Aggregator&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div></div>
 </pre></div>
 
               </div>

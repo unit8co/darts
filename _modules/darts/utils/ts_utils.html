@@ -34,6 +34,7 @@
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -320,7 +321,7 @@
 
 
 <div class="viewcode-block" id="seq2series"><a class="viewcode-back" href="../../../generated_api/darts.utils.ts_utils.html#darts.utils.ts_utils.seq2series">[docs]</a><span class="k">def</span> <span class="nf">seq2series</span><span class="p">(</span>
-    <span class="n">ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span>
+    <span class="n">ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If `ts` is a Sequence with only a single series, return the single series as TimeSeries.</span>
 
@@ -340,7 +341,7 @@
 <div class="viewcode-block" id="get_single_series"><a class="viewcode-back" href="../../../generated_api/darts.utils.ts_utils.html#darts.utils.ts_utils.get_single_series">[docs]</a><span class="k">def</span> <span class="nf">get_single_series</span><span class="p">(</span>
     <span class="n">ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
         <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span>
-    <span class="p">]</span>
+    <span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a single (first) TimeSeries or `None` from `ts`. Returns `ts` if  `ts` is a TimeSeries, `ts[0]` if</span>
 <span class="sd">    `ts` is a `Sequence[TimeSeries]`, and `ts[0][0]` if `ts` is a `Sequence[Sequence[TimeSeries]]`.</span>
@@ -392,16 +393,26 @@
         <span class="k">return</span> <span class="n">SeriesType</span><span class="o">.</span><span class="n">SINGLE</span>
     <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ts</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">TimeSeries</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">SeriesType</span><span class="o">.</span><span class="n">SEQ</span>
-    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ts</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">TimeSeries</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">SeriesType</span><span class="o">.</span><span class="n">SEQ_SEQ</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">raise_log</span><span class="p">(</span>
-            <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;input series must be of type `TimeSeries`, `Sequence[TimeSeries]`, or &quot;</span>
-                <span class="s2">&quot;`Sequence[Sequence[TimeSeries]]`&quot;</span>
-            <span class="p">),</span>
-            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ts</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">TimeSeries</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">SeriesType</span><span class="o">.</span><span class="n">SEQ_SEQ</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;input series must be of type `TimeSeries`, `Sequence[TimeSeries]`, or &quot;</span>
+                        <span class="s2">&quot;`Sequence[Sequence[TimeSeries]]`.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;input series must be of type `TimeSeries`, `Sequence[TimeSeries]`, or &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;`Sequence[Sequence[TimeSeries]]`. Raised: `</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(&#39;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;)`&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span></div>
 
 
 <span class="c1"># TODO: we do not check the time index here</span>

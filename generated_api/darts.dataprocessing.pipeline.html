@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -960,7 +961,7 @@ using fitted transformer. The transformed data is then passed to next transforme
 <span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/pipeline.html#Pipeline.inverse_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.pipeline.Pipeline.inverse_transform" title="Permalink to this definition">¶</a></dt>
 <dd><p>For each data transformer in the pipeline, inverse-transform data. Then inverse transformed data is passed to
 the next transformer. Transformers are traversed in reverse order. Raises value error if not all of the
-transformers are invertible and <code class="docutils literal notranslate"><span class="pre">partial</span></code> is set to False. Set <code class="docutils literal notranslate"><span class="pre">partial</span></code> to True for inverting only the
+transformers are invertible and <code class="docutils literal notranslate"><span class="pre">partial</span></code> is set to <cite>False</cite>. Set <code class="docutils literal notranslate"><span class="pre">partial</span></code> to True for inverting only the
 InvertibleDataTransformer in the pipeline.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

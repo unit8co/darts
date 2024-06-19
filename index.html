@@ -35,6 +35,7 @@
     <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -408,7 +409,7 @@ It is easy to wrap any of Darts forecasting or filtering models to build
 a fully fledged anomaly detection model that compares predictions with actuals.
 The <code class="docutils literal notranslate"><span class="pre">PyODScorer</span></code> makes it trivial to use PyOD detectors on time series.</p></li>
 <li><p><strong>Multivariate Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can be multivariate - i.e., contain multiple time-varying
-dimensions instead of a single scalar value. Many models can consume and produce multivariate series.</p></li>
+dimensions/columns instead of a single scalar value. Many models can consume and produce multivariate series.</p></li>
 <li><p><strong>Multiple series training (global models):</strong> All machine learning based models (incl. all neural networks)
 support being trained on multiple (potentially multivariate) series. This can scale to large datasets too.</p></li>
 <li><p><strong>Probabilistic Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can (optionally) represent stochastic
@@ -423,6 +424,11 @@ static data for each dimension, which can be exploited by some models.</p></li>
 These can make the forecasts add up in a way that respects the underlying hierarchy.</p></li>
 <li><p><strong>Regression Models:</strong> It is possible to plug-in any scikit-learn compatible model
 to obtain forecasts as functions of lagged values of the target series and covariates.</p></li>
+<li><p><strong>Training with sample weights:</strong> All global models support being trained with sample weights. They can be
+applied to each observation, forecasted time step and target column.</p></li>
+<li><p><strong>Forecast Start Shifting:</strong> All global models support training and prediction on a shifted output window.
+This is useful for example for Day-Ahead Market forecasts, or when the covariates (or target series) are reported
+with a delay.</p></li>
 <li><p><strong>Explainability:</strong> Darts has the ability to <em>explain</em> some forecasting models using Shap values.</p></li>
 <li><p><strong>Data processing:</strong> Tools to easily apply (and revert) common transformations on
 time series data (scaling, filling missing values, differencing, boxcox, …)</p></li>

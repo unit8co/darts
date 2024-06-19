@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -177,17 +178,56 @@
 <span class="sd">---------------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">xarray</span> <span class="k">as</span> <span class="nn">xr</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.utils</span> <span class="kn">import</span> <span class="n">_build_tqdm_iterator</span><span class="p">,</span> <span class="n">_parallel_apply</span>
+<span class="kn">from</span> <span class="nn">darts.utils.ts_utils</span> <span class="kn">import</span> <span class="n">SeriesType</span><span class="p">,</span> <span class="n">get_series_seq_type</span><span class="p">,</span> <span class="n">series2seq</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="component_masking"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.component_masking">[docs]</a><span class="k">def</span> <span class="nf">component_masking</span><span class="p">(</span><span class="n">transformer_method</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Applies component masking to the series fed to any `transform` method, and then reverts the masking for the</span>
+<span class="sd">    final output series.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@wraps</span><span class="p">(</span><span class="n">transformer_method</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">transform_wrapper</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># `mask_components` and `component_mask` must be in `kwargs`</span>
+        <span class="n">mask_components</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;mask_components&quot;</span><span class="p">)</span>
+        <span class="n">mask_components_apply_only</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;mask_components_apply_only&quot;</span><span class="p">)</span>
+        <span class="n">component_mask</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;component_mask&quot;</span><span class="p">)</span>
+
+        <span class="c1"># remove non-transform columns</span>
+        <span class="k">if</span> <span class="n">mask_components</span> <span class="ow">and</span> <span class="n">component_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">series_proc</span> <span class="o">=</span> <span class="n">BaseDataTransformer</span><span class="o">.</span><span class="n">apply_component_mask</span><span class="p">(</span>
+                <span class="n">series</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="n">return_ts</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">series_proc</span> <span class="o">=</span> <span class="n">series</span>
+            <span class="k">if</span> <span class="n">component_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;component_mask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">component_mask</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="n">transformer_method</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">series_proc</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># add back non-transformed columns</span>
+        <span class="k">if</span> <span class="n">mask_components</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">mask_components_apply_only</span><span class="p">:</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">BaseDataTransformer</span><span class="o">.</span><span class="n">unapply_component_mask</span><span class="p">(</span>
+                <span class="n">series</span><span class="p">,</span> <span class="n">out</span><span class="p">,</span> <span class="n">component_mask</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">return</span> <span class="n">transform_wrapper</span></div>
 
 
 <div class="viewcode-block" id="BaseDataTransformer"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer">[docs]</a><span class="k">class</span> <span class="nc">BaseDataTransformer</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
@@ -359,6 +399,12 @@
             <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;n_jobs must be an integer&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_n_jobs</span> <span class="o">=</span> <span class="n">value</span></div>
 
+    <span class="nd">@classmethod</span>
+    <span class="nd">@component_masking</span>
+    <span class="k">def</span> <span class="nf">_ts_transform</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Applies component masking to `ts_transform`.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">ts_transform</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
 <div class="viewcode-block" id="BaseDataTransformer.ts_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.ts_transform">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
@@ -487,21 +533,11 @@
 
         <span class="c1"># Take note of original input for unmasking purposes:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
-            <span class="n">input_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
             <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
             <span class="n">transformer_selector</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">input_series</span> <span class="o">=</span> <span class="n">series</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">series</span>
             <span class="n">transformer_selector</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_components</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">apply_component_mask</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="n">return_ts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">data</span>
-            <span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;component_mask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">component_mask</span>
 
         <span class="n">input_iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span>
             <span class="nb">zip</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_params</span><span class="p">(</span><span class="n">transformer_selector</span><span class="o">=</span><span class="n">transformer_selector</span><span class="p">)),</span>
@@ -510,18 +546,14 @@
             <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
         <span class="p">)</span>
 
+        <span class="c1"># apply &amp; unapply component masking to the transform method</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;mask_components&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_components</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;mask_components_apply_only&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;component_mask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">component_mask</span>
+
         <span class="n">transformed_data</span> <span class="o">=</span> <span class="n">_parallel_apply</span><span class="p">(</span>
-            <span class="n">input_iterator</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">ts_transform</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_jobs</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span>
+            <span class="n">input_iterator</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ts_transform</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_jobs</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span>
         <span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_components</span><span class="p">:</span>
-            <span class="n">unmasked</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">ts</span><span class="p">,</span> <span class="n">transformed_ts</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="n">transformed_data</span><span class="p">):</span>
-                <span class="n">unmasked</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">unapply_component_mask</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">transformed_ts</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">)</span>
-                <span class="p">)</span>
-            <span class="n">transformed_data</span> <span class="o">=</span> <span class="n">unmasked</span>
-
         <span class="k">return</span> <span class="p">(</span>
             <span class="n">transformed_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">transformed_data</span>
         <span class="p">)</span></div>
@@ -583,8 +615,10 @@
 
 <div class="viewcode-block" id="BaseDataTransformer.apply_component_mask"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.apply_component_mask">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">apply_component_mask</span><span class="p">(</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">return_ts</span><span class="o">=</span><span class="kc">False</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">return_ts</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extracts components specified by `component_mask` from `series`</span>
 
@@ -606,42 +640,49 @@
 <span class="sd">            specified by `component_mask` remaining.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sequence_type_in</span> <span class="o">=</span> <span class="n">get_series_seq_type</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="n">called_with_single_series</span> <span class="o">=</span> <span class="n">sequence_type_in</span> <span class="o">==</span> <span class="n">SeriesType</span><span class="o">.</span><span class="n">SINGLE</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="n">component_mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">masked</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">return_ts</span> <span class="k">else</span> <span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
-                <span class="nb">isinstance</span><span class="p">(</span><span class="n">component_mask</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">component_mask</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="nb">bool</span>
-            <span class="p">):</span>
-                <span class="n">raise_log</span><span class="p">(</span>
-                    <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;`component_mask` must be a boolean `np.ndarray`, not a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">component_mask</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">series</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">component_mask</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">return_ts</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">series_</span><span class="o">.</span><span class="n">all_values</span><span class="p">()</span> <span class="k">for</span> <span class="n">series_</span> <span class="ow">in</span> <span class="n">series</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">called_with_single_series</span> <span class="k">else</span> <span class="n">out</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">component_mask</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">component_mask</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="nb">bool</span>
+        <span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;`component_mask` must be a boolean `np.ndarray`, not a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">component_mask</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">series_</span> <span class="ow">in</span> <span class="n">series</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">series_</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">component_mask</span><span class="p">):</span>
                 <span class="n">raise_log</span><span class="p">(</span>
                     <span class="ne">ValueError</span><span class="p">(</span>
                         <span class="s2">&quot;mismatch between number of components in `series` and length of `component_mask`&quot;</span>
                     <span class="p">),</span>
                     <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
                 <span class="p">)</span>
-            <span class="n">masked</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[:,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="p">:]</span>
             <span class="k">if</span> <span class="n">return_ts</span><span class="p">:</span>
-                <span class="c1"># Remove masked components from coords:</span>
-                <span class="n">coords</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
-                <span class="n">coords</span><span class="p">[</span><span class="s2">&quot;component&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[</span><span class="s2">&quot;component&quot;</span><span class="p">][</span><span class="n">component_mask</span><span class="p">]</span>
-                <span class="n">new_xa</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
-                    <span class="n">masked</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">dims</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="n">coords</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">attrs</span>
-                <span class="p">)</span>
-                <span class="n">masked</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">masked</span></div>
+                <span class="n">out_</span> <span class="o">=</span> <span class="n">series_</span><span class="p">[</span><span class="n">series_</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">component_mask</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">out_</span> <span class="o">=</span> <span class="n">series_</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[:,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out_</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">called_with_single_series</span> <span class="k">else</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="BaseDataTransformer.unapply_component_mask"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.unapply_component_mask">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">unapply_component_mask</span><span class="p">(</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">vals</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">],</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">vals</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Adds back components previously removed by `component_mask` in `apply_component_mask` method.</span>
 
@@ -662,34 +703,44 @@
 <span class="sd">            `TimeSeries` (if `vals` is a `TimeSeries`) or `np.ndarray` (if `vals` is an `np.ndarray`) with those</span>
 <span class="sd">            components previously removed by `component_mask` now &#39;added back&#39;.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="k">if</span> <span class="n">component_mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">unmasked</span> <span class="o">=</span> <span class="n">vals</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
-                <span class="nb">isinstance</span><span class="p">(</span><span class="n">component_mask</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">component_mask</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="nb">bool</span>
-            <span class="p">):</span>
-                <span class="n">raise_log</span><span class="p">(</span>
-                    <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="s2">&quot;If `component_mask` is given, must be a boolean np.ndarray`&quot;</span>
-                    <span class="p">),</span>
-                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">series</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">component_mask</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">vals</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">component_mask</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">component_mask</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="nb">bool</span>
+        <span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;If `component_mask` is given, must be a boolean np.ndarray`&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">sequence_type_in</span> <span class="o">=</span> <span class="n">get_series_seq_type</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="n">called_with_single_series</span> <span class="o">=</span> <span class="n">sequence_type_in</span> <span class="o">==</span> <span class="n">SeriesType</span><span class="o">.</span><span class="n">SINGLE</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">called_with_single_series</span><span class="p">:</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span><span class="n">vals</span><span class="p">]</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">series_</span><span class="p">,</span> <span class="n">vals_</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">vals</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">series_</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">component_mask</span><span class="p">):</span>
                 <span class="n">raise_log</span><span class="p">(</span>
                     <span class="ne">ValueError</span><span class="p">(</span>
                         <span class="s2">&quot;mismatch between number of components in `series` and length of `component_mask`&quot;</span>
                     <span class="p">),</span>
                     <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
                 <span class="p">)</span>
-            <span class="n">unmasked</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">()</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
-                <span class="n">unmasked</span><span class="p">[:,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">all_values</span><span class="p">()</span>
+            <span class="n">unmasked</span> <span class="o">=</span> <span class="n">series_</span><span class="o">.</span><span class="n">all_values</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals_</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
+                <span class="n">unmasked</span><span class="p">[:,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">vals_</span><span class="o">.</span><span class="n">all_values</span><span class="p">()</span>
                 <span class="c1"># Remove timepoints not present in transformed data:</span>
-                <span class="n">unmasked</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">unmasked</span><span class="p">)</span>
+                <span class="n">unmasked</span> <span class="o">=</span> <span class="n">series_</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">vals_</span><span class="p">)</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">unmasked</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">unmasked</span><span class="p">[:,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">vals</span>
-        <span class="k">return</span> <span class="n">unmasked</span></div>
+                <span class="n">unmasked</span><span class="p">[:,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">vals_</span>
+
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">unmasked</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">called_with_single_series</span> <span class="k">else</span> <span class="n">out</span></div>
 
 <div class="viewcode-block" id="BaseDataTransformer.stack_samples"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.stack_samples">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">stack_samples</span><span class="p">(</span><span class="n">vals</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>

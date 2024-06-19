@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -175,28 +176,53 @@
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">AND Aggregator</span>
 <span class="sd">--------------</span>
-
-<span class="sd">Aggregator that identifies a time step as anomalous if all the components</span>
-<span class="sd">are flagged as anomalous (logical AND).</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.ad.aggregators.aggregators</span> <span class="kn">import</span> <span class="n">NonFittableAggregator</span>
+<span class="kn">from</span> <span class="nn">darts.ad.aggregators.aggregators</span> <span class="kn">import</span> <span class="n">Aggregator</span>
+<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">_parallel_apply</span>
 
 
-<div class="viewcode-block" id="AndAggregator"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.and_aggregator.html#darts.ad.aggregators.and_aggregator.AndAggregator">[docs]</a><span class="k">class</span> <span class="nc">AndAggregator</span><span class="p">(</span><span class="n">NonFittableAggregator</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="AndAggregator"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.and_aggregator.html#darts.ad.aggregators.and_aggregator.AndAggregator">[docs]</a><span class="k">class</span> <span class="nc">AndAggregator</span><span class="p">(</span><span class="n">Aggregator</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;AND Aggregator</span>
+
+<span class="sd">        Aggregator that identifies a time step as anomalous if all the components are flagged as anomalous</span>
+<span class="sd">        (logical AND).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n_jobs</span>
+<span class="sd">            The number of jobs to run in parallel. Defaults to `1` (sequential). Setting the parameter to `-1` means</span>
+<span class="sd">            using all the available processors.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_jobs</span> <span class="o">=</span> <span class="n">n_jobs</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;AndAggregator&quot;</span>
 
-    <span class="k">def</span> <span class="nf">_predict_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="p">[</span>
-            <span class="n">s</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="n">s</span><span class="o">.</span><span class="n">width</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series</span>
-        <span class="p">]</span></div>
+    <span class="k">def</span> <span class="nf">_predict_core</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
+        <span class="k">def</span> <span class="nf">_compononents_and</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+                <span class="n">times</span><span class="o">=</span><span class="n">s</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+                <span class="n">values</span><span class="o">=</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">s</span><span class="o">.</span><span class="n">width</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+                    <span class="n">s</span><span class="o">.</span><span class="n">dtype</span>
+                <span class="p">),</span>
+                <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;components_sum&quot;</span><span class="p">],</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">_parallel_apply</span><span class="p">(</span>
+            <span class="p">[(</span><span class="n">s</span><span class="p">,)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series</span><span class="p">],</span>
+            <span class="n">_compononents_and</span><span class="p">,</span>
+            <span class="n">n_jobs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">fn_args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span>
+            <span class="n">fn_kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
 </pre></div>
 
               </div>

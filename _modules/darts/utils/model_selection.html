@@ -34,6 +34,7 @@
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -201,7 +202,6 @@
         <span class="n">horizon</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">vertical_split_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">SIMPLE</span><span class="p">,</span>
     <span class="p">):</span>
-
         <span class="k">if</span> <span class="nb">type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
                 <span class="s2">&quot;Value for type parameter should be either `train` or `test`&quot;</span>
@@ -248,7 +248,6 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_horizontal_split_index</span>
 
     <span class="k">def</span> <span class="nf">_get_vertical_split_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts_length</span><span class="p">):</span>
-
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">vertical_split_type</span> <span class="o">==</span> <span class="n">SIMPLE</span><span class="p">:</span>
             <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_size</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">test_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ts_length</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_size</span><span class="p">)</span>
@@ -343,7 +342,6 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span>
         <span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
     <span class="p">]:</span>
-
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
             <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span>
             <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">data</span><span class="p">]</span>  <span class="c1"># convert to sequence for unified processing later</span>

@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -188,8 +189,9 @@
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">from</span> <span class="nn">numpy.lib.stride_tricks</span> <span class="kn">import</span> <span class="n">as_strided</span>
 
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.utils.data.utils</span> <span class="kn">import</span> <span class="n">_process_sample_weight</span>
 <span class="kn">from</span> <span class="nn">darts.utils.ts_utils</span> <span class="kn">import</span> <span class="n">get_single_series</span><span class="p">,</span> <span class="n">series2seq</span>
 <span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">n_steps_between</span>
 
@@ -215,11 +217,13 @@
     <span class="n">use_moving_windows</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">is_training</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">concatenate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
     <span class="n">ArrayOrArraySequence</span><span class="p">,</span>
     <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">ArrayOrArraySequence</span><span class="p">],</span>
     <span class="n">Sequence</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">],</span>
     <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span>
+    <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayOrArraySequence</span><span class="p">],</span>
 <span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an</span>
@@ -385,6 +389,16 @@
 <span class="sd">        when `Sequence[TimeSeries]` are provided, then `X` and `y` will be arrays created by concatenating all</span>
 <span class="sd">        feature/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as</span>
 <span class="sd">        `Sequence[pd.Index]`, even when `concatenate = True`.</span>
+<span class="sd">    sample_weight</span>
+<span class="sd">        Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,</span>
+<span class="sd">        per label (each step in `output_chunk_length`), and per component.</span>
+<span class="sd">        If a series or sequence of series, then those weights are used. If the weight series only have a single</span>
+<span class="sd">        component / column, then the weights are applied globally to all components in `series`. Otherwise, for</span>
+<span class="sd">        component-specific weights, the number of components must match those of `series`.</span>
+<span class="sd">        If a string, then the weights are generated using built-in weighting functions. The available options are</span>
+<span class="sd">        `&quot;linear&quot;` or `&quot;exponential&quot;` decay - the further in the past, the lower the weight. The weights are</span>
+<span class="sd">        computed globally based on the length of the longest series in `series`. Then for each series, the weights</span>
+<span class="sd">        are extracted from the end of the global weights. This gives a common time weighting across all series.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -407,7 +421,8 @@
 <span class="sd">    last_static_covariates_shape</span>
 <span class="sd">        The last observed shape of the static covariates. This is ``None`` when `uses_static_covariates`</span>
 <span class="sd">        is ``False``.</span>
-
+<span class="sd">    sample_weight</span>
+<span class="sd">        The weights to apply to each observation in `X` and output step `y`, returned as a `Sequence` of `np.ndarray`.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -435,15 +450,17 @@
 <span class="sd">        tabularization.create_lagged_component_names : return the lagged features names as a list of strings.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">raise_if</span><span class="p">(</span>
-        <span class="n">is_training</span> <span class="ow">and</span> <span class="p">(</span><span class="n">target_series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">),</span>
-        <span class="s2">&quot;Must specify `target_series` if `is_training = True`.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">is_training</span> <span class="ow">and</span> <span class="p">(</span><span class="n">target_series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must specify `target_series` if `is_training = True`.&quot;</span><span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="c1"># ensure list of TimeSeries format</span>
     <span class="n">target_series</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">target_series</span><span class="p">)</span>
     <span class="n">past_covariates</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">past_covariates</span><span class="p">)</span>
     <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">future_covariates</span><span class="p">)</span>
+
     <span class="n">seq_ts_lens</span> <span class="o">=</span> <span class="p">[</span>
         <span class="nb">len</span><span class="p">(</span><span class="n">seq_ts</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">seq_ts</span> <span class="ow">in</span> <span class="p">(</span><span class="n">target_series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
@@ -457,6 +474,10 @@
             <span class="p">),</span>
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
+
+    <span class="c1"># process / check sample weight and generate series in case of built-in weight generator</span>
+    <span class="n">sample_weight</span> <span class="o">=</span> <span class="n">_process_sample_weight</span><span class="p">(</span><span class="n">sample_weight</span><span class="p">,</span> <span class="n">target_series</span><span class="p">)</span>
+
     <span class="n">lags_passed_as_dict</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span>
         <span class="nb">isinstance</span><span class="p">(</span><span class="n">lags_</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">lags_</span> <span class="ow">in</span> <span class="p">[</span><span class="n">lags</span><span class="p">,</span> <span class="n">lags_past_covariates</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="p">]</span>
@@ -479,11 +500,12 @@
         <span class="n">lags_past_covariates</span><span class="p">,</span>
         <span class="n">lags_future_covariates</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">times</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">sample_weights</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">seq_ts_lens</span><span class="p">)):</span>
         <span class="n">target_i</span> <span class="o">=</span> <span class="n">target_series</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">target_series</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="n">past_i</span> <span class="o">=</span> <span class="n">past_covariates</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">past_covariates</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="n">future_i</span> <span class="o">=</span> <span class="n">future_covariates</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">future_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">sample_weight_i</span> <span class="o">=</span> <span class="n">sample_weight</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">sample_weight</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="n">series_equal_freq</span> <span class="o">=</span> <span class="n">_all_equal_freq</span><span class="p">(</span><span class="n">target_i</span><span class="p">,</span> <span class="n">past_i</span><span class="p">,</span> <span class="n">future_i</span><span class="p">)</span>
         <span class="c1"># component-wise lags extraction is not support with times intersection at the moment</span>
         <span class="k">if</span> <span class="n">use_moving_windows</span> <span class="ow">and</span> <span class="n">lags_passed_as_dict</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">series_equal_freq</span><span class="p">):</span>
@@ -496,36 +518,38 @@
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="n">use_moving_windows</span> <span class="ow">and</span> <span class="n">series_equal_freq</span><span class="p">:</span>
-            <span class="n">X_i</span><span class="p">,</span> <span class="n">y_i</span><span class="p">,</span> <span class="n">times_i</span> <span class="o">=</span> <span class="n">_create_lagged_data_by_moving_window</span><span class="p">(</span>
-                <span class="n">target_i</span><span class="p">,</span>
-                <span class="n">output_chunk_length</span><span class="p">,</span>
-                <span class="n">output_chunk_shift</span><span class="p">,</span>
-                <span class="n">past_i</span><span class="p">,</span>
-                <span class="n">future_i</span><span class="p">,</span>
-                <span class="n">lags</span><span class="p">,</span>
-                <span class="n">lags_past_covariates</span><span class="p">,</span>
-                <span class="n">lags_future_covariates</span><span class="p">,</span>
-                <span class="n">lags_extract</span><span class="p">,</span>
-                <span class="n">lags_order</span><span class="p">,</span>
-                <span class="n">max_samples_per_ts</span><span class="p">,</span>
-                <span class="n">multi_models</span><span class="p">,</span>
-                <span class="n">check_inputs</span><span class="p">,</span>
-                <span class="n">is_training</span><span class="p">,</span>
+            <span class="n">X_i</span><span class="p">,</span> <span class="n">y_i</span><span class="p">,</span> <span class="n">times_i</span><span class="p">,</span> <span class="n">weights_i</span> <span class="o">=</span> <span class="n">_create_lagged_data_by_moving_window</span><span class="p">(</span>
+                <span class="n">target_series</span><span class="o">=</span><span class="n">target_i</span><span class="p">,</span>
+                <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                <span class="n">output_chunk_shift</span><span class="o">=</span><span class="n">output_chunk_shift</span><span class="p">,</span>
+                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_i</span><span class="p">,</span>
+                <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_i</span><span class="p">,</span>
+                <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight_i</span><span class="p">,</span>
+                <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
+                <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates</span><span class="p">,</span>
+                <span class="n">lags_future_covariates</span><span class="o">=</span><span class="n">lags_future_covariates</span><span class="p">,</span>
+                <span class="n">lags_extract</span><span class="o">=</span><span class="n">lags_extract</span><span class="p">,</span>
+                <span class="n">lags_order</span><span class="o">=</span><span class="n">lags_order</span><span class="p">,</span>
+                <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
+                <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
+                <span class="n">check_inputs</span><span class="o">=</span><span class="n">check_inputs</span><span class="p">,</span>
+                <span class="n">is_training</span><span class="o">=</span><span class="n">is_training</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">X_i</span><span class="p">,</span> <span class="n">y_i</span><span class="p">,</span> <span class="n">times_i</span> <span class="o">=</span> <span class="n">_create_lagged_data_by_intersecting_times</span><span class="p">(</span>
-                <span class="n">target_i</span><span class="p">,</span>
-                <span class="n">output_chunk_length</span><span class="p">,</span>
-                <span class="n">output_chunk_shift</span><span class="p">,</span>
-                <span class="n">past_i</span><span class="p">,</span>
-                <span class="n">future_i</span><span class="p">,</span>
-                <span class="n">lags</span><span class="p">,</span>
-                <span class="n">lags_past_covariates</span><span class="p">,</span>
-                <span class="n">lags_future_covariates</span><span class="p">,</span>
-                <span class="n">max_samples_per_ts</span><span class="p">,</span>
-                <span class="n">multi_models</span><span class="p">,</span>
-                <span class="n">check_inputs</span><span class="p">,</span>
-                <span class="n">is_training</span><span class="p">,</span>
+            <span class="n">X_i</span><span class="p">,</span> <span class="n">y_i</span><span class="p">,</span> <span class="n">times_i</span><span class="p">,</span> <span class="n">weights_i</span> <span class="o">=</span> <span class="n">_create_lagged_data_by_intersecting_times</span><span class="p">(</span>
+                <span class="n">target_series</span><span class="o">=</span><span class="n">target_i</span><span class="p">,</span>
+                <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                <span class="n">output_chunk_shift</span><span class="o">=</span><span class="n">output_chunk_shift</span><span class="p">,</span>
+                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_i</span><span class="p">,</span>
+                <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_i</span><span class="p">,</span>
+                <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight_i</span><span class="p">,</span>
+                <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
+                <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates</span><span class="p">,</span>
+                <span class="n">lags_future_covariates</span><span class="o">=</span><span class="n">lags_future_covariates</span><span class="p">,</span>
+                <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
+                <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
+                <span class="n">check_inputs</span><span class="o">=</span><span class="n">check_inputs</span><span class="p">,</span>
+                <span class="n">is_training</span><span class="o">=</span><span class="n">is_training</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="n">X_i</span><span class="p">,</span> <span class="n">last_static_covariates_shape</span> <span class="o">=</span> <span class="n">add_static_covariates_to_lagged_data</span><span class="p">(</span>
             <span class="n">features</span><span class="o">=</span><span class="n">X_i</span><span class="p">,</span>
@@ -536,6 +560,8 @@
         <span class="n">X</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">X_i</span><span class="p">)</span>
         <span class="n">y</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_i</span><span class="p">)</span>
         <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">times_i</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">weights_i</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sample_weights</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">weights_i</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">concatenate</span><span class="p">:</span>
         <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -543,7 +569,12 @@
         <span class="n">y</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">elif</span> <span class="n">concatenate</span><span class="p">:</span>
         <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">last_static_covariates_shape</span></div>
+
+    <span class="k">if</span> <span class="n">sample_weights</span> <span class="ow">and</span> <span class="n">concatenate</span><span class="p">:</span>
+        <span class="n">sample_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">sample_weights</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">sample_weights</span><span class="p">:</span>
+        <span class="n">sample_weights</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">last_static_covariates_shape</span><span class="p">,</span> <span class="n">sample_weights</span></div>
 
 
 <div class="viewcode-block" id="create_lagged_training_data"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.create_lagged_training_data">[docs]</a><span class="k">def</span> <span class="nf">create_lagged_training_data</span><span class="p">(</span>
@@ -562,11 +593,13 @@
     <span class="n">check_inputs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">use_moving_windows</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">concatenate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
     <span class="n">ArrayOrArraySequence</span><span class="p">,</span>
     <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">ArrayOrArraySequence</span><span class="p">],</span>
     <span class="n">Sequence</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">],</span>
     <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span>
+    <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayOrArraySequence</span><span class="p">],</span>
 <span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an</span>
@@ -639,6 +672,16 @@
 <span class="sd">        when `Sequence[TimeSeries]` are provided, then `X` and `y` will be arrays created by concatenating all</span>
 <span class="sd">        feature/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as</span>
 <span class="sd">        `Sequence[pd.Index]`, even when `concatenate = True`.</span>
+<span class="sd">    sample_weight</span>
+<span class="sd">        Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,</span>
+<span class="sd">        per label (each step in `output_chunk_length`), and per component.</span>
+<span class="sd">        If a series or sequence of series, then those weights are used. If the weight series only have a single</span>
+<span class="sd">        component / column, then the weights are applied globally to all components in `series`. Otherwise, for</span>
+<span class="sd">        component-specific weights, the number of components must match those of `series`.</span>
+<span class="sd">        If a string, then the weights are generated using built-in weighting functions. The available options are</span>
+<span class="sd">        `&quot;linear&quot;` or `&quot;exponential&quot;` decay - the further in the past, the lower the weight. The weights are</span>
+<span class="sd">        computed globally based on the length of the longest series in `series`. Then for each series, the weights</span>
+<span class="sd">        are extracted from the end of the global weights. This gives a common time weighting across all series.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -658,6 +701,8 @@
 <span class="sd">        gives the times of those observations formed using the `i`th `TimeSeries` object in each</span>
 <span class="sd">        `Sequence`. Otherwise, if the series inputs were specified as `TimeSeries`, the only</span>
 <span class="sd">        element is the times of those observations formed from the lone `TimeSeries` inputs.</span>
+<span class="sd">    sample_weight</span>
+<span class="sd">        The weights to apply to each observation in `X` and output step `y`, returned as a `Sequence` of `np.ndarray`.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -689,6 +734,7 @@
         <span class="n">use_moving_windows</span><span class="o">=</span><span class="n">use_moving_windows</span><span class="p">,</span>
         <span class="n">is_training</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">concatenate</span><span class="o">=</span><span class="n">concatenate</span><span class="p">,</span>
+        <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -795,7 +841,7 @@
 <span class="sd">        If the provided series do not share the same type of `time_index` (e.g. `target_series` uses a</span>
 <span class="sd">        pd.RangeIndex, but `future_covariates` uses a `pd.DatetimeIndex`).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">X</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">create_lagged_data</span><span class="p">(</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">create_lagged_data</span><span class="p">(</span>
         <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
         <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
         <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
@@ -892,12 +938,10 @@
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">features</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
                 <span class="k">else</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">features</span><span class="p">[</span><span class="n">idx</span><span class="p">]),</span> <span class="nb">len</span><span class="p">(</span><span class="n">static_covs</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
             <span class="p">)</span>
-            <span class="n">features</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="n">features</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
-                    <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">static_covs</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">shape_out</span><span class="p">),</span>
-                <span class="p">]</span>
-            <span class="p">)</span>
+            <span class="n">features</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span>
+                <span class="n">features</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">static_covs</span><span class="p">,</span> <span class="n">shape_out</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">shape_out</span><span class="p">),</span>
+            <span class="p">])</span>
 
     <span class="k">if</span> <span class="n">input_not_list</span><span class="p">:</span>
         <span class="n">features</span> <span class="o">=</span> <span class="n">features</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -996,12 +1040,9 @@
                 <span class="p">)</span>
 
             <span class="c1"># combine all the lags and sort them in ascending order across all the components</span>
-            <span class="n">comp_lags_reordered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">variate_lags</span><span class="p">[</span><span class="n">comp_name</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
-                    <span class="k">for</span> <span class="n">comp_name</span> <span class="ow">in</span> <span class="n">components</span>
-                <span class="p">]</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">argsort</span><span class="p">()</span>
+            <span class="n">comp_lags_reordered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">variate_lags</span><span class="p">[</span><span class="n">comp_name</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span> <span class="k">for</span> <span class="n">comp_name</span> <span class="ow">in</span> <span class="n">components</span>
+            <span class="p">])</span><span class="o">.</span><span class="n">argsort</span><span class="p">()</span>
             <span class="n">tmp_lagged_feats_names</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">components</span><span class="p">:</span>
                 <span class="n">tmp_lagged_feats_names</span> <span class="o">+=</span> <span class="p">[</span>
@@ -1087,6 +1128,7 @@
     <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
     <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+    <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
     <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]],</span>
     <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]],</span>
     <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]],</span>
@@ -1096,7 +1138,7 @@
     <span class="n">multi_models</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">check_inputs</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">is_training</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Helper function called by `create_lagged_data` that computes `X`, `y`, and `times` by</span>
 <span class="sd">    extracting &#39;moving windows&#39; from each series using the `strided_moving_window`</span>
@@ -1113,29 +1155,34 @@
 <span class="sd">    Assumes that all the lags are sorted in ascending order.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">feature_times</span><span class="p">,</span> <span class="n">min_lags</span><span class="p">,</span> <span class="n">max_lags</span> <span class="o">=</span> <span class="n">_get_feature_times</span><span class="p">(</span>
-        <span class="n">target_series</span><span class="p">,</span>
-        <span class="n">past_covariates</span><span class="p">,</span>
-        <span class="n">future_covariates</span><span class="p">,</span>
-        <span class="n">lags</span><span class="p">,</span>
-        <span class="n">lags_past_covariates</span><span class="p">,</span>
-        <span class="n">lags_future_covariates</span><span class="p">,</span>
-        <span class="n">output_chunk_length</span><span class="p">,</span>
-        <span class="n">output_chunk_shift</span><span class="p">,</span>
+        <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+        <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+        <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+        <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
+        <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates</span><span class="p">,</span>
+        <span class="n">lags_future_covariates</span><span class="o">=</span><span class="n">lags_future_covariates</span><span class="p">,</span>
+        <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+        <span class="n">output_chunk_shift</span><span class="o">=</span><span class="n">output_chunk_shift</span><span class="p">,</span>
         <span class="n">is_training</span><span class="o">=</span><span class="n">is_training</span><span class="p">,</span>
         <span class="n">return_min_and_max_lags</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">check_inputs</span><span class="o">=</span><span class="n">check_inputs</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="n">check_inputs</span><span class="p">:</span>
         <span class="n">series_and_lags_not_specified</span> <span class="o">=</span> <span class="p">[</span><span class="n">max_lag</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">max_lag</span> <span class="ow">in</span> <span class="n">max_lags</span><span class="p">]</span>
-        <span class="n">raise_if</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">(</span><span class="n">series_and_lags_not_specified</span><span class="p">),</span>
-            <span class="s2">&quot;Must specify at least one series-lags pair.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">series_and_lags_not_specified</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must specify at least one series-lags pair.&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span>
+            <span class="p">)</span>
+    <span class="n">sample_weight_vals</span> <span class="o">=</span> <span class="n">_extract_sample_weight</span><span class="p">(</span><span class="n">sample_weight</span><span class="p">,</span> <span class="n">target_series</span><span class="p">)</span>
+
     <span class="n">time_bounds</span> <span class="o">=</span> <span class="n">get_shared_times_bounds</span><span class="p">(</span><span class="o">*</span><span class="n">feature_times</span><span class="p">)</span>
-    <span class="n">raise_if</span><span class="p">(</span>
-        <span class="n">time_bounds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="s2">&quot;Specified series do not share any common times for which features can be created.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">time_bounds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Specified series do not share any common times for which features can be created.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
     <span class="n">freq</span> <span class="o">=</span> <span class="n">_get_freqs</span><span class="p">(</span><span class="n">target_series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
         <span class="c1"># `stop` is exclusive, so need `+ freq` to include end-point:</span>
@@ -1227,33 +1274,44 @@
     <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="c1"># Construct labels array `y`:</span>
     <span class="k">if</span> <span class="n">is_training</span><span class="p">:</span>
-        <span class="c1"># All values between times `t` and `t + output_chunk_length` used as labels:</span>
+        <span class="c1"># All values between times `t` and `t + output_chunk_length` used as labels / weights:</span>
         <span class="c1"># Window taken between times `t` and `t + output_chunk_length - 1`:</span>
         <span class="n">first_window_start_idx</span> <span class="o">=</span> <span class="n">target_start_time_idx</span> <span class="o">+</span> <span class="n">output_chunk_shift</span>
         <span class="c1"># Add `+ 1` since end index is exclusive in Python:</span>
         <span class="n">first_window_end_idx</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">target_start_time_idx</span> <span class="o">+</span> <span class="n">output_chunk_length</span> <span class="o">+</span> <span class="n">output_chunk_shift</span>
         <span class="p">)</span>
-        <span class="c1"># To create `(num_samples - 1)` other windows in addition to first window,</span>
-        <span class="c1"># must take `(num_samples - 1)` values ahead of `first_window_end_idx`</span>
-        <span class="n">vals</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span>
-            <span class="n">first_window_start_idx</span> <span class="p">:</span> <span class="n">first_window_end_idx</span> <span class="o">+</span> <span class="n">num_samples</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="p">:,</span>
-            <span class="p">:,</span>
-        <span class="p">]</span>
-        <span class="n">windows</span> <span class="o">=</span> <span class="n">strided_moving_window</span><span class="p">(</span>
-            <span class="n">x</span><span class="o">=</span><span class="n">vals</span><span class="p">,</span>
-            <span class="n">window_len</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
-            <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-            <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-            <span class="n">check_inputs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="p">)</span>
         <span class="n">lags_to_extract</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">multi_models</span> <span class="k">else</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">1</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">_extract_lagged_vals_from_windows</span><span class="p">(</span><span class="n">windows</span><span class="p">,</span> <span class="n">lags_to_extract</span><span class="p">)</span>
-        <span class="c1"># Only values at times `t + output_chunk_length - 1` used as labels:</span>
+
+        <span class="c1"># extract target labels and sample weights</span>
+        <span class="n">y_and_weights</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">vals</span> <span class="ow">in</span> <span class="p">[</span><span class="n">target_series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">sample_weight_vals</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">vals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">y_and_weights</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># To create `(num_samples - 1)` other windows in addition to first window,</span>
+            <span class="c1"># must take `(num_samples - 1)` values ahead of `first_window_end_idx`</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[</span>
+                <span class="n">first_window_start_idx</span> <span class="p">:</span> <span class="n">first_window_end_idx</span> <span class="o">+</span> <span class="n">num_samples</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="p">:,</span>
+                <span class="p">:,</span>
+            <span class="p">]</span>
+            <span class="n">windows</span> <span class="o">=</span> <span class="n">strided_moving_window</span><span class="p">(</span>
+                <span class="n">x</span><span class="o">=</span><span class="n">vals</span><span class="p">,</span>
+                <span class="n">window_len</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                <span class="n">check_inputs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="c1"># Only values at times `t + output_chunk_length - 1` used as labels:</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">_extract_lagged_vals_from_windows</span><span class="p">(</span><span class="n">windows</span><span class="p">,</span> <span class="n">lags_to_extract</span><span class="p">)</span>
+            <span class="n">y_and_weights</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
+
+        <span class="n">y</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">y_and_weights</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">times</span>
+        <span class="n">y</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">weights</span>
 
 
 <span class="k">def</span> <span class="nf">_extract_lagged_vals_from_windows</span><span class="p">(</span>
@@ -1306,6 +1364,7 @@
     <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
     <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+    <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
     <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
     <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
     <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
@@ -1313,7 +1372,12 @@
     <span class="n">multi_models</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">check_inputs</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">is_training</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">]]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+    <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">],</span>
+    <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+<span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Helper function called by `_create_lagged_data` that computes `X`, `y`, and `times` by</span>
 <span class="sd">    first finding the time points in each series that *could* be used to create features/labels,</span>
@@ -1324,29 +1388,33 @@
 <span class="sd">    specified series are of the same frequency.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">feature_times</span><span class="p">,</span> <span class="n">min_lags</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_get_feature_times</span><span class="p">(</span>
-        <span class="n">target_series</span><span class="p">,</span>
-        <span class="n">past_covariates</span><span class="p">,</span>
-        <span class="n">future_covariates</span><span class="p">,</span>
-        <span class="n">lags</span><span class="p">,</span>
-        <span class="n">lags_past_covariates</span><span class="p">,</span>
-        <span class="n">lags_future_covariates</span><span class="p">,</span>
-        <span class="n">output_chunk_length</span><span class="p">,</span>
-        <span class="n">output_chunk_shift</span><span class="p">,</span>
+        <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+        <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+        <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+        <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
+        <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates</span><span class="p">,</span>
+        <span class="n">lags_future_covariates</span><span class="o">=</span><span class="n">lags_future_covariates</span><span class="p">,</span>
+        <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+        <span class="n">output_chunk_shift</span><span class="o">=</span><span class="n">output_chunk_shift</span><span class="p">,</span>
         <span class="n">is_training</span><span class="o">=</span><span class="n">is_training</span><span class="p">,</span>
         <span class="n">return_min_and_max_lags</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">check_inputs</span><span class="o">=</span><span class="n">check_inputs</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="n">check_inputs</span><span class="p">:</span>
         <span class="n">series_and_lags_not_specified</span> <span class="o">=</span> <span class="p">[</span><span class="n">min_lag</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">min_lag</span> <span class="ow">in</span> <span class="n">min_lags</span><span class="p">]</span>
-        <span class="n">raise_if</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">(</span><span class="n">series_and_lags_not_specified</span><span class="p">),</span>
-            <span class="s2">&quot;Must specify at least one series-lags pair.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">series_and_lags_not_specified</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must specify at least one series-lags pair.&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span>
+            <span class="p">)</span>
+    <span class="n">sample_weight_vals</span> <span class="o">=</span> <span class="n">_extract_sample_weight</span><span class="p">(</span><span class="n">sample_weight</span><span class="p">,</span> <span class="n">target_series</span><span class="p">)</span>
     <span class="n">shared_times</span> <span class="o">=</span> <span class="n">get_shared_times</span><span class="p">(</span><span class="o">*</span><span class="n">feature_times</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">raise_if</span><span class="p">(</span>
-        <span class="n">shared_times</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="s2">&quot;Specified series do not share any common times for which features can be created.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">shared_times</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Specified series do not share any common times for which features can be created.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">shared_times</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_samples_per_ts</span><span class="p">:</span>
         <span class="n">shared_times</span> <span class="o">=</span> <span class="n">shared_times</span><span class="p">[</span><span class="o">-</span><span class="n">max_samples_per_ts</span><span class="p">:]</span>
     <span class="n">X</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1412,13 +1480,23 @@
             <span class="n">idx_to_get</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="n">label_shared_time_idx</span> <span class="o">+</span> <span class="n">output_chunk_length</span> <span class="o">+</span> <span class="n">output_chunk_shift</span> <span class="o">-</span> <span class="mi">1</span>
             <span class="p">)</span>
-        <span class="c1"># Before reshaping: lagged_vals.shape = (n_observations, num_lags, n_components, n_samples)</span>
-        <span class="n">lagged_vals</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="n">idx_to_get</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
-        <span class="c1"># After reshaping: lagged_vals.shape = (n_observations, num_lags*n_components, n_samples)</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">lagged_vals</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">lagged_vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">lagged_vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># extract target labels and sample weights</span>
+        <span class="n">y_and_weights</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">vals</span> <span class="ow">in</span> <span class="p">[</span><span class="n">target_series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">sample_weight_vals</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">vals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">y_and_weights</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Before reshaping: lagged_vals.shape = (n_observations, num_lags, n_components, n_samples)</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[</span><span class="n">idx_to_get</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+            <span class="c1"># After reshaping: lagged_vals.shape = (n_observations, num_lags*n_components, n_samples)</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">y_and_weights</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
+        <span class="n">y</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="n">y_and_weights</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">shared_times</span>
+        <span class="n">y</span><span class="p">,</span> <span class="n">weights</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">shared_times</span><span class="p">,</span> <span class="n">weights</span>
 
 
 <span class="k">def</span> <span class="nf">_create_lagged_data_autoregression</span><span class="p">(</span>
@@ -1511,9 +1589,9 @@
 <span class="sd">    identical to tabularization.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># prepare index to reorder features by lags across components</span>
-    <span class="n">comp_lags_reordered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
-        <span class="p">[</span><span class="n">comp_lags</span> <span class="k">for</span> <span class="n">comp_lags</span> <span class="ow">in</span> <span class="n">component_lags</span><span class="p">[</span><span class="n">series_type</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
-    <span class="p">)</span><span class="o">.</span><span class="n">argsort</span><span class="p">()</span>
+    <span class="n">comp_lags_reordered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
+        <span class="n">comp_lags</span> <span class="k">for</span> <span class="n">comp_lags</span> <span class="ow">in</span> <span class="n">component_lags</span><span class="p">[</span><span class="n">series_type</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+    <span class="p">])</span><span class="o">.</span><span class="n">argsort</span><span class="p">()</span>
 
     <span class="c1"># convert relative lags to absolute</span>
     <span class="k">if</span> <span class="n">series_type</span> <span class="o">==</span> <span class="s2">&quot;target&quot;</span><span class="p">:</span>
@@ -1701,15 +1779,17 @@
 <span class="sd">        a regression model without using autoregressive features.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">raise_if</span><span class="p">(</span>
-        <span class="n">is_training</span> <span class="ow">and</span> <span class="p">(</span><span class="n">target_series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">),</span>
-        <span class="s2">&quot;Must specify `target_series` when `is_training = True`.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="k">if</span> <span class="n">check_inputs</span><span class="p">:</span>
-        <span class="n">raise_if</span><span class="p">(</span>
-            <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">output_chunk_length</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="s2">&quot;`output_chunk_length` must be a positive `int`.&quot;</span><span class="p">,</span>
+    <span class="k">if</span> <span class="n">is_training</span> <span class="ow">and</span> <span class="p">(</span><span class="n">target_series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must specify `target_series` when `is_training = True`.&quot;</span><span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
+    <span class="k">if</span> <span class="n">check_inputs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">output_chunk_length</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`output_chunk_length` must be a positive `int`.&quot;</span><span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="n">_check_lags</span><span class="p">(</span><span class="n">lags</span><span class="p">,</span> <span class="n">lags_past_covariates</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="p">)</span>
     <span class="n">feature_times</span><span class="p">,</span> <span class="n">min_lags</span><span class="p">,</span> <span class="n">max_lags</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">name_i</span><span class="p">,</span> <span class="n">series_i</span><span class="p">,</span> <span class="n">lags_i</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
@@ -1856,19 +1936,19 @@
                 <span class="nb">type</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">time_index</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">ts</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">specified_inputs</span>
             <span class="p">]</span>
-            <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">times_types</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span>
-                <span class="p">(</span>
-                    <span class="s2">&quot;Specified series and/or times must all &quot;</span>
-                    <span class="s2">&quot;have the same type of `time_index` (i.e. all &quot;</span>
-                    <span class="s2">&quot;`pd.RangeIndex` or all `pd.DatetimeIndex`).&quot;</span>
-                <span class="p">),</span>
-            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">times_types</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;Specified series and/or times must all have the same type of &quot;</span>
+                        <span class="s2">&quot;`time_index` (i.e. all `pd.RangeIndex` or all `pd.DatetimeIndex`).&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
     <span class="k">return</span> <span class="n">shared_times</span></div>
 
 
 <div class="viewcode-block" id="get_shared_times_bounds"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.get_shared_times_bounds">[docs]</a><span class="k">def</span> <span class="nf">get_shared_times_bounds</span><span class="p">(</span>
-    <span class="o">*</span><span class="n">series_or_times</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span>
+    <span class="o">*</span><span class="n">series_or_times</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span> <span class="kc">None</span><span class="p">]],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">],</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns the latest `start_time` and the earliest `end_time` among all non-`None` `series_or_times`;</span>
@@ -1926,14 +2006,14 @@
         <span class="n">bounds</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">times_types</span> <span class="o">=</span> <span class="p">[</span><span class="nb">type</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="n">start_times</span><span class="p">]</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">times_types</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="p">(</span>
-                <span class="s2">&quot;Specified series and/or times must all &quot;</span>
-                <span class="s2">&quot;have the same type of `time_index` &quot;</span>
-                <span class="s2">&quot;(i.e. all `pd.RangeIndex` or all `pd.DatetimeIndex`).&quot;</span>
-            <span class="p">),</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">times_types</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Specified series and/or times must all have the same type of &quot;</span>
+                    <span class="s2">&quot;`time_index` (i.e. all `pd.RangeIndex` or all `pd.DatetimeIndex`).&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="c1"># If `start_times` empty, no series were specified -&gt; `bounds = (1, -1)` will</span>
         <span class="c1"># be &#39;converted&#39; to `None` in next line:</span>
         <span class="n">bounds</span> <span class="o">=</span> <span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">start_times</span><span class="p">),</span> <span class="nb">min</span><span class="p">(</span><span class="n">end_times</span><span class="p">))</span> <span class="k">if</span> <span class="n">start_times</span> <span class="k">else</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
@@ -2003,22 +2083,22 @@
 <span class="sd">    .. [1] https://numpy.org/doc/stable/reference/generated/numpy.lib.stride_tricks.as_strided.html</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">check_inputs</span><span class="p">:</span>
-        <span class="n">raise_if</span><span class="p">(</span>
-            <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">stride</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">stride</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="s2">&quot;`stride` must be a positive `int`.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">raise_if</span><span class="p">(</span>
-            <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">window_len</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">window_len</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="s2">&quot;`window_len` must be a positive `int`.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">raise_if</span><span class="p">(</span>
-            <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">axis</span> <span class="o">&gt;</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">axis</span> <span class="o">&lt;</span> <span class="o">-</span><span class="n">x</span><span class="o">.</span><span class="n">ndim</span><span class="p">,</span>
-            <span class="s2">&quot;`axis` must be an `int` that is less than `x.ndim`.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">raise_if</span><span class="p">(</span>
-            <span class="n">window_len</span> <span class="o">&gt;</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">],</span>
-            <span class="s2">&quot;`window_len` must be less than or equal to x.shape[axis].&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">stride</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">stride</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`stride` must be a positive `int`.&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">window_len</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">window_len</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`window_len` must be a positive `int`.&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="n">axis</span> <span class="o">&gt;</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">axis</span> <span class="o">&lt;</span> <span class="o">-</span><span class="n">x</span><span class="o">.</span><span class="n">ndim</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`axis` must be an `int` that is less than `x.ndim`.&quot;</span><span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">window_len</span> <span class="o">&gt;</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`window_len` must be less than or equal to x.shape[axis].&quot;</span><span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
     <span class="n">num_windows</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span> <span class="o">-</span> <span class="n">window_len</span><span class="p">)</span> <span class="o">//</span> <span class="n">stride</span> <span class="o">+</span> <span class="mi">1</span>
     <span class="n">new_shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
     <span class="n">new_shape</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="n">num_windows</span>
@@ -2095,14 +2175,22 @@
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lags_i</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
                 <span class="n">lags_i</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">lags_i</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
 
-            <span class="n">raise_if</span><span class="p">(</span>
-                <span class="nb">any</span><span class="p">((</span><span class="n">lag</span> <span class="o">&gt;</span> <span class="n">max_lag</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lag</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span> <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">lags_i</span><span class="p">),</span>
-                <span class="sa">f</span><span class="s2">&quot;`lags</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">` must be a `Sequence` or `Dict` containing only `int` values less than </span><span class="si">{</span><span class="n">max_lag</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-    <span class="n">raise_if</span><span class="p">(</span>
-        <span class="nb">all</span><span class="p">(</span><span class="n">lags_is_none</span><span class="p">),</span>
-        <span class="s2">&quot;Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">((</span><span class="n">lag</span> <span class="o">&gt;</span> <span class="n">max_lag</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lag</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span> <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">lags_i</span><span class="p">):</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;`lags</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">` must be a `Sequence` or `Dict` containing only `int` &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;values less than </span><span class="si">{</span><span class="n">max_lag</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">lags_is_none</span><span class="p">):</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
     <span class="k">return</span> <span class="kc">None</span>
 
 
@@ -2137,15 +2225,44 @@
         <span class="n">minimum_len_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;-min(</span><span class="si">{</span><span class="n">lags_name</span><span class="si">}</span><span class="s2">) + max(</span><span class="si">{</span><span class="n">lags_name</span><span class="si">}</span><span class="s2">) + 1&quot;</span>
         <span class="n">minimum_len</span> <span class="o">=</span> <span class="o">-</span><span class="nb">min</span><span class="p">(</span><span class="n">lags</span><span class="p">)</span> <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="n">lags</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
     <span class="k">if</span> <span class="n">lags_specified</span><span class="p">:</span>
-        <span class="n">raise_if</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">.</span><span class="n">n_timesteps</span> <span class="o">&lt;</span> <span class="n">minimum_len</span><span class="p">,</span>
-            <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` must have at least &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">minimum_len_str</span><span class="si">}</span><span class="s2">` = </span><span class="si">{</span><span class="n">minimum_len</span><span class="si">}</span><span class="s2"> time steps; &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;instead, it only has </span><span class="si">{</span><span class="n">series</span><span class="o">.</span><span class="n">n_timesteps</span><span class="si">}</span><span class="s2">.&quot;</span>
-            <span class="p">),</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">n_timesteps</span> <span class="o">&lt;</span> <span class="n">minimum_len</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` must have at least `</span><span class="si">{</span><span class="n">minimum_len_str</span><span class="si">}</span><span class="s2">` = </span><span class="si">{</span><span class="n">minimum_len</span><span class="si">}</span><span class="s2"> time &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;steps; instead, it only has </span><span class="si">{</span><span class="n">series</span><span class="o">.</span><span class="n">n_timesteps</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
     <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span> <span class="nf">_extract_sample_weight</span><span class="p">(</span><span class="n">sample_weight</span><span class="p">,</span> <span class="n">target_series</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extracts sample weights values from the time intersection with the target labels.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">sample_weight_vals</span> <span class="o">=</span> <span class="n">sample_weight</span><span class="o">.</span><span class="n">slice_intersect_values</span><span class="p">(</span><span class="n">target_series</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample_weight_vals</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_series</span><span class="p">):</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;The `sample_weight` series must have at least the same times as the target `series`.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">weight_n_comp</span> <span class="o">=</span> <span class="n">sample_weight_vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">series_n_comp</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">n_components</span>
+    <span class="k">if</span> <span class="n">weight_n_comp</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">weight_n_comp</span> <span class="o">!=</span> <span class="n">series_n_comp</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;The number of components in `sample_weight` must either be `1` or match &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;the number of target series components `</span><span class="si">{</span><span class="n">series_n_comp</span><span class="si">}</span><span class="s2">`.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">weight_n_comp</span> <span class="o">!=</span> <span class="n">series_n_comp</span><span class="p">:</span>
+        <span class="n">sample_weight_vals</span> <span class="o">=</span> <span class="n">sample_weight_vals</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">series_n_comp</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sample_weight_vals</span>
 </pre></div>
 
               </div>

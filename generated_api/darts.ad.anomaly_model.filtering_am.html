@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -856,7 +857,7 @@
                 
   <span class="target" id="module-darts.ad.anomaly_model.filtering_am"></span><section id="filtering-anomaly-model">
 <h1>Filtering Anomaly Model<a class="headerlink" href="#filtering-anomaly-model" title="Permalink to this heading">¶</a></h1>
-<p>A <code class="docutils literal notranslate"><span class="pre">FilteringAnomalyModel</span></code> wraps around a Darts filtering model and one or
+<p>A <cite>FilteringAnomalyModel</cite> wraps around a Darts filtering model and one or
 several anomaly scorer(s) to compute anomaly scores
 by comparing how actuals deviate from the model’s predictions (filtered series).</p>
 <dl class="py class">
@@ -870,19 +871,34 @@ it is recommended to either provide a model that has already been fitted and eva
 appropriately on a series without anomalies, or to ensure that a simple call to the <a class="reference internal" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.fit" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a>
 function of the model will be sufficient to train it to satisfactory performance on series without anomalies.</p>
 <p>Calling <a class="reference internal" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.fit" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> on the anomaly model will fit the underlying filtering model only
-if <code class="docutils literal notranslate"><span class="pre">allow_model_training</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code> upon calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code>.
+if <cite>allow_model_training</cite> is set to <cite>True</cite> upon calling <cite>fit()</cite>.
 In addition, calling <a class="reference internal" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.fit" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> will also fit the fittable scorers, if any.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>filter</strong> – A filtering model from Darts that will be used to filter the actual time series</p></li>
-<li><p><strong>scorer</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer" title="darts.ad.scorers.scorers.AnomalyScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AnomalyScorer</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer" title="darts.ad.scorers.scorers.AnomalyScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AnomalyScorer</span></code></a>]]) – One or multiple scorer(s) that will be used to compare the actual and predicted time series in order
-to obtain an anomaly score <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.
-If a list of <cite>N</cite> scorer is given, the anomaly model will call each
-one of the scorers and output a list of <cite>N</cite> anomaly scores <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></li>
+<li><p><strong>model</strong> (<a class="reference internal" href="darts.models.filtering.filtering_model.html#darts.models.filtering.filtering_model.FilteringModel" title="darts.models.filtering.filtering_model.FilteringModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">FilteringModel</span></code></a>) – A Darts <cite>FilteringModel</cite> used to filter the actual time series.</p></li>
+<li><p><strong>scorer</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer" title="darts.ad.scorers.scorers.AnomalyScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AnomalyScorer</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer" title="darts.ad.scorers.scorers.AnomalyScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AnomalyScorer</span></code></a>]]) – One or multiple scorer(s) used to compare the actual and predicted time series in order to obtain an
+anomaly score <cite>TimeSeries</cite>. If a list of scorers,
+<a class="reference internal" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.score" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.score"><code class="xref py py-meth docutils literal notranslate"><span class="pre">score()</span></code></a> will output anomaly scores for
+each scorer.</p></li>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.scorers_are_trainable" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.scorers_are_trainable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scorers_are_trainable</span></code></a></p></td>
+<td><p>Whether any of the Scorers is trainable.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.scorers_are_univariate" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.scorers_are_univariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scorers_are_univariate</span></code></a></p></td>
+<td><p>Whether any of the Scorers is trainable.</p></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="autosummary longtable table autosummary">
 <colgroup>
@@ -890,35 +906,39 @@ one of the scorers and output a list of <cite>N</cite> anomaly scores <code clas
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.eval_accuracy" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.eval_accuracy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_accuracy</span></code></a>(actual_anomalies, series[, metric])</p></td>
-<td><p>Compute the accuracy of the anomaly scores computed by the model.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.eval_metric" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.eval_metric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_metric</span></code></a>(anomalies, series[, metric])</p></td>
+<td><p>Compute a metric for the anomaly scores computed by the model.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.fit" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series[, allow_model_training])</p></td>
 <td><p>Fit the underlying filtering model (if applicable) and the fittable scorers, if any.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.score" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">score</span></code></a>(series[, return_model_prediction])</p></td>
-<td><p>Compute the anomaly score(s) for the given series.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.predict_series" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.predict_series"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_series</span></code></a>(series, **kwargs)</p></td>
+<td><p>Filters the given sequence of target time series with the filtering model.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.show_anomalies" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.show_anomalies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show_anomalies</span></code></a>(series[, actual_anomalies, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.score" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">score</span></code></a>(series[, return_model_prediction])</p></td>
+<td><p>Compute the anomaly score(s) for the given (sequence of) series.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.show_anomalies" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.show_anomalies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show_anomalies</span></code></a>(series[, anomalies, ...])</p></td>
 <td><p>Plot the results of the anomaly model.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.eval_accuracy">
-<span class="sig-name descname"><span class="pre">eval_accuracy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AUC_ROC'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">filter_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/anomaly_model/filtering_am.html#FilteringAnomalyModel.eval_accuracy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.eval_accuracy" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute the accuracy of the anomaly scores computed by the model.</p>
-<p>Predicts the <cite>series</cite> with the filtering model, and applies the
-scorer(s) on the filtered time series and the given target time series. Returns the
-score(s) of an agnostic threshold metric, based on the anomaly score given by the scorer(s).</p>
+<dt class="sig sig-object py" id="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.eval_metric">
+<span class="sig-name descname"><span class="pre">eval_metric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AUC_ROC'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">filter_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/anomaly_model/filtering_am.html#FilteringAnomalyModel.eval_metric"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.eval_metric" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute a metric for the anomaly scores computed by the model.</p>
+<p>Predicts the <cite>series</cite> with the filtering model, and applies the scorer(s) on the filtered time series
+and the given target time series. Returns the score(s) of an agnostic threshold metric, based on the anomaly
+score given by the scorer(s).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) ground truth of the anomalies (1 if it is an anomaly and 0 if not)</p></li>
+<li><p><strong>anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) ground truth binary anomaly series (<cite>1</cite> if it is an anomaly and <cite>0</cite> if not).</p></li>
 <li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) series to predict anomalies on.</p></li>
-<li><p><strong>metric</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Optionally, Scoring function to use. Must be one of “AUC_ROC” and “AUC_PR”.
-Default: “AUC_ROC”</p></li>
-<li><p><strong>filter_kwargs</strong> – parameters of the Darts <cite>.filter()</cite> filtering model</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘AUC_ROC’, ‘AUC_PR’]) – The name of the metric function to use. Must be one of “AUC_ROC” (Area Under the
+Receiver Operating Characteristic Curve) and “AUC_PR” (Average Precision from scores).
+Default: “AUC_ROC”.</p></li>
+<li><p><strong>**filter_kwargs</strong> – Additional parameters passed to the filtering model’s <cite>filter()</cite> method.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -926,12 +946,12 @@ Default: “AUC_ROC”</p></li>
 </dd>
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p><ul class="simple">
-<li><p><em>Union[Dict[str, float], Dict[str, Sequence[float]], Sequence[Dict[str, float]],</em></p></li>
-<li><p><em>Sequence[Dict[str, Sequence[float]]]]</em> – Score for the time series.
-A (sequence of) dictionary with the keys being the name of the scorers, and the values being the
-metric results on the (sequence of) <cite>series</cite>. If the scorer treats every dimension independently
-(by nature of the scorer or if its component_wise is set to True), the values of the dictionary
-will be a Sequence containing the score for each dimension.</p></li>
+<li><p><em>Dict[str, float]</em> – A dictionary with the resulting metrics for single univariate <cite>series</cite>, with keys representing the
+anomaly scorer(s), and values representing the metric values.</p></li>
+<li><p><em>Dict[str, Sequence[float]]</em> – Same as for <cite>Dict[str, float]</cite> but for multivariate <cite>series</cite>, and anomaly scorers that treat series
+components/columns independently (by nature of the scorer or if <cite>component_wise=True</cite>).</p></li>
+<li><p><em>Sequence[Dict[str, float]]</em> – Same as for <cite>Dict[str, float]</cite> but for a sequence of univariate series.</p></li>
+<li><p><em>Sequence[Dict[str, Sequence[float]]]</em> – Same as for <cite>Dict[str, float]</cite> but for a sequence of multivariate series.</p></li>
 </ul>
 </p>
 </dd>
@@ -942,22 +962,21 @@ will be a Sequence containing the score for each dimension.</p></li>
 <dt class="sig sig-object py" id="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.fit">
 <span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_model_training</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">filter_fit_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/anomaly_model/filtering_am.html#FilteringAnomalyModel.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit the underlying filtering model (if applicable) and the fittable scorers, if any.</p>
-<p>Train the filter (if not already fitted and <cite>allow_filter_training</cite> is set to True)
-and the scorer(s) on the given time series.</p>
+<p>Train the filter (if not already fitted and <cite>allow_model_training</cite> is <cite>True</cite>) and the fittable scorer(s) on the
+given time series.</p>
 <p>The filter model will be applied to the given series, and the results will be used
 to train the scorer(s).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) series to be trained on.</p></li>
-<li><p><strong>allow_model_training</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Boolean value that indicates if the filtering model needs to be fitted on the given series.
-If set to False, the model needs to be already fitted.
-Default: False</p></li>
-<li><p><strong>filter_fit_kwargs</strong> – Parameters to be passed on to the filtering model <code class="docutils literal notranslate"><span class="pre">fit()</span></code> method.</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) series to train on (generally assumed to be anomaly-free).</p></li>
+<li><p><strong>allow_model_training</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether the filtering model should be fitted on the given series. If <cite>False</cite>, the model must already be
+fitted.</p></li>
+<li><p><strong>**filter_fit_kwargs</strong> – Additional parameters passed to the filtering model’s <cite>fit()</cite> method.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Fitted model</p>
+<dd class="field-even"><p>Fitted model.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>self</p>
@@ -966,76 +985,96 @@ Default: False</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.score">
-<span class="sig-name descname"><span class="pre">score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_model_prediction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">filter_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/anomaly_model/filtering_am.html#FilteringAnomalyModel.score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.score" title="Permalink to this definition">¶</a></dt>
-<dd><p>Compute the anomaly score(s) for the given series.</p>
-<p>Predicts the given target time series with the filtering model, and applies the scorer(s)
-to compare the predicted (filtered) series and the provided series.</p>
-<p>Outputs the anomaly score(s) of the provided time series.</p>
+<dt class="sig sig-object py" id="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.predict_series">
+<span class="sig-name descname"><span class="pre">predict_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/anomaly_model/filtering_am.html#FilteringAnomalyModel.predict_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.predict_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filters the given sequence of target time series with the filtering model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) series to score.</p></li>
-<li><p><strong>return_model_prediction</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Boolean value indicating if the prediction of the model should be returned along the anomaly score
-Default: False</p></li>
-<li><p><strong>filter_kwargs</strong> – parameters of the Darts <cite>.filter()</cite> filtering model</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – The sequence of series to filter.</p></li>
+<li><p><strong>**kwargs</strong> – Additional parameters passed to the filtering model’s <cite>filter()</cite> method.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><p>Anomaly scores series generated by the anomaly model scorers</p>
-<blockquote>
-<div><ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> if <cite>series</cite> is a series, and the anomaly model contains one scorer.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code></p>
-<blockquote>
-<div><ul class="simple">
-<li><p>If <cite>series</cite> is a series, and the anomaly model contains multiple scorers,</p></li>
-</ul>
-<p>returns one series per scorer.
-* If <cite>series</cite> is a sequence, and the anomaly model contains one scorer,
-returns one series per series in the sequence.</p>
-</div></blockquote>
-</li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Sequence[Sequence[TimeSeries]]</span></code> if <cite>series</cite> is a sequence, and the anomaly</p></li>
-</ul>
-<p>model contains multiple scorers.
-The outer sequence is over the series, and inner sequence is over the scorers.</p>
-</div></blockquote>
-</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>], Sequence[Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]]</p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.score">
+<span class="sig-name descname"><span class="pre">score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_model_prediction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">filter_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/anomaly_model/filtering_am.html#FilteringAnomalyModel.score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.score" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the anomaly score(s) for the given (sequence of) series.</p>
+<p>Predicts the given target time series with the filtering model, and applies the scorer(s)
+to compare the predicted (filtered) series and the provided series.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) series to score on.</p></li>
+<li><p><strong>return_model_prediction</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to return the filtering model prediction along with the anomaly scores.</p></li>
+<li><p><strong>**filter_kwargs</strong> – Additional parameters passed to the filtering model’s <cite>filter()</cite> method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>TimeSeries</em> – A single <cite>TimeSeries</cite> for a single <cite>series</cite> with a single anomaly scorers.</p></li>
+<li><p><em>Sequence[TimeSeries]</em> – A sequence of <cite>TimeSeries</cite> for:</p>
+<ul>
+<li><p>a single <cite>series</cite> with multiple anomaly scorers.</p></li>
+<li><p>a sequence of <cite>series</cite> with a single anomaly scorer.</p></li>
+</ul>
+</li>
+<li><p><em>Sequence[Sequence[TimeSeries]]</em> – A sequence of sequences of <cite>TimeSeries</cite> for a sequence of <cite>series</cite> and multiple anomaly scorers.
+The outer sequence is over the series, and inner sequence is over the scorers.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.scorers_are_trainable">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">scorers_are_trainable</span></span><a class="headerlink" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.scorers_are_trainable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether any of the Scorers is trainable.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.scorers_are_univariate">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">scorers_are_univariate</span></span><a class="headerlink" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.scorers_are_univariate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether any of the Scorers is trainable.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.show_anomalies">
-<span class="sig-name descname"><span class="pre">show_anomalies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names_of_scorers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">score_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/anomaly_model/filtering_am.html#FilteringAnomalyModel.show_anomalies"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.show_anomalies" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">show_anomalies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anomalies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names_of_scorers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">score_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/anomaly_model/filtering_am.html#FilteringAnomalyModel.show_anomalies"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.show_anomalies" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the results of the anomaly model.</p>
 <p>Computes the score on the given series input and shows the different anomaly scores with respect to time.</p>
 <p>The plot will be composed of the following:</p>
 <ul class="simple">
-<li><p>the series itself with the output of the filtering model</p></li>
-<li><p>the anomaly score of each scorer. The scorer with different windows will be separated.</p></li>
+<li><p>the series itself with the output of the forecasting model.</p></li>
+<li><p>the anomaly score for each scorer. The scorers with different windows will be separated.</p></li>
 <li><p>the actual anomalies, if given.</p></li>
 </ul>
 <p>It is possible to:</p>
 <ul class="simple">
 <li><p>add a title to the figure with the parameter <cite>title</cite></p></li>
 <li><p>give personalized names for the scorers with <cite>names_of_scorers</cite></p></li>
-<li><p>show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies are given</p></li>
+<li><p>show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies are provided.</p></li>
 </ul>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The series to visualize anomalies from.</p></li>
-<li><p><strong>actual_anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – The ground truth of the anomalies (1 if it is an anomaly and 0 if not)</p></li>
-<li><p><strong>names_of_scorers</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Name of the scorers. Must be a list of length equal to the number of scorers in the anomaly_model.</p></li>
-<li><p><strong>title</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Title of the figure</p></li>
-<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, Scoring function to use. Must be one of “AUC_ROC” and “AUC_PR”.
-Default: “AUC_ROC”</p></li>
-<li><p><strong>score_kwargs</strong> – parameters for the <cite>.score()</cite> function</p></li>
+<li><p><strong>anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – The ground truth of the anomalies (1 if it is an anomaly and 0 if not).</p></li>
+<li><p><strong>names_of_scorers</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.</p></li>
+<li><p><strong>title</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Title of the figure.</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘AUC_ROC’, ‘AUC_PR’]]) – Optionally, the name of the metric function to use. Must be one of “AUC_ROC” (Area Under the
+Receiver Operating Characteristic Curve) and “AUC_PR” (Average Precision from scores).
+Default: “AUC_ROC”.</p></li>
+<li><p><strong>score_kwargs</strong> – parameters for the <cite>score()</cite> method.</p></li>
 </ul>
 </dd>
 </dl>

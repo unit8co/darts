@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -856,57 +857,60 @@
                 
   <span class="target" id="module-darts.ad.scorers"></span><section id="anomaly-scorers">
 <h1>Anomaly Scorers<a class="headerlink" href="#anomaly-scorers" title="Permalink to this heading">¶</a></h1>
-<p>Scorers are at the core of the anomaly detection module. They
-produce anomaly scores time series, either for series directly (<code class="docutils literal notranslate"><span class="pre">score()</span></code>),
-or for series accompanied by some predictions (<code class="docutils literal notranslate"><span class="pre">score_from_prediction()</span></code>).</p>
-<p>The higher an anomaly score is, the more “anomalous” the corresponding
-time period is. Scorers can work over time windows, and the length of the window is related
-to the time scale over which anomalies are expected to occur.
-The interpretability of the anomaly score is dependent on the scorer.</p>
-<p>The function <code class="docutils literal notranslate"><span class="pre">score_from_prediction()</span></code> works by taking some “difference” (or “residual”)
-between the prediction and the actual series (captured by the <code class="docutils literal notranslate"><span class="pre">&quot;diff_fn&quot;</span></code> parameter).
-Some scorers are trainable (e.g., <code class="docutils literal notranslate"><span class="pre">KMeansScorer</span></code>, which learns clusters over historical data),
-in which case the <code class="docutils literal notranslate"><span class="pre">score()</span></code> function can be used to score new series.
-Other scorers are not trainable (e.g., <code class="docutils literal notranslate"><span class="pre">NormScorer</span></code>, which simply takes the Lp-norm between
-predicted values and actual values over windows). In this latter case <code class="docutils literal notranslate"><span class="pre">score()</span></code> cannot be
-used and scoring is only possible using <code class="docutils literal notranslate"><span class="pre">score_from_prediction()</span></code>.</p>
-<p>Some scorers can handle probabilistic predictions from models (at the moment all the “NLL” scorers),
-while others handle deterministic predictions (e.g., <code class="docutils literal notranslate"><span class="pre">KMeansScorer</span></code>).</p>
-<p>As an example, the <code class="docutils literal notranslate"><span class="pre">KMeansScorer</span></code>, which is trainable, can be applied using the functions:</p>
+<p>Scorers are at the core of the anomaly detection module. They produce anomaly scores time series, either for series
+directly (<cite>score()</cite>), or for series accompanied by some predictions (<cite>score_from_prediction()</cite>).</p>
+<p>The higher an anomaly score is, the more “anomalous” the corresponding time period is. Scorers can work over time
+windows, and the length of the window is related to the time scale over which anomalies are expected to occur. The
+interpretability of the anomaly score is dependent on the scorer.</p>
+<p>The function <cite>score_from_prediction()</cite> works by taking some “difference” (or “residual”) between the prediction and
+the actual series (captured by the <cite>“diff_fn”</cite> parameter). Some scorers are trainable
+(e.g., <a class="reference internal" href="darts.ad.scorers.kmeans_scorer.html#darts.ad.scorers.kmeans_scorer.KMeansScorer" title="darts.ad.scorers.kmeans_scorer.KMeansScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">KMeansScorer</span></code></a>, which learns clusters over historical data), in which
+case the <cite>score()</cite> function can be used to score new series. Other scorers are not trainable
+(e.g., <a class="reference internal" href="darts.ad.scorers.norm_scorer.html#darts.ad.scorers.norm_scorer.NormScorer" title="darts.ad.scorers.norm_scorer.NormScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">NormScorer</span></code></a>, which simply takes the Lp-norm between predicted values and
+actual values over windows). In this latter case <cite>score()</cite> cannot be used and scoring is only possible using
+<cite>score_from_prediction()</cite>.</p>
+<p>Some scorers can handle probabilistic predictions from models (at the moment all the “NLL” scorers), while others
+handle deterministic predictions (e.g., <a class="reference internal" href="darts.ad.scorers.kmeans_scorer.html#darts.ad.scorers.kmeans_scorer.KMeansScorer" title="darts.ad.scorers.kmeans_scorer.KMeansScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">KMeansScorer</span></code></a>).</p>
+<p>As an example, the <a class="reference internal" href="darts.ad.scorers.kmeans_scorer.html#darts.ad.scorers.kmeans_scorer.KMeansScorer" title="darts.ad.scorers.kmeans_scorer.KMeansScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">KMeansScorer</span></code></a>, which is trainable, can be applied using the
+functions:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">score()</span></code>: directly on a series to uncover the relationships between the different
-dimensions (over timesteps within windows and/or over dimensions of multivariate series).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">fit_from_prediction</span></code> and <code class="docutils literal notranslate"><span class="pre">score_from_prediction</span></code>: which will compute a difference (residuals)
-between the prediction (coming e.g., from a forecasting model) and the series itself.
-When scoring, the scorer will attribute a higher score to residuals that are distant
-from the clusters found during the training phase.</p></li>
+<li><p><cite>fit()</cite> and <cite>score()</cite>: directly on a series to uncover the relationships between the different dimensions
+(over timesteps within windows and/or over dimensions of multivariate series).</p></li>
+<li><p><cite>fit_from_prediction</cite> and <cite>score_from_prediction</cite>: which will compute a difference (residuals) between the
+prediction (coming e.g., from a forecasting model) and the series itself. When scoring, the scorer will attribute a
+higher score to residuals that are distant from the clusters found during the training phase.</p></li>
 </ul>
 <p>Note that <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.ad.anomaly_model.html">Anomaly Models</a>
 can be used to conveniently combine any of Darts forecasting and filtering models with one or multiple scorers.</p>
 <p>Most of the scorers have the following main parameters:</p>
 <ul class="simple">
 <li><p><cite>window</cite>:
-Integer value indicating the size of the window W used by the scorer to transform the series into
-an anomaly score. A scorer will slice the given series into subsequences of size W and returns
-a value indicating how anomalous these subset of W values are. The window size should be commensurate
-to the expected durations of the anomalies one is looking for.</p></li>
+Integer value indicating the size of the window W used by the scorer to transform the series into an anomaly score.
+A scorer will slice the given series into subsequences of size W and returns a value indicating how anomalous these
+subset of W values are. A post-processing step will convert this anomaly score into a point-wise anomaly score
+(see definition of <cite>window_transform</cite>). The window size should be commensurate to the expected durations of the
+anomalies one is looking for.</p></li>
 <li><p><cite>component_wise</cite>:
-boolean parameter indicating how the scorer should behave with multivariate series. If set to
-True, the model will treat each series dimension independently. If set to False, the model will
-consider the dimensions jointly in the considered <cite>window</cite> W to compute the score.</p></li>
+Boolean parameter indicating how the scorer should behave with multivariate series. If set to <cite>True</cite>, the model will
+treat each series dimension independently. If set to <cite>False</cite>, the model will consider the dimensions jointly in the
+considered <cite>window</cite> W to compute the score.</p></li>
+<li><p><cite>window_transform</cite>:
+Boolean value that indicates if the scorer needs to post-process its output when the <cite>window</cite> parameter exceeds 1.
+If set to <cite>True</cite>, the scores for each point can be assigned by aggregating the anomaly scores for each window the
+point is included in. It returns a point-wise anomaly score. If set to <cite>False</cite>, the score is returned without this
+post-processing step and is a window-wise anomaly score. Default: True</p></li>
 </ul>
 <p>Other useful functions are:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">eval_accuracy_from_prediction()</span></code>
-Takes as input two (sequence of) series, computes all the anomaly scores, and
-returns the value of an agnostic threshold metric (AUC-ROC or AUC-PR) based on some known ground truth
-of anomalies. The returned value is between 0 and 1, with 1 indicating that the scorer could perfectly
-separate the anomalous point from the normal ones.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">fit_from_prediction()</span></code>
-Takes two (sequence of) series as input and fits the scorer. This task is dependent on the scorer,
-but as a general case the scorer will calibrate its scoring function based on the training series that is
-considered to be anomaly-free. This training phase will allow the scorer to detect anomalies during
-the scoring phase, by comparing the series to score with the anomaly-free series seen during training.</p></li>
+<li><p><cite>eval_metric_from_prediction()</cite>
+Takes as input two (sequence of) series, computes all the anomaly scores, and returns the value of an agnostic
+threshold metric (AUC-ROC or AUC-PR) based on some known ground truth of anomalies. The returned value is between 0
+and 1, with 1 indicating that the scorer could perfectly separate the anomalous point from the normal ones.</p></li>
+<li><p><cite>fit_from_prediction()</cite>
+Takes two (sequence of) series as input and fits the scorer. This task is dependent on the scorer, but as a general
+case the scorer will calibrate its scoring function based on the training series that is considered to be
+anomaly-free. This training phase will allow the scorer to detect anomalies during the scoring phase, by comparing
+the series to score with the anomaly-free series seen during training.</p></li>
 </ul>
 <p>More details can be found in the API documentation of each scorer.</p>
 <div class="toctree-wrapper compound">
@@ -920,8 +924,8 @@ the scoring phase, by comparing the series to score with the anomaly-free series
 <li class="toctree-l1"><a class="reference internal" href="darts.ad.scorers.nll_laplace_scorer.html">NLL Laplace Scorer</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.ad.scorers.nll_poisson_scorer.html">NLL Poisson Scorer</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.ad.scorers.norm_scorer.html">Norm Scorer</a></li>
-<li class="toctree-l1"><a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">PyODScorer</a></li>
-<li class="toctree-l1"><a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">WassersteinScorer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">PyOD Scorer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">Wasserstein Scorer</a></li>
 </ul>
 </div>
 </section>

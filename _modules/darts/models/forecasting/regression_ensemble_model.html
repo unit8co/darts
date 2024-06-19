@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -455,6 +456,7 @@
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Fits the forecasting models with the entire series except the last `regression_train_n_points` values, which</span>
@@ -473,6 +475,16 @@
 <span class="sd">        future_covariates</span>
 <span class="sd">            Optionally, a series or sequence of series specifying future-known covariates passed to the</span>
 <span class="sd">            forecasting models</span>
+<span class="sd">        sample_weight</span>
+<span class="sd">            Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,</span>
+<span class="sd">            per label (each step in `output_chunk_length`), and per component.</span>
+<span class="sd">            If a series or sequence of series, then those weights are used. If the weight series only have a single</span>
+<span class="sd">            component / column, then the weights are applied globally to all components in `series`. Otherwise, for</span>
+<span class="sd">            component-specific weights, the number of components must match those of `series`.</span>
+<span class="sd">            If a string, then the weights are generated using built-in weighting functions. The available options are</span>
+<span class="sd">            `&quot;linear&quot;` or `&quot;exponential&quot;` decay - the further in the past, the lower the weight. The weights are</span>
+<span class="sd">            computed globally based on the length of the longest series in `series`. Then for each series, the weights</span>
+<span class="sd">            are extracted from the end of the global weights. This gives a common time weighting across all series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
             <span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span>
@@ -524,9 +536,9 @@
             <span class="k">if</span> <span class="n">is_single_series</span><span class="p">:</span>
                 <span class="n">train_n_points_too_big</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">train_n_points_too_big</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span>
-                    <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series</span><span class="p">]</span>
-                <span class="p">)</span>
+                <span class="n">train_n_points_too_big</span> <span class="o">=</span> <span class="nb">any</span><span class="p">([</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series</span>
+                <span class="p">])</span>
 
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="n">train_n_points_too_big</span><span class="p">,</span>
@@ -554,6 +566,9 @@
                     <span class="n">future_covariates</span><span class="o">=</span><span class="p">(</span>
                         <span class="n">future_covariates</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span> <span class="k">else</span> <span class="kc">None</span>
                     <span class="p">),</span>
+                    <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span>
+                    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_sample_weight</span>
+                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
                 <span class="p">)</span>
 
         <span class="c1"># we can call direct prediction in any case. Even if we overwrite with historical</span>
@@ -578,7 +593,9 @@
 
         <span class="c1"># train the regression model on the individual models&#39; predictions</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">=</span><span class="n">regression_target</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">predictions</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">regression_target</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span>
+            <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># prepare the forecasting models for further predicting by fitting them with the entire data</span>
@@ -596,6 +613,9 @@
                     <span class="n">future_covariates</span><span class="o">=</span><span class="p">(</span>
                         <span class="n">future_covariates</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span> <span class="k">else</span> <span class="kc">None</span>
                     <span class="p">),</span>
+                    <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span>
+                    <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_sample_weight</span>
+                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
                 <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 

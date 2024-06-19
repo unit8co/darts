@@ -34,6 +34,7 @@
     <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -205,8 +206,10 @@
     <span class="n">is_classifier</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">.model_selection</span> <span class="kn">import</span> <span class="n">cross_val_predict</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">Bunch</span><span class="p">,</span> <span class="n">_print_elapsed_time</span><span class="p">,</span> <span class="n">check_random_state</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">Bunch</span><span class="p">,</span> <span class="n">check_random_state</span>
 <span class="kn">from</span> <span class="nn">.utils._param_validation</span> <span class="kn">import</span> <span class="n">HasMethods</span><span class="p">,</span> <span class="n">StrOptions</span>
+<span class="kn">from</span> <span class="nn">.utils._response</span> <span class="kn">import</span> <span class="n">_get_response_values</span>
+<span class="kn">from</span> <span class="nn">.utils._user_interface</span> <span class="kn">import</span> <span class="n">_print_elapsed_time</span>
 <span class="kn">from</span> <span class="nn">.utils.metadata_routing</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">MetadataRouter</span><span class="p">,</span>
     <span class="n">MethodMapping</span><span class="p">,</span>
@@ -217,7 +220,12 @@
 <span class="kn">from</span> <span class="nn">.utils.metaestimators</span> <span class="kn">import</span> <span class="n">available_if</span>
 <span class="kn">from</span> <span class="nn">.utils.multiclass</span> <span class="kn">import</span> <span class="n">check_classification_targets</span>
 <span class="kn">from</span> <span class="nn">.utils.parallel</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
-<span class="kn">from</span> <span class="nn">.utils.validation</span> <span class="kn">import</span> <span class="n">_check_method_params</span><span class="p">,</span> <span class="n">check_is_fitted</span><span class="p">,</span> <span class="n">has_fit_parameter</span>
+<span class="kn">from</span> <span class="nn">.utils.validation</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_check_method_params</span><span class="p">,</span>
+    <span class="n">_check_response_method</span><span class="p">,</span>
+    <span class="n">check_is_fitted</span><span class="p">,</span>
+    <span class="n">has_fit_parameter</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;MultiOutputRegressor&quot;</span><span class="p">,</span>
@@ -501,8 +509,8 @@
         <span class="n">router</span> <span class="o">=</span> <span class="n">MetadataRouter</span><span class="p">(</span><span class="n">owner</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
             <span class="n">estimator</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">,</span>
             <span class="n">method_mapping</span><span class="o">=</span><span class="n">MethodMapping</span><span class="p">()</span>
-            <span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">callee</span><span class="o">=</span><span class="s2">&quot;partial_fit&quot;</span><span class="p">,</span> <span class="n">caller</span><span class="o">=</span><span class="s2">&quot;partial_fit&quot;</span><span class="p">)</span>
-            <span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">callee</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="n">caller</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">),</span>
+            <span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">caller</span><span class="o">=</span><span class="s2">&quot;partial_fit&quot;</span><span class="p">,</span> <span class="n">callee</span><span class="o">=</span><span class="s2">&quot;partial_fit&quot;</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">caller</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="n">callee</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">),</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">router</span>
 
@@ -824,6 +832,46 @@
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">estimator_idx</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">n_estimators</span><span class="si">}</span><span class="s2">) </span><span class="si">{</span><span class="n">processing_msg</span><span class="si">}</span><span class="s2">&quot;</span>
 
+    <span class="k">def</span> <span class="nf">_get_predictions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">output_method</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get predictions for each model in the chain.&quot;&quot;&quot;</span>
+        <span class="n">check_is_fitted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_data</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">accept_sparse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">reset</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">Y_output_chain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">)))</span>
+        <span class="n">Y_feature_chain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">)))</span>
+
+        <span class="c1"># `RegressorChain` does not have a `chain_method_` parameter so we</span>
+        <span class="c1"># default to &quot;predict&quot;</span>
+        <span class="n">chain_method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;chain_method_&quot;</span><span class="p">,</span> <span class="s2">&quot;predict&quot;</span><span class="p">)</span>
+        <span class="n">hstack</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">hstack</span> <span class="k">if</span> <span class="n">sp</span><span class="o">.</span><span class="n">issparse</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span>
+        <span class="k">for</span> <span class="n">chain_idx</span><span class="p">,</span> <span class="n">estimator</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">):</span>
+            <span class="n">previous_predictions</span> <span class="o">=</span> <span class="n">Y_feature_chain</span><span class="p">[:,</span> <span class="p">:</span><span class="n">chain_idx</span><span class="p">]</span>
+            <span class="c1"># if `X` is a scipy sparse dok_array, we convert it to a sparse</span>
+            <span class="c1"># coo_array format before hstacking, it&#39;s faster; see</span>
+            <span class="c1"># https://github.com/scipy/scipy/issues/20060#issuecomment-1937007039:</span>
+            <span class="k">if</span> <span class="n">sp</span><span class="o">.</span><span class="n">issparse</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">sp</span><span class="o">.</span><span class="n">isspmatrix</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="ow">and</span> <span class="n">X</span><span class="o">.</span><span class="n">format</span> <span class="o">==</span> <span class="s2">&quot;dok&quot;</span><span class="p">:</span>
+                <span class="n">X</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">coo_array</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+            <span class="n">X_aug</span> <span class="o">=</span> <span class="n">hstack</span><span class="p">((</span><span class="n">X</span><span class="p">,</span> <span class="n">previous_predictions</span><span class="p">))</span>
+
+            <span class="n">feature_predictions</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_get_response_values</span><span class="p">(</span>
+                <span class="n">estimator</span><span class="p">,</span>
+                <span class="n">X_aug</span><span class="p">,</span>
+                <span class="n">response_method</span><span class="o">=</span><span class="n">chain_method</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">Y_feature_chain</span><span class="p">[:,</span> <span class="n">chain_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">feature_predictions</span>
+
+            <span class="n">output_predictions</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_get_response_values</span><span class="p">(</span>
+                <span class="n">estimator</span><span class="p">,</span>
+                <span class="n">X_aug</span><span class="p">,</span>
+                <span class="n">response_method</span><span class="o">=</span><span class="n">output_method</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">Y_output_chain</span><span class="p">[:,</span> <span class="n">chain_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_predictions</span>
+
+        <span class="n">inv_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order_</span><span class="p">)</span>
+        <span class="n">inv_order</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">order_</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order_</span><span class="p">))</span>
+        <span class="n">Y_output</span> <span class="o">=</span> <span class="n">Y_output_chain</span><span class="p">[:,</span> <span class="n">inv_order</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">Y_output</span>
+
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit the model to data matrix X and targets Y.</span>
@@ -872,7 +920,19 @@
                 <span class="n">X_aug</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">X</span><span class="p">,</span> <span class="n">Y_pred_chain</span><span class="p">))</span>
 
         <span class="k">elif</span> <span class="n">sp</span><span class="o">.</span><span class="n">issparse</span><span class="p">(</span><span class="n">X</span><span class="p">):</span>
-            <span class="n">Y_pred_chain</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">lil_matrix</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="c1"># TODO: remove this condition check when the minimum supported scipy version</span>
+            <span class="c1"># doesn&#39;t support sparse matrices anymore</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">sp</span><span class="o">.</span><span class="n">isspmatrix</span><span class="p">(</span><span class="n">X</span><span class="p">):</span>
+                <span class="c1"># if `X` is a scipy sparse dok_array, we convert it to a sparse</span>
+                <span class="c1"># coo_array format before hstacking, it&#39;s faster; see</span>
+                <span class="c1"># https://github.com/scipy/scipy/issues/20060#issuecomment-1937007039:</span>
+                <span class="k">if</span> <span class="n">X</span><span class="o">.</span><span class="n">format</span> <span class="o">==</span> <span class="s2">&quot;dok&quot;</span><span class="p">:</span>
+                    <span class="n">X</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">coo_array</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+                <span class="c1"># in case that `X` is a sparse array we create `Y_pred_chain` as a</span>
+                <span class="c1"># sparse array format:</span>
+                <span class="n">Y_pred_chain</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">coo_array</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">Y_pred_chain</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">coo_matrix</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
             <span class="n">X_aug</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">X</span><span class="p">,</span> <span class="n">Y_pred_chain</span><span class="p">),</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;lil&quot;</span><span class="p">)</span>
 
         <span class="k">else</span><span class="p">:</span>
@@ -885,6 +945,16 @@
             <span class="n">routed_params</span> <span class="o">=</span> <span class="n">process_routing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">routed_params</span> <span class="o">=</span> <span class="n">Bunch</span><span class="p">(</span><span class="n">estimator</span><span class="o">=</span><span class="n">Bunch</span><span class="p">(</span><span class="n">fit</span><span class="o">=</span><span class="n">fit_params</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;chain_method&quot;</span><span class="p">):</span>
+            <span class="n">chain_method</span> <span class="o">=</span> <span class="n">_check_response_method</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">base_estimator</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">chain_method</span><span class="p">,</span>
+            <span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">chain_method_</span> <span class="o">=</span> <span class="n">chain_method</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># `RegressorChain` does not have a `chain_method` parameter</span>
+            <span class="n">chain_method</span> <span class="o">=</span> <span class="s2">&quot;predict&quot;</span>
 
         <span class="k">for</span> <span class="n">chain_idx</span><span class="p">,</span> <span class="n">estimator</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">):</span>
             <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_message</span><span class="p">(</span>
@@ -903,8 +973,15 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cv</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">chain_idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">col_idx</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">chain_idx</span>
                 <span class="n">cv_result</span> <span class="o">=</span> <span class="n">cross_val_predict</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">base_estimator</span><span class="p">,</span> <span class="n">X_aug</span><span class="p">[:,</span> <span class="p">:</span><span class="n">col_idx</span><span class="p">],</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cv</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">base_estimator</span><span class="p">,</span>
+                    <span class="n">X_aug</span><span class="p">[:,</span> <span class="p">:</span><span class="n">col_idx</span><span class="p">],</span>
+                    <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span>
+                    <span class="n">cv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cv</span><span class="p">,</span>
+                    <span class="n">method</span><span class="o">=</span><span class="n">chain_method</span><span class="p">,</span>
                 <span class="p">)</span>
+                <span class="c1"># `predict_proba` output is 2D, we use only output for classes[-1]</span>
+                <span class="k">if</span> <span class="n">cv_result</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">cv_result</span> <span class="o">=</span> <span class="n">cv_result</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">sp</span><span class="o">.</span><span class="n">issparse</span><span class="p">(</span><span class="n">X_aug</span><span class="p">):</span>
                     <span class="n">X_aug</span><span class="p">[:,</span> <span class="n">col_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">cv_result</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
@@ -925,25 +1002,7 @@
 <span class="sd">        Y_pred : array-like of shape (n_samples, n_classes)</span>
 <span class="sd">            The predicted values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">check_is_fitted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_data</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">accept_sparse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">reset</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">Y_pred_chain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">)))</span>
-        <span class="k">for</span> <span class="n">chain_idx</span><span class="p">,</span> <span class="n">estimator</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">):</span>
-            <span class="n">previous_predictions</span> <span class="o">=</span> <span class="n">Y_pred_chain</span><span class="p">[:,</span> <span class="p">:</span><span class="n">chain_idx</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">sp</span><span class="o">.</span><span class="n">issparse</span><span class="p">(</span><span class="n">X</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">chain_idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">X_aug</span> <span class="o">=</span> <span class="n">X</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">X_aug</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">X</span><span class="p">,</span> <span class="n">previous_predictions</span><span class="p">))</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">X_aug</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">X</span><span class="p">,</span> <span class="n">previous_predictions</span><span class="p">))</span>
-            <span class="n">Y_pred_chain</span><span class="p">[:,</span> <span class="n">chain_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_aug</span><span class="p">)</span>
-
-        <span class="n">inv_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order_</span><span class="p">)</span>
-        <span class="n">inv_order</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">order_</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order_</span><span class="p">))</span>
-        <span class="n">Y_pred</span> <span class="o">=</span> <span class="n">Y_pred_chain</span><span class="p">[:,</span> <span class="n">inv_order</span><span class="p">]</span>
-
-        <span class="k">return</span> <span class="n">Y_pred</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_predictions</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">output_method</span><span class="o">=</span><span class="s2">&quot;predict&quot;</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">ClassifierChain</span><span class="p">(</span><span class="n">MetaEstimatorMixin</span><span class="p">,</span> <span class="n">ClassifierMixin</span><span class="p">,</span> <span class="n">_BaseChain</span><span class="p">):</span>
@@ -994,6 +1053,19 @@
 <span class="sd">        - :term:`CV splitter`,</span>
 <span class="sd">        - An iterable yielding (train, test) splits as arrays of indices.</span>
 
+<span class="sd">    chain_method : {&#39;predict&#39;, &#39;predict_proba&#39;, &#39;predict_log_proba&#39;, \</span>
+<span class="sd">            &#39;decision_function&#39;} or list of such str&#39;s, default=&#39;predict&#39;</span>
+
+<span class="sd">        Prediction method to be used by estimators in the chain for</span>
+<span class="sd">        the &#39;prediction&#39; features of previous estimators in the chain.</span>
+
+<span class="sd">        - if `str`, name of the method;</span>
+<span class="sd">        - if a list of `str`, provides the method names in order of</span>
+<span class="sd">          preference. The method used corresponds to the first method in</span>
+<span class="sd">          the list that is implemented by `base_estimator`.</span>
+
+<span class="sd">        .. versionadded:: 1.5</span>
+
 <span class="sd">    random_state : int, RandomState instance or None, optional (default=None)</span>
 <span class="sd">        If ``order=&#39;random&#39;``, determines random number generation for the</span>
 <span class="sd">        chain order.</span>
@@ -1019,6 +1091,10 @@
 
 <span class="sd">    order_ : list</span>
 <span class="sd">        The order of labels in the classifier chain.</span>
+
+<span class="sd">    chain_method_ : str</span>
+<span class="sd">        Prediction method used by estimators in the chain for the prediction</span>
+<span class="sd">        features.</span>
 
 <span class="sd">    n_features_in_ : int</span>
 <span class="sd">        Number of features seen during :term:`fit`. Only defined if the</span>
@@ -1066,6 +1142,36 @@
 <span class="sd">           [0.8878..., 0.3684..., 0.2640...],</span>
 <span class="sd">           [0.0321..., 0.9935..., 0.0626...]])</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_parameter_constraints</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="o">**</span><span class="n">_BaseChain</span><span class="o">.</span><span class="n">_parameter_constraints</span><span class="p">,</span>
+        <span class="s2">&quot;chain_method&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="nb">list</span><span class="p">,</span>
+            <span class="nb">tuple</span><span class="p">,</span>
+            <span class="n">StrOptions</span><span class="p">(</span>
+                <span class="p">{</span><span class="s2">&quot;predict&quot;</span><span class="p">,</span> <span class="s2">&quot;predict_proba&quot;</span><span class="p">,</span> <span class="s2">&quot;predict_log_proba&quot;</span><span class="p">,</span> <span class="s2">&quot;decision_function&quot;</span><span class="p">}</span>
+            <span class="p">),</span>
+        <span class="p">],</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">base_estimator</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">cv</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">chain_method</span><span class="o">=</span><span class="s2">&quot;predict&quot;</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">base_estimator</span><span class="p">,</span>
+            <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span>
+            <span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chain_method</span> <span class="o">=</span> <span class="n">chain_method</span>
 
     <span class="nd">@_fit_context</span><span class="p">(</span>
         <span class="c1"># ClassifierChain.base_estimator is not validated yet</span>
@@ -1115,22 +1221,7 @@
 <span class="sd">        Y_prob : array-like of shape (n_samples, n_classes)</span>
 <span class="sd">            The predicted probabilities.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_data</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">accept_sparse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">reset</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">Y_prob_chain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">)))</span>
-        <span class="n">Y_pred_chain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">)))</span>
-        <span class="k">for</span> <span class="n">chain_idx</span><span class="p">,</span> <span class="n">estimator</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">):</span>
-            <span class="n">previous_predictions</span> <span class="o">=</span> <span class="n">Y_pred_chain</span><span class="p">[:,</span> <span class="p">:</span><span class="n">chain_idx</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">sp</span><span class="o">.</span><span class="n">issparse</span><span class="p">(</span><span class="n">X</span><span class="p">):</span>
-                <span class="n">X_aug</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">X</span><span class="p">,</span> <span class="n">previous_predictions</span><span class="p">))</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">X_aug</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">X</span><span class="p">,</span> <span class="n">previous_predictions</span><span class="p">))</span>
-            <span class="n">Y_prob_chain</span><span class="p">[:,</span> <span class="n">chain_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X_aug</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span>
-            <span class="n">Y_pred_chain</span><span class="p">[:,</span> <span class="n">chain_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_aug</span><span class="p">)</span>
-        <span class="n">inv_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order_</span><span class="p">)</span>
-        <span class="n">inv_order</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">order_</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order_</span><span class="p">))</span>
-        <span class="n">Y_prob</span> <span class="o">=</span> <span class="n">Y_prob_chain</span><span class="p">[:,</span> <span class="n">inv_order</span><span class="p">]</span>
-
-        <span class="k">return</span> <span class="n">Y_prob</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_predictions</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">output_method</span><span class="o">=</span><span class="s2">&quot;predict_proba&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">predict_log_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Predict logarithm of probability estimates.</span>
@@ -1162,23 +1253,7 @@
 <span class="sd">            Returns the decision function of the sample for each model</span>
 <span class="sd">            in the chain.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_data</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">accept_sparse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">reset</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">Y_decision_chain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">)))</span>
-        <span class="n">Y_pred_chain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">)))</span>
-        <span class="k">for</span> <span class="n">chain_idx</span><span class="p">,</span> <span class="n">estimator</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">):</span>
-            <span class="n">previous_predictions</span> <span class="o">=</span> <span class="n">Y_pred_chain</span><span class="p">[:,</span> <span class="p">:</span><span class="n">chain_idx</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">sp</span><span class="o">.</span><span class="n">issparse</span><span class="p">(</span><span class="n">X</span><span class="p">):</span>
-                <span class="n">X_aug</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">X</span><span class="p">,</span> <span class="n">previous_predictions</span><span class="p">))</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">X_aug</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">X</span><span class="p">,</span> <span class="n">previous_predictions</span><span class="p">))</span>
-            <span class="n">Y_decision_chain</span><span class="p">[:,</span> <span class="n">chain_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">decision_function</span><span class="p">(</span><span class="n">X_aug</span><span class="p">)</span>
-            <span class="n">Y_pred_chain</span><span class="p">[:,</span> <span class="n">chain_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_aug</span><span class="p">)</span>
-
-        <span class="n">inv_order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order_</span><span class="p">)</span>
-        <span class="n">inv_order</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">order_</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order_</span><span class="p">))</span>
-        <span class="n">Y_decision</span> <span class="o">=</span> <span class="n">Y_decision_chain</span><span class="p">[:,</span> <span class="n">inv_order</span><span class="p">]</span>
-
-        <span class="k">return</span> <span class="n">Y_decision</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_predictions</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">output_method</span><span class="o">=</span><span class="s2">&quot;decision_function&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_metadata_routing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get metadata routing of this object.</span>
@@ -1196,7 +1271,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">router</span> <span class="o">=</span> <span class="n">MetadataRouter</span><span class="p">(</span><span class="n">owner</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
             <span class="n">estimator</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base_estimator</span><span class="p">,</span>
-            <span class="n">method_mapping</span><span class="o">=</span><span class="n">MethodMapping</span><span class="p">()</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">callee</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="n">caller</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">),</span>
+            <span class="n">method_mapping</span><span class="o">=</span><span class="n">MethodMapping</span><span class="p">()</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">caller</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="n">callee</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">),</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">router</span>
 
@@ -1291,7 +1366,7 @@
 <span class="sd">    --------</span>
 <span class="sd">    &gt;&gt;&gt; from sklearn.multioutput import RegressorChain</span>
 <span class="sd">    &gt;&gt;&gt; from sklearn.linear_model import LogisticRegression</span>
-<span class="sd">    &gt;&gt;&gt; logreg = LogisticRegression(solver=&#39;lbfgs&#39;,multi_class=&#39;multinomial&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; logreg = LogisticRegression(solver=&#39;lbfgs&#39;)</span>
 <span class="sd">    &gt;&gt;&gt; X, Y = [[1, 0], [0, 1], [1, 1]], [[0, 2], [1, 1], [2, 0]]</span>
 <span class="sd">    &gt;&gt;&gt; chain = RegressorChain(base_estimator=logreg, order=[0, 1]).fit(X, Y)</span>
 <span class="sd">    &gt;&gt;&gt; chain.predict(X)</span>
@@ -1345,7 +1420,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">router</span> <span class="o">=</span> <span class="n">MetadataRouter</span><span class="p">(</span><span class="n">owner</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
             <span class="n">estimator</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base_estimator</span><span class="p">,</span>
-            <span class="n">method_mapping</span><span class="o">=</span><span class="n">MethodMapping</span><span class="p">()</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">callee</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="n">caller</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">),</span>
+            <span class="n">method_mapping</span><span class="o">=</span><span class="n">MethodMapping</span><span class="p">()</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">caller</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="n">callee</span><span class="o">=</span><span class="s2">&quot;fit&quot;</span><span class="p">),</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">router</span>
 

@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -294,12 +295,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -863,7 +864,7 @@
                 
   <span class="target" id="module-darts.utils.multioutput"></span><dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.multioutput.MultiOutputRegressor">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.multioutput.</span></span><span class="sig-name descname"><span class="pre">MultiOutputRegressor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">estimator</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/multioutput.html#MultiOutputRegressor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.multioutput.MultiOutputRegressor" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.multioutput.</span></span><span class="sig-name descname"><span class="pre">MultiOutputRegressor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_set_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_weight_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/multioutput.html#MultiOutputRegressor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.multioutput.MultiOutputRegressor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">MultiOutputRegressor</span></code></p>
 <p><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.utils.multioutput.MultiOutputRegressor</span></code> with a modified <code class="docutils literal notranslate"><span class="pre">fit()</span></code> method that also slices
 validation data correctly. The validation data has to be passed as parameter <code class="docutils literal notranslate"><span class="pre">eval_set</span></code> in <code class="docutils literal notranslate"><span class="pre">**fit_params</span></code>.</p>
@@ -916,7 +917,7 @@ validation data correctly. The validation data has to be passed as parameter <co
 <li><p><strong>X</strong> (<em>{array-like</em><em>, </em><em>sparse matrix} of shape</em><em> (</em><em>n_samples</em><em>, </em><em>n_features</em><em>)</em>) – The input data.</p></li>
 <li><p><strong>y</strong> (<em>{array-like</em><em>, </em><em>sparse matrix} of shape</em><em> (</em><em>n_samples</em><em>, </em><em>n_outputs</em><em>)</em>) – Multi-output targets. An indicator matrix turns on multilabel
 estimation.</p></li>
-<li><p><strong>sample_weight</strong> (<em>array-like of shape</em><em> (</em><em>n_samples</em><em>,</em><em>)</em><em>, </em><em>default=None</em>) – Sample weights. If <cite>None</cite>, then samples are equally weighted.
+<li><p><strong>sample_weight</strong> (<em>array-like of shape</em><em> (</em><em>n_samples</em><em>, </em><em>n_outputs</em><em>)</em><em>, </em><em>default=None</em>) – Sample weights. If <cite>None</cite>, then samples are equally weighted.
 Only supported if the underlying regressor supports sample
 weights.</p></li>
 <li><p><strong>**fit_params</strong> (<em>dict of string -&gt; object</em>) – <p>Parameters passed to the <code class="docutils literal notranslate"><span class="pre">estimator.fit</span></code> method of each step.</p>

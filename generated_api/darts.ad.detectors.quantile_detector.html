@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -862,15 +863,15 @@ computed as quantiles of historical data when the detector is fitted.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.ad.detectors.quantile_detector.QuantileDetector">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.ad.detectors.quantile_detector.</span></span><span class="sig-name descname"><span class="pre">QuantileDetector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">low_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/detectors/quantile_detector.html#QuantileDetector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.detectors.quantile_detector.QuantileDetector" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.ad.detectors.detectors.html#darts.ad.detectors.detectors.FittableDetector" title="darts.ad.detectors.detectors.FittableDetector"><code class="xref py py-class docutils literal notranslate"><span class="pre">FittableDetector</span></code></a></p>
-<p>Flags values that are either
-below or above the <cite>low_quantile</cite> and <cite>high_quantile</cite>
-quantiles of historical data, respectively.</p>
-<p>If a single value is provided for <cite>low_quantile</cite> or <cite>high_quantile</cite>, this same
-value will be used across all components of the series.</p>
+<dd><p>Bases: <a class="reference internal" href="darts.ad.detectors.detectors.html#darts.ad.detectors.detectors.FittableDetector" title="darts.ad.detectors.detectors.FittableDetector"><code class="xref py py-class docutils literal notranslate"><span class="pre">FittableDetector</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_BoundedDetectorMixin</span></code></p>
+<p>Quantile Detector</p>
+<p>Flags values that are either below or above the <cite>low_quantile</cite> and <cite>high_quantile</cite> quantiles
+of historical data, respectively.</p>
+<p>If a single value is provided for <cite>low_quantile</cite> or <cite>high_quantile</cite>, this same value will be
+used across all components of the series.</p>
 <p>If sequences of values are given for the parameters <cite>low_quantile</cite> and/or <cite>high_quantile</cite>,
 they must be of the same length, matching the dimensionality of the series passed
-to <code class="docutils literal notranslate"><span class="pre">fit()</span></code>, or have a length of 1. In the latter case, this single value will be used
+to <cite>fit()</cite>, or have a length of 1. In the latter case, this single value will be used
 across all components of the series.</p>
 <p>If either <cite>low_quantile</cite> or <cite>high_quantile</cite> is None, the corresponding bound will not be used.
 However, at least one of the two must be set.</p>
@@ -886,18 +887,21 @@ this detector is applied to.</p></li>
 </ul>
 </dd>
 </dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="darts.ad.detectors.quantile_detector.QuantileDetector.low_threshold">
-<span class="sig-name descname"><span class="pre">low_threshold</span></span><a class="headerlink" href="#darts.ad.detectors.quantile_detector.QuantileDetector.low_threshold" title="Permalink to this definition">¶</a></dt>
-<dd><p>The (sequence of) lower quantile values.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="darts.ad.detectors.quantile_detector.QuantileDetector.high_threshold">
-<span class="sig-name descname"><span class="pre">high_threshold</span></span><a class="headerlink" href="#darts.ad.detectors.quantile_detector.QuantileDetector.high_threshold" title="Permalink to this definition">¶</a></dt>
-<dd><p>The (sequence of) upper quantile values.</p>
-</dd></dl>
-
+<p class="rubric">Attributes</p>
+<table class="table">
+<colgroup>
+<col style="width: 64%" />
+<col style="width: 36%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>high_threshold</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>low_threshold</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="autosummary longtable table autosummary">
 <colgroup>
@@ -905,10 +909,10 @@ this detector is applied to.</p></li>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.detectors.quantile_detector.QuantileDetector.detect" title="darts.ad.detectors.quantile_detector.QuantileDetector.detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">detect</span></code></a>(series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.detectors.quantile_detector.QuantileDetector.detect" title="darts.ad.detectors.quantile_detector.QuantileDetector.detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">detect</span></code></a>(series[, name])</p></td>
 <td><p>Detect anomalies on given time series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.detectors.quantile_detector.QuantileDetector.eval_accuracy" title="darts.ad.detectors.quantile_detector.QuantileDetector.eval_accuracy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_accuracy</span></code></a>(actual_anomalies, anomaly_score)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.detectors.quantile_detector.QuantileDetector.eval_metric" title="darts.ad.detectors.quantile_detector.QuantileDetector.eval_metric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_metric</span></code></a>(anomalies, pred_scores[, ...])</p></td>
 <td><p>Score the results against true anomalies.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.detectors.quantile_detector.QuantileDetector.fit" title="darts.ad.detectors.quantile_detector.QuantileDetector.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
@@ -921,14 +925,17 @@ this detector is applied to.</p></li>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.ad.detectors.quantile_detector.QuantileDetector.detect">
-<span class="sig-name descname"><span class="pre">detect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.detectors.quantile_detector.QuantileDetector.detect" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">detect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'series'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.detectors.quantile_detector.QuantileDetector.detect" title="Permalink to this definition">¶</a></dt>
 <dd><p>Detect anomalies on given time series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – series on which to detect anomalies.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) series on which to detect anomalies.</p></li>
+<li><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The name of <cite>series</cite>.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>binary prediciton (1 if considered as an anomaly, 0 if not)</p>
+<dd class="field-even"><p>binary prediction (1 if considered as an anomaly, 0 if not)</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
@@ -937,19 +944,17 @@ this detector is applied to.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.ad.detectors.quantile_detector.QuantileDetector.eval_accuracy">
-<span class="sig-name descname"><span class="pre">eval_accuracy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anomaly_score</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'recall'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.detectors.quantile_detector.QuantileDetector.eval_accuracy" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.ad.detectors.quantile_detector.QuantileDetector.eval_metric">
+<span class="sig-name descname"><span class="pre">eval_metric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_scores</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'recall'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.detectors.quantile_detector.QuantileDetector.eval_metric" title="Permalink to this definition">¶</a></dt>
 <dd><p>Score the results against true anomalies.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The ground truth of the anomalies (1 if it is an anomaly and 0 if not).</p></li>
-<li><p><strong>anomaly_score</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – Series indicating how anomoulous each window of size w is.</p></li>
-<li><p><strong>window</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Integer value indicating the number of past samples each point represents
-in the anomaly_score.</p></li>
-<li><p><strong>metric</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Metric function to use. Must be one of “recall”, “precision”,
-“f1”, and “accuracy”.
-Default: “recall”</p></li>
+<li><p><strong>anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) ground truth binary anomaly series (<cite>1</cite> if it is an anomaly and <cite>0</cite> if not).</p></li>
+<li><p><strong>pred_scores</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) of estimated anomaly score series indicating how anomalous each window of size w is.</p></li>
+<li><p><strong>window</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Integer value indicating the number of past samples each point represents in the <cite>pred_scores</cite>.</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘recall’, ‘precision’, ‘f1’, ‘accuracy’]) – The name of the metric function to use. Must be one of “recall”, “precision”, “f1”, and “accuracy”.
+Default: “recall”.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -967,7 +972,7 @@ Default: “recall”</p></li>
 <dd><p>Trains the detector on the given time series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – Time series to be used to train the detector.</p>
+<dd class="field-odd"><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – Time (sequence of) series to be used to train the detector.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Fitted Detector.</p>
@@ -994,6 +999,16 @@ Default: “recall”</p></li>
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.ad.detectors.quantile_detector.QuantileDetector.high_threshold">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">high_threshold</span></span><a class="headerlink" href="#darts.ad.detectors.quantile_detector.QuantileDetector.high_threshold" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.ad.detectors.quantile_detector.QuantileDetector.low_threshold">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">low_threshold</span></span><a class="headerlink" href="#darts.ad.detectors.quantile_detector.QuantileDetector.low_threshold" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 

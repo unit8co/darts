@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -1792,19 +1793,66 @@ Downloads the dataset if it is not present already</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="darts.datasets.TaxiNewYorkDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">TaxiNewYorkDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#TaxiNewYorkDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.TaxiNewYorkDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
+<p>Taxi Passengers in New York, from 2014-07 to 2015-01.
+The data consists of aggregated total number of
+taxi passengers into 30 minute buckets.
+Univariate series.
+Source: <a class="reference internal" href="#r14c52ade7a46-1" id="id22">[1]</a></p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r14c52ade7a46-1"><span class="brackets"><a class="fn-backref" href="#id22">1</a></span></dt>
+<dd><p><a class="reference external" href="https://www.kaggle.com/code/julienjta/nyc-taxi-traffic-analysis">https://www.kaggle.com/code/julienjta/nyc-taxi-traffic-analysis</a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.TaxiNewYorkDataset.load" title="darts.datasets.TaxiNewYorkDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.datasets.TaxiNewYorkDataset.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.TaxiNewYorkDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.TaylorDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">TaylorDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#TaylorDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.TaylorDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Half-hourly electricity demand in England and Wales from Monday 5 June 2000 to Sunday 27 August 2000.
-Discussed in Taylor (2003) <a class="reference internal" href="#r0041d9a8a6dc-1" id="id22">[1]</a>, and kindly provided by James W Taylor <a class="reference internal" href="#r0041d9a8a6dc-2" id="id23">[2]</a>. Units: Megawatts
+Discussed in Taylor (2003) <a class="reference internal" href="#r0041d9a8a6dc-1" id="id23">[1]</a>, and kindly provided by James W Taylor <a class="reference internal" href="#r0041d9a8a6dc-2" id="id24">[2]</a>. Units: Megawatts
 (Uses an integer time index).</p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r0041d9a8a6dc-1"><span class="brackets"><a class="fn-backref" href="#id22">1</a></span></dt>
+<dt class="label" id="r0041d9a8a6dc-1"><span class="brackets"><a class="fn-backref" href="#id23">1</a></span></dt>
 <dd><p>Taylor, J.W. (2003) Short-term electricity demand forecasting using double seasonal exponential smoothing.
 Journal of the Operational Research Society, 54, 799-805.</p>
 </dd>
-<dt class="label" id="r0041d9a8a6dc-2"><span class="brackets"><a class="fn-backref" href="#id23">2</a></span></dt>
+<dt class="label" id="r0041d9a8a6dc-2"><span class="brackets"><a class="fn-backref" href="#id24">2</a></span></dt>
 <dd><p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor">https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor</a></p>
 </dd>
 </dl>
@@ -1884,10 +1932,10 @@ Downloads the dataset if it is not present already</p>
 <p>The data in this repo is a collection of 48 months (2015-2016) hourly data from the California Department
 of Transportation. The data describes the road occupancy rates (between 0 and 1) measured by 862 different sensors
 on San Francisco Bay area freeways. The raw data is in <a class="reference external" href="http://pems.dot.ca.gov">http://pems.dot.ca.gov</a>.
-Source: <a class="reference internal" href="#r860edad1c9c7-1" id="id24">[1]</a></p>
+Source: <a class="reference internal" href="#r860edad1c9c7-1" id="id25">[1]</a></p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r860edad1c9c7-1"><span class="brackets"><a class="fn-backref" href="#id24">1</a></span></dt>
+<dt class="label" id="r860edad1c9c7-1"><span class="brackets"><a class="fn-backref" href="#id25">1</a></span></dt>
 <dd><p><a class="reference external" href="https://github.com/laiguokun/multivariate-time-series-data">https://github.com/laiguokun/multivariate-time-series-data</a></p>
 </dd>
 </dl>
@@ -1946,10 +1994,10 @@ Downloads the dataset if it is not present already</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">USGasolineDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#USGasolineDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.USGasolineDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Weekly U.S. Product Supplied of Finished Motor Gasoline between 1991-02-08 and 2021-04-30</p>
-<p>Obtained from <a class="reference internal" href="#r82273ef589c5-1" id="id25">[1]</a>.</p>
+<p>Obtained from <a class="reference internal" href="#r82273ef589c5-1" id="id26">[1]</a>.</p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r82273ef589c5-1"><span class="brackets"><a class="fn-backref" href="#id25">1</a></span></dt>
+<dt class="label" id="r82273ef589c5-1"><span class="brackets"><a class="fn-backref" href="#id26">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&amp;s=wgfupus2&amp;f=W">https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&amp;s=wgfupus2&amp;f=W</a></p>
 </dd>
 </dl>
@@ -1991,13 +2039,13 @@ Downloads the dataset if it is not present already</p>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>14.3 million Uber pickups from January to June 2015. The data is resampled to hourly or daily based sample_freq
 on using the locationID as the target.
-Source: <a class="reference internal" href="#r426d30237afa-1" id="id26">[1]</a></p>
+Source: <a class="reference internal" href="#r426d30237afa-1" id="id27">[1]</a></p>
 <p>Loading this dataset will provide a multivariate timeseries with 262 columns for each locationID.
 The following code can be used to convert the dataset to a list of univariate timeseries,
 one for each locationID.</p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r426d30237afa-1"><span class="brackets"><a class="fn-backref" href="#id26">1</a></span></dt>
+<dt class="label" id="r426d30237afa-1"><span class="brackets"><a class="fn-backref" href="#id27">1</a></span></dt>
 <dd><p><a class="reference external" href="https://github.com/fivethirtyeight/uber-tlc-foil-response">https://github.com/fivethirtyeight/uber-tlc-foil-response</a></p>
 </dd>
 </dl>
@@ -2061,13 +2109,13 @@ Downloads the dataset if it is not present already</p>
 <p>Weather includes 21 indicators of weather, such as air
 temperature, and humidity. The data was recorded every
 10 min for 2020 in Germany.
-Source: <a class="reference internal" href="#r8a946e6db2bc-1" id="id27">[1]</a> <a class="reference internal" href="#r8a946e6db2bc-2" id="id28">[2]</a></p>
+Source: <a class="reference internal" href="#r8a946e6db2bc-1" id="id28">[1]</a> <a class="reference internal" href="#r8a946e6db2bc-2" id="id29">[2]</a></p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r8a946e6db2bc-1"><span class="brackets"><a class="fn-backref" href="#id27">1</a></span></dt>
+<dt class="label" id="r8a946e6db2bc-1"><span class="brackets"><a class="fn-backref" href="#id28">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.bgc-jena.mpg.de/wetter/">https://www.bgc-jena.mpg.de/wetter/</a></p>
 </dd>
-<dt class="label" id="r8a946e6db2bc-2"><span class="brackets"><a class="fn-backref" href="#id28">2</a></span></dt>
+<dt class="label" id="r8a946e6db2bc-2"><span class="brackets"><a class="fn-backref" href="#id29">2</a></span></dt>
 <dd><p><a class="reference external" href="https://arxiv.org/pdf/2205.13504.pdf">https://arxiv.org/pdf/2205.13504.pdf</a></p>
 </dd>
 </dl>
@@ -2126,10 +2174,10 @@ Downloads the dataset if it is not present already</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">WineDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#WineDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.WineDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Australian total wine sales by wine makers in bottles &lt;= 1 litre. Monthly between Jan 1980 and Aug 1994.
-Source: <a class="reference internal" href="#r186e955f2024-1" id="id29">[1]</a></p>
+Source: <a class="reference internal" href="#r186e955f2024-1" id="id30">[1]</a></p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r186e955f2024-1"><span class="brackets"><a class="fn-backref" href="#id29">1</a></span></dt>
+<dt class="label" id="r186e955f2024-1"><span class="brackets"><a class="fn-backref" href="#id30">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/wineind">https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/wineind</a></p>
 </dd>
 </dl>
@@ -2170,10 +2218,10 @@ Downloads the dataset if it is not present already</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">WoolyDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#WoolyDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.WoolyDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatasetLoaderCSV</span></code></a></p>
 <p>Quarterly production of woollen yarn in Australia: tonnes. Mar 1965 – Sep 1994.
-Source: <a class="reference internal" href="#r3f37309b76f8-1" id="id30">[1]</a></p>
+Source: <a class="reference internal" href="#r3f37309b76f8-1" id="id31">[1]</a></p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r3f37309b76f8-1"><span class="brackets"><a class="fn-backref" href="#id30">1</a></span></dt>
+<dt class="label" id="r3f37309b76f8-1"><span class="brackets"><a class="fn-backref" href="#id31">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/woolyrnq">https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/woolyrnq</a></p>
 </dd>
 </dl>

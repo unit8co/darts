@@ -34,6 +34,7 @@
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -182,8 +183,10 @@
 <span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">getcallargs</span><span class="p">,</span> <span class="n">signature</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Union</span>
 
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
+<span class="kn">from</span> <span class="nn">pandas._libs.tslibs.offsets</span> <span class="kn">import</span> <span class="n">BusinessMixin</span>
 <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
 <span class="kn">from</span> <span class="nn">tqdm.notebook</span> <span class="kn">import</span> <span class="n">tqdm</span> <span class="k">as</span> <span class="n">tqdm_notebook</span>
 
@@ -213,6 +216,30 @@
     <span class="n">MULTIPLICATIVE</span> <span class="o">=</span> <span class="s2">&quot;multiplicative&quot;</span>
     <span class="n">ADDITIVE</span> <span class="o">=</span> <span class="s2">&quot;additive&quot;</span>
     <span class="n">NONE</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<span class="c1"># TODO: remove this once bumping min python version from 3.8 to 3.9 (pandas v2.2.0 not available for p38)</span>
+<span class="n">pd_above_v22</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">__version__</span> <span class="o">&gt;=</span> <span class="s2">&quot;2.2&quot;</span>
+<span class="n">freqs</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;YE&quot;</span><span class="p">:</span> <span class="s2">&quot;YE&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;YS&quot;</span><span class="p">:</span> <span class="s2">&quot;YS&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;AS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BYS&quot;</span><span class="p">:</span> <span class="s2">&quot;BYS&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;BAS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BYE&quot;</span><span class="p">:</span> <span class="s2">&quot;BYE&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;BA&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;QE&quot;</span><span class="p">:</span> <span class="s2">&quot;QE&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;Q&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BQE&quot;</span><span class="p">:</span> <span class="s2">&quot;BQE&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;BQ&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ME&quot;</span><span class="p">:</span> <span class="s2">&quot;ME&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;M&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;SME&quot;</span><span class="p">:</span> <span class="s2">&quot;SME&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;SM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BME&quot;</span><span class="p">:</span> <span class="s2">&quot;BME&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;BM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CBME&quot;</span><span class="p">:</span> <span class="s2">&quot;CBME&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;CBM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;h&quot;</span><span class="p">:</span> <span class="s2">&quot;h&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;H&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;bh&quot;</span><span class="p">:</span> <span class="s2">&quot;bh&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;BH&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cbh&quot;</span><span class="p">:</span> <span class="s2">&quot;cbh&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;CBH&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;min&quot;</span><span class="p">:</span> <span class="s2">&quot;min&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;T&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;s&quot;</span><span class="p">:</span> <span class="s2">&quot;s&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;S&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ms&quot;</span><span class="p">:</span> <span class="s2">&quot;ms&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;L&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;us&quot;</span><span class="p">:</span> <span class="s2">&quot;us&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;U&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ns&quot;</span><span class="p">:</span> <span class="s2">&quot;ns&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;N&quot;</span><span class="p">,</span>
+<span class="p">}</span>
 
 
 <span class="k">def</span> <span class="nf">_build_tqdm_iterator</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">verbose</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -488,7 +515,7 @@
 <span class="sd">    Works for both integers and time stamps.</span>
 
 <span class="sd">    * if `end`, `start`, `freq` are all integers, we can simple divide the difference by the frequency.</span>
-<span class="sd">    * if `freq` is a pandas Dateoffset with non-ambiguous timedelate (e.g. &quot;d&quot;, &quot;h&quot;, ..., and not &quot;M&quot;, &quot;Y&quot;, ...),</span>
+<span class="sd">    * if `freq` is a pandas Dateoffset with non-ambiguous timedelate (e.g. &quot;d&quot;, &quot;h&quot;, ..., and not &quot;ME&quot;, &quot;YE&quot;, ...),</span>
 <span class="sd">        we can simply divide by the frequency</span>
 <span class="sd">    * otherwise, we take the period difference between the two time stamps.</span>
 
@@ -508,7 +535,7 @@
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
-<span class="sd">    &gt;&gt;&gt; n_steps_between(start=pd.Timestamp(&quot;2000-01-01&quot;), end=pd.Timestamp(&quot;2000-03-01&quot;), freq=&quot;M&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; n_steps_between(start=pd.Timestamp(&quot;2000-01-01&quot;), end=pd.Timestamp(&quot;2000-03-01&quot;), freq=&quot;ME&quot;)</span>
 <span class="sd">    2</span>
 <span class="sd">    &gt;&gt;&gt; n_steps_between(start=0, end=2, freq=1)</span>
 <span class="sd">    2</span>
@@ -516,6 +543,12 @@
 <span class="sd">    1</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">freq</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">frequencies</span><span class="o">.</span><span class="n">to_offset</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">freq</span>
+    <span class="n">valid_freq</span> <span class="o">=</span> <span class="n">freq</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">freq</span><span class="o">.</span><span class="n">n</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">valid_freq</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;`freq` must be positive/increasing, received freq=</span><span class="si">{</span><span class="n">freq</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
     <span class="n">valid_int</span> <span class="o">=</span> <span class="p">(</span>
         <span class="nb">isinstance</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
     <span class="p">)</span>
@@ -532,21 +565,41 @@
             <span class="p">),</span>
             <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="c1"># Series frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’)</span>
+    <span class="c1"># Series frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, &#39;W&#39;)</span>
     <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_timedelta</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;coerce&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">pd</span><span class="o">.</span><span class="n">NaT</span><span class="p">:</span>
-        <span class="n">n_steps</span> <span class="o">=</span> <span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">//</span> <span class="n">freq</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span> <span class="o">!=</span> <span class="n">diff</span><span class="p">:</span>
+            <span class="c1"># (A) when diff is negative, not perfectly divisible by freq, and freq is a multiple of a base frequency</span>
+            <span class="c1"># (e.g., &quot;2D&quot; or step=2), then computing `diff // freq` can be one off</span>
+            <span class="c1"># Example: `end=1, start=2, freq=2` -&gt; then `diff // freq` gives `-1`, but should be `0`.</span>
+            <span class="n">diff</span> <span class="o">+=</span> <span class="n">diff</span> <span class="o">%</span> <span class="n">freq</span>
+        <span class="n">n_steps</span> <span class="o">=</span> <span class="n">diff</span> <span class="o">//</span> <span class="n">freq</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">period_alias</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">frequencies</span><span class="o">.</span><span class="n">get_period_alias</span><span class="p">(</span><span class="n">freq</span><span class="o">.</span><span class="n">freqstr</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">period_alias</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Cannot infer period alias for `freq=</span><span class="si">{</span><span class="n">freq</span><span class="si">}</span><span class="s2">`. &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;Is it a valid pandas offset/frequency alias?&quot;</span>
-                <span class="p">),</span>
-                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="c1"># Create a temporary DatetimeIndex to extract the actual start index.</span>
-        <span class="n">n_steps</span> <span class="o">=</span> <span class="p">(</span><span class="n">end</span><span class="o">.</span><span class="n">to_period</span><span class="p">(</span><span class="n">period_alias</span><span class="p">)</span> <span class="o">-</span> <span class="n">start</span><span class="o">.</span><span class="n">to_period</span><span class="p">(</span><span class="n">period_alias</span><span class="p">))</span><span class="o">.</span><span class="n">n</span>
+        <span class="n">period_alias</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">frequencies</span><span class="o">.</span><span class="n">get_period_alias</span><span class="p">(</span><span class="n">freq</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">BusinessMixin</span><span class="p">)</span> <span class="ow">or</span> <span class="n">period_alias</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># for lower pandas versions ~1.5.0, business frequencies wrongly have a period alias.</span>
+            <span class="c1"># taking the period difference as computed in `else` gives wrong results.</span>
+            <span class="c1"># in this (worst) case for special frequencies (e.g &quot;C*&quot;), we must generate the index</span>
+            <span class="n">is_reversed</span> <span class="o">=</span> <span class="n">end</span> <span class="o">&lt;</span> <span class="n">start</span>
+            <span class="k">if</span> <span class="n">is_reversed</span><span class="p">:</span>
+                <span class="c1"># always generate an increasing index, since pandas (v2.2.1) gives inconsistent result for</span>
+                <span class="c1"># negative/decreasing frequencies. Then reverse the index in case of negative/decreasing</span>
+                <span class="c1"># input frequency</span>
+                <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">end</span><span class="p">,</span> <span class="n">start</span>
+            <span class="n">n_steps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">generate_index</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">n_steps</span><span class="p">:</span>
+                <span class="c1"># index includes end, take away for difference</span>
+                <span class="n">n_steps</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">is_reversed</span><span class="p">:</span>
+                <span class="n">n_steps</span> <span class="o">*=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># get the number of base periods (&quot;2MS&quot; has base freq &quot;MS&quot;) between the two time steps</span>
+            <span class="n">diff</span> <span class="o">=</span> <span class="p">(</span><span class="n">end</span><span class="o">.</span><span class="n">to_period</span><span class="p">(</span><span class="n">period_alias</span><span class="p">)</span> <span class="o">-</span> <span class="n">start</span><span class="o">.</span><span class="n">to_period</span><span class="p">(</span><span class="n">period_alias</span><span class="p">))</span><span class="o">.</span><span class="n">n</span>
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span> <span class="o">!=</span> <span class="n">diff</span><span class="p">:</span>
+                <span class="c1"># similar case as with (A)</span>
+                <span class="n">diff</span> <span class="o">+=</span> <span class="n">diff</span> <span class="o">%</span> <span class="n">freq</span><span class="o">.</span><span class="n">n</span>
+            <span class="c1"># floor division by the frequency multiplier (&quot;2MS&quot; has multiplier 2)</span>
+            <span class="n">n_steps</span> <span class="o">=</span> <span class="n">diff</span> <span class="o">//</span> <span class="n">freq</span><span class="o">.</span><span class="n">n</span>
     <span class="k">return</span> <span class="n">n_steps</span></div>
 
 
@@ -600,22 +653,51 @@
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="s2">&quot;D&quot;</span> <span class="k">if</span> <span class="n">freq</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">freq</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">frequencies</span><span class="o">.</span><span class="n">to_offset</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">freq</span>
         <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span>
             <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
             <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span>
             <span class="n">periods</span><span class="o">=</span><span class="n">length</span><span class="p">,</span>
-            <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;D&quot;</span> <span class="k">if</span> <span class="n">freq</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">freq</span><span class="p">,</span>
+            <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span>
             <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="k">if</span> <span class="n">freq</span><span class="o">.</span><span class="n">n</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">freq</span><span class="o">.</span><span class="n">is_on_offset</span><span class="p">(</span><span class="n">start</span><span class="p">):</span>
+                <span class="c1"># for anchored negative frequencies, and `start` does not intersect with `freq`:</span>
+                <span class="c1"># pandas (v2.2.1) generates an index that starts one step before `start` -&gt; remove this step</span>
+                <span class="n">index</span> <span class="o">=</span> <span class="n">index</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="k">elif</span> <span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">freq</span><span class="o">.</span><span class="n">is_on_offset</span><span class="p">(</span><span class="n">end</span><span class="p">):</span>
+                <span class="c1"># if `start` intersects with `freq`, then the same can happen for `end` -&gt; remove this step</span>
+                <span class="n">index</span> <span class="o">=</span> <span class="n">index</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>  <span class="c1"># int</span>
         <span class="n">step</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">freq</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">freq</span>
+        <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">start_</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">step</span> <span class="o">*</span> <span class="n">length</span> <span class="o">+</span> <span class="n">step</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">start_</span> <span class="o">=</span> <span class="n">start</span>
+
+        <span class="k">if</span> <span class="n">end</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">end_</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">step</span> <span class="o">*</span> <span class="n">length</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># make end inclusive</span>
+            <span class="n">end_</span> <span class="o">=</span> <span class="n">end</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">step</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">end</span> <span class="o">-</span> <span class="mi">1</span>
+
         <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span>
-            <span class="n">start</span><span class="o">=</span><span class="n">start</span> <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">end</span> <span class="o">-</span> <span class="n">step</span> <span class="o">*</span> <span class="n">length</span> <span class="o">+</span> <span class="n">step</span><span class="p">,</span>
-            <span class="n">stop</span><span class="o">=</span><span class="n">end</span> <span class="o">+</span> <span class="n">step</span> <span class="k">if</span> <span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">start</span> <span class="o">+</span> <span class="n">step</span> <span class="o">*</span> <span class="n">length</span><span class="p">,</span>
+            <span class="n">start</span><span class="o">=</span><span class="n">start_</span><span class="p">,</span>
+            <span class="n">stop</span><span class="o">=</span><span class="n">end_</span><span class="p">,</span>
             <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">,</span>
             <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">index</span></div>
+
+
+<div class="viewcode-block" id="expand_arr"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.expand_arr">[docs]</a><span class="k">def</span> <span class="nf">expand_arr</span><span class="p">(</span><span class="n">arr</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">ndim</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Expands a np.ndarray to `ndim` dimensions (if not already satisfied).&quot;&quot;&quot;</span>
+    <span class="n">shape</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ndim</span><span class="p">:</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">shape</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ndim</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">))))</span>
+    <span class="k">return</span> <span class="n">arr</span></div>
 </pre></div>
 
               </div>

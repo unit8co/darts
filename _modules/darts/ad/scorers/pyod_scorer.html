@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -173,35 +174,35 @@
                 
   <h1>Source code for darts.ad.scorers.pyod_scorer</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">PyODScorer</span>
+<span class="sd">PyOD Scorer</span>
 <span class="sd">-----</span>
 
 <span class="sd">This scorer can wrap around detection algorithms of PyOD.</span>
 <span class="sd">`PyOD https://pyod.readthedocs.io/en/latest/#`_.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span>
-
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">numpy.lib.stride_tricks</span> <span class="kn">import</span> <span class="n">sliding_window_view</span>
 <span class="kn">from</span> <span class="nn">pyod.models.base</span> <span class="kn">import</span> <span class="n">BaseDetector</span>
 
-<span class="kn">from</span> <span class="nn">darts.ad.scorers.scorers</span> <span class="kn">import</span> <span class="n">FittableAnomalyScorer</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">metrics</span>
+<span class="kn">from</span> <span class="nn">darts.ad.scorers.scorers</span> <span class="kn">import</span> <span class="n">WindowedAnomalyScorer</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
-<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.metrics.metrics</span> <span class="kn">import</span> <span class="n">METRIC_TYPE</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="PyODScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.pyod_scorer.html#darts.ad.scorers.pyod_scorer.PyODScorer">[docs]</a><span class="k">class</span> <span class="nc">PyODScorer</span><span class="p">(</span><span class="n">FittableAnomalyScorer</span><span class="p">):</span>
+<div class="viewcode-block" id="PyODScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.pyod_scorer.html#darts.ad.scorers.pyod_scorer.PyODScorer">[docs]</a><span class="k">class</span> <span class="nc">PyODScorer</span><span class="p">(</span><span class="n">WindowedAnomalyScorer</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model</span><span class="p">:</span> <span class="n">BaseDetector</span><span class="p">,</span>
         <span class="n">window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">component_wise</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">diff_fn</span><span class="o">=</span><span class="s2">&quot;abs_diff&quot;</span><span class="p">,</span>
+        <span class="n">window_agg</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">diff_fn</span><span class="p">:</span> <span class="n">METRIC_TYPE</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">ae</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;PyOD Scorer</span>
+
 <span class="sd">        When calling ``fit(series)``, a moving window is applied, which results in a set of vectors of size `W`,</span>
 <span class="sd">        where `W` is the window size. The PyODScorer model is trained on these vectors. The ``score(series)``</span>
 <span class="sd">        function will apply the same moving window and return the predicted raw anomaly score of each vector.</span>
@@ -212,8 +213,8 @@
 <span class="sd">        functions ``fit()`` and ``score()``, respectively.</span>
 
 <span class="sd">        `component_wise` is a boolean parameter indicating how the model should behave with multivariate inputs</span>
-<span class="sd">        series. If set to True, the model will treat each series dimension independently by fitting a different</span>
-<span class="sd">        PyODScorer model for each dimension. If set to False, the model concatenates the dimensions in</span>
+<span class="sd">        series. If set to `True`, the model will treat each series dimension independently by fitting a different</span>
+<span class="sd">        PyODScorer model for each dimension. If set to `False`, the model concatenates the dimensions in</span>
 <span class="sd">        each windows of length `W` and compute the score using only one underlying PyODScorer model.</span>
 
 <span class="sd">        **Training with** ``fit()``:</span>
@@ -221,8 +222,8 @@
 <span class="sd">        The input can be a series (univariate or multivariate) or multiple series. The series will be partitioned</span>
 <span class="sd">        into equal size subsequences. The subsequence will be of size `W` * `D`, with:</span>
 
-<span class="sd">        * `W` being the size of the window given as a parameter `window`</span>
-<span class="sd">        * `D` being the dimension of the series (`D` = 1 if univariate or if `component_wise` is set to True)</span>
+<span class="sd">        - `W` being the size of the window given as a parameter `window`</span>
+<span class="sd">        - `D` being the dimension of the series (`D` = 1 if univariate or if `component_wise` is set to `True`)</span>
 
 <span class="sd">        For a series of length `N`, (`N` - `W` + 1)/W subsequences will be generated. If a list of series is given</span>
 <span class="sd">        of length L, each series will be partitioned into subsequences, and the results will be concatenated into</span>
@@ -230,7 +231,7 @@
 
 <span class="sd">        The PyOD model will be fitted on the generated subsequences.</span>
 
-<span class="sd">        If `component_wise` is set to True, the algorithm will be applied to each dimension independently. For each</span>
+<span class="sd">        If `component_wise` is set to `True`, the algorithm will be applied to each dimension independently. For each</span>
 <span class="sd">        dimension, a PyOD model will be trained.</span>
 
 <span class="sd">        **Computing score with** ``score()``:</span>
@@ -240,9 +241,9 @@
 
 <span class="sd">        For each series, if the series is multivariate of dimension `D`:</span>
 
-<span class="sd">        * if `component_wise` is set to False: it returns a univariate series (dimension=1). It represents</span>
+<span class="sd">        - if `component_wise` is set to `False`: it returns a univariate series (dimension=1). It represents</span>
 <span class="sd">          the anomaly score of the entire series in the considered window at each timestamp.</span>
-<span class="sd">        * if `component_wise` is set to True: it returns a multivariate series of dimension `D`. Each dimension</span>
+<span class="sd">        - if `component_wise` is set to `True`: it returns a multivariate series of dimension `D`. Each dimension</span>
 <span class="sd">          represents the anomaly score of the corresponding component of the input.</span>
 
 <span class="sd">        If the series is univariate, it returns a univariate series regardless of the parameter</span>
@@ -258,114 +259,42 @@
 <span class="sd">            The (fitted) PyOD BaseDetector model.</span>
 <span class="sd">        window</span>
 <span class="sd">            Size of the window used to create the subsequences of the series.</span>
-<span class="sd">        diff_fn</span>
-<span class="sd">            Optionally, reduced function to use if two series are given. It will transform the two series into one.</span>
-<span class="sd">            This allows the KMeansScorer to apply PyODScorer on the original series or on its residuals (difference</span>
-<span class="sd">            between the prediction and the original series).</span>
-<span class="sd">            Must be one of &quot;abs_diff&quot; and &quot;diff&quot; (defined in ``_diff_series()``).</span>
-<span class="sd">            Default: &quot;abs_diff&quot;</span>
 <span class="sd">        component_wise</span>
-<span class="sd">            Boolean value indicating if the score needs to be computed for each component independently (True)</span>
-<span class="sd">            or by concatenating the component in the considered window to compute one score (False).</span>
-<span class="sd">            Default: False</span>
+<span class="sd">            Boolean value indicating if the score needs to be computed for each component independently (`True`)</span>
+<span class="sd">            or by concatenating the component in the considered window to compute one score (`False`).</span>
+<span class="sd">            Default: `False`.</span>
+<span class="sd">        window_agg</span>
+<span class="sd">            Boolean indicating whether the anomaly score for each time step is computed by</span>
+<span class="sd">            averaging the anomaly scores for all windows this point is included in.</span>
+<span class="sd">            If `False`, the anomaly score for each point is the anomaly score of its trailing window.</span>
+<span class="sd">            Default: `True`.</span>
+<span class="sd">        diff_fn</span>
+<span class="sd">            The differencing function to use to transform the predicted and actual series into one series.</span>
+<span class="sd">            The scorer is then applied to this series. Must be one of Darts per-time-step metrics (e.g.,</span>
+<span class="sd">            :func:`~darts.metrics.metrics.ae` for the absolute difference, :func:`~darts.metrics.metrics.err` for the</span>
+<span class="sd">            difference, :func:`~darts.metrics.metrics.se` for the squared difference, ...).</span>
+<span class="sd">            By default, uses the absolute difference (:func:`~darts.metrics.metrics.ae`).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">BaseDetector</span><span class="p">),</span>
             <span class="sa">f</span><span class="s2">&quot;model must be a PyOD BaseDetector, found type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">type</span><span class="p">(</span><span class="n">component_wise</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">bool</span><span class="p">,</span>  <span class="c1"># noqa: E721</span>
-            <span class="sa">f</span><span class="s2">&quot;Parameter `component_wise` must be Boolean, found type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">component_wise</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">component_wise</span> <span class="o">=</span> <span class="n">component_wise</span>
-
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="n">univariate_scorer</span><span class="o">=</span><span class="p">(</span><span class="ow">not</span> <span class="n">component_wise</span><span class="p">),</span> <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span> <span class="n">diff_fn</span><span class="o">=</span><span class="n">diff_fn</span>
+            <span class="n">is_univariate</span><span class="o">=</span><span class="p">(</span><span class="ow">not</span> <span class="n">component_wise</span><span class="p">),</span>
+            <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span>
+            <span class="n">window_agg</span><span class="o">=</span><span class="n">window_agg</span><span class="p">,</span>
+            <span class="n">diff_fn</span><span class="o">=</span><span class="n">diff_fn</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;PyODScorer (model </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
 
-    <span class="k">def</span> <span class="nf">_fit_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">list_series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]):</span>
-
-        <span class="n">list_np_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">list_series</span><span class="p">]</span>
-
-        <span class="c1"># TODO: can we factorize code in common bteween PyODScorer and KMeansScorer?</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_wise</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-                <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
-                    <span class="p">[</span>
-                        <span class="n">sliding_window_view</span><span class="p">(</span><span class="n">ar</span><span class="p">,</span> <span class="n">window_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-                        <span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-                        <span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">ar</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-                        <span class="k">for</span> <span class="n">ar</span> <span class="ow">in</span> <span class="n">list_np_series</span>
-                    <span class="p">]</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">models</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">component_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span><span class="p">):</span>
-
-                <span class="n">model_width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
-                <span class="n">model_width</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-                    <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
-                        <span class="p">[</span>
-                            <span class="n">sliding_window_view</span><span class="p">(</span>
-                                <span class="n">ar</span><span class="p">[:,</span> <span class="n">component_idx</span><span class="p">],</span> <span class="n">window_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span>
-                            <span class="p">)</span>
-                            <span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-                            <span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">)</span>
-                            <span class="k">for</span> <span class="n">ar</span> <span class="ow">in</span> <span class="n">list_np_series</span>
-                        <span class="p">]</span>
-                    <span class="p">)</span>
-                <span class="p">)</span>
-                <span class="n">models</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_width</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">models</span>
-
-    <span class="k">def</span> <span class="nf">_score_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span> <span class="o">==</span> <span class="n">series</span><span class="o">.</span><span class="n">width</span><span class="p">,</span>
-            <span class="s2">&quot;Input must have the same number of components as the data used for training&quot;</span>
-            <span class="o">+</span> <span class="s2">&quot; the PyODScorer model </span><span class="si">{}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; found number of components equal to </span><span class="si">{</span><span class="n">series</span><span class="o">.</span><span class="n">width</span><span class="si">}</span><span class="s2"> and expected &quot;</span>
-            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">np_series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">np_anomaly_score</span> <span class="o">=</span> <span class="p">[]</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_wise</span><span class="p">:</span>
-
-            <span class="n">np_anomaly_score</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">decision_function</span><span class="p">(</span>
-                    <span class="n">sliding_window_view</span><span class="p">(</span><span class="n">np_series</span><span class="p">,</span> <span class="n">window_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-                    <span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-                    <span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">*</span> <span class="n">series</span><span class="o">.</span><span class="n">width</span><span class="p">)</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-
-            <span class="k">for</span> <span class="n">component_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span><span class="p">):</span>
-                <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="n">component_idx</span><span class="p">]</span><span class="o">.</span><span class="n">decision_function</span><span class="p">(</span>
-                    <span class="n">sliding_window_view</span><span class="p">(</span>
-                        <span class="n">np_series</span><span class="p">[:,</span> <span class="n">component_idx</span><span class="p">],</span>
-                        <span class="n">window_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span>
-                        <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-                    <span class="p">)</span>
-                    <span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-                    <span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">)</span>
-                <span class="p">)</span>
-
-                <span class="n">np_anomaly_score</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">:],</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">np_anomaly_score</span><span class="p">))</span>
-        <span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">_model_score_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Wrapper around model inference method&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">decision_function</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
 </pre></div>
 
               </div>

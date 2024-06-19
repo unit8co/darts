@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -184,12 +185,13 @@
 <span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">Dataset</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
-
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">CovariateType</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span> <span class="nn">darts.utils.data.utils</span> <span class="kn">import</span> <span class="n">CovariateType</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
-<span class="n">SampleIndexType</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+<span class="n">SampleIndexType</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span>
+    <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+<span class="p">]</span>
 
 
 <div class="viewcode-block" id="TrainingDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.TrainingDataset">[docs]</a><span class="k">class</span> <span class="nc">TrainingDataset</span><span class="p">(</span><span class="n">ABC</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">):</span>
@@ -256,8 +258,9 @@
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">end_of_output_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">covariate_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">covariate_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">covariate_type</span><span class="p">:</span> <span class="n">CovariateType</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">NONE</span><span class="p">,</span>
+        <span class="n">sample_weight_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SampleIndexType</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the (start, end) indices for past target, future target and covariates (sub sets) of the current</span>
 <span class="sd">        sample `i` from `target_idx`.</span>
@@ -285,12 +288,15 @@
 <span class="sd">            the index where the output chunk of the current sample ends in `target_series`.</span>
 <span class="sd">        covariate_series</span>
 <span class="sd">            current covariate TimeSeries.</span>
-<span class="sd">        covariate_type:</span>
+<span class="sd">        covariate_type</span>
 <span class="sd">            the type of covariate to extract. Instance of `CovariateType`: One of (`CovariateType.PAST`,</span>
 <span class="sd">            `CovariateType.FUTURE`, `CovariateType.NONE`).</span>
+<span class="sd">        sample_weight_series</span>
+<span class="sd">            current sample weight TimeSeries.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">covariate_start</span><span class="p">,</span> <span class="n">covariate_end</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="n">sample_weight_start</span><span class="p">,</span> <span class="n">sample_weight_end</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
         <span class="c1"># the first time target_idx is observed</span>
         <span class="k">if</span> <span class="n">target_idx</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_memory</span><span class="p">:</span>
@@ -310,7 +316,7 @@
             <span class="p">)</span>
 
             <span class="k">if</span> <span class="n">covariate_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">NONE</span><span class="p">:</span>
-                <span class="c1"># not CovariateType.Future -&gt; both CovariateType.PAST and CovariateType.HISTORIC_FUTURE</span>
+                <span class="c1"># not CovariateType.FUTURE -&gt; both CovariateType.PAST and CovariateType.HISTORIC_FUTURE</span>
                 <span class="n">start</span> <span class="o">=</span> <span class="p">(</span>
                     <span class="n">future_start</span>
                     <span class="k">if</span> <span class="n">covariate_type</span> <span class="ow">is</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span>
@@ -320,21 +326,52 @@
 
                 <span class="c1"># we need to be careful with getting ranges and indexes:</span>
                 <span class="c1"># to get entire range, full_range = ts[:len(ts)]; to get last index: last_idx = ts[len(ts) - 1]</span>
+                <span class="c1"># extract actual index value (respects datetime- and integer-based indexes; also from non-zero</span>
+                <span class="c1"># start)</span>
+                <span class="n">target_time_index</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">_time_index</span>
+                <span class="n">covariate_time_index</span> <span class="o">=</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">_time_index</span>
+                <span class="n">start_time</span> <span class="o">=</span> <span class="n">target_time_index</span><span class="p">[</span><span class="n">start</span><span class="p">]</span>
+                <span class="n">end_time</span> <span class="o">=</span> <span class="n">target_time_index</span><span class="p">[</span><span class="n">end</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
 
-                <span class="c1"># extract actual index value (respects datetime- and integer-based indexes; also from non-zero start)</span>
-                <span class="n">start_time</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="n">start</span><span class="p">]</span>
-                <span class="n">end_time</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="n">end</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
-
-                <span class="n">raise_if_not</span><span class="p">(</span>
-                    <span class="n">start_time</span> <span class="ow">in</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">time_index</span>
-                    <span class="ow">and</span> <span class="n">end_time</span> <span class="ow">in</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">&quot;Missing covariates; could not find </span><span class="si">{</span><span class="n">covariate_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> covariates in index value range: &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">start_time</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">end_time</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-                <span class="p">)</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">start_time</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">covariate_time_index</span>
+                    <span class="ow">or</span> <span class="n">end_time</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">covariate_time_index</span>
+                <span class="p">):</span>
+                    <span class="n">raise_log</span><span class="p">(</span>
+                        <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Missing covariates; could not find </span><span class="si">{</span><span class="n">covariate_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> covariates in index &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;value range: </span><span class="si">{</span><span class="n">start_time</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">end_time</span><span class="si">}</span><span class="s2">.&quot;</span>
+                        <span class="p">),</span>
+                        <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                    <span class="p">)</span>
 
                 <span class="c1"># extract the index position (index) from index value</span>
-                <span class="n">covariate_start</span> <span class="o">=</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">start_time</span><span class="p">)</span>
-                <span class="n">covariate_end</span> <span class="o">=</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">end_time</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="n">covariate_start</span> <span class="o">=</span> <span class="n">covariate_time_index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">start_time</span><span class="p">)</span>
+                <span class="n">covariate_end</span> <span class="o">=</span> <span class="n">covariate_time_index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">end_time</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+            <span class="c1"># sample weight</span>
+            <span class="k">if</span> <span class="n">sample_weight_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># extract the index position (index) from index value</span>
+                <span class="n">target_time_index</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">_time_index</span>
+                <span class="n">sample_weight_time_index</span> <span class="o">=</span> <span class="n">sample_weight_series</span><span class="o">.</span><span class="n">_time_index</span>
+
+                <span class="n">start_time</span> <span class="o">=</span> <span class="n">target_time_index</span><span class="p">[</span><span class="n">future_start</span><span class="p">]</span>
+                <span class="n">end_time</span> <span class="o">=</span> <span class="n">target_time_index</span><span class="p">[</span><span class="n">future_end</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">start_time</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sample_weight_time_index</span>
+                    <span class="ow">or</span> <span class="n">end_time</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sample_weight_time_index</span>
+                <span class="p">):</span>
+                    <span class="n">raise_log</span><span class="p">(</span>
+                        <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Missing sample weights; could not find sample weights in index &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;value range: </span><span class="si">{</span><span class="n">start_time</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">end_time</span><span class="si">}</span><span class="s2">.&quot;</span>
+                        <span class="p">),</span>
+                        <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                <span class="n">sample_weight_start</span> <span class="o">=</span> <span class="n">sample_weight_time_index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">start_time</span><span class="p">)</span>
+                <span class="n">sample_weight_end</span> <span class="o">=</span> <span class="n">sample_weight_time_index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">end_time</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
 
             <span class="c1"># store position of initial sample and all relevant sub set indices</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_index_memory</span><span class="p">[</span><span class="n">target_idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
@@ -342,6 +379,7 @@
                 <span class="s2">&quot;past_target&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">past_start</span><span class="p">,</span> <span class="n">past_end</span><span class="p">),</span>
                 <span class="s2">&quot;future_target&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">future_start</span><span class="p">,</span> <span class="n">future_end</span><span class="p">),</span>
                 <span class="s2">&quot;covariate&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">covariate_start</span><span class="p">,</span> <span class="n">covariate_end</span><span class="p">),</span>
+                <span class="s2">&quot;sample_weight&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">sample_weight_start</span><span class="p">,</span> <span class="n">sample_weight_end</span><span class="p">),</span>
             <span class="p">}</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># load position of initial sample and its sub set indices</span>
@@ -349,6 +387,9 @@
             <span class="n">past_start</span><span class="p">,</span> <span class="n">past_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_memory</span><span class="p">[</span><span class="n">target_idx</span><span class="p">][</span><span class="s2">&quot;past_target&quot;</span><span class="p">]</span>
             <span class="n">future_start</span><span class="p">,</span> <span class="n">future_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_memory</span><span class="p">[</span><span class="n">target_idx</span><span class="p">][</span><span class="s2">&quot;future_target&quot;</span><span class="p">]</span>
             <span class="n">covariate_start</span><span class="p">,</span> <span class="n">covariate_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_memory</span><span class="p">[</span><span class="n">target_idx</span><span class="p">][</span><span class="s2">&quot;covariate&quot;</span><span class="p">]</span>
+            <span class="n">sample_weight_start</span><span class="p">,</span> <span class="n">sample_weight_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_memory</span><span class="p">[</span><span class="n">target_idx</span><span class="p">][</span>
+                <span class="s2">&quot;sample_weight&quot;</span>
+            <span class="p">]</span>
 
             <span class="c1"># evaluate how much the new sample needs to be shifted, and shift all indexes</span>
             <span class="n">idx_shift</span> <span class="o">=</span> <span class="n">end_of_output_idx</span> <span class="o">-</span> <span class="n">end_of_output_idx_last</span>
@@ -362,6 +403,14 @@
             <span class="n">covariate_end</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="n">covariate_end</span> <span class="o">+</span> <span class="n">idx_shift</span> <span class="k">if</span> <span class="n">covariate_end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
             <span class="p">)</span>
+            <span class="n">sample_weight_start</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">sample_weight_start</span> <span class="o">+</span> <span class="n">idx_shift</span>
+                <span class="k">if</span> <span class="n">sample_weight_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
+            <span class="n">sample_weight_end</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">sample_weight_end</span> <span class="o">+</span> <span class="n">idx_shift</span> <span class="k">if</span> <span class="n">sample_weight_end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
 
         <span class="k">return</span> <span class="p">(</span>
             <span class="n">past_start</span><span class="p">,</span>
@@ -370,6 +419,8 @@
             <span class="n">future_end</span><span class="p">,</span>
             <span class="n">covariate_start</span><span class="p">,</span>
             <span class="n">covariate_end</span><span class="p">,</span>
+            <span class="n">sample_weight_start</span><span class="p">,</span>
+            <span class="n">sample_weight_end</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 
@@ -385,7 +436,13 @@
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="p">]:</span>
         <span class="k">pass</span></div>
 
 
@@ -401,7 +458,13 @@
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="p">]:</span>
         <span class="k">pass</span></div>
 
 
@@ -415,8 +478,11 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
         <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
@@ -436,8 +502,11 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
         <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
@@ -457,8 +526,11 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
         <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>

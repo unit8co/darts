@@ -34,6 +34,7 @@
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -399,16 +400,14 @@
                 <span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">,</span>
                 <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;horizon </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">horizons</span><span class="p">],</span>
             <span class="p">)</span>
-            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="p">{</span>
-                    <span class="s2">&quot;attention&quot;</span><span class="p">:</span> <span class="n">attention</span><span class="p">,</span>
-                    <span class="s2">&quot;encoder_importance&quot;</span><span class="p">:</span> <span class="n">encoder_importance</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx</span> <span class="p">:</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span>
-                    <span class="s2">&quot;decoder_importance&quot;</span><span class="p">:</span> <span class="n">decoder_importance</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx</span> <span class="p">:</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span>
-                    <span class="s2">&quot;static_covariates_importance&quot;</span><span class="p">:</span> <span class="n">static_covariates_importance</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span>
-                        <span class="n">idx</span> <span class="p">:</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span>
-                    <span class="p">],</span>
-                <span class="p">}</span>
-            <span class="p">)</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s2">&quot;attention&quot;</span><span class="p">:</span> <span class="n">attention</span><span class="p">,</span>
+                <span class="s2">&quot;encoder_importance&quot;</span><span class="p">:</span> <span class="n">encoder_importance</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx</span> <span class="p">:</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span>
+                <span class="s2">&quot;decoder_importance&quot;</span><span class="p">:</span> <span class="n">decoder_importance</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx</span> <span class="p">:</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span>
+                <span class="s2">&quot;static_covariates_importance&quot;</span><span class="p">:</span> <span class="n">static_covariates_importance</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span>
+                    <span class="n">idx</span> <span class="p">:</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="p">],</span>
+            <span class="p">})</span>
         <span class="k">return</span> <span class="n">TFTExplainabilityResult</span><span class="p">(</span>
             <span class="n">explanations</span><span class="o">=</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">results</span>
         <span class="p">)</span></div>

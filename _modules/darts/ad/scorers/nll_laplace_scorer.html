@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -190,29 +191,32 @@
 
 <div class="viewcode-block" id="LaplaceNLLScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.nll_laplace_scorer.html#darts.ad.scorers.nll_laplace_scorer.LaplaceNLLScorer">[docs]</a><span class="k">class</span> <span class="nc">LaplaceNLLScorer</span><span class="p">(</span><span class="n">NLLScorer</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;NLL Laplace Scorer</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        window</span>
+<span class="sd">            Integer value indicating the size of the window W used by the scorer to transform the series into an</span>
+<span class="sd">            anomaly score. A scorer will slice the given series into subsequences of size W and returns a value</span>
+<span class="sd">            indicating how anomalous these subset of W values are. A post-processing step will convert this anomaly</span>
+<span class="sd">            score into a point-wise anomaly score (see definition of `window_transform`). The window size should be</span>
+<span class="sd">            commensurate to the expected durations of the anomalies one is looking for.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;LaplaceNLLScorer&quot;</span>
 
     <span class="k">def</span> <span class="nf">_score_core_nllikelihood</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">deterministic_values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">probabilistic_estimations</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pred_vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-
         <span class="c1"># ML estimate for the Laplace loc</span>
-        <span class="n">loc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">probabilistic_estimations</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-
+        <span class="n">loc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">pred_vals</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="c1"># ML estimate for the Laplace scale</span>
         <span class="c1"># see: https://github.com/scipy/scipy/blob/de80faf9d3480b9dbb9b888568b64499e0e70c19/scipy</span>
         <span class="c1"># /stats/_continuous_distns.py#L4846</span>
-        <span class="n">scale</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">probabilistic_estimations</span><span class="o">.</span><span class="n">T</span> <span class="o">-</span> <span class="n">loc</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
-            <span class="o">/</span> <span class="n">probabilistic_estimations</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="p">)</span>
-
-        <span class="k">return</span> <span class="o">-</span><span class="n">laplace</span><span class="o">.</span><span class="n">logpdf</span><span class="p">(</span><span class="n">deterministic_values</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span></div>
+        <span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">pred_vals</span><span class="o">.</span><span class="n">T</span> <span class="o">-</span> <span class="n">loc</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">T</span> <span class="o">/</span> <span class="n">pred_vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">laplace</span><span class="o">.</span><span class="n">logpdf</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span></div>
 </pre></div>
 
               </div>

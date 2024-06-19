@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -977,7 +978,7 @@
 <td><p>Add a parameter to the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.Bilinear.register_state_dict_pre_hook" title="darts.models.components.glu_variants.Bilinear.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
-<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p></td>
+<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> method.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.Bilinear.requires_grad_" title="darts.models.components.glu_variants.Bilinear.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
@@ -1474,7 +1475,8 @@ by this module’s <code class="xref py py-meth docutils literal notranslate"><s
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>If <code class="xref py py-attr docutils literal notranslate"><span class="pre">assign</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> the optimizer must be created after
-the call to <a class="reference internal" href="#darts.models.components.glu_variants.Bilinear.load_state_dict" title="darts.models.components.glu_variants.Bilinear.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>.</p>
+the call to <a class="reference internal" href="#darts.models.components.glu_variants.Bilinear.load_state_dict" title="darts.models.components.glu_variants.Bilinear.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a> unless
+<code class="xref py py-func docutils literal notranslate"><span class="pre">get_swap_module_params_on_conversion()</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1484,13 +1486,11 @@ persistent buffers.</p></li>
 <li><p><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to strictly enforce that the keys
 in <a class="reference internal" href="#darts.models.components.glu_variants.Bilinear.state_dict" title="darts.models.components.glu_variants.Bilinear.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> match the keys returned by this module’s
 <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> function. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
-<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to assign items in the state
-dictionary to their corresponding keys in the module instead
-of copying them inplace into the module’s current parameters and buffers.
-When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors in the current
-module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the properties of the
-Tensors in the state dict are preserved.
-Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
+in the current module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the
+properties of the Tensors in the state dict are preserved. The only
+exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate">
+<span class="pre">Default:</span> <span class="pre">``False`</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -2020,7 +2020,7 @@ module’s <a class="reference internal" href="#darts.models.components.glu_vari
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.Bilinear.register_state_dict_pre_hook">
 <span class="sig-name descname"><span class="pre">register_state_dict_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.Bilinear.register_state_dict_pre_hook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p>
+<dd><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> method.</p>
 <p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>,
 and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>. The registered
 hooks can be used to perform pre-processing before the <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>
@@ -2062,6 +2062,9 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>state</strong> (<em>dict</em>) – Extra state from the <cite>state_dict</cite></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2463,7 +2466,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <td><p>Add a parameter to the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GEGLU.register_state_dict_pre_hook" title="darts.models.components.glu_variants.GEGLU.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
-<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p></td>
+<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> method.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GEGLU.requires_grad_" title="darts.models.components.glu_variants.GEGLU.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
@@ -2960,7 +2963,8 @@ by this module’s <code class="xref py py-meth docutils literal notranslate"><s
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>If <code class="xref py py-attr docutils literal notranslate"><span class="pre">assign</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> the optimizer must be created after
-the call to <a class="reference internal" href="#darts.models.components.glu_variants.GEGLU.load_state_dict" title="darts.models.components.glu_variants.GEGLU.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>.</p>
+the call to <a class="reference internal" href="#darts.models.components.glu_variants.GEGLU.load_state_dict" title="darts.models.components.glu_variants.GEGLU.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a> unless
+<code class="xref py py-func docutils literal notranslate"><span class="pre">get_swap_module_params_on_conversion()</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -2970,13 +2974,11 @@ persistent buffers.</p></li>
 <li><p><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to strictly enforce that the keys
 in <a class="reference internal" href="#darts.models.components.glu_variants.GEGLU.state_dict" title="darts.models.components.glu_variants.GEGLU.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> match the keys returned by this module’s
 <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> function. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
-<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to assign items in the state
-dictionary to their corresponding keys in the module instead
-of copying them inplace into the module’s current parameters and buffers.
-When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors in the current
-module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the properties of the
-Tensors in the state dict are preserved.
-Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
+in the current module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the
+properties of the Tensors in the state dict are preserved. The only
+exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate">
+<span class="pre">Default:</span> <span class="pre">``False`</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -3506,7 +3508,7 @@ module’s <a class="reference internal" href="#darts.models.components.glu_vari
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.GEGLU.register_state_dict_pre_hook">
 <span class="sig-name descname"><span class="pre">register_state_dict_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.GEGLU.register_state_dict_pre_hook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p>
+<dd><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> method.</p>
 <p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>,
 and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>. The registered
 hooks can be used to perform pre-processing before the <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>
@@ -3548,6 +3550,9 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>state</strong> (<em>dict</em>) – Extra state from the <cite>state_dict</cite></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -3949,7 +3954,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <td><p>Add a parameter to the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GELU.register_state_dict_pre_hook" title="darts.models.components.glu_variants.GELU.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
-<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p></td>
+<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> method.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GELU.requires_grad_" title="darts.models.components.glu_variants.GELU.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
@@ -4446,7 +4451,8 @@ by this module’s <code class="xref py py-meth docutils literal notranslate"><s
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>If <code class="xref py py-attr docutils literal notranslate"><span class="pre">assign</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> the optimizer must be created after
-the call to <a class="reference internal" href="#darts.models.components.glu_variants.GELU.load_state_dict" title="darts.models.components.glu_variants.GELU.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>.</p>
+the call to <a class="reference internal" href="#darts.models.components.glu_variants.GELU.load_state_dict" title="darts.models.components.glu_variants.GELU.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a> unless
+<code class="xref py py-func docutils literal notranslate"><span class="pre">get_swap_module_params_on_conversion()</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -4456,13 +4462,11 @@ persistent buffers.</p></li>
 <li><p><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to strictly enforce that the keys
 in <a class="reference internal" href="#darts.models.components.glu_variants.GELU.state_dict" title="darts.models.components.glu_variants.GELU.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> match the keys returned by this module’s
 <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> function. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
-<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to assign items in the state
-dictionary to their corresponding keys in the module instead
-of copying them inplace into the module’s current parameters and buffers.
-When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors in the current
-module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the properties of the
-Tensors in the state dict are preserved.
-Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
+in the current module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the
+properties of the Tensors in the state dict are preserved. The only
+exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate">
+<span class="pre">Default:</span> <span class="pre">``False`</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -4992,7 +4996,7 @@ module’s <a class="reference internal" href="#darts.models.components.glu_vari
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.GELU.register_state_dict_pre_hook">
 <span class="sig-name descname"><span class="pre">register_state_dict_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.GELU.register_state_dict_pre_hook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p>
+<dd><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> method.</p>
 <p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>,
 and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>. The registered
 hooks can be used to perform pre-processing before the <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>
@@ -5034,6 +5038,9 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>state</strong> (<em>dict</em>) – Extra state from the <cite>state_dict</cite></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -5435,7 +5442,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <td><p>Add a parameter to the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GLU.register_state_dict_pre_hook" title="darts.models.components.glu_variants.GLU.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
-<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p></td>
+<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> method.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GLU.requires_grad_" title="darts.models.components.glu_variants.GLU.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
@@ -5932,7 +5939,8 @@ by this module’s <code class="xref py py-meth docutils literal notranslate"><s
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>If <code class="xref py py-attr docutils literal notranslate"><span class="pre">assign</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> the optimizer must be created after
-the call to <a class="reference internal" href="#darts.models.components.glu_variants.GLU.load_state_dict" title="darts.models.components.glu_variants.GLU.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>.</p>
+the call to <a class="reference internal" href="#darts.models.components.glu_variants.GLU.load_state_dict" title="darts.models.components.glu_variants.GLU.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a> unless
+<code class="xref py py-func docutils literal notranslate"><span class="pre">get_swap_module_params_on_conversion()</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -5942,13 +5950,11 @@ persistent buffers.</p></li>
 <li><p><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to strictly enforce that the keys
 in <a class="reference internal" href="#darts.models.components.glu_variants.GLU.state_dict" title="darts.models.components.glu_variants.GLU.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> match the keys returned by this module’s
 <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> function. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
-<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to assign items in the state
-dictionary to their corresponding keys in the module instead
-of copying them inplace into the module’s current parameters and buffers.
-When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors in the current
-module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the properties of the
-Tensors in the state dict are preserved.
-Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
+in the current module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the
+properties of the Tensors in the state dict are preserved. The only
+exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate">
+<span class="pre">Default:</span> <span class="pre">``False`</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -6478,7 +6484,7 @@ module’s <a class="reference internal" href="#darts.models.components.glu_vari
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.GLU.register_state_dict_pre_hook">
 <span class="sig-name descname"><span class="pre">register_state_dict_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.GLU.register_state_dict_pre_hook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p>
+<dd><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> method.</p>
 <p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>,
 and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>. The registered
 hooks can be used to perform pre-processing before the <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>
@@ -6520,6 +6526,9 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>state</strong> (<em>dict</em>) – Extra state from the <cite>state_dict</cite></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -6921,7 +6930,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <td><p>Add a parameter to the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.ReGLU.register_state_dict_pre_hook" title="darts.models.components.glu_variants.ReGLU.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
-<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p></td>
+<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> method.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.ReGLU.requires_grad_" title="darts.models.components.glu_variants.ReGLU.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
@@ -7418,7 +7427,8 @@ by this module’s <code class="xref py py-meth docutils literal notranslate"><s
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>If <code class="xref py py-attr docutils literal notranslate"><span class="pre">assign</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> the optimizer must be created after
-the call to <a class="reference internal" href="#darts.models.components.glu_variants.ReGLU.load_state_dict" title="darts.models.components.glu_variants.ReGLU.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>.</p>
+the call to <a class="reference internal" href="#darts.models.components.glu_variants.ReGLU.load_state_dict" title="darts.models.components.glu_variants.ReGLU.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a> unless
+<code class="xref py py-func docutils literal notranslate"><span class="pre">get_swap_module_params_on_conversion()</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -7428,13 +7438,11 @@ persistent buffers.</p></li>
 <li><p><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to strictly enforce that the keys
 in <a class="reference internal" href="#darts.models.components.glu_variants.ReGLU.state_dict" title="darts.models.components.glu_variants.ReGLU.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> match the keys returned by this module’s
 <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> function. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
-<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to assign items in the state
-dictionary to their corresponding keys in the module instead
-of copying them inplace into the module’s current parameters and buffers.
-When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors in the current
-module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the properties of the
-Tensors in the state dict are preserved.
-Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
+in the current module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the
+properties of the Tensors in the state dict are preserved. The only
+exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate">
+<span class="pre">Default:</span> <span class="pre">``False`</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -7964,7 +7972,7 @@ module’s <a class="reference internal" href="#darts.models.components.glu_vari
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.ReGLU.register_state_dict_pre_hook">
 <span class="sig-name descname"><span class="pre">register_state_dict_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.ReGLU.register_state_dict_pre_hook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p>
+<dd><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> method.</p>
 <p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>,
 and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>. The registered
 hooks can be used to perform pre-processing before the <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>
@@ -8006,6 +8014,9 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>state</strong> (<em>dict</em>) – Extra state from the <cite>state_dict</cite></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -8407,7 +8418,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <td><p>Add a parameter to the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.ReLU.register_state_dict_pre_hook" title="darts.models.components.glu_variants.ReLU.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
-<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p></td>
+<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> method.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.ReLU.requires_grad_" title="darts.models.components.glu_variants.ReLU.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
@@ -8904,7 +8915,8 @@ by this module’s <code class="xref py py-meth docutils literal notranslate"><s
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>If <code class="xref py py-attr docutils literal notranslate"><span class="pre">assign</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> the optimizer must be created after
-the call to <a class="reference internal" href="#darts.models.components.glu_variants.ReLU.load_state_dict" title="darts.models.components.glu_variants.ReLU.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>.</p>
+the call to <a class="reference internal" href="#darts.models.components.glu_variants.ReLU.load_state_dict" title="darts.models.components.glu_variants.ReLU.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a> unless
+<code class="xref py py-func docutils literal notranslate"><span class="pre">get_swap_module_params_on_conversion()</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -8914,13 +8926,11 @@ persistent buffers.</p></li>
 <li><p><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to strictly enforce that the keys
 in <a class="reference internal" href="#darts.models.components.glu_variants.ReLU.state_dict" title="darts.models.components.glu_variants.ReLU.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> match the keys returned by this module’s
 <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> function. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
-<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to assign items in the state
-dictionary to their corresponding keys in the module instead
-of copying them inplace into the module’s current parameters and buffers.
-When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors in the current
-module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the properties of the
-Tensors in the state dict are preserved.
-Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
+in the current module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the
+properties of the Tensors in the state dict are preserved. The only
+exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate">
+<span class="pre">Default:</span> <span class="pre">``False`</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -9450,7 +9460,7 @@ module’s <a class="reference internal" href="#darts.models.components.glu_vari
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.ReLU.register_state_dict_pre_hook">
 <span class="sig-name descname"><span class="pre">register_state_dict_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.ReLU.register_state_dict_pre_hook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p>
+<dd><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> method.</p>
 <p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>,
 and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>. The registered
 hooks can be used to perform pre-processing before the <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>
@@ -9492,6 +9502,9 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>state</strong> (<em>dict</em>) – Extra state from the <cite>state_dict</cite></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -9893,7 +9906,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <td><p>Add a parameter to the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.SwiGLU.register_state_dict_pre_hook" title="darts.models.components.glu_variants.SwiGLU.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
-<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p></td>
+<td><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> method.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.SwiGLU.requires_grad_" title="darts.models.components.glu_variants.SwiGLU.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
@@ -10390,7 +10403,8 @@ by this module’s <code class="xref py py-meth docutils literal notranslate"><s
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>If <code class="xref py py-attr docutils literal notranslate"><span class="pre">assign</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> the optimizer must be created after
-the call to <a class="reference internal" href="#darts.models.components.glu_variants.SwiGLU.load_state_dict" title="darts.models.components.glu_variants.SwiGLU.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a>.</p>
+the call to <a class="reference internal" href="#darts.models.components.glu_variants.SwiGLU.load_state_dict" title="darts.models.components.glu_variants.SwiGLU.load_state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">load_state_dict</span></code></a> unless
+<code class="xref py py-func docutils literal notranslate"><span class="pre">get_swap_module_params_on_conversion()</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -10400,13 +10414,11 @@ persistent buffers.</p></li>
 <li><p><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to strictly enforce that the keys
 in <a class="reference internal" href="#darts.models.components.glu_variants.SwiGLU.state_dict" title="darts.models.components.glu_variants.SwiGLU.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> match the keys returned by this module’s
 <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> function. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
-<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to assign items in the state
-dictionary to their corresponding keys in the module instead
-of copying them inplace into the module’s current parameters and buffers.
-When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors in the current
-module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the properties of the
-Tensors in the state dict are preserved.
-Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
+in the current module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the
+properties of the Tensors in the state dict are preserved. The only
+exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate">
+<span class="pre">Default:</span> <span class="pre">``False`</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -10936,7 +10948,7 @@ module’s <a class="reference internal" href="#darts.models.components.glu_vari
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.SwiGLU.register_state_dict_pre_hook">
 <span class="sig-name descname"><span class="pre">register_state_dict_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.SwiGLU.register_state_dict_pre_hook" title="Permalink to this definition">¶</a></dt>
-<dd><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_state_dict()</span></code> method.</p>
+<dd><p>Register a pre-hook for the <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> method.</p>
 <p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>,
 and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>. The registered
 hooks can be used to perform pre-processing before the <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>
@@ -10978,6 +10990,9 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>state</strong> (<em>dict</em>) – Extra state from the <cite>state_dict</cite></p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>

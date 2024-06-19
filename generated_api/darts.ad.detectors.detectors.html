@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -872,24 +873,27 @@
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.detectors.detectors.Detector.detect" title="darts.ad.detectors.detectors.Detector.detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">detect</span></code></a>(series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.detectors.detectors.Detector.detect" title="darts.ad.detectors.detectors.Detector.detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">detect</span></code></a>(series[, name])</p></td>
 <td><p>Detect anomalies on given time series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.detectors.detectors.Detector.eval_accuracy" title="darts.ad.detectors.detectors.Detector.eval_accuracy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_accuracy</span></code></a>(actual_anomalies, anomaly_score)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.detectors.detectors.Detector.eval_metric" title="darts.ad.detectors.detectors.Detector.eval_metric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_metric</span></code></a>(anomalies, pred_scores[, ...])</p></td>
 <td><p>Score the results against true anomalies.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.ad.detectors.detectors.Detector.detect">
-<span class="sig-name descname"><span class="pre">detect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/detectors/detectors.html#Detector.detect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.detectors.detectors.Detector.detect" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">detect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'series'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/detectors/detectors.html#Detector.detect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.detectors.detectors.Detector.detect" title="Permalink to this definition">¶</a></dt>
 <dd><p>Detect anomalies on given time series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – series on which to detect anomalies.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) series on which to detect anomalies.</p></li>
+<li><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The name of <cite>series</cite>.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>binary prediciton (1 if considered as an anomaly, 0 if not)</p>
+<dd class="field-even"><p>binary prediction (1 if considered as an anomaly, 0 if not)</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
@@ -898,19 +902,17 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.ad.detectors.detectors.Detector.eval_accuracy">
-<span class="sig-name descname"><span class="pre">eval_accuracy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anomaly_score</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'recall'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/detectors/detectors.html#Detector.eval_accuracy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.detectors.detectors.Detector.eval_accuracy" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.ad.detectors.detectors.Detector.eval_metric">
+<span class="sig-name descname"><span class="pre">eval_metric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_scores</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'recall'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/detectors/detectors.html#Detector.eval_metric"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.detectors.detectors.Detector.eval_metric" title="Permalink to this definition">¶</a></dt>
 <dd><p>Score the results against true anomalies.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The ground truth of the anomalies (1 if it is an anomaly and 0 if not).</p></li>
-<li><p><strong>anomaly_score</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – Series indicating how anomoulous each window of size w is.</p></li>
-<li><p><strong>window</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Integer value indicating the number of past samples each point represents
-in the anomaly_score.</p></li>
-<li><p><strong>metric</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Metric function to use. Must be one of “recall”, “precision”,
-“f1”, and “accuracy”.
-Default: “recall”</p></li>
+<li><p><strong>anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) ground truth binary anomaly series (<cite>1</cite> if it is an anomaly and <cite>0</cite> if not).</p></li>
+<li><p><strong>pred_scores</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) of estimated anomaly score series indicating how anomalous each window of size w is.</p></li>
+<li><p><strong>window</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Integer value indicating the number of past samples each point represents in the <cite>pred_scores</cite>.</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘recall’, ‘precision’, ‘f1’, ‘accuracy’]) – The name of the metric function to use. Must be one of “recall”, “precision”, “f1”, and “accuracy”.
+Default: “recall”.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -928,7 +930,7 @@ Default: “recall”</p></li>
 <dt class="sig sig-object py" id="darts.ad.detectors.detectors.FittableDetector">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.ad.detectors.detectors.</span></span><span class="sig-name descname"><span class="pre">FittableDetector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/detectors/detectors.html#FittableDetector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.detectors.detectors.FittableDetector" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.ad.detectors.detectors.Detector" title="darts.ad.detectors.detectors.Detector"><code class="xref py py-class docutils literal notranslate"><span class="pre">Detector</span></code></a></p>
-<p>Base class of Detectors that need training.</p>
+<p>Base class of Detectors that require training.</p>
 <p class="rubric">Methods</p>
 <table class="autosummary longtable table autosummary">
 <colgroup>
@@ -936,10 +938,10 @@ Default: “recall”</p></li>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.detectors.detectors.FittableDetector.detect" title="darts.ad.detectors.detectors.FittableDetector.detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">detect</span></code></a>(series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.detectors.detectors.FittableDetector.detect" title="darts.ad.detectors.detectors.FittableDetector.detect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">detect</span></code></a>(series[, name])</p></td>
 <td><p>Detect anomalies on given time series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.detectors.detectors.FittableDetector.eval_accuracy" title="darts.ad.detectors.detectors.FittableDetector.eval_accuracy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_accuracy</span></code></a>(actual_anomalies, anomaly_score)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.detectors.detectors.FittableDetector.eval_metric" title="darts.ad.detectors.detectors.FittableDetector.eval_metric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_metric</span></code></a>(anomalies, pred_scores[, ...])</p></td>
 <td><p>Score the results against true anomalies.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.detectors.detectors.FittableDetector.fit" title="darts.ad.detectors.detectors.FittableDetector.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
@@ -952,14 +954,17 @@ Default: “recall”</p></li>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.ad.detectors.detectors.FittableDetector.detect">
-<span class="sig-name descname"><span class="pre">detect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/detectors/detectors.html#FittableDetector.detect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.detectors.detectors.FittableDetector.detect" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">detect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'series'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/detectors/detectors.html#FittableDetector.detect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.detectors.detectors.FittableDetector.detect" title="Permalink to this definition">¶</a></dt>
 <dd><p>Detect anomalies on given time series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – series on which to detect anomalies.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) series on which to detect anomalies.</p></li>
+<li><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The name of <cite>series</cite>.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>binary prediciton (1 if considered as an anomaly, 0 if not)</p>
+<dd class="field-even"><p>binary prediction (1 if considered as an anomaly, 0 if not)</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
@@ -968,19 +973,17 @@ Default: “recall”</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.ad.detectors.detectors.FittableDetector.eval_accuracy">
-<span class="sig-name descname"><span class="pre">eval_accuracy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anomaly_score</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'recall'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.detectors.detectors.FittableDetector.eval_accuracy" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.ad.detectors.detectors.FittableDetector.eval_metric">
+<span class="sig-name descname"><span class="pre">eval_metric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_scores</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'recall'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.detectors.detectors.FittableDetector.eval_metric" title="Permalink to this definition">¶</a></dt>
 <dd><p>Score the results against true anomalies.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The ground truth of the anomalies (1 if it is an anomaly and 0 if not).</p></li>
-<li><p><strong>anomaly_score</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – Series indicating how anomoulous each window of size w is.</p></li>
-<li><p><strong>window</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Integer value indicating the number of past samples each point represents
-in the anomaly_score.</p></li>
-<li><p><strong>metric</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Metric function to use. Must be one of “recall”, “precision”,
-“f1”, and “accuracy”.
-Default: “recall”</p></li>
+<li><p><strong>anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) ground truth binary anomaly series (<cite>1</cite> if it is an anomaly and <cite>0</cite> if not).</p></li>
+<li><p><strong>pred_scores</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) of estimated anomaly score series indicating how anomalous each window of size w is.</p></li>
+<li><p><strong>window</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Integer value indicating the number of past samples each point represents in the <cite>pred_scores</cite>.</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘recall’, ‘precision’, ‘f1’, ‘accuracy’]) – The name of the metric function to use. Must be one of “recall”, “precision”, “f1”, and “accuracy”.
+Default: “recall”.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -998,7 +1001,7 @@ Default: “recall”</p></li>
 <dd><p>Trains the detector on the given time series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – Time series to be used to train the detector.</p>
+<dd class="field-odd"><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – Time (sequence of) series to be used to train the detector.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Fitted Detector.</p>

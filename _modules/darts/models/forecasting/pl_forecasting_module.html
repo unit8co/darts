@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -176,6 +177,7 @@
 <span class="sd">This file contains abstract classes for deterministic and probabilistic PyTorch Lightning Modules</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
@@ -335,6 +337,13 @@
 
         <span class="c1"># define the loss function</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">criterion</span> <span class="o">=</span> <span class="n">loss_fn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_criterion</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">loss_fn</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_criterion</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">loss_fn</span><span class="p">)</span>
+        <span class="c1"># reduction will be set to `None` when calling `TFM.fit()` with sample weights;</span>
+        <span class="c1"># reset the actual criterion in method `on_fit_end()`</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_criterion_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_criterion_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
         <span class="c1"># by default models are deterministic (i.e. not probabilistic)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">=</span> <span class="n">likelihood</span>
 
@@ -386,11 +395,11 @@
 
 <div class="viewcode-block" id="PLForecastingModule.training_step"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.training_step">[docs]</a>    <span class="k">def</span> <span class="nf">training_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_batch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;performs the training step&quot;&quot;&quot;</span>
-        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_train_output</span><span class="p">(</span><span class="n">train_batch</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-        <span class="n">target</span> <span class="o">=</span> <span class="n">train_batch</span><span class="p">[</span>
-            <span class="o">-</span><span class="mi">1</span>
-        <span class="p">]</span>  <span class="c1"># By convention target is always the last element returned by datasets</span>
-        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_loss</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="c1"># by convention, the last two elements are sample weights and future target</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_train_output</span><span class="p">(</span><span class="n">train_batch</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">sample_weight</span> <span class="o">=</span> <span class="n">train_batch</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">train_batch</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_loss</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_criterion</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
             <span class="s2">&quot;train_loss&quot;</span><span class="p">,</span>
             <span class="n">loss</span><span class="p">,</span>
@@ -398,14 +407,16 @@
             <span class="n">prog_bar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">sync_dist</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_metrics</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_metrics</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_metrics</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_metrics</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">loss</span></div>
 
 <div class="viewcode-block" id="PLForecastingModule.validation_step"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.validation_step">[docs]</a>    <span class="k">def</span> <span class="nf">validation_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val_batch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;performs the validation step&quot;&quot;&quot;</span>
-        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_train_output</span><span class="p">(</span><span class="n">val_batch</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="c1"># the last two elements are sample weights and future target</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_train_output</span><span class="p">(</span><span class="n">val_batch</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">sample_weight</span> <span class="o">=</span> <span class="n">val_batch</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">val_batch</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_loss</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_loss</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_criterion</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
             <span class="s2">&quot;val_loss&quot;</span><span class="p">,</span>
             <span class="n">loss</span><span class="p">,</span>
@@ -413,8 +424,23 @@
             <span class="n">prog_bar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">sync_dist</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_metrics</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_metrics</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_metrics</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_metrics</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">loss</span></div>
+
+<div class="viewcode-block" id="PLForecastingModule.on_fit_end"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.on_fit_end">[docs]</a>    <span class="k">def</span> <span class="nf">on_fit_end</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># revert the loss function reduction change when sample weights were used</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_criterion_reduction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">train_criterion</span><span class="o">.</span><span class="n">reduction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_criterion_reduction</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">train_criterion_reduction</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_criterion_reduction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">val_criterion</span><span class="o">.</span><span class="n">reduction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_criterion_reduction</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">val_criterion_reduction</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="PLForecastingModule.on_train_epoch_end"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.on_train_epoch_end">[docs]</a>    <span class="k">def</span> <span class="nf">on_train_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compute_metrics</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_metrics</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PLForecastingModule.on_validation_epoch_end"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.on_validation_epoch_end">[docs]</a>    <span class="k">def</span> <span class="nf">on_validation_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compute_metrics</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_metrics</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="PLForecastingModule.on_predict_start"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.on_predict_start">[docs]</a>    <span class="k">def</span> <span class="nf">on_predict_start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># optionally, activate monte carlo dropout for prediction</span>
@@ -460,7 +486,6 @@
         <span class="c1"># repeat prediction procedure for every needed sample</span>
         <span class="n">batch_predictions</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">while</span> <span class="n">sample_count</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">pred_num_samples</span><span class="p">:</span>
-
             <span class="c1"># make sure we don&#39;t produce too many samples</span>
             <span class="k">if</span> <span class="n">sample_count</span> <span class="o">+</span> <span class="n">batch_sample_size</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">pred_num_samples</span><span class="p">:</span>
                 <span class="n">batch_sample_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pred_num_samples</span> <span class="o">-</span> <span class="n">sample_count</span>
@@ -533,34 +558,43 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">predict_likelihood_parameters</span> <span class="o">=</span> <span class="n">predict_likelihood_parameters</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pred_mc_dropout</span> <span class="o">=</span> <span class="n">mc_dropout</span></div>
 
-    <span class="k">def</span> <span class="nf">_compute_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_compute_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">criterion</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">):</span>
         <span class="c1"># output is of shape (batch_size, n_timesteps, n_components, n_params)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">compute_loss</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">compute_loss</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># If there&#39;s no likelihood, nr_params=1, and we need to squeeze out the</span>
             <span class="c1"># last dimension of model output, for properly computing the loss.</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">criterion</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span> <span class="n">target</span><span class="p">)</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">criterion</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span> <span class="n">target</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">loss</span> <span class="o">=</span> <span class="p">(</span><span class="n">loss</span> <span class="o">*</span> <span class="n">sample_weight</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">loss</span>
 
-    <span class="k">def</span> <span class="nf">_calculate_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">metrics</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_update_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">metrics</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">metrics</span><span class="p">):</span>
             <span class="k">return</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">:</span>
-            <span class="n">_metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">output</span><span class="p">),</span> <span class="n">target</span><span class="p">)</span>
+            <span class="n">metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">output</span><span class="p">),</span> <span class="n">target</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># If there&#39;s no likelihood, nr_params=1, and we need to squeeze out the</span>
             <span class="c1"># last dimension of model output, for properly computing the metric.</span>
-            <span class="n">_metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span> <span class="n">target</span><span class="p">)</span>
+            <span class="n">metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">),</span> <span class="n">target</span><span class="p">)</span>
 
+    <span class="k">def</span> <span class="nf">_compute_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">metrics</span><span class="p">):</span>
+            <span class="k">return</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log_dict</span><span class="p">(</span>
-            <span class="n">_metric</span><span class="p">,</span>
+            <span class="n">res</span><span class="p">,</span>
             <span class="n">on_epoch</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">on_step</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">logger</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">prog_bar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">sync_dist</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="n">metrics</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
 
 <div class="viewcode-block" id="PLForecastingModule.configure_optimizers"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.configure_optimizers">[docs]</a>    <span class="k">def</span> <span class="nf">configure_optimizers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;configures optimizers and learning rate schedulers for model optimization.&quot;&quot;&quot;</span>
@@ -574,9 +608,9 @@
                     <span class="ne">ValueError</span><span class="p">(</span>
                         <span class="s2">&quot;Error when building the optimizer or learning rate scheduler;&quot;</span>
                         <span class="s2">&quot;please check the provided class and arguments&quot;</span>
-                        <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">class: </span><span class="si">{}</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">arguments (kwargs): </span><span class="si">{}</span><span class="s2">&quot;</span>
-                        <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">error:</span><span class="se">\n</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">kws</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">class: </span><span class="si">{</span><span class="bp">cls</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">arguments (kwargs): </span><span class="si">{</span><span class="n">kws</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">error:</span><span class="se">\n</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
                     <span class="p">),</span>
                     <span class="n">logger</span><span class="p">,</span>
                 <span class="p">)</span>
@@ -674,7 +708,7 @@
         <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;train_sample_shape&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_sample_shape</span>
         <span class="c1"># we must save the loss to properly restore it when resuming training</span>
         <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;loss_fn&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">criterion</span>
-        <span class="c1"># we must save the metrics to continue outputing them when resuming training</span>
+        <span class="c1"># we must save the metrics to continue logging them when resuming training</span>
         <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;torch_metrics_train&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_metrics</span>
         <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;torch_metrics_val&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_metrics</span></div>
 
@@ -735,7 +769,7 @@
 
 <div class="viewcode-block" id="PLForecastingModule.configure_torch_metrics"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.configure_torch_metrics">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">configure_torch_metrics</span><span class="p">(</span>
-        <span class="n">torch_metrics</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">torchmetrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">,</span> <span class="n">torchmetrics</span><span class="o">.</span><span class="n">MetricCollection</span><span class="p">]</span>
+        <span class="n">torch_metrics</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">torchmetrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">,</span> <span class="n">torchmetrics</span><span class="o">.</span><span class="n">MetricCollection</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torchmetrics</span><span class="o">.</span><span class="n">MetricCollection</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;process the torch_metrics parameter.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">torch_metrics</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -983,19 +1017,17 @@
             <span class="k">else</span> <span class="mi">0</span>
         <span class="p">)</span>
 
-        <span class="n">input_past</span><span class="p">,</span> <span class="n">input_future</span><span class="p">,</span> <span class="n">input_static</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_input_batch</span><span class="p">(</span>
+        <span class="n">input_past</span><span class="p">,</span> <span class="n">input_future</span><span class="p">,</span> <span class="n">input_static</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_input_batch</span><span class="p">((</span>
+            <span class="n">past_target</span><span class="p">,</span>
+            <span class="n">past_covariates</span><span class="p">,</span>
+            <span class="n">historic_future_covariates</span><span class="p">,</span>
             <span class="p">(</span>
-                <span class="n">past_target</span><span class="p">,</span>
-                <span class="n">past_covariates</span><span class="p">,</span>
-                <span class="n">historic_future_covariates</span><span class="p">,</span>
-                <span class="p">(</span>
-                    <span class="n">future_covariates</span><span class="p">[:,</span> <span class="p">:</span><span class="n">roll_size</span><span class="p">,</span> <span class="p">:]</span>
-                    <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-                    <span class="k">else</span> <span class="kc">None</span>
-                <span class="p">),</span>
-                <span class="n">static_covariates</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
+                <span class="n">future_covariates</span><span class="p">[:,</span> <span class="p">:</span><span class="n">roll_size</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">),</span>
+            <span class="n">static_covariates</span><span class="p">,</span>
+        <span class="p">))</span>
 
         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="p">(</span><span class="n">input_past</span><span class="p">,</span> <span class="n">input_future</span><span class="p">,</span> <span class="n">input_static</span><span class="p">))[</span>
             <span class="p">:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_prediction_index</span> <span class="p">:,</span> <span class="p">:</span>
@@ -1004,13 +1036,15 @@
         <span class="n">batch_prediction</span> <span class="o">=</span> <span class="p">[</span><span class="n">out</span><span class="p">[:,</span> <span class="p">:</span><span class="n">roll_size</span><span class="p">,</span> <span class="p">:]]</span>
         <span class="n">prediction_length</span> <span class="o">=</span> <span class="n">roll_size</span>
 
-        <span class="k">while</span> <span class="n">prediction_length</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
-            <span class="c1"># we want the last prediction to end exactly at `n` into the future.</span>
+        <span class="c1"># predict at least `output_chunk_length` points, so that we use the most recent target values</span>
+        <span class="n">min_n</span> <span class="o">=</span> <span class="n">n</span> <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
+        <span class="k">while</span> <span class="n">prediction_length</span> <span class="o">&lt;</span> <span class="n">min_n</span><span class="p">:</span>
+            <span class="c1"># we want the last prediction to end exactly at `min_n` into the future.</span>
             <span class="c1"># this means we may have to truncate the previous prediction and step</span>
             <span class="c1"># back the roll size for the last chunk</span>
-            <span class="k">if</span> <span class="n">prediction_length</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">&gt;</span> <span class="n">n</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">prediction_length</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">&gt;</span> <span class="n">min_n</span><span class="p">:</span>
                 <span class="n">spillover_prediction_length</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">prediction_length</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">-</span> <span class="n">n</span>
+                    <span class="n">prediction_length</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">-</span> <span class="n">min_n</span>
                 <span class="p">)</span>
                 <span class="n">roll_size</span> <span class="o">-=</span> <span class="n">spillover_prediction_length</span>
                 <span class="n">prediction_length</span> <span class="o">-=</span> <span class="n">spillover_prediction_length</span>

@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -347,12 +348,9 @@
             <span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_embeddings</span><span class="o">.</span><span class="n">output_size</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
             <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">categorical_static_variables</span>
         <span class="p">}</span>
-        <span class="n">static_input_sizes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-            <span class="p">{</span>
-                <span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span>
-                <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">numeric_static_variables</span>
-            <span class="p">}</span>
-        <span class="p">)</span>
+        <span class="n">static_input_sizes</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+            <span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">numeric_static_variables</span>
+        <span class="p">})</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">static_covariates_vsn</span> <span class="o">=</span> <span class="n">_VariableSelectionNetwork</span><span class="p">(</span>
             <span class="n">input_sizes</span><span class="o">=</span><span class="n">static_input_sizes</span><span class="p">,</span>
@@ -717,13 +715,11 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">static_embedding</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="c1"># add numerical static covariates</span>
-            <span class="n">static_embedding</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-                <span class="p">{</span>
-                    <span class="n">name</span><span class="p">:</span> <span class="n">x_static</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">idx</span><span class="p">]</span>
-                    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">static_variables</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">numeric_static_variables</span>
-                <span class="p">}</span>
-            <span class="p">)</span>
+            <span class="n">static_embedding</span><span class="o">.</span><span class="n">update</span><span class="p">({</span>
+                <span class="n">name</span><span class="p">:</span> <span class="n">x_static</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">idx</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">static_variables</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">numeric_static_variables</span>
+            <span class="p">})</span>
             <span class="n">static_embedding</span><span class="p">,</span> <span class="n">static_covariate_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_covariates_vsn</span><span class="p">(</span>
                 <span class="n">static_embedding</span>
             <span class="p">)</span>
@@ -1261,9 +1257,9 @@
                     <span class="k">if</span> <span class="p">(</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">static_covariates</span> <span class="ow">is</span> <span class="kc">None</span>
                     <span class="p">):</span>  <span class="c1"># when training with fit_from_dataset</span>
-                        <span class="n">static_cols</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span>
-                            <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">static_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
-                        <span class="p">)</span>
+                        <span class="n">static_cols</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span>
+                            <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">static_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                        <span class="p">])</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">static_cols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_covariates</span><span class="o">.</span><span class="n">columns</span>
                     <span class="n">numeric_mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">static_cols</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">categorical_embedding_sizes</span><span class="p">)</span>
@@ -1338,9 +1334,9 @@
         <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MixedCovariatesSequentialDataset</span><span class="p">:</span>
-
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_relative_index</span><span class="p">,</span>
             <span class="s2">&quot;TFTModel requires future covariates. The model applies multi-head attention queries on future &quot;</span>
@@ -1359,6 +1355,7 @@
             <span class="n">output_chunk_shift</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_shift</span><span class="p">,</span>
             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uses_static_covariates</span><span class="p">,</span>
+            <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_verify_train_dataset_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_dataset</span><span class="p">:</span> <span class="n">TrainingDataset</span><span class="p">):</span>

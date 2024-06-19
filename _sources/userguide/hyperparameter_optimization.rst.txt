@@ -149,7 +149,7 @@ Hyperparameter optimization with Ray Tune
 
 `Ray Tune <https://docs.ray.io/en/latest/tune/examples/tune-pytorch-lightning.html>`_ is another option for hyperparameter optimization with automatic pruning.
 
-Here is an example of how to use Ray Tune to with the ``NBEATSModel`` model using the `Asynchronous Hyperband scheduler <https://blog.ml.cmu.edu/2018/12/12/massively-parallel-hyperparameter-optimization/>`_. 
+Here is an example of how to use Ray Tune to with the ``NBEATSModel`` model using the `Asynchronous Hyperband scheduler <https://blog.ml.cmu.edu/2018/12/12/massively-parallel-hyperparameter-optimization/>`_.
 
 .. code-block:: python
 
@@ -234,13 +234,13 @@ Here is an example of how to use Ray Tune to with the ``NBEATSModel`` model usin
        train_model, callbacks=[my_stopper, tune_callback], train=train, val=val,
    )
 
-   # optimize hyperparameters by minimizing the MAPE on the validation set 
+   # optimize hyperparameters by minimizing the MAPE on the validation set
    analysis = tune.run(
        train_fn_with_parameters,
        resources_per_trial=resources_per_trial,
-       # Using a metric instead of loss allows for 
+       # Using a metric instead of loss allows for
        # comparison between different likelihood or loss functions.
-       metric="MAPE",  # any value in TuneReportCallback. 
+       metric="MAPE",  # any value in TuneReportCallback.
        mode="min",
        config=config,
        num_samples=num_samples,

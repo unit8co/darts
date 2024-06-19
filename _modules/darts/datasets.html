@@ -34,6 +34,7 @@
     <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -179,18 +180,16 @@
 <span class="sd">A few popular time series datasets</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.datasets.dataset_loaders</span> <span class="kn">import</span> <span class="n">DatasetLoaderCSV</span><span class="p">,</span> <span class="n">DatasetLoaderMetadata</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">_build_tqdm_iterator</span>
-
-<span class="kn">from</span> <span class="nn">.dataset_loaders</span> <span class="kn">import</span> <span class="n">DatasetLoaderCSV</span><span class="p">,</span> <span class="n">DatasetLoaderMetadata</span>
+<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">_build_tqdm_iterator</span><span class="p">,</span> <span class="n">freqs</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Overall usage of this package:</span>
@@ -665,6 +664,32 @@
         <span class="p">)</span></div>
 
 
+<div class="viewcode-block" id="TaxiNewYorkDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.TaxiNewYorkDataset">[docs]</a><span class="k">class</span> <span class="nc">TaxiNewYorkDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Taxi Passengers in New York, from 2014-07 to 2015-01.</span>
+<span class="sd">    The data consists of aggregated total number of</span>
+<span class="sd">    taxi passengers into 30 minute buckets.</span>
+<span class="sd">    Univariate series.</span>
+<span class="sd">    Source: [1]_</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://www.kaggle.com/code/julienjta/nyc-taxi-traffic-analysis</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+                <span class="s2">&quot;taxi_new_york_passengers.csv&quot;</span><span class="p">,</span>
+                <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span> <span class="o">+</span> <span class="s2">&quot;/taxi_new_york_passengers.csv&quot;</span><span class="p">,</span>
+                <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;0a81adf1b74354a8ec18c30e9e8fe5f0&quot;</span><span class="p">,</span>
+                <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;time&quot;</span><span class="p">,</span>
+                <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span>
+                <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;30min&quot;</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span></div>
+
+
 <div class="viewcode-block" id="ElectricityDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.ElectricityDataset">[docs]</a><span class="k">class</span> <span class="nc">ElectricityDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Measurements of electric power consumption in one household with 15 minute sampling rate.</span>
@@ -778,7 +803,7 @@
             <span class="p">)</span>
 
             <span class="n">output_dict</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="n">freq_setting</span> <span class="o">=</span> <span class="s2">&quot;1H&quot;</span> <span class="k">if</span> <span class="s2">&quot;hourly&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;1D&quot;</span>
+            <span class="n">freq_setting</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span> <span class="o">+</span> <span class="n">freqs</span><span class="p">[</span><span class="s2">&quot;h&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;hourly&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;1D&quot;</span>
             <span class="n">time_series_of_locations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">&quot;locationID&quot;</span><span class="p">))</span>
             <span class="k">for</span> <span class="n">locationID</span><span class="p">,</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">time_series_of_locations</span><span class="p">:</span>
                 <span class="n">df</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
@@ -950,7 +975,7 @@
                 <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;a2105f364ef70aec06c757304833f72a&quot;</span><span class="p">,</span>
                 <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;Date&quot;</span><span class="p">,</span>
                 <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span>
-                <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;1H&quot;</span><span class="p">,</span>
+                <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;1&quot;</span> <span class="o">+</span> <span class="n">freqs</span><span class="p">[</span><span class="s2">&quot;h&quot;</span><span class="p">],</span>
                 <span class="n">multivariate</span><span class="o">=</span><span class="n">multivariate</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="p">)</span>

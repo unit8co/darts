@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -183,10 +184,12 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers.base_data_transformer</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BaseDataTransformer</span><span class="p">,</span>
+    <span class="n">component_masking</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.utils</span> <span class="kn">import</span> <span class="n">_build_tqdm_iterator</span><span class="p">,</span> <span class="n">_parallel_apply</span>
-
-<span class="kn">from</span> <span class="nn">.base_data_transformer</span> <span class="kn">import</span> <span class="n">BaseDataTransformer</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -347,6 +350,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_fitted_params</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># stores the fitted parameters/objects</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_global_fit</span> <span class="o">=</span> <span class="n">global_fit</span>
 
+    <span class="nd">@classmethod</span>
+    <span class="nd">@component_masking</span>
+    <span class="k">def</span> <span class="nf">_ts_fit</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Applies component masking to `ts_fit`.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">ts_fit</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
 <div class="viewcode-block" id="FittableDataTransformer.ts_fit"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer.ts_fit">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">ts_fit</span><span class="p">(</span>
@@ -435,14 +444,6 @@
             <span class="n">data</span> <span class="o">=</span> <span class="n">series</span>
             <span class="n">transformer_selector</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_components</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">apply_component_mask</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="n">return_ts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">data</span>
-            <span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;component_mask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">component_mask</span>
-
         <span class="n">params_iterator</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_params</span><span class="p">(</span>
             <span class="n">transformer_selector</span><span class="o">=</span><span class="n">transformer_selector</span><span class="p">,</span> <span class="n">calling_fit</span><span class="o">=</span><span class="kc">True</span>
         <span class="p">)</span>
@@ -456,10 +457,14 @@
             <span class="n">fit_iterator</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="n">n_jobs</span>
         <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fitted_params</span> <span class="o">=</span> <span class="n">_parallel_apply</span><span class="p">(</span>
-            <span class="n">input_iterator</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">ts_fit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_jobs</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span>
-        <span class="p">)</span>
+        <span class="c1"># apply component masking to the fit method</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;mask_components&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_components</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;mask_components_apply_only&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;component_mask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">component_mask</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fitted_params</span> <span class="o">=</span> <span class="n">_parallel_apply</span><span class="p">(</span>
+            <span class="n">input_iterator</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ts_fit</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_jobs</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
 <div class="viewcode-block" id="FittableDataTransformer.fit_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer.fit_transform">[docs]</a>    <span class="k">def</span> <span class="nf">fit_transform</span><span class="p">(</span>

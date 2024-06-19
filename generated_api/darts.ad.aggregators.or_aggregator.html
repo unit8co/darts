@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -856,12 +857,19 @@
                 
   <span class="target" id="module-darts.ad.aggregators.or_aggregator"></span><section id="or-aggregator">
 <h1>OR Aggregator<a class="headerlink" href="#or-aggregator" title="Permalink to this heading">¶</a></h1>
-<p>Aggregator that identifies a time step as anomalous if any of the components
-is flagged as anomalous (logical OR).</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.ad.aggregators.or_aggregator.OrAggregator">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.ad.aggregators.or_aggregator.</span></span><span class="sig-name descname"><span class="pre">OrAggregator</span></span><a class="reference internal" href="../_modules/darts/ad/aggregators/or_aggregator.html#OrAggregator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.aggregators.or_aggregator.OrAggregator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.NonFittableAggregator" title="darts.ad.aggregators.aggregators.NonFittableAggregator"><code class="xref py py-class docutils literal notranslate"><span class="pre">NonFittableAggregator</span></code></a></p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.ad.aggregators.or_aggregator.</span></span><span class="sig-name descname"><span class="pre">OrAggregator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/aggregators/or_aggregator.html#OrAggregator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.aggregators.or_aggregator.OrAggregator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.Aggregator" title="darts.ad.aggregators.aggregators.Aggregator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aggregator</span></code></a></p>
+<p>OR Aggregator</p>
+<p>Aggregator that identifies a time step as anomalous if any of the components
+is flagged as anomalous (logical OR).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Defaults to <cite>1</cite> (sequential). Setting the parameter to <cite>-1</cite> means
+using all the available processors.</p>
+</dd>
+</dl>
 <p class="rubric">Methods</p>
 <table class="autosummary longtable table autosummary">
 <colgroup>
@@ -869,35 +877,34 @@ is flagged as anomalous (logical OR).</p>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.aggregators.or_aggregator.OrAggregator.eval_accuracy" title="darts.ad.aggregators.or_aggregator.OrAggregator.eval_accuracy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_accuracy</span></code></a>(actual_anomalies, series[, ...])</p></td>
-<td><p>Aggregates the (sequence of) multivariate series given as input into one (sequence of) series and evaluates the results against true anomalies.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.aggregators.or_aggregator.OrAggregator.eval_metric" title="darts.ad.aggregators.or_aggregator.OrAggregator.eval_metric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_metric</span></code></a>(anomalies, series[, window, metric])</p></td>
+<td><p>Aggregates the (sequence of) multivariate series given as input into one (sequence of) series and evaluates the results against the ground truth anomaly labels.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.aggregators.or_aggregator.OrAggregator.predict" title="darts.ad.aggregators.or_aggregator.OrAggregator.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(series)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.aggregators.or_aggregator.OrAggregator.predict" title="darts.ad.aggregators.or_aggregator.OrAggregator.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(series[, name])</p></td>
 <td><p>Aggregates the (sequence of) multivariate binary series given as input into a (sequence of) univariate binary series.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.ad.aggregators.or_aggregator.OrAggregator.eval_accuracy">
-<span class="sig-name descname"><span class="pre">eval_accuracy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'recall'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.aggregators.or_aggregator.OrAggregator.eval_accuracy" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.ad.aggregators.or_aggregator.OrAggregator.eval_metric">
+<span class="sig-name descname"><span class="pre">eval_metric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'recall'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.aggregators.or_aggregator.OrAggregator.eval_metric" title="Permalink to this definition">¶</a></dt>
 <dd><p>Aggregates the (sequence of) multivariate series given as input into one (sequence of)
-series and evaluates the results against true anomalies.</p>
+series and evaluates the results against the ground truth anomaly labels.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_anomalies</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – The (sequence of) ground truth of the anomalies (1 if it is an anomaly and 0 if not)</p></li>
-<li><p><strong>series</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – The (sequence of) multivariate binary series to aggregate</p></li>
+<li><p><strong>anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) binary ground truth anomaly labels (1 if it is an anomaly and 0 if not).</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted multivariate binary series to aggregate.</p></li>
 <li><p><strong>window</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – (Sequence of) integer value indicating the number of past samples each point
 represents in the (sequence of) series. The parameter will be used by the
-function <code class="docutils literal notranslate"><span class="pre">_window_adjustment_anomalies()</span></code> in darts.ad.utils to transform
-actual_anomalies.</p></li>
-<li><p><strong>metric</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Metric function to use. Must be one of “recall”, “precision”,
-“f1”, and “accuracy”.
-Default: “recall”</p></li>
+function <cite>_window_adjustment_anomalies()</cite> in darts.ad.utils to transform
+anomalies.</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘recall’, ‘precision’, ‘f1’, ‘accuracy’]) – The name of the metric function to use. Must be one of “recall”, “precision”, “f1”, and “accuracy”.
+Default: “recall”.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>(Sequence of) score for the (sequence of) series</p>
+<dd class="field-even"><p>(Sequence of) score for the (sequence of) series.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>Union[float, Sequence[float]]</p>
@@ -907,15 +914,18 @@ Default: “recall”</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.ad.aggregators.or_aggregator.OrAggregator.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.aggregators.or_aggregator.OrAggregator.predict" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'series'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.aggregators.or_aggregator.OrAggregator.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Aggregates the (sequence of) multivariate binary series given as
 input into a (sequence of) univariate binary series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) multivariate binary series to aggregate</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) multivariate binary series to aggregate.</p></li>
+<li><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The name of <cite>series</cite>.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>(Sequence of) aggregated results</p>
+<dd class="field-even"><p>(Sequence of) aggregated results.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>

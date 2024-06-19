@@ -34,6 +34,7 @@
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -227,7 +228,9 @@
         <span class="n">pred_series</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;pred_series&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="s2">&quot;pred_series&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span>
-            <span class="k">else</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;actual_series&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">else</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;actual_series&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span>
+            <span class="k">else</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="p">)</span>
 
         <span class="n">params</span> <span class="o">=</span> <span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span>
@@ -542,7 +545,7 @@
 
 
 <span class="k">def</span> <span class="nf">_get_wrapped_metric</span><span class="p">(</span>
-    <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">]</span>
+    <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the inner metric function `func` which bypasses the decorators `multi_ts_support` and</span>
 <span class="sd">    `multivariate_support`. It significantly decreases process time compared to calling `func` directly.</span>
@@ -2346,8 +2349,9 @@
     <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span>
         <span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">,</span> <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
-    <span class="n">y_true_sum</span><span class="p">,</span> <span class="n">y_pred_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span>
-        <span class="n">y_pred</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span>
+    <span class="n">y_true_sum</span><span class="p">,</span> <span class="n">y_pred_sum</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">),</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">),</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">y_true_sum</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
         <span class="n">raise_log</span><span class="p">(</span>

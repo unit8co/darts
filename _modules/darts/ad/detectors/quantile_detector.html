@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -181,33 +182,35 @@
 <span class="sd">computed as quantiles of historical data when the detector is fitted.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">darts.ad.detectors.detectors</span> <span class="kn">import</span> <span class="n">FittableDetector</span>
+<span class="kn">from</span> <span class="nn">darts.ad.detectors.detectors</span> <span class="kn">import</span> <span class="n">FittableDetector</span><span class="p">,</span> <span class="n">_BoundedDetectorMixin</span>
 <span class="kn">from</span> <span class="nn">darts.ad.detectors.threshold_detector</span> <span class="kn">import</span> <span class="n">ThresholdDetector</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<div class="viewcode-block" id="QuantileDetector"><a class="viewcode-back" href="../../../../generated_api/darts.ad.detectors.quantile_detector.html#darts.ad.detectors.quantile_detector.QuantileDetector">[docs]</a><span class="k">class</span> <span class="nc">QuantileDetector</span><span class="p">(</span><span class="n">FittableDetector</span><span class="p">):</span>
+
+<div class="viewcode-block" id="QuantileDetector"><a class="viewcode-back" href="../../../../generated_api/darts.ad.detectors.quantile_detector.html#darts.ad.detectors.quantile_detector.QuantileDetector">[docs]</a><span class="k">class</span> <span class="nc">QuantileDetector</span><span class="p">(</span><span class="n">FittableDetector</span><span class="p">,</span> <span class="n">_BoundedDetectorMixin</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">low_quantile</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">high_quantile</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Flags values that are either</span>
-<span class="sd">        below or above the `low_quantile` and `high_quantile`</span>
-<span class="sd">        quantiles of historical data, respectively.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Quantile Detector</span>
 
-<span class="sd">        If a single value is provided for `low_quantile` or `high_quantile`, this same</span>
-<span class="sd">        value will be used across all components of the series.</span>
+<span class="sd">        Flags values that are either below or above the `low_quantile` and `high_quantile` quantiles</span>
+<span class="sd">        of historical data, respectively.</span>
+
+<span class="sd">        If a single value is provided for `low_quantile` or `high_quantile`, this same value will be</span>
+<span class="sd">        used across all components of the series.</span>
 
 <span class="sd">        If sequences of values are given for the parameters `low_quantile` and/or `high_quantile`,</span>
 <span class="sd">        they must be of the same length, matching the dimensionality of the series passed</span>
-<span class="sd">        to ``fit()``, or have a length of 1. In the latter case, this single value will be used</span>
+<span class="sd">        to `fit()`, or have a length of 1. In the latter case, this single value will be used</span>
 <span class="sd">        across all components of the series.</span>
 
 <span class="sd">        If either `low_quantile` or `high_quantile` is None, the corresponding bound will not be used.</span>
@@ -223,96 +226,45 @@
 <span class="sd">            (Sequence of) quantile of historical data above which a value is regarded as anomaly.</span>
 <span class="sd">            Must be between 0 and 1. If a sequence, must match the dimensionality of the series</span>
 <span class="sd">            this detector is applied to.</span>
-
-<span class="sd">        Attributes</span>
-<span class="sd">        ----------</span>
-<span class="sd">        low_threshold</span>
-<span class="sd">            The (sequence of) lower quantile values.</span>
-<span class="sd">        high_threshold</span>
-<span class="sd">            The (sequence of) upper quantile values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-
-        <span class="n">raise_if</span><span class="p">(</span>
-            <span class="n">low_quantile</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">high_quantile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s2">&quot;At least one parameter must be not None (`low` and `high` are both None).&quot;</span><span class="p">,</span>
+        <span class="n">low_quantile</span><span class="p">,</span> <span class="n">high_quantile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_boundaries</span><span class="p">(</span>
+            <span class="n">lower_bound</span><span class="o">=</span><span class="n">low_quantile</span><span class="p">,</span>
+            <span class="n">upper_bound</span><span class="o">=</span><span class="n">high_quantile</span><span class="p">,</span>
+            <span class="n">lower_bound_name</span><span class="o">=</span><span class="s2">&quot;low_quantile&quot;</span><span class="p">,</span>
+            <span class="n">upper_bound_name</span><span class="o">=</span><span class="s2">&quot;high_quantile&quot;</span><span class="p">,</span>
         <span class="p">)</span>
-
-        <span class="k">def</span> <span class="nf">_prep_quantile</span><span class="p">(</span><span class="n">q</span><span class="p">):</span>
-            <span class="k">return</span> <span class="p">(</span>
-                <span class="n">q</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
-                <span class="k">else</span> <span class="p">[</span><span class="n">q</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span> <span class="k">else</span> <span class="n">q</span>
-            <span class="p">)</span>
-
-        <span class="n">low</span> <span class="o">=</span> <span class="n">_prep_quantile</span><span class="p">(</span><span class="n">low_quantile</span><span class="p">)</span>
-        <span class="n">high</span> <span class="o">=</span> <span class="n">_prep_quantile</span><span class="p">(</span><span class="n">high_quantile</span><span class="p">)</span>
-
-        <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="p">(</span><span class="n">low</span><span class="p">,</span> <span class="n">high</span><span class="p">):</span>
-            <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="nb">all</span><span class="p">([</span><span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">q</span><span class="p">]),</span>
-                <span class="s2">&quot;Quantiles must be between 0 and 1, or None.&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span> <span class="o">=</span> <span class="n">low</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">high</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">low</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">low</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">high_quantile</span> <span class="o">=</span> <span class="n">high</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">low</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">high</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">high</span>
-
-        <span class="c1"># the quantiles parameters are now sequences of the same length,</span>
-        <span class="c1"># possibly containing some None values, but at least one non-None value</span>
-
+        <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="p">(</span><span class="n">low_quantile</span><span class="p">,</span> <span class="n">high_quantile</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">q</span><span class="p">]):</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;All quantiles must be between 0 and 1, or None.&quot;</span><span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span> <span class="o">=</span> <span class="n">low_quantile</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">high_quantile</span> <span class="o">=</span> <span class="n">high_quantile</span>
         <span class="c1"># We&#39;ll use an inner Threshold detector once the quantiles are fitted</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">detector</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">detector</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ThresholdDetector</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="c1"># A few more checks:</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">high_quantile</span><span class="p">),</span>
-            <span class="s2">&quot;Parameters `low_quantile` and `high_quantile` must be of the same length,&quot;</span>
-            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; found `low`: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span><span class="p">)</span><span class="si">}</span><span class="s2"> and `high`: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">high_quantile</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">raise_if</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="n">lo</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">lo</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span><span class="p">])</span>
-            <span class="ow">and</span> <span class="nb">all</span><span class="p">([</span><span class="n">hi</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">hi</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">high_quantile</span><span class="p">]),</span>
-            <span class="s2">&quot;All provided quantile values are None.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">(</span>
-                <span class="n">low</span> <span class="o">&lt;=</span> <span class="n">high</span>
-                <span class="k">for</span> <span class="p">(</span><span class="n">low</span><span class="p">,</span> <span class="n">high</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">high_quantile</span><span class="p">)</span>
-                <span class="k">if</span> <span class="p">((</span><span class="n">low</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">high</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">))</span>
-            <span class="p">),</span>
-            <span class="s2">&quot;all values in `low_quantile` must be lower than or equal&quot;</span>
-            <span class="o">+</span> <span class="s2">&quot;to their corresponding value in `high_quantile`.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_fit_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">list_series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-
+    <span class="k">def</span> <span class="nf">_fit_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># if len(low) &gt; 1 and len(high) &gt; 1, then check it matches input width:</span>
-        <span class="n">raise_if</span><span class="p">(</span>
-            <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
-            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span><span class="p">)</span> <span class="o">!=</span> <span class="n">list_series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span><span class="p">,</span>
-            <span class="s2">&quot;The number of components of input must be equal to the number&quot;</span>
-            <span class="o">+</span> <span class="s2">&quot; of values given for `high_quantile` or/and `low_quantile`. Found number of &quot;</span>
-            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;components equal to </span><span class="si">{</span><span class="n">list_series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span><span class="si">}</span><span class="s2"> and expected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span><span class="p">)</span> <span class="o">!=</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;The number of components of input must be equal to the number &quot;</span>
+                    <span class="s2">&quot;of values given for `high_quantile` or/and `low_quantile`. Found number of &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;components equal to </span><span class="si">{</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span><span class="si">}</span><span class="s2"> and expected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="c1"># otherwise, make them the right length</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span> <span class="o">*</span> <span class="n">list_series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
-            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">high_quantile</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">high_quantile</span> <span class="o">*</span> <span class="n">list_series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">high_quantile</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
-            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">high_quantile</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expand_threshold</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">high_quantile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expand_threshold</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">high_quantile</span><span class="p">)</span>
 
-        <span class="c1"># concatenate everything along time axis</span>
+        <span class="c1"># concatenate everything along the time axis</span>
         <span class="n">np_series</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">list_series</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span>
+            <span class="p">[</span><span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">series</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span>
         <span class="p">)</span>
 
         <span class="c1"># move sample dimension to position 1</span>
@@ -324,23 +276,29 @@
 
         <span class="c1"># Compute 2 thresholds (low, high) for each component:</span>
         <span class="c1"># TODO: we could make this more efficient when low_quantile or high_quantile contain a single value</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">low_threshold</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">low_threshold</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">np_series</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">q</span><span class="o">=</span><span class="n">lo</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">lo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">lo</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low_quantile</span><span class="p">)</span>
         <span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">high_threshold</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">high_threshold</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">np_series</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">q</span><span class="o">=</span><span class="n">hi</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">if</span> <span class="n">hi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">hi</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">high_quantile</span><span class="p">)</span>
         <span class="p">]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">detector</span> <span class="o">=</span> <span class="n">ThresholdDetector</span><span class="p">(</span>
-            <span class="n">low_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">low_threshold</span><span class="p">,</span> <span class="n">high_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">high_threshold</span>
+            <span class="n">low_threshold</span><span class="o">=</span><span class="n">low_threshold</span><span class="p">,</span> <span class="n">high_threshold</span><span class="o">=</span><span class="n">high_threshold</span>
         <span class="p">)</span>
 
-        <span class="k">return</span> <span class="bp">self</span>
+    <span class="k">def</span> <span class="nf">_detect_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;series&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">detector</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_detect_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">detector</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">series</span><span class="p">)</span></div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">low_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">detector</span><span class="o">.</span><span class="n">low_threshold</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">detector</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">high_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">detector</span><span class="o">.</span><span class="n">high_threshold</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">detector</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span></div>
 </pre></div>
 
               </div>

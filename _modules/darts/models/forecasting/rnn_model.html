@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -337,14 +338,14 @@
             <span class="n">cov_future</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="n">batch_prediction</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">out</span><span class="p">,</span> <span class="n">last_hidden_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">(</span>
-            <span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="n">static_covariates</span><span class="p">)</span>
-        <span class="p">)</span>
+        <span class="n">out</span><span class="p">,</span> <span class="n">last_hidden_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">((</span>
+            <span class="n">input_series</span><span class="p">,</span>
+            <span class="n">static_covariates</span><span class="p">,</span>
+        <span class="p">))</span>
         <span class="n">batch_prediction</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:])</span>
         <span class="n">prediction_length</span> <span class="o">=</span> <span class="mi">1</span>
 
         <span class="k">while</span> <span class="n">prediction_length</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
-
             <span class="c1"># create new input to model from last prediction and current covariates, if available</span>
             <span class="n">new_input</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
@@ -737,9 +738,9 @@
         <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DualCovariatesShiftedDataset</span><span class="p">:</span>
-
         <span class="k">return</span> <span class="n">DualCovariatesShiftedDataset</span><span class="p">(</span>
             <span class="n">target_series</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
             <span class="n">covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
@@ -747,6 +748,7 @@
             <span class="n">shift</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uses_static_covariates</span><span class="p">,</span>
+            <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_verify_train_dataset_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_dataset</span><span class="p">:</span> <span class="n">TrainingDataset</span><span class="p">):</span>

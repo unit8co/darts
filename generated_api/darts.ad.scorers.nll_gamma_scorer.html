@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -863,6 +864,16 @@ under a Gamma distribution estimated from the stochastic prediction.</p>
 <dt class="sig sig-object py" id="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.ad.scorers.nll_gamma_scorer.</span></span><span class="sig-name descname"><span class="pre">GammaNLLScorer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/scorers/nll_gamma_scorer.html#GammaNLLScorer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.NLLScorer" title="darts.ad.scorers.scorers.NLLScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">NLLScorer</span></code></a></p>
+<p>NLL Gamma Scorer</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>window</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Integer value indicating the size of the window W used by the scorer to transform the series into an
+anomaly score. A scorer will slice the given series into subsequences of size W and returns a value
+indicating how anomalous these subset of W values are. A post-processing step will convert this anomaly
+score into a point-wise anomaly score (see definition of <cite>window_transform</cite>). The window size should be
+commensurate to the expected durations of the anomalies one is looking for.</p>
+</dd>
+</dl>
 <p class="rubric">Attributes</p>
 <table class="autosummary longtable table autosummary">
 <colgroup>
@@ -871,7 +882,13 @@ under a Gamma distribution estimated from the stochastic prediction.</p>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.is_probabilistic" title="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.is_probabilistic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_probabilistic</span></code></a></p></td>
-<td><p>Whether the scorer expects a probabilistic prediction for its first input.</p></td>
+<td><p>Whether the scorer expects a probabilistic prediction as the first input.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.is_trainable" title="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.is_trainable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_trainable</span></code></a></p></td>
+<td><p>Whether the scorer is trainable.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.is_univariate" title="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.is_univariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_univariate</span></code></a></p></td>
+<td><p>Whether the Scorer is a univariate scorer.</p></td>
 </tr>
 </tbody>
 </table>
@@ -882,56 +899,49 @@ under a Gamma distribution estimated from the stochastic prediction.</p>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.eval_accuracy_from_prediction" title="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.eval_accuracy_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_accuracy_from_prediction</span></code></a>(...[, metric])</p></td>
-<td><p>Computes the anomaly score between <cite>actual_series</cite> and <cite>pred_series</cite>, and returns the score of an agnostic threshold metric.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.eval_metric_from_prediction" title="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.eval_metric_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_metric_from_prediction</span></code></a>(anomalies, ...)</p></td>
+<td><p>Computes the anomaly score between <cite>series</cite> and <cite>pred_series</cite>, and returns the score of an agnostic threshold metric.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.score_from_prediction" title="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.score_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">score_from_prediction</span></code></a>(actual_series, pred_series)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.score_from_prediction" title="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.score_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">score_from_prediction</span></code></a>(series, pred_series)</p></td>
 <td><p>Computes the anomaly score on the two (sequence of) series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.show_anomalies_from_prediction" title="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.show_anomalies_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show_anomalies_from_prediction</span></code></a>(...[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.show_anomalies_from_prediction" title="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.show_anomalies_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show_anomalies_from_prediction</span></code></a>(series, ...)</p></td>
 <td><p>Plot the results of the scorer.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.eval_accuracy_from_prediction">
-<span class="sig-name descname"><span class="pre">eval_accuracy_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AUC_ROC'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.eval_accuracy_from_prediction" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes the anomaly score between <cite>actual_series</cite> and <cite>pred_series</cite>, and returns the score
+<dt class="sig sig-object py" id="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.eval_metric_from_prediction">
+<span class="sig-name descname"><span class="pre">eval_metric_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AUC_ROC'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.eval_metric_from_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the anomaly score between <cite>series</cite> and <cite>pred_series</cite>, and returns the score
 of an agnostic threshold metric.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) ground truth of the anomalies (1 if it is an anomaly and 0 if not)</p></li>
-<li><p><strong>actual_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
+<li><p><strong>anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) ground truth binary anomaly series (<cite>1</cite> if it is an anomaly and <cite>0</cite> if not).</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
 <li><p><strong>pred_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted series.</p></li>
-<li><p><strong>metric</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Optionally, metric function to use. Must be one of “AUC_ROC” and “AUC_PR”.
-Default: “AUC_ROC”</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘AUC_ROC’, ‘AUC_PR’]) – The name of the metric function to use. Must be one of “AUC_ROC” (Area Under the
+Receiver Operating Characteristic Curve) and “AUC_PR” (Average Precision from scores).
+Default: “AUC_ROC”.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><dl>
-<dt>Score of an agnostic threshold metric for the computed anomaly score</dt><dd><ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">float</span></code> if <cite>actual_series</cite> and <cite>actual_series</cite> are univariate series (dimension=1).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Sequence[float]</span></code></p>
-<blockquote>
-<div><ul class="simple">
-<li><p>if <cite>actual_series</cite> and <cite>actual_series</cite> are multivariate series (dimension&gt;1),</p></li>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>float</em> – A single metric value for a single univariate <cite>series</cite>.</p></li>
+<li><p><em>Sequence[float]</em> – A sequence of metric values for:</p>
+<ul>
+<li><p>a single multivariate <cite>series</cite>.</p></li>
+<li><p>a sequence of univariate <cite>series</cite>.</p></li>
 </ul>
-<p>returns one value per dimension, or
-* if <cite>actual_series</cite> and <cite>actual_series</cite> are sequences of univariate series,
-returns one value per series</p>
-</div></blockquote>
 </li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Sequence[Sequence[float]]]</span></code> if <cite>actual_series</cite> and <cite>actual_series</cite> are sequences</p></li>
+<li><p><em>Sequence[Sequence[float]]</em> – A sequence of sequences of metric values for a sequence of multivariate <cite>series</cite>.
+The outer sequence is over the series, and inner sequence is over the series’ components/columns.</p></li>
 </ul>
-<p>of multivariate series. Outer Sequence is over the sequence input and the inner
-Sequence is over the dimensions of each element in the sequence input.</p>
-</dd>
-</dl>
 </p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>Union[float, Sequence[float], Sequence[Sequence[float]]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -939,7 +949,29 @@ Sequence is over the dimensions of each element in the sequence input.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.is_probabilistic">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_probabilistic</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.is_probabilistic" title="Permalink to this definition">¶</a></dt>
-<dd><p>Whether the scorer expects a probabilistic prediction for its first input.</p>
+<dd><p>Whether the scorer expects a probabilistic prediction as the first input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.is_trainable">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_trainable</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.is_trainable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the scorer is trainable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.is_univariate">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_univariate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.is_univariate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the Scorer is a univariate scorer.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
@@ -949,7 +981,7 @@ Sequence is over the dimensions of each element in the sequence input.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.score_from_prediction">
-<span class="sig-name descname"><span class="pre">score_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.score_from_prediction" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">score_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.score_from_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the anomaly score on the two (sequence of) series.</p>
 <p>If a pair of sequences is given, they must contain the same number
 of series. The scorer will score each pair of series independently
@@ -957,7 +989,7 @@ and return an anomaly score for each pair.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
 <li><p><strong>pred_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted series.</p></li>
 </ul>
 </dd>
@@ -972,12 +1004,12 @@ and return an anomaly score for each pair.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.show_anomalies_from_prediction">
-<span class="sig-name descname"><span class="pre">show_anomalies_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scorer_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.show_anomalies_from_prediction" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">show_anomalies_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scorer_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anomalies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.show_anomalies_from_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the results of the scorer.</p>
 <p>Computes the anomaly score on the two series. And plots the results.</p>
 <dl class="simple">
 <dt>The plot will be composed of the following:</dt><dd><ul class="simple">
-<li><p>the actual_series and the pred_series.</p></li>
+<li><p>the series and the pred_series.</p></li>
 <li><p>the anomaly score of the scorer.</p></li>
 <li><p>the actual anomalies, if given.</p></li>
 </ul>
@@ -993,13 +1025,14 @@ if the actual anomalies is provided.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The actual series to visualize anomalies from.</p></li>
-<li><p><strong>pred_series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The predicted series of <cite>actual_series</cite>.</p></li>
-<li><p><strong>actual_anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – The ground truth of the anomalies (1 if it is an anomaly and 0 if not)</p></li>
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The actual series to visualize anomalies from.</p></li>
+<li><p><strong>pred_series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The predicted series of <cite>series</cite>.</p></li>
+<li><p><strong>anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – The ground truth of the anomalies (1 if it is an anomaly and 0 if not)</p></li>
 <li><p><strong>scorer_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Name of the scorer.</p></li>
 <li><p><strong>title</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Title of the figure</p></li>
-<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, Scoring function to use. Must be one of “AUC_ROC” and “AUC_PR”.
-Default: “AUC_ROC”</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘AUC_ROC’, ‘AUC_PR’]]) – Optionally, the name of the metric function to use. Must be one of “AUC_ROC” (Area Under the
+Receiver Operating Characteristic Curve) and “AUC_PR” (Average Precision from scores).
+Default: “AUC_ROC”.</p></li>
 </ul>
 </dd>
 </dl>

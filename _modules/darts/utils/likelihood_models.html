@@ -34,6 +34,7 @@
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -272,13 +273,18 @@
         <span class="c1"># used for equality operator between likelihood objects</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ignore_attrs_equality</span> <span class="o">=</span> <span class="p">[]</span>
 
-<div class="viewcode-block" id="Likelihood.compute_loss"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood.compute_loss">[docs]</a>    <span class="k">def</span> <span class="nf">compute_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+<div class="viewcode-block" id="Likelihood.compute_loss"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood.compute_loss">[docs]</a>    <span class="k">def</span> <span class="nf">compute_loss</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">target</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">sample_weight</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Computes a loss from a `model_output`, which represents the parameters of a given probability</span>
 <span class="sd">        distribution for every ground truth value in `target`, and the `target` itself.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">params_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
-        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nllloss</span><span class="p">(</span><span class="n">params_out</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nllloss</span><span class="p">(</span><span class="n">params_out</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">)</span>
 
         <span class="n">prior_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prior_params</span>
         <span class="n">use_prior</span> <span class="o">=</span> <span class="n">prior_params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span>
@@ -305,13 +311,16 @@
 
         <span class="k">return</span> <span class="n">loss</span></div>
 
-    <span class="k">def</span> <span class="nf">_nllloss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params_out</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_nllloss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params_out</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is the basic way to compute the NLL loss. It can be overwritten by likelihoods for which</span>
 <span class="sd">        PyTorch proposes a numerically better NLL loss.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">out_distr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_distr_from_params</span><span class="p">(</span><span class="n">params_out</span><span class="p">)</span>
-        <span class="k">return</span> <span class="o">-</span><span class="n">out_distr</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">target</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="o">-</span><span class="n">out_distr</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span> <span class="o">*</span> <span class="n">sample_weight</span>
+        <span class="k">return</span> <span class="n">loss</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -356,9 +365,11 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># interleave the predicted parameters to group them by input series component</span>
             <span class="n">num_samples</span><span class="p">,</span> <span class="n">n_times</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">n_params</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span>
-            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
-                <span class="p">(</span><span class="n">num_samples</span><span class="p">,</span> <span class="n">n_times</span><span class="p">,</span> <span class="n">n_components</span> <span class="o">*</span> <span class="n">n_params</span><span class="p">)</span>
-            <span class="p">)</span></div>
+            <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span>
+                <span class="n">num_samples</span><span class="p">,</span>
+                <span class="n">n_times</span><span class="p">,</span>
+                <span class="n">n_components</span> <span class="o">*</span> <span class="n">n_params</span><span class="p">,</span>
+            <span class="p">))</span></div>
 
 <div class="viewcode-block" id="Likelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood.likelihood_components_names">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -415,13 +426,11 @@
         <span class="n">cls_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
         <span class="c1"># only display the constructor parameters as user cannot change the other attributes</span>
         <span class="n">init_signature</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="fm">__init__</span><span class="p">)</span>
-        <span class="n">params_string</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
-            <span class="p">[</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">init_signature</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-                <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;self&quot;</span>
-            <span class="p">]</span>
-        <span class="p">)</span>
+        <span class="n">params_string</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">init_signature</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;self&quot;</span>
+        <span class="p">])</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cls_name</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="n">params_string</span><span class="si">}</span><span class="s2">)&quot;</span></div>
 
 
@@ -467,14 +476,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">beta_nll</span> <span class="o">=</span> <span class="n">beta_nll</span>
         <span class="n">_check_strict_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_sigma</span><span class="p">,</span> <span class="s2">&quot;sigma&quot;</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">nllloss</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">GaussianNLLLoss</span><span class="p">(</span>
-            <span class="n">reduction</span><span class="o">=</span><span class="s2">&quot;none&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_nll</span> <span class="o">&gt;</span> <span class="mf">0.0</span> <span class="k">else</span> <span class="s2">&quot;mean&quot;</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="kc">True</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nllloss</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">GaussianNLLLoss</span><span class="p">(</span><span class="n">full</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_nllloss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params_out</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_nllloss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params_out</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">):</span>
         <span class="n">means_out</span><span class="p">,</span> <span class="n">sigmas_out</span> <span class="o">=</span> <span class="n">params_out</span>
         <span class="c1"># Note: GaussianNLLLoss expects variance (and not stdev)</span>
         <span class="n">cont_var</span> <span class="o">=</span> <span class="n">sigmas_out</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span> <span class="o">**</span> <span class="mi">2</span>
@@ -482,8 +489,10 @@
         <span class="c1"># apply Beta-NLL</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_nll</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
             <span class="c1"># Note: there is no mean reduction if beta_nll &gt; 0, so we compute it here</span>
-            <span class="n">loss</span> <span class="o">=</span> <span class="p">(</span><span class="n">loss</span> <span class="o">*</span> <span class="p">(</span><span class="n">cont_var</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_nll</span><span class="p">))</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">loss</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span> <span class="o">*</span> <span class="p">(</span><span class="n">cont_var</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_nll</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span> <span class="o">*</span> <span class="n">sample_weight</span>
+        <span class="k">return</span> <span class="n">loss</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -535,13 +544,16 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">prior_lambda</span> <span class="o">=</span> <span class="n">prior_lambda</span>
         <span class="n">_check_strict_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_lambda</span><span class="p">,</span> <span class="s2">&quot;lambda&quot;</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">nllloss</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">PoissonNLLLoss</span><span class="p">(</span><span class="n">log_input</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nllloss</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">PoissonNLLLoss</span><span class="p">(</span><span class="n">log_input</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_nllloss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params_out</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_nllloss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params_out</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">):</span>
         <span class="n">lambda_out</span> <span class="o">=</span> <span class="n">params_out</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nllloss</span><span class="p">(</span><span class="n">lambda_out</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nllloss</span><span class="p">(</span><span class="n">lambda_out</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span> <span class="o">*</span> <span class="n">sample_weight</span>
+        <span class="k">return</span> <span class="n">loss</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1462,7 +1474,12 @@
     <span class="k">def</span> <span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">)</span>
 
-<div class="viewcode-block" id="QuantileRegression.compute_loss"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression.compute_loss">[docs]</a>    <span class="k">def</span> <span class="nf">compute_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+<div class="viewcode-block" id="QuantileRegression.compute_loss"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression.compute_loss">[docs]</a>    <span class="k">def</span> <span class="nf">compute_loss</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">target</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+        <span class="n">sample_weight</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        We are re-defining a custom loss (which is not a likelihood loss) compared to Likelihood</span>
 
@@ -1472,11 +1489,10 @@
 <span class="sd">            must be of shape (batch_size, n_timesteps, n_target_variables, n_quantiles)</span>
 <span class="sd">        target</span>
 <span class="sd">            must be of shape (n_samples, n_timesteps, n_target_variables)</span>
+<span class="sd">        sample_weight</span>
+<span class="sd">            must be of shape (n_samples, n_timesteps, n_target_variables)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="n">dim_q</span> <span class="o">=</span> <span class="mi">3</span>
-
-        <span class="n">batch_size</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
         <span class="n">device</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">device</span>
 
         <span class="c1"># test if torch model forward produces correct output and store quantiles tensor</span>
@@ -1497,9 +1513,11 @@
         <span class="n">errors</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">model_output</span>
         <span class="n">losses</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span>
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles_tensor</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">errors</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantiles_tensor</span> <span class="o">*</span> <span class="n">errors</span>
-        <span class="p">)</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">dim_q</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">losses</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">dim_q</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span></div>
+        <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">losses</span> <span class="o">=</span> <span class="n">losses</span> <span class="o">*</span> <span class="n">sample_weight</span>
+        <span class="k">return</span> <span class="n">losses</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span></div>
 
     <span class="k">def</span> <span class="nf">_distr_from_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># This should not be called in this class (we are abusing Likelihood)</span>

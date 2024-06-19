@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -856,14 +857,12 @@
                 
   <span class="target" id="module-darts.ad.aggregators"></span><section id="anomaly-aggregators">
 <h1>Anomaly Aggregators<a class="headerlink" href="#anomaly-aggregators" title="Permalink to this heading">¶</a></h1>
-<p>An anomaly aggregator can take multiple detected anomalies
-(in the form of binary TimeSeries, as coming from an anomaly detector)
-and combine them into one. It can typically be used to combine
-the detections of multiple models into one final detection.</p>
-<p>The key method is <code class="docutils literal notranslate"><span class="pre">predict()</span></code>, which takes as input one (or multiple)
-multivariate binary TimeSeries where each component represents the
-detection of a single model, and returns one (or multiple) univariate
-binary TimeSeries representing the final detection.</p>
+<p>An anomaly aggregator can take multiple detected anomalies (in the form of binary TimeSeries, as coming from an anomaly
+detector) and combine them into one. It can typically be used to combine the detections of multiple models into one
+final detection.</p>
+<p>The key method is <cite>predict()</cite>, which takes as input one (or multiple) multivariate binary TimeSeries where each
+component represents the detection of a single model, and returns one (or multiple) univariate binary TimeSeries
+representing the final detection.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="darts.ad.aggregators.and_aggregator.html">AND Aggregator</a></li>

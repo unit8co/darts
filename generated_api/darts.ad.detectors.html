@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -856,17 +857,16 @@
                 
   <span class="target" id="module-darts.ad.detectors"></span><section id="anomaly-detectors">
 <h1>Anomaly Detectors<a class="headerlink" href="#anomaly-detectors" title="Permalink to this heading">¶</a></h1>
-<p>Detectors provide binary anomaly classification on time series.
-They can typically be used to transform anomaly scores time series into binary anomaly time series.</p>
-<p>Some detectors are trainable. For instance, <code class="docutils literal notranslate"><span class="pre">QuantileDetector</span></code> emits a binary anomaly for
-every time step where the observed value(s) are beyond the quantile(s) observed
-on the training series.</p>
-<p>The main functions are <code class="docutils literal notranslate"><span class="pre">fit()</span></code> (for the trainable detectors), <code class="docutils literal notranslate"><span class="pre">detect()</span></code> and <code class="docutils literal notranslate"><span class="pre">eval_accuracy()</span></code>.</p>
-<p><code class="docutils literal notranslate"><span class="pre">fit()</span></code> trains the detector over the history of one or multiple time series. It can
-for instance be called on series containing anomaly scores (or even raw values) during normal times.
-The function <code class="docutils literal notranslate"><span class="pre">detect()</span></code> takes an anomaly score time series as input, and applies the detector
-to obtain binary predictions. The function <code class="docutils literal notranslate"><span class="pre">eval_accuracy()</span></code> returns the accuracy metric
-(“accuracy”, “precision”, “recall” or “f1”) between a binary prediction time series and some known
+<p>Detectors provide binary anomaly classification on time series. They can typically be used to transform anomaly scores
+time series into binary anomaly time series.</p>
+<p>Some detectors are trainable. For instance, <a class="reference internal" href="darts.ad.detectors.quantile_detector.html#darts.ad.detectors.quantile_detector.QuantileDetector" title="darts.ad.detectors.quantile_detector.QuantileDetector"><code class="xref py py-class docutils literal notranslate"><span class="pre">QuantileDetector</span></code></a> emits a
+binary anomaly for every time step where the observed value(s) are beyond the quantile(s) observed on the training
+series.</p>
+<p>The main functions are <cite>fit()</cite> (for the trainable detectors), <cite>detect()</cite> and <cite>eval_metric()</cite>.</p>
+<p><cite>fit()</cite> trains the detector over the history of one or multiple time series. It can for instance be called on series
+containing anomaly scores (or even raw values) during normal times. The function <cite>detect()</cite> takes an anomaly score
+time series as input, and applies the detector to obtain binary predictions. The function <cite>eval_metric()</cite> returns
+the accuracy metric (“accuracy”, “precision”, “recall” or “f1”) between a binary prediction time series and some known
 binary ground truth time series indicating the presence of anomalies.</p>
 <div class="toctree-wrapper compound">
 <ul>

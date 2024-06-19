@@ -34,6 +34,7 @@
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -516,23 +517,20 @@
     <span class="c1"># for explained features.</span>
     <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)):</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="n">series</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span> <span class="o">==</span> <span class="n">target_components</span><span class="p">,</span>
-                    <span class="p">(</span>
-                        <span class="n">past_covariates</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
-                        <span class="o">==</span> <span class="n">past_covariates_components</span>
-                        <span class="k">if</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-                        <span class="k">else</span> <span class="kc">True</span>
-                    <span class="p">),</span>
-                    <span class="p">(</span>
-                        <span class="n">future_covariates</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
-                        <span class="o">==</span> <span class="n">future_covariates_components</span>
-                        <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-                        <span class="k">else</span> <span class="kc">True</span>
-                    <span class="p">),</span>
-                <span class="p">]</span>
-            <span class="p">),</span>
+            <span class="nb">all</span><span class="p">([</span>
+                <span class="n">series</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span> <span class="o">==</span> <span class="n">target_components</span><span class="p">,</span>
+                <span class="p">(</span>
+                    <span class="n">past_covariates</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span> <span class="o">==</span> <span class="n">past_covariates_components</span>
+                    <span class="k">if</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="k">else</span> <span class="kc">True</span>
+                <span class="p">),</span>
+                <span class="p">(</span>
+                    <span class="n">future_covariates</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+                    <span class="o">==</span> <span class="n">future_covariates_components</span>
+                    <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="k">else</span> <span class="kc">True</span>
+                <span class="p">),</span>
+            <span class="p">]),</span>
             <span class="s2">&quot;Columns names must be identical between TimeSeries list components (multi-TimeSeries).&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 

@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -215,7 +216,7 @@
 <span class="sd">        If `forecasting_models` are probabilistic and `train_num_samples` &gt; 1, method used to reduce the</span>
 <span class="sd">        samples dimension to 1. Possible values: &quot;mean&quot;, &quot;median&quot; or float value corresponding to the</span>
 <span class="sd">        desired quantile.</span>
-<span class="sd">    retrain_forecasting_models</span>
+<span class="sd">    train_forecasting_models</span>
 <span class="sd">        If set to `False`, the `forecasting_models` are not retrained when calling `fit()` (only supported</span>
 <span class="sd">        if all the `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.</span>
 <span class="sd">    show_warnings</span>
@@ -247,14 +248,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_global_model</span><span class="p">)</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="n">local_model</span> <span class="ow">or</span> <span class="n">global_model</span>
-                    <span class="k">for</span> <span class="n">local_model</span><span class="p">,</span> <span class="n">global_model</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-                        <span class="n">is_local_model</span><span class="p">,</span> <span class="n">is_global_model</span>
-                    <span class="p">)</span>
-                <span class="p">]</span>
-            <span class="p">),</span>
+            <span class="nb">all</span><span class="p">([</span>
+                <span class="n">local_model</span> <span class="ow">or</span> <span class="n">global_model</span>
+                <span class="k">for</span> <span class="n">local_model</span><span class="p">,</span> <span class="n">global_model</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">is_local_model</span><span class="p">,</span> <span class="n">is_global_model</span><span class="p">)</span>
+            <span class="p">]),</span>
             <span class="s2">&quot;All models must be of type `GlobalForecastingModel`, or `LocalForecastingModel`. &quot;</span>
             <span class="s2">&quot;Also, make sure that all `forecasting_models` are instantiated.&quot;</span><span class="p">,</span>
             <span class="n">logger</span><span class="p">,</span>
@@ -269,7 +266,7 @@
             <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_trained</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">some_trained</span><span class="p">)),</span>
             <span class="s2">&quot;Cannot instantiate EnsembleModel with a mixture of unfitted and fitted `forecasting_models`. &quot;</span>
             <span class="s2">&quot;Consider resetting all models with `my_model.untrained_model()` or using only trained &quot;</span>
-            <span class="s2">&quot;GlobalForecastingModels together with `retrain_forecasting_models=False`.&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;GlobalForecastingModels together with `train_forecasting_models=False`.&quot;</span><span class="p">,</span>
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -277,7 +274,7 @@
             <span class="c1"># prevent issues with pytorch-lightning trainer during retraining</span>
             <span class="n">raise_if</span><span class="p">(</span>
                 <span class="n">some_trained</span><span class="p">,</span>
-                <span class="s2">&quot;`retrain_forecasting_models=True` but some `forecasting_models` were already fitted. &quot;</span>
+                <span class="s2">&quot;`train_forecasting_models=True` but some `forecasting_models` were already fitted. &quot;</span>
                 <span class="s2">&quot;Consider resetting all the `forecasting_models` with `my_model.untrained_model()` &quot;</span>
                 <span class="s2">&quot;before passing them to the `EnsembleModel`.&quot;</span><span class="p">,</span>
                 <span class="n">logger</span><span class="p">,</span>
@@ -285,7 +282,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">raise_if_not</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_trained</span><span class="p">,</span>
-                <span class="s2">&quot;`retrain_forecasting_models=False` is supported only if all the `forecasting_models` are &quot;</span>
+                <span class="s2">&quot;`train_forecasting_models=False` is supported only if all the `forecasting_models` are &quot;</span>
                 <span class="s2">&quot;already trained `GlobalForecastingModels`.&quot;</span><span class="p">,</span>
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
@@ -293,9 +290,9 @@
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="n">train_num_samples</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
             <span class="ow">and</span> <span class="n">train_num_samples</span> <span class="o">&gt;</span> <span class="mi">1</span>
-            <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
-                <span class="p">[</span><span class="ow">not</span> <span class="n">m</span><span class="o">.</span><span class="n">supports_probabilistic_prediction</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">forecasting_models</span><span class="p">]</span>
-            <span class="p">),</span>
+            <span class="ow">and</span> <span class="nb">all</span><span class="p">([</span>
+                <span class="ow">not</span> <span class="n">m</span><span class="o">.</span><span class="n">supports_probabilistic_prediction</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">forecasting_models</span>
+            <span class="p">]),</span>
             <span class="s2">&quot;`train_num_samples` is greater than 1 but the `RegressionEnsembleModel` &quot;</span>
             <span class="s2">&quot;contains only deterministic `forecasting_models`.&quot;</span><span class="p">,</span>
             <span class="n">logger</span><span class="p">,</span>
@@ -398,9 +395,7 @@
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_verify_past_future_covariates</span><span class="p">(</span><span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
-
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
-
         <span class="k">return</span> <span class="bp">self</span></div>
 
     <span class="k">def</span> <span class="nf">_stack_ts_seq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">):</span>
@@ -611,12 +606,9 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_models_are_probabilistic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span>
-            <span class="p">[</span>
-                <span class="n">model</span><span class="o">.</span><span class="n">supports_probabilistic_prediction</span>
-                <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
-            <span class="p">]</span>
-        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">([</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">supports_probabilistic_prediction</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+        <span class="p">])</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_models_same_likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -654,12 +646,10 @@
 <span class="sd">        same likelihood.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">(</span>
-            <span class="nb">all</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="n">m</span><span class="o">.</span><span class="n">supports_likelihood_parameter_prediction</span>
-                    <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
-                <span class="p">]</span>
-            <span class="p">)</span>
+            <span class="nb">all</span><span class="p">([</span>
+                <span class="n">m</span><span class="o">.</span><span class="n">supports_likelihood_parameter_prediction</span>
+                <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+            <span class="p">])</span>
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_models_same_likelihood</span>
         <span class="p">)</span>
 
@@ -673,15 +663,15 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">supports_past_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">]</span>
-        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">any</span><span class="p">([</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+        <span class="p">])</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">supports_future_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">]</span>
-        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">any</span><span class="p">([</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+        <span class="p">])</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">supports_optimized_historical_forecasts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -695,14 +685,14 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span>
 
     <span class="k">def</span> <span class="nf">_full_past_covariates_support</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">]</span>
-        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">([</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+        <span class="p">])</span>
 
     <span class="k">def</span> <span class="nf">_full_future_covariates_support</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">]</span>
-        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">([</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+        <span class="p">])</span>
 
     <span class="k">def</span> <span class="nf">_verify_past_future_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>

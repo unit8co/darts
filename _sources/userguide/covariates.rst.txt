@@ -110,7 +110,7 @@ Let's have a look at some examples of past, future, and static covariates:
 
 * ``static_covariates``\ : time independent/constant/static ``target`` characteristics
 
-  * categorical: 
+  * categorical:
 
     * location of ``target`` (country, city, .. name)
     * ``target`` identifier: (product ID, store ID, ...)

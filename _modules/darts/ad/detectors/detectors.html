@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -178,124 +179,114 @@
 
 <span class="c1"># TODO:</span>
 <span class="c1">#     - check error message and add name of variable in the message error</span>
-<span class="c1">#     - rethink the positionning of fun _check_param()</span>
 <span class="c1">#     - add possibility to input a list of param rather than only one number</span>
 <span class="c1">#     - add more complex detectors</span>
 <span class="c1">#         - create an ensemble fittable detector</span>
 
+<span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Self</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Self</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.ad.utils</span> <span class="kn">import</span> <span class="n">eval_accuracy_from_binary_prediction</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.ad.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_assert_fit_called</span><span class="p">,</span>
+    <span class="n">_check_input</span><span class="p">,</span>
+    <span class="n">eval_metric_from_binary_prediction</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span> <span class="nn">darts.utils.ts_utils</span> <span class="kn">import</span> <span class="n">series2seq</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="Detector"><a class="viewcode-back" href="../../../../generated_api/darts.ad.detectors.detectors.html#darts.ad.detectors.detectors.Detector">[docs]</a><span class="k">class</span> <span class="nc">Detector</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all detectors&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">pass</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="Detector.detect"><a class="viewcode-back" href="../../../../generated_api/darts.ad.detectors.detectors.html#darts.ad.detectors.detectors.Detector.detect">[docs]</a>    <span class="k">def</span> <span class="nf">detect</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;series&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Detect anomalies on given time series.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        series</span>
-<span class="sd">            series on which to detect anomalies.</span>
+<span class="sd">            The (sequence of) series on which to detect anomalies.</span>
+<span class="sd">        name</span>
+<span class="sd">            The name of `series`.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Union[TimeSeries, Sequence[TimeSeries]]</span>
-<span class="sd">            binary prediciton (1 if considered as an anomaly, 0 if not)</span>
+<span class="sd">            binary prediction (1 if considered as an anomaly, 0 if not)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">list_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span> <span class="k">else</span> <span class="n">series</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_series</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `series` must be of type TimeSeries.&quot;</span><span class="p">,</span>
+        <span class="n">called_with_single_series</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">_check_input</span><span class="p">(</span>
+            <span class="n">series</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">width_expected</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span><span class="p">,</span>
+            <span class="n">check_deterministic</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">is_deterministic</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_series</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `series` must be deterministic (number of samples equal to 1).&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
         <span class="n">detected_series</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_series</span><span class="p">:</span>
-            <span class="n">detected_series</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_detect_core</span><span class="p">(</span><span class="n">s</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series</span><span class="p">:</span>
+            <span class="n">detected_series</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_detect_core</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">detected_series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">called_with_single_series</span> <span class="k">else</span> <span class="n">detected_series</span></div>
 
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">detected_series</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">detected_series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">detected_series</span></div>
-
-    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_detect_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="k">pass</span>
-
-<div class="viewcode-block" id="Detector.eval_accuracy"><a class="viewcode-back" href="../../../../generated_api/darts.ad.detectors.detectors.html#darts.ad.detectors.detectors.Detector.eval_accuracy">[docs]</a>    <span class="k">def</span> <span class="nf">eval_accuracy</span><span class="p">(</span>
+<div class="viewcode-block" id="Detector.eval_metric"><a class="viewcode-back" href="../../../../generated_api/darts.ad.detectors.detectors.html#darts.ad.detectors.detectors.Detector.eval_metric">[docs]</a>    <span class="k">def</span> <span class="nf">eval_metric</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">actual_anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
-        <span class="n">anomaly_score</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">pred_scores</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;recall&quot;</span><span class="p">,</span>
+        <span class="n">metric</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;recall&quot;</span><span class="p">,</span> <span class="s2">&quot;precision&quot;</span><span class="p">,</span> <span class="s2">&quot;f1&quot;</span><span class="p">,</span> <span class="s2">&quot;accuracy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;recall&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Score the results against true anomalies.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        actual_anomalies</span>
-<span class="sd">            The ground truth of the anomalies (1 if it is an anomaly and 0 if not).</span>
-<span class="sd">        anomaly_score</span>
-<span class="sd">            Series indicating how anomoulous each window of size w is.</span>
+<span class="sd">        anomalies</span>
+<span class="sd">            The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).</span>
+<span class="sd">        pred_scores</span>
+<span class="sd">            The (sequence of) of estimated anomaly score series indicating how anomalous each window of size w is.</span>
 <span class="sd">        window</span>
-<span class="sd">            Integer value indicating the number of past samples each point represents</span>
-<span class="sd">            in the anomaly_score.</span>
+<span class="sd">            Integer value indicating the number of past samples each point represents in the `pred_scores`.</span>
 <span class="sd">        metric</span>
-<span class="sd">            Metric function to use. Must be one of &quot;recall&quot;, &quot;precision&quot;,</span>
-<span class="sd">            &quot;f1&quot;, and &quot;accuracy&quot;.</span>
-<span class="sd">            Default: &quot;recall&quot;</span>
+<span class="sd">            The name of the metric function to use. Must be one of &quot;recall&quot;, &quot;precision&quot;, &quot;f1&quot;, and &quot;accuracy&quot;.</span>
+<span class="sd">            Default: &quot;recall&quot;.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Union[float, Sequence[float], Sequence[Sequence[float]]]</span>
 <span class="sd">            Metric results for each anomaly score</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">eval_metric_from_binary_prediction</span><span class="p">(</span>
+            <span class="n">anomalies</span><span class="o">=</span><span class="n">anomalies</span><span class="p">,</span>
+            <span class="n">pred_anomalies</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">pred_scores</span><span class="p">),</span>
+            <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span>
+            <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">anomaly_score</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
-            <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">anomaly_score</span><span class="p">]),</span>
-                <span class="s2">&quot;all series in `anomaly_score` must be of type TimeSeries.&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-
-            <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">is_deterministic</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">anomaly_score</span><span class="p">]),</span>
-                <span class="s2">&quot;all series in `anomaly_score` must be deterministic (number of samples equal to 1).&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="nb">isinstance</span><span class="p">(</span><span class="n">anomaly_score</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">),</span>
-                <span class="sa">f</span><span class="s2">&quot;Input `anomaly_score` must be of type TimeSeries, found </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">anomaly_score</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-
-            <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="n">anomaly_score</span><span class="o">.</span><span class="n">is_deterministic</span><span class="p">,</span>
-                <span class="s2">&quot;Input `anomaly_score` must be deterministic (number of samples equal to 1).&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">eval_accuracy_from_binary_prediction</span><span class="p">(</span>
-            <span class="n">actual_anomalies</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">anomaly_score</span><span class="p">),</span> <span class="n">window</span><span class="p">,</span> <span class="n">metric</span>
-        <span class="p">)</span></div></div>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_detect_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;series&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="k">pass</span></div>
 
 
 <div class="viewcode-block" id="FittableDetector"><a class="viewcode-back" href="../../../../generated_api/darts.ad.detectors.detectors.html#darts.ad.detectors.detectors.FittableDetector">[docs]</a><span class="k">class</span> <span class="nc">FittableDetector</span><span class="p">(</span><span class="n">Detector</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class of Detectors that need training.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class of Detectors that require training.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -304,75 +295,37 @@
 <div class="viewcode-block" id="FittableDetector.detect"><a class="viewcode-back" href="../../../../generated_api/darts.ad.detectors.detectors.html#darts.ad.detectors.detectors.FittableDetector.detect">[docs]</a>    <span class="k">def</span> <span class="nf">detect</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;series&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Detect anomalies on given time series.</span>
+        <span class="n">_assert_fit_called</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Detector&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        series</span>
-<span class="sd">            series on which to detect anomalies.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        Union[TimeSeries, Sequence[TimeSeries]]</span>
-<span class="sd">            binary prediciton (1 if considered as an anomaly, 0 if not)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">list_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span> <span class="k">else</span> <span class="n">series</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">,</span>
-            <span class="s2">&quot;The Detector has not been fitted yet. Call `fit()` first.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span> <span class="o">==</span> <span class="n">s</span><span class="o">.</span><span class="n">width</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_series</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `series` must have the same number of components as the data &quot;</span>
-            <span class="o">+</span> <span class="s2">&quot;used for training the detector model, number of components in training: &quot;</span>
-            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">series</span><span class="p">)</span></div>
-
-    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_fit_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="k">pass</span>
-
-<div class="viewcode-block" id="FittableDetector.fit"><a class="viewcode-back" href="../../../../generated_api/darts.ad.detectors.detectors.html#darts.ad.detectors.detectors.FittableDetector.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="FittableDetector.fit"><a class="viewcode-back" href="../../../../generated_api/darts.ad.detectors.detectors.html#darts.ad.detectors.detectors.FittableDetector.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Trains the detector on the given time series.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        series</span>
-<span class="sd">            Time series to be used to train the detector.</span>
+<span class="sd">            Time (sequence of) series to be used to train the detector.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        self</span>
 <span class="sd">            Fitted Detector.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">list_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span> <span class="k">else</span> <span class="n">series</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_series</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `series` must be of type TimeSeries.&quot;</span><span class="p">,</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">series</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">_check_input</span><span class="p">(</span>
+            <span class="n">series</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;series&quot;</span><span class="p">,</span>
+            <span class="n">width_expected</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
+            <span class="n">check_deterministic</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">check_binary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">check_multivariate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">is_deterministic</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_series</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `series` must be deterministic (number of samples equal to 1).&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span> <span class="o">=</span> <span class="n">list_series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">list_series</span><span class="p">]),</span>
-            <span class="s2">&quot;all series in `series` must have the same number of components.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span> <span class="o">=</span> <span class="n">width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fit_core</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_core</span><span class="p">(</span><span class="n">list_series</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span></div>
 
 <div class="viewcode-block" id="FittableDetector.fit_detect"><a class="viewcode-back" href="../../../../generated_api/darts.ad.detectors.detectors.html#darts.ad.detectors.detectors.FittableDetector.fit_detect">[docs]</a>    <span class="k">def</span> <span class="nf">fit_detect</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
@@ -390,7 +343,125 @@
 <span class="sd">            Binary prediciton (1 if considered as an anomaly, 0 if not)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">series</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;series&quot;</span><span class="p">)</span></div>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_fit_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+
+
+<span class="k">class</span> <span class="nc">_BoundedDetectorMixin</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class containing functions supporting bounds-based detection, to be used as a mixin for some</span>
+<span class="sd">    `Detector` subclasses.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_prepare_boundaries</span><span class="p">(</span>
+        <span class="n">lower_bound_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">upper_bound_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">lower_bound</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">upper_bound</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]],</span> <span class="n">List</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Process the boundaries argument and perform some sanity checks</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        lower_bound_name</span>
+<span class="sd">            Name of the lower bound</span>
+<span class="sd">        upper_bound_name</span>
+<span class="sd">            Name of the upper bound</span>
+<span class="sd">        lower_bound</span>
+<span class="sd">            (Sequence of) numerical bound below which a value is regarded as anomaly.</span>
+<span class="sd">            If a sequence, must match the dimensionality of the series</span>
+<span class="sd">            this detector is applied to.</span>
+<span class="sd">        upper_bound</span>
+<span class="sd">            (Sequence of) numerical bound above which a value is regarded as anomaly.</span>
+<span class="sd">            If a sequence, must match the dimensionality of the series</span>
+<span class="sd">            this detector is applied to.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        lower_bound</span>
+<span class="sd">            Lower bounds, as a list of values (at least one not None value)</span>
+<span class="sd">        upper_bound</span>
+<span class="sd">            Upper bounds, as a list of values (at least one not None value)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">lower_bound</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">upper_bound</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">lower_bound_name</span><span class="si">}</span><span class="s2"> and `</span><span class="si">{</span><span class="n">upper_bound_name</span><span class="si">}</span><span class="s2">` cannot both be `None`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">_prep_boundaries</span><span class="p">(</span><span class="n">boundaries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Convert boundaries to List&quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">boundaries</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">boundaries</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+                <span class="k">else</span> <span class="p">(</span>
+                    <span class="p">[</span><span class="n">boundaries</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">boundaries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span> <span class="k">else</span> <span class="n">boundaries</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="c1"># convert to list</span>
+        <span class="n">lower_bound</span> <span class="o">=</span> <span class="n">_prep_boundaries</span><span class="p">(</span><span class="n">lower_bound</span><span class="p">)</span>
+        <span class="n">upper_bound</span> <span class="o">=</span> <span class="n">_prep_boundaries</span><span class="p">(</span><span class="n">upper_bound</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="n">lo</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">lo</span> <span class="ow">in</span> <span class="n">lower_bound</span><span class="p">])</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">([</span>
+            <span class="n">hi</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">hi</span> <span class="ow">in</span> <span class="n">upper_bound</span>
+        <span class="p">]):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;All provided upper and lower bounds values are None.&quot;</span><span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># match the lengths of the boundaries</span>
+        <span class="n">lower_bound</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">lower_bound</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">upper_bound</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lower_bound</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">lower_bound</span>
+        <span class="p">)</span>
+        <span class="n">upper_bound</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">upper_bound</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">lower_bound</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">upper_bound</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">upper_bound</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">lower_bound</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">upper_bound</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Parameters `</span><span class="si">{</span><span class="n">lower_bound_name</span><span class="si">}</span><span class="s2">` and `</span><span class="si">{</span><span class="n">upper_bound_name</span><span class="si">}</span><span class="s2">` &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;must be of the same length `n`, found &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">lower_bound_name</span><span class="si">}</span><span class="s2">`: n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">lower_bound</span><span class="p">)</span><span class="si">}</span><span class="s2"> and &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">upper_bound_name</span><span class="si">}</span><span class="s2">`: n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">upper_bound</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span>
+            <span class="n">lb</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">ub</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">lb</span> <span class="o">&lt;=</span> <span class="n">ub</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">lb</span><span class="p">,</span> <span class="n">ub</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">lower_bound</span><span class="p">,</span> <span class="n">upper_bound</span><span class="p">)</span>
+        <span class="p">]):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;All values in `</span><span class="si">{</span><span class="n">lower_bound_name</span><span class="si">}</span><span class="s2">` must be lower or equal&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;to their corresponding value in `</span><span class="si">{</span><span class="n">upper_bound_name</span><span class="si">}</span><span class="s2">`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">lower_bound</span><span class="p">,</span> <span class="n">upper_bound</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_expand_threshold</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">threshold</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">threshold</span> <span class="o">*</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">threshold</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">low_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">high_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
 </pre></div>
 
               </div>

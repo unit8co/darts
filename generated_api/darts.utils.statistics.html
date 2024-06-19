@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -972,9 +973,9 @@ interval. Uses <code class="xref py py-func docutils literal notranslate"><span 
 <li><p><strong>max_lag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximal lag order to consider.</p></li>
 <li><p><strong>alpha</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The confidence interval to display.</p></li>
 <li><p><strong>bartlett_confint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – The boolean value indicating whether the confidence interval should be
-calculated using Bartlett’s formula. If set to True, the confidence interval
+calculated using Bartlett’s formula. If set to <cite>True</cite>, the confidence interval
 can be used in the model identification stage for fitting ARIMA models.
-If set to False, the confidence interval can be used to test for randomness
+If set to <cite>False</cite>, the confidence interval can be used to test for randomness
 (i.e. there is no time dependence in the data) of the data.</p></li>
 <li><p><strong>fig_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The size of the figure to be displayed.</p></li>
 <li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]) – Optionally, an axis object to plot the ACF on.</p></li>
@@ -1046,7 +1047,7 @@ All stochastic samples will be displayed with the corresponding component.</p>
 <li><p><strong>data</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – TimeSeries instance or an array-like from which to plot the histogram.</p></li>
 <li><p><strong>bins</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, either an integer value for the number of bins to be displayed
 or an array-like of floats determining the position of bins.</p></li>
-<li><p><strong>density</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – bool, if <cite>density</cite> is set to True, the bin counts will be converted to probability density</p></li>
+<li><p><strong>density</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – bool, if <cite>density</cite> is set to <cite>True</cite>, the bin counts will be converted to probability density</p></li>
 <li><p><strong>title</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The title of the figure to be displayed</p></li>
 <li><p><strong>fig_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]) – The size of the figure to be displayed.</p></li>
 <li><p><strong>ax</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]) – Optionally, an axis object to plot the histogram on.</p></li>
@@ -1116,7 +1117,7 @@ correction.</p></li>
 <p>This function takes a univariate TimeSeries instance of residuals and plots their values,
 their distribution and their ACF.
 Please note that if the residual TimeSeries instance contains NaN values, the plots
-might be displayed incorrectly. If <cite>fill_nan</cite> is set to True, the missing values will
+might be displayed incorrectly. If <cite>fill_nan</cite> is set to <cite>True</cite>, the missing values will
 be interpolated.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

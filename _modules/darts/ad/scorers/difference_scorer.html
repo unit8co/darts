@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -181,25 +182,27 @@
 <span class="sd">returns a multivariate series.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">darts.ad.scorers.scorers</span> <span class="kn">import</span> <span class="n">NonFittableAnomalyScorer</span>
-<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">darts.ad.scorers.scorers</span> <span class="kn">import</span> <span class="n">AnomalyScorer</span>
 
 
-<div class="viewcode-block" id="DifferenceScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.difference_scorer.html#darts.ad.scorers.difference_scorer.DifferenceScorer">[docs]</a><span class="k">class</span> <span class="nc">DifferenceScorer</span><span class="p">(</span><span class="n">NonFittableAnomalyScorer</span><span class="p">):</span>
+<div class="viewcode-block" id="DifferenceScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.difference_scorer.html#darts.ad.scorers.difference_scorer.DifferenceScorer">[docs]</a><span class="k">class</span> <span class="nc">DifferenceScorer</span><span class="p">(</span><span class="n">AnomalyScorer</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">univariate_scorer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Difference Scorer&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">is_univariate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;Difference&quot;</span>
 
     <span class="k">def</span> <span class="nf">_score_core_from_prediction</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">actual_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">pred_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_assert_deterministic</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="s2">&quot;actual_series&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_assert_deterministic</span><span class="p">(</span><span class="n">pred_series</span><span class="p">,</span> <span class="s2">&quot;pred_series&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">actual_series</span> <span class="o">-</span> <span class="n">pred_series</span></div>
+        <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">pred_vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_deterministic_values</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="s2">&quot;series&quot;</span><span class="p">)</span>
+        <span class="n">pred_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_deterministic_values</span><span class="p">(</span><span class="n">pred_vals</span><span class="p">,</span> <span class="s2">&quot;pred_series&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">vals</span> <span class="o">-</span> <span class="n">pred_vals</span></div>
 </pre></div>
 
               </div>

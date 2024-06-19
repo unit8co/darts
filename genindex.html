@@ -34,6 +34,7 @@
     <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" />
@@ -842,16 +843,6 @@
 </li>
       <li><a href="generated_api/darts.ad.scorers.nll_cauchy_scorer.html#darts.ad.scorers.nll_cauchy_scorer.CauchyNLLScorer">CauchyNLLScorer (class in darts.ad.scorers.nll_cauchy_scorer)</a>
 </li>
-      <li><a href="generated_api/darts.ad.scorers.kmeans_scorer.html#darts.ad.scorers.kmeans_scorer.KMeansScorer.check_if_fit_called">check_if_fit_called() (darts.ad.scorers.kmeans_scorer.KMeansScorer method)</a>
-
-      <ul>
-        <li><a href="generated_api/darts.ad.scorers.pyod_scorer.html#darts.ad.scorers.pyod_scorer.PyODScorer.check_if_fit_called">(darts.ad.scorers.pyod_scorer.PyODScorer method)</a>
-</li>
-        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.check_if_fit_called">(darts.ad.scorers.scorers.FittableAnomalyScorer method)</a>
-</li>
-        <li><a href="generated_api/darts.ad.scorers.wasserstein_scorer.html#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.check_if_fit_called">(darts.ad.scorers.wasserstein_scorer.WassersteinScorer method)</a>
-</li>
-      </ul></li>
       <li><a href="generated_api/darts.utils.statistics.html#darts.utils.statistics.check_seasonality">check_seasonality() (in module darts.utils.statistics)</a>
 </li>
       <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.CHECKPOINT_HYPER_PARAMS_KEY">CHECKPOINT_HYPER_PARAMS_KEY (darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule attribute)</a>
@@ -1066,6 +1057,8 @@
         <li><a href="generated_api/darts.utils.torch.html#darts.utils.torch.MonteCarloDropout.compile">(darts.utils.torch.MonteCarloDropout method)</a>
 </li>
       </ul></li>
+      <li><a href="generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.component_masking">component_masking() (in module darts.dataprocessing.transformers.base_data_transformer)</a>
+</li>
       <li><a href="generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.ComponentBasedExplainabilityResult">ComponentBasedExplainabilityResult (class in darts.explainability.explainability_result)</a>
 </li>
       <li><a href="generated_api/darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SingleEncoder.components">components (darts.dataprocessing.encoders.encoder_base.SingleEncoder property)</a>
@@ -2160,8 +2153,6 @@
         <li><a href="generated_api/darts.models.forecasting.random_forest.html#module-darts.models.forecasting.random_forest">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     darts.models.forecasting.regression_ensemble_model
 
@@ -2176,6 +2167,8 @@
         <li><a href="generated_api/darts.models.forecasting.regression_model.html#module-darts.models.forecasting.regression_model">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     darts.models.forecasting.sf_auto_arima
 
@@ -2505,6 +2498,20 @@
         <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.device">(darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule property)</a>
 </li>
         <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.device">(darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule property)</a>
+</li>
+      </ul></li>
+      <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.device_mesh">device_mesh (darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule property)</a>
+
+      <ul>
+        <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.device_mesh">(darts.models.forecasting.pl_forecasting_module.PLForecastingModule property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.device_mesh">(darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.device_mesh">(darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.device_mesh">(darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.device_mesh">(darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule property)</a>
 </li>
       </ul></li>
       <li><a href="generated_api/darts.dataprocessing.dtw.cost_matrix.html#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.diagonal">diagonal() (darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix method)</a>
@@ -2953,75 +2960,75 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.Aggregator.eval_accuracy">eval_accuracy() (darts.ad.aggregators.aggregators.Aggregator method)</a>
+      <li><a href="generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.Aggregator.eval_metric">eval_metric() (darts.ad.aggregators.aggregators.Aggregator method)</a>
 
       <ul>
-        <li><a href="generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.FittableAggregator.eval_accuracy">(darts.ad.aggregators.aggregators.FittableAggregator method)</a>
+        <li><a href="generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.FittableAggregator.eval_metric">(darts.ad.aggregators.aggregators.FittableAggregator method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.NonFittableAggregator.eval_accuracy">(darts.ad.aggregators.aggregators.NonFittableAggregator method)</a>
+        <li><a href="generated_api/darts.ad.aggregators.and_aggregator.html#darts.ad.aggregators.and_aggregator.AndAggregator.eval_metric">(darts.ad.aggregators.and_aggregator.AndAggregator method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.aggregators.and_aggregator.html#darts.ad.aggregators.and_aggregator.AndAggregator.eval_accuracy">(darts.ad.aggregators.and_aggregator.AndAggregator method)</a>
+        <li><a href="generated_api/darts.ad.aggregators.ensemble_sklearn_aggregator.html#darts.ad.aggregators.ensemble_sklearn_aggregator.EnsembleSklearnAggregator.eval_metric">(darts.ad.aggregators.ensemble_sklearn_aggregator.EnsembleSklearnAggregator method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.aggregators.ensemble_sklearn_aggregator.html#darts.ad.aggregators.ensemble_sklearn_aggregator.EnsembleSklearnAggregator.eval_accuracy">(darts.ad.aggregators.ensemble_sklearn_aggregator.EnsembleSklearnAggregator method)</a>
+        <li><a href="generated_api/darts.ad.aggregators.or_aggregator.html#darts.ad.aggregators.or_aggregator.OrAggregator.eval_metric">(darts.ad.aggregators.or_aggregator.OrAggregator method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.aggregators.or_aggregator.html#darts.ad.aggregators.or_aggregator.OrAggregator.eval_accuracy">(darts.ad.aggregators.or_aggregator.OrAggregator method)</a>
+        <li><a href="generated_api/darts.ad.anomaly_model.filtering_am.html#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.eval_metric">(darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.anomaly_model.filtering_am.html#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.eval_accuracy">(darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel method)</a>
+        <li><a href="generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.eval_metric">(darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.eval_accuracy">(darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel method)</a>
+        <li><a href="generated_api/darts.ad.detectors.detectors.html#darts.ad.detectors.detectors.Detector.eval_metric">(darts.ad.detectors.detectors.Detector method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.detectors.detectors.html#darts.ad.detectors.detectors.Detector.eval_accuracy">(darts.ad.detectors.detectors.Detector method)</a>
+        <li><a href="generated_api/darts.ad.detectors.detectors.html#darts.ad.detectors.detectors.FittableDetector.eval_metric">(darts.ad.detectors.detectors.FittableDetector method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.detectors.detectors.html#darts.ad.detectors.detectors.FittableDetector.eval_accuracy">(darts.ad.detectors.detectors.FittableDetector method)</a>
+        <li><a href="generated_api/darts.ad.detectors.quantile_detector.html#darts.ad.detectors.quantile_detector.QuantileDetector.eval_metric">(darts.ad.detectors.quantile_detector.QuantileDetector method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.detectors.quantile_detector.html#darts.ad.detectors.quantile_detector.QuantileDetector.eval_accuracy">(darts.ad.detectors.quantile_detector.QuantileDetector method)</a>
+        <li><a href="generated_api/darts.ad.detectors.threshold_detector.html#darts.ad.detectors.threshold_detector.ThresholdDetector.eval_metric">(darts.ad.detectors.threshold_detector.ThresholdDetector method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.detectors.threshold_detector.html#darts.ad.detectors.threshold_detector.ThresholdDetector.eval_accuracy">(darts.ad.detectors.threshold_detector.ThresholdDetector method)</a>
+        <li><a href="generated_api/darts.ad.scorers.kmeans_scorer.html#darts.ad.scorers.kmeans_scorer.KMeansScorer.eval_metric">(darts.ad.scorers.kmeans_scorer.KMeansScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.kmeans_scorer.html#darts.ad.scorers.kmeans_scorer.KMeansScorer.eval_accuracy">(darts.ad.scorers.kmeans_scorer.KMeansScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.pyod_scorer.html#darts.ad.scorers.pyod_scorer.PyODScorer.eval_metric">(darts.ad.scorers.pyod_scorer.PyODScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.pyod_scorer.html#darts.ad.scorers.pyod_scorer.PyODScorer.eval_accuracy">(darts.ad.scorers.pyod_scorer.PyODScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.eval_metric">(darts.ad.scorers.scorers.FittableAnomalyScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.eval_accuracy">(darts.ad.scorers.scorers.FittableAnomalyScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.WindowedAnomalyScorer.eval_metric">(darts.ad.scorers.scorers.WindowedAnomalyScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.wasserstein_scorer.html#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.eval_accuracy">(darts.ad.scorers.wasserstein_scorer.WassersteinScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.wasserstein_scorer.html#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.eval_metric">(darts.ad.scorers.wasserstein_scorer.WassersteinScorer method)</a>
 </li>
       </ul></li>
-      <li><a href="generated_api/darts.ad.utils.html#darts.ad.utils.eval_accuracy_from_binary_prediction">eval_accuracy_from_binary_prediction() (in module darts.ad.utils)</a>
+      <li><a href="generated_api/darts.ad.utils.html#darts.ad.utils.eval_metric_from_binary_prediction">eval_metric_from_binary_prediction() (in module darts.ad.utils)</a>
 </li>
-      <li><a href="generated_api/darts.ad.scorers.difference_scorer.html#darts.ad.scorers.difference_scorer.DifferenceScorer.eval_accuracy_from_prediction">eval_accuracy_from_prediction() (darts.ad.scorers.difference_scorer.DifferenceScorer method)</a>
+      <li><a href="generated_api/darts.ad.scorers.difference_scorer.html#darts.ad.scorers.difference_scorer.DifferenceScorer.eval_metric_from_prediction">eval_metric_from_prediction() (darts.ad.scorers.difference_scorer.DifferenceScorer method)</a>
 
       <ul>
-        <li><a href="generated_api/darts.ad.scorers.kmeans_scorer.html#darts.ad.scorers.kmeans_scorer.KMeansScorer.eval_accuracy_from_prediction">(darts.ad.scorers.kmeans_scorer.KMeansScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.kmeans_scorer.html#darts.ad.scorers.kmeans_scorer.KMeansScorer.eval_metric_from_prediction">(darts.ad.scorers.kmeans_scorer.KMeansScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.nll_cauchy_scorer.html#darts.ad.scorers.nll_cauchy_scorer.CauchyNLLScorer.eval_accuracy_from_prediction">(darts.ad.scorers.nll_cauchy_scorer.CauchyNLLScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.nll_cauchy_scorer.html#darts.ad.scorers.nll_cauchy_scorer.CauchyNLLScorer.eval_metric_from_prediction">(darts.ad.scorers.nll_cauchy_scorer.CauchyNLLScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.nll_exponential_scorer.html#darts.ad.scorers.nll_exponential_scorer.ExponentialNLLScorer.eval_accuracy_from_prediction">(darts.ad.scorers.nll_exponential_scorer.ExponentialNLLScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.nll_exponential_scorer.html#darts.ad.scorers.nll_exponential_scorer.ExponentialNLLScorer.eval_metric_from_prediction">(darts.ad.scorers.nll_exponential_scorer.ExponentialNLLScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.nll_gamma_scorer.html#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.eval_accuracy_from_prediction">(darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.nll_gamma_scorer.html#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.eval_metric_from_prediction">(darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.nll_gaussian_scorer.html#darts.ad.scorers.nll_gaussian_scorer.GaussianNLLScorer.eval_accuracy_from_prediction">(darts.ad.scorers.nll_gaussian_scorer.GaussianNLLScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.nll_gaussian_scorer.html#darts.ad.scorers.nll_gaussian_scorer.GaussianNLLScorer.eval_metric_from_prediction">(darts.ad.scorers.nll_gaussian_scorer.GaussianNLLScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.nll_laplace_scorer.html#darts.ad.scorers.nll_laplace_scorer.LaplaceNLLScorer.eval_accuracy_from_prediction">(darts.ad.scorers.nll_laplace_scorer.LaplaceNLLScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.nll_laplace_scorer.html#darts.ad.scorers.nll_laplace_scorer.LaplaceNLLScorer.eval_metric_from_prediction">(darts.ad.scorers.nll_laplace_scorer.LaplaceNLLScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.nll_poisson_scorer.html#darts.ad.scorers.nll_poisson_scorer.PoissonNLLScorer.eval_accuracy_from_prediction">(darts.ad.scorers.nll_poisson_scorer.PoissonNLLScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.nll_poisson_scorer.html#darts.ad.scorers.nll_poisson_scorer.PoissonNLLScorer.eval_metric_from_prediction">(darts.ad.scorers.nll_poisson_scorer.PoissonNLLScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.norm_scorer.html#darts.ad.scorers.norm_scorer.NormScorer.eval_accuracy_from_prediction">(darts.ad.scorers.norm_scorer.NormScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.norm_scorer.html#darts.ad.scorers.norm_scorer.NormScorer.eval_metric_from_prediction">(darts.ad.scorers.norm_scorer.NormScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.pyod_scorer.html#darts.ad.scorers.pyod_scorer.PyODScorer.eval_accuracy_from_prediction">(darts.ad.scorers.pyod_scorer.PyODScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.pyod_scorer.html#darts.ad.scorers.pyod_scorer.PyODScorer.eval_metric_from_prediction">(darts.ad.scorers.pyod_scorer.PyODScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer.eval_accuracy_from_prediction">(darts.ad.scorers.scorers.AnomalyScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer.eval_metric_from_prediction">(darts.ad.scorers.scorers.AnomalyScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.eval_accuracy_from_prediction">(darts.ad.scorers.scorers.FittableAnomalyScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.eval_metric_from_prediction">(darts.ad.scorers.scorers.FittableAnomalyScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.NLLScorer.eval_accuracy_from_prediction">(darts.ad.scorers.scorers.NLLScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.NLLScorer.eval_metric_from_prediction">(darts.ad.scorers.scorers.NLLScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.NonFittableAnomalyScorer.eval_accuracy_from_prediction">(darts.ad.scorers.scorers.NonFittableAnomalyScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.WindowedAnomalyScorer.eval_metric_from_prediction">(darts.ad.scorers.scorers.WindowedAnomalyScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.wasserstein_scorer.html#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.eval_accuracy_from_prediction">(darts.ad.scorers.wasserstein_scorer.WassersteinScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.wasserstein_scorer.html#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.eval_metric_from_prediction">(darts.ad.scorers.wasserstein_scorer.WassersteinScorer method)</a>
 </li>
       </ul></li>
-      <li><a href="generated_api/darts.ad.utils.html#darts.ad.utils.eval_accuracy_from_scores">eval_accuracy_from_scores() (in module darts.ad.utils)</a>
+      <li><a href="generated_api/darts.ad.utils.html#darts.ad.utils.eval_metric_from_scores">eval_metric_from_scores() (in module darts.ad.utils)</a>
 </li>
       <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.example_input_array">example_input_array (darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule property)</a>
 
@@ -3038,6 +3045,8 @@
 </li>
       </ul></li>
       <li><a href="generated_api/darts.datasets.html#darts.datasets.ExchangeRateDataset">ExchangeRateDataset (class in darts.datasets)</a>
+</li>
+      <li><a href="generated_api/darts.utils.utils.html#darts.utils.utils.expand_arr">expand_arr() (in module darts.utils.utils)</a>
 </li>
       <li><a href="generated_api/darts.explainability.shap_explainer.html#darts.explainability.shap_explainer.ShapExplainer.explain">explain() (darts.explainability.shap_explainer.ShapExplainer method)</a>
 
@@ -3282,6 +3291,8 @@
 </li>
         <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.fit">(darts.ad.scorers.scorers.FittableAnomalyScorer method)</a>
 </li>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.WindowedAnomalyScorer.fit">(darts.ad.scorers.scorers.WindowedAnomalyScorer method)</a>
+</li>
         <li><a href="generated_api/darts.ad.scorers.wasserstein_scorer.html#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.fit">(darts.ad.scorers.wasserstein_scorer.WassersteinScorer method)</a>
 </li>
         <li><a href="generated_api/darts.dataprocessing.pipeline.html#darts.dataprocessing.pipeline.Pipeline.fit">(darts.dataprocessing.pipeline.Pipeline method)</a>
@@ -3473,6 +3484,8 @@
         <li><a href="generated_api/darts.ad.scorers.pyod_scorer.html#darts.ad.scorers.pyod_scorer.PyODScorer.fit_from_prediction">(darts.ad.scorers.pyod_scorer.PyODScorer method)</a>
 </li>
         <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.fit_from_prediction">(darts.ad.scorers.scorers.FittableAnomalyScorer method)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.WindowedAnomalyScorer.fit_from_prediction">(darts.ad.scorers.scorers.WindowedAnomalyScorer method)</a>
 </li>
         <li><a href="generated_api/darts.ad.scorers.wasserstein_scorer.html#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.fit_from_prediction">(darts.ad.scorers.wasserstein_scorer.WassersteinScorer method)</a>
 </li>
@@ -4551,8 +4564,12 @@
         <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.hierarchy">(darts.timeseries.TimeSeries property)</a>
 </li>
       </ul></li>
-      <li><a href="generated_api/darts.ad.detectors.quantile_detector.html#darts.ad.detectors.quantile_detector.QuantileDetector.high_threshold">high_threshold (darts.ad.detectors.quantile_detector.QuantileDetector attribute)</a>
+      <li><a href="generated_api/darts.ad.detectors.quantile_detector.html#darts.ad.detectors.quantile_detector.QuantileDetector.high_threshold">high_threshold (darts.ad.detectors.quantile_detector.QuantileDetector property)</a>
+
+      <ul>
+        <li><a href="generated_api/darts.ad.detectors.threshold_detector.html#darts.ad.detectors.threshold_detector.ThresholdDetector.high_threshold">(darts.ad.detectors.threshold_detector.ThresholdDetector property)</a>
 </li>
+      </ul></li>
       <li><a href="generated_api/darts.utils.data.utils.html#darts.utils.data.utils.CovariateType.HISTORIC_FUTURE">HISTORIC_FUTURE (darts.utils.data.utils.CovariateType attribute)</a>
 </li>
       <li><a href="generated_api/darts.models.forecasting.arima.html#darts.models.forecasting.arima.ARIMA.historical_forecasts">historical_forecasts() (darts.models.forecasting.arima.ARIMA method)</a>
@@ -4868,7 +4885,7 @@
 </li>
         <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.NLLScorer.is_probabilistic">(darts.ad.scorers.scorers.NLLScorer property)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.NonFittableAnomalyScorer.is_probabilistic">(darts.ad.scorers.scorers.NonFittableAnomalyScorer property)</a>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.WindowedAnomalyScorer.is_probabilistic">(darts.ad.scorers.scorers.WindowedAnomalyScorer property)</a>
 </li>
         <li><a href="generated_api/darts.ad.scorers.wasserstein_scorer.html#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.is_probabilistic">(darts.ad.scorers.wasserstein_scorer.WassersteinScorer property)</a>
 </li>
@@ -4877,8 +4894,72 @@
       </ul></li>
       <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.is_stochastic">is_stochastic (darts.timeseries.TimeSeries property)</a>
 </li>
-      <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.is_univariate">is_univariate (darts.timeseries.TimeSeries property)</a>
+      <li><a href="generated_api/darts.ad.scorers.difference_scorer.html#darts.ad.scorers.difference_scorer.DifferenceScorer.is_trainable">is_trainable (darts.ad.scorers.difference_scorer.DifferenceScorer property)</a>
+
+      <ul>
+        <li><a href="generated_api/darts.ad.scorers.kmeans_scorer.html#darts.ad.scorers.kmeans_scorer.KMeansScorer.is_trainable">(darts.ad.scorers.kmeans_scorer.KMeansScorer property)</a>
 </li>
+        <li><a href="generated_api/darts.ad.scorers.nll_cauchy_scorer.html#darts.ad.scorers.nll_cauchy_scorer.CauchyNLLScorer.is_trainable">(darts.ad.scorers.nll_cauchy_scorer.CauchyNLLScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.nll_exponential_scorer.html#darts.ad.scorers.nll_exponential_scorer.ExponentialNLLScorer.is_trainable">(darts.ad.scorers.nll_exponential_scorer.ExponentialNLLScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.nll_gamma_scorer.html#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.is_trainable">(darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.nll_gaussian_scorer.html#darts.ad.scorers.nll_gaussian_scorer.GaussianNLLScorer.is_trainable">(darts.ad.scorers.nll_gaussian_scorer.GaussianNLLScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.nll_laplace_scorer.html#darts.ad.scorers.nll_laplace_scorer.LaplaceNLLScorer.is_trainable">(darts.ad.scorers.nll_laplace_scorer.LaplaceNLLScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.nll_poisson_scorer.html#darts.ad.scorers.nll_poisson_scorer.PoissonNLLScorer.is_trainable">(darts.ad.scorers.nll_poisson_scorer.PoissonNLLScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.norm_scorer.html#darts.ad.scorers.norm_scorer.NormScorer.is_trainable">(darts.ad.scorers.norm_scorer.NormScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.pyod_scorer.html#darts.ad.scorers.pyod_scorer.PyODScorer.is_trainable">(darts.ad.scorers.pyod_scorer.PyODScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer.is_trainable">(darts.ad.scorers.scorers.AnomalyScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.is_trainable">(darts.ad.scorers.scorers.FittableAnomalyScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.NLLScorer.is_trainable">(darts.ad.scorers.scorers.NLLScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.WindowedAnomalyScorer.is_trainable">(darts.ad.scorers.scorers.WindowedAnomalyScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.wasserstein_scorer.html#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.is_trainable">(darts.ad.scorers.wasserstein_scorer.WassersteinScorer property)</a>
+</li>
+      </ul></li>
+      <li><a href="generated_api/darts.ad.scorers.difference_scorer.html#darts.ad.scorers.difference_scorer.DifferenceScorer.is_univariate">is_univariate (darts.ad.scorers.difference_scorer.DifferenceScorer property)</a>
+
+      <ul>
+        <li><a href="generated_api/darts.ad.scorers.kmeans_scorer.html#darts.ad.scorers.kmeans_scorer.KMeansScorer.is_univariate">(darts.ad.scorers.kmeans_scorer.KMeansScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.nll_cauchy_scorer.html#darts.ad.scorers.nll_cauchy_scorer.CauchyNLLScorer.is_univariate">(darts.ad.scorers.nll_cauchy_scorer.CauchyNLLScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.nll_exponential_scorer.html#darts.ad.scorers.nll_exponential_scorer.ExponentialNLLScorer.is_univariate">(darts.ad.scorers.nll_exponential_scorer.ExponentialNLLScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.nll_gamma_scorer.html#darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer.is_univariate">(darts.ad.scorers.nll_gamma_scorer.GammaNLLScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.nll_gaussian_scorer.html#darts.ad.scorers.nll_gaussian_scorer.GaussianNLLScorer.is_univariate">(darts.ad.scorers.nll_gaussian_scorer.GaussianNLLScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.nll_laplace_scorer.html#darts.ad.scorers.nll_laplace_scorer.LaplaceNLLScorer.is_univariate">(darts.ad.scorers.nll_laplace_scorer.LaplaceNLLScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.nll_poisson_scorer.html#darts.ad.scorers.nll_poisson_scorer.PoissonNLLScorer.is_univariate">(darts.ad.scorers.nll_poisson_scorer.PoissonNLLScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.norm_scorer.html#darts.ad.scorers.norm_scorer.NormScorer.is_univariate">(darts.ad.scorers.norm_scorer.NormScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.pyod_scorer.html#darts.ad.scorers.pyod_scorer.PyODScorer.is_univariate">(darts.ad.scorers.pyod_scorer.PyODScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer.is_univariate">(darts.ad.scorers.scorers.AnomalyScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.is_univariate">(darts.ad.scorers.scorers.FittableAnomalyScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.NLLScorer.is_univariate">(darts.ad.scorers.scorers.NLLScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.WindowedAnomalyScorer.is_univariate">(darts.ad.scorers.scorers.WindowedAnomalyScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.ad.scorers.wasserstein_scorer.html#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.is_univariate">(darts.ad.scorers.wasserstein_scorer.WassersteinScorer property)</a>
+</li>
+        <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.is_univariate">(darts.timeseries.TimeSeries property)</a>
+</li>
+      </ul></li>
       <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.is_within_range">is_within_range() (darts.timeseries.TimeSeries method)</a>
 </li>
       <li><a href="generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.Itakura">Itakura (class in darts.dataprocessing.dtw.window)</a>
@@ -5077,6 +5158,8 @@
         <li><a href="generated_api/darts.datasets.html#darts.datasets.MonthlyMilkIncompleteDataset.load">(darts.datasets.MonthlyMilkIncompleteDataset method)</a>
 </li>
         <li><a href="generated_api/darts.datasets.html#darts.datasets.SunspotsDataset.load">(darts.datasets.SunspotsDataset method)</a>
+</li>
+        <li><a href="generated_api/darts.datasets.html#darts.datasets.TaxiNewYorkDataset.load">(darts.datasets.TaxiNewYorkDataset method)</a>
 </li>
         <li><a href="generated_api/darts.datasets.html#darts.datasets.TaylorDataset.load">(darts.datasets.TaylorDataset method)</a>
 </li>
@@ -5415,8 +5498,12 @@
 </li>
       <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.longest_contiguous_slice">longest_contiguous_slice() (darts.timeseries.TimeSeries method)</a>
 </li>
-      <li><a href="generated_api/darts.ad.detectors.quantile_detector.html#darts.ad.detectors.quantile_detector.QuantileDetector.low_threshold">low_threshold (darts.ad.detectors.quantile_detector.QuantileDetector attribute)</a>
+      <li><a href="generated_api/darts.ad.detectors.quantile_detector.html#darts.ad.detectors.quantile_detector.QuantileDetector.low_threshold">low_threshold (darts.ad.detectors.quantile_detector.QuantileDetector property)</a>
+
+      <ul>
+        <li><a href="generated_api/darts.ad.detectors.threshold_detector.html#darts.ad.detectors.threshold_detector.ThresholdDetector.low_threshold">(darts.ad.detectors.threshold_detector.ThresholdDetector property)</a>
 </li>
+      </ul></li>
       <li><a href="generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel.lr_find">lr_find() (darts.models.forecasting.block_rnn_model.BlockRNNModel method)</a>
 
       <ul>
@@ -6470,10 +6557,6 @@
         <li><a href="generated_api/darts.utils.utils.html#darts.utils.utils.SeasonalityMode.NONE">(darts.utils.utils.SeasonalityMode attribute)</a>
 </li>
       </ul></li>
-      <li><a href="generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.NonFittableAggregator">NonFittableAggregator (class in darts.ad.aggregators.aggregators)</a>
-</li>
-      <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.NonFittableAnomalyScorer">NonFittableAnomalyScorer (class in darts.ad.scorers.scorers)</a>
-</li>
       <li><a href="generated_api/darts.dataprocessing.dtw.cost_matrix.html#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nonzero">nonzero() (darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix method)</a>
 </li>
       <li><a href="generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.LayerNorm.normalized_shape">normalized_shape (darts.models.components.layer_norm_variants.LayerNorm attribute)</a>
@@ -7633,8 +7716,6 @@
       <ul>
         <li><a href="generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.FittableAggregator.predict">(darts.ad.aggregators.aggregators.FittableAggregator method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.NonFittableAggregator.predict">(darts.ad.aggregators.aggregators.NonFittableAggregator method)</a>
-</li>
         <li><a href="generated_api/darts.ad.aggregators.and_aggregator.html#darts.ad.aggregators.and_aggregator.AndAggregator.predict">(darts.ad.aggregators.and_aggregator.AndAggregator method)</a>
 </li>
         <li><a href="generated_api/darts.ad.aggregators.ensemble_sklearn_aggregator.html#darts.ad.aggregators.ensemble_sklearn_aggregator.EnsembleSklearnAggregator.predict">(darts.ad.aggregators.ensemble_sklearn_aggregator.EnsembleSklearnAggregator method)</a>
@@ -7832,6 +7913,12 @@
 </li>
       <li><a href="generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet.predict_raw">predict_raw() (darts.models.forecasting.prophet_model.Prophet method)</a>
 </li>
+      <li><a href="generated_api/darts.ad.anomaly_model.filtering_am.html#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.predict_series">predict_series() (darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel method)</a>
+
+      <ul>
+        <li><a href="generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.predict_series">(darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel method)</a>
+</li>
+      </ul></li>
       <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.predict_step">predict_step() (darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule method)</a>
 
       <ul>
@@ -8901,6 +8988,8 @@
 </li>
         <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.score">(darts.ad.scorers.scorers.FittableAnomalyScorer method)</a>
 </li>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.WindowedAnomalyScorer.score">(darts.ad.scorers.scorers.WindowedAnomalyScorer method)</a>
+</li>
         <li><a href="generated_api/darts.ad.scorers.wasserstein_scorer.html#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.score">(darts.ad.scorers.wasserstein_scorer.WassersteinScorer method)</a>
 </li>
         <li><a href="generated_api/darts.utils.multioutput.html#darts.utils.multioutput.MultiOutputRegressor.score">(darts.utils.multioutput.MultiOutputRegressor method)</a>
@@ -8933,9 +9022,21 @@
 </li>
         <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.NLLScorer.score_from_prediction">(darts.ad.scorers.scorers.NLLScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.NonFittableAnomalyScorer.score_from_prediction">(darts.ad.scorers.scorers.NonFittableAnomalyScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.WindowedAnomalyScorer.score_from_prediction">(darts.ad.scorers.scorers.WindowedAnomalyScorer method)</a>
 </li>
         <li><a href="generated_api/darts.ad.scorers.wasserstein_scorer.html#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.score_from_prediction">(darts.ad.scorers.wasserstein_scorer.WassersteinScorer method)</a>
+</li>
+      </ul></li>
+      <li><a href="generated_api/darts.ad.anomaly_model.filtering_am.html#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.scorers_are_trainable">scorers_are_trainable (darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel property)</a>
+
+      <ul>
+        <li><a href="generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.scorers_are_trainable">(darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel property)</a>
+</li>
+      </ul></li>
+      <li><a href="generated_api/darts.ad.anomaly_model.filtering_am.html#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel.scorers_are_univariate">scorers_are_univariate (darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel property)</a>
+
+      <ul>
+        <li><a href="generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.scorers_are_univariate">(darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel property)</a>
 </li>
       </ul></li>
       <li><a href="generated_api/darts.metrics.metrics.html#darts.metrics.metrics.se">se() (in module darts.metrics.metrics)</a>
@@ -9207,6 +9308,8 @@
 </li>
         <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.show_anomalies">(darts.ad.scorers.scorers.FittableAnomalyScorer method)</a>
 </li>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.WindowedAnomalyScorer.show_anomalies">(darts.ad.scorers.scorers.WindowedAnomalyScorer method)</a>
+</li>
         <li><a href="generated_api/darts.ad.scorers.wasserstein_scorer.html#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.show_anomalies">(darts.ad.scorers.wasserstein_scorer.WassersteinScorer method)</a>
 </li>
       </ul></li>
@@ -9237,7 +9340,7 @@
 </li>
         <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.NLLScorer.show_anomalies_from_prediction">(darts.ad.scorers.scorers.NLLScorer method)</a>
 </li>
-        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.NonFittableAnomalyScorer.show_anomalies_from_prediction">(darts.ad.scorers.scorers.NonFittableAnomalyScorer method)</a>
+        <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.WindowedAnomalyScorer.show_anomalies_from_prediction">(darts.ad.scorers.scorers.WindowedAnomalyScorer method)</a>
 </li>
         <li><a href="generated_api/darts.ad.scorers.wasserstein_scorer.html#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.show_anomalies_from_prediction">(darts.ad.scorers.wasserstein_scorer.WassersteinScorer method)</a>
 </li>
@@ -9299,6 +9402,8 @@
       <li><a href="generated_api/darts.utils.utils.html#darts.utils.utils.slice_index">slice_index() (in module darts.utils.utils)</a>
 </li>
       <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.slice_intersect">slice_intersect() (darts.timeseries.TimeSeries method)</a>
+</li>
+      <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.slice_intersect_times">slice_intersect_times() (darts.timeseries.TimeSeries method)</a>
 </li>
       <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.slice_intersect_values">slice_intersect_values() (darts.timeseries.TimeSeries method)</a>
 </li>
@@ -10032,6 +10137,96 @@
         <li><a href="generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_probabilistic_prediction">(darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal method)</a>
 </li>
       </ul></li>
+      <li><a href="generated_api/darts.models.forecasting.arima.html#darts.models.forecasting.arima.ARIMA.supports_sample_weight">supports_sample_weight (darts.models.forecasting.arima.ARIMA property)</a>
+
+      <ul>
+        <li><a href="generated_api/darts.models.forecasting.auto_arima.html#darts.models.forecasting.auto_arima.AutoARIMA.supports_sample_weight">(darts.models.forecasting.auto_arima.AutoARIMA property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveDrift.supports_sample_weight">(darts.models.forecasting.baselines.NaiveDrift property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel.supports_sample_weight">(darts.models.forecasting.baselines.NaiveEnsembleModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMean.supports_sample_weight">(darts.models.forecasting.baselines.NaiveMean property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMovingAverage.supports_sample_weight">(darts.models.forecasting.baselines.NaiveMovingAverage property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal.supports_sample_weight">(darts.models.forecasting.baselines.NaiveSeasonal property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel.supports_sample_weight">(darts.models.forecasting.block_rnn_model.BlockRNNModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel.supports_sample_weight">(darts.models.forecasting.catboost_model.CatBoostModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.croston.html#darts.models.forecasting.croston.Croston.supports_sample_weight">(darts.models.forecasting.croston.Croston property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.dlinear.html#darts.models.forecasting.dlinear.DLinearModel.supports_sample_weight">(darts.models.forecasting.dlinear.DLinearModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.ensemble_model.html#darts.models.forecasting.ensemble_model.EnsembleModel.supports_sample_weight">(darts.models.forecasting.ensemble_model.EnsembleModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.exponential_smoothing.html#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.supports_sample_weight">(darts.models.forecasting.exponential_smoothing.ExponentialSmoothing property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.fft.html#darts.models.forecasting.fft.FFT.supports_sample_weight">(darts.models.forecasting.fft.FFT property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_sample_weight">(darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_sample_weight">(darts.models.forecasting.global_baseline_models.GlobalNaiveDrift property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_sample_weight">(darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.kalman_forecaster.html#darts.models.forecasting.kalman_forecaster.KalmanForecaster.supports_sample_weight">(darts.models.forecasting.kalman_forecaster.KalmanForecaster property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel.supports_sample_weight">(darts.models.forecasting.lgbm.LightGBMModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel.supports_sample_weight">(darts.models.forecasting.linear_regression_model.LinearRegressionModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.nbeats.html#darts.models.forecasting.nbeats.NBEATSModel.supports_sample_weight">(darts.models.forecasting.nbeats.NBEATSModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.nhits.html#darts.models.forecasting.nhits.NHiTSModel.supports_sample_weight">(darts.models.forecasting.nhits.NHiTSModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.nlinear.html#darts.models.forecasting.nlinear.NLinearModel.supports_sample_weight">(darts.models.forecasting.nlinear.NLinearModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet.supports_sample_weight">(darts.models.forecasting.prophet_model.Prophet property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest.supports_sample_weight">(darts.models.forecasting.random_forest.RandomForest property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.supports_sample_weight">(darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel.supports_sample_weight">(darts.models.forecasting.regression_model.RegressionModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.supports_sample_weight">(darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel.supports_sample_weight">(darts.models.forecasting.rnn_model.RNNModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.sf_auto_arima.html#darts.models.forecasting.sf_auto_arima.StatsForecastAutoARIMA.supports_sample_weight">(darts.models.forecasting.sf_auto_arima.StatsForecastAutoARIMA property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_sample_weight">(darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.sf_auto_ets.html#darts.models.forecasting.sf_auto_ets.StatsForecastAutoETS.supports_sample_weight">(darts.models.forecasting.sf_auto_ets.StatsForecastAutoETS property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.sf_auto_theta.html#darts.models.forecasting.sf_auto_theta.StatsForecastAutoTheta.supports_sample_weight">(darts.models.forecasting.sf_auto_theta.StatsForecastAutoTheta property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.BATS.supports_sample_weight">(darts.models.forecasting.tbats_model.BATS property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.TBATS.supports_sample_weight">(darts.models.forecasting.tbats_model.TBATS property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.tcn_model.html#darts.models.forecasting.tcn_model.TCNModel.supports_sample_weight">(darts.models.forecasting.tcn_model.TCNModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel.supports_sample_weight">(darts.models.forecasting.tft_model.TFTModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta.supports_sample_weight">(darts.models.forecasting.theta.FourTheta property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta.supports_sample_weight">(darts.models.forecasting.theta.Theta property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.tide_model.html#darts.models.forecasting.tide_model.TiDEModel.supports_sample_weight">(darts.models.forecasting.tide_model.TiDEModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.transformer_model.html#darts.models.forecasting.transformer_model.TransformerModel.supports_sample_weight">(darts.models.forecasting.transformer_model.TransformerModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.tsmixer_model.html#darts.models.forecasting.tsmixer_model.TSMixerModel.supports_sample_weight">(darts.models.forecasting.tsmixer_model.TSMixerModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.varima.html#darts.models.forecasting.varima.VARIMA.supports_sample_weight">(darts.models.forecasting.varima.VARIMA property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel.supports_sample_weight">(darts.models.forecasting.xgboost.XGBModel property)</a>
+</li>
+      </ul></li>
       <li><a href="generated_api/darts.models.forecasting.arima.html#darts.models.forecasting.arima.ARIMA.supports_static_covariates">supports_static_covariates (darts.models.forecasting.arima.ARIMA property)</a>
 
       <ul>
@@ -10212,6 +10407,22 @@
         <li><a href="generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel.supports_transferrable_series_prediction">(darts.models.forecasting.xgboost.XGBModel property)</a>
 </li>
       </ul></li>
+      <li><a href="generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel.supports_val_set">supports_val_set (darts.models.forecasting.catboost_model.CatBoostModel property)</a>
+
+      <ul>
+        <li><a href="generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel.supports_val_set">(darts.models.forecasting.lgbm.LightGBMModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel.supports_val_set">(darts.models.forecasting.linear_regression_model.LinearRegressionModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest.supports_val_set">(darts.models.forecasting.random_forest.RandomForest property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel.supports_val_set">(darts.models.forecasting.regression_model.RegressionModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.supports_val_set">(darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel.supports_val_set">(darts.models.forecasting.xgboost.XGBModel property)</a>
+</li>
+      </ul></li>
       <li><a href="generated_api/darts.dataprocessing.dtw.cost_matrix.html#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.swapaxes">swapaxes() (darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix method)</a>
 </li>
       <li><a href="generated_api/darts.models.components.glu_variants.html#darts.models.components.glu_variants.SwiGLU">SwiGLU (class in darts.models.components.glu_variants)</a>
@@ -10279,6 +10490,8 @@
       <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.tail">tail() (darts.timeseries.TimeSeries method)</a>
 </li>
       <li><a href="generated_api/darts.dataprocessing.dtw.cost_matrix.html#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.take">take() (darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix method)</a>
+</li>
+      <li><a href="generated_api/darts.datasets.html#darts.datasets.TaxiNewYorkDataset">TaxiNewYorkDataset (class in darts.datasets)</a>
 </li>
       <li><a href="generated_api/darts.datasets.html#darts.datasets.TaylorDataset">TaylorDataset (class in darts.datasets)</a>
 </li>
@@ -10574,12 +10787,12 @@
 </li>
       <li><a href="generated_api/darts.dataprocessing.transformers.reconciliation.html#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator">TopDownReconciliator (class in darts.dataprocessing.transformers.reconciliation)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated_api/darts.dataprocessing.dtw.cost_matrix.html#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring">tostring() (darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix method)</a>
 </li>
       <li><a href="generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar.total_predict_batches_current_dataloader">total_predict_batches_current_dataloader (darts.utils.callbacks.TFMProgressBar property)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar.total_test_batches_current_dataloader">total_test_batches_current_dataloader (darts.utils.callbacks.TFMProgressBar property)</a>
 </li>
       <li><a href="generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar.total_train_batches">total_train_batches (darts.utils.callbacks.TFMProgressBar property)</a>
@@ -10644,6 +10857,16 @@
         <li><a href="generated_api/darts.utils.losses.html#darts.utils.losses.SmapeLoss.train">(darts.utils.losses.SmapeLoss method)</a>
 </li>
         <li><a href="generated_api/darts.utils.torch.html#darts.utils.torch.MonteCarloDropout.train">(darts.utils.torch.MonteCarloDropout method)</a>
+</li>
+      </ul></li>
+      <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.train_criterion_reduction">train_criterion_reduction (darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule attribute)</a>
+
+      <ul>
+        <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.train_criterion_reduction">(darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule attribute)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.train_criterion_reduction">(darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule attribute)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.train_criterion_reduction">(darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule attribute)</a>
 </li>
       </ul></li>
       <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.train_dataloader">train_dataloader() (darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule method)</a>
@@ -11324,6 +11547,16 @@
 <h2 id="V">V</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.val_criterion_reduction">val_criterion_reduction (darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule attribute)</a>
+
+      <ul>
+        <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.val_criterion_reduction">(darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule attribute)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.val_criterion_reduction">(darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule attribute)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.val_criterion_reduction">(darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule attribute)</a>
+</li>
+      </ul></li>
       <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.val_dataloader">val_dataloader() (darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule method)</a>
 
       <ul>
@@ -11340,6 +11573,24 @@
       </ul></li>
       <li><a href="generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar.val_progress_bar">val_progress_bar (darts.utils.callbacks.TFMProgressBar property)</a>
 </li>
+      <li><a href="generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel.val_set_params">val_set_params (darts.models.forecasting.catboost_model.CatBoostModel property)</a>
+
+      <ul>
+        <li><a href="generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel.val_set_params">(darts.models.forecasting.lgbm.LightGBMModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel.val_set_params">(darts.models.forecasting.linear_regression_model.LinearRegressionModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest.val_set_params">(darts.models.forecasting.random_forest.RandomForest property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel.val_set_params">(darts.models.forecasting.regression_model.RegressionModel property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.val_set_params">(darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates property)</a>
+</li>
+        <li><a href="generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel.val_set_params">(darts.models.forecasting.xgboost.XGBModel property)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar.validation_description">validation_description (darts.utils.callbacks.TFMProgressBar property)</a>
 </li>
       <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.validation_step">validation_step() (darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule method)</a>
@@ -11356,8 +11607,6 @@
         <li><a href="generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.validation_step">(darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.values">values() (darts.timeseries.TimeSeries method)</a>
 </li>
       <li><a href="generated_api/darts.dataprocessing.dtw.cost_matrix.html#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.var">var() (darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix method)</a>
@@ -11390,6 +11639,8 @@
 </li>
       <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.window_transform">window_transform() (darts.timeseries.TimeSeries method)</a>
 </li>
+      <li><a href="generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.WindowedAnomalyScorer">WindowedAnomalyScorer (class in darts.ad.scorers.scorers)</a>
+</li>
       <li><a href="generated_api/darts.dataprocessing.transformers.window_transformer.html#darts.dataprocessing.transformers.window_transformer.WindowTransformer">WindowTransformer (class in darts.dataprocessing.transformers.window_transformer)</a>
 </li>
   </ul></td>
@@ -11401,6 +11652,8 @@
       <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.with_hierarchy">with_hierarchy() (darts.timeseries.TimeSeries method)</a>
 </li>
       <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.with_static_covariates">with_static_covariates() (darts.timeseries.TimeSeries method)</a>
+</li>
+      <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.with_times_and_values">with_times_and_values() (darts.timeseries.TimeSeries method)</a>
 </li>
       <li><a href="generated_api/darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException.with_traceback">with_traceback() (darts.datasets.dataset_loaders.DatasetLoadingException method)</a>
 </li>

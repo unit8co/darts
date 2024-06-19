@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -958,6 +959,12 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.utils.expand_arr">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.utils.</span></span><span class="sig-name descname"><span class="pre">expand_arr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ndim</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/utils.html#expand_arr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.utils.expand_arr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expands a np.ndarray to <cite>ndim</cite> dimensions (if not already satisfied).</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.utils.generate_index">
 <span class="sig-prename descclassname"><span class="pre">darts.utils.utils.</span></span><span class="sig-name descname"><span class="pre">generate_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/utils.html#generate_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.utils.generate_index" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
@@ -994,7 +1001,7 @@ Works for both integers and time stamps.</p>
 <ul class="simple">
 <li><p>if <cite>end</cite>, <cite>start</cite>, <cite>freq</cite> are all integers, we can simple divide the difference by the frequency.</p></li>
 <li><dl class="simple">
-<dt>if <cite>freq</cite> is a pandas Dateoffset with non-ambiguous timedelate (e.g. “d”, “h”, …, and not “M”, “Y”, …),</dt><dd><p>we can simply divide by the frequency</p>
+<dt>if <cite>freq</cite> is a pandas Dateoffset with non-ambiguous timedelate (e.g. “d”, “h”, …, and not “ME”, “YE”, …),</dt><dd><p>we can simply divide by the frequency</p>
 </dd>
 </dl>
 </li>
@@ -1016,7 +1023,7 @@ Works for both integers and time stamps.</p>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">n_steps_between</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2000-01-01&quot;</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2000-03-01&quot;</span><span class="p">),</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;M&quot;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">n_steps_between</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2000-01-01&quot;</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2000-03-01&quot;</span><span class="p">),</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;ME&quot;</span><span class="p">)</span>
 <span class="go">2</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">n_steps_between</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="go">2</span>

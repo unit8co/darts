@@ -34,6 +34,7 @@
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -176,18 +177,22 @@
 <span class="sd">Utils for Anomaly Detection</span>
 <span class="sd">---------------------------</span>
 
-<span class="sd">Common functions used by anomaly_model.py, scorers.py, aggregators.py and detectors.py</span>
+<span class="sd">Common functions used throughout the Anomaly Detection module.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="c1"># TODO:</span>
-<span class="c1">#     - change structure of eval_accuracy_from_scores and eval_accuracy_from_binary_prediction (a lot of repeated code)</span>
 <span class="c1">#     - migrate metrics function to darts.metric</span>
 <span class="c1">#     - check error message</span>
 <span class="c1">#     - create a zoom option on anomalies for a show function</span>
-<span class="c1">#     - add an option visualize: &quot;by window&quot;, &quot;unique&quot;, &quot;together&quot;</span>
+<span class="c1">#     - add an option to visualize: &quot;by window&quot;, &quot;unique&quot;, &quot;together&quot;</span>
 <span class="c1">#     - create a normalize option in plot function (norm every anomaly score btw 1 and 0) -&gt; to be seen on the same plot</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
 
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -201,184 +206,175 @@
 <span class="p">)</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span> <span class="nn">darts.utils.ts_utils</span> <span class="kn">import</span> <span class="n">series2seq</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_assert_binary</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">name_series</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if series is a binary timeseries (1 and 0)&quot;</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    series</span>
-<span class="sd">        series to check for.</span>
-<span class="sd">    name_series</span>
-<span class="sd">        name str of the series.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">raise_if_not</span><span class="p">(</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-            <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">),</span>
-        <span class="p">),</span>
-        <span class="sa">f</span><span class="s2">&quot;Input series </span><span class="si">{</span><span class="n">name_series</span><span class="si">}</span><span class="s2"> must be a binary time series.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-
-
-<div class="viewcode-block" id="eval_accuracy_from_scores"><a class="viewcode-back" href="../../../generated_api/darts.ad.utils.html#darts.ad.utils.eval_accuracy_from_scores">[docs]</a><span class="k">def</span> <span class="nf">eval_accuracy_from_scores</span><span class="p">(</span>
-    <span class="n">actual_anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
-    <span class="n">anomaly_score</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+<div class="viewcode-block" id="eval_metric_from_scores"><a class="viewcode-back" href="../../../generated_api/darts.ad.utils.html#darts.ad.utils.eval_metric_from_scores">[docs]</a><span class="k">def</span> <span class="nf">eval_metric_from_scores</span><span class="p">(</span>
+    <span class="n">anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">pred_scores</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">window</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Scores the results against true anomalies.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes a score/metric between anomaly scores against true anomalies.</span>
 
-<span class="sd">    `actual_anomalies` and `anomaly_score` must have the same shape.</span>
-<span class="sd">    `actual_anomalies` must be binary and have values belonging to the two classes (0 and 1).</span>
+<span class="sd">    `anomalies` and `pred_scores` must have the same shape.</span>
+<span class="sd">    `anomalies` must be binary and have values belonging to the two classes (0 and 1).</span>
 
-<span class="sd">    If one series is given for `actual_anomalies` and `anomaly_score` contains more than</span>
-<span class="sd">    one series, the function will consider `actual_anomalies` as the ground truth anomalies for</span>
-<span class="sd">    all scores in `anomaly_score`.</span>
+<span class="sd">    If one series is given for `anomalies` and `pred_scores` contains more than</span>
+<span class="sd">    one series, the function will consider `anomalies` as the ground truth anomalies for</span>
+<span class="sd">    all scores in `pred_scores`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    actual_anomalies</span>
-<span class="sd">        The ground truth of the anomalies (1 if it is an anomaly and 0 if not).</span>
-<span class="sd">    anomaly_score</span>
-<span class="sd">        Series indicating how anomoulous each window of size w is.</span>
+<span class="sd">    anomalies</span>
+<span class="sd">        The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).</span>
+<span class="sd">    pred_scores</span>
+<span class="sd">        The (sequence of) of estimated anomaly score series indicating how anomalous each window of size w is.</span>
 <span class="sd">    window</span>
-<span class="sd">        Integer value indicating the number of past samples each point represents</span>
-<span class="sd">        in the anomaly_score. The parameter will be used by the function</span>
-<span class="sd">        ``_window_adjustment_anomalies()`` to transform actual_anomalies.</span>
-<span class="sd">        If a list is given. the length must match the number of series in anomaly_score</span>
-<span class="sd">        and actual_anomalies. If only one window is given, the value will be used for every</span>
-<span class="sd">        series in anomaly_score and actual_anomalies.</span>
+<span class="sd">        Integer value indicating the number of past samples each point represents in the `pred_scores`.</span>
+<span class="sd">        The parameter will be used to transform `anomalies`.</span>
+<span class="sd">        If a list of integers, the length must match the number of series in `pred_scores`.</span>
+<span class="sd">        If an integer, the value will be used for every series in `pred_scores` and `anomalies`.</span>
 <span class="sd">    metric</span>
-<span class="sd">        Optionally, Scoring function to use. Must be one of &quot;AUC_ROC&quot; and &quot;AUC_PR&quot;.</span>
-<span class="sd">        Default: &quot;AUC_ROC&quot;</span>
+<span class="sd">        The name of the metric function to use. Must be one of &quot;AUC_ROC&quot; (Area Under the</span>
+<span class="sd">        Receiver Operating Characteristic Curve) and &quot;AUC_PR&quot; (Average Precision from scores).</span>
+<span class="sd">        Default: &quot;AUC_ROC&quot;.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    Union[float, Sequence[float], Sequence[Sequence[float]]]</span>
-<span class="sd">        Score of the anomalies score prediction</span>
-<span class="sd">            * ``float`` if `anomaly_score` is a univariate series (dimension=1).</span>
-<span class="sd">            * ``Sequence[float]``</span>
+<span class="sd">    float</span>
+<span class="sd">        A single score/metric for univariate `pred_scores` series (with only one component/column).</span>
+<span class="sd">    Sequence[float]</span>
+<span class="sd">        A sequence (list) of scores for:</span>
 
-<span class="sd">                * if `anomaly_score` is a multivariate series (dimension&gt;1),</span>
-<span class="sd">                  returns one value per dimension.</span>
-<span class="sd">                * if `anomaly_score` is a sequence of univariate series, returns one</span>
-<span class="sd">                  value per series</span>
-<span class="sd">            * ``Sequence[Sequence[float]]`` if `anomaly_score` is a sequence of</span>
-<span class="sd">              multivariate series. Outer Sequence is over the sequence input, and the inner</span>
-<span class="sd">              Sequence is over the dimensions of each element in the sequence input.</span>
+<span class="sd">        - multivariate `pred_scores` series (multiple components). Gives a score for each component.</span>
+<span class="sd">        - a sequence (list) of univariate `pred_scores` series. Gives a score for each series.</span>
+<span class="sd">    Sequence[Sequence[float]]</span>
+<span class="sd">        A sequence of sequences of scores for a sequence of multivariate `pred_scores` series.</span>
+<span class="sd">        Gives a score for each series (outer sequence) and component (inner sequence).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">raise_if_not</span><span class="p">(</span>
-        <span class="n">metric</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">},</span>
-        <span class="s2">&quot;Argument `metric` must be one of &#39;AUC_ROC&#39;, &#39;AUC_PR&#39;&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">metric_fn</span> <span class="o">=</span> <span class="n">roc_auc_score</span> <span class="k">if</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;AUC_ROC&quot;</span> <span class="k">else</span> <span class="n">average_precision_score</span>
-
-    <span class="n">list_actual_anomalies</span><span class="p">,</span> <span class="n">list_anomaly_scores</span><span class="p">,</span> <span class="n">list_window</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">_to_list</span><span class="p">(</span><span class="n">actual_anomalies</span><span class="p">),</span>
-        <span class="n">_to_list</span><span class="p">(</span><span class="n">anomaly_score</span><span class="p">),</span>
-        <span class="n">_to_list</span><span class="p">(</span><span class="n">window</span><span class="p">),</span>
-    <span class="p">)</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_actual_anomalies</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_anomaly_scores</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">list_actual_anomalies</span> <span class="o">=</span> <span class="n">list_actual_anomalies</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_anomaly_scores</span><span class="p">)</span>
-
-    <span class="n">_assert_same_length</span><span class="p">(</span><span class="n">list_actual_anomalies</span><span class="p">,</span> <span class="n">list_anomaly_scores</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_window</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">list_window</span> <span class="o">=</span> <span class="n">list_window</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">actual_anomalies</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">len</span><span class="p">(</span><span class="n">list_window</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_actual_anomalies</span><span class="p">),</span>
-            <span class="s2">&quot;The list of windows must be the same length as the list of `anomaly_score` and&quot;</span>
-            <span class="o">+</span> <span class="s2">&quot; `actual_anomalies`. There must be one window value for each series.&quot;</span>
-            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; Found length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">list_window</span><span class="p">)</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">list_actual_anomalies</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="n">sol</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">s_anomalies</span><span class="p">,</span> <span class="n">s_score</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
-        <span class="nb">zip</span><span class="p">(</span><span class="n">list_actual_anomalies</span><span class="p">,</span> <span class="n">list_anomaly_scores</span><span class="p">)</span>
-    <span class="p">):</span>
-
-        <span class="n">_assert_binary</span><span class="p">(</span><span class="n">s_anomalies</span><span class="p">,</span> <span class="s2">&quot;actual_anomalies&quot;</span><span class="p">)</span>
-
-        <span class="n">sol</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="n">_eval_accuracy_from_data</span><span class="p">(</span>
-                <span class="n">s_anomalies</span><span class="p">,</span> <span class="n">s_score</span><span class="p">,</span> <span class="n">list_window</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">metric_fn</span><span class="p">,</span> <span class="n">metric</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sol</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">anomaly_score</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">sol</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">sol</span></div>
+    <span class="k">return</span> <span class="n">_eval_metric</span><span class="p">(</span>
+        <span class="n">anomalies</span><span class="o">=</span><span class="n">anomalies</span><span class="p">,</span>
+        <span class="n">pred_series</span><span class="o">=</span><span class="n">pred_scores</span><span class="p">,</span>
+        <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span>
+        <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
+        <span class="n">pred_is_binary</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="eval_accuracy_from_binary_prediction"><a class="viewcode-back" href="../../../generated_api/darts.ad.utils.html#darts.ad.utils.eval_accuracy_from_binary_prediction">[docs]</a><span class="k">def</span> <span class="nf">eval_accuracy_from_binary_prediction</span><span class="p">(</span>
-    <span class="n">actual_anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
-    <span class="n">binary_pred_anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+<div class="viewcode-block" id="eval_metric_from_binary_prediction"><a class="viewcode-back" href="../../../generated_api/darts.ad.utils.html#darts.ad.utils.eval_metric_from_binary_prediction">[docs]</a><span class="k">def</span> <span class="nf">eval_metric_from_binary_prediction</span><span class="p">(</span>
+    <span class="n">anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">pred_anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">window</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;recall&quot;</span><span class="p">,</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;recall&quot;</span><span class="p">,</span> <span class="s2">&quot;precision&quot;</span><span class="p">,</span> <span class="s2">&quot;f1&quot;</span><span class="p">,</span> <span class="s2">&quot;accuracy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;recall&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Score the results against true anomalies.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes a score/metric between predicted anomalies against true anomalies.</span>
 
-<span class="sd">    checks that `pred_anomalies` and `actual_anomalies` are the same:</span>
-<span class="sd">        - type,</span>
-<span class="sd">        - length,</span>
-<span class="sd">        - number of components</span>
-<span class="sd">        - binary and has values belonging to the two classes (1 and 0)</span>
+<span class="sd">    `pred_anomalies` and `anomalies` must have:</span>
 
-<span class="sd">    If one series is given for `actual_anomalies` and `pred_anomalies` contains more than</span>
-<span class="sd">    one series, the function will consider `actual_anomalies` as the true anomalies for</span>
-<span class="sd">    all scores in `anomaly_score`.</span>
+<span class="sd">        - identical dimensions (number of time steps and number of components/columns),</span>
+<span class="sd">        - binary values belonging to the two classes (`1` if it is an anomaly and `0` if not)</span>
+
+<span class="sd">    If one series is given for `anomalies` and `pred_anomalies` contains more than</span>
+<span class="sd">    one series, the function will consider `anomalies` as the true anomalies for</span>
+<span class="sd">    all scores in `pred_scores`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    actual_anomalies</span>
-<span class="sd">        The (sequence of) ground truth of the anomalies (1 if it is an anomaly and 0 if not)</span>
-<span class="sd">    binary_pred_anomalies</span>
-<span class="sd">        Anomaly predictions.</span>
+<span class="sd">    anomalies</span>
+<span class="sd">        The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).</span>
+<span class="sd">    pred_anomalies</span>
+<span class="sd">        The (sequence of) predicted binary anomaly series.</span>
 <span class="sd">    window</span>
-<span class="sd">        Integer value indicating the number of past samples each point represents</span>
-<span class="sd">        in the pred_anomalies. The parameter will be used to transform actual_anomalies.</span>
-<span class="sd">        If a list is given. the length must match the number of series in pred_anomalies</span>
-<span class="sd">        and actual_anomalies. If only one window is given, the value will be used for every</span>
-<span class="sd">        series in pred_anomalies and actual_anomalies.</span>
+<span class="sd">        Integer value indicating the number of past samples each point represents in the `pred_scores`.</span>
+<span class="sd">        The parameter will be used to transform `anomalies`.</span>
+<span class="sd">        If a list of integers, the length must match the number of series in `pred_scores`.</span>
+<span class="sd">        If an integer, the value will be used for every series in `pred_scores` and `anomalies`.</span>
 <span class="sd">    metric</span>
-<span class="sd">        Optionally, Scoring function to use. Must be one of &quot;recall&quot;, &quot;precision&quot;,</span>
-<span class="sd">        &quot;f1&quot;, and &quot;accuracy&quot;.</span>
-<span class="sd">        Default: &quot;recall&quot;</span>
+<span class="sd">        The name of the metric function to use. Must be one of &quot;recall&quot;, &quot;precision&quot;, &quot;f1&quot;, and &quot;accuracy&quot;.</span>
+<span class="sd">        Default: &quot;recall&quot;.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    Union[float, Sequence[float], Sequence[Sequence[float]]]</span>
-<span class="sd">        Score of the anomalies prediction</span>
+<span class="sd">    float</span>
+<span class="sd">        A single score for univariate `pred_anomalies` series (with only one component/column).</span>
+<span class="sd">    Sequence[float]</span>
+<span class="sd">        A sequence (list) of scores for:</span>
 
-<span class="sd">            * ``float`` if `binary_pred_anomalies` is a univariate series (dimension=1).</span>
-<span class="sd">            * ``Sequence[float]``</span>
-
-<span class="sd">                * if `binary_pred_anomalies` is a multivariate series (dimension&gt;1),</span>
-<span class="sd">                  returns one value per dimension.</span>
-<span class="sd">                * if `binary_pred_anomalies` is a sequence of univariate series, returns one</span>
-<span class="sd">                  value per series</span>
-<span class="sd">            * ``Sequence[Sequence[float]]`` if `binary_pred_anomalies` is a sequence of</span>
-<span class="sd">              multivariate series. Outer Sequence is over the sequence input, and the inner</span>
-<span class="sd">              Sequence is over the dimensions of each element in the sequence input.</span>
+<span class="sd">        - multivariate `pred_anomalies` series (multiple components). Gives a score for each component.</span>
+<span class="sd">        - a sequence (list) of univariate `pred_anomalies` series. Gives a score for each series.</span>
+<span class="sd">    Sequence[Sequence[float]]</span>
+<span class="sd">        A sequence of sequences of scores for a sequence of multivariate `pred_anomalies` series.</span>
+<span class="sd">        Gives a score for each series (outer sequence) and component (inner sequence).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_eval_metric</span><span class="p">(</span>
+        <span class="n">anomalies</span><span class="o">=</span><span class="n">anomalies</span><span class="p">,</span>
+        <span class="n">pred_series</span><span class="o">=</span><span class="n">pred_anomalies</span><span class="p">,</span>
+        <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span>
+        <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
+        <span class="n">pred_is_binary</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span></div>
 
-    <span class="n">raise_if_not</span><span class="p">(</span>
-        <span class="n">metric</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;recall&quot;</span><span class="p">,</span> <span class="s2">&quot;precision&quot;</span><span class="p">,</span> <span class="s2">&quot;f1&quot;</span><span class="p">,</span> <span class="s2">&quot;accuracy&quot;</span><span class="p">},</span>
-        <span class="s2">&quot;Argument `metric` must be one of &#39;recall&#39;, &#39;precision&#39;, &quot;</span>
-        <span class="s2">&quot;&#39;f1&#39; and &#39;accuracy&#39;.&quot;</span><span class="p">,</span>
+
+<span class="k">def</span> <span class="nf">_eval_metric</span><span class="p">(</span>
+    <span class="n">anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">window</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">,</span> <span class="s2">&quot;recall&quot;</span><span class="p">,</span> <span class="s2">&quot;precision&quot;</span><span class="p">,</span> <span class="s2">&quot;f1&quot;</span><span class="p">,</span> <span class="s2">&quot;accuracy&quot;</span><span class="p">],</span>
+    <span class="n">pred_is_binary</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes a score/metric between anomaly scores or binary predicted anomalies against true</span>
+<span class="sd">    anomalies.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    anomalies</span>
+<span class="sd">        The (sequence of) ground truth binary anomaly series (`1` if it is an anomaly and `0` if not).</span>
+<span class="sd">    pred_series</span>
+<span class="sd">        The (sequence of) anomaly scores or predicted binary anomaly series.</span>
+<span class="sd">    window</span>
+<span class="sd">        Integer value indicating the number of past samples each point represents in the `pred_scores`.</span>
+<span class="sd">        The parameter will be used to transform `anomalies`.</span>
+<span class="sd">        If a list of integers, the length must match the number of series in `pred_scores`.</span>
+<span class="sd">        If an integer, the value will be used for every series in `pred_scores` and `anomalies`.</span>
+<span class="sd">    metric</span>
+<span class="sd">        The name of the scoring function to use. Must be one of &quot;recall&quot;, &quot;precision&quot;,</span>
+<span class="sd">        &quot;f1&quot;, and &quot;accuracy&quot; if `pred_is_binary` is `True`. Otherwise, must be one of &quot;AUC_ROC&quot;, &quot;AUC_PR&quot;.</span>
+<span class="sd">    pred_is_binary</span>
+<span class="sd">        Whether `pred_series` refers predicted binary anomalies or anomaly scores.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        A single score for univariate `pred_series` series (with only one component/column).</span>
+<span class="sd">    Sequence[float]</span>
+<span class="sd">        A sequence (list) of scores for:</span>
+
+<span class="sd">        - multivariate `pred_series` series (multiple components). Gives a score for each component.</span>
+<span class="sd">        - a sequence (list) of univariate `pred_series` series. Gives a score for each series.</span>
+<span class="sd">    Sequence[Sequence[float]]</span>
+<span class="sd">        A sequence of sequences of scores for a sequence of multivariate `pred_series` series.</span>
+<span class="sd">        Gives a score for each series (outer sequence) and component (inner sequence).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">metrics_exp</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;recall&quot;</span><span class="p">,</span> <span class="s2">&quot;precision&quot;</span><span class="p">,</span> <span class="s2">&quot;f1&quot;</span><span class="p">,</span> <span class="s2">&quot;accuracy&quot;</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">pred_is_binary</span>
+        <span class="k">else</span> <span class="p">{</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">}</span>
     <span class="p">)</span>
+    <span class="k">if</span> <span class="n">metric</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">metrics_exp</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Argument `metric` must be one of </span><span class="si">{</span><span class="n">metrics_exp</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;recall&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;AUC_ROC&quot;</span><span class="p">:</span>
+        <span class="n">metric_fn</span> <span class="o">=</span> <span class="n">roc_auc_score</span>
+    <span class="k">elif</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">:</span>
+        <span class="n">metric_fn</span> <span class="o">=</span> <span class="n">average_precision_score</span>
+    <span class="k">elif</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;recall&quot;</span><span class="p">:</span>
         <span class="n">metric_fn</span> <span class="o">=</span> <span class="n">recall_score</span>
     <span class="k">elif</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;precision&quot;</span><span class="p">:</span>
         <span class="n">metric_fn</span> <span class="o">=</span> <span class="n">precision_score</span>
@@ -387,304 +383,117 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">metric_fn</span> <span class="o">=</span> <span class="n">accuracy_score</span>
 
-    <span class="n">list_actual_anomalies</span><span class="p">,</span> <span class="n">list_binary_pred_anomalies</span><span class="p">,</span> <span class="n">list_window</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">_to_list</span><span class="p">(</span><span class="n">actual_anomalies</span><span class="p">),</span>
-        <span class="n">_to_list</span><span class="p">(</span><span class="n">binary_pred_anomalies</span><span class="p">),</span>
-        <span class="n">_to_list</span><span class="p">(</span><span class="n">window</span><span class="p">),</span>
+    <span class="n">called_with_single_series</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pred_series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span>
+    <span class="n">anomalies</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">anomalies</span><span class="p">)</span>
+    <span class="n">pred_series</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">pred_series</span><span class="p">)</span>
+    <span class="n">window</span> <span class="o">=</span> <span class="p">[</span><span class="n">window</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span> <span class="k">else</span> <span class="n">window</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">anomalies</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">pred_series</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">anomalies</span> <span class="o">=</span> <span class="n">anomalies</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">pred_series</span><span class="p">)</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;anomalies&quot;</span>
+    <span class="n">pred_name</span> <span class="o">=</span> <span class="s2">&quot;pred_anomalies&quot;</span> <span class="k">if</span> <span class="n">pred_is_binary</span> <span class="k">else</span> <span class="s2">&quot;pred_scores&quot;</span>
+    <span class="n">_assert_same_length</span><span class="p">(</span>
+        <span class="n">anomalies</span><span class="p">,</span>
+        <span class="n">pred_series</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">,</span>
+        <span class="n">pred_name</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_actual_anomalies</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_binary_pred_anomalies</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">list_actual_anomalies</span> <span class="o">=</span> <span class="n">list_actual_anomalies</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_binary_pred_anomalies</span><span class="p">)</span>
-
-    <span class="n">_assert_same_length</span><span class="p">(</span><span class="n">list_actual_anomalies</span><span class="p">,</span> <span class="n">list_binary_pred_anomalies</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_window</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">list_window</span> <span class="o">=</span> <span class="n">list_window</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">actual_anomalies</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">window</span> <span class="o">=</span> <span class="n">window</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">anomalies</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">len</span><span class="p">(</span><span class="n">list_window</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_actual_anomalies</span><span class="p">),</span>
-            <span class="s2">&quot;The list of windows must be the same length as the list of `pred_anomalies` and&quot;</span>
-            <span class="o">+</span> <span class="s2">&quot; `actual_anomalies`. There must be one window value for each series.&quot;</span>
-            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; Found length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">list_window</span><span class="p">)</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">list_actual_anomalies</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">anomalies</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The list of windows must be the same length as the list of `</span><span class="si">{</span><span class="n">pred_name</span><span class="si">}</span><span class="s2">` and &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">`. There must be one window value for each series. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Found length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">window</span><span class="p">)</span><span class="si">}</span><span class="s2">, expected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">anomalies</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
 
     <span class="n">sol</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">s_anomalies</span><span class="p">,</span> <span class="n">s_pred</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
-        <span class="nb">zip</span><span class="p">(</span><span class="n">list_actual_anomalies</span><span class="p">,</span> <span class="n">list_binary_pred_anomalies</span><span class="p">)</span>
-    <span class="p">):</span>
+    <span class="k">for</span> <span class="n">s_anomalies</span><span class="p">,</span> <span class="n">s_pred</span><span class="p">,</span> <span class="n">s_window</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">anomalies</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">window</span><span class="p">):</span>
+        <span class="n">_assert_timeseries</span><span class="p">(</span><span class="n">s_pred</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">pred_name</span><span class="p">)</span>
+        <span class="n">_assert_timeseries</span><span class="p">(</span><span class="n">s_anomalies</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">_assert_binary</span><span class="p">(</span><span class="n">s_anomalies</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pred_is_binary</span><span class="p">:</span>
+            <span class="n">_assert_binary</span><span class="p">(</span><span class="n">s_pred</span><span class="p">,</span> <span class="n">pred_name</span><span class="p">)</span>
 
-        <span class="n">_assert_binary</span><span class="p">(</span><span class="n">s_pred</span><span class="p">,</span> <span class="s2">&quot;pred_anomalies&quot;</span><span class="p">)</span>
-        <span class="n">_assert_binary</span><span class="p">(</span><span class="n">s_anomalies</span><span class="p">,</span> <span class="s2">&quot;actual_anomalies&quot;</span><span class="p">)</span>
+        <span class="c1"># if s_window &gt; 1, the anomalies will be adjusted so that it can be compared timewise with s_pred</span>
+        <span class="n">s_anomalies</span> <span class="o">=</span> <span class="n">_max_pooling</span><span class="p">(</span><span class="n">s_anomalies</span><span class="p">,</span> <span class="n">s_window</span><span class="p">)</span>
 
-        <span class="n">sol</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="n">_eval_accuracy_from_data</span><span class="p">(</span>
-                <span class="n">s_anomalies</span><span class="p">,</span> <span class="n">s_pred</span><span class="p">,</span> <span class="n">list_window</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">metric_fn</span><span class="p">,</span> <span class="n">metric</span>
+        <span class="n">_sanity_check_two_series</span><span class="p">(</span><span class="n">s_pred</span><span class="p">,</span> <span class="n">s_anomalies</span><span class="p">,</span> <span class="n">pred_name</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+        <span class="n">s_pred_vals</span> <span class="o">=</span> <span class="n">s_pred</span><span class="o">.</span><span class="n">slice_intersect_values</span><span class="p">(</span><span class="n">s_anomalies</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">s_anomalies_vals</span> <span class="o">=</span> <span class="n">s_anomalies</span><span class="o">.</span><span class="n">slice_intersect_values</span><span class="p">(</span><span class="n">s_pred</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">s_pred_vals</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">s_anomalies_vals</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The two time series `</span><span class="si">{</span><span class="n">pred_name</span><span class="si">}</span><span class="s2">` and `</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;must have at least a partially overlapping time index.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="p">)</span>
 
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sol</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">binary_pred_anomalies</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">sol</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">sol</span></div>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pred_is_binary</span><span class="p">:</span>  <span class="c1"># `pred_series` is an anomaly score</span>
+            <span class="n">nr_anomalies_per_component</span> <span class="o">=</span> <span class="n">s_anomalies_vals</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
 
+            <span class="k">if</span> <span class="n">nr_anomalies_per_component</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` does not contain anomalies. </span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2"> cannot be computed.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">nr_anomalies_per_component</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">s_anomalies_vals</span><span class="p">):</span>
+                <span class="n">add_txt</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;&quot;</span>
+                    <span class="k">if</span> <span class="n">s_window</span> <span class="o">&lt;=</span> <span class="mi">1</span>
+                    <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot; Consider decreasing the window size (window=</span><span class="si">{</span><span class="n">s_window</span><span class="si">}</span><span class="s2">)&quot;</span>
+                <span class="p">)</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` only contains anomalies. </span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2"> cannot be computed.&quot;</span>
+                        <span class="o">+</span> <span class="n">add_txt</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">_eval_accuracy_from_data</span><span class="p">(</span>
-    <span class="n">s_anomalies</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-    <span class="n">s_data</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-    <span class="n">window</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">metric_fn</span><span class="p">,</span>
-    <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal function for:</span>
-<span class="sd">        - ``eval_accuracy_from_binary_prediction()``</span>
-<span class="sd">        - ``eval_accuracy_from_scores()``</span>
-
-<span class="sd">    Score the results against true anomalies.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    actual_anomalies</span>
-<span class="sd">        The ground truth of the anomalies (1 if it is an anomaly and 0 if not)</span>
-<span class="sd">    s_data</span>
-<span class="sd">        series prediction</span>
-<span class="sd">    window</span>
-<span class="sd">        Integer value indicating the number of past samples each point represents</span>
-<span class="sd">        in the anomaly_score. The parameter will be used by the function</span>
-<span class="sd">        ``_window_adjustment_anomalies()`` to transform s_anomalies.</span>
-<span class="sd">    metric_fn</span>
-<span class="sd">        Function to use. Can be &quot;average_precision_score&quot;, &quot;roc_auc_score&quot;, &quot;accuracy_score&quot;,</span>
-<span class="sd">        &quot;f1_score&quot;, &quot;precision_score&quot; and &quot;recall_score&quot;.</span>
-<span class="sd">    metric_name</span>
-<span class="sd">        Name str of the function to use. Can be &quot;AUC_PR&quot;, &quot;AUC_ROC&quot;, &quot;accuracy&quot;,</span>
-<span class="sd">        &quot;f1&quot;, &quot;precision&quot; and &quot;recall&quot;.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    Union[float, Sequence[float]]</span>
-<span class="sd">        Score of the anomalies prediction</span>
-<span class="sd">            - float -&gt; if `s_data` is a univariate series (dimension=1).</span>
-<span class="sd">            - Sequence[float] -&gt; if `s_data` is a multivariate series (dimension&gt;1),</span>
-<span class="sd">            returns one value per dimension.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">_assert_timeseries</span><span class="p">(</span><span class="n">s_data</span><span class="p">,</span> <span class="s2">&quot;Prediction series input&quot;</span><span class="p">)</span>
-    <span class="n">_assert_timeseries</span><span class="p">(</span><span class="n">s_anomalies</span><span class="p">,</span> <span class="s2">&quot;actual_anomalies input&quot;</span><span class="p">)</span>
-
-    <span class="c1"># if window &gt; 1, the anomalies will be adjusted so that it can be compared timewise with s_data</span>
-    <span class="n">s_anomalies</span> <span class="o">=</span> <span class="n">_max_pooling</span><span class="p">(</span><span class="n">s_anomalies</span><span class="p">,</span> <span class="n">window</span><span class="p">)</span>
-
-    <span class="n">_sanity_check_two_series</span><span class="p">(</span><span class="n">s_data</span><span class="p">,</span> <span class="n">s_anomalies</span><span class="p">)</span>
-
-    <span class="n">s_data</span><span class="p">,</span> <span class="n">s_anomalies</span> <span class="o">=</span> <span class="n">_intersect</span><span class="p">(</span><span class="n">s_data</span><span class="p">,</span> <span class="n">s_anomalies</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">metric_name</span> <span class="o">==</span> <span class="s2">&quot;AUC_ROC&quot;</span> <span class="ow">or</span> <span class="n">metric_name</span> <span class="o">==</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">:</span>
-
-        <span class="n">nr_anomalies_per_component</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">s_anomalies</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
-        <span class="p">)</span>
-
-        <span class="n">raise_if</span><span class="p">(</span>
-            <span class="n">nr_anomalies_per_component</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">&quot;`actual_anomalies` does not contain anomalies. </span><span class="si">{</span><span class="n">metric_name</span><span class="si">}</span><span class="s2"> cannot be computed.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">raise_if</span><span class="p">(</span>
-            <span class="n">nr_anomalies_per_component</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">s_anomalies</span><span class="p">),</span>
-            <span class="sa">f</span><span class="s2">&quot;`actual_anomalies` only contains anomalies. </span><span class="si">{</span><span class="n">metric_name</span><span class="si">}</span><span class="s2"> cannot be computed.&quot;</span>
-            <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot; Consider decreasing the window size (window=</span><span class="si">{</span><span class="n">window</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">][</span>
-                <span class="n">window</span> <span class="o">&gt;</span> <span class="mi">1</span>
-            <span class="p">],</span>
-        <span class="p">)</span>
-
-    <span class="c1"># TODO: could we vectorize this?</span>
-    <span class="n">metrics</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">component_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">s_data</span><span class="o">.</span><span class="n">width</span><span class="p">):</span>
-        <span class="n">metrics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="n">metric_fn</span><span class="p">(</span>
-                <span class="n">s_anomalies</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[:,</span> <span class="n">component_idx</span><span class="p">],</span>
-                <span class="n">s_data</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[:,</span> <span class="n">component_idx</span><span class="p">],</span>
+        <span class="c1"># TODO: could we vectorize this?</span>
+        <span class="n">metrics</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">component_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">s_pred</span><span class="o">.</span><span class="n">width</span><span class="p">):</span>
+            <span class="n">metrics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">metric_fn</span><span class="p">(</span>
+                    <span class="n">s_anomalies_vals</span><span class="p">[:,</span> <span class="n">component_idx</span><span class="p">],</span>
+                    <span class="n">s_pred_vals</span><span class="p">[:,</span> <span class="n">component_idx</span><span class="p">],</span>
+                <span class="p">)</span>
             <span class="p">)</span>
-        <span class="p">)</span>
+        <span class="n">sol</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metrics</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">metrics</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">metrics</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">metrics</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">metrics</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">metrics</span>
-
-
-<span class="k">def</span> <span class="nf">_intersect</span><span class="p">(</span>
-    <span class="n">series_1</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-    <span class="n">series_2</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the sub-series of series_1 and of series_2 that share the same time index.</span>
-<span class="sd">    (Intersection in time of the two time series)</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    series_1</span>
-<span class="sd">        1st time series</span>
-<span class="sd">    series_2:</span>
-<span class="sd">        2nd time series</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    Tuple[TimeSeries, TimeSeries]</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">new_series_1</span> <span class="o">=</span> <span class="n">series_1</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">series_2</span><span class="p">)</span>
-    <span class="n">raise_if</span><span class="p">(</span>
-        <span class="nb">len</span><span class="p">(</span><span class="n">new_series_1</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="s2">&quot;Time intersection between the two series must be non empty.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">new_series_1</span><span class="p">,</span> <span class="n">series_2</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">series_1</span><span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">_assert_timeseries</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if given input is of type Darts TimeSeries&quot;&quot;&quot;</span>
-
-    <span class="n">raise_if_not</span><span class="p">(</span>
-        <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">),</span>
-        <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> must be type darts.timeseries.TimeSeries and not </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="n">message</span> <span class="k">if</span> <span class="n">message</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;Series input&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-        <span class="p">),</span>
-    <span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">_sanity_check_two_series</span><span class="p">(</span>
-    <span class="n">series_1</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-    <span class="n">series_2</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-<span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Performs sanity check on the two given inputs</span>
-
-<span class="sd">    Checks if the two inputs:</span>
-<span class="sd">        - type is Darts Timeseries</span>
-<span class="sd">        - have the same number of components</span>
-<span class="sd">        - if their intersection in time is not null</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    series_1</span>
-<span class="sd">        1st time series</span>
-<span class="sd">    series_2:</span>
-<span class="sd">        2nd time series</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">_assert_timeseries</span><span class="p">(</span><span class="n">series_1</span><span class="p">)</span>
-    <span class="n">_assert_timeseries</span><span class="p">(</span><span class="n">series_2</span><span class="p">)</span>
-
-    <span class="c1"># check if the two inputs time series have the same number of components</span>
-    <span class="n">raise_if_not</span><span class="p">(</span>
-        <span class="n">series_1</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="n">series_2</span><span class="o">.</span><span class="n">width</span><span class="p">,</span>
-        <span class="s2">&quot;Series must have the same number of components,&quot;</span>
-        <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; found </span><span class="si">{</span><span class="n">series_1</span><span class="o">.</span><span class="n">width</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">series_2</span><span class="o">.</span><span class="n">width</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="c1"># check if the time intersection between the two inputs time series is not empty</span>
-    <span class="n">raise_if_not</span><span class="p">(</span>
-        <span class="nb">len</span><span class="p">(</span><span class="n">series_1</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">series_2</span><span class="o">.</span><span class="n">time_index</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="s2">&quot;Series must have a non-empty intersection timestamps.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">_max_pooling</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Slides a window of size `window` along the input series, and replaces the value of the</span>
-<span class="sd">    input time series by the maximum of the values contained in the window.</span>
-
-<span class="sd">    The binary time series output represents if there is an anomaly (=1) or not (=0) in the past</span>
-<span class="sd">    window points. The new series will equal the length of the input series - window. Its first</span>
-<span class="sd">    point will start at the first time index of the input time series + window points.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    series:</span>
-<span class="sd">        Binary time series.</span>
-<span class="sd">    window:</span>
-<span class="sd">        Integer value indicating the number of past samples each point represents.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    Binary TimeSeries</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">raise_if_not</span><span class="p">(</span>
-        <span class="nb">isinstance</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span>
-        <span class="sa">f</span><span class="s2">&quot;Parameter `window` must be of type int, found </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">window</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="n">raise_if_not</span><span class="p">(</span>
-        <span class="n">window</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="sa">f</span><span class="s2">&quot;Parameter `window` must be stricly greater than 0, found size </span><span class="si">{</span><span class="n">window</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="n">raise_if_not</span><span class="p">(</span>
-        <span class="n">window</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">),</span>
-        <span class="s2">&quot;Parameter `window` must be smaller than the length of the input series, &quot;</span>
-        <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; found window size </span><span class="si">{</span><span class="p">(</span><span class="n">window</span><span class="p">)</span><span class="si">}</span><span class="s2">, and max size </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">window</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="c1"># the process results in replacing every value by itself -&gt; return directly the series</span>
-        <span class="k">return</span> <span class="n">series</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">window_transform</span><span class="p">(</span>
-            <span class="n">transforms</span><span class="o">=</span><span class="p">{</span>
-                <span class="s2">&quot;window&quot;</span><span class="p">:</span> <span class="n">window</span><span class="p">,</span>
-                <span class="s2">&quot;function&quot;</span><span class="p">:</span> <span class="s2">&quot;max&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="s2">&quot;rolling&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;min_periods&quot;</span><span class="p">:</span> <span class="n">window</span><span class="p">,</span>
-            <span class="p">},</span>
-            <span class="n">treat_na</span><span class="o">=</span><span class="s2">&quot;dropna&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">_to_list</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;If not already, it converts the input into a sequence</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    series</span>
-<span class="sd">        single TimeSeries, or a sequence of TimeSeries</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    Sequence[TimeSeries]</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">return</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span> <span class="k">else</span> <span class="n">series</span>
-
-
-<span class="k">def</span> <span class="nf">_assert_same_length</span><span class="p">(</span>
-    <span class="n">list_series_1</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-    <span class="n">list_series_2</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-<span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if the two sequences contain the same number of TimeSeries.&quot;&quot;&quot;</span>
-
-    <span class="n">raise_if_not</span><span class="p">(</span>
-        <span class="nb">len</span><span class="p">(</span><span class="n">list_series_1</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_series_2</span><span class="p">),</span>
-        <span class="s2">&quot;Sequences of series must be of the same length, found length:&quot;</span>
-        <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">list_series_1</span><span class="p">)</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">list_series_2</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">sol</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">called_with_single_series</span> <span class="k">else</span> <span class="n">sol</span>
 
 
 <div class="viewcode-block" id="show_anomalies_from_scores"><a class="viewcode-back" href="../../../generated_api/darts.ad.utils.html#darts.ad.utils.show_anomalies_from_scores">[docs]</a><span class="k">def</span> <span class="nf">show_anomalies_from_scores</span><span class="p">(</span>
     <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-    <span class="n">model_output</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">anomaly_scores</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">anomalies</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">pred_series</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">pred_scores</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">window</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">names_of_scorers</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">actual_anomalies</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot the results generated by an anomaly model.</span>
 
 <span class="sd">    The plot will be composed of the following:</span>
-<span class="sd">        - the series itself with the output of the model (if given)</span>
+<span class="sd">        - the actual series itself with the output of the model (if given)</span>
 <span class="sd">        - the anomaly score of each scorer. The scorer with different windows will be separated.</span>
 <span class="sd">        - the actual anomalies, if given.</span>
 
-<span class="sd">    If model_output is stochastic (i.e., if it has multiple samples), the function will plot:</span>
+<span class="sd">    If `pred_series` is stochastic (i.e., if it has multiple samples), the function will plot:</span>
 <span class="sd">        - the mean per timestamp</span>
 <span class="sd">        - the quantile 0.95 for an upper bound</span>
 <span class="sd">        - the quantile 0.05 for a lower bound</span>
@@ -697,144 +506,95 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    series</span>
-<span class="sd">        The series to visualize anomalies from.</span>
-<span class="sd">    model_output</span>
-<span class="sd">        Output of the model given as input the series (can be stochastic).</span>
-<span class="sd">    anomaly_scores</span>
-<span class="sd">        Output of the scorers given the output of the model and the series.</span>
+<span class="sd">        The actual series to visualize anomalies from.</span>
+<span class="sd">    anomalies</span>
+<span class="sd">        The ground truth of the anomalies (1 if it is an anomaly and 0 if not).</span>
+<span class="sd">    pred_series</span>
+<span class="sd">        Output of the model given as input the `series` (can be stochastic).</span>
+<span class="sd">    pred_scores</span>
+<span class="sd">        Output of the scorers given the output of the model and `series`.</span>
 <span class="sd">    window</span>
 <span class="sd">        Window parameter for each anomaly scores.</span>
 <span class="sd">        Default: 1. If a list of anomaly scores is given, the same default window will be used for every score.</span>
 <span class="sd">    names_of_scorers</span>
 <span class="sd">        Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.</span>
-<span class="sd">    actual_anomalies</span>
-<span class="sd">        The ground truth of the anomalies (1 if it is an anomaly and 0 if not)</span>
+<span class="sd">        Only effective when `pred_scores` is not `None`.</span>
 <span class="sd">    title</span>
 <span class="sd">        Title of the figure</span>
 <span class="sd">    metric</span>
-<span class="sd">        Optionally, Scoring function to use. Must be one of &quot;AUC_ROC&quot; and &quot;AUC_PR&quot;.</span>
-<span class="sd">        Default: &quot;AUC_ROC&quot;</span>
+<span class="sd">        Optionally, the name of the metric function to use. Must be one of &quot;AUC_ROC&quot; (Area Under the</span>
+<span class="sd">        Receiver Operating Characteristic Curve) and &quot;AUC_PR&quot; (Average Precision from scores).</span>
+<span class="sd">        Only effective when `pred_scores` is not `None`.</span>
+<span class="sd">        Default: &quot;AUC_ROC&quot;.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">series</span> <span class="o">=</span> <span class="n">_check_input</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;series&quot;</span><span class="p">,</span>
+        <span class="n">num_series_expected</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
-    <span class="n">raise_if_not</span><span class="p">(</span>
-        <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">),</span>
-        <span class="sa">f</span><span class="s2">&quot;Input `series` must be of type TimeSeries, found </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">anomaly_scores</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;Anomaly results&quot;</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">isinstance</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
-            <span class="sa">f</span><span class="s2">&quot;Input `title` must be of type str, found </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">title</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">pred_scores</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;Anomaly results&quot;</span>
 
     <span class="n">nbr_plots</span> <span class="o">=</span> <span class="mi">1</span>
-
-    <span class="k">if</span> <span class="n">model_output</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_output</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">),</span>
-            <span class="sa">f</span><span class="s2">&quot;Input `model_output` must be of type TimeSeries, found </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">actual_anomalies</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">isinstance</span><span class="p">(</span><span class="n">actual_anomalies</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">),</span>
-            <span class="sa">f</span><span class="s2">&quot;Input `actual_anomalies` must be of type TimeSeries, found </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">actual_anomalies</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
+    <span class="k">if</span> <span class="n">anomalies</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">nbr_plots</span> <span class="o">=</span> <span class="n">nbr_plots</span> <span class="o">+</span> <span class="mi">1</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="n">metric</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s2">&quot;`actual_anomalies` must be given in order to calculate a metric.&quot;</span><span class="p">,</span>
+    <span class="k">elif</span> <span class="n">metric</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`anomalies` must be given in order to calculate a metric.&quot;</span><span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">anomaly_scores</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">anomaly_scores</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">anomaly_scores</span><span class="p">):</span>
-                <span class="n">raise_if_not</span><span class="p">(</span>
-                    <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">),</span>
-                    <span class="sa">f</span><span class="s2">&quot;Elements of anomaly_scores must be of type TimeSeries, found </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="si">}</span><span class="s2"> at index </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-                <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="nb">isinstance</span><span class="p">(</span><span class="n">anomaly_scores</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">),</span>
-                <span class="sa">f</span><span class="s2">&quot;Input `anomaly_scores` must be of type TimeSeries or Sequence, found </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">actual_anomalies</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">anomaly_scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">anomaly_scores</span><span class="p">]</span>
-
+    <span class="n">pred_scores</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">pred_scores</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pred_scores</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">names_of_scorers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names_of_scorers</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-                <span class="n">names_of_scorers</span> <span class="o">=</span> <span class="p">[</span><span class="n">names_of_scorers</span><span class="p">]</span>
-            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names_of_scorers</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
-                <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">names_of_scorers</span><span class="p">):</span>
-                    <span class="n">raise_if_not</span><span class="p">(</span>
-                        <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
-                        <span class="sa">f</span><span class="s2">&quot;Elements of names_of_scorers must be of type str, found </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="si">}</span><span class="s2"> at index </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-                    <span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Input `names_of_scorers` must be of type str or Sequence, found </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">names_of_scorers</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="n">names_of_scorers</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="p">[</span><span class="n">names_of_scorers</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names_of_scorers</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+                <span class="k">else</span> <span class="n">names_of_scorers</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">names_of_scorers</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pred_scores</span><span class="p">):</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The number of names in `names_of_scorers` must match the &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;number of anomaly score given as input, found &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">names_of_scorers</span><span class="p">)</span><span class="si">}</span><span class="s2"> and expected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pred_scores</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
                 <span class="p">)</span>
 
-            <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="nb">len</span><span class="p">(</span><span class="n">names_of_scorers</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">anomaly_scores</span><span class="p">),</span>
-                <span class="s2">&quot;The number of names in `names_of_scorers` must match the number of anomaly score &quot;</span>
-                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;given as input, found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">names_of_scorers</span><span class="p">)</span><span class="si">}</span><span class="s2"> and expected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">anomaly_scores</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">window</span> <span class="o">=</span> <span class="p">[</span><span class="n">window</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">window</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">w</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">window</span><span class="p">]):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Parameter `window` must be a positive integer, &quot;</span>
+                    <span class="s2">&quot;or a sequence of positive integers.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">window</span> <span class="o">=</span> <span class="n">window</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">window</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">pred_scores</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pred_scores</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The number of window in `window` must match the &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;number of anomaly score given as input. One window &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;value for each series. Found length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">window</span><span class="p">)</span><span class="si">}</span><span class="s2">, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;and expected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pred_scores</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
-            <span class="n">window</span> <span class="o">=</span> <span class="p">[</span><span class="n">window</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">window</span><span class="p">):</span>
-                <span class="n">raise_if_not</span><span class="p">(</span>
-                    <span class="nb">isinstance</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span>
-                    <span class="sa">f</span><span class="s2">&quot;Every window must be of type int, found </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">w</span><span class="p">)</span><span class="si">}</span><span class="s2"> at index </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-                <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Input `window` must be of type int or Sequence, found </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">window</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">([</span><span class="n">w</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="n">pred_scores</span><span class="p">)]):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Parameter `window` must be an integer or sequence of integers &quot;</span>
+                    <span class="s2">&quot;with value(s) smaller than the length of the corresponding series &quot;</span>
+                    <span class="s2">&quot;in `pred_scores`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="n">w</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">window</span><span class="p">]),</span>
-            <span class="s2">&quot;All windows must be positive integer.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">window</span> <span class="o">=</span> <span class="n">window</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">anomaly_scores</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="nb">len</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">anomaly_scores</span><span class="p">),</span>
-                <span class="s2">&quot;The number of window in `window` must match the number of anomaly score given as input. One &quot;</span>
-                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;window value for each series. Found length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">window</span><span class="p">)</span><span class="si">}</span><span class="s2">, and expected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">anomaly_scores</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="n">w</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="n">anomaly_scores</span><span class="p">)]),</span>
-            <span class="s2">&quot;All windows must be smaller than the length of their corresponding score.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
 
         <span class="n">nbr_plots</span> <span class="o">=</span> <span class="n">nbr_plots</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">window</span><span class="p">))</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">window</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="s2">&quot;The parameter `window` is given, but the input `anomaly_scores` is None.&quot;</span>
-            <span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">names_of_scorers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="s2">&quot;The parameter `names_of_scorers` is given, but the input `anomaly_scores` is None.&quot;</span>
-            <span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">metric</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="s2">&quot;The parameter `metric` is given, but the input `anomaly_scores` is None.&quot;</span>
-            <span class="p">)</span>
 
     <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
         <span class="n">nbr_plots</span><span class="p">,</span>
@@ -848,10 +608,9 @@
 
     <span class="n">_plot_series</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span> <span class="n">ax_id</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="n">index_ax</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">label_name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">model_output</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-
+    <span class="k">if</span> <span class="n">pred_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">_plot_series</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">=</span><span class="n">model_output</span><span class="p">,</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">pred_series</span><span class="p">,</span>
             <span class="n">ax_id</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="n">index_ax</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
             <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
             <span class="n">label_name</span><span class="o">=</span><span class="s2">&quot;model output&quot;</span><span class="p">,</span>
@@ -859,23 +618,23 @@
 
     <span class="n">axs</span><span class="p">[</span><span class="n">index_ax</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">actual_anomalies</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">anomaly_scores</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">anomalies</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">pred_scores</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">axs</span><span class="p">[</span><span class="n">index_ax</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 
     <span class="n">axs</span><span class="p">[</span><span class="n">index_ax</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper center&quot;</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">),</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">anomaly_scores</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-
+    <span class="k">if</span> <span class="n">pred_scores</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">dict_input</span> <span class="o">=</span> <span class="p">{}</span>
 
-        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">anomaly_scores</span><span class="p">,</span> <span class="n">window</span><span class="p">)):</span>
-
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">pred_scores</span><span class="p">,</span> <span class="n">window</span><span class="p">)):</span>
             <span class="n">dict_input</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;series_score&quot;</span><span class="p">:</span> <span class="n">score</span><span class="p">,</span> <span class="s2">&quot;window&quot;</span><span class="p">:</span> <span class="n">w</span><span class="p">,</span> <span class="s2">&quot;name_id&quot;</span><span class="p">:</span> <span class="n">idx</span><span class="p">}</span>
 
-        <span class="n">current_window</span> <span class="o">=</span> <span class="n">window</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">index_ax</span> <span class="o">=</span> <span class="n">index_ax</span> <span class="o">+</span> <span class="mi">1</span>
-
-        <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">dict_input</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;window&quot;</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">elem</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+            <span class="nb">sorted</span><span class="p">(</span><span class="n">dict_input</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;window&quot;</span><span class="p">])</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">current_window</span> <span class="o">=</span> <span class="n">elem</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;window&quot;</span><span class="p">]</span>
+                <span class="n">index_ax</span> <span class="o">=</span> <span class="n">index_ax</span> <span class="o">+</span> <span class="mi">1</span>
 
             <span class="n">idx</span> <span class="o">=</span> <span class="n">elem</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;name_id&quot;</span><span class="p">]</span>
             <span class="n">w</span> <span class="o">=</span> <span class="n">elem</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;window&quot;</span><span class="p">]</span>
@@ -886,9 +645,9 @@
 
             <span class="k">if</span> <span class="n">metric</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">value</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span>
-                    <span class="n">eval_accuracy_from_scores</span><span class="p">(</span>
-                        <span class="n">anomaly_score</span><span class="o">=</span><span class="n">anomaly_scores</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
-                        <span class="n">actual_anomalies</span><span class="o">=</span><span class="n">actual_anomalies</span><span class="p">,</span>
+                    <span class="n">eval_metric_from_scores</span><span class="p">(</span>
+                        <span class="n">anomalies</span><span class="o">=</span><span class="n">anomalies</span><span class="p">,</span>
+                        <span class="n">pred_scores</span><span class="o">=</span><span class="n">pred_scores</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
                         <span class="n">window</span><span class="o">=</span><span class="n">w</span><span class="p">,</span>
                         <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
                     <span class="p">),</span>
@@ -916,10 +675,9 @@
             <span class="n">axs</span><span class="p">[</span><span class="n">index_ax</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
             <span class="n">axs</span><span class="p">[</span><span class="n">index_ax</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">actual_anomalies</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-
+    <span class="k">if</span> <span class="n">anomalies</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">_plot_series</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">=</span><span class="n">actual_anomalies</span><span class="p">,</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">anomalies</span><span class="p">,</span>
             <span class="n">ax_id</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="n">index_ax</span> <span class="o">+</span> <span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
             <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
             <span class="n">label_name</span><span class="o">=</span><span class="s2">&quot;anomalies&quot;</span><span class="p">,</span>
@@ -939,8 +697,142 @@
     <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">title</span><span class="p">)</span></div>
 
 
+<span class="k">def</span> <span class="nf">_assert_binary</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if series is a binary timeseries (1 and 0)&quot;</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    series</span>
+<span class="sd">        series to check for.</span>
+<span class="sd">    name</span>
+<span class="sd">        name of the series.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">vals</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">vals</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)):</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input series `</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` must have binary values only.&quot;</span><span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_assert_timeseries</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;series&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if given input is of type Darts TimeSeries&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;all series in `</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` must be `TimeSeries`. Received </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_sanity_check_two_series</span><span class="p">(</span>
+    <span class="n">series_1</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+    <span class="n">series_2</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+    <span class="n">name_series_1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">name_series_2</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Performs sanity check on the two given inputs</span>
+
+<span class="sd">    Checks if the two inputs:</span>
+<span class="sd">        - type is Darts Timeseries</span>
+<span class="sd">        - have the same number of components</span>
+<span class="sd">        - if their intersection in time is not null</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    series_1</span>
+<span class="sd">        1st time series</span>
+<span class="sd">    series_2:</span>
+<span class="sd">        2nd time series</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_assert_timeseries</span><span class="p">(</span><span class="n">series_1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name_series_1</span><span class="p">)</span>
+    <span class="n">_assert_timeseries</span><span class="p">(</span><span class="n">series_2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name_series_2</span><span class="p">)</span>
+
+    <span class="c1"># check if the two inputs time series have the same number of components</span>
+    <span class="k">if</span> <span class="n">series_1</span><span class="o">.</span><span class="n">width</span> <span class="o">!=</span> <span class="n">series_2</span><span class="o">.</span><span class="n">width</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The series from `</span><span class="si">{</span><span class="n">name_series_1</span><span class="si">}</span><span class="s2">` and `</span><span class="si">{</span><span class="n">name_series_2</span><span class="si">}</span><span class="s2">` must have the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;same number of components, found </span><span class="si">{</span><span class="n">series_1</span><span class="o">.</span><span class="n">width</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">series_2</span><span class="o">.</span><span class="n">width</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_max_pooling</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Slides a window of size `window` along the input series, and replaces the value of the</span>
+<span class="sd">    input time series by the maximum of the values contained in the window.</span>
+
+<span class="sd">    The binary time series output represents if there is an anomaly (=1) or not (=0) in the past</span>
+<span class="sd">    window points. The new series will equal the length of the input series - window. Its first</span>
+<span class="sd">    point will start at the first time index of the input time series + window points.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    series:</span>
+<span class="sd">        Binary time series.</span>
+<span class="sd">    window:</span>
+<span class="sd">        Integer value indicating the number of past samples each point represents.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Binary TimeSeries</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">window</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Parameter `window` must be strictly greater than 0, found size </span><span class="si">{</span><span class="n">window</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">window</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Parameter `window` must be smaller than the length of the &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;input series, found window size </span><span class="si">{</span><span class="n">window</span><span class="si">}</span><span class="s2">, and max size </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">window</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># the process results in replacing every value by itself -&gt; return directly the series</span>
+        <span class="k">return</span> <span class="n">series</span>
+
+    <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">window_transform</span><span class="p">(</span>
+        <span class="n">transforms</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">&quot;window&quot;</span><span class="p">:</span> <span class="n">window</span><span class="p">,</span>
+            <span class="s2">&quot;function&quot;</span><span class="p">:</span> <span class="s2">&quot;max&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="s2">&quot;rolling&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;min_periods&quot;</span><span class="p">:</span> <span class="n">window</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="n">treat_na</span><span class="o">=</span><span class="s2">&quot;dropna&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_assert_same_length</span><span class="p">(</span>
+    <span class="n">list_series_1</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+    <span class="n">list_series_2</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+    <span class="n">name_series_1</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">name_series_2</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if the two sequences contain the same number of TimeSeries.&quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_series_1</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_series_2</span><span class="p">):</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Number of `</span><span class="si">{</span><span class="n">name_series_2</span><span class="si">}</span><span class="s2">` must match the number of given &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">name_series_1</span><span class="si">}</span><span class="s2">`, found length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">list_series_2</span><span class="p">)</span><span class="si">}</span><span class="s2"> and &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;expected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">list_series_1</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
 <span class="k">def</span> <span class="nf">_plot_series</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">ax_id</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">,</span> <span class="n">label_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal function called by ``show_anomalies_from_scores()``</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal function called by `show_anomalies_from_scores()`</span>
 
 <span class="sd">    Plot the series on the given axes ax_id.</span>
 
@@ -955,7 +847,6 @@
 <span class="sd">    label_name</span>
 <span class="sd">        Name that will appear in the legend.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">component</span><span class="p">[:</span><span class="mi">10</span><span class="p">]):</span>
         <span class="n">comp</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="n">c</span><span class="p">)</span>
 
@@ -978,6 +869,91 @@
             <span class="n">ax_id</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
                 <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">low_series</span><span class="p">,</span> <span class="n">high_series</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
             <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_check_input</span><span class="p">(</span>
+    <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">width_expected</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">check_deterministic</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">check_binary</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">check_multivariate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">num_series_expected</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">extra_checks</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Input `series` checks used for Aggregators, Detectors, ...</span>
+
+<span class="sd">    - `series` must be (sequence of) series with length (`num_series_expected`) where each series must:</span>
+<span class="sd">        - have width `width_expected` if it is not `None`</span>
+<span class="sd">        - be deterministic if `check_deterministic=True`</span>
+<span class="sd">        - be binary if `check_binary=True`</span>
+<span class="sd">        - be multivariate if `check_multivariate=True`</span>
+
+<span class="sd">    By default, all checks except the `TimeSeries` check are disabled.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    series</span>
+<span class="sd">        A (sequence of) multivariate series.</span>
+<span class="sd">    name</span>
+<span class="sd">        The name of the series.</span>
+<span class="sd">    width_expected</span>
+<span class="sd">        Optionally, the expected number of components/width of each series.</span>
+<span class="sd">    check_multivariate</span>
+<span class="sd">        Whether to check if all series are multivariate.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">series</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">num_series_expected</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">!=</span> <span class="n">num_series_expected</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">num_series_expected</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">err_txt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` must be single `TimeSeries` or a sequence of `TimeSeries` of length `1`.&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">err_txt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` must be a sequence of `TimeSeries` of length `</span><span class="si">{</span><span class="n">num_series_expected</span><span class="si">}</span><span class="s2">`.&quot;</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span><span class="n">err_txt</span><span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;all series in `</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` must be of type `TimeSeries`.&quot;</span><span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">check_deterministic</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">s</span><span class="o">.</span><span class="n">is_deterministic</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;all series in `</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` must be deterministic (number of samples=1).&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">check_binary</span><span class="p">:</span>
+            <span class="n">_assert_binary</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">check_multivariate</span> <span class="ow">and</span> <span class="n">s</span><span class="o">.</span><span class="n">width</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;all series in `</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` must be multivariate (width&gt;1).&quot;</span><span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">width_expected</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">s</span><span class="o">.</span><span class="n">width</span> <span class="o">!=</span> <span class="n">width_expected</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;all series in `</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` must have `</span><span class="si">{</span><span class="n">width_expected</span><span class="si">}</span><span class="s2">` component(s) (width=</span><span class="si">{</span><span class="n">width_expected</span><span class="si">}</span><span class="s2">).&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">extra_checks</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">extra_checks</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">series</span>
+
+
+<span class="k">def</span> <span class="nf">_assert_fit_called</span><span class="p">(</span><span class="n">fit_called</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks that `fit_called` is `True`.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">fit_called</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;The `</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` has not been fitted yet. Call `</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">.fit()` first.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
 </pre></div>
 
               </div>

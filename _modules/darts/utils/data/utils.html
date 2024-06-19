@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -175,13 +176,19 @@
 <span></span><span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
 
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span> <span class="nn">darts.utils.ts_utils</span> <span class="kn">import</span> <span class="n">series2seq</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="c1"># Those freqs can be used to divide Time deltas (the others can&#39;t):</span>
-<span class="n">DIVISIBLE_FREQS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;D&quot;</span><span class="p">,</span> <span class="s2">&quot;H&quot;</span><span class="p">,</span> <span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">,</span> <span class="s2">&quot;S&quot;</span><span class="p">,</span> <span class="s2">&quot;L&quot;</span><span class="p">,</span> <span class="s2">&quot;ms&quot;</span><span class="p">,</span> <span class="s2">&quot;U&quot;</span><span class="p">,</span> <span class="s2">&quot;us&quot;</span><span class="p">,</span> <span class="s2">&quot;N&quot;</span><span class="p">}</span>
+<span class="n">DIVISIBLE_FREQS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;D&quot;</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">,</span> <span class="s2">&quot;H&quot;</span><span class="p">,</span> <span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="s2">&quot;min&quot;</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">,</span> <span class="s2">&quot;S&quot;</span><span class="p">,</span> <span class="s2">&quot;L&quot;</span><span class="p">,</span> <span class="s2">&quot;ms&quot;</span><span class="p">,</span> <span class="s2">&quot;U&quot;</span><span class="p">,</span> <span class="s2">&quot;us&quot;</span><span class="p">,</span> <span class="s2">&quot;N&quot;</span><span class="p">,</span> <span class="s2">&quot;ns&quot;</span><span class="p">}</span>
+<span class="c1"># supported built-in sample weight generators for regression and torch models</span>
+<span class="n">SUPPORTED_SAMPLE_WEIGHT</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;exponential&quot;</span><span class="p">}</span>
 
 
 <div class="viewcode-block" id="CovariateType"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.utils.html#darts.utils.data.utils.CovariateType">[docs]</a><span class="k">class</span> <span class="nc">CovariateType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
@@ -203,11 +210,14 @@
 
 <span class="sd">    Note: this function does not check if the matching index value is in `ts_covariate` or not.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">raise_if_not</span><span class="p">(</span>
-        <span class="n">ts_target</span><span class="o">.</span><span class="n">freq</span> <span class="o">==</span> <span class="n">ts_covariate</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
-        <span class="s2">&quot;The dataset contains some target/covariates series pair that have incompatible &quot;</span>
-        <span class="s1">&#39;time axes (not the same &quot;freq&quot;) and thus cannot be matched&#39;</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">ts_target</span><span class="o">.</span><span class="n">freq</span> <span class="o">!=</span> <span class="n">ts_covariate</span><span class="o">.</span><span class="n">freq</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;The dataset contains some target/covariates series pair that have incompatible &quot;</span>
+                <span class="s1">&#39;time axes (not the same &quot;freq&quot;) and thus cannot be matched&#39;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="n">freq</span> <span class="o">=</span> <span class="n">ts_target</span><span class="o">.</span><span class="n">freq</span>
 
@@ -233,6 +243,56 @@
         <span class="k">return</span> <span class="o">-</span><span class="mi">1</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">other</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">))</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">other</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">_process_sample_weight</span><span class="p">(</span><span class="n">sample_weight</span><span class="p">,</span> <span class="n">target_series</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">if</span> <span class="n">target_series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must supply target `series` when using `sample_weight`.&quot;</span><span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="c1"># get sample weights</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sample_weight</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SUPPORTED_SAMPLE_WEIGHT</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Invalid `sample_weight` value: `&#39;</span><span class="si">{</span><span class="n">sample_weight</span><span class="si">}</span><span class="s2">&#39;`. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;If a string, must be one of: </span><span class="si">{</span><span class="n">SUPPORTED_SAMPLE_WEIGHT</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="c1"># create global time weights based on the longest target series</span>
+        <span class="n">max_len</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_i</span><span class="p">)</span> <span class="k">for</span> <span class="n">target_i</span> <span class="ow">in</span> <span class="n">target_series</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sample_weight</span> <span class="o">==</span> <span class="s2">&quot;linear&quot;</span><span class="p">:</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">max_len</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># &quot;exponential&quot;</span>
+            <span class="n">time_steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">max_len</span><span class="p">)</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">time_steps</span><span class="p">))</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">target_series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+        <span class="c1"># create sequence of series for tabularization</span>
+        <span class="n">sample_weight</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+                <span class="n">times</span><span class="o">=</span><span class="n">target_i</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+                <span class="n">values</span><span class="o">=</span><span class="n">weights</span><span class="p">[</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">target_i</span><span class="p">)</span> <span class="p">:],</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">target_i</span> <span class="ow">in</span> <span class="n">target_series</span>
+        <span class="p">]</span>
+
+    <span class="n">sample_weight</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">sample_weight</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_series</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sample_weight</span><span class="p">):</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;The provided sequence of target `series` must have the same length as &quot;</span>
+                <span class="s2">&quot;the provided sequence of `sample_weight`.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">sample_weight</span>
 </pre></div>
 
               </div>

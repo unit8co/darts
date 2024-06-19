@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -315,13 +316,11 @@
                     <span class="p">),</span>
                     <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
                 <span class="p">)</span>
-            <span class="n">fitted_params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="p">{</span>
-                    <span class="s2">&quot;high_freq&quot;</span><span class="p">:</span> <span class="n">high_freq</span><span class="p">,</span>
-                    <span class="s2">&quot;start&quot;</span><span class="p">:</span> <span class="n">ts</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span>
-                    <span class="s2">&quot;end&quot;</span><span class="p">:</span> <span class="n">ts</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span>
-                <span class="p">}</span>
-            <span class="p">)</span>
+            <span class="n">fitted_params</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s2">&quot;high_freq&quot;</span><span class="p">:</span> <span class="n">high_freq</span><span class="p">,</span>
+                <span class="s2">&quot;start&quot;</span><span class="p">:</span> <span class="n">ts</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span>
+                <span class="s2">&quot;end&quot;</span><span class="p">:</span> <span class="n">ts</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span>
+            <span class="p">})</span>
         <span class="k">return</span> <span class="n">fitted_params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">is_single_series</span> <span class="k">else</span> <span class="n">fitted_params</span></div>
 
 <div class="viewcode-block" id="MIDAS.ts_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.midas.html#darts.dataprocessing.transformers.midas.MIDAS.ts_transform">[docs]</a>    <span class="nd">@staticmethod</span>

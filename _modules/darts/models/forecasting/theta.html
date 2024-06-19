@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -339,19 +340,15 @@
         <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">forecast</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
 
         <span class="c1"># Forecast of the Linear Regression part.</span>
-        <span class="n">drift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coef</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
-            <span class="p">[</span>
-                <span class="n">i</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">)</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span>
-                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
-            <span class="p">]</span>
-        <span class="p">)</span>
+        <span class="n">drift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coef</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+            <span class="n">i</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">)</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+        <span class="p">])</span>
 
         <span class="c1"># Combining the two forecasts</span>
         <span class="n">forecast</span> <span class="o">+=</span> <span class="n">drift</span>
 
         <span class="c1"># Re-apply the seasonal trend of the TimeSeries</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_seasonal</span><span class="p">:</span>
-
             <span class="n">replicated_seasonality</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">seasonality</span><span class="o">.</span><span class="n">pd_series</span><span class="p">()[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">season_period</span> <span class="p">:],</span>
                 <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span><span class="p">),</span>
@@ -601,7 +598,6 @@
 
         <span class="c1"># Re-apply the seasonal trend of the TimeSeries</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_seasonal</span><span class="p">:</span>
-
             <span class="n">replicated_seasonality</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">seasonality</span><span class="o">.</span><span class="n">pd_series</span><span class="p">()[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">season_period</span> <span class="p">:],</span>
                 <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">n</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">season_period</span><span class="p">),</span>

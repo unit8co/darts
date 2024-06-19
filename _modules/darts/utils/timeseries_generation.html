@@ -34,6 +34,7 @@
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -581,7 +582,6 @@
     <span class="n">until</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]],</span>
     <span class="n">add_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">:</span>
-
     <span class="k">if</span> <span class="ow">not</span> <span class="n">add_length</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">until</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">time_index</span>
 
@@ -887,12 +887,10 @@
                 <span class="s2">&quot;The first string for the sine component name, the second for the cosine component name.&quot;</span><span class="p">,</span>
                 <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">values_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
-                <span class="p">{</span>
-                    <span class="n">with_columns</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">freq</span> <span class="o">*</span> <span class="n">values</span><span class="p">),</span>
-                    <span class="n">with_columns</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">freq</span> <span class="o">*</span> <span class="n">values</span><span class="p">),</span>
-                <span class="p">}</span>
-            <span class="p">)</span>
+            <span class="n">values_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+                <span class="n">with_columns</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">freq</span> <span class="o">*</span> <span class="n">values</span><span class="p">),</span>
+                <span class="n">with_columns</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">freq</span> <span class="o">*</span> <span class="n">values</span><span class="p">),</span>
+            <span class="p">})</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">with_columns</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">with_columns</span> <span class="o">=</span> <span class="n">attribute</span>
@@ -928,9 +926,9 @@
 <span class="sd">    custom_columns</span>
 <span class="sd">        New names for the forecast TimeSeries, used when the number of components changes</span>
 <span class="sd">    with_static_covs</span>
-<span class="sd">        If set to False, do not copy the input_series `static_covariates` attribute</span>
+<span class="sd">        If set to `False`, do not copy the input_series `static_covariates` attribute</span>
 <span class="sd">    with_hierarchy</span>
-<span class="sd">        If set to False, do not copy the input_series `hierarchy` attribute</span>
+<span class="sd">        If set to `False`, do not copy the input_series `hierarchy` attribute</span>
 <span class="sd">    pred_start</span>
 <span class="sd">        Optionally, give a custom prediction start point.</span>
 

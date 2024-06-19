@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>PyODScorer &#8212; darts  documentation</title>
+    <title>PyOD Scorer &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3 current active">
       <a class="current reference internal" href="#">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -854,14 +855,15 @@
               
               <div>
                 
-  <span class="target" id="module-darts.ad.scorers.pyod_scorer"></span><section id="pyodscorer">
-<h1>PyODScorer<a class="headerlink" href="#pyodscorer" title="Permalink to this heading">¶</a></h1>
+  <span class="target" id="module-darts.ad.scorers.pyod_scorer"></span><section id="pyod-scorer">
+<h1>PyOD Scorer<a class="headerlink" href="#pyod-scorer" title="Permalink to this heading">¶</a></h1>
 <p>This scorer can wrap around detection algorithms of PyOD.
 <a href="#id1"><span class="problematic" id="id2">`PyOD https://pyod.readthedocs.io/en/latest/#`_</span></a>.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.ad.scorers.pyod_scorer.PyODScorer">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.ad.scorers.pyod_scorer.</span></span><span class="sig-name descname"><span class="pre">PyODScorer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_wise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diff_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'abs_diff'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/scorers/pyod_scorer.html#PyODScorer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer" title="darts.ad.scorers.scorers.FittableAnomalyScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">FittableAnomalyScorer</span></code></a></p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.ad.scorers.pyod_scorer.</span></span><span class="sig-name descname"><span class="pre">PyODScorer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_wise=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_agg=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diff_fn=&lt;function</span> <span class="pre">ae&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/scorers/pyod_scorer.html#PyODScorer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.WindowedAnomalyScorer" title="darts.ad.scorers.scorers.WindowedAnomalyScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">WindowedAnomalyScorer</span></code></a></p>
+<p>PyOD Scorer</p>
 <p>When calling <code class="docutils literal notranslate"><span class="pre">fit(series)</span></code>, a moving window is applied, which results in a set of vectors of size <cite>W</cite>,
 where <cite>W</cite> is the window size. The PyODScorer model is trained on these vectors. The <code class="docutils literal notranslate"><span class="pre">score(series)</span></code>
 function will apply the same moving window and return the predicted raw anomaly score of each vector.</p>
@@ -870,30 +872,30 @@ Both require two series (actual and prediction), and compute a “difference” 
 function <code class="docutils literal notranslate"><span class="pre">diff_fn</span></code> (default: absolute difference). The resulting series is then passed to the
 functions <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">score()</span></code>, respectively.</p>
 <p><cite>component_wise</cite> is a boolean parameter indicating how the model should behave with multivariate inputs
-series. If set to True, the model will treat each series dimension independently by fitting a different
-PyODScorer model for each dimension. If set to False, the model concatenates the dimensions in
+series. If set to <cite>True</cite>, the model will treat each series dimension independently by fitting a different
+PyODScorer model for each dimension. If set to <cite>False</cite>, the model concatenates the dimensions in
 each windows of length <cite>W</cite> and compute the score using only one underlying PyODScorer model.</p>
 <p><strong>Training with</strong> <code class="docutils literal notranslate"><span class="pre">fit()</span></code>:</p>
 <p>The input can be a series (univariate or multivariate) or multiple series. The series will be partitioned
 into equal size subsequences. The subsequence will be of size <cite>W</cite> * <cite>D</cite>, with:</p>
 <ul class="simple">
 <li><p><cite>W</cite> being the size of the window given as a parameter <cite>window</cite></p></li>
-<li><p><cite>D</cite> being the dimension of the series (<cite>D</cite> = 1 if univariate or if <cite>component_wise</cite> is set to True)</p></li>
+<li><p><cite>D</cite> being the dimension of the series (<cite>D</cite> = 1 if univariate or if <cite>component_wise</cite> is set to <cite>True</cite>)</p></li>
 </ul>
 <p>For a series of length <cite>N</cite>, (<cite>N</cite> - <cite>W</cite> + 1)/W subsequences will be generated. If a list of series is given
 of length L, each series will be partitioned into subsequences, and the results will be concatenated into
 an array of length L * number of subsequences of each series.</p>
 <p>The PyOD model will be fitted on the generated subsequences.</p>
-<p>If <cite>component_wise</cite> is set to True, the algorithm will be applied to each dimension independently. For each
+<p>If <cite>component_wise</cite> is set to <cite>True</cite>, the algorithm will be applied to each dimension independently. For each
 dimension, a PyOD model will be trained.</p>
 <p><strong>Computing score with</strong> <code class="docutils literal notranslate"><span class="pre">score()</span></code>:</p>
 <p>The input can be a series (univariate or multivariate) or a sequence of series. The given series must have the
 same dimension <cite>D</cite> as the data used to train the PyOD model.</p>
 <p>For each series, if the series is multivariate of dimension <cite>D</cite>:</p>
 <ul class="simple">
-<li><p>if <cite>component_wise</cite> is set to False: it returns a univariate series (dimension=1). It represents
+<li><p>if <cite>component_wise</cite> is set to <cite>False</cite>: it returns a univariate series (dimension=1). It represents
 the anomaly score of the entire series in the considered window at each timestamp.</p></li>
-<li><p>if <cite>component_wise</cite> is set to True: it returns a multivariate series of dimension <cite>D</cite>. Each dimension
+<li><p>if <cite>component_wise</cite> is set to <cite>True</cite>: it returns a multivariate series of dimension <cite>D</cite>. Each dimension
 represents the anomaly score of the corresponding component of the input.</p></li>
 </ul>
 <p>If the series is univariate, it returns a univariate series regardless of the parameter
@@ -906,14 +908,18 @@ Each value in the score series thus represents how anomalous the sample of the <
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>model</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDetector</span></code>) – The (fitted) PyOD BaseDetector model.</p></li>
 <li><p><strong>window</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Size of the window used to create the subsequences of the series.</p></li>
-<li><p><strong>diff_fn</strong> – Optionally, reduced function to use if two series are given. It will transform the two series into one.
-This allows the KMeansScorer to apply PyODScorer on the original series or on its residuals (difference
-between the prediction and the original series).
-Must be one of “abs_diff” and “diff” (defined in <code class="docutils literal notranslate"><span class="pre">_diff_series()</span></code>).
-Default: “abs_diff”</p></li>
-<li><p><strong>component_wise</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Boolean value indicating if the score needs to be computed for each component independently (True)
-or by concatenating the component in the considered window to compute one score (False).
-Default: False</p></li>
+<li><p><strong>component_wise</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Boolean value indicating if the score needs to be computed for each component independently (<cite>True</cite>)
+or by concatenating the component in the considered window to compute one score (<cite>False</cite>).
+Default: <cite>False</cite>.</p></li>
+<li><p><strong>window_agg</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Boolean indicating whether the anomaly score for each time step is computed by
+averaging the anomaly scores for all windows this point is included in.
+If <cite>False</cite>, the anomaly score for each point is the anomaly score of its trailing window.
+Default: <cite>True</cite>.</p></li>
+<li><p><strong>diff_fn</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[…, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]]) – The differencing function to use to transform the predicted and actual series into one series.
+The scorer is then applied to this series. Must be one of Darts per-time-step metrics (e.g.,
+<a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.ae" title="darts.metrics.metrics.ae"><code class="xref py py-func docutils literal notranslate"><span class="pre">ae()</span></code></a> for the absolute difference, <a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.err" title="darts.metrics.metrics.err"><code class="xref py py-func docutils literal notranslate"><span class="pre">err()</span></code></a> for the
+difference, <a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.se" title="darts.metrics.metrics.se"><code class="xref py py-func docutils literal notranslate"><span class="pre">se()</span></code></a> for the squared difference, …).
+By default, uses the absolute difference (<a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.ae" title="darts.metrics.metrics.ae"><code class="xref py py-func docutils literal notranslate"><span class="pre">ae()</span></code></a>).</p></li>
 </ul>
 </dd>
 </dl>
@@ -925,7 +931,13 @@ Default: False</p></li>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.is_probabilistic" title="darts.ad.scorers.pyod_scorer.PyODScorer.is_probabilistic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_probabilistic</span></code></a></p></td>
-<td><p>Whether the scorer expects a probabilistic prediction for its first input.</p></td>
+<td><p>Whether the scorer expects a probabilistic prediction as the first input.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.is_trainable" title="darts.ad.scorers.pyod_scorer.PyODScorer.is_trainable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_trainable</span></code></a></p></td>
+<td><p>Whether the Scorer is trainable.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.is_univariate" title="darts.ad.scorers.pyod_scorer.PyODScorer.is_univariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_univariate</span></code></a></p></td>
+<td><p>Whether the Scorer is a univariate scorer.</p></td>
 </tr>
 </tbody>
 </table>
@@ -936,122 +948,99 @@ Default: False</p></li>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.check_if_fit_called" title="darts.ad.scorers.pyod_scorer.PyODScorer.check_if_fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_if_fit_called</span></code></a>()</p></td>
-<td><p>Checks if the scorer has been fitted before calling its <cite>score()</cite> function.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.eval_accuracy" title="darts.ad.scorers.pyod_scorer.PyODScorer.eval_accuracy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_accuracy</span></code></a>(actual_anomalies, series[, metric])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.eval_metric" title="darts.ad.scorers.pyod_scorer.PyODScorer.eval_metric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_metric</span></code></a>(anomalies, series[, metric])</p></td>
 <td><p>Computes the anomaly score of the given time series, and returns the score of an agnostic threshold metric.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.eval_accuracy_from_prediction" title="darts.ad.scorers.pyod_scorer.PyODScorer.eval_accuracy_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_accuracy_from_prediction</span></code></a>(...[, metric])</p></td>
-<td><p>Computes the anomaly score between <cite>actual_series</cite> and <cite>pred_series</cite>, and returns the score of an agnostic threshold metric.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.eval_metric_from_prediction" title="darts.ad.scorers.pyod_scorer.PyODScorer.eval_metric_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_metric_from_prediction</span></code></a>(anomalies, ...)</p></td>
+<td><p>Computes the anomaly score between <cite>series</cite> and <cite>pred_series</cite>, and returns the score of an agnostic threshold metric.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.fit" title="darts.ad.scorers.pyod_scorer.PyODScorer.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
-<td><p>Fits the scorer on the given time series input.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.fit" title="darts.ad.scorers.pyod_scorer.PyODScorer.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
+<td><p>Fits the scorer on the given time series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.fit_from_prediction" title="darts.ad.scorers.pyod_scorer.PyODScorer.fit_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_from_prediction</span></code></a>(actual_series, pred_series)</p></td>
-<td><p>Fits the scorer on the two (sequence of) series.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.fit_from_prediction" title="darts.ad.scorers.pyod_scorer.PyODScorer.fit_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_from_prediction</span></code></a>(series, pred_series)</p></td>
+<td><p>Fits the scorer on the two (sequences of) series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.score" title="darts.ad.scorers.pyod_scorer.PyODScorer.score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">score</span></code></a>(series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.score" title="darts.ad.scorers.pyod_scorer.PyODScorer.score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">score</span></code></a>(series)</p></td>
 <td><p>Computes the anomaly score on the given series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.score_from_prediction" title="darts.ad.scorers.pyod_scorer.PyODScorer.score_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">score_from_prediction</span></code></a>(actual_series, pred_series)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.score_from_prediction" title="darts.ad.scorers.pyod_scorer.PyODScorer.score_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">score_from_prediction</span></code></a>(series, pred_series)</p></td>
 <td><p>Computes the anomaly score on the two (sequence of) series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.show_anomalies" title="darts.ad.scorers.pyod_scorer.PyODScorer.show_anomalies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show_anomalies</span></code></a>(series[, actual_anomalies, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.show_anomalies" title="darts.ad.scorers.pyod_scorer.PyODScorer.show_anomalies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show_anomalies</span></code></a>(series[, anomalies, ...])</p></td>
 <td><p>Plot the results of the scorer.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.show_anomalies_from_prediction" title="darts.ad.scorers.pyod_scorer.PyODScorer.show_anomalies_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show_anomalies_from_prediction</span></code></a>(...[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.pyod_scorer.PyODScorer.show_anomalies_from_prediction" title="darts.ad.scorers.pyod_scorer.PyODScorer.show_anomalies_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show_anomalies_from_prediction</span></code></a>(series, ...)</p></td>
 <td><p>Plot the results of the scorer.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.ad.scorers.pyod_scorer.PyODScorer.check_if_fit_called">
-<span class="sig-name descname"><span class="pre">check_if_fit_called</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.check_if_fit_called" title="Permalink to this definition">¶</a></dt>
-<dd><p>Checks if the scorer has been fitted before calling its <cite>score()</cite> function.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.ad.scorers.pyod_scorer.PyODScorer.eval_accuracy">
-<span class="sig-name descname"><span class="pre">eval_accuracy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AUC_ROC'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.eval_accuracy" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.ad.scorers.pyod_scorer.PyODScorer.eval_metric">
+<span class="sig-name descname"><span class="pre">eval_metric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AUC_ROC'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.eval_metric" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the anomaly score of the given time series, and returns the score
 of an agnostic threshold metric.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The ground truth of the anomalies (1 if it is an anomaly and 0 if not)</p></li>
+<li><p><strong>anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) ground truth binary anomaly series (<cite>1</cite> if it is an anomaly and <cite>0</cite> if not).</p></li>
 <li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) series to detect anomalies from.</p></li>
-<li><p><strong>metric</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Optionally, metric function to use. Must be one of “AUC_ROC” and “AUC_PR”.
-Default: “AUC_ROC”</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘AUC_ROC’, ‘AUC_PR’]) – The name of the metric function to use. Must be one of “AUC_ROC” (Area Under the
+Receiver Operating Characteristic Curve) and “AUC_PR” (Average Precision from scores).
+Default: “AUC_ROC”.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><dl>
-<dt>Score of an agnostic threshold metric for the computed anomaly score</dt><dd><ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">float</span></code> if <cite>series</cite> is a univariate series (dimension=1).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Sequence[float]</span></code></p>
-<blockquote>
-<div><ul class="simple">
-<li><p>if <cite>series</cite> is a multivariate series (dimension&gt;1), returns one</p></li>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>float</em> – A single score/metric for univariate <cite>series</cite> series (with only one component/column).</p></li>
+<li><p><em>Sequence[float]</em> – A sequence (list) of scores for:</p>
+<ul>
+<li><p>multivariate <cite>series</cite> series (multiple components). Gives a score for each component.</p></li>
+<li><p>a sequence (list) of univariate <cite>series</cite> series. Gives a score for each series.</p></li>
 </ul>
-<p>value per dimension, or
-* if <cite>series</cite> is a sequence of univariate series, returns one value
-per series</p>
-</div></blockquote>
 </li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Sequence[Sequence[float]]]</span></code> if <cite>series</cite> is a sequence of multivariate</p></li>
+<li><p><em>Sequence[Sequence[float]]</em> – A sequence of sequences of scores for a sequence of multivariate <cite>series</cite> series.
+Gives a score for each series (outer sequence) and component (inner sequence).</p></li>
 </ul>
-<p>series. Outer Sequence is over the sequence input and the inner Sequence
-is over the dimensions of each element in the sequence input.</p>
-</dd>
-</dl>
 </p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>Union[float, Sequence[float], Sequence[Sequence[float]]]</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.ad.scorers.pyod_scorer.PyODScorer.eval_accuracy_from_prediction">
-<span class="sig-name descname"><span class="pre">eval_accuracy_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AUC_ROC'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.eval_accuracy_from_prediction" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes the anomaly score between <cite>actual_series</cite> and <cite>pred_series</cite>, and returns the score
+<dt class="sig sig-object py" id="darts.ad.scorers.pyod_scorer.PyODScorer.eval_metric_from_prediction">
+<span class="sig-name descname"><span class="pre">eval_metric_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AUC_ROC'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.eval_metric_from_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the anomaly score between <cite>series</cite> and <cite>pred_series</cite>, and returns the score
 of an agnostic threshold metric.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) ground truth of the anomalies (1 if it is an anomaly and 0 if not)</p></li>
-<li><p><strong>actual_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
+<li><p><strong>anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) ground truth binary anomaly series (<cite>1</cite> if it is an anomaly and <cite>0</cite> if not).</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
 <li><p><strong>pred_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted series.</p></li>
-<li><p><strong>metric</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Optionally, metric function to use. Must be one of “AUC_ROC” and “AUC_PR”.
-Default: “AUC_ROC”</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘AUC_ROC’, ‘AUC_PR’]) – The name of the metric function to use. Must be one of “AUC_ROC” (Area Under the
+Receiver Operating Characteristic Curve) and “AUC_PR” (Average Precision from scores).
+Default: “AUC_ROC”.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><dl>
-<dt>Score of an agnostic threshold metric for the computed anomaly score</dt><dd><ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">float</span></code> if <cite>actual_series</cite> and <cite>actual_series</cite> are univariate series (dimension=1).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Sequence[float]</span></code></p>
-<blockquote>
-<div><ul class="simple">
-<li><p>if <cite>actual_series</cite> and <cite>actual_series</cite> are multivariate series (dimension&gt;1),</p></li>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>float</em> – A single metric value for a single univariate <cite>series</cite>.</p></li>
+<li><p><em>Sequence[float]</em> – A sequence of metric values for:</p>
+<ul>
+<li><p>a single multivariate <cite>series</cite>.</p></li>
+<li><p>a sequence of univariate <cite>series</cite>.</p></li>
 </ul>
-<p>returns one value per dimension, or
-* if <cite>actual_series</cite> and <cite>actual_series</cite> are sequences of univariate series,
-returns one value per series</p>
-</div></blockquote>
 </li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Sequence[Sequence[float]]]</span></code> if <cite>actual_series</cite> and <cite>actual_series</cite> are sequences</p></li>
+<li><p><em>Sequence[Sequence[float]]</em> – A sequence of sequences of metric values for a sequence of multivariate <cite>series</cite>.
+The outer sequence is over the series, and inner sequence is over the series’ components/columns.</p></li>
 </ul>
-<p>of multivariate series. Outer Sequence is over the sequence input and the inner
-Sequence is over the dimensions of each element in the sequence input.</p>
-</dd>
-</dl>
 </p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>Union[float, Sequence[float], Sequence[Sequence[float]]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1059,9 +1048,9 @@ Sequence is over the dimensions of each element in the sequence input.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.ad.scorers.pyod_scorer.PyODScorer.fit">
 <span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fits the scorer on the given time series input.</p>
-<p>If sequence of series is given, the scorer will be fitted on the concatenation of the sequence.</p>
-<p>The assumption is that the series <cite>series</cite> used for training are generally anomaly-free.</p>
+<dd><p>Fits the scorer on the given time series.</p>
+<p>If a sequence of series, the scorer is fitted on the concatenation of the sequence.</p>
+<p>The assumption is that <cite>series</cite> is generally anomaly-free.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) series with no anomalies.</p>
@@ -1077,19 +1066,20 @@ Sequence is over the dimensions of each element in the sequence input.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.ad.scorers.pyod_scorer.PyODScorer.fit_from_prediction">
-<span class="sig-name descname"><span class="pre">fit_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.fit_from_prediction" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fits the scorer on the two (sequence of) series.</p>
-<p>The function <code class="docutils literal notranslate"><span class="pre">diff_fn</span></code> passed as a parameter to the scorer, will transform <cite>pred_series</cite> and <cite>actual_series</cite>
-into one series. By default, <code class="docutils literal notranslate"><span class="pre">diff_fn</span></code> will compute the absolute difference (Default: “abs_diff”).
-If <cite>pred_series</cite> and <cite>actual_series</cite> are sequences, <code class="docutils literal notranslate"><span class="pre">diff_fn</span></code> will be applied to all pairwise elements
-of the sequences.</p>
+<span class="sig-name descname"><span class="pre">fit_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.fit_from_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the scorer on the two (sequences of) series.</p>
+<p>The function <cite>diff_fn</cite> passed as a parameter to the scorer, will transform <cite>pred_series</cite> and <cite>series</cite>
+into one series. By default, <cite>diff_fn</cite> will compute the absolute difference (Default:
+<a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.ae" title="darts.metrics.metrics.ae"><code class="xref py py-func docutils literal notranslate"><span class="pre">ae()</span></code></a>). If <cite>pred_series</cite> and <cite>series</cite> are sequences, <cite>diff_fn</cite> will be
+applied to all pairwise elements of the sequences.</p>
 <p>The scorer will then be fitted on this (sequence of) series. If a sequence of series is given,
 the scorer will be fitted on the concatenation of the sequence.</p>
-<p>The scorer assumes that the (sequence of) actual_series is anomaly-free.</p>
+<p>The scorer assumes that the (sequence of) series is anomaly-free.</p>
+<p>If any of the series is stochastic (with <cite>n_samples&gt;1</cite>), <cite>diff_fn</cite> is computed on quantile <cite>0.5</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
 <li><p><strong>pred_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted series.</p></li>
 </ul>
 </dd>
@@ -1105,7 +1095,29 @@ the scorer will be fitted on the concatenation of the sequence.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.ad.scorers.pyod_scorer.PyODScorer.is_probabilistic">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_probabilistic</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.is_probabilistic" title="Permalink to this definition">¶</a></dt>
-<dd><p>Whether the scorer expects a probabilistic prediction for its first input.</p>
+<dd><p>Whether the scorer expects a probabilistic prediction as the first input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.ad.scorers.pyod_scorer.PyODScorer.is_trainable">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_trainable</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.is_trainable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the Scorer is trainable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.ad.scorers.pyod_scorer.PyODScorer.is_univariate">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_univariate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.is_univariate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the Scorer is a univariate scorer.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
@@ -1134,19 +1146,19 @@ and return an anomaly score for each series in the sequence.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.ad.scorers.pyod_scorer.PyODScorer.score_from_prediction">
-<span class="sig-name descname"><span class="pre">score_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.score_from_prediction" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">score_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.score_from_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the anomaly score on the two (sequence of) series.</p>
-<p>The function <code class="docutils literal notranslate"><span class="pre">diff_fn</span></code> passed as a parameter to the scorer, will transform <cite>pred_series</cite> and <cite>actual_series</cite>
-into one “difference” series. By default, <code class="docutils literal notranslate"><span class="pre">diff_fn</span></code> will compute the absolute difference
-(Default: “abs_diff”).
-If actual_series and pred_series are sequences, <code class="docutils literal notranslate"><span class="pre">diff_fn</span></code> will be applied to all pairwise elements
+<p>The function <cite>diff_fn</cite> passed as a parameter to the scorer, will transform <cite>pred_series</cite> and <cite>series</cite>
+into one “difference” series. By default, <cite>diff_fn</cite> will compute the absolute difference
+(Default: <a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.ae" title="darts.metrics.metrics.ae"><code class="xref py py-func docutils literal notranslate"><span class="pre">ae()</span></code></a>).
+If series and pred_series are sequences, <cite>diff_fn</cite> will be applied to all pairwise elements
 of the sequences.</p>
 <p>The scorer will then transform this series into an anomaly score. If a sequence of series is given,
 the scorer will score each series independently and return an anomaly score for each series in the sequence.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
 <li><p><strong>pred_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted series.</p></li>
 </ul>
 </dd>
@@ -1161,7 +1173,7 @@ the scorer will score each series independently and return an anomaly score for 
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.ad.scorers.pyod_scorer.PyODScorer.show_anomalies">
-<span class="sig-name descname"><span class="pre">show_anomalies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scorer_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.show_anomalies" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">show_anomalies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anomalies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scorer_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.show_anomalies" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the results of the scorer.</p>
 <p>Computes the score on the given series input. And plots the results.</p>
 <dl>
@@ -1183,11 +1195,12 @@ the scorer will score each series independently and return an anomaly score for 
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The series to visualize anomalies from.</p></li>
-<li><p><strong>actual_anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – The ground truth of the anomalies (1 if it is an anomaly and 0 if not)</p></li>
+<li><p><strong>anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – The (sequence of) ground truth binary anomaly series (<cite>1</cite> if it is an anomaly and <cite>0</cite> if not).</p></li>
 <li><p><strong>scorer_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Name of the scorer.</p></li>
 <li><p><strong>title</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Title of the figure</p></li>
-<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, Scoring function to use. Must be one of “AUC_ROC” and “AUC_PR”.
-Default: “AUC_ROC”</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘AUC_ROC’, ‘AUC_PR’]]) – Optionally, the name of the metric function to use. Must be one of “AUC_ROC” (Area Under the
+Receiver Operating Characteristic Curve) and “AUC_PR” (Average Precision from scores).
+Default: “AUC_ROC”.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1195,12 +1208,12 @@ Default: “AUC_ROC”</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.ad.scorers.pyod_scorer.PyODScorer.show_anomalies_from_prediction">
-<span class="sig-name descname"><span class="pre">show_anomalies_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scorer_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.show_anomalies_from_prediction" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">show_anomalies_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scorer_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anomalies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.pyod_scorer.PyODScorer.show_anomalies_from_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the results of the scorer.</p>
 <p>Computes the anomaly score on the two series. And plots the results.</p>
 <dl class="simple">
 <dt>The plot will be composed of the following:</dt><dd><ul class="simple">
-<li><p>the actual_series and the pred_series.</p></li>
+<li><p>the series and the pred_series.</p></li>
 <li><p>the anomaly score of the scorer.</p></li>
 <li><p>the actual anomalies, if given.</p></li>
 </ul>
@@ -1216,13 +1229,14 @@ if the actual anomalies is provided.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>actual_series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The actual series to visualize anomalies from.</p></li>
-<li><p><strong>pred_series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The predicted series of <cite>actual_series</cite>.</p></li>
-<li><p><strong>actual_anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – The ground truth of the anomalies (1 if it is an anomaly and 0 if not)</p></li>
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The actual series to visualize anomalies from.</p></li>
+<li><p><strong>pred_series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The predicted series of <cite>series</cite>.</p></li>
+<li><p><strong>anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – The ground truth of the anomalies (1 if it is an anomaly and 0 if not)</p></li>
 <li><p><strong>scorer_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Name of the scorer.</p></li>
 <li><p><strong>title</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Title of the figure</p></li>
-<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, Scoring function to use. Must be one of “AUC_ROC” and “AUC_PR”.
-Default: “AUC_ROC”</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘AUC_ROC’, ‘AUC_PR’]]) – Optionally, the name of the metric function to use. Must be one of “AUC_ROC” (Area Under the
+Receiver Operating Characteristic Curve) and “AUC_PR” (Average Precision from scores).
+Default: “AUC_ROC”.</p></li>
 </ul>
 </dd>
 </dl>

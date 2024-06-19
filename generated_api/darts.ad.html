@@ -35,6 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -292,12 +293,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyODScorer
+       PyOD Scorer
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       WassersteinScorer
+       Wasserstein Scorer
       </a>
      </li>
     </ul>
@@ -859,22 +860,22 @@
 <p>A suite of tools for performing anomaly detection and classification
 on time series.</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.ad.scorers.html">Anomaly Scorers</a>
-are at the core of the anomaly detection module. They
-produce anomaly scores time series, either for single series (<code class="docutils literal notranslate"><span class="pre">score()</span></code>),
-or for series accompanied by some predictions (<code class="docutils literal notranslate"><span class="pre">score_from_prediction()</span></code>).
-Scorers can be trainable (e.g., <code class="docutils literal notranslate"><span class="pre">KMeansScorer</span></code>) or not (e.g., <code class="docutils literal notranslate"><span class="pre">NormScorer</span></code>).</p></li>
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.ad.anomaly_model.html">Anomaly Models</a>
-offer a convenient way to produce anomaly scores from any of Darts
-forecasting models (<code class="docutils literal notranslate"><span class="pre">ForecastingAnomalyModel</span></code>) or filtering models (<code class="docutils literal notranslate"><span class="pre">FilteringAnomalyModel</span></code>),
-by comparing models’ predictions with actual observations.
-These classes take as parameters one Darts model, and one or multiple scorers, and can be readily
-used to produce anomaly scores with the <code class="docutils literal notranslate"><span class="pre">score()</span></code> method.</p></li>
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.ad.detectors.html">Anomaly Detectors</a>:
-transform raw time series (such as anaomly scores) into binary anomaly time series.</p></li>
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.ad.aggregators.html">Anomaly Aggregators</a>:
-combine multiple binary anomaly time series (in the form of multivariate time series)
-into a single binary anomaly time series applying boolean logic.</p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.ad.scorers.html">Anomaly Scorers</a> are at the core of the
+anomaly detection module. They produce anomaly scores time series, either for single series (<cite>score()</cite>),
+or for series accompanied by some predictions (<cite>score_from_prediction()</cite>). Scorers can be trainable
+(e.g., <a class="reference internal" href="darts.ad.scorers.kmeans_scorer.html#darts.ad.scorers.kmeans_scorer.KMeansScorer" title="darts.ad.scorers.kmeans_scorer.KMeansScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">KMeansScorer</span></code></a>) or not
+(e.g., <a class="reference internal" href="darts.ad.scorers.norm_scorer.html#darts.ad.scorers.norm_scorer.NormScorer" title="darts.ad.scorers.norm_scorer.NormScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">NormScorer</span></code></a>).</p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.ad.anomaly_model.html">Anomaly Models</a> offer a convenient way
+to produce anomaly scores from any of Darts forecasting models
+(<a class="reference internal" href="darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel" title="darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">ForecastingAnomalyModel</span></code></a>) or filtering models
+(<a class="reference internal" href="darts.ad.anomaly_model.filtering_am.html#darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel" title="darts.ad.anomaly_model.filtering_am.FilteringAnomalyModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">FilteringAnomalyModel</span></code></a>), by comparing models’ predictions with actual
+observations. These classes take as parameters one Darts model, and one or multiple scorers, and can be readily used
+to produce anomaly scores with the <cite>score()</cite> method.</p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.ad.detectors.html">Anomaly Detectors</a>: transform raw time
+series (such as anomaly scores) into binary anomaly time series.</p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.ad.aggregators.html">Anomaly Aggregators</a>: combine multiple
+binary anomaly time series (in the form of multivariate time series) into a single binary anomaly time series
+applying boolean logic.</p></li>
 </ul>
 <div class="toctree-wrapper compound">
 <ul>

@@ -34,6 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -385,33 +386,9 @@
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">n_jobs_multioutput_wrapper</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Fit/train the model on one or multiple series.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        series</span>
-<span class="sd">            TimeSeries or Sequence[TimeSeries] object containing the target values.</span>
-<span class="sd">        past_covariates</span>
-<span class="sd">            Optionally, a series or sequence of series specifying past-observed covariates</span>
-<span class="sd">        future_covariates</span>
-<span class="sd">            Optionally, a series or sequence of series specifying future-known covariates</span>
-<span class="sd">        max_samples_per_ts</span>
-<span class="sd">            This is an integer upper bound on the number of tuples that can be produced</span>
-<span class="sd">            per time series. It can be used in order to have an upper bound on the total size of the dataset and</span>
-<span class="sd">            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset</span>
-<span class="sd">            creation) to know their sizes, which might be expensive on big datasets.</span>
-<span class="sd">            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the</span>
-<span class="sd">            most recent `max_samples_per_ts` samples will be considered.</span>
-<span class="sd">        n_jobs_multioutput_wrapper</span>
-<span class="sd">            Number of jobs of the MultiOutputRegressor wrapper to run in parallel. Only used if the model doesn&#39;t</span>
-<span class="sd">            support multi-output regression natively.</span>
-<span class="sd">        **kwargs</span>
-<span class="sd">            Additional keyword arguments passed to the `fit` method of the model.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
             <span class="c1"># set solver for linear program</span>
             <span class="k">if</span> <span class="s2">&quot;solver&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">:</span>
@@ -441,6 +418,8 @@
                     <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
                     <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
                     <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
+                    <span class="n">n_jobs_multioutput_wrapper</span><span class="o">=</span><span class="n">n_jobs_multioutput_wrapper</span><span class="p">,</span>
+                    <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
 
@@ -457,6 +436,8 @@
                 <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
                 <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
                 <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
+                <span class="n">n_jobs_multioutput_wrapper</span><span class="o">=</span><span class="n">n_jobs_multioutput_wrapper</span><span class="p">,</span>
+                <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
             <span class="p">)</span>
 
