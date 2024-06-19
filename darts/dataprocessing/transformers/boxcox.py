@@ -15,11 +15,14 @@ import pandas as pd
 from scipy.special import inv_boxcox
 from scipy.stats import boxcox, boxcox_normmax
 
+from darts.dataprocessing.transformers.fittable_data_transformer import (
+    FittableDataTransformer,
+)
+from darts.dataprocessing.transformers.invertible_data_transformer import (
+    InvertibleDataTransformer,
+)
 from darts.logging import get_logger, raise_if
 from darts.timeseries import TimeSeries
-
-from .fittable_data_transformer import FittableDataTransformer
-from .invertible_data_transformer import InvertibleDataTransformer
 
 logger = get_logger(__name__)
 
@@ -135,7 +138,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         params: Mapping[str, Any],
         *args,
-        **kwargs
+        **kwargs,
     ) -> Union[Sequence[float], pd.Series]:
         lmbda, method = params["fixed"]["_lmbda"], params["fixed"]["_optim_method"]
         # If `global_fit` is `True`, then `series` will be ` Sequence[TimeSeries]`;
@@ -164,7 +167,6 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
     def ts_transform(
         series: TimeSeries, params: Mapping[str, Any], **kwargs
     ) -> TimeSeries:
-
         lmbda = params["fitted"]
 
         vals = BoxCox.stack_samples(series)
@@ -178,7 +180,6 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
     def ts_inverse_transform(
         series: TimeSeries, params: Mapping[str, Any], **kwargs
     ) -> TimeSeries:
-
         lmbda = params["fitted"]
 
         vals = BoxCox.stack_samples(series)

@@ -23,9 +23,8 @@ from statsmodels.tsa.stattools import (
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
-
-from .missing_values import fill_missing_values
-from .utils import ModelMode, SeasonalityMode
+from darts.utils.missing_values import fill_missing_values
+from darts.utils.utils import ModelMode, SeasonalityMode
 
 logger = get_logger(__name__)
 
@@ -189,7 +188,6 @@ def extract_trend_and_seasonality(
     )
 
     if method == "naive":
-
         decomp = seasonal_decompose(
             ts.pd_series(), period=freq, model=model.value, extrapolate_trend="freq"
         )
@@ -278,9 +276,7 @@ def remove_from_series(
     else:
         raise_log(
             ValueError(
-                "Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {}".format(
-                    model
-                )
+                f"Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {model}"
             )
         )
     return new_ts
@@ -390,7 +386,6 @@ def stationarity_tests(
     p_value_threshold_adfuller: float = 0.05,
     p_value_threshold_kpss: float = 0.05,
 ) -> bool:
-
     """
     Double test on stationarity using both Kwiatkowski-Phillips-Schmidt-Shin and Augmented
     Dickey-Fuller statistical tests.
@@ -622,9 +617,9 @@ def plot_acf(
         The confidence interval to display.
     bartlett_confint
         The boolean value indicating whether the confidence interval should be
-        calculated using Bartlett's formula. If set to True, the confidence interval
+        calculated using Bartlett's formula. If set to `True`, the confidence interval
         can be used in the model identification stage for fitting ARIMA models.
-        If set to False, the confidence interval can be used to test for randomness
+        If set to `False`, the confidence interval can be used to test for randomness
         (i.e. there is no time dependence in the data) of the data.
     fig_size
         The size of the figure to be displayed.
@@ -668,9 +663,11 @@ def plot_acf(
         axis.plot(
             (i, i),
             (0, r[i]),
-            color=("#b512b8" if m is not None and i == m else "black")
-            if default_formatting
-            else None,
+            color=(
+                ("#b512b8" if m is not None and i == m else "black")
+                if default_formatting
+                else None
+            ),
             lw=(1 if m is not None and i == m else 0.5),
         )
 
@@ -887,9 +884,11 @@ def plot_ccf(
         axis.plot(
             (i, i),
             (0, ccf[i]),
-            color=("#b512b8" if m is not None and i == m else "black")
-            if default_formatting
-            else None,
+            color=(
+                ("#b512b8" if m is not None and i == m else "black")
+                if default_formatting
+                else None
+            ),
             lw=(1 if m is not None and i == m else 0.5),
         )
 
@@ -935,7 +934,7 @@ def plot_hist(
         Optionally, either an integer value for the number of bins to be displayed
         or an array-like of floats determining the position of bins.
     density
-        bool, if `density` is set to True, the bin counts will be converted to probability density
+        bool, if `density` is set to `True`, the bin counts will be converted to probability density
     title
         The title of the figure to be displayed
     fig_size
@@ -1008,7 +1007,7 @@ def plot_residuals_analysis(
     This function takes a univariate TimeSeries instance of residuals and plots their values,
     their distribution and their ACF.
     Please note that if the residual TimeSeries instance contains NaN values, the plots
-    might be displayed incorrectly. If `fill_nan` is set to True, the missing values will
+    might be displayed incorrectly. If `fill_nan` is set to `True`, the missing values will
     be interpolated.
 
     Parameters
@@ -1040,11 +1039,13 @@ def plot_residuals_analysis(
     ax1.set_title("Residual values")
 
     # plot histogram and distribution
-    res_mean, res_std = np.mean(residuals.univariate_values()), np.std(
-        residuals.univariate_values()
+    res_mean, res_std = (
+        np.mean(residuals.univariate_values()),
+        np.std(residuals.univariate_values()),
     )
-    res_min, res_max = min(residuals.univariate_values()), max(
-        residuals.univariate_values()
+    res_min, res_max = (
+        min(residuals.univariate_values()),
+        max(residuals.univariate_values()),
     )
     x = np.linspace(res_min, res_max, 100)
     ax2 = fig.add_subplot(gs[1:, 1:])

@@ -38,7 +38,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-13, ubuntu-latest]
         python-version: ['3.9']
         flavour: ['all']
 
@@ -85,10 +85,10 @@ jobs:
 
       - name: "8. Codecov upload"
         if: ${{ matrix.flavour == 'all' }}
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true
-          files: ./coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   docs:
     runs-on: ubuntu-latest

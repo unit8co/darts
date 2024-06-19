@@ -4,7 +4,7 @@ from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.utils.statistics import stationarity_tests
-from darts.utils.utils import series2seq
+from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -342,18 +342,20 @@ def _check_valid_input(
     # for explained features.
     for idx in range(len(series)):
         raise_if_not(
-            all(
-                [
-                    series[idx].columns.to_list() == target_components,
+            all([
+                series[idx].columns.to_list() == target_components,
+                (
                     past_covariates[idx].columns.to_list() == past_covariates_components
                     if past_covariates is not None
-                    else True,
+                    else True
+                ),
+                (
                     future_covariates[idx].columns.to_list()
                     == future_covariates_components
                     if future_covariates is not None
-                    else True,
-                ]
-            ),
+                    else True
+                ),
+            ]),
             "Columns names must be identical between TimeSeries list components (multi-TimeSeries).",
         )
 

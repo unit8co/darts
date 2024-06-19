@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath("../../.."))
 project = "darts"
 copyright = f"2020 - {datetime.now().year}, Unit8 SA (Apache 2.0 License)"
 author = "Unit8 SA"
-version = "0.27.2"
+version = "0.29.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -48,6 +48,7 @@ extensions = [
 autodoc_default_options = {
     "inherited-members": None,
     "show-inheritance": None,
+    "ignore-module-all": True,
     "exclude-members": "ForecastingModel,LocalForecastingModel,FutureCovariatesLocalForecastingModel,"
     + "TransferableFutureCovariatesLocalForecastingModel,GlobalForecastingModel,TorchForecastingModel,"
     + "PastCovariatesTorchModel,FutureCovariatesTorchModel,DualCovariatesTorchModel,MixedCovariatesTorchModel,"

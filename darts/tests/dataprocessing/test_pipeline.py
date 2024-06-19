@@ -246,7 +246,6 @@ class TestPipeline:
         assert str(err.value) == "key must be either an int or a slice"
 
     def test_multi_ts(self):
-
         series1 = constant_timeseries(value=0.0, length=3)
         series2 = constant_timeseries(value=1.0, length=3)
 

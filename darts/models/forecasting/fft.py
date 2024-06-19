@@ -105,7 +105,7 @@ def _find_relevant_timestamp_attributes(series: TimeSeries) -> set:
         # check for yearly seasonality
         if _check_approximate_seasonality(series, 12, 1, 0):
             relevant_attributes.add("month")
-    elif type(series.freq) == pd.tseries.offsets.Day:
+    elif type(series.freq) is pd.tseries.offsets.Day:
         # check for yearly seasonality
         if _check_approximate_seasonality(series, 365, 5, 20):
             relevant_attributes.update({"month", "day"})
@@ -115,7 +115,7 @@ def _find_relevant_timestamp_attributes(series: TimeSeries) -> set:
         # check for weekly seasonality
         elif _check_approximate_seasonality(series, 7, 0, 0):
             relevant_attributes.add("weekday")
-    elif type(series.freq) == pd.tseries.offsets.Hour:
+    elif type(series.freq) is pd.tseries.offsets.Hour:
         # check for yearly seasonality
         if _check_approximate_seasonality(series, 8760, 100, 100):
             relevant_attributes.update({"month", "day", "hour"})
@@ -128,7 +128,7 @@ def _find_relevant_timestamp_attributes(series: TimeSeries) -> set:
         # check for daily seasonality
         elif _check_approximate_seasonality(series, 24, 1, 1):
             relevant_attributes.add("hour")
-    elif type(series.freq) == pd.tseries.offsets.Minute:
+    elif type(series.freq) is pd.tseries.offsets.Minute:
         # check for daily seasonality
         if _check_approximate_seasonality(series, 1440, 20, 50):
             relevant_attributes.update({"hour", "minute"})
@@ -374,10 +374,10 @@ class FFT(LocalForecastingModel):
         show_warnings: bool = True,
     ):
         super().predict(n, num_samples)
-        trend_forecast = np.array(
-            [self.trend_function(i + len(self.training_series)) for i in range(n)]
-        )
-        periodic_forecast = np.array(
-            [self.predicted_values[i % len(self.predicted_values)] for i in range(n)]
-        )
+        trend_forecast = np.array([
+            self.trend_function(i + len(self.training_series)) for i in range(n)
+        ])
+        periodic_forecast = np.array([
+            self.predicted_values[i % len(self.predicted_values)] for i in range(n)
+        ])
         return self._build_forecast_series(periodic_forecast + trend_forecast)

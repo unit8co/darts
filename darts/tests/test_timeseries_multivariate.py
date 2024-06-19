@@ -1,13 +1,15 @@
+import itertools
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from darts import TimeSeries
 from darts.tests.test_timeseries import TestTimeSeries
+from darts.utils.utils import freqs
 
 
 class TestTimeSeriesMultivariate:
-
     times1 = pd.date_range("20130101", "20130110")
     times2 = pd.date_range("20130206", "20130215")
     dataframe1 = pd.DataFrame(
@@ -91,8 +93,12 @@ class TestTimeSeriesMultivariate:
     def test_drop(self):
         TestTimeSeries.helper_test_drop(self, self.series1)
 
-    def test_intersect(self):
-        TestTimeSeries.helper_test_intersect(self, self.series1)
+    @pytest.mark.parametrize(
+        "config", itertools.product(["D", "2D", 1, 2], [False, True])
+    )
+    def test_intersect(self, config):
+        freq, mixed_freq = config
+        TestTimeSeries.helper_test_intersect(freq, mixed_freq, is_univariate=False)
 
     def test_shift(self):
         TestTimeSeries.helper_test_shift(self, self.series1)
@@ -162,11 +168,12 @@ class TestTimeSeriesMultivariate:
         assert self.series1 == seriesB
 
     def test_add_datetime_attribute(self):
+        """datetime_attributes are 0-indexed (shift is applied when necessary)"""
         seriesA = self.series1.add_datetime_attribute("day")
         assert seriesA.width == self.series1.width + 1
         assert set(
             seriesA.pd_dataframe().iloc[:, seriesA.width - 1].values.flatten()
-        ) == set(range(1, 11))
+        ) == set(range(0, 10))
         seriesB = self.series3.add_datetime_attribute("day", True)
         assert seriesB.width == self.series3.width + 31
         assert set(
@@ -197,7 +204,13 @@ class TestTimeSeriesMultivariate:
         assert np.allclose(np.add(np.square(values_sin), np.square(values_cos)), 1)
 
         df = seriesF.pd_dataframe()
+        # first day is equivalent to t=0
         df = df[df.index.day == 1]
+        assert np.allclose(df["day_sin"].values, 0, atol=0.03)
+        assert np.allclose(df["day_cos"].values, 1, atol=0.03)
+
+        # second day is equivalent to t=1
+        df = df[df.index.day == 2]
         assert np.allclose(df["day_sin"].values, 0.2, atol=0.03)
         assert np.allclose(df["day_cos"].values, 0.97, atol=0.03)
 
@@ -221,7 +234,9 @@ class TestTimeSeriesMultivariate:
         assert seriesA.width == 3
 
         # testing hourly time series
-        times = pd.date_range(start=pd.Timestamp("20201224"), periods=50, freq="H")
+        times = pd.date_range(
+            start=pd.Timestamp("20201224"), periods=50, freq=freqs["h"]
+        )
         seriesB = TimeSeries.from_times_and_values(times, range(len(times)))
         seriesB = seriesB.add_holidays("US")
         last_column = seriesB.pd_dataframe().iloc[:, seriesB.width - 1]

@@ -44,7 +44,7 @@ from darts.models.forecasting.forecasting_model import (
 )
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
+from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode, generate_index
 
 logger = get_logger(__name__)
 
@@ -164,13 +164,11 @@ class TestLocalForecastingModels:
             assert os.path.exists(p)
 
         assert (
-            len(
-                [
-                    p
-                    for p in os.listdir(tmpdir_module)
-                    if p.startswith(type(model).__name__)
-                ]
-            )
+            len([
+                p
+                for p in os.listdir(tmpdir_module)
+                if p.startswith(type(model).__name__)
+            ])
             == len(full_model_paths) + 1
         )
 
@@ -222,10 +220,9 @@ class TestLocalForecastingModels:
         model.fit(self.ts_pass_train)
         prediction = model.predict(len(self.ts_pass_val))
         current_mape = mape(self.ts_pass_val, prediction)
-        assert (
-            current_mape < max_mape
-        ), "{} model exceeded the maximum MAPE of {}. " "with a MAPE of {}".format(
-            str(model), max_mape, current_mape
+        assert current_mape < max_mape, (
+            f"{str(model)} model exceeded the maximum MAPE of {max_mape}. "
+            f"with a MAPE of {current_mape}"
         )
 
     @pytest.mark.parametrize("config", multivariate_models)
@@ -236,10 +233,9 @@ class TestLocalForecastingModels:
         model.fit(self.ts_ice_heater_train)
         prediction = model.predict(len(self.ts_ice_heater_val))
         current_mape = mape(self.ts_ice_heater_val, prediction)
-        assert (
-            current_mape < max_mape
-        ), "{} model exceeded the maximum MAPE of {}. " "with a MAPE of {}".format(
-            str(model), max_mape, current_mape
+        assert current_mape < max_mape, (
+            f"{str(model)} model exceeded the maximum MAPE of {max_mape}. "
+            f"with a MAPE of {current_mape}"
         )
 
     def test_multivariate_input(self):
@@ -259,11 +255,11 @@ class TestLocalForecastingModels:
 
         # test case with numerical pd.RangeIndex
         target_num_idx = TimeSeries.from_times_and_values(
-            times=tg.generate_index(start=0, length=len(self.ts_gaussian)),
+            times=generate_index(start=0, length=len(self.ts_gaussian)),
             values=self.ts_gaussian.all_values(copy=False),
         )
         fc_num_idx = TimeSeries.from_times_and_values(
-            times=tg.generate_index(start=0, length=len(self.ts_gaussian_long)),
+            times=generate_index(start=0, length=len(self.ts_gaussian_long)),
             values=self.ts_gaussian_long.all_values(copy=False),
         )
 
