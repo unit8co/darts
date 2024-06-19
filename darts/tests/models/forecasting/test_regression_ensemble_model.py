@@ -144,7 +144,7 @@ class TestRegressionEnsembleModels:
         model_ens.fit(self.sine_series[:45])
         model_ens.predict(5)
 
-        # retrain_forecasting_models=True requires all the model to be reset
+        # train_forecasting_models=True requires all the model to be reset
         with pytest.raises(ValueError):
             RegressionEnsembleModel(
                 forecasting_models=[linreg1, linreg2],

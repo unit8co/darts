@@ -29,7 +29,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
         output_chunk_shift: int = 0,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, static_covariates, sample weights,
@@ -124,7 +124,7 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
         output_chunk_shift: int = 0,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
         """
         A time series dataset containing tuples of (past_target, future_covariates, static_covariates, sample weights,
@@ -219,7 +219,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
         output_chunk_shift: int = 0,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
         """
         A time series dataset containing tuples of
@@ -342,7 +342,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
         output_chunk_shift: int = 0,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
         """
         A time series dataset containing tuples of
@@ -468,7 +468,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
         output_chunk_shift: int = 0,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_covariates, static_covariates,

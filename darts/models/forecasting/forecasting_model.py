@@ -242,6 +242,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return False
 
     @property
+    def supports_sample_weight(self) -> bool:
+        """
+        Whether model supports sample weight for training.
+        """
+        return False
+
+    @property
     def supports_likelihood_parameter_prediction(self) -> bool:
         """
         Whether model instance supports direct prediction of likelihood parameters
@@ -363,19 +370,20 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         **kwargs,
     ):
         add_kwargs = {}
         # handle past and future covariates based on model support
-        for covs, covs_name in zip(
-            [past_covariates, future_covariates],
-            ["past_covariates", "future_covariates"],
+        for series_, series_name in zip(
+            [past_covariates, future_covariates, sample_weight],
+            ["past_covariates", "future_covariates", "sample_weight"],
         ):
-            if getattr(self, f"supports_{covs_name}"):
-                add_kwargs[covs_name] = covs
-            elif covs is not None:
+            if getattr(self, f"supports_{series_name}"):
+                add_kwargs[series_name] = series_
+            elif series_ is not None:
                 raise_log(
-                    ValueError(f"Model cannot be fit/trained with `{covs_name}`."),
+                    ValueError(f"Model cannot be fit/trained with `{series_name}`."),
                     logger,
                 )
         self.fit(series=series, **add_kwargs, **kwargs)
@@ -639,6 +647,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         enable_optimization: bool = True,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
         """Compute the historical forecasts that would have been obtained by this model on
         (potentially multiple) `series`.
@@ -749,6 +758,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Additional arguments passed to the model `fit()` method.
         predict_kwargs
             Additional arguments passed to the model `predict()` method.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels for training. Only effective when
+            `retrain` is not ``False``. They are applied per observation, per label (each step in
+            `output_chunk_length`), and per component.
+            If a series or sequence of series, then those weights are used. If the weight series only have a single
+            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+            component-specific weights, the number of components must match those of `series`.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+            computed per time `series`.
 
         Returns
         -------
@@ -905,6 +924,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
+        sample_weight = (
+            sample_weight
+            if isinstance(sample_weight, str)
+            else series2seq(sample_weight)
+        )
 
         if len(series) == 1:
             # Use tqdm on the outer loop only if there's more than one series to iterate over
@@ -920,6 +944,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         for idx, series_ in enumerate(outer_iterator):
             past_covariates_ = past_covariates[idx] if past_covariates else None
             future_covariates_ = future_covariates[idx] if future_covariates else None
+            if isinstance(sample_weight, str):
+                sample_weight_ = sample_weight
+            else:
+                sample_weight_ = sample_weight[idx] if sample_weight else None
 
             # predictable time indexes (assuming model is already trained)
             historical_forecasts_time_index_predict = (
@@ -1047,6 +1075,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             series=train_series,
                             past_covariates=past_covariates_,
                             future_covariates=future_covariates_,
+                            sample_weight=sample_weight_,
                             **fit_kwargs,
                         )
                     else:
@@ -1167,6 +1196,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         metric_kwargs: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ) -> Union[float, np.ndarray, List[float], List[np.ndarray]]:
         """Compute error values that the model would have produced when
         used on (potentially multiple) `series`.
@@ -1291,6 +1321,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Additional arguments passed to the model `fit()` method.
         predict_kwargs
             Additional arguments passed to the model `predict()` method.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels for training. Only effective when
+            `retrain` is not ``False``. They are applied per observation, per label (each step in
+            `output_chunk_length`), and per component.
+            If a series or sequence of series, then those weights are used. If the weight series only have a single
+            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+            component-specific weights, the number of components must match those of `series`.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+            computed per time `series`.
 
         Returns
         -------
@@ -1353,6 +1393,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             show_warnings=show_warnings,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
+            sample_weight=sample_weight,
         )
 
         # remember input series type
@@ -1494,6 +1535,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         n_random_samples: Optional[Union[int, float]] = None,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
+        sample_weight: Optional[Union[TimeSeries, str]] = None,
     ) -> Tuple["ForecastingModel", Dict[str, Any], float]:
         """
         Find the best hyper-parameters among a given set using a grid search.
@@ -1613,6 +1655,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Additional arguments passed to the model `fit()` method.
         predict_kwargs
             Additional arguments passed to the model `predict()` method.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels for training. Only effective when
+            `retrain` is not ``False``. They are applied per observation, per label (each step in
+            `output_chunk_length`), and per component.
+            If a series, then those weights are used. If the weight series only have a single component / column, then
+            the weights are applied globally to all components in `series`. Otherwise, for component-specific weights,
+            the number of components must match those of `series`.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight.
 
         Returns
         -------
@@ -1627,7 +1678,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             + use_fitted_values
             == 1,
             "Please pass exactly one of the arguments 'forecast_horizon', "
-            "'val_target_series' or 'use_fitted_values'.",
+            "'val_series' or 'use_fitted_values'.",
             logger,
         )
 
@@ -1700,6 +1751,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     series=series,
                     past_covariates=past_covariates,
                     future_covariates=future_covariates,
+                    sample_weight=sample_weight,
                     **fit_kwargs,
                 )
                 fitted_values = TimeSeries.from_times_and_values(
@@ -1723,12 +1775,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     show_warnings=show_warnings,
                     fit_kwargs=fit_kwargs,
                     predict_kwargs=predict_kwargs,
+                    sample_weight=sample_weight,
                 )
             else:  # split mode
                 model._fit_wrapper(
                     series=series,
                     past_covariates=past_covariates,
                     future_covariates=future_covariates,
+                    sample_weight=sample_weight,
                     **fit_kwargs,
                 )
                 pred = model._predict_wrapper(
@@ -1781,6 +1835,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
         values_only: bool = False,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
         """Compute the residuals produced by this model on a (or sequence of) `TimeSeries`.
 
@@ -1905,6 +1960,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Additional arguments passed to the model `predict()` method.
         values_only
             Whether to return the residuals as `np.ndarray`. If `False`, returns residuals as `TimeSeries`.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels for training. Only effective when
+            `retrain` is not ``False``. They are applied per observation, per label (each step in
+            `output_chunk_length`), and per component.
+            If a series or sequence of series, then those weights are used. If the weight series only have a single
+            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+            component-specific weights, the number of components must match those of `series`.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+            computed per time `series`.
 
         Returns
         -------
@@ -1942,6 +2007,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
             overlap_end=False,
+            sample_weight=sample_weight,
         )
 
         residuals = self.backtest(
@@ -2778,6 +2844,13 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     def supports_transferrable_series_prediction(self) -> bool:
         """
         Whether the model supports prediction for any input `series`.
+        """
+        return True
+
+    @property
+    def supports_sample_weight(self) -> bool:
+        """
+        Whether model supports sample weight for training.
         """
         return True
 

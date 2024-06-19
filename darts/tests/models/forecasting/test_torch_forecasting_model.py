@@ -2028,8 +2028,8 @@ class TestTorchForecastingModel:
             model.fit(ts, sample_weight=[ts, ts])
         assert (
             str(err.value)
-            == "The provided sequence of target series must have the same length as the "
-            "provided sequence of sample weights."
+            == "The provided sequence of target `series` must have the same length as the "
+            "provided sequence of `sample_weight`."
         )
 
         # same number of components

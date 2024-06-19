@@ -41,7 +41,7 @@ class EnsembleModel(GlobalForecastingModel):
         If `forecasting_models` are probabilistic and `train_num_samples` > 1, method used to reduce the
         samples dimension to 1. Possible values: "mean", "median" or float value corresponding to the
         desired quantile.
-    retrain_forecasting_models
+    train_forecasting_models
         If set to `False`, the `forecasting_models` are not retrained when calling `fit()` (only supported
         if all the `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
     show_warnings
@@ -91,7 +91,7 @@ class EnsembleModel(GlobalForecastingModel):
             or (self.is_global_ensemble and not (self.all_trained or not some_trained)),
             "Cannot instantiate EnsembleModel with a mixture of unfitted and fitted `forecasting_models`. "
             "Consider resetting all models with `my_model.untrained_model()` or using only trained "
-            "GlobalForecastingModels together with `retrain_forecasting_models=False`.",
+            "GlobalForecastingModels together with `train_forecasting_models=False`.",
             logger,
         )
 
@@ -99,7 +99,7 @@ class EnsembleModel(GlobalForecastingModel):
             # prevent issues with pytorch-lightning trainer during retraining
             raise_if(
                 some_trained,
-                "`retrain_forecasting_models=True` but some `forecasting_models` were already fitted. "
+                "`train_forecasting_models=True` but some `forecasting_models` were already fitted. "
                 "Consider resetting all the `forecasting_models` with `my_model.untrained_model()` "
                 "before passing them to the `EnsembleModel`.",
                 logger,
@@ -107,7 +107,7 @@ class EnsembleModel(GlobalForecastingModel):
         else:
             raise_if_not(
                 self.is_global_ensemble and self.all_trained,
-                "`retrain_forecasting_models=False` is supported only if all the `forecasting_models` are "
+                "`train_forecasting_models=False` is supported only if all the `forecasting_models` are "
                 "already trained `GlobalForecastingModels`.",
                 logger,
             )
@@ -220,9 +220,7 @@ class EnsembleModel(GlobalForecastingModel):
         )
 
         self._verify_past_future_covariates(past_covariates, future_covariates)
-
         super().fit(series, past_covariates, future_covariates)
-
         return self
 
     def _stack_ts_seq(self, predictions):

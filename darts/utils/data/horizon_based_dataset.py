@@ -25,7 +25,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         lh: Tuple[int, int] = (1, 3),
         lookback: int = 3,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ) -> None:
         """
         A time series dataset containing tuples of (past_target, past_covariates, static_covariates, sample weights,

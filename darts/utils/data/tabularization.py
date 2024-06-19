@@ -2081,7 +2081,7 @@ def _extract_sample_weight(sample_weight, target_series):
         raise_log(
             ValueError(
                 "The number of components in `sample_weight` must either be `1` or match "
-                f"the number of target series components `{series_n_comp}`"
+                f"the number of target series components `{series_n_comp}`."
             ),
             logger=logger,
         )

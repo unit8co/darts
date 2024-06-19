@@ -32,7 +32,7 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, static_covariates, sample weights,
@@ -123,7 +123,7 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
         """
         A time series dataset containing tuples of (past_target, future_covariates, static_covariates, sample weights,
@@ -217,7 +217,7 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
         """
         A time series dataset containing tuples of
@@ -340,7 +340,7 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, historic_future_covariates,
@@ -461,7 +461,7 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_covariates, static_covariates,
@@ -586,7 +586,7 @@ class GenericShiftedDataset(TrainingDataset):
         max_samples_per_ts: Optional[int] = None,
         covariate_type: CovariateType = CovariateType.NONE,
         use_static_covariates: bool = True,
-        sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
         """
         Contains (past_target, <X>_covariates, static_covariates, sample weights, future_target), where "<X>" is past
