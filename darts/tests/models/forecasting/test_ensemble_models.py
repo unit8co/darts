@@ -1,3 +1,6 @@
+import copy
+import itertools
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -10,6 +13,7 @@ from darts.models import (
     NaiveDrift,
     NaiveEnsembleModel,
     NaiveSeasonal,
+    RegressionEnsembleModel,
     StatsForecastAutoARIMA,
     Theta,
 )
@@ -503,6 +507,196 @@ class TestEnsembleModels:
         ])
         with pytest.raises(ValueError):
             naive.fit(self.series1, self.series2)
+
+    @pytest.mark.parametrize("model_cls", [NaiveEnsembleModel, RegressionEnsembleModel])
+    def test_sample_weight_mixed_models(self, model_cls):
+        """Check sample weights for ensemble models with mixed forecasting models.
+
+        NaiveEnsembleModel
+            Sample weights will only be passed to global models.
+            A weighted linear model that ignores `1000` should learn that y_t = y_(t-1) + 1. When calling predict():
+            - linear model should predict y_(t,lin) = 1000 + 1 = 1001
+            - naive seasonal should predict y_(t,ns) = y_(t-1) = 1000
+
+            The ensemble takes the average:
+            - y_t = 0.5 * y_(t,lin) + 0.5 * y_(t,ns) = 1001 + 1000 = 1000.5
+
+        RegressionEnsembleModel
+            Sample weights will be passed to global forecasting models and regression ensemble model.
+            A weighted linear model that ignores `1000` should learn that y_t = y_(t-1) + 1. When calling predict():
+            - linear model should predict y_(t,lin) = y_(t-1) + 1
+            - naive seasonal should predict y_(t,ns) = y_(t-1)
+
+            The training set for regression ensemble covers the forecasts for and labels of last 5 points, where labels
+            10000 and 1002 are ignored (0 weight):
+            - the linear forecasting model generates forecasts: [1001, 1002, 1003, 1004, 1005]
+            - the naive seasonal model generates forecasts: [1000, 1000, 1000, 1000, 1000]
+
+            The ensemble model should then learn a perfect fit based only on the output of the linear model:
+            - y_t = 1.0 * y_(t,lin) + 0.0 * y_(t,ns) = 1.0 * (y_(t-1) + 1)
+            - for y_(t-1) = 1005 -> y_t = 1006
+        """
+        if issubclass(model_cls, NaiveEnsembleModel):
+            series = TimeSeries.from_values(np.array([0.0, 1.0, 2.0, 3.0, 1000]))
+            weights = TimeSeries.from_values(np.array([1.0, 1.0, 1.0, 1.0, 0.0]))
+            pred_expected = np.array([[1000.5]])
+            kwargs = {}
+        else:
+            series = TimeSeries.from_values(
+                np.array([0.0, 1.0, 2.0, 3.0, 4.0, 1000, 10000, 1002, 1003, 1004, 1005])
+            )
+            weights = TimeSeries.from_values(
+                np.array([1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0])
+            )
+            pred_expected = np.array([[1006.0]])
+            kwargs = {"regression_train_n_points": 5}
+
+        model = model_cls(
+            [LinearRegressionModel(lags=[-1]), NaiveSeasonal(K=1)], **kwargs
+        )
+        model.fit(series, sample_weight=weights)
+        preds_weighted = model.predict(n=1)
+        np.testing.assert_array_almost_equal(preds_weighted.values(), pred_expected)
+
+        # make sure that without weights we get different results
+        model = model_cls(
+            [LinearRegressionModel(lags=[-1]), NaiveSeasonal(K=1)], **kwargs
+        )
+        model.fit(series)
+        preds = model.predict(n=1)
+        with pytest.raises(AssertionError):
+            np.testing.assert_array_almost_equal(
+                preds_weighted.values(), preds.values()
+            )
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product([NaiveEnsembleModel, RegressionEnsembleModel], [True, False]),
+    )
+    def test_sample_weight_global(self, config):
+        """Check sample weights for ensemble models with global forecasting models.
+
+        NaiveEnsembleModel
+            Sample weights will only be passed to global forecasting models.
+            A weighted linear model that ignores `1000` should learn that y_t = y_(t-1) + 1. When calling predict():
+            - linear model should predict y_(t,lin) = 1000 + 1 = 1001
+
+            The ensemble takes the average:
+            - y_t = 0.5 * y_(t,lin) + 0.5 * y_(t,lin) = 1001 + 1001 = 1001
+
+        RegressionEnsembleModel
+            Sample weights will be passed to global forecasting models and regression ensemble model.
+            A weighted linear model that ignores `1000` should learn that y_t = y_(t-1) + 1. When calling predict():
+            - linear model should predict y_(t,lin) = y_(t-1) + 1
+
+            The training set for regression ensemble covers the forecasts for and labels of last 5 points, where labels
+            10000 and 1002 are ignored (0 weight):
+            - the linear forecasting model generates forecasts: [1001, 1002, 1003, 1004, 1005]
+
+            The ensemble model should then learn a perfect fit based on the output of the linear model:
+            - y_t = 1.0 * y_(t,lin) + 0.0 * y_(t,ns) = 1.0 * (y_(t-1) + 1)
+        """
+        model_cls, single_series = config
+        if issubclass(model_cls, NaiveEnsembleModel):
+            series = TimeSeries.from_values(np.array([0.0, 1.0, 2.0, 3.0, 1000]))
+            weights = TimeSeries.from_values(np.array([1.0, 1.0, 1.0, 1.0, 0.0]))
+            pred_expected = np.array([[1001.0]])
+            kwargs = {}
+        else:
+            series = TimeSeries.from_values(
+                np.array([0.0, 1.0, 2.0, 3.0, 4.0, 1000, 10000, 1002, 1003, 1004, 1005])
+            )
+            weights = TimeSeries.from_values(
+                np.array([1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0])
+            )
+            pred_expected = np.array([[1006.0]])
+            kwargs = {"regression_train_n_points": 5}
+
+        if not single_series:
+            series = [series] * 2
+            weights = [weights] * 2
+
+        model = model_cls(
+            [LinearRegressionModel(lags=[-1]), LinearRegressionModel(lags=[-1])],
+            **kwargs,
+        )
+        model.fit(series, sample_weight=weights)
+        preds_weighted = model.predict(n=1, series=series)
+        if single_series:
+            preds_weighted = [preds_weighted]
+
+        for preds in preds_weighted:
+            np.testing.assert_array_almost_equal(preds.values(), pred_expected)
+
+        # make sure that without weights we get different results
+        model = model_cls(
+            [LinearRegressionModel(lags=[-1]), LinearRegressionModel(lags=[-1])],
+            **kwargs,
+        )
+        model.fit(series)
+        preds = model.predict(n=1, series=series)
+        if single_series:
+            preds = [preds]
+
+        for pred_w, pred_nw in zip(preds_weighted, preds):
+            with pytest.raises(AssertionError):
+                np.testing.assert_array_almost_equal(pred_w.values(), pred_nw.values())
+
+    @pytest.mark.parametrize("model_cls", [NaiveEnsembleModel, RegressionEnsembleModel])
+    def test_invalid_sample_weight(self, model_cls):
+        kwargs = {
+            "forecasting_models": [
+                LinearRegressionModel(lags=[-1]),
+                NaiveSeasonal(K=1),
+            ],
+        }
+        if issubclass(model_cls, RegressionEnsembleModel):
+            kwargs["regression_train_n_points"] = 3
+
+        ts = TimeSeries.from_values(np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0]))
+        # weights too short
+        model = model_cls(**copy.deepcopy(kwargs))
+        with pytest.raises(ValueError) as err:
+            model.fit(ts, sample_weight=ts[:-1])
+        assert (
+            str(err.value)
+            == "The `sample_weight` series must have at least the same times as the target `series`."
+        )
+
+        # same number of series
+        model = model_cls(**copy.deepcopy(kwargs))
+        with pytest.raises(ValueError) as err:
+            model.fit(ts, sample_weight=[ts, ts])
+        assert (
+            str(err.value)
+            == "The provided sequence of target `series` must have the same length as the "
+            "provided sequence of `sample_weight`."
+        )
+
+        # same number of components
+        model = model_cls(**copy.deepcopy(kwargs))
+        with pytest.raises(ValueError) as err:
+            model.fit(ts, sample_weight=ts.stack(ts))
+        assert (
+            str(err.value)
+            == "The number of components in `sample_weight` must either be `1` or match the "
+            "number of target series components `1`."
+        )
+        # with correct number it works
+        model = model_cls(**copy.deepcopy(kwargs))
+        model.fit(ts.stack(ts), sample_weight=ts.stack(ts))
+        # or with multivar ts and single component weights (globally applied)
+        model = model_cls(**copy.deepcopy(kwargs))
+        model.fit(ts.stack(ts), sample_weight=ts)
+
+        # invalid string
+        model = model_cls(**copy.deepcopy(kwargs))
+        with pytest.raises(ValueError) as err:
+            model.fit(ts, sample_weight="invalid")
+        assert str(err.value).startswith("Invalid `sample_weight` value: `'invalid'`. ")
+
+        # but with valid string it works
+        model.fit(ts, sample_weight="linear")
 
     def test_predict_with_target(self):
         series_long = self.series1

@@ -211,6 +211,27 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 logger,
             )
 
+    if (
+        n.sample_weight is not None
+        and not isinstance(n.sample_weight, str)
+        and model.supports_sample_weight
+    ):
+        sample_weight = series2seq(n.sample_weight)
+        for idx, (series_, sample_weight_) in enumerate(zip(series, sample_weight)):
+            is_valid = (
+                sample_weight_.freq == series_.freq
+                and sample_weight_.start_time() <= series_.start_time()
+                and len(sample_weight_) >= len(series_)
+            )
+            if not is_valid:
+                raise_log(
+                    ValueError(
+                        f"`sample_weight` at series index {idx} must contain at least all times "
+                        f"of the corresponding target `series`."
+                    ),
+                    logger=logger,
+                )
+
 
 def _historical_forecasts_sanitize_kwargs(
     model,
@@ -810,12 +831,12 @@ def _check_optimizable_historical_forecasts_global_models(
     if show_warnings:
         if not retrain_off:
             logger.warning(
-                "`enable_optimization=True` is ignored because `retrain` is not `False` or `0`."
+                "`enable_optimization=True` is ignored because `retrain` is not `False` or `0`. "
                 "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
             )
         if is_autoregressive:
             logger.warning(
-                "`enable_optimization=True` is ignored because `forecast_horizon > model.output_chunk_length`."
+                "`enable_optimization=True` is ignored because `forecast_horizon > model.output_chunk_length`. "
                 "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
             )
 

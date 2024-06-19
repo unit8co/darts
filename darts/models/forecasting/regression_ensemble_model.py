@@ -281,6 +281,7 @@ class RegressionEnsembleModel(EnsembleModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
         """
         Fits the forecasting models with the entire series except the last `regression_train_n_points` values, which
@@ -299,6 +300,16 @@ class RegressionEnsembleModel(EnsembleModel):
         future_covariates
             Optionally, a series or sequence of series specifying future-known covariates passed to the
             forecasting models
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
+            per label (each step in `output_chunk_length`), and per component.
+            If a series or sequence of series, then those weights are used. If the weight series only have a single
+            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+            component-specific weights, the number of components must match those of `series`.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+            computed globally based on the length of the longest series in `series`. Then for each series, the weights
+            are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
         super().fit(
             series, past_covariates=past_covariates, future_covariates=future_covariates
@@ -380,6 +391,9 @@ class RegressionEnsembleModel(EnsembleModel):
                     future_covariates=(
                         future_covariates if model.supports_future_covariates else None
                     ),
+                    sample_weight=sample_weight
+                    if model.supports_sample_weight
+                    else None,
                 )
 
         # we can call direct prediction in any case. Even if we overwrite with historical
@@ -404,7 +418,9 @@ class RegressionEnsembleModel(EnsembleModel):
 
         # train the regression model on the individual models' predictions
         self.regression_model.fit(
-            series=regression_target, future_covariates=predictions
+            series=regression_target,
+            future_covariates=predictions,
+            sample_weight=sample_weight,
         )
 
         # prepare the forecasting models for further predicting by fitting them with the entire data
@@ -422,6 +438,9 @@ class RegressionEnsembleModel(EnsembleModel):
                     future_covariates=(
                         future_covariates if model.supports_future_covariates else None
                     ),
+                    sample_weight=sample_weight
+                    if model.supports_sample_weight
+                    else None,
                 )
         return self
 

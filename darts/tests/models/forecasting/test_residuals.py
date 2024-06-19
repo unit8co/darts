@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 import darts.metrics as metrics
+from darts.datasets import AirPassengersDataset
 from darts.logging import get_logger
 from darts.models import LinearRegressionModel, NaiveDrift, NaiveSeasonal
 from darts.tests.models.forecasting.test_regression_models import dummy_timeseries
@@ -575,3 +576,39 @@ class TestResiduals:
         for bt_list in bts:
             for bt in bt_list:
                 np.testing.assert_array_almost_equal(bt, bt_expected)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product([True, False], [True, False]),
+    )
+    def test_sample_weight(self, config):
+        """check that passing sample weights work and that it yields different results than without sample weights."""
+        manual_weight, multi_series = config
+        ts = AirPassengersDataset().load()
+        if manual_weight:
+            sample_weight = np.linspace(0, 1, len(ts))
+            sample_weight = ts.with_values(np.expand_dims(sample_weight, -1))
+        else:
+            sample_weight = "linear"
+
+        if multi_series:
+            ts = [ts] * 2
+            sample_weight = [sample_weight] * 2 if manual_weight else sample_weight
+
+        model = LinearRegressionModel(lags=3, output_chunk_length=1)
+        start_kwargs = {"start": -1, "start_format": "position"}
+        res_non_weighted = model.residuals(series=ts, values_only=True, **start_kwargs)
+
+        model = LinearRegressionModel(lags=3, output_chunk_length=1)
+        res_weighted = model.residuals(
+            series=ts, sample_weight=sample_weight, values_only=True, **start_kwargs
+        )
+
+        if not multi_series:
+            res_weighted = [res_weighted]
+            res_non_weighted = [res_non_weighted]
+
+        # check that the predictions are different
+        for res_nw, res_w in zip(res_non_weighted, res_weighted):
+            with pytest.raises(AssertionError):
+                np.testing.assert_array_almost_equal(res_w, res_nw)

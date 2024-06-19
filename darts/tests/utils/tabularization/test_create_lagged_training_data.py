@@ -522,7 +522,7 @@ class TestCreateLaggedTrainingData:
             else [expected_times_y]
         )
 
-        X, y, times, _ = create_lagged_training_data(
+        X, y, times, _, _ = create_lagged_training_data(
             target_series=target,
             output_chunk_length=output_chunk_length,
             past_covariates=past_cov if lags_past_ else None,
@@ -977,7 +977,7 @@ class TestCreateLaggedTrainingData:
             if all(lags_is_none):
                 continue
             # Using moving window method:
-            X_mw, y_mw, times_mw, _ = create_lagged_training_data(
+            X_mw, y_mw, times_mw, _, _ = create_lagged_training_data(
                 target_series=target,
                 output_chunk_length=output_chunk_length,
                 past_covariates=past if lags_past else None,
@@ -992,7 +992,7 @@ class TestCreateLaggedTrainingData:
                 output_chunk_shift=output_chunk_shift,
             )
             # Using time intersection method:
-            X_ti, y_ti, times_ti, _ = create_lagged_training_data(
+            X_ti, y_ti, times_ti, _, _ = create_lagged_training_data(
                 target_series=target,
                 output_chunk_length=output_chunk_length,
                 past_covariates=past if lags_past else None,
@@ -1065,7 +1065,8 @@ class TestCreateLaggedTrainingData:
         ]
         expected_X = np.concatenate(
             [expected_X_target, expected_X_past, expected_X_future], axis=1
-        )[:, :, np.newaxis]
+        )
+        expected_X = np.expand_dims(expected_X, axis=-1)
 
         kwargs = {
             "expected_X": expected_X,
@@ -2611,3 +2612,214 @@ class TestCreateLaggedTrainingData:
             use_static_covariates=use_static_cov,
         )
         assert expected_lagged_features == created_lagged_features
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [10, 50],
+            [True, False],
+            ["linear", "exponential"],
+            ["D", "2D", 2],
+            [True, False],
+        ),
+    )
+    def test_correct_generated_weights_exponential(self, config):
+        """Tests built in weights generation for:
+        - varying target series sizes
+        - with and without moving window tabularization
+        - different weight functions
+        - datetime and integer index
+        - single and multiple series
+        """
+        training_size, use_moving_windows, sample_weight, freq, single_series = config
+
+        if not isinstance(freq, int):
+            freq = pd.tseries.frequencies.to_offset(freq)
+            start = pd.Timestamp("2000-01-01")
+        else:
+            start = 1
+
+        train_y = linear_timeseries(start=start, length=training_size, freq=freq)
+
+        _, y, _, _, weights = create_lagged_training_data(
+            lags=[-4, -1],
+            target_series=train_y if single_series else [train_y] * 2,
+            output_chunk_length=1,
+            uses_static_covariates=False,
+            sample_weight=sample_weight,
+            output_chunk_shift=0,
+            use_moving_windows=use_moving_windows,
+        )
+
+        len_y = len(y) if single_series else int(len(y) / 2)
+        if sample_weight == "linear":
+            expected_weights = np.linspace(0, 1, len(train_y))[-len_y:, None, None]
+        else:  # exponential decay
+            time_steps = np.linspace(0, 1, len(train_y))
+            expected_weights = np.exp(-10 * (1 - time_steps))[-len_y:, None, None]
+
+        if not single_series:
+            expected_weights = np.concatenate([expected_weights] * 2, axis=0)
+
+        assert weights.shape == y.shape
+        np.testing.assert_array_almost_equal(weights, expected_weights)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [10, 20],
+            [True, False],
+            [True, False],
+            [1, 2],
+            [0, 1],
+            ["D", "2D", 2],
+            [True, False],
+            [True, False],
+        ),
+    )
+    def test_correct_user_weights(self, config):
+        """Checks correct weights extraction for:
+        - varying target series sizes
+        - with and without moving window tabularization
+        - weights with exact matching index and longer weights
+        - single and multi horizon
+        - with and without output chunk shift
+        - datetime and integer index
+        - single and multiple series
+        - uni- and multivariate series
+        """
+        (
+            training_size,
+            use_moving_windows,
+            weights_longer,
+            ocl,
+            ocs,
+            freq,
+            single_series,
+            univar_series,
+        ) = config
+        if not isinstance(freq, int):
+            freq = pd.tseries.frequencies.to_offset(freq)
+            start = pd.Timestamp("2000-01-01")
+        else:
+            start = 1
+
+        train_y = linear_timeseries(start=start, length=training_size, freq=freq)
+        if not univar_series:
+            train_y.stack(train_y)
+
+        # weights are either longer or have the exact time index as the target series
+        n_weights = len(train_y) + 2 * int(weights_longer)
+        ts_weights = TimeSeries.from_times_and_values(
+            times=generate_index(
+                start=train_y.start_time() - int(weights_longer) * freq,
+                length=n_weights,
+                freq=freq,
+            ),
+            values=np.linspace(0, 1, n_weights),
+        )
+        if not univar_series:
+            ts_weights.stack(ts_weights + 1.0)
+
+        _, y, _, _, weights = create_lagged_training_data(
+            lags=[-4, -1],
+            target_series=train_y if single_series else [train_y] * 2,
+            output_chunk_length=ocl,
+            uses_static_covariates=False,
+            sample_weight=ts_weights if single_series else [ts_weights] * 2,
+            output_chunk_shift=ocs,
+            use_moving_windows=use_moving_windows,
+        )
+
+        # weights shape must match label shape, since we have one
+        # weight per sample and predict step
+        assert weights.shape == y.shape
+
+        # get the weights matching the index of the target series
+        weights_exact = ts_weights.values()
+        if weights_longer:
+            weights_exact = weights_exact[1:-1]
+
+        # the weights correspond to the same sample and time index as the `y` labels
+        expected_weights = []
+        len_y_single = len(y) if single_series else int(len(y) / 2)
+        for i in range(ocl):
+            mask = slice(-(i + len_y_single), -i if i else None)
+            expected_weights.append(weights_exact[mask])
+        expected_weights = np.concatenate(expected_weights, axis=1)[:, ::-1]
+        if not single_series:
+            expected_weights = np.concatenate([expected_weights] * 2, axis=0)
+        np.testing.assert_array_almost_equal(weights[:, :, 0], expected_weights)
+
+    @pytest.mark.parametrize(
+        "use_moving_windows",
+        [True, False],
+    )
+    def test_invalid_sample_weights(self, use_moving_windows):
+        """Checks invalid weights raise error with and without moving window tabularization
+        - too short series
+        - not enough series
+        - invalid string
+        - weights shape does not match number of `series` components
+        """
+        training_size = 10
+
+        train_y = linear_timeseries(length=training_size)
+        weights_too_short = train_y[:-2]
+        with pytest.raises(ValueError) as err:
+            _ = create_lagged_training_data(
+                lags=[-4, -1],
+                target_series=train_y,
+                output_chunk_length=1,
+                uses_static_covariates=False,
+                sample_weight=weights_too_short,
+                output_chunk_shift=0,
+                use_moving_windows=use_moving_windows,
+            )
+        assert (
+            str(err.value)
+            == "The `sample_weight` series must have at least the same times as the target `series`."
+        )
+
+        with pytest.raises(ValueError) as err:
+            _ = create_lagged_training_data(
+                lags=[-4, -1],
+                target_series=[train_y] * 2,
+                output_chunk_length=1,
+                uses_static_covariates=False,
+                sample_weight=[train_y],
+                output_chunk_shift=0,
+                use_moving_windows=use_moving_windows,
+            )
+        assert (
+            str(err.value)
+            == "The provided sequence of target `series` must have the same length as the provided sequence "
+            "of `sample_weight`."
+        )
+
+        with pytest.raises(ValueError) as err:
+            _ = create_lagged_training_data(
+                lags=[-4, -1],
+                target_series=[train_y] * 2,
+                output_chunk_length=1,
+                uses_static_covariates=False,
+                sample_weight="invalid",
+                output_chunk_shift=0,
+                use_moving_windows=use_moving_windows,
+            )
+        assert str(err.value).startswith("Invalid `sample_weight` value: `'invalid'`. ")
+
+        with pytest.raises(ValueError) as err:
+            _ = create_lagged_training_data(
+                lags=[-4, -1],
+                target_series=train_y,
+                output_chunk_length=1,
+                uses_static_covariates=False,
+                sample_weight=train_y.stack(train_y),
+                output_chunk_shift=0,
+                use_moving_windows=use_moving_windows,
+            )
+        assert str(err.value) == (
+            "The number of components in `sample_weight` must either be `1` or "
+            "match the number of target series components `1`."
+        )
