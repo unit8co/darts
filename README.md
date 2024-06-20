@@ -164,7 +164,7 @@ series.plot()
   The `PyODScorer` makes it trivial to use PyOD detectors on time series.
 
 * **Multivariate Support:** `TimeSeries` can be multivariate - i.e., contain multiple time-varying
-  dimensions instead of a single scalar value. Many models can consume and produce multivariate series.
+  dimensions/columns instead of a single scalar value. Many models can consume and produce multivariate series.
 
 * **Multiple series training (global models):** All machine learning based models (incl. all neural networks)
   support being trained on multiple (potentially multivariate) series. This can scale to large datasets too.
@@ -185,6 +185,13 @@ series.plot()
 
 * **Regression Models:** It is possible to plug-in any scikit-learn compatible model
   to obtain forecasts as functions of lagged values of the target series and covariates.
+
+* **Training with sample weights:** All global models support being trained with sample weights. They can be
+  applied to each observation, forecasted time step and target column.
+
+* **Forecast Start Shifting:** All global models support training and prediction on a shifted output window.
+  This is useful for example for Day-Ahead Market forecasts, or when the covariates (or target series) are reported
+  with a delay.
 
 * **Explainability:** Darts has the ability to *explain* some forecasting models using Shap values.
 
