@@ -103,3 +103,30 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
             return decorated(self, *args, **kwargs)
 
     return decorator
+
+
+class TemporalBatchNorm1d(nn.Module):
+    def __init__(self, feature_size) -> None:
+        super().__init__()
+        self.norm = nn.BatchNorm1d(feature_size)
+
+    def forward(self, input):
+        input = input.swapaxes(1, 2)
+        input = self.norm(input)
+        input = input.swapaxes(1, 2)
+        return input if len(input) > 1 else input[0]
+
+
+class ExtractRnnOutput(nn.Module):
+    def __init__(self, is_output, is_lstm) -> None:
+        self.is_output = is_output
+        self.is_lstm = is_lstm
+        super().__init__()
+
+    def forward(self, input):
+        output, hidden = input
+        if self.is_output:
+            return output
+        if self.is_lstm:
+            return hidden[0]
+        return hidden
