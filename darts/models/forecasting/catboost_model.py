@@ -165,7 +165,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         self._median_idx = None
         self._model_container = None
         self._rng = None
-        self.likelihood = likelihood
+        self._likelihood = likelihood
         self.quantiles = None
 
         self._output_chunk_length = output_chunk_length

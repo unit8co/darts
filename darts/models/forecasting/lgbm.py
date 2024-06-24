@@ -188,7 +188,7 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         self._median_idx = None
         self._model_container = None
         self.quantiles = None
-        self.likelihood = likelihood
+        self._likelihood = likelihood
         self._rng = None
 
         # parse likelihood
@@ -294,7 +294,6 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
                     val_sample_weight=val_sample_weight,
                     **kwargs,
                 )
-
                 self._model_container[quantile] = self.model
             return self
 

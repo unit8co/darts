@@ -105,6 +105,7 @@ def _optimized_historical_forecasts_last_points_only(
             target_series=(
                 None
                 if model._get_lags("target") is None
+                and not model.uses_static_covariates
                 else series_[hist_fct_tgt_start:hist_fct_tgt_end]
             ),
             past_covariates=(
@@ -260,6 +261,7 @@ def _optimized_historical_forecasts_all_points(
             target_series=(
                 None
                 if model._get_lags("target") is None
+                and not model.uses_static_covariates
                 else series_[hist_fct_tgt_start:hist_fct_tgt_end]
             ),
             past_covariates=(
@@ -281,6 +283,7 @@ def _optimized_historical_forecasts_all_points(
             check_inputs=True,
             use_moving_windows=True,
             concatenate=False,
+            show_warnings=False,
         )
 
         # stride must be applied post-hoc to avoid missing values

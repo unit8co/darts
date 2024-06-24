@@ -1315,7 +1315,7 @@ class TestRegressionModels:
                 horizon=0, target_dim=1
             )
 
-    model_configs = [(XGBModel, dict({"tree_method": "exact"}, **xgb_test_params))]
+    model_configs = [(XGBModel, dict({"likelihood": "poisson"}, **xgb_test_params))]
     if lgbm_available:
         model_configs += [(LightGBMModel, lgbm_test_params)]
     if cb_available:
@@ -1341,7 +1341,15 @@ class TestRegressionModels:
         """Craft training data so that estimator_[i].predict(X) == i + 1"""
 
         def helper_check_overfitted_estimators(ts: TimeSeries, ocl: int):
-            m = XGBModel(lags=3, output_chunk_length=ocl, multi_models=True)
+            # since xgboost==2.1.0, the regular deterministic models have native multi output regression
+            # -> we use a quantile likelihood to activate Darts' MultiOutputRegressor
+            m = XGBModel(
+                lags=3,
+                output_chunk_length=ocl,
+                multi_models=True,
+                likelihood="quantile",
+                quantiles=[0.5],
+            )
             m.fit(ts)
 
             assert len(m.model.estimators_) == ocl * ts.width
@@ -1401,7 +1409,15 @@ class TestRegressionModels:
         # estimators_[0] labels : [1]
         # estimators_[1] labels : [2]
 
-        m = XGBModel(lags=3, output_chunk_length=ocl, multi_models=False)
+        # since xgboost==2.1.0, the regular deterministic models have native multi output regression
+        # -> we use a quantile likelihood to activate Darts' MultiOutputRegressor
+        m = XGBModel(
+            lags=3,
+            output_chunk_length=ocl,
+            multi_models=False,
+            likelihood="quantile",
+            quantiles=[0.5],
+        )
         m.fit(ts)
 
         # one estimator is reused for all the horizon of a given component
@@ -2592,6 +2608,44 @@ class TestRegressionModels:
         np.testing.assert_array_almost_equal(
             hist_fc_opt.values(copy=False), pred_last_hist_fc[-1].values(copy=False)
         )
+
+    @pytest.mark.parametrize("lpo", [True, False])
+    def test_historical_forecasts_no_target_lags_with_static_covs(self, lpo):
+        """Tests that historical forecasts work without target lags but with static covariates.
+        For last_points_only `True` and `False`."""
+        ocl = 7
+        series = tg.linear_timeseries(
+            length=28, start=pd.Timestamp("2000-01-01"), freq="d"
+        ).with_static_covariates(pd.Series([1.0]))
+
+        model = LinearRegressionModel(
+            lags=None,
+            lags_future_covariates=(3, 0),
+            output_chunk_length=ocl,
+            use_static_covariates=True,
+        )
+        model.fit(series, future_covariates=series)
+
+        preds1 = model.historical_forecasts(
+            series,
+            future_covariates=series,
+            retrain=False,
+            enable_optimization=True,
+            last_points_only=lpo,
+        )
+        preds2 = model.historical_forecasts(
+            series,
+            future_covariates=series,
+            retrain=False,
+            enable_optimization=False,
+            last_points_only=lpo,
+        )
+        if lpo:
+            preds1 = [preds1]
+            preds2 = [preds2]
+
+        for p1, p2 in zip(preds1, preds2):
+            np.testing.assert_array_almost_equal(p1.values(), p2.values())
 
     @pytest.mark.parametrize(
         "config",

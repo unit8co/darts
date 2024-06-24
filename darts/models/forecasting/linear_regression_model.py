@@ -174,7 +174,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         self._median_idx = None
         self._model_container = None
         self.quantiles = None
-        self.likelihood = likelihood
+        self._likelihood = likelihood
         self._rng = None
 
         # parse likelihood
