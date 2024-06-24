@@ -43,6 +43,7 @@ def create_lagged_data(
     is_training: bool = True,
     concatenate: bool = True,
     sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
+    show_warnings: bool = True,
 ) -> Tuple[
     ArrayOrArraySequence,
     Union[None, ArrayOrArraySequence],
@@ -224,6 +225,8 @@ def create_lagged_data(
         `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
         computed globally based on the length of the longest series in `series`. Then for each series, the weights
         are extracted from the end of the global weights. This gives a common time weighting across all series.
+    show_warnings
+        Whether to show warnings.
 
     Returns
     -------
@@ -359,6 +362,7 @@ def create_lagged_data(
                 multi_models=multi_models,
                 check_inputs=check_inputs,
                 is_training=is_training,
+                show_warnings=show_warnings,
             )
         else:
             X_i, y_i, times_i, weights_i = _create_lagged_data_by_intersecting_times(
@@ -375,6 +379,7 @@ def create_lagged_data(
                 multi_models=multi_models,
                 check_inputs=check_inputs,
                 is_training=is_training,
+                show_warnings=show_warnings,
             )
         X_i, last_static_covariates_shape = add_static_covariates_to_lagged_data(
             features=X_i,
@@ -576,6 +581,7 @@ def create_lagged_prediction_data(
     check_inputs: bool = True,
     use_moving_windows: bool = True,
     concatenate: bool = True,
+    show_warnings: bool = True,
 ) -> Tuple[ArrayOrArraySequence, Sequence[pd.Index]]:
     """
     Creates the features array `X` to produce a series of prediction from an already-trained regression model; the
@@ -640,6 +646,8 @@ def create_lagged_prediction_data(
         `Sequence[TimeSeries]` are provided, then `X` will be an array created by concatenating all feature
         arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
+    show_warnings
+        Whether to show warnings.
 
     Returns
     -------
@@ -680,6 +688,7 @@ def create_lagged_prediction_data(
         use_moving_windows=use_moving_windows,
         is_training=False,
         concatenate=concatenate,
+        show_warnings=show_warnings,
     )
     return X, times
 
@@ -963,6 +972,7 @@ def _create_lagged_data_by_moving_window(
     multi_models: bool,
     check_inputs: bool,
     is_training: bool,
+    show_warnings: bool = True,
 ) -> Tuple[np.ndarray, Optional[np.ndarray], pd.Index, Optional[np.ndarray]]:
     """
     Helper function called by `create_lagged_data` that computes `X`, `y`, and `times` by
@@ -991,6 +1001,7 @@ def _create_lagged_data_by_moving_window(
         is_training=is_training,
         return_min_and_max_lags=True,
         check_inputs=check_inputs,
+        show_warnings=show_warnings,
     )
     if check_inputs:
         series_and_lags_not_specified = [max_lag is None for max_lag in max_lags]
@@ -1197,6 +1208,7 @@ def _create_lagged_data_by_intersecting_times(
     multi_models: bool,
     check_inputs: bool,
     is_training: bool,
+    show_warnings: bool = True,
 ) -> Tuple[
     np.ndarray,
     Optional[np.ndarray],
@@ -1224,6 +1236,7 @@ def _create_lagged_data_by_intersecting_times(
         is_training=is_training,
         return_min_and_max_lags=True,
         check_inputs=check_inputs,
+        show_warnings=show_warnings,
     )
     if check_inputs:
         series_and_lags_not_specified = [min_lag is None for min_lag in min_lags]
@@ -1460,6 +1473,7 @@ def _get_feature_times(
     is_training: bool = True,
     return_min_and_max_lags: bool = False,
     check_inputs: bool = True,
+    show_warnings: bool = True,
 ) -> Union[FeatureTimes, Tuple[FeatureTimes, MinLags, MaxLags]]:
     """
     Returns a tuple containing the times in `target_series`, the times in `past_covariates`, and the times in
@@ -1571,6 +1585,8 @@ def _get_feature_times(
     return_min_and_max_lags
         Optionally, specifies whether the largest magnitude lag value for each series should also be returned along with
         the 'eligible' feature times
+    show_warnings
+        Whether to show warnings.
 
     Note: if the lags are provided as a dictionary for the target series or any of the covariates series, the
     component-specific lags are grouped into a single list to compute the corresponding feature time.
@@ -1673,7 +1689,11 @@ def _get_feature_times(
             # `target_series`/`past_covariates` in `Notes`:
             if max_lag_i > 0:
                 times_i = times_i[max_lag_i:]
-        elif (not is_label_series) and (series_specified ^ lags_specified):
+        elif (
+            show_warnings
+            and (not is_label_series)
+            and (series_specified ^ lags_specified)
+        ):
             # Warn user that series/lags input will be ignored:
             times_i = max_lag_i = None
             lags_name = "lags" if name_i == "target_series" else f"lags_{name_i}"
