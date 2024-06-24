@@ -1315,7 +1315,7 @@ class TestRegressionModels:
                 horizon=0, target_dim=1
             )
 
-    model_configs = [(XGBModel, dict({"tree_method": "exact"}, **xgb_test_params))]
+    model_configs = [(XGBModel, dict({"likelihood": "poisson"}, **xgb_test_params))]
     if lgbm_available:
         model_configs += [(LightGBMModel, lgbm_test_params)]
     if cb_available:
@@ -1341,7 +1341,15 @@ class TestRegressionModels:
         """Craft training data so that estimator_[i].predict(X) == i + 1"""
 
         def helper_check_overfitted_estimators(ts: TimeSeries, ocl: int):
-            m = XGBModel(lags=3, output_chunk_length=ocl, multi_models=True)
+            # since xgboost==2.1.0, the regular deterministic models have native multi output regression
+            # -> we use a quantile likelihood to activate Darts' MultiOutputRegressor
+            m = XGBModel(
+                lags=3,
+                output_chunk_length=ocl,
+                multi_models=True,
+                likelihood="quantile",
+                quantiles=[0.5],
+            )
             m.fit(ts)
 
             assert len(m.model.estimators_) == ocl * ts.width
@@ -1401,7 +1409,15 @@ class TestRegressionModels:
         # estimators_[0] labels : [1]
         # estimators_[1] labels : [2]
 
-        m = XGBModel(lags=3, output_chunk_length=ocl, multi_models=False)
+        # since xgboost==2.1.0, the regular deterministic models have native multi output regression
+        # -> we use a quantile likelihood to activate Darts' MultiOutputRegressor
+        m = XGBModel(
+            lags=3,
+            output_chunk_length=ocl,
+            multi_models=False,
+            likelihood="quantile",
+            quantiles=[0.5],
+        )
         m.fit(ts)
 
         # one estimator is reused for all the horizon of a given component
