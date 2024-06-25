@@ -205,9 +205,13 @@ class TestShapExplainer:
 
         # Good type of explainers
         shap_explain = ShapExplainer(m)
-        assert isinstance(
-            shap_explain.explainers.explainers[0][0], shap.explainers.Tree
-        )
+        if isinstance(m, XGBModel):
+            # since xgboost > 2.1.0, model supports native multi output regression
+            assert isinstance(shap_explain.explainers.explainers, shap.explainers.Tree)
+        else:
+            assert isinstance(
+                shap_explain.explainers.explainers[0][0], shap.explainers.Tree
+            )
 
         # Linear model - also not a MultiOutputRegressor
         m = LinearRegressionModel(
@@ -266,9 +270,12 @@ class TestShapExplainer:
             future_covariates=self.fut_cov_ts,
         )
         shap_explain = ShapExplainer(m)
-        assert isinstance(
-            shap_explain.explainers.explainers[0][0], shap.explainers.Tree
-        )
+        if isinstance(m, XGBModel):
+            assert isinstance(shap_explain.explainers.explainers, shap.explainers.Tree)
+        else:
+            assert isinstance(
+                shap_explain.explainers.explainers[0][0], shap.explainers.Tree
+            )
 
         # Bad choice of shap explainer
         with pytest.raises(ValueError):
@@ -709,13 +716,26 @@ class TestShapExplainer:
             shap.Explanation,
         )
 
-    def test_shap_selected_components(self):
-        model_cls = LightGBMModel if lgbm_available else XGBModel
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (XGBModel, {}),
+            (
+                LightGBMModel if lgbm_available else XGBModel,
+                {"likelihood": "quantile", "quantiles": [0.5]},
+            ),
+        ],
+    )
+    def test_shap_selected_components(self, config):
+        """Test selected components with and without Darts' MultiOutputRegressor"""
+        model_cls, model_kwargs = config
+        # model_cls = XGBModel
         model = model_cls(
             lags=4,
             lags_past_covariates=2,
             lags_future_covariates=[1],
             output_chunk_length=1,
+            **model_kwargs,
         )
         model.fit(
             series=self.target_ts,
