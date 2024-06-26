@@ -658,7 +658,7 @@ class _RegressionShapExplainers:
             shap_explanation_tmp = self.explainers(foreground_X)
             for h in horizons:
                 tmp_n = {}
-                for t_idx, t in enumerate(target_components):
+                for t_idx, t in enumerate(self.target_components):
                     if t not in target_components:
                         continue
                     if not self.single_output:
