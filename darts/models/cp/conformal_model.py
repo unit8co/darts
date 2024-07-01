@@ -272,9 +272,8 @@ class ConformalModel(GlobalForecastingModel):
             predict_kwargs=predict_kwargs,
         )
         # TODO: add support for:
-        # - overlap_end = True
         # - last_points_only = True
-        # - use only `train_length` previous residuals
+        # - overlap_end = True
         # - num_samples
         # - predict_likelihood_parameters
         # - tqdm iterator over series
@@ -283,6 +282,7 @@ class ConformalModel(GlobalForecastingModel):
 
         # DONE:
         # - add correct output components
+        # - use only `train_length` previous residuals
         residuals = self.model.residuals(
             series=series,
             historical_forecasts=hfcs,
@@ -298,31 +298,25 @@ class ConformalModel(GlobalForecastingModel):
             cp_preds = []
 
             # no historical forecasts were generated
-            if not s_hfcs:
+            if not s_hfcs or train_length is not None and train_length > len(s_hfcs):
                 cp_hfcs.append(cp_preds)
                 continue
 
             # determine the first forecast index for which to compute conformal prediction;
             # all forecasts before that are used for calibration
             # skip based on `train_length`
-            skip_n_train_length = 0
-            if train_length is not None:
-                if train_length > len(s_hfcs):
-                    # ignore series where we don't have enough forecasts available
-                    cp_hfcs.append(cp_preds)
-                    continue
-                skip_n_train_length = train_length
+            skip_n_train_length = train_length if train_length is not None else 0
 
             # skip based on `start`
             skip_n_start = 0
             if start is not None:
                 if isinstance(start, pd.Timestamp) or start_format == "value":
-                    skip_n_start = n_steps_between(
-                        s_hfcs[0], start, freq=series[0].freq
-                    )
+                    start_ = start
                 else:
-                    # start is `int` and `start_format="position"`
-                    skip_n_start = start if start >= 0 else start + len(series)
+                    start_ = series_._time_index[start]
+                skip_n_start = n_steps_between(
+                    start_, s_hfcs[0].start_time(), freq=series_.freq
+                )
 
             # TODO: what should be the smallest number for calibration residuals - 0 or 1?
             min_skip_n = 0
@@ -339,8 +333,9 @@ class ConformalModel(GlobalForecastingModel):
                 else:
                     # TODO: should we consider all previous historical forecasts, or only the stridden ones?
                     # get the last residual index for calibration
-                    cal_idx = skip_n + idx * stride
-                    cal_res = np.concatenate(res[:cal_idx], axis=2)
+                    cal_end = skip_n + idx * stride
+                    cal_start = None if train_length is None else cal_end - train_length
+                    cal_res = np.concatenate(res[cal_start:cal_end], axis=2)
                     q_hat = np.quantile(cal_res, q=self.alpha, axis=2)
                     cp_pred = np.concatenate(
                         [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
