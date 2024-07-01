@@ -737,6 +737,7 @@ def _build_forecast_series(
     with_static_covs: bool = True,
     with_hierarchy: bool = True,
     pred_start: Optional[Union[pd.Timestamp, int]] = None,
+    time_index: Union[pd.DatetimeIndex, pd.RangeIndex] = None,
 ) -> TimeSeries:
     """
     Builds a forecast time series starting after the end of an input time series, with the
@@ -762,17 +763,17 @@ def _build_forecast_series(
     TimeSeries
         New TimeSeries instance starting after the input series
     """
-    time_index_length = (
-        len(points_preds)
-        if isinstance(points_preds, np.ndarray)
-        else len(points_preds[0])
-    )
-
-    time_index = _generate_new_dates(
-        time_index_length,
-        input_series=input_series,
-        start=pred_start,
-    )
+    if time_index is None:
+        time_index_length = (
+            len(points_preds)
+            if isinstance(points_preds, np.ndarray)
+            else len(points_preds[0])
+        )
+        time_index = _generate_new_dates(
+            time_index_length,
+            input_series=input_series,
+            start=pred_start,
+        )
     values = (
         points_preds
         if isinstance(points_preds, np.ndarray)

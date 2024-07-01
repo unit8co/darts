@@ -13,6 +13,7 @@ from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.utils import _with_sanity_checks
+from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
 from darts.utils.utils import n_steps_between
 
@@ -154,7 +155,7 @@ class ConformalModel(GlobalForecastingModel):
 
         # first: NAIVE only
         cp_preds = []
-        for res, pred in zip(residuals, preds):
+        for series_, pred, res in zip(series, preds, residuals):
             # convert to (horizon, n comps, hist fcs)
             res = np.concatenate(res, axis=2)
             q_hat = np.quantile(res, q=self.alpha, axis=2)
@@ -162,13 +163,15 @@ class ConformalModel(GlobalForecastingModel):
             cp_pred = np.concatenate(
                 [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
             )
-            # TODO: use `_build_forecast_series` as in `pl_forecasting_module.py`
-            cp_pred = TimeSeries.from_times_and_values(
-                times=pred._time_index,
-                values=cp_pred,
+            cp_pred = _build_forecast_series(
+                points_preds=cp_pred,
+                input_series=series_,
+                custom_columns=self._cp_component_names(series_),
+                time_index=pred._time_index,
+                with_static_covs=False,
+                with_hierarchy=False,
             )
             cp_preds.append(cp_pred)
-
         return cp_preds[0] if called_with_single_series else cp_preds
         # for step_number in range(1, self.n_forecasts + 1):
         #     # conformalize
@@ -271,7 +274,6 @@ class ConformalModel(GlobalForecastingModel):
         # TODO: add support for:
         # - overlap_end = True
         # - last_points_only = True
-        # - add correct output components
         # - use only `train_length` previous residuals
         # - num_samples
         # - predict_likelihood_parameters
@@ -279,6 +281,8 @@ class ConformalModel(GlobalForecastingModel):
         # - support for different CP algorithms
         # - compute all possible residuals (including the partial forecast horizons up until the end)
 
+        # DONE:
+        # - add correct output components
         residuals = self.model.residuals(
             series=series,
             historical_forecasts=hfcs,
@@ -290,7 +294,7 @@ class ConformalModel(GlobalForecastingModel):
 
         # TODO: Generate Conformalized predictions per forecast
         cp_hfcs = []
-        for s_hfcs, res in zip(hfcs, residuals):
+        for series_, s_hfcs, res in zip(series, hfcs, residuals):
             cp_preds = []
 
             # no historical forecasts were generated
@@ -324,7 +328,10 @@ class ConformalModel(GlobalForecastingModel):
             min_skip_n = 0
             skip_n = max([skip_n_train_length, skip_n_start, min_skip_n])
 
-            for idx, pred in enumerate(s_hfcs[skip_n::stride]):
+            for (
+                idx,
+                pred,
+            ) in enumerate(s_hfcs[skip_n::stride]):
                 # convert to (horizon, n comps, hist fcs)
                 pred_vals = pred.values(copy=False)
                 if not skip_n and not idx:
@@ -338,11 +345,13 @@ class ConformalModel(GlobalForecastingModel):
                     cp_pred = np.concatenate(
                         [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
                     )
-
-                # TODO: use `_build_forecast_series` as in `pl_forecasting_module.py`
-                cp_pred = TimeSeries.from_times_and_values(
-                    times=pred._time_index,
-                    values=cp_pred,
+                cp_pred = _build_forecast_series(
+                    points_preds=cp_pred,
+                    input_series=series_,
+                    custom_columns=self._cp_component_names(series_),
+                    time_index=pred._time_index,
+                    with_static_covs=False,
+                    with_hierarchy=False,
                 )
                 cp_preds.append(cp_pred)
             cp_hfcs.append(cp_preds)
@@ -441,6 +450,13 @@ class ConformalModel(GlobalForecastingModel):
             q_hat_idx = int(len(noncon_scores) * self.alpha)
             q_hat = noncon_scores[-q_hat_idx]
             return {"q_hat_sym": q_hat}
+
+    def _cp_component_names(self, input_series) -> List[str]:
+        return [
+            f"{tgt_name}_{param_n}"
+            for tgt_name in input_series.components
+            for param_n in ["q_lo", "q_md", "q_hi"]
+        ]
 
     @property
     def _model_encoder_settings(
