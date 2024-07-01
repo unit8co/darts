@@ -14,8 +14,13 @@ from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.utils import _with_sanity_checks
 from darts.utils.timeseries_generation import _build_forecast_series
-from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
-from darts.utils.utils import n_steps_between
+from darts.utils.ts_utils import (
+    SeriesType,
+    get_series_seq_type,
+    get_single_series,
+    series2seq,
+)
+from darts.utils.utils import generate_index, n_steps_between
 
 logger = get_logger(__name__)
 
@@ -263,7 +268,7 @@ class ConformalModel(GlobalForecastingModel):
             forecast_horizon=forecast_horizon,
             retrain=False,
             overlap_end=overlap_end,
-            last_points_only=False,
+            last_points_only=last_points_only,
             verbose=verbose,
             show_warnings=show_warnings,
             predict_likelihood_parameters=predict_likelihood_parameters,
@@ -272,7 +277,6 @@ class ConformalModel(GlobalForecastingModel):
             predict_kwargs=predict_kwargs,
         )
         # TODO: add support for:
-        # - last_points_only = True
         # - overlap_end = True
         # - num_samples
         # - predict_likelihood_parameters
@@ -281,12 +285,13 @@ class ConformalModel(GlobalForecastingModel):
         # - compute all possible residuals (including the partial forecast horizons up until the end)
 
         # DONE:
+        # - last_points_only = True
         # - add correct output components
         # - use only `train_length` previous residuals
         residuals = self.model.residuals(
             series=series,
             historical_forecasts=hfcs,
-            last_points_only=False,
+            last_points_only=last_points_only,
             verbose=verbose,
             show_warnings=show_warnings,
             values_only=True,
@@ -315,41 +320,79 @@ class ConformalModel(GlobalForecastingModel):
                 else:
                     start_ = series_._time_index[start]
                 skip_n_start = n_steps_between(
-                    start_, s_hfcs[0].start_time(), freq=series_.freq
+                    end=start_,
+                    start=get_single_series(s_hfcs).start_time(),
+                    freq=series_.freq,
                 )
+                # hfcs only contain last predicted points; skip until end of first forecast
+                if last_points_only:
+                    skip_n_start += forecast_horizon - 1
 
             # TODO: what should be the smallest number for calibration residuals - 0 or 1?
             min_skip_n = 0
             skip_n = max([skip_n_train_length, skip_n_start, min_skip_n])
 
-            for (
-                idx,
-                pred,
-            ) in enumerate(s_hfcs[skip_n::stride]):
-                # convert to (horizon, n comps, hist fcs)
-                pred_vals = pred.values(copy=False)
-                if not skip_n and not idx:
-                    cp_pred = np.concatenate([pred_vals] * 3, axis=1)
-                else:
-                    # TODO: should we consider all previous historical forecasts, or only the stridden ones?
-                    # get the last residual index for calibration
-                    cal_end = skip_n + idx * stride
-                    cal_start = None if train_length is None else cal_end - train_length
-                    cal_res = np.concatenate(res[cal_start:cal_end], axis=2)
-                    q_hat = np.quantile(cal_res, q=self.alpha, axis=2)
-                    cp_pred = np.concatenate(
-                        [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
-                    )
-                cp_pred = _build_forecast_series(
-                    points_preds=cp_pred,
+            if last_points_only:
+                for idx, pred_vals in enumerate(
+                    s_hfcs.values(copy=False)[skip_n::stride]
+                ):
+                    pred_vals = np.expand_dims(pred_vals, 0)
+                    if not skip_n and not idx:
+                        cp_pred = np.concatenate([pred_vals] * 3, axis=1)
+                    else:
+                        # get the last residual index for calibration
+                        cal_end = skip_n + idx * stride
+                        cal_start = (
+                            None if train_length is None else cal_end - train_length
+                        )
+                        # TODO: should we consider all previous historical forecasts, or only the stridden ones?
+                        cal_res = res[cal_start:cal_end]
+                        q_hat = np.quantile(cal_res, q=self.alpha, axis=0)
+                        cp_pred = np.concatenate(
+                            [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
+                        )
+                    cp_preds.append(cp_pred)
+                cp_preds = _build_forecast_series(
+                    points_preds=np.concatenate(cp_preds, axis=0),
                     input_series=series_,
                     custom_columns=self._cp_component_names(series_),
-                    time_index=pred._time_index,
+                    time_index=generate_index(
+                        start=s_hfcs._time_index[skip_n],
+                        length=len(cp_preds),
+                        freq=series_.freq * stride,
+                    ),
                     with_static_covs=False,
                     with_hierarchy=False,
                 )
-                cp_preds.append(cp_pred)
-            cp_hfcs.append(cp_preds)
+                cp_hfcs.append(cp_preds)
+            else:
+                for idx, pred in enumerate(s_hfcs[skip_n::stride]):
+                    # convert to (horizon, n comps, hist fcs)
+                    pred_vals = pred.values(copy=False)
+                    if not skip_n and not idx:
+                        cp_pred = np.concatenate([pred_vals] * 3, axis=1)
+                    else:
+                        # get the last residual index for calibration
+                        cal_end = skip_n + idx * stride
+                        cal_start = (
+                            None if train_length is None else cal_end - train_length
+                        )
+                        # TODO: should we consider all previous historical forecasts, or only the stridden ones?
+                        cal_res = np.concatenate(res[cal_start:cal_end], axis=2)
+                        q_hat = np.quantile(cal_res, q=self.alpha, axis=2)
+                        cp_pred = np.concatenate(
+                            [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
+                        )
+                    cp_pred = _build_forecast_series(
+                        points_preds=cp_pred,
+                        input_series=series_,
+                        custom_columns=self._cp_component_names(series_),
+                        time_index=pred._time_index,
+                        with_static_covs=False,
+                        with_hierarchy=False,
+                    )
+                    cp_preds.append(cp_pred)
+                cp_hfcs.append(cp_preds)
         return cp_hfcs[0] if called_with_single_series else cp_hfcs
 
     def _get_nonconformity_scores(self, df_cal: pd.DataFrame, step_number: int) -> dict:
