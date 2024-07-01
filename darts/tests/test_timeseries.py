@@ -1446,10 +1446,10 @@ class TestTimeSeries:
         df_01 = series.pd_dataframe()
         df_012 = series.pd_dataframe()
 
-        df_0[["0"]] = df_0[["0"]].applymap(fn)
-        df_2[["2"]] = df_2[["2"]].applymap(fn)
-        df_01[["0", "1"]] = df_01[["0", "1"]].applymap(fn)
-        df_012 = df_012.applymap(fn)
+        df_0[["0"]] = df_0[["0"]].map(fn)
+        df_2[["2"]] = df_2[["2"]].map(fn)
+        df_01[["0", "1"]] = df_01[["0", "1"]].map(fn)
+        df_012 = df_012.map(fn)
 
         series_0 = TimeSeries.from_dataframe(df_0, freq="D")
         series_2 = TimeSeries.from_dataframe(df_2, freq="D")
