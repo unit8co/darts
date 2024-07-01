@@ -1,5 +1,10 @@
 import re
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import numpy as np
 import pandas as pd
@@ -7,7 +12,9 @@ import pandas as pd
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.utils import _with_sanity_checks
 from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
+from darts.utils.utils import n_steps_between
 
 logger = get_logger(__name__)
 
@@ -130,8 +137,6 @@ class ConformalModel(GlobalForecastingModel):
             predict_likelihood_parameters=predict_likelihood_parameters,
             show_warnings=show_warnings,
         )
-        preds = series2seq(preds)
-
         residuals = self.model.residuals(
             series=series,
             past_covariates=past_covariates,
@@ -218,6 +223,130 @@ class ConformalModel(GlobalForecastingModel):
         #         df = pd.concat([df, df_add], axis=1, ignore_index=False)
         #
         # return df
+
+    @_with_sanity_checks("_historical_forecasts_sanity_checks")
+    def historical_forecasts(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        num_samples: int = 1,
+        train_length: Optional[int] = None,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["position", "value"] = "value",
+        forecast_horizon: int = 1,
+        stride: int = 1,
+        retrain: Union[bool, int, Callable[..., bool]] = True,
+        overlap_end: bool = False,
+        last_points_only: bool = True,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+        enable_optimization: bool = True,
+        fit_kwargs: Optional[Dict[str, Any]] = None,
+        predict_kwargs: Optional[Dict[str, Any]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+    ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
+        called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
+        series = series2seq(series)
+        past_covariates = series2seq(past_covariates)
+        future_covariates = series2seq(future_covariates)
+
+        hfcs = self.model.historical_forecasts(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            forecast_horizon=forecast_horizon,
+            retrain=False,
+            overlap_end=overlap_end,
+            last_points_only=False,
+            verbose=verbose,
+            show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            enable_optimization=enable_optimization,
+            fit_kwargs=fit_kwargs,
+            predict_kwargs=predict_kwargs,
+        )
+        # TODO: add support for:
+        # - overlap_end = True
+        # - last_points_only = True
+        # - add correct output components
+        # - use only `train_length` previous residuals
+        # - num_samples
+        # - predict_likelihood_parameters
+        # - tqdm iterator over series
+        # - support for different CP algorithms
+        # - compute all possible residuals (including the partial forecast horizons up until the end)
+
+        residuals = self.model.residuals(
+            series=series,
+            historical_forecasts=hfcs,
+            last_points_only=False,
+            verbose=verbose,
+            show_warnings=show_warnings,
+            values_only=True,
+        )
+
+        # TODO: Generate Conformalized predictions per forecast
+        cp_hfcs = []
+        for s_hfcs, res in zip(hfcs, residuals):
+            cp_preds = []
+
+            # no historical forecasts were generated
+            if not s_hfcs:
+                cp_hfcs.append(cp_preds)
+                continue
+
+            # determine the first forecast index for which to compute conformal prediction;
+            # all forecasts before that are used for calibration
+            # skip based on `train_length`
+            skip_n_train_length = 0
+            if train_length is not None:
+                if train_length > len(s_hfcs):
+                    # ignore series where we don't have enough forecasts available
+                    cp_hfcs.append(cp_preds)
+                    continue
+                skip_n_train_length = train_length
+
+            # skip based on `start`
+            skip_n_start = 0
+            if start is not None:
+                if isinstance(start, pd.Timestamp) or start_format == "value":
+                    skip_n_start = n_steps_between(
+                        s_hfcs[0], start, freq=series[0].freq
+                    )
+                else:
+                    # start is `int` and `start_format="position"`
+                    skip_n_start = start if start >= 0 else start + len(series)
+
+            # TODO: what should be the smallest number for calibration residuals - 0 or 1?
+            min_skip_n = 0
+            skip_n = max([skip_n_train_length, skip_n_start, min_skip_n])
+
+            for idx, pred in enumerate(s_hfcs[skip_n::stride]):
+                # convert to (horizon, n comps, hist fcs)
+                pred_vals = pred.values(copy=False)
+                if not skip_n and not idx:
+                    cp_pred = np.concatenate([pred_vals] * 3, axis=1)
+                else:
+                    # TODO: should we consider all previous historical forecasts, or only the stridden ones?
+                    # get the last residual index for calibration
+                    cal_idx = skip_n + idx * stride
+                    cal_res = np.concatenate(res[:cal_idx], axis=2)
+                    q_hat = np.quantile(cal_res, q=self.alpha, axis=2)
+                    cp_pred = np.concatenate(
+                        [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
+                    )
+
+                # TODO: use `_build_forecast_series` as in `pl_forecasting_module.py`
+                cp_pred = TimeSeries.from_times_and_values(
+                    times=pred._time_index,
+                    values=cp_pred,
+                )
+                cp_preds.append(cp_pred)
+            cp_hfcs.append(cp_preds)
+        return cp_hfcs[0] if called_with_single_series else cp_hfcs
 
     def _get_nonconformity_scores(self, df_cal: pd.DataFrame, step_number: int) -> dict:
         """Get the nonconformity scores using the given conformal prediction technique.
@@ -326,6 +455,7 @@ class ConformalModel(GlobalForecastingModel):
     ]:
         return None, None, False, False, None, None
 
+    @property
     def extreme_lags(
         self,
     ) -> Tuple[
