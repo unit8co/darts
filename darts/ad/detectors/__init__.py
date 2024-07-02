@@ -18,10 +18,12 @@ the accuracy metric ("accuracy", "precision", "recall" or "f1") between a binary
 binary ground truth time series indicating the presence of anomalies.
 """
 
+from darts.ad.detectors.iqr_detector import IQRDetector
 from darts.ad.detectors.quantile_detector import QuantileDetector
 from darts.ad.detectors.threshold_detector import ThresholdDetector
 
 __all__ = [
+    "IQRDetector",
     "QuantileDetector",
     "ThresholdDetector",
 ]
