@@ -636,7 +636,7 @@ class TestAnomalyDetectionDetector:
         q1 = np.quantile(np_series[:, 0], q=0.25, axis=0)
         q3 = np.quantile(np_series[:, 0], q=0.75, axis=0)
 
-        # With scale=0 it should detect only inside the IQR
+        # With scale=0 it should detect only outside the IQR
         detector = IQRDetector(scale=0)
         detector.fit(self.train)
 
