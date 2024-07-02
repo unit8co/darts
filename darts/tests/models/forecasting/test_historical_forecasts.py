@@ -13,6 +13,7 @@ from darts.models import (
     ARIMA,
     AutoARIMA,
     CatBoostModel,
+    ConformalModel,
     LightGBMModel,
     LinearRegressionModel,
     NaiveDrift,
@@ -1360,13 +1361,13 @@ class TestHistoricalforecast:
             assert ohfc[0].start_time() == first_ts_expected
             # check hist fc end
             assert ohfc[-1].end_time() == last_ts_expected
-            for hfc, ohfc in zip(hfc, ohfc):
-                assert hfc.columns.equals(series.columns)
-                assert ohfc.columns.equals(series.columns)
-                assert len(ohfc) == n_pred_points_expected
-                assert (hfc.time_index == ohfc.time_index).all()
+            for hfc_, ohfc_ in zip(hfc, ohfc):
+                assert hfc_.columns.equals(series.columns)
+                assert ohfc_.columns.equals(series.columns)
+                assert len(ohfc_) == n_pred_points_expected
+                assert (hfc_.time_index == ohfc_.time_index).all()
                 np.testing.assert_array_almost_equal(
-                    hfc.all_values(), ohfc.all_values()
+                    hfc_.all_values(), ohfc_.all_values()
                 )
 
     def test_hist_fc_end_exact_with_covs(self):
@@ -2512,3 +2513,155 @@ class TestHistoricalforecast:
                 == f"`sample_weight` at series index {invalid_idx} must contain "
                 f"at least all times of the corresponding target `series`."
             )
+
+    @pytest.mark.slow
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
+    @pytest.mark.parametrize(
+        "config",
+        list(
+            itertools.product(
+                [False, True],  # use covariates
+                [True, False],  # last points only
+                [True, False],  # overlap end
+                [1, 3],  # stride
+                [
+                    3,  # horizon < ocl
+                    5,  # horizon == ocl
+                    7,  # horizon > ocl -> autoregression
+                ],
+                [False, True],  # use integer indexed series
+                [False, True],  # use multi-series
+            )
+        ),
+    )
+    def test_conformal_historical_forecasts(self, config):
+        """Tests naive conformal model."""
+        (
+            use_covs,
+            last_points_only,
+            overlap_end,
+            stride,
+            horizon,
+            use_int_idx,
+            use_multi_series,
+        ) = config
+        icl = 3
+        ocl = 5
+        len_val_series = 10
+        series_train, series_val = (
+            self.ts_pass_train[:10],
+            self.ts_pass_val[:len_val_series],
+        )
+        if use_int_idx:
+            series_train = TimeSeries.from_values(
+                series_train.all_values(), columns=series_train.columns
+            )
+            series_val = TimeSeries.from_times_and_values(
+                values=series_val.all_values(),
+                times=pd.RangeIndex(
+                    start=series_train.end_time() + series_train.freq,
+                    stop=series_train.end_time()
+                    + (len(series_val) + 1) * series_train.freq,
+                    step=series_train.freq,
+                ),
+                columns=series_train.columns,
+            )
+
+        model_kwargs = (
+            {}
+            if not use_covs
+            else {"lags_past_covariates": icl, "lags_future_covariates": (icl, ocl)}
+        )
+        forecasting_model = LinearRegressionModel(
+            lags=icl, output_chunk_length=ocl, **model_kwargs
+        )
+        if use_covs:
+            pc = tg.gaussian_timeseries(
+                start=series_train.start_time(),
+                end=series_val.end_time() + max(0, horizon - ocl) * series_train.freq,
+                freq=series_train.freq,
+            )
+            fc = tg.gaussian_timeseries(
+                start=series_train.start_time(),
+                end=series_val.end_time() + max(ocl, horizon) * series_train.freq,
+                freq=series_train.freq,
+            )
+        else:
+            pc, fc = None, None
+
+        forecasting_model.fit(series_train, past_covariates=pc, future_covariates=fc)
+
+        model = ConformalModel(forecasting_model, alpha=0.8, method="naive")
+
+        if use_multi_series:
+            series_val = [
+                series_val,
+                (series_val + 10)
+                .shift(1)
+                .with_columns_renamed(series_val.columns, "test_col"),
+            ]
+            pc = [pc, pc.shift(1)] if pc is not None else None
+            fc = [fc, fc.shift(1)] if fc is not None else None
+
+        hist_fct = model.historical_forecasts(
+            series=series_val,
+            past_covariates=pc,
+            future_covariates=fc,
+            retrain=False,
+            last_points_only=last_points_only,
+            overlap_end=overlap_end,
+            stride=stride,
+            forecast_horizon=horizon,
+        )
+
+        if not isinstance(series_val, list):
+            series_val = [series_val]
+            hist_fct = [hist_fct]
+
+        for (
+            series,
+            hfc,
+        ) in zip(series_val, hist_fct):
+            if not isinstance(hfc, list):
+                hfc = [hfc]
+
+            if not last_points_only and overlap_end:
+                n_pred_series_expected = 8
+                n_pred_points_expected = horizon
+                first_ts_expected = series.time_index[icl]
+                last_ts_expected = series.end_time() + series.freq * horizon
+            elif not last_points_only:  # overlap_end = False
+                n_pred_series_expected = len(series) - icl - horizon + 1
+                n_pred_points_expected = horizon
+                first_ts_expected = series.time_index[icl]
+                last_ts_expected = series.end_time()
+            elif overlap_end:  # last_points_only = True
+                n_pred_series_expected = 1
+                n_pred_points_expected = 8
+                first_ts_expected = series.time_index[icl] + (horizon - 1) * series.freq
+                last_ts_expected = series.end_time() + series.freq * horizon
+            else:  # last_points_only = True, overlap_end = False
+                n_pred_series_expected = 1
+                n_pred_points_expected = len(series) - icl - horizon + 1
+                first_ts_expected = series.time_index[icl] + (horizon - 1) * series.freq
+                last_ts_expected = series.end_time()
+
+            # to make it simple in case of stride, we assume that non-optimized hist fc returns correct results
+            if stride > 1:
+                n_pred_series_expected = len(hfc)
+                n_pred_points_expected = len(hfc[0])
+                first_ts_expected = hfc[0].start_time()
+                last_ts_expected = hfc[-1].end_time()
+
+            cols_excpected = []
+            for col in series.columns:
+                cols_excpected += [f"{col}_q_lo", f"{col}_q_md", f"{col}_q_hi"]
+            # check length match between optimized and default hist fc
+            assert len(hfc) == n_pred_series_expected
+            # check hist fc start
+            assert hfc[0].start_time() == first_ts_expected
+            # check hist fc end
+            assert hfc[-1].end_time() == last_ts_expected
+            for hfc_ in hfc:
+                assert hfc_.columns.tolist() == cols_excpected
+                assert len(hfc_) == n_pred_points_expected
