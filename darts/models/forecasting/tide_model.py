@@ -79,10 +79,10 @@ class _TideModule(PLMixedCovariatesModule):
         temporal_decoder_hidden: int,
         temporal_width_past: int,
         temporal_width_future: int,
-        temporal_hidden_size_past: int,
-        temporal_hidden_size_future: int,
         use_layer_norm: bool,
         dropout: float,
+        temporal_hidden_size_past: Optional[int] = None,
+        temporal_hidden_size_future: Optional[int] = None,
         **kwargs,
     ):
         """Pytorch module implementing the TiDE architecture.
@@ -154,8 +154,8 @@ class _TideModule(PLMixedCovariatesModule):
         self.dropout = dropout
         self.temporal_width_past = temporal_width_past
         self.temporal_width_future = temporal_width_future
-        self.temporal_hidden_size_past = temporal_hidden_size_past
-        self.temporal_hidden_size_future = temporal_hidden_size_future
+        self.temporal_hidden_size_past = temporal_hidden_size_past or hidden_size
+        self.temporal_hidden_size_future = temporal_hidden_size_future or hidden_size
 
         # past covariates handling: either feature projection, raw features, or no features
         self.past_cov_projection = None
@@ -383,8 +383,8 @@ class TiDEModel(MixedCovariatesTorchModel):
         hidden_size: int = 128,
         temporal_width_past: int = 4,
         temporal_width_future: int = 4,
-        temporal_hidden_size_past: int = 64,
-        temporal_hidden_size_future: int = 64,
+        temporal_hidden_size_past: int = None,
+        temporal_hidden_size_future: int = None,
         temporal_decoder_hidden: int = 32,
         use_layer_norm: bool = False,
         dropout: float = 0.1,
@@ -440,9 +440,13 @@ class TiDEModel(MixedCovariatesTorchModel):
             The width of the output layer in the future covariate projection residual block. If `0`,
             will bypass feature projection and use the raw feature data.
         temporal_hidden_size_past
-            The width of the hidden layer in the past covariate projection residual block.
+            The width of the hidden layer in the past covariate projection residual block. If not specified,
+            defaults to `hidden_size`, which is the width of the hidden layer in the encoder and decoder. 
+            This is likely to be too large in many cases, so it is recommended to set this parameter explicitly.
         temporal_hidden_size_future
-            The width of the hidden layer in the future covariate projection residual block.
+            The width of the hidden layer in the future covariate projection residual block. If not specified,
+            defaults to `hidden_size`, which is the width of the hidden layer in the encoder and decoder.
+            This is likely to be too large in many cases, so it is recommended to set this parameter explicitly.
         temporal_decoder_hidden
             The width of the layers in the temporal decoder.
         use_layer_norm
@@ -640,8 +644,8 @@ class TiDEModel(MixedCovariatesTorchModel):
         self.hidden_size = hidden_size
         self.temporal_width_past = temporal_width_past
         self.temporal_width_future = temporal_width_future
-        self.temporal_hidden_size_past = temporal_hidden_size_past
-        self.temporal_hidden_size_future = temporal_hidden_size_future
+        self.temporal_hidden_size_past = temporal_hidden_size_past or hidden_size
+        self.temporal_hidden_size_future = temporal_hidden_size_future or hidden_size
         self.temporal_decoder_hidden = temporal_decoder_hidden
 
         self._considers_static_covariates = use_static_covariates
