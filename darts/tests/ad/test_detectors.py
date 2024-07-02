@@ -6,6 +6,7 @@ import pytest
 
 from darts import TimeSeries
 from darts.ad.detectors.detectors import FittableDetector
+from darts.ad.detectors.iqr_detector import IQRDetector
 from darts.ad.detectors.quantile_detector import QuantileDetector
 from darts.ad.detectors.threshold_detector import ThresholdDetector
 
@@ -376,6 +377,30 @@ class TestAnomalyDetectionDetector:
                 },
                 (9.13658, 10.74007),
             ),
+            (
+                IQRDetector,
+                {},
+                {
+                    "anomalies": 28,
+                    "accuracy": 0.69,
+                    "recall": 0.2,
+                    "f1": 0.060606,
+                    "precision": 0.035714,
+                },
+                (8.9444, 10.95811),
+            ),
+            (
+                IQRDetector,
+                {"scale": 1},
+                {
+                    "anomalies": 47,
+                    "accuracy": 0.52,
+                    "recall": 0.4,
+                    "f1": 0.07692,
+                    "precision": 0.042553,
+                },
+                (9.19611, 10.70640),
+            ),
         ],
     )
     def test_bounded_detector_eval_metric_univariate(self, config):
@@ -461,6 +486,39 @@ class TestAnomalyDetectionDetector:
                     "precision": (0.0, 0.10526),
                 },
             ),
+            (
+                IQRDetector,
+                {"scale": [0.5, np.inf]},
+                {
+                    "anomalies": [46, 0],
+                    "accuracy": (0.51, 0.9),
+                    "recall": (0.363636, 0.0),
+                    "f1": (0.14035, 0.0),
+                    "precision": (0.08695, 0.0),
+                },
+            ),
+            (
+                IQRDetector,
+                {"scale": [np.inf, 0.77]},
+                {
+                    "anomalies": [0, 34],
+                    "accuracy": (0.89, 0.62),
+                    "recall": (0.0, 0.3),
+                    "f1": (0.0, 0.136363),
+                    "precision": (0.0, 0.08823),
+                },
+            ),
+            (
+                IQRDetector,
+                {"scale": [0.5, 0.77]},
+                {
+                    "anomalies": [46, 34],
+                    "accuracy": (0.51, 0.62),
+                    "recall": (0.363636, 0.3),
+                    "f1": (0.14035, 0.136363),
+                    "precision": (0.08695, 0.08823),
+                },
+            ),
         ],
     )
     def test_bounded_detector_performance_multivariate(self, config):
@@ -516,3 +574,78 @@ class TestAnomalyDetectionDetector:
         prediction2 = detector2.fit_detect(self.train)
 
         assert prediction1 == prediction2
+
+    def test_IQRDetector_constructor(self):
+        # Numbers in `scale must be non-negative numbers
+        with pytest.raises(ValueError):
+            IQRDetector(scale=-1)
+        with pytest.raises(ValueError):
+            IQRDetector(scale=[-2])
+        with pytest.raises(ValueError):
+            IQRDetector(scale=[3, -4])
+        with pytest.raises(ValueError):
+            IQRDetector(scale="3")
+        with pytest.raises(ValueError):
+            IQRDetector(scale=IQRDetector())
+
+        IQRDetector()
+        IQRDetector(scale=1.2345)
+        IQRDetector(scale=0)
+        IQRDetector(scale=[1, 2, np.inf, 3, 0])
+
+    def test_iqr_detector_fit_detect_matching_width(self):
+        """Widths of series should match the number of values given for `scale`,
+        if more than one value is provided.
+
+        `self.train` series has only one component whereas model is created with 2/3 values"""
+        detector = IQRDetector(scale=[1.5, 1.5])
+
+        # during training
+        with pytest.raises(ValueError):
+            detector.fit(self.train)
+        with pytest.raises(ValueError):
+            detector.fit([self.train, self.mts_train])
+
+        # during detection
+        detector.fit(self.mts_train)
+        with pytest.raises(ValueError):
+            detector.detect(self.train)
+        with pytest.raises(ValueError):
+            detector.detect([self.train, self.mts_train])
+
+        # single `scale` but fit to wrong widths
+        detector = IQRDetector(scale=1.5)
+        detector.fit(self.train)
+        with pytest.raises(ValueError):
+            detector.detect(self.mts_train)
+
+    # Test if the IQR detector is actually using the IQR algorithm
+    def test_iqr_detector_logic(self):
+        # concatenate everything along the time axis
+        np_series = np.concatenate(
+            [series.all_values(copy=False) for series in self.train], axis=0
+        )
+
+        # move sample dimension to position 1
+        np_series = np.moveaxis(np_series, 2, 1)
+
+        # flatten it in order to obtain an array of shape (time * samples, components)
+        # where all samples of a given component are concatenated along time
+        np_series = np_series.reshape(np_series.shape[0] * np_series.shape[1], -1)
+
+        q1 = np.quantile(np_series[:, 0], q=0.25, axis=0)
+        q3 = np.quantile(np_series[:, 0], q=0.75, axis=0)
+
+        # With scale=0 it should detect only inside the IQR
+        detector = IQRDetector(scale=0)
+        detector.fit(self.train)
+
+        assert np.abs(detector.detector.low_threshold - q1) < delta
+        assert np.abs(detector.detector.high_threshold - q3) < delta
+
+        # With larger scale it should add "padding" accordingly
+        detector = IQRDetector(scale=0.5)
+        detector.fit(self.train)
+
+        assert detector.detector.low_threshold < q1
+        assert detector.detector.high_threshold > q3
