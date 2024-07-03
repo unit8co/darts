@@ -57,7 +57,7 @@ from darts.utils.ts_utils import (
     get_single_series,
     series2seq,
 )
-from darts.utils.utils import generate_index
+from darts.utils.utils import generate_index, n_steps_between
 
 logger = get_logger(__name__)
 
@@ -1827,6 +1827,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         forecast_horizon: int = 1,
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
+        overlap_end: bool = False,
         last_points_only: bool = True,
         metric: METRIC_TYPE = metrics.err,
         verbose: bool = False,
@@ -1937,6 +1938,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             to the corresponding retrain function argument.
             Note: some models do require being retrained every time and do not support anything other
             than `retrain=True`.
+        overlap_end
+            Whether the returned forecasts can go beyond the series' end or not.
         last_points_only
             Whether to use the whole historical forecasts or only the last point of each forecast to compute the error.
         metric
@@ -2006,9 +2009,34 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             show_warnings=show_warnings,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
-            overlap_end=False,
+            overlap_end=overlap_end,
             sample_weight=sample_weight,
         )
+        # remember input series type
+        series_seq_type = get_series_seq_type(series)
+
+        # add nans to end of series to get residuals of same shape for each forecast
+        if overlap_end:
+            # infer the forecast horizon based on the last forecast; allows user not to care about `forecast_horizon`
+            if series_seq_type == SeriesType.SINGLE:
+                hfc_last = (
+                    historical_forecasts
+                    if last_points_only
+                    else historical_forecasts[-1]
+                )
+                series = [series]
+            else:
+                hfc_last = (
+                    historical_forecasts[0]
+                    if last_points_only
+                    else historical_forecasts[0][-1]
+                )
+            horizon_ = n_steps_between(
+                hfc_last.end_time(), series[0].end_time(), freq=series[0].freq
+            )
+            series = [s_.append_values(np.array([np.nan] * horizon_)) for s_ in series]
+            if series_seq_type == SeriesType.SINGLE:
+                series = series[0]
 
         residuals = self.backtest(
             series=series,
@@ -2018,9 +2046,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             reduction=None,
             metric_kwargs=metric_kwargs,
         )
-
-        # remember input series type
-        series_seq_type = get_series_seq_type(series)
 
         # convert forecasts and residuals to list of lists of series/arrays
         forecast_seq_type = get_series_seq_type(historical_forecasts)

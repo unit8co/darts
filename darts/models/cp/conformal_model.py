@@ -13,6 +13,8 @@ from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.utils import _with_sanity_checks
+
+# from darts.utils.data.tabularization import _extract_lagged_vals_from_windows
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.ts_utils import (
     SeriesType,
@@ -50,6 +52,10 @@ def cqr_score_asym(row, quantile_lo_col, quantile_hi_col):
             else 1,
         ]
     )
+
+
+# TODO: fit conformal model (maybe for the future)
+# -
 
 
 class ConformalModel(GlobalForecastingModel):
@@ -260,6 +266,7 @@ class ConformalModel(GlobalForecastingModel):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
+        # generate all possible forecasts (overlap_end=True)
         hfcs = self.model.historical_forecasts(
             series=series,
             past_covariates=past_covariates,
@@ -267,7 +274,7 @@ class ConformalModel(GlobalForecastingModel):
             num_samples=num_samples,
             forecast_horizon=forecast_horizon,
             retrain=False,
-            overlap_end=overlap_end,
+            overlap_end=True,
             last_points_only=last_points_only,
             verbose=verbose,
             show_warnings=show_warnings,
@@ -291,6 +298,7 @@ class ConformalModel(GlobalForecastingModel):
         residuals = self.model.residuals(
             series=series,
             historical_forecasts=hfcs,
+            overlap_end=True,
             last_points_only=last_points_only,
             verbose=verbose,
             show_warnings=show_warnings,
@@ -303,14 +311,18 @@ class ConformalModel(GlobalForecastingModel):
             cp_preds = []
 
             # no historical forecasts were generated
-            if not s_hfcs or train_length is not None and train_length > len(s_hfcs):
+            if not s_hfcs or (train_length is not None and train_length > len(s_hfcs)):
                 cp_hfcs.append(cp_preds)
                 continue
 
             # determine the first forecast index for which to compute conformal prediction;
             # all forecasts before that are used for calibration
-            # skip based on `train_length`
-            skip_n_train_length = train_length if train_length is not None else 0
+
+            # skip based on `train_length`; for `horizon > 1` we need additional calibration points
+            # to avoid look-ahead bias and ensure all steps in horizon have `train_length` points
+            skip_n_train_length = (
+                train_length + forecast_horizon - 1 if train_length is not None else 0
+            )
 
             # skip based on `start`
             skip_n_start = 0
@@ -340,14 +352,21 @@ class ConformalModel(GlobalForecastingModel):
                     if not skip_n and not idx:
                         cp_pred = np.concatenate([pred_vals] * 3, axis=1)
                     else:
-                        # get the last residual index for calibration
+                        # get the last residual index for calibration, `cal_end` is exclusive
                         cal_end = skip_n + idx * stride
+                        # first residual index is shifted back by the horizon to also get `train_length` points for
+                        # the last point in the horizon
                         cal_start = (
-                            None if train_length is None else cal_end - train_length
+                            None
+                            if train_length is None
+                            else cal_end - (train_length + forecast_horizon - 1)
                         )
+                        # cal_start = (
+                        #     None if train_length is None else cal_end - train_length - (forecast_horizon - 1)
+                        # )
                         # TODO: should we consider all previous historical forecasts, or only the stridden ones?
                         cal_res = res[cal_start:cal_end]
-                        q_hat = np.quantile(cal_res, q=self.alpha, axis=0)
+                        q_hat = np.nanquantile(cal_res, q=self.alpha, axis=0)
                         cp_pred = np.concatenate(
                             [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
                         )
