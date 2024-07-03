@@ -27,6 +27,7 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 
+import inspect
 from collections import OrderedDict
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -701,9 +702,22 @@ class RegressionModel(GlobalForecastingModel):
                 val_sample_weight=val_sample_weight,
                 max_samples_per_ts=max_samples_per_ts,
             )
-        self.model.fit(
-            training_samples, training_labels, sample_weight=sample_weights, **kwargs
-        )
+
+        # check whether model's fit method supports parameter sample_weights
+        if sample_weights is not None:
+            fit_parameters = inspect.signature(self.model.fit).parameters
+            if "sample_weight" in fit_parameters:
+                self.model.fit(
+                    training_samples,
+                    training_labels,
+                    sample_weight=sample_weights,
+                    **kwargs,
+                )
+            else:
+                logger.warning("Provided `sample_weights` wasn't used.")
+                self.model.fit(training_samples, training_labels, **kwargs)
+        else:
+            self.model.fit(training_samples, training_labels, **kwargs)
 
         # generate and store the lagged components names (for feature importance analysis)
         self._lagged_feature_names, self._lagged_label_names = (
