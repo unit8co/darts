@@ -652,7 +652,6 @@ class TestAnomalyDetectionDetector:
 
     def test_iqr_detector_detect_logic(self):
         values = np.random.uniform(low=0, high=10, size=30)
-        shuffle(values)
         nice_ts = TimeSeries.from_values(values)
 
         np_series = nice_ts.all_values(copy=False)
