@@ -651,6 +651,8 @@ class TestAnomalyDetectionDetector:
         assert detector.detector.high_threshold > q3
 
     def test_iqr_detector_detect_logic(self):
+        np.random.seed(24)
+
         values = np.random.uniform(low=0, high=10, size=30)
         nice_ts = TimeSeries.from_values(values)
 
@@ -682,7 +684,6 @@ class TestAnomalyDetectionDetector:
             size=expected_anomalies // 2,
         )
         anomalous_arr = np.hstack((anomalies_high, not_anomalies, anomalies_low))
-        shuffle(anomalous_arr)
         anomalous_ts = TimeSeries.from_values(anomalous_arr)
 
         detector = IQRDetector(scale=scale)
