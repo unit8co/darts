@@ -45,10 +45,11 @@ class IQRDetector(QuantileDetector):
         # Parent QuantileDetector will compute Q1 and Q3 thresholds
         super().__init__(low_quantile=0.25, high_quantile=0.75)
 
-        scale = [scale] if isinstance(scale, float) else scale
         self.scale = np.array(scale)
+        if self.scale.ndim == 0:
+            self.scale = np.expand_dims(self.scale, 0)
 
-        if (self.scale < 0.0).any():
+        if not np.issubdtype(self.scale.dtype, np.number) or (self.scale < 0.0).any():
             raise_log(
                 ValueError("All values in `scale` must be non-negative numbers."),
                 logger=logger,
@@ -57,8 +58,6 @@ class IQRDetector(QuantileDetector):
     def _fit_core(self, series: Sequence[TimeSeries]) -> None:
         super()._fit_core(series)
 
-        # if `scale` is not a single value, then check it matches input width
-        # Note: Due to array broadcasting mechanics the len check is also necessary
         if len(self.scale) > 1 and len(self.scale) != series[0].width:
             raise_log(
                 ValueError(

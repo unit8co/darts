@@ -1,4 +1,5 @@
 from itertools import product
+from random import shuffle
 from typing import Sequence
 
 import numpy as np
@@ -617,8 +618,18 @@ class TestAnomalyDetectionDetector:
         with pytest.raises(ValueError):
             detector.detect(self.mts_train)
 
+        detector = IQRDetector(scale=1.5)
+        detector.fit(self.mts_train)
+        with pytest.raises(ValueError):
+            detector.detect(self.train)
+
+        detector = IQRDetector(scale=[1.5])
+        detector.fit(self.mts_train)
+        with pytest.raises(ValueError):
+            detector.detect(self.train)
+
     # Test if the IQR detector is actually using the IQR algorithm
-    def test_iqr_detector_logic(self):
+    def test_iqr_detector_fit_logic(self):
         # concatenate everything along the time axis
         np_series = self.train.all_values(copy=False)
 
@@ -638,3 +649,54 @@ class TestAnomalyDetectionDetector:
 
         assert detector.detector.low_threshold < q1
         assert detector.detector.high_threshold > q3
+
+    def test_iqr_detector_detect_logic(self):
+        values = np.random.uniform(low=0, high=10, size=30)
+        shuffle(values)
+        nice_ts = TimeSeries.from_values(values)
+
+        np_series = nice_ts.all_values(copy=False)
+        q1 = np.quantile(np_series, q=0.25)
+        q3 = np.quantile(np_series, q=0.75)
+
+        diff = q3 - q1
+        scale = 0.5
+        expected_low_threshold = q1 - diff * scale
+        expected_high_threshold = q3 + diff * scale
+
+        expected_anomalies = 10
+        expected_not_anomalies = 20
+
+        not_anomalies = np.random.uniform(
+            low=expected_low_threshold + delta,
+            high=expected_high_threshold - delta,
+            size=expected_not_anomalies,
+        )
+        anomalies_high = np.random.uniform(
+            low=expected_high_threshold + delta,
+            high=expected_high_threshold + 10,
+            size=expected_anomalies // 2,
+        )
+        anomalies_low = np.random.uniform(
+            low=expected_low_threshold - 10,
+            high=expected_low_threshold - delta,
+            size=expected_anomalies // 2,
+        )
+        anomalous_arr = np.hstack((anomalies_high, not_anomalies, anomalies_low))
+        shuffle(anomalous_arr)
+        anomalous_ts = TimeSeries.from_values(anomalous_arr)
+
+        detector = IQRDetector(scale=scale)
+        detector.fit(nice_ts)
+
+        assert (
+            np.abs(detector.detector.low_threshold[0] - expected_low_threshold) < delta
+        )
+        assert (
+            np.abs(detector.detector.high_threshold[0] - expected_high_threshold)
+            < delta
+        )
+
+        detection = detector.detect(anomalous_ts)
+
+        assert detection.sum(axis=0).all_values().flatten()[0] == expected_anomalies
