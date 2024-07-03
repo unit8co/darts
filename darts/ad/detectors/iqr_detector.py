@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 
 
 class IQRDetector(QuantileDetector):
-    def __init__(self, scale: Union[Sequence[Union[float, None]], float] = 1.5) -> None:
+    def __init__(self, scale: Union[Sequence[float], float] = 1.5) -> None:
         """IQR Detector
 
         Flags values that lie outside of the interquartile range (IQR)
@@ -33,8 +33,6 @@ class IQRDetector(QuantileDetector):
 
         If a sequences of values is given for the `scale` parameter,
         it's length must match the dimensionality of the series passed.
-        Unless it's length is 1, then it is treated as a single value.
-        Infinity may be used to disable flagging on that dimension.
 
         Parameters
         ----------
@@ -47,26 +45,12 @@ class IQRDetector(QuantileDetector):
         # Parent QuantileDetector will compute Q1 and Q3 thresholds
         super().__init__(low_quantile=0.25, high_quantile=0.75)
 
+        scale = [scale] if isinstance(scale, float) else scale
         self.scale = np.array(scale)
 
-        if not np.issubdtype(self.scale.dtype, np.number):
-            raise_log(
-                ValueError(
-                    "All values in `scale` must be non-negative numbers. "
-                    f"Detected non-numeric value of type `{self.scale.dtype}`."
-                ),
-                logger=logger,
-            )
-
-        # if `scale` is a sequence
-        if np.ndim(self.scale) > 0 and any(x < 0.0 for x in self.scale):
+        if (self.scale < 0.0).any():
             raise_log(
                 ValueError("All values in `scale` must be non-negative numbers."),
-                logger=logger,
-            )
-        if np.ndim(self.scale) == 0 and self.scale < 0.0:
-            raise_log(
-                ValueError("Parameter `scale` must be non-negative"),
                 logger=logger,
             )
 
@@ -75,11 +59,7 @@ class IQRDetector(QuantileDetector):
 
         # if `scale` is not a single value, then check it matches input width
         # Note: Due to array broadcasting mechanics the len check is also necessary
-        if (
-            np.ndim(self.scale) > 0
-            and len(self.scale) > 0
-            and len(self.scale) != series[0].width
-        ):
+        if len(self.scale) > 1 and len(self.scale) != series[0].width:
             raise_log(
                 ValueError(
                     "The number of components of input must be equal to the number "

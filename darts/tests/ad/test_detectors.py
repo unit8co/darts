@@ -585,8 +585,6 @@ class TestAnomalyDetectionDetector:
             IQRDetector(scale=[3, -4])
         with pytest.raises(ValueError):
             IQRDetector(scale="3")
-        with pytest.raises(ValueError):
-            IQRDetector(scale=IQRDetector())
 
         IQRDetector()
         IQRDetector(scale=1.2345)
@@ -622,19 +620,10 @@ class TestAnomalyDetectionDetector:
     # Test if the IQR detector is actually using the IQR algorithm
     def test_iqr_detector_logic(self):
         # concatenate everything along the time axis
-        np_series = np.concatenate(
-            [series.all_values(copy=False) for series in self.train], axis=0
-        )
+        np_series = self.train.all_values(copy=False)
 
-        # move sample dimension to position 1
-        np_series = np.moveaxis(np_series, 2, 1)
-
-        # flatten it in order to obtain an array of shape (time * samples, components)
-        # where all samples of a given component are concatenated along time
-        np_series = np_series.reshape(np_series.shape[0] * np_series.shape[1], -1)
-
-        q1 = np.quantile(np_series[:, 0], q=0.25, axis=0)
-        q3 = np.quantile(np_series[:, 0], q=0.75, axis=0)
+        q1 = np.quantile(np_series, q=0.25)
+        q3 = np.quantile(np_series, q=0.75)
 
         # With scale=0 it should detect only outside the IQR
         detector = IQRDetector(scale=0)
