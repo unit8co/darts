@@ -1,5 +1,4 @@
 from itertools import product
-from random import shuffle
 from typing import Sequence
 
 import numpy as np
