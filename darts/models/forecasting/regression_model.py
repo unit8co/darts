@@ -703,21 +703,19 @@ class RegressionModel(GlobalForecastingModel):
                 max_samples_per_ts=max_samples_per_ts,
             )
 
-        # check whether model's fit method supports parameter sample_weights
+        # check whether model's fit method supports parameter `sample_weight`
+        sample_weight_kwargs = dict()
         if sample_weights is not None:
-            fit_parameters = inspect.signature(self.model.fit).parameters
-            if "sample_weight" in fit_parameters:
-                self.model.fit(
-                    training_samples,
-                    training_labels,
-                    sample_weight=sample_weights,
-                    **kwargs,
-                )
+            if "sample_weight" in inspect.signature(self.model.fit).parameters:
+                sample_weight_kwargs = {"sample_weight": sample_weights}
             else:
-                logger.warning("Provided `sample_weights` wasn't used.")
-                self.model.fit(training_samples, training_labels, **kwargs)
-        else:
-            self.model.fit(training_samples, training_labels, **kwargs)
+                logger.warning(
+                    "`sample_weight` was ignored since underlying regression model's "
+                    "`fit()` method does not support it."
+                )
+        self.model.fit(
+            training_samples, training_labels, **sample_weight_kwargs, **kwargs
+        )
 
         # generate and store the lagged components names (for feature importance analysis)
         self._lagged_feature_names, self._lagged_label_names = (
