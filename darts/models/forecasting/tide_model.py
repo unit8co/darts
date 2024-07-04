@@ -441,7 +441,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             will bypass feature projection and use the raw feature data.
         temporal_hidden_size_past
             The width of the hidden layer in the past covariate projection residual block. If not specified,
-            defaults to `hidden_size`, which is the width of the hidden layer in the encoder and decoder. 
+            defaults to `hidden_size`, which is the width of the hidden layer in the encoder and decoder.
             This is likely to be too large in many cases, so it is recommended to set this parameter explicitly.
         temporal_hidden_size_future
             The width of the hidden layer in the future covariate projection residual block. If not specified,
