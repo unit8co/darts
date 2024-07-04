@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.neighbors import KNeighborsRegressor
 
 import darts
 from darts import TimeSeries
@@ -209,12 +210,17 @@ class TestRegressionModels:
         tree_method="exact",
         **xgb_test_params,
     )
+    KNeighborsRegressorModel = partialclass(
+        RegressionModel,
+        model=KNeighborsRegressor(n_neighbors=1),
+    )
     # targets for poisson regression must be positive, so we exclude them for some tests
     models.extend([
         QuantileLinearRegressionModel,
         PoissonLinearRegressionModel,
         PoissonXGBModel,
         QuantileXGBModel,
+        KNeighborsRegressorModel,
     ])
 
     univariate_accuracies = [
@@ -225,6 +231,7 @@ class TestRegressionModels:
         0.4,  # PoissonLinearRegressionModel
         0.75,  # PoissonXGBModel
         0.75,  # QuantileXGBModel
+        1e-13,  # KNeighborsRegressorModel
     ]
     multivariate_accuracies = [
         0.3,  # RandomForest
@@ -234,6 +241,7 @@ class TestRegressionModels:
         0.4,  # PoissonLinearRegressionModel
         0.75,  # PoissonXGBModel
         0.75,  # QuantileXGBModel
+        1e-13,  # KNeighborsRegressorModel
     ]
     multivariate_multiseries_accuracies = [
         0.05,  # RandomForest
@@ -243,6 +251,7 @@ class TestRegressionModels:
         0.4,  # PoissonLinearRegressionModel
         0.85,  # PoissonXGBModel
         0.65,  # QuantileXGBModel
+        1e-13,  # KNeighborsRegressorModel
     ]
 
     lgbm_w_categorical_covariates = NotImportedModule
