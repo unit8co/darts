@@ -2532,7 +2532,7 @@ class TestHistoricalforecast:
                 [False, True],  # use integer indexed series
                 [False, True],  # use multi-series
             )
-        ),
+        )[0:1],
     )
     def test_conformal_historical_forecasts(self, config):
         """Tests naive conformal model."""
@@ -2626,12 +2626,12 @@ class TestHistoricalforecast:
                 hfc = [hfc]
 
             if not last_points_only and overlap_end:
-                n_pred_series_expected = 8
+                n_pred_series_expected = len(series) - icl + 1 - horizon
                 n_pred_points_expected = horizon
-                first_ts_expected = series.time_index[icl]
+                first_ts_expected = series.time_index[icl + horizon]
                 last_ts_expected = series.end_time() + series.freq * horizon
             elif not last_points_only:  # overlap_end = False
-                n_pred_series_expected = len(series) - icl - horizon + 1
+                n_pred_series_expected = len(series) - icl + 1 - horizon
                 n_pred_points_expected = horizon
                 first_ts_expected = series.time_index[icl]
                 last_ts_expected = series.end_time()

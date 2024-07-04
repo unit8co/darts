@@ -14,6 +14,7 @@ from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.utils import _with_sanity_checks
+from darts.utils.historical_forecasts.utils import _historical_forecasts_start_warnings
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.ts_utils import (
     SeriesType,
@@ -320,12 +321,11 @@ class ConformalModel(GlobalForecastingModel):
             metric=self.score_fn,
         )
 
-        # mask later used to avoid look-ahead bias in case of `last_points_only=False`
+        # this mask is later used to avoid look-ahead bias in case of `last_points_only=False`
         idx_horizon, idx_comp, idx_hfc = _triul_indices(
             forecast_horizon, series[0].width
         )
 
-        # TODO: Generate Conformalized predictions per forecast
         cp_hfcs = []
         for series_idx, (series_, s_hfcs, res) in enumerate(
             zip(series, hfcs, residuals)
@@ -337,36 +337,29 @@ class ConformalModel(GlobalForecastingModel):
                 cp_hfcs.append(cp_preds)
                 continue
 
-            # determine the first forecast index for which to compute conformal prediction;
-            # all forecasts before that are used for calibration
-
-            # skip based on `train_length`
-            skip_n_train = train_length or 0
-            # for `horizon > 1` we need additional calibration points
-            # to avoid look-ahead bias and ensure all steps in horizon have `train_length` points
-            skip_n_train += forecast_horizon - 1
-
-            # skip based on `start`
-            skip_n_start = 0
-            if start is not None:
-                if isinstance(start, pd.Timestamp) or start_format == "value":
-                    start_ = start
-                else:
-                    start_ = series_._time_index[start]
-                skip_n_start = n_steps_between(
-                    end=start_,
-                    start=get_single_series(s_hfcs).start_time(),
+            # determine the last forecast index for conformal prediction
+            first_hfc = get_single_series(s_hfcs)
+            last_hfc = s_hfcs if last_points_only else s_hfcs[-1]
+            last_fc_idx = len(s_hfcs)
+            # adjust based on `overlap_end`
+            if not overlap_end:
+                delta_end = n_steps_between(
+                    end=last_hfc.end_time(),
+                    start=series_.end_time(),
                     freq=series_.freq,
                 )
-                # hfcs only contain last predicted points; skip until end of first forecast
-                if last_points_only:
-                    skip_n_start += forecast_horizon - 1
+                if last_fc_idx:
+                    last_fc_idx -= delta_end
 
+            # determine the first forecast index for conformal prediction; all forecasts before that are
+            # used for calibration
             # we need at least 1 residual per point in the horizon
-            min_skip_n = 1 if last_points_only else forecast_horizon
-            first_fc_idx = max([skip_n_train, skip_n_start, min_skip_n])
+            skip_n_train = forecast_horizon
 
-            if first_fc_idx >= len(s_hfcs):
+            # plus some additional steps based on `train_length`
+            if train_length is not None:
+                skip_n_train += train_length - 1
+            if skip_n_train >= len(s_hfcs):
                 (
                     raise_log(
                         ValueError(
@@ -379,17 +372,50 @@ class ConformalModel(GlobalForecastingModel):
                     ),
                 )
 
-            # determine the last forecast index respecting `overlap_end`
-            last_fc_idx = len(s_hfcs)
-            if not overlap_end:
-                last_hfc = s_hfcs if last_points_only else s_hfcs[-1]
-                delta_end = n_steps_between(
-                    end=last_hfc.end_time(),
-                    start=series_.end_time(),
+            # skip solely based on `start`
+            skip_n_start = 0
+            if start is not None:
+                if isinstance(start, pd.Timestamp) or start_format == "value":
+                    start_time = start
+                else:
+                    start_time = series_._time_index[start]
+
+                skip_n_start = n_steps_between(
+                    end=start_time,
+                    start=first_hfc.start_time(),
                     freq=series_.freq,
                 )
-                if last_fc_idx:
-                    last_fc_idx -= delta_end
+                # hfcs only contain last predicted points; skip until end of first forecast
+                if last_points_only:
+                    skip_n_start += forecast_horizon - 1
+
+                # if start is out of bounds, we ignore it
+                if (
+                    skip_n_start < 0
+                    or skip_n_start >= last_fc_idx
+                    or skip_n_start < skip_n_train
+                ):
+                    skip_n_start = 0
+                    if show_warnings:
+                        # adjust to actual start point in case of `last_points_only`
+                        adjust_idx = (
+                            int(last_points_only)
+                            * (forecast_horizon - 1)
+                            * series_.freq
+                        )
+                        hfc_predict_index = (
+                            s_hfcs[skip_n_train].start_time() - adjust_idx,
+                            s_hfcs[last_fc_idx].start_time() - adjust_idx,
+                        )
+                        _historical_forecasts_start_warnings(
+                            idx=series_idx,
+                            start=start,
+                            start_time_=start_time,
+                            historical_forecasts_time_index=hfc_predict_index,
+                        )
+
+            # get final first index
+            first_fc_idx = max([skip_n_train, skip_n_start])
 
             # historical conformal prediction
             if last_points_only:
