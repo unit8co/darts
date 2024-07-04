@@ -9,12 +9,11 @@ except ImportError:
 import numpy as np
 import pandas as pd
 
+import darts.metrics
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.utils import _with_sanity_checks
-
-# from darts.utils.data.tabularization import _extract_lagged_vals_from_windows
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.ts_utils import (
     SeriesType,
@@ -25,6 +24,18 @@ from darts.utils.ts_utils import (
 from darts.utils.utils import generate_index, n_steps_between
 
 logger = get_logger(__name__)
+
+
+def _triul_indices(forecast_horizon, n_comps):
+    idx_horizon, idx_hfc = np.tril_indices(n=forecast_horizon, k=-1)
+    idx_comp = [i for _ in range(len(idx_horizon)) for i in range(n_comps)]
+
+    # reverse to get lower left triangle
+    idx_horizon = forecast_horizon - 1 - idx_horizon
+    idx_horizon = idx_horizon.repeat(n_comps)
+
+    idx_hfc = idx_hfc.repeat(n_comps)
+    return idx_horizon, idx_comp, idx_hfc
 
 
 def cqr_score_sym(row, quantile_lo_col, quantile_hi_col):
@@ -109,6 +120,7 @@ class ConformalModel(GlobalForecastingModel):
         self.method = method
         self.quantiles = quantiles
         self._fit_called = True
+        self.score_fn = darts.metrics.ae
 
     @property
     def output_chunk_length(self) -> Optional[int]:
@@ -160,6 +172,7 @@ class ConformalModel(GlobalForecastingModel):
             verbose=verbose,
             show_warnings=show_warnings,
             values_only=True,
+            metric=self.score_fn,
         )
         if self.method != "naive":
             raise_log(NotImplementedError("non-naive not yet implemented"))
@@ -284,14 +297,15 @@ class ConformalModel(GlobalForecastingModel):
             predict_kwargs=predict_kwargs,
         )
         # TODO: add support for:
-        # - overlap_end = True
         # - num_samples
         # - predict_likelihood_parameters
         # - tqdm iterator over series
         # - support for different CP algorithms
-        # - compute all possible residuals (including the partial forecast horizons up until the end)
 
         # DONE:
+        # - properly define minimum residuals to start (different for `last_points_only=True/False`
+        # - compute all possible residuals (including the partial forecast horizons up until the end)
+        # - overlap_end = True
         # - last_points_only = True
         # - add correct output components
         # - use only `train_length` previous residuals
@@ -303,11 +317,19 @@ class ConformalModel(GlobalForecastingModel):
             verbose=verbose,
             show_warnings=show_warnings,
             values_only=True,
+            metric=self.score_fn,
+        )
+
+        # mask later used to avoid look-ahead bias in case of `last_points_only=False`
+        idx_horizon, idx_comp, idx_hfc = _triul_indices(
+            forecast_horizon, series[0].width
         )
 
         # TODO: Generate Conformalized predictions per forecast
         cp_hfcs = []
-        for series_, s_hfcs, res in zip(series, hfcs, residuals):
+        for series_idx, (series_, s_hfcs, res) in enumerate(
+            zip(series, hfcs, residuals)
+        ):
             cp_preds = []
 
             # no historical forecasts were generated
@@ -318,11 +340,11 @@ class ConformalModel(GlobalForecastingModel):
             # determine the first forecast index for which to compute conformal prediction;
             # all forecasts before that are used for calibration
 
-            # skip based on `train_length`; for `horizon > 1` we need additional calibration points
+            # skip based on `train_length`
+            skip_n_train = train_length or 0
+            # for `horizon > 1` we need additional calibration points
             # to avoid look-ahead bias and ensure all steps in horizon have `train_length` points
-            skip_n_train_length = (
-                train_length + forecast_horizon - 1 if train_length is not None else 0
-            )
+            skip_n_train += forecast_horizon - 1
 
             # skip based on `start`
             skip_n_start = 0
@@ -340,31 +362,54 @@ class ConformalModel(GlobalForecastingModel):
                 if last_points_only:
                     skip_n_start += forecast_horizon - 1
 
-            # TODO: what should be the smallest number for calibration residuals - 0 or 1?
-            min_skip_n = 0
-            skip_n = max([skip_n_train_length, skip_n_start, min_skip_n])
+            # we need at least 1 residual per point in the horizon
+            min_skip_n = 1 if last_points_only else forecast_horizon
+            first_fc_idx = max([skip_n_train, skip_n_start, min_skip_n])
 
+            if first_fc_idx >= len(s_hfcs):
+                (
+                    raise_log(
+                        ValueError(
+                            "Cannot build a single input for prediction with the provided model, "
+                            f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
+                            "prediction input time index requirements were not met. "
+                            "Please check the time index of `series` and `*_covariates`."
+                        ),
+                        logger=logger,
+                    ),
+                )
+
+            # determine the last forecast index respecting `overlap_end`
+            last_fc_idx = len(s_hfcs)
+            if not overlap_end:
+                last_hfc = s_hfcs if last_points_only else s_hfcs[-1]
+                delta_end = n_steps_between(
+                    end=last_hfc.end_time(),
+                    start=series_.end_time(),
+                    freq=series_.freq,
+                )
+                if last_fc_idx:
+                    last_fc_idx -= delta_end
+
+            # historical conformal prediction
             if last_points_only:
                 for idx, pred_vals in enumerate(
-                    s_hfcs.values(copy=False)[skip_n::stride]
+                    s_hfcs.values(copy=False)[first_fc_idx:last_fc_idx:stride]
                 ):
                     pred_vals = np.expand_dims(pred_vals, 0)
-                    if not skip_n and not idx:
+                    if not first_fc_idx and not idx:
                         cp_pred = np.concatenate([pred_vals] * 3, axis=1)
                     else:
                         # get the last residual index for calibration, `cal_end` is exclusive
-                        cal_end = skip_n + idx * stride
-                        # first residual index is shifted back by the horizon to also get `train_length` points for
+                        # to avoid look-ahead bias, use only residuals from before the historical forecast start point;
+                        # since we look at `last_points only=True`, the last residual historically available at
+                        # the forecasting point is `forecast_horizon - 1` steps before
+                        cal_end = first_fc_idx + idx * stride - (forecast_horizon - 1)
+                        # first residual index is shifted back by the horizon to get `train_length` points for
                         # the last point in the horizon
                         cal_start = (
-                            None
-                            if train_length is None
-                            else cal_end - (train_length + forecast_horizon - 1)
+                            cal_end - train_length if train_length is not None else None
                         )
-                        # cal_start = (
-                        #     None if train_length is None else cal_end - train_length - (forecast_horizon - 1)
-                        # )
-                        # TODO: should we consider all previous historical forecasts, or only the stridden ones?
                         cal_res = res[cal_start:cal_end]
                         q_hat = np.nanquantile(cal_res, q=self.alpha, axis=0)
                         cp_pred = np.concatenate(
@@ -376,7 +421,7 @@ class ConformalModel(GlobalForecastingModel):
                     input_series=series_,
                     custom_columns=self._cp_component_names(series_),
                     time_index=generate_index(
-                        start=s_hfcs._time_index[skip_n],
+                        start=s_hfcs._time_index[first_fc_idx],
                         length=len(cp_preds),
                         freq=series_.freq * stride,
                     ),
@@ -385,20 +430,36 @@ class ConformalModel(GlobalForecastingModel):
                 )
                 cp_hfcs.append(cp_preds)
             else:
-                for idx, pred in enumerate(s_hfcs[skip_n::stride]):
+                for idx, pred in enumerate(s_hfcs[first_fc_idx:last_fc_idx:stride]):
                     # convert to (horizon, n comps, hist fcs)
                     pred_vals = pred.values(copy=False)
-                    if not skip_n and not idx:
+                    if not first_fc_idx and not idx:
                         cp_pred = np.concatenate([pred_vals] * 3, axis=1)
                     else:
-                        # get the last residual index for calibration
-                        cal_end = skip_n + idx * stride
+                        # get the last residual index for calibration, `cal_end` is exclusive
+                        # to avoid look-ahead bias, use only residuals from before the historical forecast start point;
+                        # since we look at `last_points only=False`, the last residual historically available at
+                        # the forecasting point is from the first predicted step of the previous forecast
+                        cal_end = first_fc_idx + idx * stride
+                        # stepping back further gives access to more residuals and also residuals from longer horizons.
+                        # to get `train_length` residuals for the last step in the horizon, we need to step back
+                        # additional `forecast_horizon - 1` points
                         cal_start = (
-                            None if train_length is None else cal_end - train_length
+                            cal_end - train_length - (forecast_horizon - 1)
+                            if train_length is not None
+                            else None
                         )
                         # TODO: should we consider all previous historical forecasts, or only the stridden ones?
                         cal_res = np.concatenate(res[cal_start:cal_end], axis=2)
-                        q_hat = np.quantile(cal_res, q=self.alpha, axis=2)
+                        # ignore upper left residuals to have same number of residuals per horizon
+                        cal_res[idx_horizon, idx_comp, idx_hfc] = np.nan
+                        # ignore lower right residuals to avoid look-ahead bias
+                        cal_res[
+                            forecast_horizon - 1 - idx_horizon,
+                            idx_comp,
+                            cal_res.shape[2] - 1 - idx_hfc,
+                        ] = np.nan
+                        q_hat = np.nanquantile(cal_res, q=self.alpha, axis=2)
                         cp_pred = np.concatenate(
                             [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
                         )
