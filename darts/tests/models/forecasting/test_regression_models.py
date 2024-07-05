@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.neighbors import KNeighborsRegressor
 
 import darts
 from darts import TimeSeries
@@ -208,6 +209,10 @@ class TestRegressionModels:
         likelihood="quantile",
         tree_method="exact",
         **xgb_test_params,
+    )
+    KNeighborsRegressorModel = partialclass(
+        RegressionModel,
+        model=KNeighborsRegressor(n_neighbors=1),
     )
     # targets for poisson regression must be positive, so we exclude them for some tests
     models.extend([
@@ -1589,6 +1594,7 @@ class TestRegressionModels:
                 (LinearRegressionModel, {}),
                 (RandomForest, {"bootstrap": False}),
                 (XGBModel, xgb_test_params),
+                (KNeighborsRegressorModel, {}),  # no weights support
             ]
             + (
                 [(CatBoostModel, dict({"allow_const_label": True}, **cb_test_params))]
@@ -1625,7 +1631,12 @@ class TestRegressionModels:
             preds_no_weight = [preds_no_weight]
 
         for pred, pred_no_weight in zip(preds, preds_no_weight):
-            with pytest.raises(AssertionError):
+            if model.supports_sample_weight:
+                with pytest.raises(AssertionError):
+                    np.testing.assert_array_almost_equal(
+                        pred.all_values(), pred_no_weight.all_values()
+                    )
+            else:
                 np.testing.assert_array_almost_equal(
                     pred.all_values(), pred_no_weight.all_values()
                 )
@@ -1637,6 +1648,7 @@ class TestRegressionModels:
                 (LinearRegressionModel, {}),
                 (RandomForest, {"bootstrap": False}),
                 (XGBModel, xgb_test_params),
+                (KNeighborsRegressorModel, {}),  # no weights support
             ]
             + (
                 [(CatBoostModel, dict({"allow_const_label": True}, **cb_test_params))]
@@ -1664,7 +1676,11 @@ class TestRegressionModels:
 
         preds = [preds] if single_series else preds
         for pred in preds:
-            np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
+            if model.supports_sample_weight:
+                np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
+            else:
+                with pytest.raises(AssertionError):
+                    np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
 
     @pytest.mark.parametrize(
         "config",
@@ -1672,6 +1688,7 @@ class TestRegressionModels:
             (LinearRegressionModel, {}),
             (RandomForest, {"bootstrap": False}),
             (XGBModel, xgb_test_params),
+            (KNeighborsRegressorModel, {}),  # no weights support
         ]
         + (
             [(CatBoostModel, dict({"allow_const_label": True}, **cb_test_params))]
@@ -1693,7 +1710,11 @@ class TestRegressionModels:
 
         pred = model.predict(n=3)
 
-        np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
+        if model.supports_sample_weight:
+            np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
+        else:
+            with pytest.raises(AssertionError):
+                np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
 
     def test_weights_multimodel_false_multi_horizon(self):
         model = LinearRegressionModel(lags=3, output_chunk_length=3, multi_models=False)
