@@ -27,7 +27,6 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 
-import inspect
 from collections import OrderedDict
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -39,6 +38,7 @@ except ImportError:
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
+from sklearn.utils.validation import has_fit_parameter
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
@@ -703,10 +703,10 @@ class RegressionModel(GlobalForecastingModel):
                 max_samples_per_ts=max_samples_per_ts,
             )
 
-        # check whether model's fit method supports parameter `sample_weight`
+        # only use `sample_weight` if model supports it
         sample_weight_kwargs = dict()
         if sample_weights is not None:
-            if "sample_weight" in inspect.signature(self.model.fit).parameters:
+            if self.supports_sample_weight:
                 sample_weight_kwargs = {"sample_weight": sample_weights}
             else:
                 logger.warning(
@@ -1270,6 +1270,15 @@ class RegressionModel(GlobalForecastingModel):
     def supports_val_set(self) -> bool:
         """Whether the model supports a validation set during training."""
         return False
+
+    @property
+    def supports_sample_weight(self) -> bool:
+        """Whether the model supports a validation set during training."""
+        return (
+            self.model.supports_sample_weight
+            if isinstance(self.model, MultiOutputRegressor)
+            else has_fit_parameter(self.model, "sample_weight")
+        )
 
     @property
     def val_set_params(self) -> Tuple[Optional[str], Optional[str]]:
