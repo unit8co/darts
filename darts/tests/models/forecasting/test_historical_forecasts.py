@@ -2514,8 +2514,6 @@ class TestHistoricalforecast:
                 f"at least all times of the corresponding target `series`."
             )
 
-    @pytest.mark.slow
-    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize(
         "config",
         list(
@@ -2672,6 +2670,112 @@ class TestHistoricalforecast:
                 n_pred_points_expected = len(hfc[0])
                 first_ts_expected = hfc[0].start_time()
                 last_ts_expected = hfc[-1].end_time()
+
+            cols_excpected = []
+            for col in series.columns:
+                cols_excpected += [f"{col}_q_lo", f"{col}_q_md", f"{col}_q_hi"]
+            # check length match between optimized and default hist fc
+            assert len(hfc) == n_pred_series_expected
+            # check hist fc start
+            assert hfc[0].start_time() == first_ts_expected
+            # check hist fc end
+            assert hfc[-1].end_time() == last_ts_expected
+            for hfc_ in hfc:
+                assert hfc_.columns.tolist() == cols_excpected
+                assert len(hfc_) == n_pred_points_expected
+
+    @pytest.mark.parametrize(
+        "config",
+        list(
+            itertools.product(
+                [False, True],  # last points only
+                [None, 1, 2],  # train length
+                ["value", "position"],  # start format
+                [False, True],  # use integer indexed series
+                [False, True],  # use multi-series
+            )
+        ),
+    )
+    def test_conformal_historical_start_trian_length(self, config):
+        """Tests naive conformal model."""
+        (
+            last_points_only,
+            train_length,
+            start_format,
+            use_int_idx,
+            use_multi_series,
+        ) = config
+        icl = 3
+        ocl = 5
+        horizon = 7
+        min_len_val_series = icl + 2 * horizon
+        # generate n forecasts
+        n_forecasts = 3
+        series_train, series_val = (
+            self.ts_pass_train[:10],
+            self.ts_pass_val[: min_len_val_series + n_forecasts - 1],
+        )
+        if use_int_idx:
+            series_train = TimeSeries.from_values(
+                series_train.all_values(), columns=series_train.columns
+            )
+            series_val = TimeSeries.from_times_and_values(
+                values=series_val.all_values(),
+                times=pd.RangeIndex(
+                    start=series_train.end_time() + series_train.freq,
+                    stop=series_train.end_time()
+                    + (len(series_val) + 1) * series_train.freq,
+                    step=series_train.freq,
+                ),
+                columns=series_train.columns,
+            )
+        forecasting_model = LinearRegressionModel(lags=icl, output_chunk_length=ocl)
+        forecasting_model.fit(series_train)
+
+        model = ConformalModel(forecasting_model, alpha=0.8, method="naive")
+
+        if use_multi_series:
+            series_val = [
+                series_val,
+                (series_val + 10)
+                .shift(1)
+                .with_columns_renamed(series_val.columns, "test_col"),
+            ]
+
+        hist_fct = model.historical_forecasts(
+            series=series_val,
+            retrain=False,
+            train_length=train_length,
+            start=0,
+            start_format=start_format,
+            last_points_only=last_points_only,
+            forecast_horizon=horizon,
+        )
+
+        if not isinstance(series_val, list):
+            series_val = [series_val]
+            hist_fct = [hist_fct]
+
+        for (
+            series,
+            hfc,
+        ) in zip(series_val, hist_fct):
+            if not isinstance(hfc, list):
+                hfc = [hfc]
+
+            n_preds_with_overlap = len(series) - icl + 1 - horizon
+            if not last_points_only:
+                n_pred_series_expected = n_preds_with_overlap - horizon
+                n_pred_points_expected = horizon
+                first_ts_expected = series.time_index[icl] + series.freq * horizon
+                last_ts_expected = series.end_time()
+            else:
+                n_pred_series_expected = 1
+                n_pred_points_expected = n_preds_with_overlap - horizon
+                first_ts_expected = (
+                    series.time_index[icl] + (2 * horizon - 1) * series.freq
+                )
+                last_ts_expected = series.end_time()
 
             cols_excpected = []
             for col in series.columns:
