@@ -646,6 +646,7 @@ class TestTimeSeriesStaticCovariate:
         )
         static_covs = pd.Series([0, 1], index=["st1", "st2"]).astype(int)
         ts = ts.with_static_covariates(static_covs)
+
         assert ts.static_covariates.dtypes.iloc[0] == "float64"
         ts = ts.astype("float32")
         assert ts.static_covariates.dtypes.iloc[0] == "float32"
