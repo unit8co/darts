@@ -10,6 +10,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For users of the library:
 
 **Improved**
+- Added `IQRDetector`, that allows to detect anomalies using the interquartile range algorithm. [#2441] by [Igor Urbanik](https://github.com/u8-igor).
 
 **Fixed**
 
