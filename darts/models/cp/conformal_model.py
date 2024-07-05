@@ -359,18 +359,6 @@ class ConformalModel(GlobalForecastingModel):
             # plus some additional steps based on `train_length`
             if train_length is not None:
                 skip_n_train += train_length - 1
-            if skip_n_train >= len(s_hfcs):
-                (
-                    raise_log(
-                        ValueError(
-                            "Cannot build a single input for prediction with the provided model, "
-                            f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
-                            "prediction input time index requirements were not met. "
-                            "Please check the time index of `series` and `*_covariates`."
-                        ),
-                        logger=logger,
-                    ),
-                )
 
             # skip solely based on `start`
             skip_n_start = 0
@@ -416,6 +404,18 @@ class ConformalModel(GlobalForecastingModel):
 
             # get final first index
             first_fc_idx = max([skip_n_train, skip_n_start])
+            if first_fc_idx >= last_fc_idx:
+                (
+                    raise_log(
+                        ValueError(
+                            "Cannot build a single input for prediction with the provided model, "
+                            f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
+                            "prediction input time index requirements were not met. "
+                            "Please check the time index of `series` and `*_covariates`."
+                        ),
+                        logger=logger,
+                    ),
+                )
 
             # historical conformal prediction
             if last_points_only:

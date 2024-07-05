@@ -2532,7 +2532,7 @@ class TestHistoricalforecast:
                 [False, True],  # use integer indexed series
                 [False, True],  # use multi-series
             )
-        )[0:1],
+        ),
     )
     def test_conformal_historical_forecasts(self, config):
         """Tests naive conformal model."""
@@ -2547,10 +2547,12 @@ class TestHistoricalforecast:
         ) = config
         icl = 3
         ocl = 5
-        len_val_series = 10
+        min_len_val_series = icl + horizon + int(not overlap_end) * horizon
+        # generate n forecasts
+        n_forecasts = 3
         series_train, series_val = (
             self.ts_pass_train[:10],
-            self.ts_pass_val[:len_val_series],
+            self.ts_pass_val[: min_len_val_series + n_forecasts - 1],
         )
         if use_int_idx:
             series_train = TimeSeries.from_values(
@@ -2566,7 +2568,8 @@ class TestHistoricalforecast:
                 ),
                 columns=series_train.columns,
             )
-
+        series_val_too_short = series_val[:-n_forecasts]
+        # with pytest.raises(ValueError):
         model_kwargs = (
             {}
             if not use_covs
@@ -2613,6 +2616,18 @@ class TestHistoricalforecast:
             stride=stride,
             forecast_horizon=horizon,
         )
+        with pytest.raises(ValueError) as exc:
+            _ = model.historical_forecasts(
+                series=series_val_too_short,
+                past_covariates=pc,
+                future_covariates=fc,
+                retrain=False,
+                last_points_only=last_points_only,
+                overlap_end=overlap_end,
+                stride=stride,
+                forecast_horizon=horizon,
+            )
+        assert str(exc.value).startswith("Cannot build a single input for prediction")
 
         if not isinstance(series_val, list):
             series_val = [series_val]
@@ -2625,25 +2640,30 @@ class TestHistoricalforecast:
             if not isinstance(hfc, list):
                 hfc = [hfc]
 
+            n_preds_with_overlap = len(series) - icl + 1 - horizon
             if not last_points_only and overlap_end:
-                n_pred_series_expected = len(series) - icl + 1 - horizon
+                n_pred_series_expected = n_preds_with_overlap
                 n_pred_points_expected = horizon
-                first_ts_expected = series.time_index[icl + horizon]
+                first_ts_expected = series.time_index[icl] + series.freq * horizon
                 last_ts_expected = series.end_time() + series.freq * horizon
             elif not last_points_only:  # overlap_end = False
-                n_pred_series_expected = len(series) - icl + 1 - horizon
+                n_pred_series_expected = n_preds_with_overlap - horizon
                 n_pred_points_expected = horizon
-                first_ts_expected = series.time_index[icl]
+                first_ts_expected = series.time_index[icl] + series.freq * horizon
                 last_ts_expected = series.end_time()
             elif overlap_end:  # last_points_only = True
                 n_pred_series_expected = 1
-                n_pred_points_expected = 8
-                first_ts_expected = series.time_index[icl] + (horizon - 1) * series.freq
+                n_pred_points_expected = n_preds_with_overlap
+                first_ts_expected = (
+                    series.time_index[icl] + (2 * horizon - 1) * series.freq
+                )
                 last_ts_expected = series.end_time() + series.freq * horizon
             else:  # last_points_only = True, overlap_end = False
                 n_pred_series_expected = 1
-                n_pred_points_expected = len(series) - icl - horizon + 1
-                first_ts_expected = series.time_index[icl] + (horizon - 1) * series.freq
+                n_pred_points_expected = n_preds_with_overlap - horizon
+                first_ts_expected = (
+                    series.time_index[icl] + (2 * horizon - 1) * series.freq
+                )
                 last_ts_expected = series.end_time()
 
             # to make it simple in case of stride, we assume that non-optimized hist fc returns correct results
