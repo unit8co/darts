@@ -28,13 +28,25 @@ logger = get_logger(__name__)
 
 
 def _triul_indices(forecast_horizon, n_comps):
-    idx_horizon, idx_hfc = np.tril_indices(n=forecast_horizon, k=-1)
-    idx_comp = [i for _ in range(len(idx_horizon)) for i in range(n_comps)]
+    """Computes the indices of upper for a 3D Matrix of shape (horizon, components, n forecasts)
+    left triangle. The upper left triangle is first computed for the (horizon, n forecasts)
+    dimension, and then repeated along the `components` dimension.
 
+    These indices can be used to:
+        - mask out residuals from "newer" forecasts to avoid look-ahead bias (for horizons > 1)
+        - mask out residuals from "older" forecasts, so that each conformal forecast has the same number
+          of residual examples per point in the forecast horizon.
+    """
+    # get lower right triangle
+    idx_horizon, idx_hfc = np.tril_indices(n=forecast_horizon, k=-1)
     # reverse to get lower left triangle
     idx_horizon = forecast_horizon - 1 - idx_horizon
-    idx_horizon = idx_horizon.repeat(n_comps)
 
+    # get component indices (already repeated)
+    idx_comp = [i for _ in range(len(idx_horizon)) for i in range(n_comps)]
+
+    # repeat along the component dimension
+    idx_horizon = idx_horizon.repeat(n_comps)
     idx_hfc = idx_hfc.repeat(n_comps)
     return idx_horizon, idx_comp, idx_hfc
 
@@ -321,7 +333,8 @@ class ConformalModel(GlobalForecastingModel):
             metric=self.score_fn,
         )
 
-        # this mask is later used to avoid look-ahead bias in case of `last_points_only=False`
+        # this mask is later used to avoid look-ahead bias and guarantee identical number of calibration
+        # points per step in the forecast horizon. Only used in case of `last_points_only=False`
         idx_horizon, idx_comp, idx_hfc = _triul_indices(
             forecast_horizon, series[0].width
         )
@@ -475,7 +488,6 @@ class ConformalModel(GlobalForecastingModel):
                             if train_length is not None
                             else None
                         )
-                        # TODO: should we consider all previous historical forecasts, or only the stridden ones?
                         cal_res = np.concatenate(res[cal_start:cal_end], axis=2)
                         # ignore upper left residuals to have same number of residuals per horizon
                         cal_res[idx_horizon, idx_comp, idx_hfc] = np.nan

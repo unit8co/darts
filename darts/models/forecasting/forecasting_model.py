@@ -2015,7 +2015,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # remember input series type
         series_seq_type = get_series_seq_type(series)
 
-        # add nans to end of series to get residuals of same shape for each forecast
+        # optionally, add nans to end of series to get residuals of same shape for each forecast
         if overlap_end:
             # infer the forecast horizon based on the last forecast; allows user not to care about `forecast_horizon`
             if series_seq_type == SeriesType.SINGLE:

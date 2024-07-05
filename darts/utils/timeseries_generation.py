@@ -756,7 +756,9 @@ def _build_forecast_series(
     with_hierarchy
         If set to `False`, do not copy the input_series `hierarchy` attribute
     pred_start
-        Optionally, give a custom prediction start point.
+        Optionally, give a custom prediction start point. Only effective if `time_index` is `None`.
+    time_index
+        Optionally, the index to use for the forecast time series.
 
     Returns
     -------

@@ -2533,7 +2533,8 @@ class TestHistoricalforecast:
         ),
     )
     def test_conformal_historical_forecasts(self, config):
-        """Tests naive conformal model."""
+        """Tests naive conformal model with last points only, covariates, stride,
+        different horizons and overlap end."""
         (
             use_covs,
             last_points_only,
@@ -2690,17 +2691,19 @@ class TestHistoricalforecast:
             itertools.product(
                 [False, True],  # last points only
                 [None, 1, 2],  # train length
+                [False, True],  # use start
                 ["value", "position"],  # start format
                 [False, True],  # use integer indexed series
                 [False, True],  # use multi-series
             )
         ),
     )
-    def test_conformal_historical_start_trian_length(self, config):
-        """Tests naive conformal model."""
+    def test_conformal_historical_start_train_length(self, config):
+        """Tests naive conformal model with start and train length."""
         (
             last_points_only,
             train_length,
+            use_start,
             start_format,
             use_int_idx,
             use_multi_series,
@@ -2708,7 +2711,9 @@ class TestHistoricalforecast:
         icl = 3
         ocl = 5
         horizon = 7
-        min_len_val_series = icl + 2 * horizon
+        add_train_length = train_length - 1 if train_length is not None else 0
+        add_start = 2 * int(use_start)
+        min_len_val_series = icl + 2 * horizon + add_train_length + add_start
         # generate n forecasts
         n_forecasts = 3
         series_train, series_val = (
@@ -2732,6 +2737,13 @@ class TestHistoricalforecast:
         forecasting_model = LinearRegressionModel(lags=icl, output_chunk_length=ocl)
         forecasting_model.fit(series_train)
 
+        start_position = icl + horizon + add_train_length + add_start
+        start = None
+        if use_start:
+            if start_format == "value":
+                start = series_val.time_index[start_position]
+            else:
+                start = start_position
         model = ConformalModel(forecasting_model, alpha=0.8, method="naive")
 
         if use_multi_series:
@@ -2746,7 +2758,7 @@ class TestHistoricalforecast:
             series=series_val,
             retrain=False,
             train_length=train_length,
-            start=0,
+            start=start,
             start_format=start_format,
             last_points_only=last_points_only,
             forecast_horizon=horizon,
@@ -2756,24 +2768,40 @@ class TestHistoricalforecast:
             series_val = [series_val]
             hist_fct = [hist_fct]
 
-        for (
+        for idx, (
             series,
             hfc,
-        ) in zip(series_val, hist_fct):
+        ) in enumerate(zip(series_val, hist_fct)):
             if not isinstance(hfc, list):
                 hfc = [hfc]
 
-            n_preds_with_overlap = len(series) - icl + 1 - horizon
+            # multi series: second series is shifted by one time step (+/- idx);
+            # start_format = "value" requires a shift
+            add_start_series_2 = idx * int(use_start) * int(start_format == "value")
+            n_preds_without_overlap = (
+                len(series)
+                - icl
+                + 1
+                - 2 * horizon
+                - add_train_length
+                - add_start
+                + add_start_series_2
+            )
             if not last_points_only:
-                n_pred_series_expected = n_preds_with_overlap - horizon
+                n_pred_series_expected = n_preds_without_overlap
                 n_pred_points_expected = horizon
-                first_ts_expected = series.time_index[icl] + series.freq * horizon
+                # seconds series is shifted by one time step (- idx)
+                first_ts_expected = series.time_index[
+                    start_position - add_start_series_2
+                ]
                 last_ts_expected = series.end_time()
             else:
                 n_pred_series_expected = 1
-                n_pred_points_expected = n_preds_with_overlap - horizon
+                n_pred_points_expected = n_preds_without_overlap
+                # seconds series is shifted by one time step (- idx)
                 first_ts_expected = (
-                    series.time_index[icl] + (2 * horizon - 1) * series.freq
+                    series.time_index[start_position - add_start_series_2]
+                    + (horizon - 1) * series.freq
                 )
                 last_ts_expected = series.end_time()
 
