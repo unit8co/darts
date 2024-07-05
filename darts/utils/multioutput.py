@@ -99,9 +99,7 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
                 logger=logger,
             )
 
-        if sample_weight is not None and not has_fit_parameter(
-            self.estimator, "sample_weight"
-        ):
+        if sample_weight is not None and not self.supports_sample_weight:
             raise_log(
                 ValueError("Underlying estimator does not support sample weights."),
                 logger=logger,
@@ -138,3 +136,10 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
             self.feature_names_in_ = self.estimators_[0].feature_names_in_
 
         return self
+
+    @property
+    def supports_sample_weight(self) -> bool:
+        """
+        Whether model supports sample weight for training.
+        """
+        return has_fit_parameter(self.estimator, "sample_weight")
