@@ -676,17 +676,15 @@ def datetime_attribute_timeseries(
         values_df = pd.get_dummies(values)
         # fill missing columns (in case not all values appear in time_index)
         attribute_range = np.arange(num_values_dict[attribute])
-        mask_bool = np.isin(attribute_range, values_df.columns.values, invert=True)
+        is_missing = np.isin(attribute_range, values_df.columns.values, invert=True)
         # if there are attribute_range columns that are
         # not in values_df.columns.values
-        if attribute_range[mask_bool].size != 0:
-            list_0 = [0] * len(values_df)
-            dict_0 = {i: list_0 for i in attribute_range[mask_bool]}
+        if is_missing.any():
+            dict_0 = {i: False for i in attribute_range[is_missing]}
             # Make a dataframe from the dictionary and concatenate it
-            # to the values values_df  in which the columns selected
-            # by opposite mask ~.
+            # to the values values_df  in which the existing columns
             values_df = pd.concat(
-                [values_df[attribute_range[~mask_bool]], pd.DataFrame(dict_0)], axis=1
+                [values_df, pd.DataFrame(dict_0, index=values_df.index)], axis=1
             ).sort_index(axis=1)
         else:
             values_df = values_df[attribute_range]
