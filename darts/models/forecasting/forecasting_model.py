@@ -41,10 +41,12 @@ from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _adjust_historical_forecasts_time_index,
+    _extend_series_for_overlap_end,
     _get_historical_forecast_predict_index,
     _get_historical_forecast_train_index,
     _historical_forecasts_general_checks,
     _historical_forecasts_sanitize_kwargs,
+    _process_historical_forecast_for_backtest,
     _reconciliate_historical_time_indices,
 )
 from darts.utils.timeseries_generation import (
@@ -57,7 +59,7 @@ from darts.utils.ts_utils import (
     get_single_series,
     series2seq,
 )
-from darts.utils.utils import generate_index, n_steps_between
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -1398,57 +1400,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # remember input series type
         series_seq_type = get_series_seq_type(series)
-        series = series2seq(series)
-
-        # check that `historical_forecasts` have correct type
-        expected_seq_type = None
-        forecast_seq_type = get_series_seq_type(historical_forecasts)
-        if last_points_only and not series_seq_type == forecast_seq_type:
-            # lpo=True -> fc sequence type must be the same
-            expected_seq_type = series_seq_type
-        elif not last_points_only and forecast_seq_type != series_seq_type + 1:
-            # lpo=False -> fc sequence type must be one order higher
-            expected_seq_type = series_seq_type + 1
-
-        if expected_seq_type is not None:
-            raise_log(
-                ValueError(
-                    f"Expected `historical_forecasts` of type {expected_seq_type} "
-                    f"with `last_points_only={last_points_only}` and `series` of type "
-                    f"{series_seq_type}. However, received `historical_forecasts` of type "
-                    f"{forecast_seq_type}. Make sure to pass the same `last_points_only` "
-                    f"value that was used to generate the historical forecasts."
-                ),
-                logger=logger,
-            )
-
-        # we must wrap each fc in a list if `last_points_only=True`
-        nested = last_points_only and forecast_seq_type == SeriesType.SEQ
-        historical_forecasts = series2seq(
-            historical_forecasts, seq_type_out=SeriesType.SEQ_SEQ, nested=nested
+        # validate historical forecasts and covert to multiple series with multiple forecasts case
+        series, historical_forecasts = _process_historical_forecast_for_backtest(
+            series=series,
+            historical_forecasts=historical_forecasts,
+            last_points_only=last_points_only,
         )
-
-        # check that the number of series-specific forecasts corresponds to the
-        # number of series in `series`
-        if len(series) != len(historical_forecasts):
-            error_msg = (
-                f"Mismatch between the number of series-specific `historical_forecasts` "
-                f"(n={len(historical_forecasts)}) and the number of  `TimeSeries` in `series` "
-                f"(n={len(series)}). For `last_points_only={last_points_only}`, expected "
-            )
-            expected_seq_type = (
-                series_seq_type if last_points_only else series_seq_type + 1
-            )
-            if expected_seq_type == SeriesType.SINGLE:
-                error_msg += (
-                    f"a single `historical_forecasts` of type {expected_seq_type}."
-                )
-            else:
-                error_msg += f"`historical_forecasts` of type {expected_seq_type} with length n={len(series)}."
-            raise_log(
-                ValueError(error_msg),
-                logger=logger,
-            )
 
         # we have multiple forecasts per series: rearrange forecasts to call each metric only once;
         # flatten historical forecasts, get matching target series index, remember cumulative target lengths
@@ -2012,52 +1969,30 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             overlap_end=overlap_end,
             sample_weight=sample_weight,
         )
+
         # remember input series type
         series_seq_type = get_series_seq_type(series)
+        # validate historical forecasts and covert to multiple series with multiple forecasts case
+        series, historical_forecasts = _process_historical_forecast_for_backtest(
+            series=series,
+            historical_forecasts=historical_forecasts,
+            last_points_only=last_points_only,
+        )
 
         # optionally, add nans to end of series to get residuals of same shape for each forecast
         if overlap_end:
-            # infer the forecast horizon based on the last forecast; allows user not to care about `forecast_horizon`
-            if series_seq_type == SeriesType.SINGLE:
-                hfc_last = (
-                    historical_forecasts
-                    if last_points_only
-                    else historical_forecasts[-1]
-                )
-                series = [series]
-            else:
-                hfc_last = (
-                    historical_forecasts[0]
-                    if last_points_only
-                    else historical_forecasts[0][-1]
-                )
-            horizon_ = n_steps_between(
-                hfc_last.end_time(), series[0].end_time(), freq=series[0].freq
+            series = _extend_series_for_overlap_end(
+                series=series, historical_forecasts=historical_forecasts
             )
-            series = [s_.append_values(np.array([np.nan] * horizon_)) for s_ in series]
-            if series_seq_type == SeriesType.SINGLE:
-                series = series[0]
 
         residuals = self.backtest(
             series=series,
             historical_forecasts=historical_forecasts,
-            last_points_only=last_points_only,
+            last_points_only=False,
             metric=metric,
             reduction=None,
             metric_kwargs=metric_kwargs,
         )
-
-        # convert forecasts and residuals to list of lists of series/arrays
-        forecast_seq_type = get_series_seq_type(historical_forecasts)
-        historical_forecasts = series2seq(
-            historical_forecasts,
-            seq_type_out=SeriesType.SEQ_SEQ,
-            nested=last_points_only and forecast_seq_type == SeriesType.SEQ,
-        )
-        if series_seq_type == SeriesType.SINGLE:
-            residuals = [residuals]
-        if last_points_only:
-            residuals = [[res] for res in residuals]
 
         # sanity check residual output
         try:

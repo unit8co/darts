@@ -158,12 +158,14 @@ class ConformalModel(GlobalForecastingModel):
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
+        cal_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
-
         preds = self.model.predict(
             n=n,
             series=series,
@@ -174,14 +176,43 @@ class ConformalModel(GlobalForecastingModel):
             predict_likelihood_parameters=predict_likelihood_parameters,
             show_warnings=show_warnings,
         )
+
+        if cal_series is None:
+            series_ = series
+            past_covariates_ = past_covariates
+            future_covariates_ = future_covariates
+        else:
+            series_ = series2seq(cal_series)
+            if len(series_) != len(series):
+                raise_log(
+                    ValueError(
+                        f"Mismatch between number of `cal_series` ({len(series_)}) "
+                        f"and number of `series` ({len(series)})."
+                    ),
+                    logger=logger,
+                )
+            past_covariates_ = series2seq(cal_past_covariates)
+            future_covariates_ = series2seq(cal_future_covariates)
+
+        hfcs = self.model.historical_forecasts(
+            series=series_,
+            past_covariates=past_covariates_,
+            future_covariates=future_covariates_,
+            num_samples=num_samples,
+            forecast_horizon=n,
+            retrain=False,
+            overlap_end=True,
+            last_points_only=False,
+            verbose=verbose,
+            show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+        )
+
         residuals = self.model.residuals(
             series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            forecast_horizon=n,
+            historical_forecasts=hfcs,
             last_points_only=False,
-            retrain=False,
-            stride=1,
+            overlap_end=True,
             verbose=verbose,
             show_warnings=show_warnings,
             values_only=True,
@@ -512,6 +543,24 @@ class ConformalModel(GlobalForecastingModel):
                     cp_preds.append(cp_pred)
                 cp_hfcs.append(cp_preds)
         return cp_hfcs[0] if called_with_single_series else cp_hfcs
+
+    def _calibrate_forecasts(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        forecasts: Union[TimeSeries, Sequence[TimeSeries]],
+        cal_series: Union[TimeSeries, Sequence[TimeSeries]],
+        cal_forecasts: Union[TimeSeries, Sequence[TimeSeries]],
+        train_length: Optional[int] = None,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["position", "value"] = "value",
+        forecast_horizon: int = 1,
+        stride: int = 1,
+        overlap_end: bool = False,
+        last_points_only: bool = True,
+        verbose: bool = False,
+        show_warnings: bool = True,
+    ):
+        pass
 
     def _get_nonconformity_scores(self, df_cal: pd.DataFrame, step_number: int) -> dict:
         """Get the nonconformity scores using the given conformal prediction technique.

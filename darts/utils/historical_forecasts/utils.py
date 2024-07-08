@@ -14,8 +14,8 @@ from numpy.typing import ArrayLike
 
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
-from darts.utils.ts_utils import get_series_seq_type, series2seq
-from darts.utils.utils import generate_index
+from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
+from darts.utils.utils import generate_index, n_steps_between
 
 logger = get_logger(__name__)
 
@@ -927,3 +927,93 @@ def _process_predict_start_points_bounds(
     bounds[:, 1] -= steps_too_long
     cum_lengths = np.cumsum(np.diff(bounds) // stride + 1)
     return bounds, cum_lengths
+
+
+def _process_historical_forecast_for_backtest(
+    series: Union[TimeSeries, Sequence[TimeSeries]],
+    historical_forecasts: Union[
+        TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]
+    ],
+    last_points_only: bool,
+):
+    """Checks that the `historical_forecasts` have the correct format based on the input `series` and
+    `last_points_only`. If all checks have passed, it converts `series` and `historical_forecasts` format into a
+    multiple series case with `last_points_only=False`.
+    """
+    # remember input series type
+    series_seq_type = get_series_seq_type(series)
+    series = series2seq(series)
+
+    # check that `historical_forecasts` have correct type
+    expected_seq_type = None
+    forecast_seq_type = get_series_seq_type(historical_forecasts)
+    if last_points_only and not series_seq_type == forecast_seq_type:
+        # lpo=True -> fc sequence type must be the same
+        expected_seq_type = series_seq_type
+    elif not last_points_only and forecast_seq_type != series_seq_type + 1:
+        # lpo=False -> fc sequence type must be one order higher
+        expected_seq_type = series_seq_type + 1
+
+    if expected_seq_type is not None:
+        raise_log(
+            ValueError(
+                f"Expected `historical_forecasts` of type {expected_seq_type} "
+                f"with `last_points_only={last_points_only}` and `series` of type "
+                f"{series_seq_type}. However, received `historical_forecasts` of type "
+                f"{forecast_seq_type}. Make sure to pass the same `last_points_only` "
+                f"value that was used to generate the historical forecasts."
+            ),
+            logger=logger,
+        )
+
+    # we must wrap each fc in a list if `last_points_only=True`
+    nested = last_points_only and forecast_seq_type == SeriesType.SEQ
+    historical_forecasts = series2seq(
+        historical_forecasts, seq_type_out=SeriesType.SEQ_SEQ, nested=nested
+    )
+
+    # check that the number of series-specific forecasts corresponds to the
+    # number of series in `series`
+    if len(series) != len(historical_forecasts):
+        error_msg = (
+            f"Mismatch between the number of series-specific `historical_forecasts` "
+            f"(n={len(historical_forecasts)}) and the number of  `TimeSeries` in `series` "
+            f"(n={len(series)}). For `last_points_only={last_points_only}`, expected "
+        )
+        expected_seq_type = series_seq_type if last_points_only else series_seq_type + 1
+        if expected_seq_type == SeriesType.SINGLE:
+            error_msg += f"a single `historical_forecasts` of type {expected_seq_type}."
+        else:
+            error_msg += f"`historical_forecasts` of type {expected_seq_type} with length n={len(series)}."
+        raise_log(
+            ValueError(error_msg),
+            logger=logger,
+        )
+    return series, historical_forecasts
+
+
+def _extend_series_for_overlap_end(
+    series: Sequence[TimeSeries],
+    historical_forecasts: Sequence[Sequence[TimeSeries]],
+):
+    """Extends each target `series` to the end of the last historical forecast for that series.
+    Fills the values all missing dates with `np.nan`.
+
+    Assumes the input meets the multiple `series` case with `last_points_only=False` (e.g. the output of
+    `darts.utils.historical_forecasts.utils_process_historical_forecast_for_backtest()`).
+    """
+    series_extended = []
+    append_vals = [np.nan] * series[0].n_components
+    for series_, hfcs_ in zip(series, historical_forecasts):
+        # find number of missing target time steps based on the last forecast
+        missing_steps = n_steps_between(
+            hfcs_[-1].end_time(), series[0].end_time(), freq=series[0].freq
+        )
+        # extend the target if it is too short
+        if missing_steps > 0:
+            series_extended.append(
+                series_.append_values(np.array([append_vals] * missing_steps))
+            )
+        else:
+            series_extended.append(series_)
+    return series_extended
