@@ -572,8 +572,8 @@ class ElectricityDataset(DatasetLoaderCSV):
 
             # filter column down to the period of recording
             srs = srs.replace(0.0, np.nan)
-            start_date = min(srs.fillna(method="ffill").dropna().index)
-            end_date = max(srs.fillna(method="bfill").dropna().index)
+            start_date = min(srs.ffill().dropna().index)
+            end_date = max(srs.bfill().dropna().index)
             active_range = (srs.index >= start_date) & (srs.index <= end_date)
             srs = srs[active_range].fillna(0.0)
 
@@ -670,8 +670,8 @@ class UberTLCDataset(DatasetLoaderCSV):
             srs = series[label]
 
             # filter column down to the period of recording
-            start_date = min(srs.fillna(method="ffill").dropna().index)
-            end_date = max(srs.fillna(method="bfill").dropna().index)
+            start_date = min(srs.ffill().dropna().index)
+            end_date = max(srs.bfill().dropna().index)
             active_range = (srs.index >= start_date) & (srs.index <= end_date)
             srs = srs[active_range]
 
