@@ -109,15 +109,15 @@ except ImportError:
     XGBModel = NotImportedModule(module_name="XGBoost")
 
 # Conformal Prediction
-from darts.models.cp.conformal_model import ConformalModel
-from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
-from darts.models.filtering.kalman_filter import KalmanFilter
+from darts.models.cp.conformal_model import NaiveConformalModel
 
 # Filtering
+from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
+from darts.models.filtering.kalman_filter import KalmanFilter
 from darts.models.filtering.moving_average_filter import MovingAverageFilter
-from darts.models.forecasting.baselines import NaiveEnsembleModel
 
 # Ensembling
+from darts.models.forecasting.baselines import NaiveEnsembleModel
 from darts.models.forecasting.ensemble_model import EnsembleModel
 
 __all__ = [
@@ -167,5 +167,5 @@ __all__ = [
     "MovingAverageFilter",
     "NaiveEnsembleModel",
     "EnsembleModel",
-    "ConformalModel",
+    "NaiveConformalModel",
 ]

@@ -1,4 +1,5 @@
 import re
+from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 try:
@@ -110,7 +111,7 @@ def _calibration_residuals(
     return cal_res
 
 
-class ConformalModel(GlobalForecastingModel):
+class ConformalModel(GlobalForecastingModel, ABC):
     def __init__(
         self,
         model,
@@ -161,7 +162,6 @@ class ConformalModel(GlobalForecastingModel):
         self.method = method
         self.quantiles = quantiles
         self._fit_called = True
-        self.score_fn = darts.metrics.ae
 
     @property
     def output_chunk_length(self) -> Optional[int]:
@@ -416,9 +416,11 @@ class ConformalModel(GlobalForecastingModel):
     def _calibrate_forecasts(
         self,
         series: Sequence[TimeSeries],
-        forecasts: Sequence[Sequence[TimeSeries]],
+        forecasts: Union[Sequence[Sequence[TimeSeries]], Sequence[TimeSeries]],
         cal_series: Optional[Sequence[TimeSeries]] = None,
-        cal_forecasts: Optional[Sequence[Sequence[TimeSeries]]] = None,
+        cal_forecasts: Optional[
+            Union[Sequence[Sequence[TimeSeries]], Sequence[TimeSeries]]
+        ] = None,
         train_length: Optional[int] = None,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
@@ -451,7 +453,7 @@ class ConformalModel(GlobalForecastingModel):
             verbose=verbose,
             show_warnings=show_warnings,
             values_only=True,
-            metric=self.score_fn,
+            metric=self._residuals_metric,
         )
 
         # this mask is later used to avoid look-ahead bias and guarantee identical number of calibration
@@ -574,8 +576,9 @@ class ConformalModel(GlobalForecastingModel):
                     forecast_horizon=forecast_horizon,
                     cal_mask=cal_mask,
                 )
-                axis = 0 if last_points_only else 2
-                q_hat = np.nanquantile(cal_res, q=self.alpha, axis=axis)
+                q_hat = self._calibrate_interval(
+                    cal_res, last_points_only=last_points_only
+                )
 
             # historical conformal prediction
             if last_points_only:
@@ -597,9 +600,11 @@ class ConformalModel(GlobalForecastingModel):
                         cal_res = _calibration_residuals(
                             res, cal_start, cal_end, last_points_only=last_points_only
                         )
-                        q_hat = np.nanquantile(cal_res, q=self.alpha, axis=0)
+                        q_hat = self._calibrate_interval(
+                            cal_res, last_points_only=last_points_only
+                        )
                     cp_pred = np.concatenate(
-                        [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
+                        [pred_vals + q_hat[0], pred_vals, pred_vals + q_hat[1]], axis=1
                     )
                     cp_preds.append(cp_pred)
                 cp_preds = _build_forecast_series(
@@ -641,9 +646,11 @@ class ConformalModel(GlobalForecastingModel):
                             forecast_horizon=forecast_horizon,
                             cal_mask=cal_mask,
                         )
-                        q_hat = np.nanquantile(cal_res, q=self.alpha, axis=2)
+                        q_hat = self._calibrate_interval(
+                            cal_res, last_points_only=last_points_only
+                        )
                     cp_pred = np.concatenate(
-                        [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
+                        [pred_vals + q_hat[0], pred_vals, pred_vals + q_hat[1]], axis=1
                     )
                     cp_pred = _build_forecast_series(
                         points_preds=cp_pred,
@@ -656,6 +663,17 @@ class ConformalModel(GlobalForecastingModel):
                     cp_preds.append(cp_pred)
                 cp_hfcs.append(cp_preds)
         return cp_hfcs
+
+    @abstractmethod
+    def _calibrate_interval(
+        self, residuals: np.ndarray, last_points_only: bool
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Computes the upper and lower calibrated forecast intervals based on residuals."""
+
+    @property
+    @abstractmethod
+    def _residuals_metric(self):
+        """Gives the "per time step" metric used to compute residuals."""
 
     def _get_nonconformity_scores(self, df_cal: pd.DataFrame, step_number: int) -> dict:
         """Get the nonconformity scores using the given conformal prediction technique.
@@ -880,3 +898,17 @@ def _get_evaluate_metrics_from_dataset(
     miscoverage_rate = 1 - coverage_rate
 
     return interval_width, miscoverage_rate
+
+
+class NaiveConformalModel(ConformalModel):
+    def _calibrate_interval(
+        self, residuals: np.ndarray, last_points_only: bool
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Computes the lower and upper calibrated forecast intervals based on residuals."""
+        axis = 0 if last_points_only else 2
+        q_hat = np.nanquantile(residuals, q=self.alpha, axis=axis)
+        return -q_hat, q_hat
+
+    @property
+    def _residuals_metric(self):
+        return darts.metrics.ae

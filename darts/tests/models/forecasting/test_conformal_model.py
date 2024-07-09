@@ -8,8 +8,8 @@ import pytest
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models import (
-    ConformalModel,
     LinearRegressionModel,
+    NaiveConformalModel,
     NaiveSeasonal,
 )
 from darts.utils import timeseries_generation as tg
@@ -198,30 +198,30 @@ class TestRegressionModels:
         model_err_msg = "`model` must be a pre-trained `GlobalForecastingModel`."
         # un-trained local model
         with pytest.raises(ValueError) as exc:
-            ConformalModel(model=local_model, alpha=0.8, method=method)
+            NaiveConformalModel(model=local_model, alpha=0.8, method=method)
         assert str(exc.value) == model_err_msg
 
         # pre-trained local model
         local_model.fit(series)
         with pytest.raises(ValueError) as exc:
-            ConformalModel(model=local_model, alpha=0.8, method=method)
+            NaiveConformalModel(model=local_model, alpha=0.8, method=method)
         assert str(exc.value) == model_err_msg
 
         # un-trained global model
         with pytest.raises(ValueError) as exc:
-            ConformalModel(model=global_model, alpha=0.8, method=method)
+            NaiveConformalModel(model=global_model, alpha=0.8, method=method)
         assert str(exc.value) == model_err_msg
 
         # pre-trained local model should work
         global_model.fit(series)
-        _ = ConformalModel(model=global_model, alpha=0.8, method=method)
+        _ = NaiveConformalModel(model=global_model, alpha=0.8, method=method)
 
     @pytest.mark.parametrize("model_cls", models)
     def test_predict_runnability(self, model_cls):
         # testing lags_past_covariates None but past_covariates during prediction
         model_instance = model_cls(lags=4, lags_past_covariates=None)
         model_instance.fit(self.sine_univariate1)
-        model = ConformalModel(model_instance, alpha=0.8, method="naive")
+        model = NaiveConformalModel(model_instance, alpha=0.8, method="naive")
         # cannot pass past covariates
         with pytest.raises(ValueError):
             model.predict(
@@ -238,7 +238,7 @@ class TestRegressionModels:
         model_instance.fit(
             [self.sine_univariate1] * 2, past_covariates=[self.sine_univariate1] * 2
         )
-        model = ConformalModel(model_instance, alpha=0.8, method="naive")
+        model = NaiveConformalModel(model_instance, alpha=0.8, method="naive")
         with pytest.raises(ValueError) as exc:
             model.predict(n=1, series=self.sine_univariate1)
         assert (
@@ -266,7 +266,7 @@ class TestRegressionModels:
         model_instance.fit(
             [self.sine_univariate1] * 2, future_covariates=[self.sine_univariate1] * 2
         )
-        model = ConformalModel(model_instance, alpha=0.8, method="naive")
+        model = NaiveConformalModel(model_instance, alpha=0.8, method="naive")
         with pytest.raises(ValueError) as exc:
             model.predict(n=1, series=self.sine_univariate1)
         assert (
@@ -290,7 +290,7 @@ class TestRegressionModels:
         # test input dim
         model_instance = model_cls(lags=4)
         model_instance.fit(self.sine_univariate1)
-        model = ConformalModel(model_instance, alpha=0.8, method="naive")
+        model = NaiveConformalModel(model_instance, alpha=0.8, method="naive")
         with pytest.raises(ValueError) as exc:
             model.predict(
                 n=1, series=self.sine_univariate1.stack(self.sine_univariate1)
@@ -348,7 +348,7 @@ class TestRegressionModels:
             lags=icl, output_chunk_length=ocl, **model_kwargs
         )
         model_instance.fit(series=series, past_covariates=pc, future_covariates=fc)
-        model = ConformalModel(model_instance, alpha=0.8, method="naive")
+        model = NaiveConformalModel(model_instance, alpha=0.8, method="naive")
 
         preds = model.predict(
             n=horizon, series=series, past_covariates=pc, future_covariates=fc
