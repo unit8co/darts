@@ -43,7 +43,7 @@ def _triul_indices(forecast_horizon, n_comps):
     idx_horizon = forecast_horizon - 1 - idx_horizon
 
     # get component indices (already repeated)
-    idx_comp = [i for _ in range(len(idx_horizon)) for i in range(n_comps)]
+    idx_comp = np.array([i for _ in range(len(idx_horizon)) for i in range(n_comps)])
 
     # repeat along the component dimension
     idx_horizon = idx_horizon.repeat(n_comps)
@@ -78,8 +78,36 @@ def cqr_score_asym(row, quantile_lo_col, quantile_hi_col):
     )
 
 
-# TODO: fit conformal model (maybe for the future)
-# -
+def _calibration_residuals(
+    residuals,
+    start: Optional[int],
+    end: Optional[int],
+    last_points_only: bool,
+    forecast_horizon: Optional[int] = None,
+    cal_mask: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]] = None,
+):
+    """Extract residuals used to calibrate the predictions of a forecasting model.
+    It guarantees:
+    - no look-ahead bias
+    """
+    if last_points_only:
+        return residuals[start:end]
+
+    cal_res = np.concatenate(residuals[start:end], axis=2)
+    # no masking required for horizon == 1
+    if forecast_horizon == 1:
+        return cal_res
+
+    # ignore upper left residuals to have same number of residuals per horizon
+    idx_horizon, idx_comp, idx_hfc = cal_mask
+    cal_res[idx_horizon, idx_comp, idx_hfc] = np.nan
+    # ignore lower right residuals to avoid look-ahead bias
+    cal_res[
+        forecast_horizon - 1 - idx_horizon,
+        idx_comp,
+        cal_res.shape[2] - 1 - idx_hfc,
+    ] = np.nan
+    return cal_res
 
 
 class ConformalModel(GlobalForecastingModel):
@@ -166,6 +194,26 @@ class ConformalModel(GlobalForecastingModel):
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
+
+        # if a calibration set is given, use it. Otherwise, use past of input as calibration
+        if cal_series is None:
+            cal_series = series
+            cal_past_covariates = past_covariates
+            cal_future_covariates = future_covariates
+
+        cal_series = series2seq(cal_series)
+        if len(cal_series) != len(series):
+            raise_log(
+                ValueError(
+                    f"Mismatch between number of `cal_series` ({len(cal_series)}) "
+                    f"and number of `series` ({len(series)})."
+                ),
+                logger=logger,
+            )
+        cal_past_covariates = series2seq(cal_past_covariates)
+        cal_future_covariates = series2seq(cal_future_covariates)
+
+        # generate model forecast to calibrate
         preds = self.model.predict(
             n=n,
             series=series,
@@ -176,28 +224,14 @@ class ConformalModel(GlobalForecastingModel):
             predict_likelihood_parameters=predict_likelihood_parameters,
             show_warnings=show_warnings,
         )
+        # convert to multi series case with `last_points_only=False`
+        preds = [[pred] for pred in preds]
 
-        if cal_series is None:
-            series_ = series
-            past_covariates_ = past_covariates
-            future_covariates_ = future_covariates
-        else:
-            series_ = series2seq(cal_series)
-            if len(series_) != len(series):
-                raise_log(
-                    ValueError(
-                        f"Mismatch between number of `cal_series` ({len(series_)}) "
-                        f"and number of `series` ({len(series)})."
-                    ),
-                    logger=logger,
-                )
-            past_covariates_ = series2seq(cal_past_covariates)
-            future_covariates_ = series2seq(cal_future_covariates)
-
-        hfcs = self.model.historical_forecasts(
-            series=series_,
-            past_covariates=past_covariates_,
-            future_covariates=future_covariates_,
+        # generate all possible forecasts for calibration
+        cal_hfcs = self.model.historical_forecasts(
+            series=cal_series,
+            past_covariates=cal_past_covariates,
+            future_covariates=cal_future_covariates,
             num_samples=num_samples,
             forecast_horizon=n,
             retrain=False,
@@ -207,40 +241,22 @@ class ConformalModel(GlobalForecastingModel):
             show_warnings=show_warnings,
             predict_likelihood_parameters=predict_likelihood_parameters,
         )
-
-        residuals = self.model.residuals(
+        cal_preds = self._calibrate_forecasts(
             series=series,
-            historical_forecasts=hfcs,
-            last_points_only=False,
+            forecasts=preds,
+            cal_series=cal_series,
+            cal_forecasts=cal_hfcs,
+            forecast_horizon=n,
             overlap_end=True,
+            last_points_only=False,
             verbose=verbose,
             show_warnings=show_warnings,
-            values_only=True,
-            metric=self.score_fn,
         )
-        if self.method != "naive":
-            raise_log(NotImplementedError("non-naive not yet implemented"))
-
-        # first: NAIVE only
-        cp_preds = []
-        for series_, pred, res in zip(series, preds, residuals):
-            # convert to (horizon, n comps, hist fcs)
-            res = np.concatenate(res, axis=2)
-            q_hat = np.quantile(res, q=self.alpha, axis=2)
-            pred_vals = pred.values(copy=False)
-            cp_pred = np.concatenate(
-                [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
-            )
-            cp_pred = _build_forecast_series(
-                points_preds=cp_pred,
-                input_series=series_,
-                custom_columns=self._cp_component_names(series_),
-                time_index=pred._time_index,
-                with_static_covs=False,
-                with_hierarchy=False,
-            )
-            cp_preds.append(cp_pred)
-        return cp_preds[0] if called_with_single_series else cp_preds
+        # convert historical forecasts output to simple forecast / prediction
+        if called_with_single_series:
+            return cal_preds[0][0]
+        else:
+            return [cp[0] for cp in cal_preds]
         # for step_number in range(1, self.n_forecasts + 1):
         #     # conformalize
         #     noncon_scores = self._get_nonconformity_scores(df_cal, step_number)
@@ -317,13 +333,29 @@ class ConformalModel(GlobalForecastingModel):
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        cal_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
         called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
-        # generate all possible forecasts (overlap_end=True)
+        if cal_series is not None:
+            cal_series = series2seq(cal_series)
+            if len(cal_series) != len(series):
+                raise_log(
+                    ValueError(
+                        f"Mismatch between number of `cal_series` ({len(cal_series)}) "
+                        f"and number of `series` ({len(series)})."
+                    ),
+                    logger=logger,
+                )
+            cal_past_covariates = series2seq(cal_past_covariates)
+            cal_future_covariates = series2seq(cal_future_covariates)
+
+        # generate all possible forecasts (overlap_end=True) to have enough residuals
         hfcs = self.model.historical_forecasts(
             series=series,
             past_covariates=past_covariates,
@@ -340,6 +372,63 @@ class ConformalModel(GlobalForecastingModel):
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
         )
+        # optionally, generate calibration forecasts
+        if cal_series is None:
+            cal_hfcs = None
+        else:
+            cal_hfcs = self.model.historical_forecasts(
+                series=cal_series,
+                past_covariates=cal_past_covariates,
+                future_covariates=cal_future_covariates,
+                num_samples=num_samples,
+                forecast_horizon=forecast_horizon,
+                retrain=False,
+                overlap_end=True,
+                last_points_only=last_points_only,
+                verbose=verbose,
+                show_warnings=show_warnings,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                enable_optimization=enable_optimization,
+                fit_kwargs=fit_kwargs,
+                predict_kwargs=predict_kwargs,
+            )
+        calibrated_forecasts = self._calibrate_forecasts(
+            series=series,
+            forecasts=hfcs,
+            cal_series=cal_series,
+            cal_forecasts=cal_hfcs,
+            train_length=train_length,
+            start=start,
+            start_format=start_format,
+            forecast_horizon=forecast_horizon,
+            stride=stride,
+            overlap_end=overlap_end,
+            last_points_only=last_points_only,
+            verbose=verbose,
+            show_warnings=show_warnings,
+        )
+        return (
+            calibrated_forecasts[0]
+            if called_with_single_series
+            else calibrated_forecasts
+        )
+
+    def _calibrate_forecasts(
+        self,
+        series: Sequence[TimeSeries],
+        forecasts: Sequence[Sequence[TimeSeries]],
+        cal_series: Optional[Sequence[TimeSeries]] = None,
+        cal_forecasts: Optional[Sequence[Sequence[TimeSeries]]] = None,
+        train_length: Optional[int] = None,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["position", "value"] = "value",
+        forecast_horizon: int = 1,
+        stride: int = 1,
+        overlap_end: bool = False,
+        last_points_only: bool = True,
+        verbose: bool = False,
+        show_warnings: bool = True,
+    ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
         # TODO: add support for:
         # - num_samples
         # - predict_likelihood_parameters
@@ -353,9 +442,10 @@ class ConformalModel(GlobalForecastingModel):
         # - last_points_only = True
         # - add correct output components
         # - use only `train_length` previous residuals
+
         residuals = self.model.residuals(
-            series=series,
-            historical_forecasts=hfcs,
+            series=series if cal_series is None else cal_series,
+            historical_forecasts=forecasts if cal_series is None else cal_forecasts,
             overlap_end=True,
             last_points_only=last_points_only,
             verbose=verbose,
@@ -366,13 +456,11 @@ class ConformalModel(GlobalForecastingModel):
 
         # this mask is later used to avoid look-ahead bias and guarantee identical number of calibration
         # points per step in the forecast horizon. Only used in case of `last_points_only=False`
-        idx_horizon, idx_comp, idx_hfc = _triul_indices(
-            forecast_horizon, series[0].width
-        )
+        cal_mask = _triul_indices(forecast_horizon, series[0].width)
 
         cp_hfcs = []
         for series_idx, (series_, s_hfcs, res) in enumerate(
-            zip(series, hfcs, residuals)
+            zip(series, forecasts, residuals)
         ):
             cp_preds = []
 
@@ -395,14 +483,28 @@ class ConformalModel(GlobalForecastingModel):
                 if last_fc_idx:
                     last_fc_idx -= delta_end
 
-            # determine the first forecast index for conformal prediction; all forecasts before that are
-            # used for calibration
-            # we need at least 1 residual per point in the horizon
-            skip_n_train = forecast_horizon
-
-            # plus some additional steps based on `train_length`
-            if train_length is not None:
-                skip_n_train += train_length - 1
+            # determine the first forecast index for conformal prediction
+            if cal_series is None:
+                # all forecasts before that are used for calibration
+                # we need at least 1 residual per point in the horizon
+                skip_n_train = forecast_horizon
+                # plus some additional steps based on `train_length`
+                if train_length is not None:
+                    skip_n_train += train_length - 1
+            else:
+                # with a long enough calibration set, we can start from the first forecast
+                min_n_cal = max(train_length or 0, 1)
+                if len(residuals) < min_n_cal:
+                    raise_log(
+                        ValueError(
+                            "Could not build a single calibration input with the provided "
+                            f"`cal_series` and `cal_*_covariates` at series index: {series_idx}. "
+                            f"Expected to generate at least `max(train_length, 1) = {min_n_cal}` "
+                            f"calibration forecasts, but could only generate `{len(residuals)}`."
+                        ),
+                        logger=logger,
+                    )
+                skip_n_train = 0
 
             # skip solely based on `start`
             skip_n_start = 0
@@ -461,15 +563,27 @@ class ConformalModel(GlobalForecastingModel):
                     ),
                 )
 
+            # use fixed `q_hat` if calibration set is provided
+            q_hat = None
+            if cal_series is not None:
+                cal_res = _calibration_residuals(
+                    res,
+                    -train_length if train_length is not None else None,
+                    None,
+                    last_points_only=last_points_only,
+                    forecast_horizon=forecast_horizon,
+                    cal_mask=cal_mask,
+                )
+                axis = 0 if last_points_only else 2
+                q_hat = np.nanquantile(cal_res, q=self.alpha, axis=axis)
+
             # historical conformal prediction
             if last_points_only:
                 for idx, pred_vals in enumerate(
                     s_hfcs.values(copy=False)[first_fc_idx:last_fc_idx:stride]
                 ):
                     pred_vals = np.expand_dims(pred_vals, 0)
-                    if not first_fc_idx and not idx:
-                        cp_pred = np.concatenate([pred_vals] * 3, axis=1)
-                    else:
+                    if cal_series is None:
                         # get the last residual index for calibration, `cal_end` is exclusive
                         # to avoid look-ahead bias, use only residuals from before the historical forecast start point;
                         # since we look at `last_points only=True`, the last residual historically available at
@@ -480,11 +594,13 @@ class ConformalModel(GlobalForecastingModel):
                         cal_start = (
                             cal_end - train_length if train_length is not None else None
                         )
-                        cal_res = res[cal_start:cal_end]
-                        q_hat = np.nanquantile(cal_res, q=self.alpha, axis=0)
-                        cp_pred = np.concatenate(
-                            [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
+                        cal_res = _calibration_residuals(
+                            res, cal_start, cal_end, last_points_only=last_points_only
                         )
+                        q_hat = np.nanquantile(cal_res, q=self.alpha, axis=0)
+                    cp_pred = np.concatenate(
+                        [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
+                    )
                     cp_preds.append(cp_pred)
                 cp_preds = _build_forecast_series(
                     points_preds=np.concatenate(cp_preds, axis=0),
@@ -503,9 +619,7 @@ class ConformalModel(GlobalForecastingModel):
                 for idx, pred in enumerate(s_hfcs[first_fc_idx:last_fc_idx:stride]):
                     # convert to (horizon, n comps, hist fcs)
                     pred_vals = pred.values(copy=False)
-                    if not first_fc_idx and not idx:
-                        cp_pred = np.concatenate([pred_vals] * 3, axis=1)
-                    else:
+                    if cal_series is None:
                         # get the last residual index for calibration, `cal_end` is exclusive
                         # to avoid look-ahead bias, use only residuals from before the historical forecast start point;
                         # since we look at `last_points only=False`, the last residual historically available at
@@ -519,19 +633,18 @@ class ConformalModel(GlobalForecastingModel):
                             if train_length is not None
                             else None
                         )
-                        cal_res = np.concatenate(res[cal_start:cal_end], axis=2)
-                        # ignore upper left residuals to have same number of residuals per horizon
-                        cal_res[idx_horizon, idx_comp, idx_hfc] = np.nan
-                        # ignore lower right residuals to avoid look-ahead bias
-                        cal_res[
-                            forecast_horizon - 1 - idx_horizon,
-                            idx_comp,
-                            cal_res.shape[2] - 1 - idx_hfc,
-                        ] = np.nan
-                        q_hat = np.nanquantile(cal_res, q=self.alpha, axis=2)
-                        cp_pred = np.concatenate(
-                            [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
+                        cal_res = _calibration_residuals(
+                            res,
+                            cal_start,
+                            cal_end,
+                            last_points_only=last_points_only,
+                            forecast_horizon=forecast_horizon,
+                            cal_mask=cal_mask,
                         )
+                        q_hat = np.nanquantile(cal_res, q=self.alpha, axis=2)
+                    cp_pred = np.concatenate(
+                        [pred_vals - q_hat, pred_vals, pred_vals + q_hat], axis=1
+                    )
                     cp_pred = _build_forecast_series(
                         points_preds=cp_pred,
                         input_series=series_,
@@ -542,25 +655,7 @@ class ConformalModel(GlobalForecastingModel):
                     )
                     cp_preds.append(cp_pred)
                 cp_hfcs.append(cp_preds)
-        return cp_hfcs[0] if called_with_single_series else cp_hfcs
-
-    def _calibrate_forecasts(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        forecasts: Union[TimeSeries, Sequence[TimeSeries]],
-        cal_series: Union[TimeSeries, Sequence[TimeSeries]],
-        cal_forecasts: Union[TimeSeries, Sequence[TimeSeries]],
-        train_length: Optional[int] = None,
-        start: Optional[Union[pd.Timestamp, float, int]] = None,
-        start_format: Literal["position", "value"] = "value",
-        forecast_horizon: int = 1,
-        stride: int = 1,
-        overlap_end: bool = False,
-        last_points_only: bool = True,
-        verbose: bool = False,
-        show_warnings: bool = True,
-    ):
-        pass
+        return cp_hfcs
 
     def _get_nonconformity_scores(self, df_cal: pd.DataFrame, step_number: int) -> dict:
         """Get the nonconformity scores using the given conformal prediction technique.
