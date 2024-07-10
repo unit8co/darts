@@ -893,7 +893,7 @@ def _get_evaluate_metrics_from_dataset(
     return interval_width, miscoverage_rate
 
 
-class NaiveConformalModel(ConformalModel):
+class ConformalNaiveModel(ConformalModel):
     def __init__(self, model, alpha: Union[float, Tuple[float, float]]):
         if not isinstance(alpha, float):
             raise_log(

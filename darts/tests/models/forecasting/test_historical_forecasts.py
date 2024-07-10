@@ -13,9 +13,9 @@ from darts.models import (
     ARIMA,
     AutoARIMA,
     CatBoostModel,
+    ConformalNaiveModel,
     LightGBMModel,
     LinearRegressionModel,
-    NaiveConformalModel,
     NaiveDrift,
     NaiveSeasonal,
     NotImportedModule,
@@ -2593,7 +2593,7 @@ class TestHistoricalforecast:
 
         forecasting_model.fit(series_train, past_covariates=pc, future_covariates=fc)
 
-        model = NaiveConformalModel(forecasting_model, alpha=0.8)
+        model = ConformalNaiveModel(forecasting_model, alpha=0.8)
 
         if use_multi_series:
             series_val = [
@@ -2745,7 +2745,7 @@ class TestHistoricalforecast:
                 start = series_val.time_index[start_position]
             else:
                 start = start_position
-        model = NaiveConformalModel(forecasting_model, alpha=0.8)
+        model = ConformalNaiveModel(forecasting_model, alpha=0.8)
 
         if use_multi_series:
             series_val = [
