@@ -231,9 +231,10 @@ class EnsembleModel(GlobalForecastingModel):
         # stacks multiple sequences of timeseries elementwise
         return [self._stack_ts_seq(ts_list) for ts_list in zip(*predictions_list)]
 
+    @property
     def _model_encoder_settings(self):
         raise NotImplementedError(
-            "Encoders are not supported by EnsembleModels. Instead add encoder to the underlying `forecasting_models`."
+            "Encoders are not supported by EnsembleModels. Instead add encoders to the underlying `forecasting_models`."
         )
 
     def _make_multiple_predictions(

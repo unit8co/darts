@@ -151,10 +151,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         self.quantiles = quantiles
         self._fit_called = True
 
-    @property
-    def output_chunk_length(self) -> Optional[int]:
-        return self.model.output_chunk_length
-
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -178,10 +174,39 @@ class ConformalModel(GlobalForecastingModel, ABC):
         cal_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         cal_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        if series is None:
+            # then there must be a single TS, and that was saved in super().fit as self.training_series
+            if self.training_series is None:
+                raise_log(
+                    ValueError(
+                        "Input `series` must be provided. This is the result either from fitting on multiple series, "
+                        "or from not having fit the model yet."
+                    ),
+                    logger,
+                )
+            series = self.training_series
+
         called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
+
+        # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
+        if past_covariates is None and self.past_covariate_series is not None:
+            past_covariates = [self.past_covariate_series] * len(series)
+        if future_covariates is None and self.future_covariate_series is not None:
+            future_covariates = [self.future_covariate_series] * len(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
+
+        super().predict(
+            n,
+            series,
+            past_covariates,
+            future_covariates,
+            num_samples,
+            verbose,
+            predict_likelihood_parameters,
+            show_warnings,
+        )
 
         # if a calibration set is given, use it. Otherwise, use past of input as calibration
         if cal_series is None:
@@ -770,17 +795,16 @@ class ConformalModel(GlobalForecastingModel, ABC):
         ]
 
     @property
-    def _model_encoder_settings(
-        self,
-    ) -> Tuple[
-        Optional[int],
-        Optional[int],
-        bool,
-        bool,
-        Optional[List[int]],
-        Optional[List[int]],
-    ]:
-        return None, None, False, False, None, None
+    def output_chunk_length(self) -> Optional[int]:
+        return self.model.output_chunk_length
+
+    @property
+    def output_chunk_shift(self) -> int:
+        return self.model.output_chunk_shift
+
+    @property
+    def _model_encoder_settings(self):
+        raise NotImplementedError(f"not supported by `{self.__class__.__name__}`.")
 
     @property
     def extreme_lags(
@@ -795,10 +819,74 @@ class ConformalModel(GlobalForecastingModel, ABC):
         int,
         Optional[int],
     ]:
-        return self.model.extreme_lags
+        raise NotImplementedError(f"not supported by `{self.__class__.__name__}`.")
+
+    @property
+    def min_train_series_length(self) -> int:
+        raise NotImplementedError(f"not supported by `{self.__class__.__name__}`.")
+
+    @property
+    def min_train_samples(self) -> int:
+        raise NotImplementedError(f"not supported by `{self.__class__.__name__}`.")
 
     def supports_multivariate(self) -> bool:
         return self.model.supports_multivariate
+
+    @property
+    def supports_past_covariates(self) -> bool:
+        return self.model.supports_past_covariates
+
+    @property
+    def supports_future_covariates(self) -> bool:
+        return self.model.supports_future_covariates
+
+    @property
+    def supports_static_covariates(self) -> bool:
+        return self.model.supports_static_covariates
+
+    @property
+    def supports_sample_weight(self) -> bool:
+        """Whether the model supports a validation set during training."""
+        return False
+
+    @property
+    def supports_likelihood_parameter_prediction(self) -> bool:
+        """EnsembleModel can predict likelihood parameters if all its forecasting models were fitted with the
+        same likelihood.
+        """
+        return True
+
+    @property
+    def supports_probabilistic_prediction(self) -> bool:
+        return True
+
+    @property
+    def uses_past_covariates(self) -> bool:
+        """
+        Whether the model uses past covariates, once fitted.
+        """
+        return self.model.uses_past_covariates
+
+    @property
+    def uses_future_covariates(self) -> bool:
+        """
+        Whether the model uses future covariates, once fitted.
+        """
+        return self.model.uses_future_covariates
+
+    @property
+    def uses_static_covariates(self) -> bool:
+        """
+        Whether the model uses static covariates, once fitted.
+        """
+        return self.model.uses_static_covariates
+
+    @property
+    def considers_static_covariates(self) -> bool:
+        """
+        Whether the model considers static covariates, if there are any.
+        """
+        return self.model.considers_static_covariates
 
 
 def uncertainty_evaluate(df_forecast: pd.DataFrame) -> pd.DataFrame:
