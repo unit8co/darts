@@ -116,10 +116,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
         self,
         model,
         alpha: Union[float, Tuple[float, float]],
-        method: str,
         quantiles: Optional[List[float]] = None,
     ):
-        """Conformal prediction dataclass
+        """Base Conformal Prediction Model
 
         Parameters
         ----------
@@ -128,22 +127,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
         alpha
             Significance level of the prediction interval, float if coverage error spread arbitrarily over left and
             right tails, tuple of two floats for different coverage error over left and right tails respectively
-        method
-            The conformal prediction technique to use:
-
-             - `"naive"` for the Naive or Absolute Residual method
-             - `"cqr"` for Conformalized Quantile Regression
         quantiles
             Optionally, a list of quantiles from the quantile regression `model` to use.
         """
         if not isinstance(model, GlobalForecastingModel) or not model._fit_called:
             raise_log(
                 ValueError("`model` must be a pre-trained `GlobalForecastingModel`."),
-                logger=logger,
-            )
-        if method == "naive" and not isinstance(alpha, float):
-            raise_log(
-                ValueError(f"`alpha` must be a `float` when `method={method}`."),
                 logger=logger,
             )
         super().__init__(add_encoders=None)
@@ -159,7 +148,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         self.model = model
         self.noncon_scores = dict()
         self.alpha = alpha
-        self.method = method
         self.quantiles = quantiles
         self._fit_called = True
 
@@ -496,13 +484,15 @@ class ConformalModel(GlobalForecastingModel, ABC):
             else:
                 # with a long enough calibration set, we can start from the first forecast
                 min_n_cal = max(train_length or 0, 1)
-                if len(residuals) < min_n_cal:
+                if not last_points_only:
+                    min_n_cal += forecast_horizon - 1
+                if len(res) < min_n_cal:
                     raise_log(
                         ValueError(
                             "Could not build a single calibration input with the provided "
                             f"`cal_series` and `cal_*_covariates` at series index: {series_idx}. "
-                            f"Expected to generate at least `max(train_length, 1) = {min_n_cal}` "
-                            f"calibration forecasts, but could only generate `{len(residuals)}`."
+                            f"Expected to generate at least `{min_n_cal}` calibration forecasts, "
+                            f"but could only generate `{len(res)}`."
                         ),
                         logger=logger,
                     )
@@ -568,9 +558,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
             # use fixed `q_hat` if calibration set is provided
             q_hat = None
             if cal_series is not None:
+                cal_start = -train_length if train_length else 0
+                if not last_points_only:
+                    cal_start -= forecast_horizon - 1
                 cal_res = _calibration_residuals(
                     res,
-                    -train_length if train_length is not None else None,
+                    cal_start,
                     None,
                     last_points_only=last_points_only,
                     forecast_horizon=forecast_horizon,
@@ -901,6 +894,14 @@ def _get_evaluate_metrics_from_dataset(
 
 
 class NaiveConformalModel(ConformalModel):
+    def __init__(self, model, alpha: Union[float, Tuple[float, float]]):
+        if not isinstance(alpha, float):
+            raise_log(
+                ValueError("`alpha` must be a `float`."),
+                logger=logger,
+            )
+        super().__init__(model=model, alpha=alpha)
+
     def _calibrate_interval(
         self, residuals: np.ndarray, last_points_only: bool
     ) -> Tuple[np.ndarray, np.ndarray]:

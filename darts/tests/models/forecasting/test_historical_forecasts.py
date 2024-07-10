@@ -2593,7 +2593,7 @@ class TestHistoricalforecast:
 
         forecasting_model.fit(series_train, past_covariates=pc, future_covariates=fc)
 
-        model = NaiveConformalModel(forecasting_model, alpha=0.8, method="naive")
+        model = NaiveConformalModel(forecasting_model, alpha=0.8)
 
         if use_multi_series:
             series_val = [
@@ -2699,7 +2699,8 @@ class TestHistoricalforecast:
         ),
     )
     def test_conformal_historical_start_train_length(self, config):
-        """Tests naive conformal model with start and train length."""
+        """Tests naive conformal model with start, train length, calibration set, and center forecasts against
+        the forecasting model's forecast."""
         (
             last_points_only,
             train_length,
@@ -2744,7 +2745,7 @@ class TestHistoricalforecast:
                 start = series_val.time_index[start_position]
             else:
                 start = start_position
-        model = NaiveConformalModel(forecasting_model, alpha=0.8, method="naive")
+        model = NaiveConformalModel(forecasting_model, alpha=0.8)
 
         if use_multi_series:
             series_val = [
@@ -2763,21 +2764,48 @@ class TestHistoricalforecast:
             last_points_only=last_points_only,
             forecast_horizon=horizon,
         )
+        # using a calibration series should be able to calibrate all historical forecasts
+        # from the base forecasting model
+        hist_fct_all = forecasting_model.historical_forecasts(
+            series=series_val,
+            retrain=False,
+            start=start,
+            start_format=start_format,
+            last_points_only=last_points_only,
+            forecast_horizon=horizon,
+        )
+        hist_fct_cal = model.historical_forecasts(
+            series=series_val,
+            cal_series=series_val,
+            retrain=False,
+            train_length=train_length,
+            start=start,
+            start_format=start_format,
+            last_points_only=last_points_only,
+            forecast_horizon=horizon,
+        )
 
         if not isinstance(series_val, list):
             series_val = [series_val]
             hist_fct = [hist_fct]
+            hist_fct_all = [hist_fct_all]
+            hist_fct_cal = [hist_fct_cal]
 
         for idx, (
             series,
             hfc,
-        ) in enumerate(zip(series_val, hist_fct)):
+            hfc_all,
+            hfc_cal,
+        ) in enumerate(zip(series_val, hist_fct, hist_fct_all, hist_fct_cal)):
             if not isinstance(hfc, list):
                 hfc = [hfc]
+                hfc_all = [hfc_all]
+                hfc_cal = [hfc_cal]
 
             # multi series: second series is shifted by one time step (+/- idx);
             # start_format = "value" requires a shift
             add_start_series_2 = idx * int(use_start) * int(start_format == "value")
+
             n_preds_without_overlap = (
                 len(series)
                 - icl
@@ -2808,7 +2836,7 @@ class TestHistoricalforecast:
             cols_excpected = []
             for col in series.columns:
                 cols_excpected += [f"{col}_q_lo", f"{col}_q_md", f"{col}_q_hi"]
-            # check length match between optimized and default hist fc
+            # check historical forecasts dimensions
             assert len(hfc) == n_pred_series_expected
             # check hist fc start
             assert hfc[0].start_time() == first_ts_expected
@@ -2817,3 +2845,27 @@ class TestHistoricalforecast:
             for hfc_ in hfc:
                 assert hfc_.columns.tolist() == cols_excpected
                 assert len(hfc_) == n_pred_points_expected
+
+            # with a calibration set, we can calibrate all possible historical forecasts from base forecasting model
+            assert len(hfc_cal) == len(hfc_all)
+            for hfc_all_, hfc_cal_ in zip(hfc_all, hfc_cal):
+                assert hfc_all_.start_time() == hfc_cal_.start_time()
+                assert len(hfc_all_) == len(hfc_cal_)
+                assert hfc_all_.freq == hfc_cal_.freq
+
+                # the center forecast must be equal to the forecasting model's forecast
+                np.testing.assert_array_almost_equal(
+                    hfc_all_.all_values(), hfc_cal_.all_values()[:, 1:2]
+                )
+
+                # check that with a calibration set, all prediction intervals have the same width
+                vals_cal_0 = hfc_cal[0].values()
+                vals_cal_i = hfc_cal_.values()
+                np.testing.assert_array_almost_equal(
+                    vals_cal_0[:, 0] - vals_cal_0[:, 1],
+                    vals_cal_i[:, 0] - vals_cal_i[:, 1],
+                )
+                np.testing.assert_array_almost_equal(
+                    vals_cal_0[:, 1] - vals_cal_0[:, 2],
+                    vals_cal_i[:, 1] - vals_cal_i[:, 2],
+                )
