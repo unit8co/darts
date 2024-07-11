@@ -1,6 +1,7 @@
+import os
 import re
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, BinaryIO, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 try:
     from typing import Literal
@@ -26,30 +27,6 @@ from darts.utils.ts_utils import (
 from darts.utils.utils import generate_index, n_steps_between
 
 logger = get_logger(__name__)
-
-
-def _triul_indices(forecast_horizon, n_comps):
-    """Computes the indices of upper for a 3D Matrix of shape (horizon, components, n forecasts)
-    left triangle. The upper left triangle is first computed for the (horizon, n forecasts)
-    dimension, and then repeated along the `components` dimension.
-
-    These indices can be used to:
-        - mask out residuals from "newer" forecasts to avoid look-ahead bias (for horizons > 1)
-        - mask out residuals from "older" forecasts, so that each conformal forecast has the same number
-          of residual examples per point in the forecast horizon.
-    """
-    # get lower right triangle
-    idx_horizon, idx_hfc = np.tril_indices(n=forecast_horizon, k=-1)
-    # reverse to get lower left triangle
-    idx_horizon = forecast_horizon - 1 - idx_horizon
-
-    # get component indices (already repeated)
-    idx_comp = np.array([i for _ in range(len(idx_horizon)) for i in range(n_comps)])
-
-    # repeat along the component dimension
-    idx_horizon = idx_horizon.repeat(n_comps)
-    idx_hfc = idx_hfc.repeat(n_comps)
-    return idx_horizon, idx_comp, idx_hfc
 
 
 def cqr_score_sym(row, quantile_lo_col, quantile_hi_col):
@@ -88,12 +65,36 @@ def _calibration_residuals(
     cal_mask: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]] = None,
 ):
     """Extract residuals used to calibrate the predictions of a forecasting model.
-    It guarantees:
-    - no look-ahead bias
+
+    Parameters
+    ----------
+    residuals
+        A (sequence) of residuals.
+    start
+        The first index from the residuals to extract for the current historical forecasts.
+    end
+        The last index from the residuals to extract for the current historical forecasts.
+    last_points_only
+        Whether to return only the last predicted points.
+    forecast_horizon
+        The forecast horizon.
+    cal_mask
+        Optionally, in case of `last_points_only=False` a mask to prevent look-ahead bias and provide the same number
+        of calibration residuals per point in the horizon.
+
+    Returns
+    -------
+    np.ndarray
+        An array of residuals used for calibration. The non-np.nan values have shape (n forecasting points,
+        n components, n cal forecasts * n samples). For `last_points_only=True`, n forecasting points is `1`.
+        Otherwise, it's equal to `forecast_horizon`.
     """
     if last_points_only:
-        return residuals[start:end]
+        # (n hist forecasts, n components, n samples) -> (1, n components, n cal forecasts * n samples)
+        return np.swapaxes(residuals[start:end], 0, 2)
 
+    # n hist forecasts * (horizon, n components, n samples) -> (horizon, n components, n cal forecasts * n samples)
+    # n cal forecasts is longer, as we'll set all non-relevant values in the cal_mask to np.nan
     cal_res = np.concatenate(residuals[start:end], axis=2)
     # no masking required for horizon == 1
     if forecast_horizon == 1:
@@ -109,6 +110,30 @@ def _calibration_residuals(
         cal_res.shape[2] - 1 - idx_hfc,
     ] = np.nan
     return cal_res
+
+
+def _triul_indices(forecast_horizon, n_comps):
+    """Computes the indices of the upper left triangle from a 3D Matrix of shape (horizon, components, n forecasts).
+    The upper left triangle is first computed for the (horizon, n forecasts) dimension, and then repeated along the
+    `components` dimension.
+
+    These indices can be used to:
+        - mask out residuals from "newer" forecasts to avoid look-ahead bias (for horizons > 1)
+        - mask out residuals from "older" forecasts, so that each conformal forecast has the same number
+          of residual examples per point in the forecast horizon.
+    """
+    # get lower right triangle
+    idx_horizon, idx_hfc = np.tril_indices(n=forecast_horizon, k=-1)
+    # reverse to get lower left triangle
+    idx_horizon = forecast_horizon - 1 - idx_horizon
+
+    # get component indices (already repeated)
+    idx_comp = np.array([i for _ in range(len(idx_horizon)) for i in range(n_comps)])
+
+    # repeat along the component dimension
+    idx_horizon = idx_horizon.repeat(n_comps)
+    idx_hfc = idx_hfc.repeat(n_comps)
+    return idx_horizon, idx_comp, idx_hfc
 
 
 class ConformalModel(GlobalForecastingModel, ABC):
@@ -176,7 +201,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
-            if self.training_series is None:
+            if self.model.training_series is None:
                 raise_log(
                     ValueError(
                         "Input `series` must be provided. This is the result either from fitting on multiple series, "
@@ -184,16 +209,16 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     ),
                     logger,
                 )
-            series = self.training_series
+            series = self.model.training_series
 
         called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
 
         # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
-        if past_covariates is None and self.past_covariate_series is not None:
-            past_covariates = [self.past_covariate_series] * len(series)
-        if future_covariates is None and self.future_covariate_series is not None:
-            future_covariates = [self.future_covariate_series] * len(series)
+        if past_covariates is None and self.model.past_covariate_series is not None:
+            past_covariates = [self.model.past_covariate_series] * len(series)
+        if future_covariates is None and self.model.future_covariate_series is not None:
+            future_covariates = [self.model.future_covariate_series] * len(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
@@ -583,9 +608,14 @@ class ConformalModel(GlobalForecastingModel, ABC):
             # use fixed `q_hat` if calibration set is provided
             q_hat = None
             if cal_series is not None:
-                cal_start = -train_length if train_length else 0
-                if not last_points_only:
-                    cal_start -= forecast_horizon - 1
+                if train_length is None:
+                    cal_start = 0
+                else:
+                    cal_start = -train_length
+                    # with last points only we need additional points;
+                    # the mask will handle correct residual extraction
+                    if not last_points_only:
+                        cal_start -= forecast_horizon - 1
                 cal_res = _calibration_residuals(
                     res,
                     cal_start,
@@ -594,9 +624,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     forecast_horizon=forecast_horizon,
                     cal_mask=cal_mask,
                 )
-                q_hat = self._calibrate_interval(
-                    cal_res, last_points_only=last_points_only
-                )
+                q_hat = self._calibrate_interval(cal_res)
 
             # historical conformal prediction
             if last_points_only:
@@ -618,12 +646,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
                         cal_res = _calibration_residuals(
                             res, cal_start, cal_end, last_points_only=last_points_only
                         )
-                        q_hat = self._calibrate_interval(
-                            cal_res, last_points_only=last_points_only
-                        )
-                    cp_pred = np.concatenate(
-                        [pred_vals + q_hat[0], pred_vals, pred_vals + q_hat[1]], axis=1
-                    )
+                        q_hat = self._calibrate_interval(cal_res)
+                    cp_pred = self._apply_interval(pred_vals, q_hat)
                     cp_preds.append(cp_pred)
                 cp_preds = _build_forecast_series(
                     points_preds=np.concatenate(cp_preds, axis=0),
@@ -633,6 +657,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                         start=s_hfcs._time_index[first_fc_idx],
                         length=len(cp_preds),
                         freq=series_.freq * stride,
+                        name=series_.time_index.name,
                     ),
                     with_static_covs=False,
                     with_hierarchy=False,
@@ -664,12 +689,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
                             forecast_horizon=forecast_horizon,
                             cal_mask=cal_mask,
                         )
-                        q_hat = self._calibrate_interval(
-                            cal_res, last_points_only=last_points_only
-                        )
-                    cp_pred = np.concatenate(
-                        [pred_vals + q_hat[0], pred_vals, pred_vals + q_hat[1]], axis=1
-                    )
+                        q_hat = self._calibrate_interval(cal_res)
+                    cp_pred = self._apply_interval(pred_vals, q_hat)
                     cp_pred = _build_forecast_series(
                         points_preds=cp_pred,
                         input_series=series_,
@@ -682,11 +703,43 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 cp_hfcs.append(cp_preds)
         return cp_hfcs
 
+    def save(
+        self, path: Optional[Union[str, os.PathLike, BinaryIO]] = None, **pkl_kwargs
+    ) -> None:
+        model_name = self.__class__.__name__
+        raise_log(
+            NotImplementedError(
+                f"`{model_name}` does not support saving / loading. Instead, "
+                f"save the underlying forecasting model `{self.model.__class__.__name__}` using its dedicated "
+                f"save / load functionality, and create a new `{model_name}` with it.",
+            ),
+            logger=logger,
+        )
+
     @abstractmethod
     def _calibrate_interval(
-        self, residuals: np.ndarray, last_points_only: bool
+        self, residuals: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Computes the upper and lower calibrated forecast intervals based on residuals."""
+
+    def _apply_interval(self, pred, q_hat):
+        """Applies the calibrated interval to the predicted values. Returns an array with 3 predicted columns
+        (lower bound, model forecast, upper bound) per component.
+
+        E.g. output is `(target1_cq_low, target1_pred, target1_cq_high, target2_cq_low, ...)`
+        """
+        n_comps = pred.shape[1]
+        pred = np.concatenate([pred + q_hat[0], pred, pred + q_hat[1]], axis=1)
+        if n_comps == 1:
+            return pred
+
+        n_cal_comps = 3
+        # pre-compute axes swap (source and destination) for applying calibration intervals
+        axes_src = [i for i in range(n_comps * n_cal_comps)]
+        axes_dst = []
+        for i in range(n_comps):
+            axes_dst += axes_src[i::n_comps]
+        return pred[:, axes_dst]
 
     @property
     @abstractmethod
@@ -789,9 +842,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     def _cp_component_names(self, input_series) -> List[str]:
         return [
-            f"{tgt_name}_{param_n}"
+            f"{tgt_name}{param_n}"
             for tgt_name in input_series.components
-            for param_n in ["q_lo", "q_md", "q_hi"]
+            for param_n in ["_cq_lo", "", "_cq_hi"]
         ]
 
     @property
@@ -991,11 +1044,16 @@ class ConformalNaiveModel(ConformalModel):
         super().__init__(model=model, alpha=alpha)
 
     def _calibrate_interval(
-        self, residuals: np.ndarray, last_points_only: bool
+        self, residuals: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """Computes the lower and upper calibrated forecast intervals based on residuals."""
-        axis = 0 if last_points_only else 2
-        q_hat = np.nanquantile(residuals, q=self.alpha, axis=axis)
+        """Computes the lower and upper calibrated forecast intervals based on residuals.
+
+        Parameters
+        ----------
+        residuals
+            The residuals are expected to have shape (horizon, n components, n historical forecasts * n samples)
+        """
+        q_hat = np.nanquantile(residuals, q=self.alpha, axis=2)
         return -q_hat, q_hat
 
     @property

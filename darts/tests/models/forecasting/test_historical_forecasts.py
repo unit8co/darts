@@ -2674,7 +2674,7 @@ class TestHistoricalforecast:
 
             cols_excpected = []
             for col in series.columns:
-                cols_excpected += [f"{col}_q_lo", f"{col}_q_md", f"{col}_q_hi"]
+                cols_excpected += [f"{col}_cq_lo", f"{col}", f"{col}_cq_hi"]
             # check length match between optimized and default hist fc
             assert len(hfc) == n_pred_series_expected
             # check hist fc start
@@ -2835,7 +2835,7 @@ class TestHistoricalforecast:
 
             cols_excpected = []
             for col in series.columns:
-                cols_excpected += [f"{col}_q_lo", f"{col}_q_md", f"{col}_q_hi"]
+                cols_excpected += [f"{col}_cq_lo", f"{col}", f"{col}_cq_hi"]
             # check historical forecasts dimensions
             assert len(hfc) == n_pred_series_expected
             # check hist fc start

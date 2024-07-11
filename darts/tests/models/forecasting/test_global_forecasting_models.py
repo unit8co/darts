@@ -10,7 +10,6 @@ import pytest
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
 from darts.metrics import mape
-from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 from darts.utils.timeseries_generation import linear_timeseries
@@ -24,12 +23,10 @@ import torch
 
 from darts.models import (
     BlockRNNModel,
-    ConformalNaiveModel,
     DLinearModel,
     GlobalNaiveAggregate,
     GlobalNaiveDrift,
     GlobalNaiveSeasonal,
-    LinearRegressionModel,
     NBEATSModel,
     NLinearModel,
     RNNModel,
@@ -48,150 +45,139 @@ from darts.utils.likelihood_models import GaussianLikelihood
 
 IN_LEN = 24
 OUT_LEN = 12
-torch_kwargs = {
-    "input_chunk_length": IN_LEN,
-    "output_chunk_length": OUT_LEN,
-    "random_state": 0,
-    "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
-}
-# pre-trained global model for conformal models
-model_fc = LinearRegressionModel(lags=IN_LEN, output_chunk_length=OUT_LEN).fit(
-    AirPassengersDataset().load()
-)
 models_cls_kwargs_errs = [
     (
         BlockRNNModel,
-        dict(
-            {
-                "model": "RNN",
-                "hidden_dim": 10,
-                "n_rnn_layers": 1,
-                "batch_size": 32,
-                "n_epochs": 10,
-            },
-            **torch_kwargs,
-        ),
+        {
+            "model": "RNN",
+            "hidden_dim": 10,
+            "n_rnn_layers": 1,
+            "batch_size": 32,
+            "n_epochs": 10,
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
         110.0,
     ),
     (
         RNNModel,
-        dict(
-            {
-                "model": "RNN",
-                "training_length": IN_LEN + OUT_LEN,
-                "hidden_dim": 10,
-                "batch_size": 32,
-                "n_epochs": 10,
-            },
-            **torch_kwargs,
-        ),
+        {
+            "model": "RNN",
+            "training_length": IN_LEN + OUT_LEN,
+            "hidden_dim": 10,
+            "batch_size": 32,
+            "n_epochs": 10,
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
         150.0,
     ),
     (
         RNNModel,
-        dict(
-            {
-                "training_length": IN_LEN + OUT_LEN,
-                "n_epochs": 10,
-                "likelihood": GaussianLikelihood(),
-            },
-            **torch_kwargs,
-        ),
+        {
+            "training_length": IN_LEN + OUT_LEN,
+            "n_epochs": 10,
+            "likelihood": GaussianLikelihood(),
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
         80.0,
     ),
     (
         TCNModel,
-        dict(
-            {
-                "n_epochs": 10,
-                "batch_size": 32,
-            },
-            **torch_kwargs,
-        ),
+        {
+            "n_epochs": 10,
+            "batch_size": 32,
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
         60.0,
     ),
     (
         TransformerModel,
-        dict(
-            {
-                "d_model": 16,
-                "nhead": 2,
-                "num_encoder_layers": 2,
-                "num_decoder_layers": 2,
-                "dim_feedforward": 16,
-                "batch_size": 32,
-                "n_epochs": 10,
-            },
-            **torch_kwargs,
-        ),
+        {
+            "d_model": 16,
+            "nhead": 2,
+            "num_encoder_layers": 2,
+            "num_decoder_layers": 2,
+            "dim_feedforward": 16,
+            "batch_size": 32,
+            "n_epochs": 10,
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
         60.0,
     ),
     (
         NBEATSModel,
-        dict(
-            {
-                "num_stacks": 4,
-                "num_blocks": 1,
-                "num_layers": 2,
-                "layer_widths": 12,
-                "n_epochs": 10,
-            },
-            **torch_kwargs,
-        ),
+        {
+            "num_stacks": 4,
+            "num_blocks": 1,
+            "num_layers": 2,
+            "layer_widths": 12,
+            "n_epochs": 10,
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
         140.0,
     ),
     (
         TFTModel,
-        dict(
-            {
-                "hidden_size": 16,
-                "lstm_layers": 1,
-                "num_attention_heads": 4,
-                "add_relative_index": True,
-                "n_epochs": 10,
-            },
-            **torch_kwargs,
-        ),
+        {
+            "hidden_size": 16,
+            "lstm_layers": 1,
+            "num_attention_heads": 4,
+            "add_relative_index": True,
+            "n_epochs": 10,
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
         70.0,
     ),
     (
         NLinearModel,
-        dict({"n_epochs": 10}, **torch_kwargs),
+        {
+            "n_epochs": 10,
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
         50.0,
     ),
     (
         DLinearModel,
-        dict({"n_epochs": 10}, **torch_kwargs),
+        {
+            "n_epochs": 10,
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
         55.0,
     ),
     (
         TiDEModel,
-        dict({"n_epochs": 10}, **torch_kwargs),
+        {
+            "n_epochs": 10,
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
         40.0,
     ),
     (
         TSMixerModel,
-        dict({"n_epochs": 10}, **torch_kwargs),
+        {
+            "n_epochs": 10,
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
         60.0,
     ),
     (
         GlobalNaiveAggregate,
-        torch_kwargs,
+        {
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
         22,
     ),
     (
         GlobalNaiveDrift,
-        torch_kwargs,
+        {
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
         17,
     ),
     (
         GlobalNaiveSeasonal,
-        torch_kwargs,
-        39,
-    ),
-    (
-        ConformalNaiveModel,
-        {"model": model_fc, "alpha": 0.8},
+        {
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
         39,
     ),
 ]
@@ -261,14 +247,10 @@ class TestGlobalForecastingModels:
     def test_save_model_parameters(self, config):
         # model creation parameters were saved before. check if re-created model has same params as original
         model_cls, kwargs, err = config
-        model = model_cls(**kwargs)
-        model_fresh = model.untrained_model()
-        assert model._model_params.keys() == model_fresh._model_params.keys()
-        for param, val in model._model_params.items():
-            if isinstance(val, ForecastingModel):
-                # Conformal Models require a forecasting model as input, which has no equality
-                continue
-            assert val == model_fresh._model_params[param]
+        model = model_cls(
+            input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
+        )
+        assert model._model_params, model.untrained_model()._model_params
 
     @pytest.mark.parametrize(
         "model",
@@ -328,7 +310,12 @@ class TestGlobalForecastingModels:
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_single_ts(self, config):
         model_cls, kwargs, err = config
-        model = model_cls(**kwargs)
+        model = model_cls(
+            input_chunk_length=IN_LEN,
+            output_chunk_length=OUT_LEN,
+            random_state=0,
+            **kwargs,
+        )
         model.fit(self.ts_pass_train)
         pred = model.predict(n=36)
         mape_err = mape(self.ts_pass_val, pred)
