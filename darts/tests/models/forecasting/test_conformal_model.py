@@ -634,15 +634,16 @@ class TestConformalModel:
                 [1, 3, 5],  # horizon
                 [True, False],  # univariate series
                 [True, False],  # single series,
+                [0, 1],  # output chunk shift
             )
         ),
     )
     def test_naive_conformal_model_historical_forecasts(self, config):
         """Verifies naive conformal model historical forecasts."""
-        n, is_univar, is_single = config
+        n, is_univar, is_single, ocs = config
         alpha = 0.8
         series = self.helper_prepare_series(is_univar, is_single)
-        model_fc = train_model(series)
+        model_fc = train_model(series, model_params={"output_chunk_shift": ocs})
         hfc_fc_list = model_fc.historical_forecasts(
             series,
             retrain=False,
@@ -691,15 +692,19 @@ class TestConformalModel:
             for idx, (pred_fc, pred_cal) in enumerate(
                 zip(hfc_fc[first_fc_idx:], hfc_cal)
             ):
-                residuals = np.concatenate(hfc_residuals[: first_fc_idx + idx], axis=2)
+                # need to ignore additional `ocs` (output shift) residuals
+                residuals = np.concatenate(
+                    hfc_residuals[: first_fc_idx - ocs + idx], axis=2
+                )
 
                 pred_vals = pred_fc.all_values()
                 pred_vals_expected = self.helper_compute_naive_pred_cal(
-                    residuals, pred_vals, n, alpha
+                    residuals, pred_vals, n, alpha, ocs=ocs
                 )
                 np.testing.assert_array_almost_equal(
                     pred_cal.all_values(), pred_vals_expected
                 )
+
         for hfc_cal_with_cal, hfc_cal in zip(hfc_cal_list_with_cal, hfc_cal_list):
             # last forecast with calibration set must be equal to the last without calibration set
             # (since calibration set is the same series)
@@ -752,7 +757,7 @@ class TestConformalModel:
             series = [series, series + 5]
         return series
 
-    def helper_compute_naive_pred_cal(self, residuals, pred_vals, n, alpha):
+    def helper_compute_naive_pred_cal(self, residuals, pred_vals, n, alpha, ocs=0):
         q_hats = []
         # compute the quantile `alpha` of all past residuals (absolute "per time step" errors between historical
         # forecasts and the target series)

@@ -520,18 +520,19 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     start=series_.end_time(),
                     freq=series_.freq,
                 )
-                if last_fc_idx:
+                if delta_end > 0:
                     last_fc_idx -= delta_end
 
             # determine the first forecast index for conformal prediction
             if cal_series is None:
                 # all forecasts before that are used for calibration
                 # we need at least 1 residual per point in the horizon
-                skip_n_train = forecast_horizon
+                skip_n_train = forecast_horizon + self.output_chunk_shift
                 # plus some additional steps based on `train_length`
                 if train_length is not None:
                     skip_n_train += train_length - 1
             else:
+                # TODO: check cal set with ocs
                 # with a long enough calibration set, we can start from the first forecast
                 min_n_cal = max(train_length or 0, 1)
                 if not last_points_only:
@@ -561,6 +562,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     start=first_hfc.start_time(),
                     freq=series_.freq,
                 )
+                # hfcs have shifted output; skip until end of shift
+                skip_n_start += self.output_chunk_shift
                 # hfcs only contain last predicted points; skip until end of first forecast
                 if last_points_only:
                     skip_n_start += forecast_horizon - 1
@@ -573,12 +576,11 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 ):
                     skip_n_start = 0
                     if show_warnings:
-                        # adjust to actual start point in case of `last_points_only`
+                        # adjust to actual start point in case of output shift or `last_points_only=True`
                         adjust_idx = (
-                            int(last_points_only)
-                            * (forecast_horizon - 1)
-                            * series_.freq
-                        )
+                            self.output_chunk_shift
+                            + int(last_points_only) * (forecast_horizon - 1)
+                        ) * series_.freq
                         hfc_predict_index = (
                             s_hfcs[skip_n_train].start_time() - adjust_idx,
                             s_hfcs[last_fc_idx].start_time() - adjust_idx,
@@ -610,6 +612,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             if cal_series is not None:
                 if train_length is None:
                     cal_start = 0
+                # TODO check whether we actually get correct train length points without overlap NaNs at the end
                 else:
                     cal_start = -train_length
                     # with last points only we need additional points;
@@ -637,7 +640,11 @@ class ConformalModel(GlobalForecastingModel, ABC):
                         # to avoid look-ahead bias, use only residuals from before the historical forecast start point;
                         # since we look at `last_points only=True`, the last residual historically available at
                         # the forecasting point is `forecast_horizon - 1` steps before
-                        cal_end = first_fc_idx + idx * stride - (forecast_horizon - 1)
+                        cal_end = (
+                            first_fc_idx
+                            + idx * stride
+                            - (forecast_horizon + self.output_chunk_shift - 1)
+                        )
                         # first residual index is shifted back by the horizon to get `train_length` points for
                         # the last point in the horizon
                         cal_start = (
@@ -668,11 +675,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     # convert to (horizon, n comps, hist fcs)
                     pred_vals = pred.values(copy=False)
                     if cal_series is None:
-                        # get the last residual index for calibration, `cal_end` is exclusive
+                        # get the last residual index for calibration, `cal_end` is exclusive.
                         # to avoid look-ahead bias, use only residuals from before the historical forecast start point;
                         # since we look at `last_points only=False`, the last residual historically available at
-                        # the forecasting point is from the first predicted step of the previous forecast
-                        cal_end = first_fc_idx + idx * stride
+                        # the forecasting point is from the first predicted step of the previous forecast (without
+                        # output shift, otherwise the `output_chunk_shift`th point before that)
+                        cal_end = first_fc_idx + idx * stride - self.output_chunk_shift
                         # stepping back further gives access to more residuals and also residuals from longer horizons.
                         # to get `train_length` residuals for the last step in the horizon, we need to step back
                         # additional `forecast_horizon - 1` points
@@ -722,7 +730,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Computes the upper and lower calibrated forecast intervals based on residuals."""
 
-    def _apply_interval(self, pred, q_hat):
+    @staticmethod
+    def _apply_interval(pred, q_hat):
         """Applies the calibrated interval to the predicted values. Returns an array with 3 predicted columns
         (lower bound, model forecast, upper bound) per component.
 

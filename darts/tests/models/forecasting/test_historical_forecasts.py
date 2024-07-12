@@ -2529,6 +2529,7 @@ class TestHistoricalforecast:
                 ],
                 [False, True],  # use integer indexed series
                 [False, True],  # use multi-series
+                [0, 1],  # output chunk shift
             )
         ),
     )
@@ -2543,10 +2544,12 @@ class TestHistoricalforecast:
             horizon,
             use_int_idx,
             use_multi_series,
+            ocs,
         ) = config
         icl = 3
         ocl = 5
-        min_len_val_series = icl + horizon + int(not overlap_end) * horizon
+        horizon_ocs = horizon + ocs
+        min_len_val_series = icl + horizon_ocs + int(not overlap_end) * horizon_ocs
         # generate n forecasts
         n_forecasts = 3
         series_train, series_val = (
@@ -2575,7 +2578,7 @@ class TestHistoricalforecast:
             else {"lags_past_covariates": icl, "lags_future_covariates": (icl, ocl)}
         )
         forecasting_model = LinearRegressionModel(
-            lags=icl, output_chunk_length=ocl, **model_kwargs
+            lags=icl, output_chunk_length=ocl, output_chunk_shift=ocs, **model_kwargs
         )
         if use_covs:
             pc = tg.gaussian_timeseries(
@@ -2585,7 +2588,8 @@ class TestHistoricalforecast:
             )
             fc = tg.gaussian_timeseries(
                 start=series_train.start_time(),
-                end=series_val.end_time() + max(ocl, horizon) * series_train.freq,
+                end=series_val.end_time()
+                + (max(ocl, horizon) + ocs) * series_train.freq,
                 freq=series_train.freq,
             )
         else:
@@ -2604,6 +2608,22 @@ class TestHistoricalforecast:
             ]
             pc = [pc, pc.shift(1)] if pc is not None else None
             fc = [fc, fc.shift(1)] if fc is not None else None
+
+        # cannot perform auto regression with output chunk shift
+        if ocs and horizon > ocl:
+            with pytest.raises(ValueError) as exc:
+                _ = model.historical_forecasts(
+                    series=series_val_too_short,
+                    past_covariates=pc,
+                    future_covariates=fc,
+                    retrain=False,
+                    last_points_only=last_points_only,
+                    overlap_end=overlap_end,
+                    stride=stride,
+                    forecast_horizon=horizon,
+                )
+            assert str(exc.value).startswith("Cannot perform auto-regression")
+            return
 
         hist_fct = model.historical_forecasts(
             series=series_val,
@@ -2639,36 +2659,50 @@ class TestHistoricalforecast:
             if not isinstance(hfc, list):
                 hfc = [hfc]
 
-            n_preds_with_overlap = len(series) - icl + 1 - horizon
+            n_preds_with_overlap = len(series) - icl + 1 - horizon_ocs
             if not last_points_only and overlap_end:
                 n_pred_series_expected = n_preds_with_overlap
                 n_pred_points_expected = horizon
-                first_ts_expected = series.time_index[icl] + series.freq * horizon
-                last_ts_expected = series.end_time() + series.freq * horizon
+                first_ts_expected = series.time_index[icl] + series.freq * (
+                    horizon_ocs + ocs
+                )
+                last_ts_expected = series.end_time() + series.freq * horizon_ocs
             elif not last_points_only:  # overlap_end = False
-                n_pred_series_expected = n_preds_with_overlap - horizon
+                n_pred_series_expected = n_preds_with_overlap - horizon_ocs
                 n_pred_points_expected = horizon
-                first_ts_expected = series.time_index[icl] + series.freq * horizon
+                first_ts_expected = series.time_index[icl] + series.freq * (
+                    horizon_ocs + ocs
+                )
                 last_ts_expected = series.end_time()
             elif overlap_end:  # last_points_only = True
                 n_pred_series_expected = 1
                 n_pred_points_expected = n_preds_with_overlap
-                first_ts_expected = (
-                    series.time_index[icl] + (2 * horizon - 1) * series.freq
+                first_ts_expected = series.time_index[icl] + series.freq * (
+                    horizon_ocs + ocs + horizon - 1
                 )
-                last_ts_expected = series.end_time() + series.freq * horizon
+                last_ts_expected = series.end_time() + series.freq * horizon_ocs
             else:  # last_points_only = True, overlap_end = False
                 n_pred_series_expected = 1
-                n_pred_points_expected = n_preds_with_overlap - horizon
-                first_ts_expected = (
-                    series.time_index[icl] + (2 * horizon - 1) * series.freq
+                n_pred_points_expected = n_preds_with_overlap - horizon_ocs
+                first_ts_expected = series.time_index[icl] + series.freq * (
+                    horizon_ocs + ocs + horizon - 1
                 )
                 last_ts_expected = series.end_time()
 
             # to make it simple in case of stride, we assume that non-optimized hist fc returns correct results
             if stride > 1:
-                n_pred_series_expected = len(hfc)
-                n_pred_points_expected = len(hfc[0])
+                n_pred_series_expected = (
+                    n_pred_series_expected
+                    if last_points_only
+                    else n_pred_series_expected // stride
+                    + int(n_pred_series_expected % stride)
+                )
+                n_pred_points_expected = (
+                    n_pred_points_expected
+                    if not last_points_only
+                    else n_pred_points_expected // stride
+                    + int(n_pred_points_expected % stride)
+                )
                 first_ts_expected = hfc[0].start_time()
                 last_ts_expected = hfc[-1].end_time()
 
@@ -2695,6 +2729,7 @@ class TestHistoricalforecast:
                 ["value", "position"],  # start format
                 [False, True],  # use integer indexed series
                 [False, True],  # use multi-series
+                [0, 1],  # output chunk shift
             )
         ),
     )
@@ -2708,13 +2743,15 @@ class TestHistoricalforecast:
             start_format,
             use_int_idx,
             use_multi_series,
+            ocs,
         ) = config
         icl = 3
         ocl = 5
-        horizon = 7
+        horizon = 5
+        horizon_ocs = horizon + ocs
         add_train_length = train_length - 1 if train_length is not None else 0
         add_start = 2 * int(use_start)
-        min_len_val_series = icl + 2 * horizon + add_train_length + add_start
+        min_len_val_series = icl + 2 * horizon_ocs + add_train_length + add_start
         # generate n forecasts
         n_forecasts = 3
         series_train, series_val = (
@@ -2735,10 +2772,14 @@ class TestHistoricalforecast:
                 ),
                 columns=series_train.columns,
             )
-        forecasting_model = LinearRegressionModel(lags=icl, output_chunk_length=ocl)
+        forecasting_model = LinearRegressionModel(
+            lags=icl,
+            output_chunk_length=ocl,
+            output_chunk_shift=ocs,
+        )
         forecasting_model.fit(series_train)
 
-        start_position = icl + horizon + add_train_length + add_start
+        start_position = icl + horizon_ocs + add_train_length + add_start
         start = None
         if use_start:
             if start_format == "value":
@@ -2810,7 +2851,7 @@ class TestHistoricalforecast:
                 len(series)
                 - icl
                 + 1
-                - 2 * horizon
+                - 2 * horizon_ocs
                 - add_train_length
                 - add_start
                 + add_start_series_2
@@ -2820,7 +2861,7 @@ class TestHistoricalforecast:
                 n_pred_points_expected = horizon
                 # seconds series is shifted by one time step (- idx)
                 first_ts_expected = series.time_index[
-                    start_position - add_start_series_2
+                    start_position - add_start_series_2 + ocs
                 ]
                 last_ts_expected = series.end_time()
             else:
@@ -2829,7 +2870,7 @@ class TestHistoricalforecast:
                 # seconds series is shifted by one time step (- idx)
                 first_ts_expected = (
                     series.time_index[start_position - add_start_series_2]
-                    + (horizon - 1) * series.freq
+                    + (horizon_ocs - 1) * series.freq
                 )
                 last_ts_expected = series.end_time()
 
