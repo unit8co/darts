@@ -99,7 +99,7 @@ class AutoARIMA(FutureCovariatesLocalForecastingModel):
         self,
         series: TimeSeries,
         future_covariates: Optional[TimeSeries] = None,
-        **fit_kwargs
+        **fit_kwargs,
     ):
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
@@ -107,7 +107,7 @@ class AutoARIMA(FutureCovariatesLocalForecastingModel):
         self.model.fit(
             series.values(),
             X=future_covariates.values() if future_covariates else None,
-            **fit_kwargs
+            **fit_kwargs,
         )
         return self
 
