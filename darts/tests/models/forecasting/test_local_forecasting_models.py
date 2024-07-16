@@ -164,11 +164,13 @@ class TestLocalForecastingModels:
             assert os.path.exists(p)
 
         assert (
-            len([
-                p
-                for p in os.listdir(tmpdir_module)
-                if p.startswith(type(model).__name__)
-            ])
+            len(
+                [
+                    p
+                    for p in os.listdir(tmpdir_module)
+                    if p.startswith(type(model).__name__)
+                ]
+            )
             == len(full_model_paths) + 1
         )
 
@@ -647,7 +649,7 @@ class TestLocalForecastingModels:
             (
                 ExponentialSmoothing(),
                 "ExponentialSmoothing(trend=ModelMode.ADDITIVE, damped=False, seasonal=SeasonalityMode.ADDITIVE, "
-                + "seasonal_periods=None, random_state=0, kwargs=None)",
+                + "seasonal_periods=None, random_state=0)",
             ),  # no params changed
             (
                 ARIMA(1, 1, 1),
