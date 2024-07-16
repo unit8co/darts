@@ -95,12 +95,19 @@ class AutoARIMA(FutureCovariatesLocalForecastingModel):
     def supports_multivariate(self) -> bool:
         return False
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        **fit_kwargs
+    ):
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
         series = self.training_series
         self.model.fit(
-            series.values(), X=future_covariates.values() if future_covariates else None
+            series.values(),
+            X=future_covariates.values() if future_covariates else None,
+            **fit_kwargs
         )
         return self
 
