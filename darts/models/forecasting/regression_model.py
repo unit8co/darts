@@ -38,6 +38,7 @@ except ImportError:
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
+from sklearn.utils.validation import has_fit_parameter
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
@@ -701,8 +702,19 @@ class RegressionModel(GlobalForecastingModel):
                 val_sample_weight=val_sample_weight,
                 max_samples_per_ts=max_samples_per_ts,
             )
+
+        # only use `sample_weight` if model supports it
+        sample_weight_kwargs = dict()
+        if sample_weights is not None:
+            if self.supports_sample_weight:
+                sample_weight_kwargs = {"sample_weight": sample_weights}
+            else:
+                logger.warning(
+                    "`sample_weight` was ignored since underlying regression model's "
+                    "`fit()` method does not support it."
+                )
         self.model.fit(
-            training_samples, training_labels, sample_weight=sample_weights, **kwargs
+            training_samples, training_labels, **sample_weight_kwargs, **kwargs
         )
 
         # generate and store the lagged components names (for feature importance analysis)
@@ -1258,6 +1270,15 @@ class RegressionModel(GlobalForecastingModel):
     def supports_val_set(self) -> bool:
         """Whether the model supports a validation set during training."""
         return False
+
+    @property
+    def supports_sample_weight(self) -> bool:
+        """Whether the model supports a validation set during training."""
+        return (
+            self.model.supports_sample_weight
+            if isinstance(self.model, MultiOutputRegressor)
+            else has_fit_parameter(self.model, "sample_weight")
+        )
 
     @property
     def val_set_params(self) -> Tuple[Optional[str], Optional[str]]:
