@@ -146,6 +146,7 @@ __all__ = [
     "GlobalNaiveDrift",
     "GlobalNaiveDrift",
     "GlobalNaiveSeasonal",
+    "MultivariateForecastingModelWrapper",
     "NBEATSModel",
     "NHiTSModel",
     "NLinearModel",
