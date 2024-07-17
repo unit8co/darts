@@ -111,7 +111,6 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         self.darts_kf = KalmanFilter(dim_x, kf)
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-
         super()._fit(series, future_covariates)
         if self.kf is None:
             self.darts_kf.fit(series=series, covariates=future_covariates)
@@ -142,7 +141,6 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
     ) -> TimeSeries:
-
         super()._predict(
             n, series, historic_future_covariates, future_covariates, num_samples
         )
@@ -171,5 +169,5 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         return True
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return True

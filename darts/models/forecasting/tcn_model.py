@@ -29,7 +29,7 @@ class _ResidualBlock(nn.Module):
         num_filters: int,
         kernel_size: int,
         dilation_base: int,
-        dropout_fn,
+        dropout: float,
         weight_norm: bool,
         nr_blocks_below: int,
         num_layers: int,
@@ -46,8 +46,8 @@ class _ResidualBlock(nn.Module):
             The size of every kernel in a convolutional layer.
         dilation_base
             The base of the exponent that will determine the dilation on every level.
-        dropout_fn
-            The dropout function to be applied to every convolutional layer.
+        dropout
+            The dropout to be applied to every convolutional layer.
         weight_norm
             Boolean value indicating whether to use weight normalization.
         nr_blocks_below
@@ -77,7 +77,8 @@ class _ResidualBlock(nn.Module):
 
         self.dilation_base = dilation_base
         self.kernel_size = kernel_size
-        self.dropout_fn = dropout_fn
+        self.dropout1 = MonteCarloDropout(dropout)
+        self.dropout2 = MonteCarloDropout(dropout)
         self.num_layers = num_layers
         self.nr_blocks_below = nr_blocks_below
 
@@ -96,9 +97,10 @@ class _ResidualBlock(nn.Module):
             dilation=(dilation_base**nr_blocks_below),
         )
         if weight_norm:
-            self.conv1, self.conv2 = nn.utils.weight_norm(
-                self.conv1
-            ), nn.utils.weight_norm(self.conv2)
+            self.conv1, self.conv2 = (
+                nn.utils.weight_norm(self.conv1),
+                nn.utils.weight_norm(self.conv2),
+            )
 
         if input_dim != output_dim:
             self.conv3 = nn.Conv1d(input_dim, output_dim, 1)
@@ -111,14 +113,14 @@ class _ResidualBlock(nn.Module):
             self.kernel_size - 1
         )
         x = F.pad(x, (left_padding, 0))
-        x = self.dropout_fn(F.relu(self.conv1(x)))
+        x = self.dropout1(F.relu(self.conv1(x)))
 
         # second step
         x = F.pad(x, (left_padding, 0))
         x = self.conv2(x)
         if self.nr_blocks_below < self.num_layers - 1:
             x = F.relu(x)
-        x = self.dropout_fn(x)
+        x = self.dropout2(x)
 
         # add residual
         if self.conv1.in_channels != self.conv2.out_channels:
@@ -141,7 +143,7 @@ class _TCNModule(PLPastCovariatesModule):
         nr_params: int,
         target_length: int,
         dropout: float,
-        **kwargs
+        **kwargs,
     ):
         """PyTorch module implementing a dilated TCN module used in `TCNModel`.
 
@@ -195,7 +197,6 @@ class _TCNModule(PLPastCovariatesModule):
         self.target_size = target_size
         self.nr_params = nr_params
         self.dilation_base = dilation_base
-        self.dropout = MonteCarloDropout(p=dropout)
 
         # If num_layers is not passed, compute number of layers needed for full history coverage
         if num_layers is None and dilation_base > 1:
@@ -221,15 +222,15 @@ class _TCNModule(PLPastCovariatesModule):
         self.res_blocks_list = []
         for i in range(num_layers):
             res_block = _ResidualBlock(
-                num_filters,
-                kernel_size,
-                dilation_base,
-                self.dropout,
-                weight_norm,
-                i,
-                num_layers,
-                self.input_size,
-                target_size * nr_params,
+                num_filters=num_filters,
+                kernel_size=kernel_size,
+                dilation_base=dilation_base,
+                dropout=dropout,
+                weight_norm=weight_norm,
+                nr_blocks_below=i,
+                num_layers=num_layers,
+                input_size=self.input_size,
+                target_size=target_size * nr_params,
             )
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
@@ -268,7 +269,7 @@ class TCNModel(PastCovariatesTorchModel):
         dilation_base: int = 2,
         weight_norm: bool = False,
         dropout: float = 0.2,
-        **kwargs
+        **kwargs,
     ):
         """Temporal Convolutional Network Model (TCN).
 
@@ -534,9 +535,9 @@ class TCNModel(PastCovariatesTorchModel):
         target: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> PastCovariatesShiftedDataset:
-
         return PastCovariatesShiftedDataset(
             target_series=target,
             covariates=past_covariates,
@@ -544,4 +545,5 @@ class TCNModel(PastCovariatesTorchModel):
             shift=self.output_chunk_length + self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
+            sample_weight=sample_weight,
         )

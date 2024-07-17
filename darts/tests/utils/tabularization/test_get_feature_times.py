@@ -87,9 +87,9 @@ class TestGetFeatureTimes:
         times = past_covariates.time_index
         min_lag = -max(past_covariates_lags)
         # Add times after end of series for which we can create features:
-        times = times.union(
-            [times[-1] + i * past_covariates.freq for i in range(1, min_lag + 1)]
-        )
+        times = times.union([
+            times[-1] + i * past_covariates.freq for i in range(1, min_lag + 1)
+        ])
         max_lag = -min(past_covariates_lags)
         times = times[max_lag:]
         return times
@@ -158,20 +158,18 @@ class TestGetFeatureTimes:
         # Case 1:
         if (min_lag > 0) and (max_lag > 0):
             # Can create features for times extending after the end of `future_covariates`:
-            times = times.union(
-                [times[-1] + i * future_covariates.freq for i in range(1, min_lag + 1)]
-            )
+            times = times.union([
+                times[-1] + i * future_covariates.freq for i in range(1, min_lag + 1)
+            ])
             # Can't create features for first `max_lag` times in series:
             times = times[max_lag:]
         # Case 2:
         elif (min_lag <= 0) and (max_lag <= 0):
             # Can create features for times before the start of `future_covariates`:
-            times = times.union(
-                [
-                    times[0] - i * future_covariates.freq
-                    for i in range(1, abs(max_lag) + 1)
-                ]
-            )
+            times = times.union([
+                times[0] - i * future_covariates.freq
+                for i in range(1, abs(max_lag) + 1)
+            ])
             # Can't create features for last `abs(min_lag)` times in series:
             times = times[:min_lag] if min_lag != 0 else times
         # Case 3:
@@ -415,8 +413,9 @@ class TestGetFeatureTimes:
             future = linear_timeseries(
                 start=pd.Timestamp("1/2/2000"), length=1, freq="2d"
             )
-            exp_start_target, exp_start_future = pd.Timestamp("1/2/2000"), pd.Timestamp(
-                "1/6/2000"
+            exp_start_target, exp_start_future = (
+                pd.Timestamp("1/2/2000"),
+                pd.Timestamp("1/6/2000"),
             )
 
         lags = [-1]
@@ -472,8 +471,9 @@ class TestGetFeatureTimes:
             future = linear_timeseries(
                 start=pd.Timestamp("1/2/2000"), length=1, freq="2d"
             )
-            exp_start_target, exp_start_future = pd.Timestamp("1/2/2000"), pd.Timestamp(
-                "1/6/2000"
+            exp_start_target, exp_start_future = (
+                pd.Timestamp("1/2/2000"),
+                pd.Timestamp("1/6/2000"),
             )
 
         lags = [-1]

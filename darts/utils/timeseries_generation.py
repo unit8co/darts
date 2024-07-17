@@ -12,6 +12,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -25,74 +26,6 @@ ONE_INDEXED_FREQS = {
     "weekofyear",
     "week_of_year",
 }
-
-
-def generate_index(
-    start: Optional[Union[pd.Timestamp, int]] = None,
-    end: Optional[Union[pd.Timestamp, int]] = None,
-    length: Optional[int] = None,
-    freq: Union[str, int, pd.DateOffset] = None,
-    name: str = None,
-) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
-    """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
-    or a pandas RangeIndex. The index starts at
-
-    Parameters
-    ----------
-    start
-        The start of the returned index. If a pandas Timestamp is passed, the index will be a pandas
-        DatetimeIndex. If an integer is passed, the index will be a pandas RangeIndex index. Works only with
-        either `length` or `end`.
-    end
-        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
-        set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
-    length
-        Optionally, the length of the returned index. Works only with either `start` or `end`.
-    freq
-        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
-        a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
-        By default, "D" (daily) is used.
-        If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
-        The freq is optional for generating an integer index (if not specified, 1 is used).
-    name
-        Optionally, an index name.
-    """
-    constructors = [
-        arg_name
-        for arg, arg_name in zip([start, end, length], ["start", "end", "length"])
-        if arg is not None
-    ]
-    raise_if(
-        len(constructors) != 2,
-        "index can only be generated with exactly two of the following parameters: [`start`, `end`, `length`]. "
-        f"Observed parameters: {constructors}. For generating an index with `end` and `length` consider setting "
-        f"`start` to None.",
-        logger,
-    )
-    raise_if(
-        end is not None and start is not None and type(start) is not type(end),
-        "index generation with `start` and `end` requires equal object types of `start` and `end`",
-        logger,
-    )
-
-    if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
-        index = pd.date_range(
-            start=start,
-            end=end,
-            periods=length,
-            freq="D" if freq is None else freq,
-            name=name,
-        )
-    else:  # int
-        step = 1 if freq is None else freq
-        index = pd.RangeIndex(
-            start=start if start is not None else end - step * length + step,
-            stop=end + step if end is not None else start + step * length,
-            step=step,
-            name=name,
-        )
-    return index
 
 
 def constant_timeseries(
@@ -474,7 +407,6 @@ def _extend_time_index_until(
     until: Optional[Union[int, str, pd.Timestamp]],
     add_length: int,
 ) -> pd.DatetimeIndex:
-
     if not add_length and not until:
         return time_index
 
@@ -743,11 +675,19 @@ def datetime_attribute_timeseries(
     if one_hot:
         values_df = pd.get_dummies(values)
         # fill missing columns (in case not all values appear in time_index)
-        attribute_range = range(num_values_dict[attribute])
-        for i in attribute_range:
-            if not (i in values_df.columns):
-                values_df[i] = 0
-        values_df = values_df[attribute_range]
+        attribute_range = np.arange(num_values_dict[attribute])
+        is_missing = np.isin(attribute_range, values_df.columns.values, invert=True)
+        # if there are attribute_range columns that are
+        # not in values_df.columns.values
+        if is_missing.any():
+            dict_0 = {i: False for i in attribute_range[is_missing]}
+            # Make a dataframe from the dictionary and concatenate it
+            # to the values values_df  in which the existing columns
+            values_df = pd.concat(
+                [values_df, pd.DataFrame(dict_0, index=values_df.index)], axis=1
+            ).sort_index(axis=1)
+        else:
+            values_df = values_df[attribute_range]
 
         if with_columns is None:
             with_columns = [
@@ -780,12 +720,10 @@ def datetime_attribute_timeseries(
                 "The first string for the sine component name, the second for the cosine component name.",
                 logger=logger,
             )
-            values_df = pd.DataFrame(
-                {
-                    with_columns[0]: np.sin(freq * values),
-                    with_columns[1]: np.cos(freq * values),
-                }
-            )
+            values_df = pd.DataFrame({
+                with_columns[0]: np.sin(freq * values),
+                with_columns[1]: np.cos(freq * values),
+            })
         else:
             if with_columns is None:
                 with_columns = attribute
@@ -821,9 +759,9 @@ def _build_forecast_series(
     custom_columns
         New names for the forecast TimeSeries, used when the number of components changes
     with_static_covs
-        If set to False, do not copy the input_series `static_covariates` attribute
+        If set to `False`, do not copy the input_series `static_covariates` attribute
     with_hierarchy
-        If set to False, do not copy the input_series `hierarchy` attribute
+        If set to `False`, do not copy the input_series `hierarchy` attribute
     pred_start
         Optionally, give a custom prediction start point.
 

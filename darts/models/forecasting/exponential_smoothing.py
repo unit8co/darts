@@ -25,7 +25,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         seasonal_periods: Optional[int] = None,
         random_state: int = 0,
         kwargs: Optional[Dict[str, Any]] = None,
-        **fit_kwargs
+        **fit_kwargs,
     ):
         """Exponential Smoothing
 
@@ -126,7 +126,7 @@ class ExponentialSmoothing(LocalForecastingModel):
             seasonal_periods=seasonal_periods_param,
             freq=series.freq if series.has_datetime_index else None,
             dates=series.time_index if series.has_datetime_index else None,
-            **self.constructor_kwargs
+            **self.constructor_kwargs,
         )
         hw_results = hw_model.fit(**self.fit_kwargs)
         self.model = hw_results
@@ -159,7 +159,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         return False
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return True
 
     @property

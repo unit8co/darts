@@ -134,19 +134,17 @@ class TestReconciliation:
     def test_summation_matrix(self):
         np.testing.assert_equal(
             _get_summation_matrix(self.series_complex),
-            np.array(
-                [
-                    [1, 1, 1, 1],
-                    [1, 1, 0, 0],
-                    [0, 0, 1, 1],
-                    [1, 0, 1, 0],
-                    [0, 1, 0, 1],
-                    [1, 0, 0, 0],
-                    [0, 1, 0, 0],
-                    [0, 0, 1, 0],
-                    [0, 0, 0, 1],
-                ]
-            ),
+            np.array([
+                [1, 1, 1, 1],
+                [1, 1, 0, 0],
+                [0, 0, 1, 1],
+                [1, 0, 1, 0],
+                [0, 1, 0, 1],
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1],
+            ]),
         )
 
     def test_hierarchy_preserved_after_predict(self):

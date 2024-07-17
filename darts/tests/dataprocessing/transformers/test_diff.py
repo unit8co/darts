@@ -9,6 +9,7 @@ from darts.dataprocessing.transformers import Diff
 from darts.timeseries import TimeSeries
 from darts.timeseries import concatenate as darts_concat
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
+from darts.utils.utils import freqs
 
 
 class TestDiff:
@@ -246,7 +247,8 @@ class TestDiff:
             values=vals, times=pd.date_range(start="1/1/2018", freq="W", periods=10)
         )
         series2 = TimeSeries.from_times_and_values(
-            values=vals, times=pd.date_range(start="1/1/2018", freq="M", periods=10)
+            values=vals,
+            times=pd.date_range(start="1/1/2018", freq=freqs["ME"], periods=10),
         )
         diff = Diff(lags=1, dropna=True)
         diff.fit(series1)
@@ -274,7 +276,7 @@ class TestDiff:
             diff.inverse_transform(series_rm_comp.diff(n=1, periods=1, dropna=True))
         assert (
             f"Expected series to have {series.n_components} components; "
-            f"instead, it has {series.n_components-1}." == str(e.value)
+            f"instead, it has {series.n_components - 1}." == str(e.value)
         )
         series_rm_samp = TimeSeries.from_times_and_values(
             values=vals[:, :, 1:], times=dates
@@ -283,7 +285,7 @@ class TestDiff:
             diff.inverse_transform(series_rm_samp.diff(n=1, periods=1, dropna=True))
         assert (
             f"Expected series to have {series.n_samples} samples; "
-            f"instead, it has {series.n_samples-1}." == str(e.value)
+            f"instead, it has {series.n_samples - 1}." == str(e.value)
         )
 
     def test_diff_multiple_calls_to_fit(self):

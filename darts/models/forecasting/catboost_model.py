@@ -7,10 +7,10 @@ CatBoost based regression model.
 This implementation comes with the ability to produce probabilistic forecasts.
 """
 
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from catboost import CatBoostRegressor
+from catboost import CatBoostRegressor, Pool
 
 from darts.logging import get_logger
 from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
@@ -165,7 +165,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         self._median_idx = None
         self._model_container = None
         self._rng = None
-        self.likelihood = likelihood
+        self._likelihood = likelihood
         self.quantiles = None
 
         self._output_chunk_length = output_chunk_length
@@ -215,6 +215,11 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
+        n_jobs_multioutput_wrapper: Optional[int] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        val_sample_weight: Optional[
+            Union[TimeSeries, Sequence[TimeSeries], str]
+        ] = None,
         verbose: Optional[Union[int, bool]] = 0,
         **kwargs,
     ):
@@ -242,20 +247,26 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        n_jobs_multioutput_wrapper
+            Number of jobs of the MultiOutputRegressor wrapper to run in parallel. Only used if the model doesn't
+            support multi-output regression natively.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
+            per label (each step in `output_chunk_length`), and per component.
+            If a series or sequence of series, then those weights are used. If the weight series only have a single
+            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+            component-specific weights, the number of components must match those of `series`.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+            computed globally based on the length of the longest series in `series`. Then for each series, the weights
+            are extracted from the end of the global weights. This gives a common time weighting across all series.
+        val_sample_weight
+            Same as for `sample_weight` but for the evaluation dataset.
         verbose
             An integer or a boolean that can be set to 1 to display catboost's default verbose output
         **kwargs
             Additional kwargs passed to `catboost.CatboostRegressor.fit()`
         """
-
-        if val_series is not None:
-            kwargs["eval_set"] = self._create_lagged_data(
-                target_series=val_series,
-                past_covariates=val_past_covariates,
-                future_covariates=val_future_covariates,
-                max_samples_per_ts=max_samples_per_ts,
-            )
-
         if self.likelihood == "quantile":
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
@@ -264,29 +275,37 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
                 # translating to catboost argument
                 self.kwargs["loss_function"] = f"Quantile:alpha={this_quantile}"
                 self.model = CatBoostRegressor(**self.kwargs)
-
                 super().fit(
                     series=series,
                     past_covariates=past_covariates,
                     future_covariates=future_covariates,
+                    val_series=val_series,
+                    val_past_covariates=val_past_covariates,
+                    val_future_covariates=val_future_covariates,
                     max_samples_per_ts=max_samples_per_ts,
+                    n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+                    sample_weight=sample_weight,
+                    val_sample_weight=val_sample_weight,
                     verbose=verbose,
                     **kwargs,
                 )
-
                 self._model_container[quantile] = self.model
-
             return self
 
         super().fit(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            val_series=val_series,
+            val_past_covariates=val_past_covariates,
+            val_future_covariates=val_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
+            n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+            sample_weight=sample_weight,
+            val_sample_weight=val_sample_weight,
             verbose=verbose,
             **kwargs,
         )
-
         return self
 
     def _predict_and_sample(
@@ -325,9 +344,51 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         else:
             return None
 
+    def _add_val_set_to_kwargs(
+        self,
+        kwargs: Dict,
+        val_series: Sequence[TimeSeries],
+        val_past_covariates: Optional[Sequence[TimeSeries]],
+        val_future_covariates: Optional[Sequence[TimeSeries]],
+        val_sample_weight: Optional[Union[Sequence[TimeSeries], str]],
+        max_samples_per_ts: int,
+    ) -> dict:
+        # CatBoostRegressor requires sample weights to be passed with a validation set `Pool`
+        kwargs = super()._add_val_set_to_kwargs(
+            kwargs=kwargs,
+            val_series=val_series,
+            val_past_covariates=val_past_covariates,
+            val_future_covariates=val_future_covariates,
+            val_sample_weight=val_sample_weight,
+            max_samples_per_ts=max_samples_per_ts,
+        )
+        val_set_name, val_weight_name = self.val_set_params
+        val_sets = kwargs[val_set_name]
+        # CatBoost requires eval set Pool with sample weights -> remove from kwargs
+        val_weights = kwargs.pop(val_weight_name)
+        val_pools = []
+        for i, val_set in enumerate(val_sets):
+            val_pools.append(
+                Pool(
+                    data=val_set[0],
+                    label=val_set[1],
+                    weight=val_weights[i] if val_weights is not None else None,
+                )
+            )
+        kwargs[val_set_name] = val_pools
+        return kwargs
+
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None
+
+    @property
+    def supports_val_set(self) -> bool:
+        return True
+
+    @property
+    def val_set_params(self) -> Tuple[Optional[str], Optional[str]]:
+        return "eval_set", "eval_sample_weight"
 
     @property
     def min_train_series_length(self) -> int:

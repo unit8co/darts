@@ -8,12 +8,12 @@ This implementation comes with the ability to produce probabilistic forecasts.
 """
 
 from functools import partial
-from typing import List, Optional, Sequence, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import xgboost as xgb
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -21,7 +21,6 @@ from darts.models.forecasting.regression_model import (
     _LikelihoodMixin,
 )
 from darts.timeseries import TimeSeries
-from darts.utils.utils import raise_if_not
 
 logger = get_logger(__name__)
 
@@ -194,7 +193,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         self._median_idx = None
         self._model_container = None
         self.quantiles = None
-        self.likelihood = likelihood
+        self._likelihood = likelihood
         self._rng = None
 
         # parse likelihood
@@ -233,6 +232,11 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
+        n_jobs_multioutput_wrapper: Optional[int] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        val_sample_weight: Optional[
+            Union[TimeSeries, Sequence[TimeSeries], str]
+        ] = None,
         **kwargs,
     ):
         """
@@ -259,22 +263,24 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        n_jobs_multioutput_wrapper
+            Number of jobs of the MultiOutputRegressor wrapper to run in parallel. Only used if the model doesn't
+            support multi-output regression natively.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
+            per label (each step in `output_chunk_length`), and per component.
+            If a series or sequence of series, then those weights are used. If the weight series only have a single
+            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+            component-specific weights, the number of components must match those of `series`.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+            computed globally based on the length of the longest series in `series`. Then for each series, the weights
+            are extracted from the end of the global weights. This gives a common time weighting across all series.
+        val_sample_weight
+            Same as for `sample_weight` but for the evaluation dataset.
         **kwargs
             Additional kwargs passed to `xgb.XGBRegressor.fit()`
         """
-
-        if val_series is not None:
-            # Note: we create a list here as it's what's expected by XGBRegressor.fit()
-            # This is handled as a separate case in multioutput.py
-            kwargs["eval_set"] = [
-                self._create_lagged_data(
-                    target_series=val_series,
-                    past_covariates=val_past_covariates,
-                    future_covariates=val_future_covariates,
-                    max_samples_per_ts=max_samples_per_ts,
-                )
-            ]
-
         # TODO: XGBRegressor supports multi quantile reqression which we could leverage in the future
         #  see https://xgboost.readthedocs.io/en/latest/python/examples/quantile_regression.html
         if self.likelihood == "quantile":
@@ -287,27 +293,35 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
                     objective = partial(xgb_quantile_loss, quantile=quantile)
                     self.kwargs["objective"] = objective
                 self.model = xgb.XGBRegressor(**self.kwargs)
-
                 super().fit(
                     series=series,
                     past_covariates=past_covariates,
                     future_covariates=future_covariates,
+                    val_series=val_series,
+                    val_past_covariates=val_past_covariates,
+                    val_future_covariates=val_future_covariates,
                     max_samples_per_ts=max_samples_per_ts,
+                    n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+                    sample_weight=sample_weight,
+                    val_sample_weight=val_sample_weight,
                     **kwargs,
                 )
-
                 self._model_container[quantile] = self.model
-
             return self
 
         super().fit(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            val_series=val_series,
+            val_past_covariates=val_past_covariates,
+            val_future_covariates=val_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
+            n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+            sample_weight=sample_weight,
+            val_sample_weight=val_sample_weight,
             **kwargs,
         )
-
         return self
 
     def _predict_and_sample(
@@ -328,8 +342,16 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             )
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None
+
+    @property
+    def supports_val_set(self) -> bool:
+        return True
+
+    @property
+    def val_set_params(self) -> Tuple[Optional[str], Optional[str]]:
+        return "eval_set", "sample_weight_eval_set"
 
     @property
     def min_train_series_length(self) -> int:

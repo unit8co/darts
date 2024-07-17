@@ -15,7 +15,7 @@ from darts.dataprocessing.transformers import (
 )
 from darts.logging import get_logger, raise_log
 from darts.timeseries import _finite_rows_boundaries
-from darts.utils.timeseries_generation import generate_index
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -141,13 +141,11 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                     ),
                     logger=logger,
                 )
-            fitted_params.append(
-                {
-                    "high_freq": high_freq,
-                    "start": ts.start_time(),
-                    "end": ts.end_time(),
-                }
-            )
+            fitted_params.append({
+                "high_freq": high_freq,
+                "start": ts.start_time(),
+                "end": ts.end_time(),
+            })
         return fitted_params[0] if is_single_series else fitted_params
 
     @staticmethod

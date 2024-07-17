@@ -13,7 +13,7 @@ from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.timeseries import TimeSeries, concatenate
-from darts.utils.utils import seq2series, series2seq
+from darts.utils.ts_utils import seq2series, series2seq
 
 logger = get_logger(__name__)
 
@@ -222,7 +222,9 @@ class RegressionEnsembleModel(EnsembleModel):
                 ),
                 forecast_horizon=model.output_chunk_length,
                 stride=model.output_chunk_length,
-                num_samples=num_samples if model._is_probabilistic else 1,
+                num_samples=(
+                    num_samples if model.supports_probabilistic_prediction else 1
+                ),
                 start=-start_hist_forecasts,
                 start_format="position",
                 retrain=False,
@@ -232,10 +234,7 @@ class RegressionEnsembleModel(EnsembleModel):
                 predict_likelihood_parameters=False,
             )
             # concatenate the strided predictions of output_chunk_length values each
-            if is_single_series:
-                tmp_pred = [concatenate(tmp_pred, axis=0)]
-            else:
-                tmp_pred = [concatenate(sub_pred, axis=0) for sub_pred in tmp_pred]
+            tmp_pred = [concatenate(sub_pred, axis=0) for sub_pred in tmp_pred]
 
             # add the missing steps at beginning by taking the first values of precomputed predictions
             if missing_steps:
@@ -282,6 +281,7 @@ class RegressionEnsembleModel(EnsembleModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
         """
         Fits the forecasting models with the entire series except the last `regression_train_n_points` values, which
@@ -300,6 +300,16 @@ class RegressionEnsembleModel(EnsembleModel):
         future_covariates
             Optionally, a series or sequence of series specifying future-known covariates passed to the
             forecasting models
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
+            per label (each step in `output_chunk_length`), and per component.
+            If a series or sequence of series, then those weights are used. If the weight series only have a single
+            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+            component-specific weights, the number of components must match those of `series`.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+            computed globally based on the length of the longest series in `series`. Then for each series, the weights
+            are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
         super().fit(
             series, past_covariates=past_covariates, future_covariates=future_covariates
@@ -317,9 +327,9 @@ class RegressionEnsembleModel(EnsembleModel):
             # shift by the forecasting models' largest input length
             all_shifts = []
             # when it's not clearly defined, extreme_lags returns
-            # min_train_serie_length for the LocalForecastingModels
+            # `min_train_series_length` for the LocalForecastingModels
             for model in self.forecasting_models:
-                min_target_lag, _, _, _, _, _, _ = model.extreme_lags
+                min_target_lag, _, _, _, _, _, _, _ = model.extreme_lags
                 if min_target_lag is not None:
                     all_shifts.append(-min_target_lag)
 
@@ -351,9 +361,9 @@ class RegressionEnsembleModel(EnsembleModel):
             if is_single_series:
                 train_n_points_too_big = len(series) <= self.train_n_points
             else:
-                train_n_points_too_big = any(
-                    [len(s) <= self.train_n_points for s in series]
-                )
+                train_n_points_too_big = any([
+                    len(s) <= self.train_n_points for s in series
+                ])
 
         raise_if(
             train_n_points_too_big,
@@ -381,6 +391,9 @@ class RegressionEnsembleModel(EnsembleModel):
                     future_covariates=(
                         future_covariates if model.supports_future_covariates else None
                     ),
+                    sample_weight=sample_weight
+                    if model.supports_sample_weight
+                    else None,
                 )
 
         # we can call direct prediction in any case. Even if we overwrite with historical
@@ -405,7 +418,9 @@ class RegressionEnsembleModel(EnsembleModel):
 
         # train the regression model on the individual models' predictions
         self.regression_model.fit(
-            series=regression_target, future_covariates=predictions
+            series=regression_target,
+            future_covariates=predictions,
+            sample_weight=sample_weight,
         )
 
         # prepare the forecasting models for further predicting by fitting them with the entire data
@@ -423,6 +438,9 @@ class RegressionEnsembleModel(EnsembleModel):
                     future_covariates=(
                         future_covariates if model.supports_future_covariates else None
                     ),
+                    sample_weight=sample_weight
+                    if model.supports_sample_weight
+                    else None,
                 )
         return self
 
@@ -460,6 +478,7 @@ class RegressionEnsembleModel(EnsembleModel):
         Optional[int],
         Optional[int],
         int,
+        Optional[int],
     ]:
         extreme_lags_ = super().extreme_lags
         # shift min_target_lag in the past to account for the regression model training set
@@ -486,9 +505,9 @@ class RegressionEnsembleModel(EnsembleModel):
         )
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         """
         A RegressionEnsembleModel is probabilistic if its regression
         model is probabilistic (ensembling layer)
         """
-        return self.regression_model._is_probabilistic
+        return self.regression_model.supports_probabilistic_prediction

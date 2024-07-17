@@ -159,7 +159,6 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
     ) -> TimeSeries:
-
         if num_samples > 1 and self.trend:
             logger.warning(
                 "Trends are not well supported yet for getting probabilistic forecasts with ARIMA."
@@ -254,7 +253,7 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         return 30
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return True
 
     @property

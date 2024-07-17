@@ -1,13 +1,15 @@
+import itertools
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from darts import TimeSeries
 from darts.tests.test_timeseries import TestTimeSeries
+from darts.utils.utils import freqs
 
 
 class TestTimeSeriesMultivariate:
-
     times1 = pd.date_range("20130101", "20130110")
     times2 = pd.date_range("20130206", "20130215")
     dataframe1 = pd.DataFrame(
@@ -91,8 +93,12 @@ class TestTimeSeriesMultivariate:
     def test_drop(self):
         TestTimeSeries.helper_test_drop(self, self.series1)
 
-    def test_intersect(self):
-        TestTimeSeries.helper_test_intersect(self, self.series1)
+    @pytest.mark.parametrize(
+        "config", itertools.product(["D", "2D", 1, 2], [False, True])
+    )
+    def test_intersect(self, config):
+        freq, mixed_freq = config
+        TestTimeSeries.helper_test_intersect(freq, mixed_freq, is_univariate=False)
 
     def test_shift(self):
         TestTimeSeries.helper_test_shift(self, self.series1)
@@ -228,7 +234,9 @@ class TestTimeSeriesMultivariate:
         assert seriesA.width == 3
 
         # testing hourly time series
-        times = pd.date_range(start=pd.Timestamp("20201224"), periods=50, freq="H")
+        times = pd.date_range(
+            start=pd.Timestamp("20201224"), periods=50, freq=freqs["h"]
+        )
         seriesB = TimeSeries.from_times_and_values(times, range(len(times)))
         seriesB = seriesB.add_holidays("US")
         last_column = seriesB.pd_dataframe().iloc[:, seriesB.width - 1]
