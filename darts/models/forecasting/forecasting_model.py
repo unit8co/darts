@@ -971,18 +971,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             past_covariates_ = (
                 past_covariates[idx] if past_covariates is not None else None
             )
-            if past_covariates_ and past_covariates_transformer:
-                past_covariates_ = past_covariates_transformer.fit_transform(
-                    past_covariates_
-                )
-
             future_covariates_ = (
                 future_covariates[idx] if future_covariates is not None else None
             )
-            if future_covariates_ and future_covariates_transformer:
-                future_covariates_ = future_covariates_transformer.fit_transform(
-                    future_covariates_
-                )
 
             if isinstance(sample_weight, str):
                 sample_weight_ = sample_weight
@@ -1093,7 +1084,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if train_length_ and len(train_series) > train_length_:
                     train_series = train_series[-train_length_:]
 
-                train_transformed = False
+                series_transformed = False
+                past_covariates_transformed = False
+                future_covariates_transformed = False
                 # testing `retrain` to exclude `False` and `0`
                 if (
                     retrain
@@ -1116,9 +1109,33 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         if series_transformer is not None:
                             if isinstance(series_transformer, FittableDataTransformer):
                                 series_transformer.fit(train_series)
-                            # remember that series was already transformed for later forecast
-                            train_transformed = True
                             train_series = series_transformer.transform(train_series)
+                            series_transformed = True
+
+                        if past_covariates_transformer is not None and past_covariates_:
+                            if isinstance(
+                                past_covariates_transformer, FittableDataTransformer
+                            ):
+                                past_covariates_transformer.fit(past_covariates_)
+                            past_covariates_ = past_covariates_transformer.transform(
+                                past_covariates_
+                            )
+                            past_covariates_transformed = True
+
+                        if (
+                            future_covariates_transformer is not None
+                            and future_covariates_
+                        ):
+                            if isinstance(
+                                future_covariates_transformer, FittableDataTransformer
+                            ):
+                                future_covariates_transformer.fit(future_covariates_)
+                            future_covariates_ = (
+                                future_covariates_transformer.transform(
+                                    future_covariates_
+                                )
+                            )
+                            future_covariates_transformed = True
 
                         model._fit_wrapper(
                             series=train_series,
@@ -1168,8 +1185,25 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         values=np.array([np.NaN]),
                     )
 
-                if series_transformer is not None and not train_transformed:
+                # transfrom TimeSeries even if model isn't retrained
+                if series_transformer is not None and not series_transformed:
                     train_series = series_transformer.transform(train_series)
+
+                if (
+                    past_covariates_transformer is not None
+                    and not past_covariates_transformed
+                ):
+                    past_covariates_ = past_covariates_transformer.transform(
+                        past_covariates_
+                    )
+
+                if (
+                    future_covariates_transformer is not None
+                    and not future_covariates_transformed
+                ):
+                    future_covariates_ = future_covariates_transformer.transform(
+                        future_covariates_
+                    )
 
                 forecast = model._predict_wrapper(
                     n=forecast_horizon,
