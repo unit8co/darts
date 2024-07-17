@@ -652,8 +652,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series_transformer: Optional[
             Union[FittableDataTransformer, InvertibleDataTransformer]
         ] = None,
-        past_covariates_transformer: Optional[FittableDataTransformer] = None,
-        future_covariates_transformer: Optional[FittableDataTransformer] = None,
+        past_covariates_transformer: Optional[
+            Union[FittableDataTransformer, InvertibleDataTransformer]
+        ] = None,
+        future_covariates_transformer: Optional[
+            Union[FittableDataTransformer, InvertibleDataTransformer]
+        ] = None,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
@@ -765,16 +769,19 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Whether to use the optimized version of historical_forecasts when supported and available.
 
         series_transformer
-            If model is retrained, data transformer re-fit on the training data at each historical forecast step.
+            If model is retrained and transformer is fittable, data transformer re-fit on the training data
+            at each historical forecast step.
             The fitted transformer is used to transform the input either for model training or prediction.
             Inverse transformation will be applied to the prediction.
 
         past_covariates_transformer
-            If model is retrained, data transformer re-fit on the training data at each historical forecast step.
+            If model is retrained and transformer is fittable, data transformer re-fit on the training data
+            at each historical forecast step.
             The fitted transformer is used to transform the input for model training
 
         future_covariates_transformer
-            If model is retrained, data transformer re-fit on the training data at each historical forecast step.
+            If model is retrained and transformer is fittable, data transformer re-fit on the training data
+            at each historical forecast step.
             The fitted transformer is used to transform the input for model training
 
 
