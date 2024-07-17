@@ -29,17 +29,14 @@ from darts.dataprocessing.encoders.encoders import (
 )
 from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger, raise_log
+from darts.tests.conftest import TORCH_AVAILABLE
 from darts.utils import timeseries_generation as tg
+from darts.utils.utils import freqs, generate_index
 
 logger = get_logger(__name__)
 
-try:
+if TORCH_AVAILABLE:
     from darts.models import TFTModel
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning("Torch not installed - will be skipping Torch models tests")
-    TORCH_AVAILABLE = False
 
 
 class TestEncoder:
@@ -79,7 +76,7 @@ class TestEncoder:
     # multi-TS at prediction should be as follows
     inf_ts_short_future = [
         TimeSeries.from_times_and_values(
-            tg.generate_index(
+            generate_index(
                 start=ts.end_time() + (1 - 12) * ts.freq, length=12 + 6, freq=ts.freq
             ),
             np.arange(12 + 6),
@@ -89,7 +86,7 @@ class TestEncoder:
 
     inf_ts_long_future = [
         TimeSeries.from_times_and_values(
-            tg.generate_index(
+            generate_index(
                 start=ts.end_time() + (1 - 12) * ts.freq, length=12 + 8, freq=ts.freq
             ),
             np.arange(12 + 8),
@@ -99,7 +96,7 @@ class TestEncoder:
 
     inf_ts_short_past = [
         TimeSeries.from_times_and_values(
-            tg.generate_index(
+            generate_index(
                 start=ts.end_time() + (1 - 12) * ts.freq, length=12, freq=ts.freq
             ),
             np.arange(12),
@@ -109,7 +106,7 @@ class TestEncoder:
 
     inf_ts_long_past = [
         TimeSeries.from_times_and_values(
-            tg.generate_index(
+            generate_index(
                 start=ts.end_time() + (1 - 12) * ts.freq,
                 length=12 + (8 - 6),
                 freq=ts.freq,
@@ -354,9 +351,9 @@ class TestEncoder:
                 base_comp_name = "darts_enc_pc_"
             else:
                 base_comp_name = "darts_enc_fc_"
-            comps_expected = pd.Index(
-                [base_comp_name + comp_name for comp_name in comps_expected]
-            )
+            comps_expected = pd.Index([
+                base_comp_name + comp_name for comp_name in comps_expected
+            ])
 
             assert not enc.fit_called
             # initially, no components
@@ -493,32 +490,28 @@ class TestEncoder:
             "tz": "CET",
         }
         # given `add_encoders` dict, we expect encoders to generate the following components
-        comps_expected_past = pd.Index(
-            [
-                "darts_enc_pc_cyc_month_sin",
-                "darts_enc_pc_cyc_month_cos",
-                "darts_enc_pc_cyc_day_sin",
-                "darts_enc_pc_cyc_day_cos",
-                "darts_enc_pc_dta_month",
-                "darts_enc_pc_dta_year",
-                "darts_enc_pc_pos_relative",
-                "darts_enc_pc_cus_custom",
-                "darts_enc_pc_cus_custom_1",
-            ]
-        )
-        comps_expected_future = pd.Index(
-            [
-                "darts_enc_fc_cyc_day_sin",
-                "darts_enc_fc_cyc_day_cos",
-                "darts_enc_fc_cyc_month_sin",
-                "darts_enc_fc_cyc_month_cos",
-                "darts_enc_fc_dta_year",
-                "darts_enc_fc_dta_month",
-                "darts_enc_fc_pos_relative",
-                "darts_enc_fc_cus_custom",
-                "darts_enc_fc_cus_custom_1",
-            ]
-        )
+        comps_expected_past = pd.Index([
+            "darts_enc_pc_cyc_month_sin",
+            "darts_enc_pc_cyc_month_cos",
+            "darts_enc_pc_cyc_day_sin",
+            "darts_enc_pc_cyc_day_cos",
+            "darts_enc_pc_dta_month",
+            "darts_enc_pc_dta_year",
+            "darts_enc_pc_pos_relative",
+            "darts_enc_pc_cus_custom",
+            "darts_enc_pc_cus_custom_1",
+        ])
+        comps_expected_future = pd.Index([
+            "darts_enc_fc_cyc_day_sin",
+            "darts_enc_fc_cyc_day_cos",
+            "darts_enc_fc_cyc_month_sin",
+            "darts_enc_fc_cyc_month_cos",
+            "darts_enc_fc_dta_year",
+            "darts_enc_fc_dta_month",
+            "darts_enc_fc_pos_relative",
+            "darts_enc_fc_cus_custom",
+            "darts_enc_fc_cus_custom_1",
+        ])
         kwargs = {
             "add_encoders": add_encoders,
             "input_chunk_length": input_chunk_length,
@@ -667,7 +660,7 @@ class TestEncoder:
 
         attribute = "month"
         month_series = TimeSeries.from_times_and_values(
-            times=tg.generate_index(
+            times=generate_index(
                 start=pd.to_datetime("2000-01-01"), length=24, freq="MS"
             ),
             values=np.arange(24),
@@ -724,7 +717,7 @@ class TestEncoder:
         attribute = "month"
 
         month_series = TimeSeries.from_times_and_values(
-            times=tg.generate_index(
+            times=generate_index(
                 start=pd.to_datetime("2000-01-01"), length=24, freq="MS"
             ),
             values=np.arange(24),
@@ -890,7 +883,7 @@ class TestEncoder:
 
     def test_callable_encoder(self):
         """Test `CallableIndexEncoder`"""
-        ts = tg.linear_timeseries(length=24, freq="A")
+        ts = tg.linear_timeseries(length=24, freq=freqs["YE"])
         input_chunk_length = 12
         output_chunk_length = 6
 
@@ -930,7 +923,7 @@ class TestEncoder:
 
         # inference set
         pc, fc = encs.encode_inference(n=12, target=ts)
-        year_index = tg.generate_index(
+        year_index = generate_index(
             start=ts.end_time() - ts.freq * (input_chunk_length - 1),
             length=24,
             freq=ts.freq,
@@ -968,7 +961,11 @@ class TestEncoder:
                 )
 
         ts1 = tg.linear_timeseries(
-            start_value=1, end_value=2, length=60, freq="T", column_name="cov_in"
+            start_value=1,
+            end_value=2,
+            length=60,
+            freq=freqs["min"],
+            column_name="cov_in",
         )
         encoder_params = {
             "position": {"future": ["relative"]},
@@ -1020,7 +1017,11 @@ class TestEncoder:
         )
 
         fc_inf = tg.linear_timeseries(
-            start_value=1, end_value=3, length=80, freq="T", column_name="cov_in"
+            start_value=1,
+            end_value=3,
+            length=80,
+            freq=freqs["min"],
+            column_name="cov_in",
         )
         pc3, fc3 = encs.encode_inference(n=60, target=ts1, future_covariates=fc_inf)
 
@@ -1048,7 +1049,7 @@ class TestEncoder:
 
     def test_transformer_multi_series(self):
         ts1 = tg.linear_timeseries(
-            start_value=1, end_value=2, length=21, freq="T", column_name="cov"
+            start_value=1, end_value=2, length=21, freq=freqs["min"], column_name="cov"
         )
         ts2 = tg.linear_timeseries(
             start=None,
@@ -1056,7 +1057,7 @@ class TestEncoder:
             start_value=1.5,
             end_value=2,
             length=11,
-            freq="T",
+            freq=freqs["min"],
             column_name="cov",
         )
         ts1_inf = ts1.drop_before(ts2.start_time() - ts1.freq)

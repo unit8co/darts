@@ -55,7 +55,6 @@ class _TimeDistributedEmbeddingBag(nn.EmbeddingBag):
         self.batch_first = batch_first
 
     def forward(self, x):
-
         if len(x.size()) <= 2:
             return super().forward(x)
 
@@ -99,9 +98,9 @@ class _MultiEmbedding(nn.Module):
         self.embedding_sizes = embedding_sizes
         self.variable_names = variable_names
 
-        self.embeddings = nn.ModuleDict(
-            {name: nn.Embedding(*embedding_sizes[name]) for name in variable_names}
-        )
+        self.embeddings = nn.ModuleDict({
+            name: nn.Embedding(*embedding_sizes[name]) for name in variable_names
+        })
 
     @property
     def input_size(self) -> int:
@@ -151,7 +150,6 @@ class _TimeDistributedInterpolation(nn.Module):
         return upsampled
 
     def forward(self, x):
-
         if len(x.size()) <= 2:
             return self.interpolate(x)
 
@@ -543,12 +541,12 @@ class _InterpretableMultiHeadAttention(nn.Module):
         self.dropout = MonteCarloDropout(p=dropout)
 
         self.v_layer = nn.Linear(self.d_model, self.d_v)
-        self.q_layers = nn.ModuleList(
-            [nn.Linear(self.d_model, self.d_q) for _ in range(self.n_head)]
-        )
-        self.k_layers = nn.ModuleList(
-            [nn.Linear(self.d_model, self.d_k) for _ in range(self.n_head)]
-        )
+        self.q_layers = nn.ModuleList([
+            nn.Linear(self.d_model, self.d_q) for _ in range(self.n_head)
+        ])
+        self.k_layers = nn.ModuleList([
+            nn.Linear(self.d_model, self.d_k) for _ in range(self.n_head)
+        ])
         self.attention = _ScaledDotProductAttention()
         self.w_h = nn.Linear(self.d_v, self.d_model, bias=False)
 

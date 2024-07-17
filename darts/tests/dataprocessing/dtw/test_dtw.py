@@ -66,9 +66,10 @@ class TestDynamicTimeWarping:
         assert (
             exact_alignment.distance() == 0
         ), "Minimum cost between two shifted series should be 0"
-        np.testing.assert_array_equal(
-            exact_alignment.path(), expected_path
-        ), "Incorrect path"
+        (
+            np.testing.assert_array_equal(exact_alignment.path(), expected_path),
+            "Incorrect path",
+        )
 
     def test_multi_grid(self):
         size = 2**5 - 1  # test odd size

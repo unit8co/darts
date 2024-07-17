@@ -2,6 +2,7 @@
 Pipeline
 --------
 """
+
 from copy import deepcopy
 from typing import Iterator, Sequence, Union
 
@@ -172,7 +173,7 @@ class Pipeline:
         """
         For each data transformer in the pipeline, inverse-transform data. Then inverse transformed data is passed to
         the next transformer. Transformers are traversed in reverse order. Raises value error if not all of the
-        transformers are invertible and ``partial`` is set to False. Set ``partial`` to True for inverting only the
+        transformers are invertible and ``partial`` is set to `False`. Set ``partial`` to True for inverting only the
         InvertibleDataTransformer in the pipeline.
 
         Parameters

@@ -10,7 +10,6 @@ from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 
 
 class TestBoxCox:
-
     sine_series = sine_timeseries(length=50, value_y_offset=5, value_frequency=0.05)
     lin_series = linear_timeseries(start_value=1, end_value=10, length=50)
     multi_series = sine_series.stack(lin_series)
@@ -61,7 +60,6 @@ class TestBoxCox:
         )
 
     def test_boxcox_multi_ts(self):
-
         test_cases = [
             ([[0.2, 0.4], [0.3, 0.6]]),  # full lambda
             (0.4),  # single value
