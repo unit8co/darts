@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 from darts.dataprocessing.transformers import FittableDataTransformer
 
@@ -18,7 +18,7 @@ from darts.utils.historical_forecasts.utils import (
     _get_historical_forecast_boundaries,
     _process_predict_start_points_bounds,
 )
-from darts.utils.timeseries_generation import generate_index
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -41,9 +41,7 @@ def _optimized_historical_forecasts(
     past_covariates_transformer: Optional[FittableDataTransformer] = None,
     future_covariates_transformer: Optional[FittableDataTransformer] = None,
     **kwargs,
-) -> Union[
-    TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
-]:
+) -> Union[Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
     Optimized historical forecasts for TorchForecastingModels
 
@@ -161,4 +159,4 @@ def _optimized_historical_forecasts(
                 hierarchy=preds[0].hierarchy,
             )
         forecasts_list.append(preds)
-    return forecasts_list if len(forecasts_list) > 1 else forecasts_list[0]
+    return forecasts_list

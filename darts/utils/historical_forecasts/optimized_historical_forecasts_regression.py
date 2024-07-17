@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 try:
     from typing import Literal
@@ -12,9 +12,10 @@ from numpy.lib.stride_tricks import sliding_window_view
 from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
+from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
-from darts.utils.timeseries_generation import generate_index
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -31,21 +32,20 @@ def _optimized_historical_forecasts_last_points_only(
     stride: int = 1,
     overlap_end: bool = False,
     show_warnings: bool = True,
+    verbose: bool = False,
     predict_likelihood_parameters: bool = False,
     past_covariates_transformer: Optional[FittableDataTransformer] = None,
     future_covariates_transformer: Optional[FittableDataTransformer] = None,
     **kwargs,
-) -> Union[
-    TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
-]:
+) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
     Optimized historical forecasts for RegressionModel with last_points_only = True
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
     forecasts_list = []
-
-    for idx, series_ in enumerate(series):
+    iterator = _build_tqdm_iterator(series, verbose)
+    for idx, series_ in enumerate(iterator):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
         if past_covariates_ and past_covariates_transformer:
             past_covariates_ = past_covariates_transformer.fit_transform(
@@ -115,15 +115,22 @@ def _optimized_historical_forecasts_last_points_only(
             )
 
         X, times = create_lagged_prediction_data(
-            target_series=None
-            if model._get_lags("target") is None
-            else series_[hist_fct_tgt_start:hist_fct_tgt_end],
-            past_covariates=None
-            if past_covariates_ is None
-            else past_covariates_[hist_fct_pc_start:hist_fct_pc_end],
-            future_covariates=None
-            if future_covariates_ is None
-            else future_covariates_[hist_fct_fc_start:hist_fct_fc_end],
+            target_series=(
+                None
+                if model._get_lags("target") is None
+                and not model.uses_static_covariates
+                else series_[hist_fct_tgt_start:hist_fct_tgt_end]
+            ),
+            past_covariates=(
+                None
+                if past_covariates_ is None
+                else past_covariates_[hist_fct_pc_start:hist_fct_pc_end]
+            ),
+            future_covariates=(
+                None
+                if future_covariates_ is None
+                else future_covariates_[hist_fct_fc_start:hist_fct_fc_end]
+            ),
             lags=model._get_lags("target"),
             lags_past_covariates=model._get_lags("past"),
             lags_future_covariates=model._get_lags("future"),
@@ -158,29 +165,31 @@ def _optimized_historical_forecasts_last_points_only(
         if model.multi_models:
             forecast = forecast[
                 :,
-                (forecast_horizon - 1)
-                * len(forecast_components) : (forecast_horizon)
+                (forecast_horizon - 1) * len(forecast_components) : (forecast_horizon)
                 * len(forecast_components),
                 :,
             ]
 
-        forecast_value = TimeSeries.from_times_and_values(
-            times=times[0]
-            if stride == 1 and model.output_chunk_length == 1
-            else generate_index(
-                start=hist_fct_start + (forecast_horizon - 1) * freq,
-                length=forecast.shape[0],
-                freq=freq * stride,
-                name=series_.time_index.name,
-            ),
-            values=forecast,
-            columns=forecast_components,
-            static_covariates=series_.static_covariates,
-            hierarchy=series_.hierarchy,
+        forecasts_list.append(
+            TimeSeries.from_times_and_values(
+                times=(
+                    times[0]
+                    if stride == 1 and model.output_chunk_length == 1
+                    else generate_index(
+                        start=hist_fct_start
+                        + (forecast_horizon + model.output_chunk_shift - 1) * freq,
+                        length=forecast.shape[0],
+                        freq=freq * stride,
+                        name=series_.time_index.name,
+                    )
+                ),
+                values=forecast,
+                columns=forecast_components,
+                static_covariates=series_.static_covariates,
+                hierarchy=series_.hierarchy,
+            )
         )
-        forecasts_list.append(forecast_value)
-
-    return forecasts_list if len(series) > 1 else forecasts_list[0]
+    return forecasts_list
 
 
 def _optimized_historical_forecasts_all_points(
@@ -195,20 +204,20 @@ def _optimized_historical_forecasts_all_points(
     stride: int = 1,
     overlap_end: bool = False,
     show_warnings: bool = True,
+    verbose: bool = False,
     predict_likelihood_parameters: bool = False,
     past_covariates_transformer: Optional[FittableDataTransformer] = None,
     future_covariates_transformer: Optional[FittableDataTransformer] = None,
     **kwargs,
-) -> Union[
-    TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
-]:
+) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
     Optimized historical forecasts for RegressionModel with last_points_only = False.
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
     forecasts_list = []
-    for idx, series_ in enumerate(series):
+    iterator = _build_tqdm_iterator(series, verbose)
+    for idx, series_ in enumerate(iterator):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
         if past_covariates_ and past_covariates_transformer:
             past_covariates_ = past_covariates_transformer.fit_transform(
@@ -277,15 +286,22 @@ def _optimized_historical_forecasts_all_points(
                 )
 
         X, _ = create_lagged_prediction_data(
-            target_series=None
-            if model._get_lags("target") is None
-            else series_[hist_fct_tgt_start:hist_fct_tgt_end],
-            past_covariates=None
-            if past_covariates_ is None
-            else past_covariates_[hist_fct_pc_start:hist_fct_pc_end],
-            future_covariates=None
-            if future_covariates_ is None
-            else future_covariates_[hist_fct_fc_start:hist_fct_fc_end],
+            target_series=(
+                None
+                if model._get_lags("target") is None
+                and not model.uses_static_covariates
+                else series_[hist_fct_tgt_start:hist_fct_tgt_end]
+            ),
+            past_covariates=(
+                None
+                if past_covariates_ is None
+                else past_covariates_[hist_fct_pc_start:hist_fct_pc_end]
+            ),
+            future_covariates=(
+                None
+                if future_covariates_ is None
+                else future_covariates_[hist_fct_fc_start:hist_fct_fc_end]
+            ),
             lags=model._get_lags("target"),
             lags_past_covariates=model._get_lags("past"),
             lags_future_covariates=model._get_lags("future"),
@@ -295,6 +311,7 @@ def _optimized_historical_forecasts_all_points(
             check_inputs=True,
             use_moving_windows=True,
             concatenate=False,
+            show_warnings=False,
         )
 
         # stride must be applied post-hoc to avoid missing values
@@ -345,7 +362,7 @@ def _optimized_historical_forecasts_all_points(
 
         # TODO: check if faster to create in the loop
         new_times = generate_index(
-            start=hist_fct_start,
+            start=hist_fct_start + model.output_chunk_shift * series_.freq,
             length=forecast_horizon * stride * forecast.shape[0],
             freq=freq,
             name=series_.time_index.name,
@@ -364,4 +381,4 @@ def _optimized_historical_forecasts_all_points(
             )
             forecasts_.append(forecast_value)
         forecasts_list.append(forecasts_)
-    return forecasts_list if len(series) > 1 else forecasts_list[0]
+    return forecasts_list

@@ -3,6 +3,7 @@ Forecasting Model Explainer Base Class
 
 A `_ForecastingModelExplainer` takes a fitted forecasting model as input and generates explanations for it.
 """
+
 from abc import ABC, abstractmethod
 from typing import Optional, Sequence, Tuple, Union
 
@@ -177,7 +178,6 @@ class _ForecastingModelExplainer(ABC):
         horizons: Optional[Union[int, Sequence[int]]],
         target_components: Optional[Union[str, Sequence[str]]],
     ) -> Tuple[Sequence[int], Sequence[str]]:
-
         return process_horizons_and_targets(
             horizons=horizons,
             fallback_horizon=self.n,

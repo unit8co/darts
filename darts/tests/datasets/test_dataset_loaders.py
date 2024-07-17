@@ -25,6 +25,7 @@ from darts.datasets import (
     MonthlyMilkDataset,
     MonthlyMilkIncompleteDataset,
     SunspotsDataset,
+    TaxiNewYorkDataset,
     TaylorDataset,
     TemperatureDataset,
     TrafficDataset,
@@ -70,6 +71,7 @@ datasets_with_width = [
     (TrafficDataset, 862),
     (WeatherDataset, 21),
     (ElectricityConsumptionZurichDataset, 10),
+    (TaxiNewYorkDataset, 1),
 ]
 
 wrong_hash_dataset = DatasetLoaderCSV(

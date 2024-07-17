@@ -176,11 +176,9 @@ from darts.dataprocessing.encoders.encoder_base import (
 from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.timeseries import DIMS
-from darts.utils.timeseries_generation import (
-    datetime_attribute_timeseries,
-    generate_index,
-)
-from darts.utils.utils import seq2series, series2seq
+from darts.utils.timeseries_generation import datetime_attribute_timeseries
+from darts.utils.ts_utils import seq2series, series2seq
+from darts.utils.utils import generate_index
 
 SupportedTimeSeries = Union[TimeSeries, Sequence[TimeSeries]]
 logger = get_logger(__name__)
@@ -1552,6 +1550,6 @@ class SequentialEncoder(Encoder):
 
     @property
     def requires_fit(self) -> bool:
-        return any(
-            [enc.requires_fit for cov_enc in self.encoders for enc in cov_enc]
-        ) or any([tf is not None for tf in self.transformers()])
+        return any([
+            enc.requires_fit for cov_enc in self.encoders for enc in cov_enc
+        ]) or any([tf is not None for tf in self.transformers()])

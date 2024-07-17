@@ -25,7 +25,7 @@ You will find here some more detailed information about Darts.
    .. userguide/probabilistic_forecasting.md
 
    .. userguide/ensembling.md
- 
+
    .. userguide/filtering_models.md
 
    .. userguide/preprocessing_and_pipelines.md
