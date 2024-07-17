@@ -40,6 +40,7 @@ import sys
 from collections import defaultdict
 from copy import deepcopy
 from inspect import signature
+from io import StringIO
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import matplotlib.axes
@@ -1247,7 +1248,7 @@ class TimeSeries:
         TimeSeries
             The time series object converted from the JSON String
         """
-        df = pd.read_json(json_str, orient="split")
+        df = pd.read_json(StringIO(json_str), orient="split")
         return cls.from_dataframe(
             df, static_covariates=static_covariates, hierarchy=hierarchy
         )
