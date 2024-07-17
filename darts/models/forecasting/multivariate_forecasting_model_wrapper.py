@@ -6,6 +6,7 @@ A wrapper around local forecasting models to enable multivariate series training
 for each component of the target series, independently of the others hence ignoring the potential interactions between
 its components.
 """
+
 from typing import List, Optional, Tuple
 
 from darts.logging import get_logger, raise_if_not
@@ -81,10 +82,7 @@ class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel)
 
         raise_if_not(
             len(predictions) == len(self._trained_models),
-            "Prediction contains {} components but {} models were fitted".format(
-                len(predictions),
-                len(self._trained_models),
-            ),
+            f"Prediction contains {len(predictions)} components but {len(self._trained_models)} models were fitted",
         )
 
         return concatenate(predictions, axis=1)
