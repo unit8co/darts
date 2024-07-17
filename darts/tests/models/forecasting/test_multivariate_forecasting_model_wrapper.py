@@ -62,12 +62,14 @@ class TestMultivariateForecastingModelWrapper:
     future_covariates = tg.gaussian_timeseries(length=ts_length + n_pred, mean=50)
 
     @pytest.mark.parametrize("model", local_models)
-    def test_fit_predict_local_models(self, model):
-        self._test_predict_with_base_model(model)
+    @pytest.mark.parametrize("series", [univariate, multivariate])
+    def test_fit_predict_local_models(self, model, series):
+        self._test_predict_with_base_model(model, series)
 
     @pytest.mark.parametrize("model", future_covariates_models)
-    def test_fit_predict_local_future_covariates_models(self, model):
-        self._test_predict_with_base_model(model, self.future_covariates)
+    @pytest.mark.parametrize("series", [univariate, multivariate])
+    def test_fit_predict_local_future_covariates_models(self, model, series):
+        self._test_predict_with_base_model(model, series, self.future_covariates)
 
     @pytest.mark.parametrize("model_object", future_covariates_models)
     def test_encoders_support(self, model_object):
@@ -85,22 +87,21 @@ class TestMultivariateForecastingModelWrapper:
 
             self._test_predict_with_base_model(model, fc)
 
-    def _test_predict_with_base_model(self, model, future_covariates=None):
-        for combination in [self.univariate, self.multivariate]:
-            preds = self.trained_model_predictions(
-                model, self.n_pred, combination, future_covariates
-            )
-            assert isinstance(preds, TimeSeries)
-            assert preds.n_components == combination.n_components
+    def _test_predict_with_base_model(
+        self, model, series: TimeSeries, future_covariates=None
+    ):
+        preds = self.trained_model_predictions(
+            model, self.n_pred, series, future_covariates
+        )
+        assert isinstance(preds, TimeSeries)
+        assert preds.n_components == series.n_components
 
-            # Make sure that the compound prediction is the same as the individual predictions
-            individual_preds = self.trained_individual_model_predictions(
-                model, self.n_pred, combination, future_covariates
-            )
-            for component in range(combination.n_components):
-                assert (
-                    preds.univariate_component(component) == individual_preds[component]
-                )
+        # Make sure that the compound prediction is the same as the individual predictions
+        individual_preds = self.trained_individual_model_predictions(
+            model, self.n_pred, series, future_covariates
+        )
+        for component in range(series.n_components):
+            assert preds.univariate_component(component) == individual_preds[component]
 
     def trained_model_predictions(self, base_model, n, series, future_covariates):
         model = MultivariateForecastingModelWrapper(base_model)
