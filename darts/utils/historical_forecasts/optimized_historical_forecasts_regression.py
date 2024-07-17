@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import sliding_window_view
 
-from darts.dataprocessing.transformers import FittableDataTransformer
+from darts.dataprocessing.transformers import InvertibleDataTransformer
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator
@@ -34,8 +34,8 @@ def _optimized_historical_forecasts_last_points_only(
     show_warnings: bool = True,
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
-    past_covariates_transformer: Optional[FittableDataTransformer] = None,
-    future_covariates_transformer: Optional[FittableDataTransformer] = None,
+    past_covariates_transformer: Optional[InvertibleDataTransformer] = None,
+    future_covariates_transformer: Optional[InvertibleDataTransformer] = None,
     **kwargs,
 ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
@@ -206,8 +206,8 @@ def _optimized_historical_forecasts_all_points(
     show_warnings: bool = True,
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
-    past_covariates_transformer: Optional[FittableDataTransformer] = None,
-    future_covariates_transformer: Optional[FittableDataTransformer] = None,
+    past_covariates_transformer: Optional[InvertibleDataTransformer] = None,
+    future_covariates_transformer: Optional[InvertibleDataTransformer] = None,
     **kwargs,
 ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
@@ -220,15 +220,13 @@ def _optimized_historical_forecasts_all_points(
     for idx, series_ in enumerate(iterator):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
         if past_covariates_ and past_covariates_transformer:
-            past_covariates_ = past_covariates_transformer.fit_transform(
-                past_covariates_
-            )
+            past_covariates_ = past_covariates_transformer.transform(past_covariates_)
 
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
         if future_covariates_ and future_covariates_transformer:
-            future_covariates_ = future_covariates_transformer.fit_transform(
+            future_covariates_ = future_covariates_transformer.transform(
                 future_covariates_
             )
 
