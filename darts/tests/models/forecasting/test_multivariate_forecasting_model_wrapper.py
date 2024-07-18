@@ -72,24 +72,25 @@ class TestMultivariateForecastingModelWrapper:
         self._test_predict_with_base_model(model, series, self.future_covariates)
 
     @pytest.mark.parametrize("model_object", future_covariates_models)
-    def test_encoders_support(self, model_object):
+    @pytest.mark.parametrize("series", [univariate, multivariate])
+    @pytest.mark.parametrize("future_covariates", [future_covariates, None])
+    def test_encoders_support(self, model_object, series, future_covariates):
         add_encoders = {
             "position": {"future": ["relative"]},
         }
 
-        # test once with user supplied covariates, and once without
-        for fc in [self.future_covariates, None]:
-            model_params = {
-                k: vals for k, vals in copy.deepcopy(model_object.model_params).items()
-            }
-            model_params["add_encoders"] = add_encoders
-            model = model_object.__class__(**model_params)
+        model_params = {
+            k: vals for k, vals in copy.deepcopy(model_object.model_params).items()
+        }
+        model_params["add_encoders"] = add_encoders
+        model = model_object.__class__(**model_params)
 
-            self._test_predict_with_base_model(model, fc)
+        self._test_predict_with_base_model(model, series, future_covariates)
 
     def _test_predict_with_base_model(
         self, model, series: TimeSeries, future_covariates=None
     ):
+        print(type(series), isinstance(series, TimeSeries))
         preds = self.trained_model_predictions(
             model, self.n_pred, series, future_covariates
         )
@@ -105,6 +106,7 @@ class TestMultivariateForecastingModelWrapper:
 
     def trained_model_predictions(self, base_model, n, series, future_covariates):
         model = MultivariateForecastingModelWrapper(base_model)
+        print(series)
         model.fit(series, future_covariates=future_covariates)
         return model.predict(n=n, series=series, future_covariates=future_covariates)
 
