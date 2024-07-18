@@ -16,7 +16,7 @@ from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
 from darts.timeseries import TimeSeries, concatenate
-from darts.utils.utils import seq2series
+from darts.utils.ts_utils import seq2series
 
 logger = get_logger(__name__)
 
