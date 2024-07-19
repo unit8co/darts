@@ -145,6 +145,7 @@ if __name__ == "__main__":
 Here is an example of how to use Ray Tune to with the `NBEATSModel` model using the [Asynchronous Hyperband scheduler](https://blog.ml.cmu.edu/2018/12/12/massively-parallel-hyperparameter-optimization/).
 
 ```python
+import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping
@@ -154,7 +155,6 @@ from ray.tune import CLIReporter
 from ray.tune.integration.pytorch_lightning import TuneReportCheckpointCallback
 from ray.tune.schedulers import ASHAScheduler
 from ray.tune.tuner import Tuner
-
 from torchmetrics import (
     MeanAbsoluteError,
     MeanAbsolutePercentageError,
@@ -174,7 +174,7 @@ def train_model(model_args, callbacks, train, val):
     model = NBEATSModel(
         input_chunk_length=24,
         output_chunk_length=12,
-        n_epochs=500,
+        n_epochs=100,
         torch_metrics=torch_metrics,
         pl_trainer_kwargs={"callbacks": callbacks, "enable_progress_bar": False},
         **model_args,
@@ -187,7 +187,7 @@ def train_model(model_args, callbacks, train, val):
 
 
 # Read data:
-series = AirPassengersDataset().load()
+series = AirPassengersDataset().load().astype(np.float32)
 
 # Create training and validation sets:
 train, val = series.split_after(pd.Timestamp(year=1957, month=12, day=1))
@@ -208,12 +208,12 @@ my_stopper = EarlyStopping(
 
 
 # set up ray tune callback
-class _TuneReportCallback(TuneReportCheckpointCallback, pl.Callback):
+class TuneReportCallback(TuneReportCheckpointCallback, pl.Callback):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
 
-tune_callback = _TuneReportCallback(
+tune_callback = TuneReportCallback(
     {
         "loss": "val_loss",
         "MAPE": "val_MeanAbsolutePercentageError",
@@ -229,7 +229,7 @@ train_fn_with_parameters = tune.with_parameters(
     val=val,
 )
 
-# Set the resources to be used for each trial
+# Set the resources to be used for each trial (disable GPU, if you don't have one)
 resources_per_trial = {"cpu": 8, "gpu": 1}
 
 # define the hyperparameter space
