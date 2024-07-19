@@ -124,7 +124,10 @@ class Croston(FutureCovariatesLocalForecastingModel):
         return False
 
     def _fit(
-        self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None, **_
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        **kwargs,
     ):
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
@@ -137,6 +140,7 @@ class Croston(FutureCovariatesLocalForecastingModel):
                 if future_covariates is not None
                 else None
             ),
+            **kwargs,
         )
 
         return self

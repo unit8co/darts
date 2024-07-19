@@ -94,14 +94,14 @@ class ExponentialSmoothing(LocalForecastingModel):
         self.model = None
         np.random.seed(random_state)
 
-    def fit(self, series: TimeSeries, **fit_kwargs):
+    def fit(self, series: TimeSeries, **kwargs):
         """Fit/train the model on the (single) provided series.
 
         Parameters
         ----------
         series
             The model will be trained to forecast this time series.
-        fit_kwargs
+        kwargs
             Some optional keyword arguments that will be used to call
             :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()`.
             See `the documentation
@@ -138,7 +138,7 @@ class ExponentialSmoothing(LocalForecastingModel):
             dates=series.time_index if series.has_datetime_index else None,
             **self.constructor_kwargs,
         )
-        hw_results = hw_model.fit(**fit_kwargs)
+        hw_results = hw_model.fit(**kwargs)
         self.model = hw_results
 
         if self.infer_seasonal_periods:

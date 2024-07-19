@@ -2906,7 +2906,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         self,
         series: TimeSeries,
         future_covariates: Optional[TimeSeries] = None,
-        **fit_kwargs,
+        **kwargs,
     ):
         """Fit/train the model on the (single) provided series.
 
@@ -2920,7 +2920,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             A time series of future-known covariates. This time series will not be forecasted, but can be used by
             some models as an input. It must contain at least the same time steps/indices as the target `series`.
             If it is longer than necessary, it will be automatically trimmed.
-        fit_kwargs
+        kwargs
             Optional keyword arguments that will be passed to the fit function of the underlying model if supported
             by the underlying model.
 
@@ -2954,7 +2954,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
 
         super().fit(series)
 
-        return self._fit(series, future_covariates=future_covariates, **fit_kwargs)
+        return self._fit(series, future_covariates=future_covariates, **kwargs)
 
     @abstractmethod
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):

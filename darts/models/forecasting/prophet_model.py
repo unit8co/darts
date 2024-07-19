@@ -207,7 +207,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         self,
         series: TimeSeries,
         future_covariates: Optional[TimeSeries] = None,
-        **fit_kwargs,
+        **kwargs,
     ):
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
@@ -254,10 +254,10 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         if self.suppress_stdout_stderr:
             self._execute_and_suppress_output(
-                self.model.fit, logger, logging.WARNING, fit_df, **fit_kwargs
+                self.model.fit, logger, logging.WARNING, fit_df, **kwargs
             )
         else:
-            self.model.fit(fit_df, **fit_kwargs)
+            self.model.fit(fit_df, **kwargs)
 
         return self
 
