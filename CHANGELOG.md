@@ -12,10 +12,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 - Added `IQRDetector`, that allows to detect anomalies using the interquartile range algorithm. [#2441] by [Igor Urbanik](https://github.com/u8-igor).
 - Made README's forecasting model support table more colorblind-friendly. [#2433](https://github.com/unit8co/darts/pull/2433)
-
-* Improvements to `Hyperparameter Optimization` doc: [#2459](https://github.com/unit8co/darts/pull/2459) by [He Weilin](https://github.com/cnhwl).
-  * Rewritten the "Hyperparameter optimization with Ray Tune" code based on `Ray==2.31.0`.
-  * Defined a custom version of the `TuneReportCheckpointCallback` on account of `ValueError: Expected a parent`.
+- Updated the Ray Tune Hyperparameter Optimization example in the [user guide](https://unit8co.github.io/darts/userguide/hyperparameter_optimization.html) to work with the latest `ray` versions (`>=2.31.0`). [#2459](https://github.com/unit8co/darts/pull/2459) by [He Weilin](https://github.com/cnhwl).
 
 **Fixed**
 
