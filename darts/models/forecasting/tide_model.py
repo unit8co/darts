@@ -728,3 +728,11 @@ class TiDEModel(MixedCovariatesTorchModel):
     @property
     def supports_multivariate(self) -> bool:
         return True
+
+    def _check_ckpt_parameters(self, tfm_save):
+        # new parameters were added that will break loading weights
+        new_params = ["temporal_hidden_size_past", "temporal_hidden_size_future"]
+        for param in new_params:
+            if param not in tfm_save.model_params:
+                tfm_save.model_params[param] = None
+        super()._check_ckpt_parameters(tfm_save)
