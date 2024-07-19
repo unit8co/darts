@@ -635,12 +635,13 @@ class TestConformalModel:
                 [True, False],  # univariate series
                 [True, False],  # single series,
                 [0, 1],  # output chunk shift
+                [None, 1],  # train length
             )
         ),
     )
     def test_naive_conformal_model_historical_forecasts(self, config):
         """Verifies naive conformal model historical forecasts."""
-        n, is_univar, is_single, ocs = config
+        n, is_univar, is_single, ocs, train_length = config
         alpha = 0.8
         series = self.helper_prepare_series(is_univar, is_single)
         model_fc = train_model(series, model_params={"output_chunk_shift": ocs})
@@ -668,6 +669,7 @@ class TestConformalModel:
             overlap_end=True,
             last_points_only=False,
             stride=1,
+            train_length=train_length,
         )
         hfc_cal_list_with_cal = model.historical_forecasts(
             series=series,
@@ -676,6 +678,7 @@ class TestConformalModel:
             last_points_only=False,
             stride=1,
             cal_series=series,
+            train_length=train_length,
         )
 
         if is_single:
@@ -683,9 +686,9 @@ class TestConformalModel:
             residuals_list = [residuals_list]
             hfc_cal_list_with_cal = [hfc_cal_list_with_cal]
             hfc_fc_list = [hfc_fc_list]
+
         # conformal models start later since they need past residuals as input
         first_fc_idx = len(hfc_fc_list[0]) - len(hfc_cal_list[0])
-
         for hfc_fc, hfc_cal, hfc_residuals in zip(
             hfc_fc_list, hfc_cal_list, residuals_list
         ):
@@ -699,7 +702,7 @@ class TestConformalModel:
 
                 pred_vals = pred_fc.all_values()
                 pred_vals_expected = self.helper_compute_naive_pred_cal(
-                    residuals, pred_vals, n, alpha, ocs=ocs
+                    residuals, pred_vals, n, alpha, train_length=train_length
                 )
                 np.testing.assert_array_almost_equal(
                     pred_cal.all_values(), pred_vals_expected
@@ -757,12 +760,22 @@ class TestConformalModel:
             series = [series, series + 5]
         return series
 
-    def helper_compute_naive_pred_cal(self, residuals, pred_vals, n, alpha, ocs=0):
+    def helper_compute_naive_pred_cal(
+        self, residuals, pred_vals, n, alpha, train_length=None
+    ):
+        train_length = train_length or 0
+        # if train_length:
+        #     d = 1
         q_hats = []
         # compute the quantile `alpha` of all past residuals (absolute "per time step" errors between historical
         # forecasts and the target series)
         for idx in range(n):
-            res_n = residuals[idx][:, n - (idx + 1) : residuals.shape[2] - idx]
+            res_end = residuals.shape[2] - idx
+            if train_length:
+                res_start = res_end - train_length
+            else:
+                res_start = n - (idx + 1)
+            res_n = residuals[idx][:, res_start:res_end]
             q_hat_n = np.quantile(res_n, q=alpha, axis=1)
             q_hats.append(q_hat_n)
         q_hats = np.expand_dims(np.array(q_hats), -1)
