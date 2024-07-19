@@ -2921,8 +2921,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             some models as an input. It must contain at least the same time steps/indices as the target `series`.
             If it is longer than necessary, it will be automatically trimmed.
         kwargs
-            Optional keyword arguments that will be passed to the fit function of the underlying model if supported
-            by the underlying model.
+            Optional keyword arguments that will be passed to the fit function of the underlying model.
 
         Returns
         -------
