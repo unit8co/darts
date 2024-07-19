@@ -2956,7 +2956,12 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         return self._fit(series, future_covariates=future_covariates, **kwargs)
 
     @abstractmethod
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        **kwargs,
+    ):
         """Fits/trains the model on the provided series.
         DualCovariatesModels must implement the fit logic in this method.
         """
