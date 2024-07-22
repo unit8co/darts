@@ -2,8 +2,12 @@
 Ensemble Model Base Class
 """
 
+import io
+import os
+import pickle
+import shutil
 from abc import abstractmethod
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import BinaryIO, List, Optional, Sequence, Tuple, Union
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import (
@@ -11,6 +15,7 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
     LocalForecastingModel,
 )
+from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 from darts.timeseries import TimeSeries, concatenate
 from darts.utils.ts_utils import series2seq
 
@@ -376,6 +381,126 @@ class EnsembleModel(GlobalForecastingModel):
                 pred.quantile(self.train_samples_reduction) for pred in predictions
             ]
         return predictions[0] if is_single_series else predictions
+
+    def save(
+        self, path: Optional[Union[str, os.PathLike, BinaryIO]] = None, **pkl_kwargs
+    ) -> None:
+        """
+        Saves the model under a given path or file handle.
+
+        Example for saving and loading a :class:`RegressionEnsembleModel`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RegressionEnsembleModel, LinearRegressionModel, TiDEModel
+
+                model = RegressionEnsembleModel(
+                    forecasting_models = [
+                        LinearRegressionModel(lags=4),
+                        TiDEModel(input_chunk_length=4, output_chunk_length=4),
+                        ],
+                        regression_train_n_points=10,
+                )
+
+                model.save("my_model.pkl")
+                model_loaded = RegressionEnsembleModel.load("my_model.pkl")
+            ..
+
+        Parameters
+        ----------
+        path
+            Path or file handle under which to save the model at its current state. If no path is specified, the model
+            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
+            E.g., ``"RegressionEnsembleModel_2020-01-01_12_00_00.pkl"``.
+        pkl_kwargs
+            Keyword arguments passed to `pickle.dump()`
+        """
+
+        if path is None:
+            # default path
+            path = self._default_save_path() + ".pkl"
+
+        if isinstance(path, (str, os.PathLike)):
+            # save the whole object using pickle
+            with open(path, "wb") as handle:
+                pickle.dump(obj=self, file=handle, **pkl_kwargs)
+        elif isinstance(path, io.BufferedWriter):
+            # save the whole object using pickle
+            pickle.dump(obj=self, file=path, **pkl_kwargs)
+        else:
+            raise_log(
+                ValueError(
+                    "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
+                    f"or 'BufferedWriter' (for an already opened file), but was '{path.__class__}'."
+                ),
+                logger=logger,
+            )
+
+        for i, m in enumerate(self.forecasting_models):
+            if issubclass(type(m), TorchForecastingModel):
+                # save the LightningModule checkpoint
+                path_ptl_ckpt = f"{path}.{type(m).__name__}_{i}.ckpt"
+                if m.trainer is not None:
+                    m.trainer.save_checkpoint(path_ptl_ckpt)
+                    print(path_ptl_ckpt + " is saved!")
+                # TODO: keep track of PyTorch Lightning to see if they implement model checkpoint saving
+                #  without having to call fit/predict/validate/test before
+                # try to recover original automatic PL checkpoint
+                elif m.load_ckpt_path:
+                    if os.path.exists(m.load_ckpt_path):
+                        shutil.copy(m.load_ckpt_path, path_ptl_ckpt)
+                    else:
+                        logger.warning(
+                            f"Model was not trained since the last loading and attempt to retrieve PyTorch "
+                            f"Lightning checkpoint {m.load_ckpt_path} was unsuccessful: model was saved "
+                            f"without its weights."
+                        )
+
+    @staticmethod
+    def load(path: Union[str, os.PathLike, BinaryIO]) -> "ForecastingModel":
+        """
+        Loads the model from a given path or file handle.
+
+        Parameters
+        ----------
+        path
+            Path or file handle from which to load the model.
+        """
+
+        if isinstance(path, (str, os.PathLike)):
+            raise_if_not(
+                os.path.exists(path),
+                f"The file {path} doesn't exist",
+                logger,
+            )
+
+            with open(path, "rb") as handle:
+                model = pickle.load(file=handle)
+        elif isinstance(path, io.BufferedReader):
+            model = pickle.load(file=path)
+        else:
+            raise_log(
+                ValueError(
+                    "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
+                    f"or 'BufferedReader' (for an already opened file), but was '{path.__class__}'."
+                ),
+                logger=logger,
+            )
+
+        for i, m in enumerate(model.forecasting_models):
+            if issubclass(type(m), TorchForecastingModel):
+                # if a checkpoint was saved, we also load the PyTorch LightningModule from checkpoint
+                path_ptl_ckpt = f"{path}.{type(m).__name__}_{i}.ckpt"
+                if os.path.exists(path_ptl_ckpt):
+                    m.model = m._load_from_checkpoint(path_ptl_ckpt)
+                else:
+                    m._fit_called = False
+                    logger.warning(
+                        f"Model was loaded without weights since no PyTorch LightningModule checkpoint ('.ckpt') could be "  # noqa: E501
+                        f"found at {path_ptl_ckpt}. Please call `fit()` before calling `predict()`."
+                    )
+        return model
 
     @property
     def min_train_series_length(self) -> int:
