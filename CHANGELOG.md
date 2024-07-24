@@ -22,7 +22,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug with `xgboost>=2.1.0`, where multi output regression was not properly handled. [#2426](https://github.com/unit8co/darts/pull/2426) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when using `ShapExplainer.explain()` with some selected `target_components` and a regression model that natively supports multi output regression: The target components were not properly mapped. [#2428](https://github.com/unit8co/darts/pull/2428) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when using `fit()` with a `RegressionModel` that uses an underlying `model` which does not support `sample_weight`. [#2445](https://github.com/unit8co/darts/pull/2445) by [He Weilin](https://github.com/cnhwl).
-- Fixed a bug when using `save()` and `load()` with a `RegressionEnsembleModel` that ensembles any `TorchForecastingModel`. [#2437](https://github.com/unit8co/darts/pull/2445) by [He Weilin](https://github.com/cnhwl).
+- Fixed a bug when using `save()` and `load()` with a `RegressionEnsembleModel` that ensembles any `TorchForecastingModel`. [#2437](https://github.com/unit8co/darts/issues/2437) by [He Weilin](https://github.com/cnhwl).
 
 **Dependencies**
 
