@@ -386,7 +386,9 @@ class EnsembleModel(GlobalForecastingModel):
         self, path: Optional[Union[str, os.PathLike, BinaryIO]] = None, **pkl_kwargs
     ) -> None:
         """
-        Saves the model under a given path or file handle.
+        Saves the ensemble model under a given path or file handle.
+
+        If `forecasting_models` contains TorchForecastingModel, the checkpoint file would be saved.
 
         Example for saving and loading a :class:`RegressionEnsembleModel`:
 
@@ -403,16 +405,19 @@ class EnsembleModel(GlobalForecastingModel):
                         regression_train_n_points=10,
                 )
 
-                model.save("my_model.pkl")
-                model_loaded = RegressionEnsembleModel.load("my_model.pkl")
+                model.save("my_ensemble_model.pkl")
+                model_loaded = RegressionEnsembleModel.load("my_ensemble_model.pkl")
             ..
 
         Parameters
         ----------
         path
-            Path or file handle under which to save the model at its current state. If no path is specified, the model
-            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
-            E.g., ``"RegressionEnsembleModel_2020-01-01_12_00_00.pkl"``.
+            Path or file handle under which to save the ensemble model at its current state. If no path is specified,
+            the ensemble model is automatically saved under ``"{RegressionEnsembleModel}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
+            If the ith model of `forecasting_models` is a TorchForecastingModel, the checkpoint file would be saved
+            under ``"{path}.{ithModelClass}_{i}.ckpt"``.
+            E.g., ``"RegressionEnsembleModel_2024-07-25_14_58_53.pkl"`` and
+            ``"RegressionEnsembleModel_2024-07-25_14_58_53.pkl.TiDEModel_1.ckpt"``
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """
@@ -443,7 +448,6 @@ class EnsembleModel(GlobalForecastingModel):
                 path_ptl_ckpt = f"{path}.{type(m).__name__}_{i}.ckpt"
                 if m.trainer is not None:
                     m.trainer.save_checkpoint(path_ptl_ckpt)
-                    print(path_ptl_ckpt + " is saved!")
                 # TODO: keep track of PyTorch Lightning to see if they implement model checkpoint saving
                 #  without having to call fit/predict/validate/test before
                 # try to recover original automatic PL checkpoint
@@ -460,12 +464,12 @@ class EnsembleModel(GlobalForecastingModel):
     @staticmethod
     def load(path: Union[str, os.PathLike, BinaryIO]) -> "ForecastingModel":
         """
-        Loads the model from a given path or file handle.
+        Loads the ensemble model from a given path or file handle.
 
         Parameters
         ----------
         path
-            Path or file handle from which to load the model.
+            Path or file handle from which to load the ensemble model.
         """
 
         if isinstance(path, (str, os.PathLike)):
