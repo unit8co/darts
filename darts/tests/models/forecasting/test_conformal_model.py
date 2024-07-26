@@ -642,6 +642,8 @@ class TestConformalModel:
     def test_naive_conformal_model_historical_forecasts(self, config):
         """Verifies naive conformal model historical forecasts."""
         n, is_univar, is_single, ocs, train_length = config
+        # if train_length:
+        #     d = 1
         alpha = 0.8
         series = self.helper_prepare_series(is_univar, is_single)
         model_fc = train_model(series, model_params={"output_chunk_shift": ocs})

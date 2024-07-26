@@ -610,11 +610,25 @@ class ConformalModel(GlobalForecastingModel, ABC):
             # use fixed `q_hat` if calibration set is provided
             q_hat = None
             if cal_series is not None:
+                cal_series_, cal_hfcs = (
+                    cal_series[series_idx],
+                    cal_forecasts[series_idx],
+                )
+                cal_last_hfc = cal_hfcs if last_points_only else cal_hfcs[-1]
+                cal_last_fc_idx = len(cal_hfcs)
+                cal_delta_end = n_steps_between(
+                    end=cal_last_hfc.end_time(),
+                    start=cal_series_.end_time(),
+                    freq=cal_series_.freq,
+                )
+                if cal_delta_end > 0:
+                    cal_last_fc_idx -= cal_delta_end
+
                 if train_length is None:
                     cal_start = 0
                 # TODO check whether we actually get correct train length points without overlap NaNs at the end
                 else:
-                    cal_start = -train_length
+                    cal_start = cal_last_fc_idx - train_length
                     # with last points only we need additional points;
                     # the mask will handle correct residual extraction
                     if not last_points_only:
@@ -622,7 +636,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 cal_res = _calibration_residuals(
                     res,
                     cal_start,
-                    None,
+                    cal_last_fc_idx,
                     last_points_only=last_points_only,
                     forecast_horizon=forecast_horizon,
                     cal_mask=cal_mask,
