@@ -462,7 +462,7 @@ class EnsembleModel(GlobalForecastingModel):
                         )
 
     @staticmethod
-    def load(path: Union[str, os.PathLike, BinaryIO]) -> "ForecastingModel":
+    def load(path: Union[str, os.PathLike, BinaryIO]) -> "EnsembleModel":
         """
         Loads the ensemble model from a given path or file handle.
 
