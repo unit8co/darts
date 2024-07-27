@@ -56,86 +56,6 @@ def cqr_score_asym(row, quantile_lo_col, quantile_hi_col):
     )
 
 
-def _calibration_residuals(
-    residuals,
-    start: Optional[int],
-    end: Optional[int],
-    last_points_only: bool,
-    forecast_horizon: Optional[int] = None,
-    cal_mask: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]] = None,
-):
-    """Extract residuals used to calibrate the predictions of a forecasting model.
-
-    Parameters
-    ----------
-    residuals
-        A (sequence) of residuals.
-    start
-        The first index from the residuals to extract for the current historical forecasts.
-    end
-        The last index from the residuals to extract for the current historical forecasts.
-    last_points_only
-        Whether to return only the last predicted points.
-    forecast_horizon
-        The forecast horizon.
-    cal_mask
-        Optionally, in case of `last_points_only=False` a mask to prevent look-ahead bias and provide the same number
-        of calibration residuals per point in the horizon.
-
-    Returns
-    -------
-    np.ndarray
-        An array of residuals used for calibration. The non-np.nan values have shape (n forecasting points,
-        n components, n cal forecasts * n samples). For `last_points_only=True`, n forecasting points is `1`.
-        Otherwise, it's equal to `forecast_horizon`.
-    """
-    if last_points_only:
-        # (n hist forecasts, n components, n samples) -> (1, n components, n cal forecasts * n samples)
-        return np.swapaxes(residuals[start:end], 0, 2)
-
-    # n hist forecasts * (horizon, n components, n samples) -> (horizon, n components, n cal forecasts * n samples)
-    # n cal forecasts is longer, as we'll set all non-relevant values in the cal_mask to np.nan
-    cal_res = np.concatenate(residuals[start:end], axis=2)
-    # no masking required for horizon == 1
-    if forecast_horizon == 1:
-        return cal_res
-
-    # ignore upper left residuals to have same number of residuals per horizon
-    idx_horizon, idx_comp, idx_hfc = cal_mask
-    cal_res[idx_horizon, idx_comp, idx_hfc] = np.nan
-    # ignore lower right residuals to avoid look-ahead bias
-    cal_res[
-        forecast_horizon - 1 - idx_horizon,
-        idx_comp,
-        cal_res.shape[2] - 1 - idx_hfc,
-    ] = np.nan
-    return cal_res
-
-
-def _triul_indices(forecast_horizon, n_comps):
-    """Computes the indices of the upper left triangle from a 3D Matrix of shape (horizon, components, n forecasts).
-    The upper left triangle is first computed for the (horizon, n forecasts) dimension, and then repeated along the
-    `components` dimension.
-
-    These indices can be used to:
-        - mask out residuals from "newer" forecasts to avoid look-ahead bias (for horizons > 1)
-        - mask out residuals from "older" forecasts, so that each conformal forecast has the same number
-          of residual examples per point in the forecast horizon.
-    """
-    # get lower right triangle
-    idx_horizon, idx_hfc = np.tril_indices(n=forecast_horizon, k=-1)
-    # reverse to get lower left triangle
-    idx_horizon = forecast_horizon - 1 - idx_horizon
-
-    # get component indices (already repeated)
-    idx_comp = np.array([i for _ in range(len(idx_horizon)) for i in range(n_comps)])
-
-    # repeat along the component dimension
-    idx_horizon = idx_horizon.repeat(n_comps)
-    idx_hfc = idx_hfc.repeat(n_comps)
-    return idx_horizon, idx_comp, idx_hfc
-
-
 class ConformalModel(GlobalForecastingModel, ABC):
     def __init__(
         self,
@@ -474,15 +394,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         # - predict_likelihood_parameters
         # - tqdm iterator over series
         # - support for different CP algorithms
-
-        # DONE:
-        # - properly define minimum residuals to start (different for `last_points_only=True/False`
-        # - compute all possible residuals (including the partial forecast horizons up until the end)
-        # - overlap_end = True
-        # - last_points_only = True
-        # - add correct output components
-        # - use only `train_length` previous residuals
-
         residuals = self.model.residuals(
             series=series if cal_series is None else cal_series,
             historical_forecasts=forecasts if cal_series is None else cal_forecasts,
@@ -493,10 +404,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
             values_only=True,
             metric=self._residuals_metric,
         )
-
-        # this mask is later used to avoid look-ahead bias and guarantee identical number of calibration
-        # points per step in the forecast horizon. Only used in case of `last_points_only=False`
-        cal_mask = _triul_indices(forecast_horizon, series[0].width)
 
         cp_hfcs = []
         for series_idx, (series_, s_hfcs, res) in enumerate(
@@ -607,41 +514,68 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     ),
                 )
 
-            # use fixed `q_hat` if calibration set is provided
+            # TODO: only works if all points with overlap end can be generated
+            n_examples = (
+                len(s_hfcs) if cal_series is None else len(cal_forecasts[series_idx])
+            ) - forecast_horizon
+            # assert len(s_hfcs) - forecast_horizon == last_fc_idx - first_fc_idx
+            # bring into shape (forecasting steps, n components, n samples * n examples)
+            if last_points_only:
+                # -> (1, n components, n samples * n examples)
+                res = res[:n_examples].T
+            else:
+                res = np.array(res)
+                # -> (forecast horizon, n components, n samples * n examples)
+                # rearrange the residuals to avoid look-ahead bias and to have the same number of examples per
+                # point in the horizon;
+                # e.g. for a horizon = 2, and some forecasting point at time t3, we would have residuals:
+                # R1: t1_h1, R2: t1_h2  (e.g. t1_h1 is the first forecasted point from time t1 -> t2)
+                # R3: t2_h1, R4: t2_h2
+                # - R4 would be unknown at time t3 -> we exclude it
+                # - R1 is ignored to have the same number of examples per point in the horizon (1 in this case)
+                res = np.concatenate(
+                    [
+                        res[-(i + 1) - n_examples : -(i + 1), i]
+                        for i in range(forecast_horizon)
+                    ],
+                    axis=2,
+                ).T
+
             q_hat = None
             if cal_series is not None:
-                cal_series_, cal_hfcs = (
-                    cal_series[series_idx],
-                    cal_forecasts[series_idx],
-                )
-                cal_last_hfc = cal_hfcs if last_points_only else cal_hfcs[-1]
-                cal_last_fc_idx = len(cal_hfcs)
-                cal_delta_end = n_steps_between(
-                    end=cal_last_hfc.end_time(),
-                    start=cal_series_.end_time(),
-                    freq=cal_series_.freq,
-                )
-                if cal_delta_end > 0:
-                    cal_last_fc_idx -= cal_delta_end
-
-                if train_length is None:
-                    cal_start = 0
-                # TODO check whether we actually get correct train length points without overlap NaNs at the end
+                # with a calibration set, we use the same calibration for all forecasts
+                if self.output_chunk_shift:
+                    res = res[:, :, : -self.output_chunk_shift]
+                if train_length is not None:
+                    res = res[:, :, -train_length:]
                 else:
-                    cal_start = cal_last_fc_idx - train_length
-                    # with last points only we need additional points;
-                    # the mask will handle correct residual extraction
-                    if not last_points_only:
-                        cal_start -= forecast_horizon - 1
-                cal_res = _calibration_residuals(
-                    res,
-                    cal_start,
-                    cal_last_fc_idx,
-                    last_points_only=last_points_only,
-                    forecast_horizon=forecast_horizon,
-                    cal_mask=cal_mask,
-                )
-                q_hat = self._calibrate_interval(cal_res)
+                    res = res
+                q_hat = self._calibrate_interval(res)
+
+            def conformal_predict(idx_, pred_vals_):
+                if cal_series is None:
+                    # get the last residual index for calibration, `cal_end` is exclusive
+                    # to avoid look-ahead bias, use only residuals from before the historical forecast start point;
+                    # for `last_points_only=True`, the last residual historically available at the forecasting
+                    # point is `forecast_horizon + self.output_chunk_shift - 1` steps before. The same applies to
+                    # `last_points_only=False` thanks to the residual rearrangement
+                    cal_end = (
+                        first_fc_idx
+                        + idx_ * stride
+                        - (forecast_horizon + self.output_chunk_shift - 1)
+                    )
+                    # first residual index is shifted back by the horizon to get `train_length` points for
+                    # the last point in the horizon
+                    cal_start = (
+                        cal_end - train_length if train_length is not None else None
+                    )
+
+                    cal_res = res[:, :, cal_start:cal_end]
+                    q_hat_ = self._calibrate_interval(cal_res)
+                else:
+                    # with a calibration set, use a constant q_hat
+                    q_hat_ = q_hat
+                return self._apply_interval(pred_vals_, q_hat_)
 
             # historical conformal prediction
             if last_points_only:
@@ -649,26 +583,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     s_hfcs.values(copy=False)[first_fc_idx:last_fc_idx:stride]
                 ):
                     pred_vals = np.expand_dims(pred_vals, 0)
-                    if cal_series is None:
-                        # get the last residual index for calibration, `cal_end` is exclusive
-                        # to avoid look-ahead bias, use only residuals from before the historical forecast start point;
-                        # since we look at `last_points only=True`, the last residual historically available at
-                        # the forecasting point is `forecast_horizon - 1` steps before
-                        cal_end = (
-                            first_fc_idx
-                            + idx * stride
-                            - (forecast_horizon + self.output_chunk_shift - 1)
-                        )
-                        # first residual index is shifted back by the horizon to get `train_length` points for
-                        # the last point in the horizon
-                        cal_start = (
-                            cal_end - train_length if train_length is not None else None
-                        )
-                        cal_res = _calibration_residuals(
-                            res, cal_start, cal_end, last_points_only=last_points_only
-                        )
-                        q_hat = self._calibrate_interval(cal_res)
-                    cp_pred = self._apply_interval(pred_vals, q_hat)
+                    cp_pred = conformal_predict(idx, pred_vals)
                     cp_preds.append(cp_pred)
                 cp_preds = _build_forecast_series(
                     points_preds=np.concatenate(cp_preds, axis=0),
@@ -686,33 +601,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 cp_hfcs.append(cp_preds)
             else:
                 for idx, pred in enumerate(s_hfcs[first_fc_idx:last_fc_idx:stride]):
-                    # convert to (horizon, n comps, hist fcs)
                     pred_vals = pred.values(copy=False)
-                    if cal_series is None:
-                        # get the last residual index for calibration, `cal_end` is exclusive.
-                        # to avoid look-ahead bias, use only residuals from before the historical forecast start point;
-                        # since we look at `last_points only=False`, the last residual historically available at
-                        # the forecasting point is from the first predicted step of the previous forecast (without
-                        # output shift, otherwise the `output_chunk_shift`th point before that)
-                        cal_end = first_fc_idx + idx * stride - self.output_chunk_shift
-                        # stepping back further gives access to more residuals and also residuals from longer horizons.
-                        # to get `train_length` residuals for the last step in the horizon, we need to step back
-                        # additional `forecast_horizon - 1` points
-                        cal_start = (
-                            cal_end - train_length - (forecast_horizon - 1)
-                            if train_length is not None
-                            else None
-                        )
-                        cal_res = _calibration_residuals(
-                            res,
-                            cal_start,
-                            cal_end,
-                            last_points_only=last_points_only,
-                            forecast_horizon=forecast_horizon,
-                            cal_mask=cal_mask,
-                        )
-                        q_hat = self._calibrate_interval(cal_res)
-                    cp_pred = self._apply_interval(pred_vals, q_hat)
+                    cp_pred = conformal_predict(idx, pred_vals)
                     cp_pred = _build_forecast_series(
                         points_preds=cp_pred,
                         input_series=series_,
