@@ -65,7 +65,7 @@ class TestConformalModel:
     static_covariates = pd.DataFrame([[0.0, 1.0]], columns=["st1", "st2"])
 
     # real timeseries for functionality tests
-    ts_length = 10 + horizon
+    ts_length = 13 + horizon
     ts_passengers = (
         AirPassengersDataset()
         .load()[:ts_length]
@@ -636,15 +636,25 @@ class TestConformalModel:
                 [True, False],  # single series,
                 [0, 1],  # output chunk shift
                 [None, 1],  # train length
+                [True, False],  # use too short covariates
             )
         ),
     )
     def test_naive_conformal_model_historical_forecasts(self, config):
         """Verifies naive conformal model historical forecasts."""
-        n, is_univar, is_single, ocs, train_length = config
+        n, is_univar, is_single, ocs, train_length, use_covs = config
         alpha = 0.8
         series = self.helper_prepare_series(is_univar, is_single)
-        model_fc = train_model(series, model_params={"output_chunk_shift": ocs})
+        model_params = {"output_chunk_shift": ocs}
+        covs_kwargs = {}
+        cal_covs_kwargs = {}
+        if use_covs:
+            model_params["lags_past_covariates"] = regr_kwargs["lags"]
+            # use shorter covariates, to test whether residuals are still properly extracted
+            past_covs = series[:-3] if is_single else [s[:-3] for s in series]
+            covs_kwargs["past_covariates"] = past_covs
+            cal_covs_kwargs["cal_past_covariates"] = past_covs
+        model_fc = train_model(series, model_params=model_params, **covs_kwargs)
         hfc_fc_list = model_fc.historical_forecasts(
             series,
             retrain=False,
@@ -652,6 +662,7 @@ class TestConformalModel:
             overlap_end=True,
             last_points_only=False,
             stride=1,
+            **covs_kwargs,
         )
         # compute the expected intervals
         residuals_list = model_fc.residuals(
@@ -661,6 +672,7 @@ class TestConformalModel:
             last_points_only=False,
             values_only=True,
             metric=ae,  # absolute error
+            **covs_kwargs,
         )
         model = ConformalNaiveModel(model=model_fc, alpha=alpha)
         hfc_cal_list = model.historical_forecasts(
@@ -670,6 +682,7 @@ class TestConformalModel:
             last_points_only=False,
             stride=1,
             train_length=train_length,
+            **covs_kwargs,
         )
         hfc_cal_list_with_cal = model.historical_forecasts(
             series=series,
@@ -679,6 +692,8 @@ class TestConformalModel:
             stride=1,
             train_length=train_length,
             cal_series=series,
+            **covs_kwargs,
+            **cal_covs_kwargs,
         )
 
         if is_single:
@@ -732,6 +747,7 @@ class TestConformalModel:
             last_points_only=True,
             stride=1,
             train_length=train_length,
+            **covs_kwargs,
         )
         hfc_lpo_list_with_cal = model.historical_forecasts(
             series=series,
@@ -741,6 +757,8 @@ class TestConformalModel:
             stride=1,
             train_length=train_length,
             cal_series=series,
+            **covs_kwargs,
+            **cal_covs_kwargs,
         )
         if is_single:
             hfc_lpo_list = [hfc_lpo_list]
