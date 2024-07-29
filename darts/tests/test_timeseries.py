@@ -975,6 +975,47 @@ class TestTimeSeries:
             # Cannot divide by 0.
             self.series1 / 0
 
+    def test_ops_samples_broadcasting(self):
+        # time-series with multiple samples
+        seriesA = concatenate([self.series1, self.series2, self.series3], axis=2)
+        assert seriesA.n_components == 1
+        assert seriesA.n_samples == 3
+
+        constant = 2
+
+        # constant but not scalar
+        seriesB = TimeSeries.from_series(
+            pd.Series([constant for _ in range(len(seriesA))], index=self.times)
+        )
+        assert seriesB.n_components == 1
+        assert seriesB.n_samples == 1
+
+        targetAdd = seriesA + constant
+        targetSub = seriesA - constant
+        targetMul = seriesA * constant
+        targetDiv = seriesA / constant
+        targetPow = seriesA**constant
+
+        # assert different operations; must be equivalent to operations with scalar
+        assert seriesA + seriesB == targetAdd
+        assert seriesA - seriesB == targetSub
+        assert seriesA * seriesB == targetMul
+        assert seriesA / seriesB == targetDiv
+        assert seriesA**seriesB == targetPow
+
+        # 2 samples must not be broadcast onto 3 sample
+        two_samples = concatenate([self.series1, self.series2], axis=2)
+        with pytest.raises(ValueError):
+            seriesA + two_samples
+
+        # it also works with numpy arrays directly given a third dimension of size 1 (equivalent to single-sample)
+        seriesB_all_values = seriesB.all_values()
+
+        assert isinstance(seriesB_all_values, np.ndarray)
+        assert len(seriesB_all_values.shape) == 3 and seriesB_all_values.shape[2] == 1
+
+        assert seriesA + seriesB_all_values == targetAdd
+
     def test_getitem_datetime_index(self):
         series_short: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
         series_stride_2: TimeSeries = self.series1.with_times_and_values(

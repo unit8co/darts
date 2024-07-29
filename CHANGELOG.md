@@ -5,6 +5,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
+- Added support for broadcasting single-sample TimeSeries onto multi-sample TimeSeries. [#2476](https://https://github.com/unit8co/darts/pull/2476)
+  by [Joel L.](https://github.com/Joelius300).
+
 [Full Changelog](https://github.com/unit8co/darts/compare/0.30.0...master)
 
 ### For users of the library:
