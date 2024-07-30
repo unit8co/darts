@@ -3319,7 +3319,9 @@ class TimeSeries:
             )
         )
 
-    def resample(self, freq: str, method: str = "pad", **kwargs) -> Self:
+    def resample(
+        self, freq: Union[str, pd.DateOffset], method: str = "pad", **kwargs
+    ) -> Self:
         """
         Build a reindexed ``TimeSeries`` with a given frequency.
         Provided method is used to fill holes in reindexed TimeSeries, by default 'pad'.
@@ -3328,7 +3330,7 @@ class TimeSeries:
         ----------
         freq
             The new time difference between two adjacent entries in the returned TimeSeries.
-            A DateOffset alias is expected.
+            Expects a `pandas.DateOffset` or `DateOffset` alias.
         method:
             Method to fill holes in reindexed TimeSeries (note this does not fill NaNs that already were present):
 
@@ -3371,6 +3373,8 @@ class TimeSeries:
         TimeSeries
             A reindexed TimeSeries with given frequency.
         """
+        if isinstance(freq, pd.DateOffset):
+            freq = freq.freqstr
 
         resample = self._xa.resample(
             indexer={self._time_dim: freq},
