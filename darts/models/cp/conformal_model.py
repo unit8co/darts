@@ -420,15 +420,15 @@ class ConformalModel(GlobalForecastingModel, ABC):
             first_hfc = get_single_series(s_hfcs)
             last_hfc = s_hfcs if last_points_only else s_hfcs[-1]
             last_fc_idx = len(s_hfcs)
+
             # adjust based on `overlap_end`
-            if not overlap_end:
-                delta_end = n_steps_between(
-                    end=last_hfc.end_time(),
-                    start=series_.end_time(),
-                    freq=series_.freq,
-                )
-                if delta_end > 0:
-                    last_fc_idx -= delta_end
+            delta_end = n_steps_between(
+                end=last_hfc.end_time(),
+                start=series_.end_time(),
+                freq=series_.freq,
+            )
+            if not overlap_end and delta_end > 0:
+                last_fc_idx -= delta_end
 
             # determine the first forecast index for conformal prediction
             if cal_series is None:
@@ -438,23 +438,38 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 # plus some additional steps based on `train_length`
                 if train_length is not None:
                     skip_n_train += train_length - 1
+                min_n_cal = skip_n_train
+
+                if delta_end == forecast_horizon + self.output_chunk_shift:
+                    min_n_cal += 1
             else:
-                # TODO: check cal set with ocs
                 # with a long enough calibration set, we can start from the first forecast
                 min_n_cal = max(train_length or 0, 1)
                 if not last_points_only:
                     min_n_cal += forecast_horizon - 1
-                if len(res) < min_n_cal:
-                    raise_log(
-                        ValueError(
-                            "Could not build a single calibration input with the provided "
-                            f"`cal_series` and `cal_*_covariates` at series index: {series_idx}. "
-                            f"Expected to generate at least `{min_n_cal}` calibration forecasts, "
-                            f"but could only generate `{len(res)}`."
-                        ),
-                        logger=logger,
-                    )
+
+                cal_series_ = cal_series[series_idx]
+                cal_last_hfc = cal_forecasts[series_idx][-1]
+                cal_delta_end = n_steps_between(
+                    end=cal_last_hfc.end_time(),
+                    start=cal_series_.end_time(),
+                    freq=cal_series_.freq,
+                )
+                if cal_delta_end == forecast_horizon + self.output_chunk_shift:
+                    min_n_cal += 1
                 skip_n_train = 0
+
+            if len(res) < min_n_cal:
+                set_name = "" if cal_series is None else "cal_"
+                raise_log(
+                    ValueError(
+                        "Could not build a single calibration input with the provided "
+                        f"`{set_name}series` and `{set_name}*_covariates` at series index: {series_idx}. "
+                        f"Expected to generate at least `{min_n_cal}` calibration forecasts, "
+                        f"but could only generate `{len(res)}`."
+                    ),
+                    logger=logger,
+                )
 
             # skip solely based on `start`
             skip_n_start = 0

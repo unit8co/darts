@@ -20,7 +20,7 @@ from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
 
 IN_LEN = 3
-OUT_LEN = 5
+OUT_LEN = 3
 regr_kwargs = {"lags": IN_LEN, "output_chunk_length": OUT_LEN}
 tfm_kwargs = copy.deepcopy(tfm_kwargs)
 tfm_kwargs["pl_trainer_kwargs"]["fast_dev_run"] = True
@@ -491,7 +491,7 @@ class TestConformalModel:
             [True, False],  # single series
             [True, False],  # use covariates
             [True, False],  # datetime index
-            [3, 5, 7],  # different horizons
+            [1, 3, 5],  # different horizons
         ),
     )
     def test_predict(self, config):
@@ -643,6 +643,9 @@ class TestConformalModel:
     def test_naive_conformal_model_historical_forecasts(self, config):
         """Verifies naive conformal model historical forecasts."""
         n, is_univar, is_single, ocs, train_length, use_covs = config
+        if ocs and n > OUT_LEN:
+            # auto-regression not allowed with ocs
+            return
         alpha = 0.8
         series = self.helper_prepare_series(is_univar, is_single)
         model_params = {"output_chunk_shift": ocs}
@@ -784,8 +787,6 @@ class TestConformalModel:
         self, residuals, pred_vals, n, alpha, train_length=None
     ):
         train_length = train_length or 0
-        # if train_length:
-        #     d = 1
         q_hats = []
         # compute the quantile `alpha` of all past residuals (absolute "per time step" errors between historical
         # forecasts and the target series)
@@ -812,3 +813,59 @@ class TestConformalModel:
             pred_vals_expected.append(pred_col_expected)
         pred_vals_expected = np.concatenate(pred_vals_expected, axis=1)
         return pred_vals_expected
+
+    @pytest.mark.parametrize(
+        "config",
+        list(
+            itertools.product(
+                [1, 3, 5, 7],  # horizon
+                [0, 1],  # output chunk shift
+                [None, 1],  # train length
+                [False, True],  # use covariates
+            )
+        ),
+    )
+    def test_too_short_input(self, config):
+        """Verifies naive conformal model historical forecasts."""
+        n, ocs, train_length, use_covs = config
+        if ocs and n > OUT_LEN:
+            return
+        icl = IN_LEN
+        min_len = icl + n
+        series = tg.linear_timeseries(length=min_len)
+
+        model_params = {"output_chunk_shift": ocs}
+        covs_kwargs = {}
+        cal_covs_kwargs = {}
+        covs_kwargs_too_short = {}
+        cal_covs_kwargs_short = {}
+        if use_covs:
+            model_params["lags_past_covariates"] = regr_kwargs["lags"]
+            # use shorter covariates, to test whether residuals are still properly extracted
+            covs_kwargs["past_covariates"] = series
+            cal_covs_kwargs["cal_past_covariates"] = series
+            covs_kwargs_too_short["past_covariates"] = series[:-1]
+            cal_covs_kwargs_short["past_covariates"] = series[:-1]
+        # model_fc = train_model(series, model_params=model_params, **covs_kwargs)
+
+        model = ConformalNaiveModel(
+            train_model(
+                self.ts_pass_train.with_static_covariates(None),
+                model_params=model_params,
+            ),
+            alpha=0.8,
+        )
+        # prediction works with long enough series
+        _ = model.predict(n=n, series=series)
+        _ = model.predict(n=n, series=series, cal_series=series)
+        # series too short
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict(n=n, series=series[:-1])
+        assert str(exc.value).startswith(
+            "Could not build a single calibration input with the provided `cal_series`"
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict(n=n, series=series, cal_series=series[:-1])
+        assert str(exc.value).startswith(
+            "Could not build a single calibration input with the provided `cal_series`"
+        )
