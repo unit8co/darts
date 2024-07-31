@@ -5,7 +5,6 @@ Ensemble Model Base Class
 import io
 import os
 import pickle
-import shutil
 from abc import abstractmethod
 from typing import BinaryIO, List, Optional, Sequence, Tuple, Union
 
@@ -393,7 +392,7 @@ class EnsembleModel(GlobalForecastingModel):
         """
         Saves the ensemble model under a given path or file handle.
 
-        If `forecasting_models` contains TorchForecastingModel, the checkpoint file would be saved.
+        If `forecasting_models` contains TorchForecastingModel, two files (model object and checkpoint) would be saved.
 
         Example for saving and loading a :class:`RegressionEnsembleModel`:
 
@@ -419,9 +418,10 @@ class EnsembleModel(GlobalForecastingModel):
         path
             Path or file handle under which to save the ensemble model at its current state. If no path is specified,
             the ensemble model is automatically saved under ``"{RegressionEnsembleModel}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
-            If the ith model of `forecasting_models` is a TorchForecastingModel, the checkpoint file would be saved
-            under ``"{path}.{ithModelClass}_{i}.ckpt"``.
-            E.g., ``"RegressionEnsembleModel_2024-07-25_14_58_53.pkl"`` and
+            If the ith model of `forecasting_models` is a TorchForecastingModel, two files (model object and checkpoint)
+            would be saved under ``"{path}.{ithModelClass}_{i}.pt"`` and ``"{path}.{ithModelClass}_{i}.ckpt"``
+            E.g., ``"RegressionEnsembleModel_2024-07-25_14_58_53.pkl"``
+            ``"RegressionEnsembleModel_2024-07-25_14_58_53.pkl.TiDEModel_1.pt"``
             ``"RegressionEnsembleModel_2024-07-25_14_58_53.pkl.TiDEModel_1.ckpt"``
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
@@ -449,22 +449,8 @@ class EnsembleModel(GlobalForecastingModel):
 
         for i, m in enumerate(self.forecasting_models):
             if TORCH_AVAILABLE and issubclass(type(m), TorchForecastingModel):
-                # save the LightningModule checkpoint
-                path_ptl_ckpt = f"{path}.{type(m).__name__}_{i}.ckpt"
-                if m.trainer is not None:
-                    m.trainer.save_checkpoint(path_ptl_ckpt)
-                # TODO: keep track of PyTorch Lightning to see if they implement model checkpoint saving
-                #  without having to call fit/predict/validate/test before
-                # try to recover original automatic PL checkpoint
-                elif m.load_ckpt_path:
-                    if os.path.exists(m.load_ckpt_path):
-                        shutil.copy(m.load_ckpt_path, path_ptl_ckpt)
-                    else:
-                        logger.warning(
-                            f"Model was not trained since the last loading and attempt to retrieve PyTorch "
-                            f"Lightning checkpoint {m.load_ckpt_path} was unsuccessful: model was saved "
-                            f"without its weights."
-                        )
+                path_pt_ckpt = f"{path}.{type(m).__name__}_{i}.pt"
+                m.save(path=path_pt_ckpt)
 
     @staticmethod
     def load(path: Union[str, os.PathLike, BinaryIO]) -> "EnsembleModel":
