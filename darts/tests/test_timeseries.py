@@ -975,6 +975,22 @@ class TestTimeSeries:
             # Cannot divide by 0.
             self.series1 / 0
 
+    def test_ops_array(self):
+        # can work with xarray directly
+        series2_x = self.series2.data_array(copy=False)
+        assert self.series1 + self.series2 == self.series1 + series2_x
+        assert self.series1 - self.series2 == self.series1 - series2_x
+        assert self.series1 * self.series2 == self.series1 * series2_x
+        assert self.series1 / self.series2 == self.series1 / series2_x
+        assert self.series1**self.series2 == self.series1**series2_x
+        # can work with ndarray directly
+        series2_nd = self.series2.all_values(copy=False)
+        assert self.series1 + self.series2 == self.series1 + series2_nd
+        assert self.series1 - self.series2 == self.series1 - series2_nd
+        assert self.series1 * self.series2 == self.series1 * series2_nd
+        assert self.series1 / self.series2 == self.series1 / series2_nd
+        assert self.series1**self.series2 == self.series1**series2_nd
+
     @pytest.mark.parametrize(
         "broadcast_components,broadcast_samples",
         itertools.product([True, False], [True, False]),
