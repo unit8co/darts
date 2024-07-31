@@ -4987,12 +4987,18 @@ class TimeSeries:
             )
             return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            if not (other.all_values(copy=False) != 0).all():
+            if isinstance(other, TimeSeries):
+                other_vals = other.data_array(copy=False).values
+            elif isinstance(other, xr.DataArray):
+                other_vals = other.values
+            else:
+                other_vals = other
+            if not (other_vals != 0).all():
                 raise_log(
                     ZeroDivisionError("Cannot divide by a TimeSeries with a value 0."),
                     logger,
                 )
-            return self._combine_arrays(other, lambda s1, s2: s1 / s2)
+            return self._combine_arrays(other_vals, lambda s1, s2: s1 / s2)
         else:
             raise_log(
                 TypeError(
