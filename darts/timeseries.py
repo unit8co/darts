@@ -4604,11 +4604,16 @@ class TimeSeries:
         else:
             other_vals = other
 
+        t, c, s = self._xa.values.shape
         raise_if_not(
-            # exact shape match
+            # can combine arrays if shapes are equal (t, c, s)
             self._xa.values.shape == other_vals.shape
-            # or broadcast [x, y, 1] onto [x, y, z]
-            or other_vals.shape == (*self._xa.values.shape[:2], 1),
+            # or broadcast [t, 1, 1] onto [t, c, s]
+            or other_vals.shape == (t, 1, 1)
+            # or broadcast [t, c, 1] onto [t, c, s]
+            or other_vals.shape == (t, c, 1)
+            # or broadcast [t, 1, s] onto [t, c, s]
+            or other_vals.shape == (t, 1, s),
             "Attempted to perform operation on two TimeSeries of unequal shapes.",
             logger,
         )
