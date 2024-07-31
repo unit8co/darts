@@ -203,7 +203,12 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 # Use 0 as default value
                 self._floor = 0
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        **kwargs,
+    ):
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
         series = self.training_series
@@ -249,10 +254,10 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         if self.suppress_stdout_stderr:
             self._execute_and_suppress_output(
-                self.model.fit, logger, logging.WARNING, fit_df
+                self.model.fit, logger, logging.WARNING, fit_df, **kwargs
             )
         else:
-            self.model.fit(fit_df)
+            self.model.fit(fit_df, **kwargs)
 
         return self
 

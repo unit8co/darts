@@ -89,13 +89,19 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
         super().__init__(add_encoders=add_encoders)
         self.model = SFAutoARIMA(*autoarima_args, **autoarima_kwargs)
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        **kwargs,
+    ):
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
         series = self.training_series
         self.model.fit(
             series.values(copy=False).flatten(),
             X=future_covariates.values(copy=False) if future_covariates else None,
+            **kwargs,
         )
         return self
 

@@ -95,7 +95,12 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
         self.model = SFAutoETS(*autoets_args, **autoets_kwargs)
         self._linreg = None
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        **kwargs,
+    ):
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
         series = self.training_series
@@ -116,9 +121,7 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
         else:
             target = series
 
-        self.model.fit(
-            target.values(copy=False).flatten(),
-        )
+        self.model.fit(target.values(copy=False).flatten(), **kwargs)
         return self
 
     def _predict(

@@ -3,7 +3,7 @@ Exponential Smoothing
 ---------------------
 """
 
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
@@ -24,8 +24,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         seasonal: Optional[SeasonalityMode] = SeasonalityMode.ADDITIVE,
         seasonal_periods: Optional[int] = None,
         random_state: int = 0,
-        kwargs: Optional[Dict[str, Any]] = None,
-        **fit_kwargs,
+        **kwargs,
     ):
         """Exponential Smoothing
 
@@ -66,11 +65,6 @@ class ExponentialSmoothing(LocalForecastingModel):
             :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing()`.
             See `the documentation
             <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`_.
-        fit_kwargs
-            Some optional keyword arguments that will be used to call
-            :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()`.
-            See `the documentation
-            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.fit.html>`_.
 
         Examples
         --------
@@ -96,12 +90,28 @@ class ExponentialSmoothing(LocalForecastingModel):
         self.seasonal = seasonal
         self.infer_seasonal_periods = seasonal_periods is None
         self.seasonal_periods = seasonal_periods
-        self.constructor_kwargs = dict() if kwargs is None else kwargs
-        self.fit_kwargs = fit_kwargs
+        self.constructor_kwargs = kwargs
         self.model = None
         np.random.seed(random_state)
 
-    def fit(self, series: TimeSeries):
+    def fit(self, series: TimeSeries, **kwargs):
+        """Fit/train the model on the (single) provided series.
+
+        Parameters
+        ----------
+        series
+            The model will be trained to forecast this time series.
+        kwargs
+            Some optional keyword arguments that will be used to call
+            :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()`.
+            See `the documentation
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.fit.html>`_.
+
+        Returns
+        -------
+        self
+            Fitted model.
+        """
         super().fit(series)
         self._assert_univariate(series)
         series = self.training_series
@@ -128,7 +138,7 @@ class ExponentialSmoothing(LocalForecastingModel):
             dates=series.time_index if series.has_datetime_index else None,
             **self.constructor_kwargs,
         )
-        hw_results = hw_model.fit(**self.fit_kwargs)
+        hw_results = hw_model.fit(**kwargs)
         self.model = hw_results
 
         if self.infer_seasonal_periods:

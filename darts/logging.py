@@ -192,7 +192,9 @@ class SuppressStdoutStderr:
             os.close(fd)
 
 
-def execute_and_suppress_output(function, logger, suppression_threshold_level, *args):
+def execute_and_suppress_output(
+    function, logger, suppression_threshold_level, *args, **kwargs
+):
     """
     This function conditionally executes the given function with the given arguments
     based on whether the current level of 'logger' is below, above or equal to
@@ -207,9 +209,9 @@ def execute_and_suppress_output(function, logger, suppression_threshold_level, *
     """
     if logger.level >= suppression_threshold_level:
         with SuppressStdoutStderr():
-            return_value = function(*args)
+            return_value = function(*args, **kwargs)
     else:
-        return_value = function(*args)
+        return_value = function(*args, **kwargs)
     return return_value
 
 

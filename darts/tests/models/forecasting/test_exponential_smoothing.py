@@ -53,7 +53,7 @@ class TestExponentialSmoothing:
             "initial_trend": 0.2,
             "initial_seasonal": np.arange(1, 25),
         }
-        model = ExponentialSmoothing(kwargs=constructor_kwargs)
+        model = ExponentialSmoothing(**constructor_kwargs)
         model.fit(self.series)
         # must be checked separately, name is not consistent
         np.testing.assert_array_almost_equal(
@@ -70,12 +70,10 @@ class TestExponentialSmoothing:
         # using default optimization method
         model = ExponentialSmoothing()
         model.fit(self.series)
-        assert model.fit_kwargs == {}
         pred = model.predict(n=2)
 
         model_bis = ExponentialSmoothing()
         model_bis.fit(self.series)
-        assert model_bis.fit_kwargs == {}
         pred_bis = model_bis.predict(n=2)
 
         # two methods with the same parameters should yield the same forecasts
@@ -83,9 +81,8 @@ class TestExponentialSmoothing:
         np.testing.assert_array_almost_equal(pred.values(), pred_bis.values())
 
         # change optimization method
-        model_ls = ExponentialSmoothing(method="least_squares")
-        model_ls.fit(self.series)
-        assert model_ls.fit_kwargs == {"method": "least_squares"}
+        model_ls = ExponentialSmoothing()
+        model_ls.fit(self.series, method="least_squares")
         pred_ls = model_ls.predict(n=2)
 
         # forecasts should be slightly different
