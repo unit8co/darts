@@ -975,46 +975,40 @@ class TestTimeSeries:
             # Cannot divide by 0.
             self.series1 / 0
 
-    def test_ops_samples_broadcasting(self):
-        # time-series with multiple samples
-        seriesA = concatenate([self.series1, self.series2, self.series3], axis=2)
-        assert seriesA.n_components == 1
-        assert seriesA.n_samples == 3
-
-        constant = 2
-
-        # constant but not scalar
-        seriesB = TimeSeries.from_series(
-            pd.Series([constant for _ in range(len(seriesA))], index=self.times)
+    @pytest.mark.parametrize(
+        "broadcast_components,broadcast_samples",
+        itertools.product([True, False], [True, False]),
+    )
+    def test_ops_broadcasting(self, broadcast_components, broadcast_samples):
+        # generate random time-series
+        t, c, s = 10, 5, 3
+        arrayA = np.random.rand(t, c, s)
+        arrayB = np.random.rand(
+            t, 1 if broadcast_components else c, 1 if broadcast_samples else s
         )
-        assert seriesB.n_components == 1
-        assert seriesB.n_samples == 1
 
-        targetAdd = seriesA + constant
-        targetSub = seriesA - constant
-        targetMul = seriesA * constant
-        targetDiv = seriesA / constant
-        targetPow = seriesA**constant
+        seriesA = TimeSeries.from_times_and_values(self.times, arrayA)
+        seriesB = TimeSeries.from_times_and_values(self.times, arrayB)
+
+        seriesAdd = TimeSeries.from_times_and_values(self.times, arrayA + arrayB)
+        seriesSub = TimeSeries.from_times_and_values(self.times, arrayA - arrayB)
+        seriesMul = TimeSeries.from_times_and_values(self.times, arrayA * arrayB)
+        seriesDiv = TimeSeries.from_times_and_values(self.times, arrayA / arrayB)
+        seriesPow = TimeSeries.from_times_and_values(self.times, arrayA**arrayB)
 
         # assert different operations; must be equivalent to operations with scalar
-        assert seriesA + seriesB == targetAdd
-        assert seriesA - seriesB == targetSub
-        assert seriesA * seriesB == targetMul
-        assert seriesA / seriesB == targetDiv
-        assert seriesA**seriesB == targetPow
+        assert seriesA + seriesB == seriesAdd
+        assert seriesA - seriesB == seriesSub
+        assert seriesA * seriesB == seriesMul
+        assert seriesA / seriesB == seriesDiv
+        assert seriesA**seriesB == seriesPow
 
-        # 2 samples must not be broadcast onto 3 sample
-        two_samples = concatenate([self.series1, self.series2], axis=2)
-        with pytest.raises(ValueError):
-            seriesA + two_samples
-
-        # it also works with numpy arrays directly given a third dimension of size 1 (equivalent to single-sample)
-        seriesB_all_values = seriesB.all_values()
-
-        assert isinstance(seriesB_all_values, np.ndarray)
-        assert len(seriesB_all_values.shape) == 3 and seriesB_all_values.shape[2] == 1
-
-        assert seriesA + seriesB_all_values == targetAdd
+        # it also works with numpy arrays directly
+        assert seriesA + arrayB == seriesAdd
+        assert seriesA - arrayB == seriesSub
+        assert seriesA * arrayB == seriesMul
+        assert seriesA / arrayB == seriesDiv
+        assert seriesA**arrayB == seriesPow
 
     def test_getitem_datetime_index(self):
         series_short: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
