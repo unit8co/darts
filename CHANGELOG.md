@@ -14,6 +14,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Added hyperparameters controlling the hidden layer sizes for the feature encoders in `TiDEModel`. [#2408](https://github.com/unit8co/darts/issues/2408) by [eschibli](https://github.com/eschibli).
 - Made README's forecasting model support table more colorblind-friendly. [#2433](https://github.com/unit8co/darts/pull/2433)
 - Updated the Ray Tune Hyperparameter Optimization example in the [user guide](https://unit8co.github.io/darts/userguide/hyperparameter_optimization.html) to work with the latest `ray` versions (`>=2.31.0`). [#2459](https://github.com/unit8co/darts/pull/2459) by [He Weilin](https://github.com/cnhwl).
+- Added support for broadcasting to TimeSeries on component and sample level. [#2476](https://https://github.com/unit8co/darts/pull/2476) by [Joel L.](https://github.com/Joelius300).
 
 **Fixed**
 
@@ -21,6 +22,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug with `xgboost>=2.1.0`, where multi output regression was not properly handled. [#2426](https://github.com/unit8co/darts/pull/2426) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when using `ShapExplainer.explain()` with some selected `target_components` and a regression model that natively supports multi output regression: The target components were not properly mapped. [#2428](https://github.com/unit8co/darts/pull/2428) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when using `fit()` with a `RegressionModel` that uses an underlying `model` which does not support `sample_weight`. [#2445](https://github.com/unit8co/darts/pull/2445) by [He Weilin](https://github.com/cnhwl).
+- Fixed a bug preventing TimeSeries to be divided by xarray or ndarray. [#2476](https://https://github.com/unit8co/darts/pull/2476) by [Joel L.](https://github.com/Joelius300).
 
 **Dependencies**
 

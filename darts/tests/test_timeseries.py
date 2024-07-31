@@ -975,6 +975,57 @@ class TestTimeSeries:
             # Cannot divide by 0.
             self.series1 / 0
 
+    def test_ops_array(self):
+        # can work with xarray directly
+        series2_x = self.series2.data_array(copy=False)
+        assert self.series1 + self.series2 == self.series1 + series2_x
+        assert self.series1 - self.series2 == self.series1 - series2_x
+        assert self.series1 * self.series2 == self.series1 * series2_x
+        assert self.series1 / self.series2 == self.series1 / series2_x
+        assert self.series1**self.series2 == self.series1**series2_x
+        # can work with ndarray directly
+        series2_nd = self.series2.all_values(copy=False)
+        assert self.series1 + self.series2 == self.series1 + series2_nd
+        assert self.series1 - self.series2 == self.series1 - series2_nd
+        assert self.series1 * self.series2 == self.series1 * series2_nd
+        assert self.series1 / self.series2 == self.series1 / series2_nd
+        assert self.series1**self.series2 == self.series1**series2_nd
+
+    @pytest.mark.parametrize(
+        "broadcast_components,broadcast_samples",
+        itertools.product([True, False], [True, False]),
+    )
+    def test_ops_broadcasting(self, broadcast_components, broadcast_samples):
+        # generate random time-series
+        t, c, s = 10, 5, 3
+        arrayA = np.random.rand(t, c, s)
+        arrayB = np.random.rand(
+            t, 1 if broadcast_components else c, 1 if broadcast_samples else s
+        )
+
+        seriesA = TimeSeries.from_times_and_values(self.times, arrayA)
+        seriesB = TimeSeries.from_times_and_values(self.times, arrayB)
+
+        seriesAdd = TimeSeries.from_times_and_values(self.times, arrayA + arrayB)
+        seriesSub = TimeSeries.from_times_and_values(self.times, arrayA - arrayB)
+        seriesMul = TimeSeries.from_times_and_values(self.times, arrayA * arrayB)
+        seriesDiv = TimeSeries.from_times_and_values(self.times, arrayA / arrayB)
+        seriesPow = TimeSeries.from_times_and_values(self.times, arrayA**arrayB)
+
+        # assert different operations; must be equivalent to operations with scalar
+        assert seriesA + seriesB == seriesAdd
+        assert seriesA - seriesB == seriesSub
+        assert seriesA * seriesB == seriesMul
+        assert seriesA / seriesB == seriesDiv
+        assert seriesA**seriesB == seriesPow
+
+        # it also works with numpy arrays directly
+        assert seriesA + arrayB == seriesAdd
+        assert seriesA - arrayB == seriesSub
+        assert seriesA * arrayB == seriesMul
+        assert seriesA / arrayB == seriesDiv
+        assert seriesA**arrayB == seriesPow
+
     def test_getitem_datetime_index(self):
         series_short: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
         series_stride_2: TimeSeries = self.series1.with_times_and_values(
