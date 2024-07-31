@@ -21,7 +21,7 @@ class TestTimeSeries:
     pd_series3 = pd.Series(range(15, 25), index=times)
     series1: TimeSeries = TimeSeries.from_series(pd_series1)
     series2: TimeSeries = TimeSeries.from_series(pd_series2)
-    series3: TimeSeries = TimeSeries.from_series(pd_series2)
+    series3: TimeSeries = TimeSeries.from_series(pd_series3)
 
     def test_creation(self):
         series_test = TimeSeries.from_series(self.pd_series1)
@@ -536,19 +536,19 @@ class TestTimeSeries:
         with pytest.raises(ValueError):
             self.series1.rescale_with_value(1)
 
-        seriesA = self.series3.rescale_with_value(0)
+        seriesA = self.series2.rescale_with_value(0)
         assert np.all(seriesA.values() == 0)
 
-        seriesB = self.series3.rescale_with_value(-5)
-        assert self.series3 * -1.0 == seriesB
+        seriesB = self.series2.rescale_with_value(-5)
+        assert self.series2 * -1.0 == seriesB
 
-        seriesC = self.series3.rescale_with_value(1)
-        assert self.series3 * 0.2 == seriesC
+        seriesC = self.series2.rescale_with_value(1)
+        assert self.series2 * 0.2 == seriesC
 
-        seriesD = self.series3.rescale_with_value(
+        seriesD = self.series2.rescale_with_value(
             1e20
         )  # TODO: test will fail if value > 1e24 due to num imprecision
-        assert self.series3 * 0.2e20 == seriesD
+        assert self.series2 * 0.2e20 == seriesD
 
     @staticmethod
     def helper_test_intersect(freq, is_mixed_freq: bool, is_univariate: bool):
