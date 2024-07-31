@@ -4604,19 +4604,24 @@ class TimeSeries:
         else:
             other_vals = other
 
-        t, c, s = self._xa.values.shape
-        raise_if_not(
+        t, c, s = self._xa.shape
+        other_shape = other_vals.shape
+        if not (
             # can combine arrays if shapes are equal (t, c, s)
-            self._xa.values.shape == other_vals.shape
+            other_shape == (t, c, s)
             # or broadcast [t, 1, 1] onto [t, c, s]
-            or other_vals.shape == (t, 1, 1)
+            or other_shape == (t, 1, 1)
             # or broadcast [t, c, 1] onto [t, c, s]
-            or other_vals.shape == (t, c, 1)
+            or other_shape == (t, c, 1)
             # or broadcast [t, 1, s] onto [t, c, s]
-            or other_vals.shape == (t, 1, s),
-            "Attempted to perform operation on two TimeSeries of unequal shapes.",
-            logger,
-        )
+            or other_shape == (t, 1, s),
+        ):
+            raise_log(
+                ValueError(
+                    "Attempted to perform operation on two TimeSeries of unequal shapes."
+                ),
+                logger=logger,
+            )
         new_xa = self._xa.copy()
         new_xa.values = combine_fn(new_xa.values, other_vals)
         return self.__class__(new_xa)
