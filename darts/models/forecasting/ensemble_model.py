@@ -15,9 +15,14 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
     LocalForecastingModel,
 )
-from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+from darts.models.utils import TORCH_AVAILABLE
 from darts.timeseries import TimeSeries, concatenate
 from darts.utils.ts_utils import series2seq
+
+if TORCH_AVAILABLE:
+    from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+else:
+    TorchForecastingModel = None
 
 logger = get_logger(__name__)
 
@@ -443,7 +448,7 @@ class EnsembleModel(GlobalForecastingModel):
             )
 
         for i, m in enumerate(self.forecasting_models):
-            if issubclass(type(m), TorchForecastingModel):
+            if TORCH_AVAILABLE and issubclass(type(m), TorchForecastingModel):
                 # save the LightningModule checkpoint
                 path_ptl_ckpt = f"{path}.{type(m).__name__}_{i}.ckpt"
                 if m.trainer is not None:
