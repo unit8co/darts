@@ -5,7 +5,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-- Added support for broadcasting single-sample TimeSeries onto multi-sample TimeSeries. [#2476](https://https://github.com/unit8co/darts/pull/2476)
+- Added support for broadcasting to TimeSeries on component and sample level. [#2476](https://https://github.com/unit8co/darts/pull/2476)
   by [Joel L.](https://github.com/Joelius300).
 - Fixed bug preventing TimeSeries to be divided by xarray or ndarray. [#2476](https://https://github.com/unit8co/darts/pull/2476)
   by [Joel L.](https://github.com/Joelius300).
