@@ -3319,7 +3319,9 @@ class TimeSeries:
             )
         )
 
-    def resample(self, freq: str, method: str = "pad", **kwargs) -> Self:
+    def resample(
+        self, freq: Union[str, pd.DateOffset], method: str = "pad", **kwargs
+    ) -> Self:
         """
         Build a reindexed ``TimeSeries`` with a given frequency.
         Provided method is used to fill holes in reindexed TimeSeries, by default 'pad'.
@@ -3328,7 +3330,7 @@ class TimeSeries:
         ----------
         freq
             The new time difference between two adjacent entries in the returned TimeSeries.
-            A DateOffset alias is expected.
+            Expects a `pandas.DateOffset` or `DateOffset` alias.
         method:
             Method to fill holes in reindexed TimeSeries (note this does not fill NaNs that already were present):
 
@@ -3371,6 +3373,8 @@ class TimeSeries:
         TimeSeries
             A reindexed TimeSeries with given frequency.
         """
+        if isinstance(freq, pd.DateOffset):
+            freq = freq.freqstr
 
         resample = self._xa.resample(
             indexer={self._time_dim: freq},
@@ -4600,11 +4604,24 @@ class TimeSeries:
         else:
             other_vals = other
 
-        raise_if_not(
-            self._xa.values.shape == other_vals.shape,
-            "Attempted to perform operation on two TimeSeries of unequal shapes.",
-            logger,
-        )
+        t, c, s = self._xa.shape
+        other_shape = other_vals.shape
+        if not (
+            # can combine arrays if shapes are equal (t, c, s)
+            other_shape == (t, c, s)
+            # or broadcast [t, 1, 1] onto [t, c, s]
+            or other_shape == (t, 1, 1)
+            # or broadcast [t, c, 1] onto [t, c, s]
+            or other_shape == (t, c, 1)
+            # or broadcast [t, 1, s] onto [t, c, s]
+            or other_shape == (t, 1, s),
+        ):
+            raise_log(
+                ValueError(
+                    "Attempted to perform operation on two TimeSeries of unequal shapes."
+                ),
+                logger=logger,
+            )
         new_xa = self._xa.copy()
         new_xa.values = combine_fn(new_xa.values, other_vals)
         return self.__class__(new_xa)
@@ -4980,12 +4997,18 @@ class TimeSeries:
             )
             return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            if not (other.all_values(copy=False) != 0).all():
+            if isinstance(other, TimeSeries):
+                other_vals = other.data_array(copy=False).values
+            elif isinstance(other, xr.DataArray):
+                other_vals = other.values
+            else:
+                other_vals = other
+            if not (other_vals != 0).all():
                 raise_log(
                     ZeroDivisionError("Cannot divide by a TimeSeries with a value 0."),
                     logger,
                 )
-            return self._combine_arrays(other, lambda s1, s2: s1 / s2)
+            return self._combine_arrays(other_vals, lambda s1, s2: s1 / s2)
         else:
             raise_log(
                 TypeError(
