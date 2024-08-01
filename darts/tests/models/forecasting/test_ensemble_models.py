@@ -771,6 +771,9 @@ class TestEnsembleModels:
         # if loaded ensemble model creates same forecasts as original ensemble models
         cwd = os.getcwd()
         os.chdir(tmpdir_module)
+        os.mkdir(model_cls.__name__)
+        full_model_path_str = os.path.join(tmpdir_module, model_cls.__name__)
+        os.chdir(full_model_path_str)
         kwargs = {}
         expected_suffixes = [".pkl", ".pkl.RNNModel_2.pt", ".pkl.RNNModel_2.pt.ckpt"]
 
@@ -797,13 +800,16 @@ class TestEnsembleModels:
         # test save
         model.save()
 
-        files = os.listdir(tmpdir_module)
+        assert os.path.exists(full_model_path_str)
+        files = os.listdir(full_model_path_str)
         if TORCH_AVAILABLE:
             assert len(files) == 3
             for f in files:
                 assert f.startswith(model_cls.__name__)
             suffix_counts = {
-                suffix: sum(1 for p in os.listdir(tmpdir_module) if p.endswith(suffix))
+                suffix: sum(
+                    1 for p in os.listdir(full_model_path_str) if p.endswith(suffix)
+                )
                 for suffix in expected_suffixes
             }
             assert all(count == 1 for count in suffix_counts.values())
@@ -815,7 +821,9 @@ class TestEnsembleModels:
             )
 
         # test load
-        loaded_model = model_cls.load(min(files, key=len))
+        loaded_model = model_cls.load(
+            os.path.join(full_model_path_str, min(files, key=len))
+        )
 
         assert model_prediction == loaded_model.predict(5)
 
