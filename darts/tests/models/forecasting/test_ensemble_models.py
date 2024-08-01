@@ -1,5 +1,6 @@
 import copy
 import itertools
+import os
 
 import numpy as np
 import pandas as pd
@@ -763,3 +764,59 @@ class TestEnsembleModels:
                 ),
             ],
         )
+
+    @pytest.mark.parametrize("model_cls", [NaiveEnsembleModel, RegressionEnsembleModel])
+    def test_save_load_ensemble_models(self, tmpdir_module, model_cls):
+        # check if save and load methods work and
+        # if loaded ensemble model creates same forecasts as original ensemble models
+        cwd = os.getcwd()
+        os.chdir(tmpdir_module)
+        kwargs = {}
+        expected_suffixes = [".pkl", ".pkl.RNNModel_2.pt", ".pkl.RNNModel_2.pt.ckpt"]
+
+        if issubclass(model_cls, RegressionEnsembleModel):
+            kwargs["regression_train_n_points"] = 5
+
+        if TORCH_AVAILABLE:
+            model = model_cls(
+                [
+                    LinearRegressionModel(lags=[-1]),
+                    NaiveSeasonal(K=1),
+                    RNNModel(10, n_epochs=1),
+                ],
+                **kwargs,
+            )
+        else:
+            model = model_cls(
+                [LinearRegressionModel(lags=[-1]), NaiveSeasonal(K=1)], **kwargs
+            )
+
+        model.fit(self.series1 + self.series2)
+        model_prediction = model.predict(5)
+
+        # test save
+        model.save()
+
+        files = os.listdir(tmpdir_module)
+        if TORCH_AVAILABLE:
+            assert len(files) == 3
+            for f in files:
+                assert f.startswith(model_cls.__name__)
+            suffix_counts = {
+                suffix: sum(1 for p in os.listdir(tmpdir_module) if p.endswith(suffix))
+                for suffix in expected_suffixes
+            }
+            assert all(count == 1 for count in suffix_counts.values())
+        else:
+            assert (
+                len(files) == 1
+                and files[0].startswith(model_cls.__name__)
+                and files[0].endswith(".pkl")
+            )
+
+        # test load
+        loaded_model = model_cls.load(min(files, key=len))
+
+        assert model_prediction == loaded_model.predict(5)
+
+        os.chdir(cwd)
