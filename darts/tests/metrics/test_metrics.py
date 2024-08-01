@@ -74,7 +74,9 @@ class TestMetrics:
     pd_train_not_periodic = pd.Series(
         range(31), index=pd.date_range("20121201", "20121231")
     )
-    pd_series1 = pd.Series(range(10), index=pd.date_range("20130101", "20130110"))
+    pd_series1 = pd.Series(
+        range(10), index=pd.date_range("20130101", "20130110")
+    ).astype("float64")
     pd_series2 = pd.Series(
         np.random.rand(10) * 10 + 1, index=pd.date_range("20130101", "20130110")
     )

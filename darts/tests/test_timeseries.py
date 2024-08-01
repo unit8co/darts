@@ -21,7 +21,7 @@ class TestTimeSeries:
     pd_series3 = pd.Series(range(15, 25), index=times)
     series1: TimeSeries = TimeSeries.from_series(pd_series1)
     series2: TimeSeries = TimeSeries.from_series(pd_series2)
-    series3: TimeSeries = TimeSeries.from_series(pd_series2)
+    series3: TimeSeries = TimeSeries.from_series(pd_series3)
 
     def test_creation(self):
         series_test = TimeSeries.from_series(self.pd_series1)
@@ -536,19 +536,19 @@ class TestTimeSeries:
         with pytest.raises(ValueError):
             self.series1.rescale_with_value(1)
 
-        seriesA = self.series3.rescale_with_value(0)
+        seriesA = self.series2.rescale_with_value(0)
         assert np.all(seriesA.values() == 0)
 
-        seriesB = self.series3.rescale_with_value(-5)
-        assert self.series3 * -1.0 == seriesB
+        seriesB = self.series2.rescale_with_value(-5)
+        assert self.series2 * -1.0 == seriesB
 
-        seriesC = self.series3.rescale_with_value(1)
-        assert self.series3 * 0.2 == seriesC
+        seriesC = self.series2.rescale_with_value(1)
+        assert self.series2 * 0.2 == seriesC
 
-        seriesD = self.series3.rescale_with_value(
+        seriesD = self.series2.rescale_with_value(
             1e20
         )  # TODO: test will fail if value > 1e24 due to num imprecision
-        assert self.series3 * 0.2e20 == seriesD
+        assert self.series2 * 0.2e20 == seriesD
 
     @staticmethod
     def helper_test_intersect(freq, is_mixed_freq: bool, is_univariate: bool):
@@ -974,6 +974,57 @@ class TestTimeSeries:
         with pytest.raises(ZeroDivisionError):
             # Cannot divide by 0.
             self.series1 / 0
+
+    def test_ops_array(self):
+        # can work with xarray directly
+        series2_x = self.series2.data_array(copy=False)
+        assert self.series1 + self.series2 == self.series1 + series2_x
+        assert self.series1 - self.series2 == self.series1 - series2_x
+        assert self.series1 * self.series2 == self.series1 * series2_x
+        assert self.series1 / self.series2 == self.series1 / series2_x
+        assert self.series1**self.series2 == self.series1**series2_x
+        # can work with ndarray directly
+        series2_nd = self.series2.all_values(copy=False)
+        assert self.series1 + self.series2 == self.series1 + series2_nd
+        assert self.series1 - self.series2 == self.series1 - series2_nd
+        assert self.series1 * self.series2 == self.series1 * series2_nd
+        assert self.series1 / self.series2 == self.series1 / series2_nd
+        assert self.series1**self.series2 == self.series1**series2_nd
+
+    @pytest.mark.parametrize(
+        "broadcast_components,broadcast_samples",
+        itertools.product([True, False], [True, False]),
+    )
+    def test_ops_broadcasting(self, broadcast_components, broadcast_samples):
+        # generate random time-series
+        t, c, s = 10, 5, 3
+        arrayA = np.random.rand(t, c, s)
+        arrayB = np.random.rand(
+            t, 1 if broadcast_components else c, 1 if broadcast_samples else s
+        )
+
+        seriesA = TimeSeries.from_times_and_values(self.times, arrayA)
+        seriesB = TimeSeries.from_times_and_values(self.times, arrayB)
+
+        seriesAdd = TimeSeries.from_times_and_values(self.times, arrayA + arrayB)
+        seriesSub = TimeSeries.from_times_and_values(self.times, arrayA - arrayB)
+        seriesMul = TimeSeries.from_times_and_values(self.times, arrayA * arrayB)
+        seriesDiv = TimeSeries.from_times_and_values(self.times, arrayA / arrayB)
+        seriesPow = TimeSeries.from_times_and_values(self.times, arrayA**arrayB)
+
+        # assert different operations; must be equivalent to operations with scalar
+        assert seriesA + seriesB == seriesAdd
+        assert seriesA - seriesB == seriesSub
+        assert seriesA * seriesB == seriesMul
+        assert seriesA / seriesB == seriesDiv
+        assert seriesA**seriesB == seriesPow
+
+        # it also works with numpy arrays directly
+        assert seriesA + arrayB == seriesAdd
+        assert seriesA - arrayB == seriesSub
+        assert seriesA * arrayB == seriesMul
+        assert seriesA / arrayB == seriesDiv
+        assert seriesA**arrayB == seriesPow
 
     def test_getitem_datetime_index(self):
         series_short: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
