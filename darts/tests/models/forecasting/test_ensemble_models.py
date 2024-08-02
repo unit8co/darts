@@ -824,7 +824,6 @@ class TestEnsembleModels:
         for filename in os.listdir(full_model_path_str):
             if filename.endswith(".pkl"):
                 pkl_files.append(os.path.join(full_model_path_str, filename))
-        print(pkl_files)
         for p in pkl_files:
             loaded_model = model_cls.load(p)
             assert model_prediction == loaded_model.predict(5)
