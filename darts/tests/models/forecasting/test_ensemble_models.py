@@ -785,7 +785,7 @@ class TestEnsembleModels:
                 [
                     LinearRegressionModel(lags=[-1]),
                     NaiveSeasonal(K=1),
-                    RNNModel(10, n_epochs=1),
+                    RNNModel(10, n_epochs=1, **tfm_kwargs),
                 ],
                 **kwargs,
             )

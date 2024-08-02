@@ -392,7 +392,7 @@ class EnsembleModel(GlobalForecastingModel):
         """
         Saves the ensemble model under a given path or file handle.
 
-        If `forecasting_models` contains TorchForecastingModel, two files (model object and checkpoint) would be saved.
+        Additionally, two files are stored for each `TorchForecastingModel` under the forecasting models.
 
         Example for saving and loading a :class:`RegressionEnsembleModel`:
 
@@ -418,11 +418,8 @@ class EnsembleModel(GlobalForecastingModel):
         path
             Path or file handle under which to save the ensemble model at its current state. If no path is specified,
             the ensemble model is automatically saved under ``"{RegressionEnsembleModel}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
-            If the ith model of `forecasting_models` is a TorchForecastingModel, two files (model object and checkpoint)
-            would be saved under ``"{path}.{ithModelClass}_{i}.pt"`` and ``"{path}.{ithModelClass}_{i}.ckpt"``
-            E.g., ``"RegressionEnsembleModel_2024-07-25_14_58_53.pkl"``
-            ``"RegressionEnsembleModel_2024-07-25_14_58_53.pkl.TiDEModel_1.pt"``
-            ``"RegressionEnsembleModel_2024-07-25_14_58_53.pkl.TiDEModel_1.ckpt"``
+            If the i-th model of `forecasting_models` is a TorchForecastingModel, two files (model object and
+            checkpoint) are saved under ``"{path}.{ithModelClass}_{i}.pt"`` and ``"{path}.{ithModelClass}_{i}.ckpt"``.
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """
@@ -431,26 +428,12 @@ class EnsembleModel(GlobalForecastingModel):
             # default path
             path = self._default_save_path() + ".pkl"
 
-        if isinstance(path, (str, os.PathLike)):
-            # save the whole object using pickle
-            with open(path, "wb") as handle:
-                pickle.dump(obj=self, file=handle, **pkl_kwargs)
-        elif isinstance(path, io.BufferedWriter):
-            # save the whole object using pickle
-            pickle.dump(obj=self, file=path, **pkl_kwargs)
-        else:
-            raise_log(
-                ValueError(
-                    "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
-                    f"or 'BufferedWriter' (for an already opened file), but was '{path.__class__}'."
-                ),
-                logger=logger,
-            )
+        super().save(path, **pkl_kwargs)
 
         for i, m in enumerate(self.forecasting_models):
             if TORCH_AVAILABLE and issubclass(type(m), TorchForecastingModel):
-                path_pt_ckpt = f"{path}.{type(m).__name__}_{i}.pt"
-                m.save(path=path_pt_ckpt)
+                path_tfm = f"{path}.{type(m).__name__}_{i}.pt"
+                m.save(path=path_tfm)
 
     @staticmethod
     def load(path: Union[str, os.PathLike, BinaryIO]) -> "EnsembleModel":
@@ -463,38 +446,12 @@ class EnsembleModel(GlobalForecastingModel):
             Path or file handle from which to load the ensemble model.
         """
 
-        if isinstance(path, (str, os.PathLike)):
-            raise_if_not(
-                os.path.exists(path),
-                f"The file {path} doesn't exist",
-                logger,
-            )
-
-            with open(path, "rb") as handle:
-                model = pickle.load(file=handle)
-        elif isinstance(path, io.BufferedReader):
-            model = pickle.load(file=path)
-        else:
-            raise_log(
-                ValueError(
-                    "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
-                    f"or 'BufferedReader' (for an already opened file), but was '{path.__class__}'."
-                ),
-                logger=logger,
-            )
+        model: EnsembleModel = GlobalForecastingModel.load(path)
 
         for i, m in enumerate(model.forecasting_models):
-            if issubclass(type(m), TorchForecastingModel):
-                # if a checkpoint was saved, we also load the PyTorch LightningModule from checkpoint
-                path_ptl_ckpt = f"{path}.{type(m).__name__}_{i}.pt.ckpt"
-                if os.path.exists(path_ptl_ckpt):
-                    m.model = m._load_from_checkpoint(path_ptl_ckpt)
-                else:
-                    m._fit_called = False
-                    logger.warning(
-                        f"Model was loaded without weights since no PyTorch LightningModule checkpoint ('.ckpt') could be "  # noqa: E501
-                        f"found at {path_ptl_ckpt}. Please call `fit()` before calling `predict()`."
-                    )
+            if TORCH_AVAILABLE and issubclass(type(m), TorchForecastingModel):
+                path_tfm = f"{path}.{type(m).__name__}_{i}.pt"
+                model.forecasting_models[i] = TorchForecastingModel.load(path_tfm)
         return model
 
     @property
