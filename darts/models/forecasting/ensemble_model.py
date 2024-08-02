@@ -2,9 +2,7 @@
 Ensemble Model Base Class
 """
 
-import io
 import os
-import pickle
 from abc import abstractmethod
 from typing import BinaryIO, List, Optional, Sequence, Tuple, Union
 
