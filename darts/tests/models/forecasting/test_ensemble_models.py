@@ -799,11 +799,12 @@ class TestEnsembleModels:
 
         # test save
         model.save()
+        model.save(os.path.join(full_model_path_str, f"{model_cls.__name__}.pkl"))
 
         assert os.path.exists(full_model_path_str)
         files = os.listdir(full_model_path_str)
         if TORCH_AVAILABLE:
-            assert len(files) == 3
+            assert len(files) == 6
             for f in files:
                 assert f.startswith(model_cls.__name__)
             suffix_counts = {
@@ -812,19 +813,20 @@ class TestEnsembleModels:
                 )
                 for suffix in expected_suffixes
             }
-            assert all(count == 1 for count in suffix_counts.values())
+            assert all(count == 2 for count in suffix_counts.values())
         else:
-            assert (
-                len(files) == 1
-                and files[0].startswith(model_cls.__name__)
-                and files[0].endswith(".pkl")
-            )
+            assert len(files) == 2
+            for f in files:
+                assert f.startswith(model_cls.__name__) and f.endswith(".pkl")
 
         # test load
-        loaded_model = model_cls.load(
-            os.path.join(full_model_path_str, min(files, key=len))
-        )
-
-        assert model_prediction == loaded_model.predict(5)
+        pkl_files = []
+        for filename in os.listdir(full_model_path_str):
+            if filename.endswith(".pkl"):
+                pkl_files.append(os.path.join(full_model_path_str, filename))
+        print(pkl_files)
+        for p in pkl_files:
+            loaded_model = model_cls.load(p)
+            assert model_prediction == loaded_model.predict(5)
 
         os.chdir(cwd)
