@@ -10,7 +10,7 @@ from typing import List, Optional, Tuple, Type, Union
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger, raise_log
+from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLPastCovariatesModule,
     io_processor,
@@ -30,6 +30,7 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
         nr_params: int,
         num_layers_out_fc: Optional[List] = None,
         dropout: float = 0.0,
+        activation: Optional[str] = None,
         **kwargs,
     ):
         """This class allows to create custom block RNN modules that can later be used with Darts'
@@ -63,6 +64,8 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
             This network connects the last hidden layer of the PyTorch RNN module to the output.
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
+        activation
+            The name of the activation function to be applied between the layers of the fully connected network.
         **kwargs
             all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
             base class.
@@ -77,6 +80,7 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
         self.nr_params = nr_params
         self.num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
         self.dropout = dropout
+        self.activation = activation
         self.out_len = self.output_chunk_length
 
     @io_processor
@@ -105,6 +109,7 @@ class _BlockRNNModule(CustomBlockRNNModule):
     def __init__(
         self,
         name: str,
+        activation: Optional[str] = None,
         **kwargs,
     ):
         """PyTorch module implementing a block RNN to be used in `BlockRNNModel`.
@@ -116,6 +121,7 @@ class _BlockRNNModule(CustomBlockRNNModule):
 
         This module uses an RNN to encode the input sequence, and subsequently uses a fully connected
         network as the decoder which takes as input the last hidden state of the encoder RNN.
+        Optionally, a non-linear activation function can be applied between the layers of the fully connected network.
         The final output of the decoder is a sequence of length `output_chunk_length`. In this sense,
         the `_BlockRNNModule` produces 'blocks' of forecasts at a time (which is different
         from `_RNNModule` used by the `RNNModel`).
@@ -124,6 +130,9 @@ class _BlockRNNModule(CustomBlockRNNModule):
         ----------
         name
             The name of the specific PyTorch RNN module ("RNN", "GRU" or "LSTM").
+        activation
+            The name of the activation function to be applied between the layers of the fully connected network.
+            Options include "ReLU", "Sigmoid", "Tanh", or None for no activation. Default: None.
         **kwargs
             all parameters required for the :class:`darts.models.forecasting.CustomBlockRNNModule` base class.
 
@@ -135,7 +144,8 @@ class _BlockRNNModule(CustomBlockRNNModule):
         Outputs
         -------
         y of shape `(batch_size, output_chunk_length, target_size, nr_params)`
-            Tensor containing the prediction at the last time step of the sequence.
+            Tensor containing the prediction at the last time step of the sequence, where optional activation
+            functions may have been applied between the layers of the fully connected network.
         """
 
         super().__init__(**kwargs)
@@ -155,10 +165,15 @@ class _BlockRNNModule(CustomBlockRNNModule):
         # to the output of desired length
         last = self.hidden_dim
         feats = []
-        for feature in self.num_layers_out_fc + [
-            self.out_len * self.target_size * self.nr_params
-        ]:
+        for index, feature in enumerate(
+            self.num_layers_out_fc + [self.out_len * self.target_size * self.nr_params]
+        ):
             feats.append(nn.Linear(last, feature))
+
+            # Add activation only between layers, but not on the final layer
+            if activation and index < len(self.num_layers_out_fc):
+                activation_function = getattr(nn, activation)()
+                feats.append(activation_function)
             last = feature
         self.fc = nn.Sequential(*feats)
 
@@ -195,6 +210,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
         n_rnn_layers: int = 1,
         hidden_fc_sizes: Optional[List] = None,
         dropout: float = 0.0,
+        activation: Optional[str] = None,
         **kwargs,
     ):
         """Block Recurrent Neural Network Model (RNNs).
@@ -243,6 +259,9 @@ class BlockRNNModel(PastCovariatesTorchModel):
             Sizes of hidden layers connecting the last hidden layer of the RNN module to the output, if any.
         dropout
             Fraction of neurons afected by Dropout.
+        activation
+            The name of the activation function to be applied between the layers of the fully connected network.
+            Options include "ReLU", "Sigmoid", "Tanh", or None for no activation. Default: None.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -430,11 +449,31 @@ class BlockRNNModel(PastCovariatesTorchModel):
                     logger=logger,
                 )
 
+        # check we got right activation function specified:
+        if activation is not None:
+            try:
+                getattr(nn, activation)
+            except AttributeError:
+                raise_log(
+                    ValueError(
+                        f"Invalid activation function: {activation}. "
+                        "Please use a valid torch.nn activation function name."
+                    ),
+                    logger=logger,
+                )
+            raise_if(
+                activation and (hidden_fc_sizes is None or len(hidden_fc_sizes) == 0),
+                "The activation function has been set, but the model contains only one linear layer. "
+                "Activation function will not be applied.",
+                logger=logger,
+            )
+
         self.rnn_type_or_module = model
         self.hidden_fc_sizes = hidden_fc_sizes
         self.hidden_dim = hidden_dim
         self.n_rnn_layers = n_rnn_layers
         self.dropout = dropout
+        self.activation = activation
 
     @property
     def supports_multivariate(self) -> bool:
@@ -464,6 +503,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
             num_layers=self.n_rnn_layers,
             num_layers_out_fc=hidden_fc_sizes,
             dropout=self.dropout,
+            activation=self.activation,
             **self.pl_module_params,
             **kwargs,
         )
