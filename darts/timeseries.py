@@ -867,6 +867,9 @@ class TimeSeries:
 
         # sort on entire `df` to avoid having to sort individually later on
         if time_col:
+            """
+            Alessio: I think I found the bug!
+            """
             df.index = pd.DatetimeIndex(df[time_col])
             df = df.drop(columns=time_col)
         df = df.sort_index()
