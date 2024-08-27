@@ -129,7 +129,8 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             Default: ``None``.
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
-            trained to predict at step 'output_chunk_length' in the future. Default: True.
+            trained to predict each step 'output_chunk_length' in the future (features lags are shifted for each step).
+            Default: True.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
