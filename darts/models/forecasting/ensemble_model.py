@@ -2,8 +2,9 @@
 Ensemble Model Base Class
 """
 
+import os
 from abc import abstractmethod
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import BinaryIO, List, Optional, Sequence, Tuple, Union
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import (
@@ -11,8 +12,14 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
     LocalForecastingModel,
 )
+from darts.models.utils import TORCH_AVAILABLE
 from darts.timeseries import TimeSeries, concatenate
 from darts.utils.ts_utils import series2seq
+
+if TORCH_AVAILABLE:
+    from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+else:
+    TorchForecastingModel = None
 
 logger = get_logger(__name__)
 
@@ -376,6 +383,74 @@ class EnsembleModel(GlobalForecastingModel):
                 pred.quantile(self.train_samples_reduction) for pred in predictions
             ]
         return predictions[0] if is_single_series else predictions
+
+    def save(
+        self, path: Optional[Union[str, os.PathLike, BinaryIO]] = None, **pkl_kwargs
+    ) -> None:
+        """
+        Saves the ensemble model under a given path or file handle.
+
+        Additionally, two files are stored for each `TorchForecastingModel` under the forecasting models.
+
+        Example for saving and loading a :class:`RegressionEnsembleModel`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RegressionEnsembleModel, LinearRegressionModel, TiDEModel
+
+                model = RegressionEnsembleModel(
+                    forecasting_models = [
+                        LinearRegressionModel(lags=4),
+                        TiDEModel(input_chunk_length=4, output_chunk_length=4),
+                        ],
+                        regression_train_n_points=10,
+                )
+
+                model.save("my_ensemble_model.pkl")
+                model_loaded = RegressionEnsembleModel.load("my_ensemble_model.pkl")
+            ..
+
+        Parameters
+        ----------
+        path
+            Path or file handle under which to save the ensemble model at its current state. If no path is specified,
+            the ensemble model is automatically saved under ``"{RegressionEnsembleModel}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
+            If the i-th model of `forecasting_models` is a TorchForecastingModel, two files (model object and
+            checkpoint) are saved under ``"{path}.{ithModelClass}_{i}.pt"`` and ``"{path}.{ithModelClass}_{i}.ckpt"``.
+        pkl_kwargs
+            Keyword arguments passed to `pickle.dump()`
+        """
+
+        if path is None:
+            # default path
+            path = self._default_save_path() + ".pkl"
+
+        super().save(path, **pkl_kwargs)
+
+        for i, m in enumerate(self.forecasting_models):
+            if TORCH_AVAILABLE and issubclass(type(m), TorchForecastingModel):
+                path_tfm = f"{path}.{type(m).__name__}_{i}.pt"
+                m.save(path=path_tfm)
+
+    @staticmethod
+    def load(path: Union[str, os.PathLike, BinaryIO]) -> "EnsembleModel":
+        """
+        Loads the ensemble model from a given path or file handle.
+
+        Parameters
+        ----------
+        path
+            Path or file handle from which to load the ensemble model.
+        """
+
+        model: EnsembleModel = GlobalForecastingModel.load(path)
+
+        for i, m in enumerate(model.forecasting_models):
+            if TORCH_AVAILABLE and issubclass(type(m), TorchForecastingModel):
+                path_tfm = f"{path}.{type(m).__name__}_{i}.pt"
+                model.forecasting_models[i] = TorchForecastingModel.load(path_tfm)
+        return model
 
     @property
     def min_train_series_length(self) -> int:
