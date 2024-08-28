@@ -462,8 +462,8 @@ class BlockRNNModel(PastCovariatesTorchModel):
                 )
             raise_if(
                 activation and (hidden_fc_sizes is None or len(hidden_fc_sizes) == 0),
-                "The activation function has been set, but the model contains only one linear layer. "
-                "Activation function will not be applied.",
+                "The activation function has been set, but the model does not contain hidden fully connected layers; "
+                "either set `activation=None` or increase `hidden_fc_sizes`.",
                 logger=logger,
             )
 
