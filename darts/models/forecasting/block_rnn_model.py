@@ -260,8 +260,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
         dropout
             Fraction of neurons afected by Dropout.
         activation
-            The name of the activation function to be applied between the layers of the fully connected network.
-            Options include "ReLU", "Sigmoid", "Tanh", or None for no activation. Default: None.
+            The name of a torch.nn activation function to be applied between the layers of the fully connected network. Default: None.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
