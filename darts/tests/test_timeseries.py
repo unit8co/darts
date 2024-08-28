@@ -165,6 +165,31 @@ class TestTimeSeries:
         # getting index for idx should return i s.t., series[i].time == idx
         assert series.get_index_at_point(16) == 3
 
+    def test_grom_group_dataframe(self):
+        # checks that the time_index is of RangeIndex type when the time_col is a list/Rangeindex
+        group = ["a", "a", "a", "b", "b", "b"]
+        values = np.random.randn(len(group))
+
+        # for time as a list
+        time = [i for i in range(len(group))]
+        df = pd.DataFrame({
+            "group": group,
+            "time": time,
+            "x": values,
+        })
+        ts = TimeSeries.from_group_dataframe(df, group_cols="group", time_col="time")
+        assert isinstance(ts[0].time_index, pd.RangeIndex)
+
+        # for time as RangeIndex
+        time = pd.RangeIndex(len(group))
+        df = pd.DataFrame({
+            "group": group,
+            "time": time,
+            "x": values,
+        })
+        ts = TimeSeries.from_group_dataframe(df, group_cols="group", time_col="time")
+        assert isinstance(ts[0].time_index, pd.RangeIndex)
+
     def test_integer_indexing(self):
         n = 10
         int_idx = pd.Index([i for i in range(n)])
