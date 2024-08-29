@@ -2,6 +2,13 @@ from darts.logging import get_logger, raise_log
 
 logger = get_logger(__name__)
 
+try:
+    import torch  # noqa: F401
+
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+
 
 class NotImportedModule:
     """Helper class for handling import errors of optional dependencies."""
