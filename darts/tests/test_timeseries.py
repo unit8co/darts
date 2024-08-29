@@ -165,7 +165,7 @@ class TestTimeSeries:
         # getting index for idx should return i s.t., series[i].time == idx
         assert series.get_index_at_point(16) == 3
 
-    def test_grom_group_dataframe(self):
+    def test_from_group_dataframe(self):
         # checks that the time_index is of RangeIndex type when the time_col is a list/Rangeindex
         group = ["a", "a", "a", "b", "b", "b"]
         values = np.random.randn(len(group))
