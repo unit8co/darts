@@ -866,12 +866,8 @@ class TimeSeries:
         df = df[static_cov_cols + extract_value_cols + extract_time_col]
 
         if time_col:
-            # if not np.issubdtype(df[time_col].dtype, np.datetime64):
-            #     df = df.set_index(df[time_col])
-            # else:
-            #     df.index = pd.DatetimeIndex(df[time_col])
-            #     df.drop(columns=time_col)
             df = df.set_index(df[time_col])
+
         if df.index.is_monotonic_increasing:
             logger.warning(
                 "UserWarning: The `df` (time) index set from `time_col` is monotonically increasing. This "
