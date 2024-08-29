@@ -166,12 +166,12 @@ class TestTimeSeries:
         assert series.get_index_at_point(16) == 3
 
     def test_from_group_dataframe(self):
-        # checks that the time_index is of RangeIndex type when the time_col is a list/Rangeindex
+        # checks that the time_index is of RangeIndex type when the time_col is a(n) (unsorted) list and/or a Rangeindex
         group = ["a", "a", "a", "b", "b", "b"]
         values = np.random.randn(len(group))
 
-        # for time as a list
-        time = [i for i in range(len(group))]
+        # for time as a unsorted list
+        time = [2, 1, 0, 0, 1, 2]
         df = pd.DataFrame({
             "group": group,
             "time": time,
@@ -179,16 +179,33 @@ class TestTimeSeries:
         })
         ts = TimeSeries.from_group_dataframe(df, group_cols="group", time_col="time")
         assert isinstance(ts[0].time_index, pd.RangeIndex)
+        assert (ts[0].time_index == pd.RangeIndex(3)).all()
+        assert (ts[1].time_index == pd.RangeIndex(3)).all()
 
-        # for time as RangeIndex
-        time = pd.RangeIndex(len(group))
+        # for time as Timestamps
+        time = pd.DatetimeIndex(
+            [pd.Timestamp("20240103") - pd.Timedelta(i, "d") for i in range(3)]
+            + [pd.Timestamp("20240101") + pd.Timedelta(i, "d") for i in range(3)]
+        )
         df = pd.DataFrame({
             "group": group,
             "time": time,
             "x": values,
         })
         ts = TimeSeries.from_group_dataframe(df, group_cols="group", time_col="time")
-        assert isinstance(ts[0].time_index, pd.RangeIndex)
+        assert isinstance(ts[0].time_index, pd.DatetimeIndex)
+        assert (
+            ts[0].time_index
+            == pd.DatetimeIndex([
+                pd.Timestamp("20240101") + pd.Timedelta(i, "d") for i in range(3)
+            ])
+        ).all()
+        assert (
+            ts[1].time_index
+            == pd.DatetimeIndex([
+                pd.Timestamp("20240101") + pd.Timedelta(i, "d") for i in range(3)
+            ])
+        ).all()
 
     def test_integer_indexing(self):
         n = 10
