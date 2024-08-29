@@ -153,6 +153,19 @@ class TestBlockRNNModel:
                 **tfm_kwargs,
             )
 
+    def test_raise_if_no_activation_with_hidden_fc_layers(self):
+        with pytest.raises(ValueError):
+            BlockRNNModel(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                model="RNN",
+                activation=None,
+                hidden_fc_sizes=[10],
+                n_epochs=1,
+                random_state=42,
+                **tfm_kwargs,
+            )
+
     def test_fit(self, tmpdir_module):
         # Test basic fit()
         model = BlockRNNModel(

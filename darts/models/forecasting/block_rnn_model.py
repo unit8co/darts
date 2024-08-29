@@ -260,7 +260,8 @@ class BlockRNNModel(PastCovariatesTorchModel):
         dropout
             Fraction of neurons afected by Dropout.
         activation
-            The name of a torch.nn activation function to be applied between the layers of the fully connected network. Default: None.
+            The name of a torch.nn activation function to be applied between the layers of the fully connected network.
+            Default: None.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -447,6 +448,15 @@ class BlockRNNModel(PastCovariatesTorchModel):
                     ),
                     logger=logger,
                 )
+
+        raise_if(
+            activation is None
+            and hidden_fc_sizes is not None
+            and len(hidden_fc_sizes) > 0,
+            "The model contains hidden fully connected layers, but the activation function is not set; "
+            "please specify a valid activation function or remove the hidden layers.",
+            logger=logger,
+        )
 
         # check we got right activation function specified:
         if activation is not None:
