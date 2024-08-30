@@ -865,11 +865,19 @@ class TimeSeries:
 
         df = df[static_cov_cols + extract_value_cols + extract_time_col]
 
-        # sort on entire `df` to avoid having to sort individually later on
         if time_col:
-            df.index = pd.DatetimeIndex(df[time_col])
-            df = df.drop(columns=time_col)
-        df = df.sort_index()
+            df = df.set_index(df[time_col])
+
+        if df.index.is_monotonic_increasing:
+            logger.warning(
+                "UserWarning: The (time) index from `df` is monotonically increasing. This "
+                "results in time series groups with non-overlapping (time) index. You can ignore this warning if the "
+                "index represents the actual index of each individual time series group."
+            )
+
+        # sort on entire `df` to avoid having to sort individually later on
+        if not df.index.is_monotonic_increasing:
+            df = df.sort_index()
 
         groups = df.groupby(group_cols[0] if len(group_cols) == 1 else group_cols)
 
