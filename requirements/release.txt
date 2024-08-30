@@ -1,8 +1,8 @@
 bump2version==1.0.1
 docutils==0.17.1
-ipython==8.10.0
-ipykernel==5.3.4
-ipywidgets==7.5.1
+ipython==8.26.0
+ipykernel==6.29.5
+ipywidgets==8.1.5
 jupyterlab==4.2.5
 ipython_genutils==0.2.0
 jinja2==3.1.4
