@@ -412,28 +412,30 @@ class ConformalModel(GlobalForecastingModel, ABC):
             cp_preds = []
 
             # no historical forecasts were generated
-            if not s_hfcs or (train_length is not None and train_length > len(s_hfcs)):
+            if not s_hfcs:
                 cp_hfcs.append(cp_preds)
                 continue
 
             first_hfc = get_single_series(s_hfcs)
             last_hfc = s_hfcs if last_points_only else s_hfcs[-1]
 
-            # determine first forecast index for conformal prediction and minimum number of
-            # calibration examples
+            # compute the minimum required number of useful calibration residuals
+            # at least one or `train_length` examples
+            min_n_cal = train_length or 1
+            # `last_points_only=False` requires additional examples to use most recent information
+            # from all steps in the horizon
+            if not last_points_only:
+                min_n_cal += forecast_horizon - 1
+
+            # determine first forecast index for conformal prediction
             if cal_series is None:
                 # we need at least one residual per point in the horizon prior to the first conformal forecast
                 first_idx_train = forecast_horizon + self.output_chunk_shift
                 # plus some additional examples based on `train_length`
                 if train_length is not None:
                     first_idx_train += train_length - 1
-
-                # the minimum number of calibration examples includes the first forecast (+1)
-                min_n_cal = first_idx_train + 1
-
-                # check if later we need to drop some residuals without useful information
+                # check if later we need to drop some residuals without useful information (unknown residuals)
                 if overlap_end:
-                    # compute number of steps between `series` end and last forecast end
                     delta_end = n_steps_between(
                         end=last_hfc.end_time(),
                         start=series_.end_time(),
@@ -442,16 +444,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 else:
                     delta_end = 0
             else:
-                # calibration set is decoupled from `series` forecasts -> we can start with the first forecast
+                # calibration set is decoupled from `series` forecasts; we can start with the first forecast
                 first_idx_train = 0
-
-                # at least one or `train_length` examples
-                min_n_cal = max(train_length or 0, 1)
-                # `last_points_only=False` requires additional examples to use most recent information
-                # from all steps in the horizon
-                if not last_points_only:
-                    min_n_cal += forecast_horizon - 1
-
                 # check if we need to drop some residuals without useful information
                 cal_series_ = cal_series[series_idx]
                 cal_last_hfc = cal_forecasts[series_idx][-1]
@@ -459,24 +453,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     end=cal_last_hfc.end_time(),
                     start=cal_series_.end_time(),
                     freq=cal_series_.freq,
-                )
-                # if calibration set gives residuals with unuseful information, increase the required size
-                if delta_end > 0:
-                    if last_points_only:
-                        min_n_cal += delta_end
-                    elif delta_end >= forecast_horizon:
-                        min_n_cal += delta_end - forecast_horizon + 1
-
-            if len(res) < min_n_cal:
-                set_name = "" if cal_series is None else "cal_"
-                raise_log(
-                    ValueError(
-                        "Could not build the minimum required calibration input with the provided "
-                        f"`{set_name}series` and `{set_name}*_covariates` at series index: {series_idx}. "
-                        f"Expected to generate at least `{min_n_cal}` calibration forecasts, "
-                        f"but could only generate `{len(res)}`."
-                    ),
-                    logger=logger,
                 )
 
             # drop residuals without useful information
@@ -489,9 +465,27 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 # useful residual information only up until the forecast
                 # starting at the last time step in `series`
                 last_res_idx = -(delta_end - forecast_horizon + 1)
+            if last_res_idx is None and cal_series is None:
+                # drop at least the one residuals/forecast from the end, since we can only use prior residuals
+                last_res_idx = -(self.output_chunk_shift + 1)
+                # with last points only, ignore the last `horizon` residuals to avoid look-ahead bias
+                if last_points_only:
+                    last_res_idx -= forecast_horizon - 1
+
             if last_res_idx is not None:
                 res = res[:last_res_idx]
 
+            if first_idx_train >= len(s_hfcs) or len(res) < min_n_cal:
+                set_name = "" if cal_series is None else "cal_"
+                raise_log(
+                    ValueError(
+                        "Could not build the minimum required calibration input with the provided "
+                        f"`{set_name}series` and `{set_name}*_covariates` at series index: {series_idx}. "
+                        f"Expected to generate at least `{min_n_cal}` calibration forecasts with known residuals "
+                        f"before the first conformal forecast, but could only generate `{len(res)}`."
+                    ),
+                    logger=logger,
+                )
             # skip solely based on `start`
             first_idx_start = 0
             if start is not None:
@@ -546,18 +540,44 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 res = np.array(res)
                 # -> (forecast horizon, n components, n samples * n examples)
                 # rearrange the residuals to avoid look-ahead bias and to have the same number of examples per
-                # point in the horizon;
-                # e.g. for a horizon = 2, and some forecasting point at time t3, we would have residuals:
-                # R1: t1_h1, R2: t1_h2  (e.g. t1_h1 is the first forecasted point from time t1 -> t2)
-                # R3: t2_h1, R4: t2_h2
-                # - R4 would be unknown at time t3 -> we exclude it
-                # - R1 is ignored to have the same number of examples per point in the horizon (1 in this case)
+                # point in the horizon. We want the most recent residuals in the past for each step in the horizon.
+                # Meaning that to conformalize any forecast at some time `t` with `horizon=n`:
+                #   - for `horizon=1` of that forecast calibrate with residuals from all 1-step forecasts up until
+                #     forecast time `t-1`
+                #   - for `horizon=n` of that forecast calibrate with residuals from all n-step forecasts up until
+                #     forecast time `t-n`
+                # The rearranged residuals will look as follows, where `res_ti_cj_hk` is the
+                # residuals at time `ti` for component `cj` at forecasted step/horizon `hk`.
+                # ```
+                # [  # forecast horizon
+                #     [  # components
+                #         [res_t0_c0_h1, ...]  # residuals at different times
+                #         [..., res_tn_cn_h1],
+                #     ],
+                #     ...,
+                #     [
+                #         [res_t0_c0_hn, ...],
+                #         [..., res_tn_cn_hn],
+                #     ],
+                # ]
+                # ```
                 res_ = []
                 for irr in range(forecast_horizon - 1, -1, -1):
                     res_end_idx = -(forecast_horizon - (irr + 1))
                     res_.append(res[irr : res_end_idx or None, abs(res_end_idx)])
                 res = np.concatenate(res_, axis=2).T
             assert not np.isnan(res).any().any()
+
+            # get the last forecast index based on the residual examples
+            if cal_series is None:
+                last_fc_idx = res.shape[2] + (
+                    forecast_horizon + self.output_chunk_shift
+                )
+            else:
+                last_fc_idx = len(s_hfcs)
+
+            if last_fc_idx > len(s_hfcs):
+                raise_log(ValueError("blabla"), logger=logger)
 
             q_hat = None
             if cal_series is not None:
@@ -584,6 +604,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     )
 
                     cal_res = res[:, :, cal_start:cal_end]
+
+                    # TODO: remove checks
+                    len_exp = cal_end - (cal_start or 0)
+                    if cal_res.shape[2] != len_exp:
+                        raise_log(ValueError("Too short cal"), logger=logger)
+
                     q_hat_ = self._calibrate_interval(cal_res)
                 else:
                     # with a calibration set, use a constant q_hat
@@ -593,7 +619,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             # historical conformal prediction
             if last_points_only:
                 for idx, pred_vals in enumerate(
-                    s_hfcs.values(copy=False)[first_fc_idx::stride]
+                    s_hfcs.values(copy=False)[first_fc_idx:last_fc_idx:stride]
                 ):
                     pred_vals = np.expand_dims(pred_vals, 0)
                     cp_pred = conformal_predict(idx, pred_vals)
@@ -613,7 +639,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 )
                 cp_hfcs.append(cp_preds)
             else:
-                for idx, pred in enumerate(s_hfcs[first_fc_idx::stride]):
+                for idx, pred in enumerate(s_hfcs[first_fc_idx:last_fc_idx:stride]):
                     pred_vals = pred.values(copy=False)
                     cp_pred = conformal_predict(idx, pred_vals)
                     cp_pred = _build_forecast_series(
@@ -631,6 +657,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
     def save(
         self, path: Optional[Union[str, os.PathLike, BinaryIO]] = None, **pkl_kwargs
     ) -> None:
+        # TODO: Use new save/load logic from EnsembleModel
         model_name = self.__class__.__name__
         raise_log(
             NotImplementedError(

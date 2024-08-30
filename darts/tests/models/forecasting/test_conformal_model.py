@@ -629,15 +629,13 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [1, 3, 5],  # horizon
-                [True, False],  # univariate series
-                [True, False],  # single series,
-                [0, 1],  # output chunk shift
-                [None, 1],  # train length
-                [False, True],  # use covariates
-            )
+        itertools.product(
+            [1, 3, 5],  # horizon
+            [True, False],  # univariate series
+            [True, False],  # single series,
+            [0, 1],  # output chunk shift
+            [None, 1],  # train length
+            [False, True],  # use covariates
         ),
     )
     def test_naive_conformal_model_historical_forecasts(self, config):
@@ -896,12 +894,10 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [1, 3, 5],  # horizon
-                [0, 1],  # output chunk shift
-                [False, True],  # use covariates
-            )
+        itertools.product(
+            [1, 3, 5],  # horizon
+            [0, 1],  # output chunk shift
+            [False, True],  # use covariates
         ),
     )
     def test_too_short_input_predict(self, config):
@@ -912,6 +908,7 @@ class TestConformalModel:
         icl = IN_LEN
         min_len = icl + ocs + n
         series = tg.linear_timeseries(length=min_len)
+        series_train = [tg.linear_timeseries(length=IN_LEN + OUT_LEN + ocs)] * 2
 
         model_params = {"output_chunk_shift": ocs}
         covs_kwargs = {}
@@ -919,11 +916,10 @@ class TestConformalModel:
         covs_kwargs_train = {}
         covs_kwargs_too_short = {}
         cal_covs_kwargs_short = {}
-        series = self.ts_pass_train.with_static_covariates(None)
         if use_covs:
             model_params["lags_past_covariates"] = regr_kwargs["lags"]
+            covs_kwargs_train["past_covariates"] = series_train
             # use shorter covariates, to test whether residuals are still properly extracted
-            covs_kwargs_train["past_covariates"] = [series] * 2
             past_covs = series
             # for auto-regression, we require longer past covariates
             if n > OUT_LEN:
@@ -936,7 +932,7 @@ class TestConformalModel:
 
         model = ConformalNaiveModel(
             train_model(
-                series=[series] * 2,
+                series=series_train,
                 model_params=model_params,
                 **covs_kwargs_train,
             ),
@@ -985,17 +981,14 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [False, True],  # last points only
-                [False, True],  # overlap end
-                [None, 2],  # train length
-                [False, True],  # use multi-series
-                [0, 1],  # output chunk shift
-                [1, 3, 5],  # horizon
-                [True, False],  # use covs
-            )
-        )[6:7],
+        itertools.product(
+            [False, True],  # last points only
+            [False, True],  # overlap end
+            [None, 2],  # train length
+            [0, 1],  # output chunk shift
+            [1, 3, 5],  # horizon
+            [True, False],  # use covs
+        ),
     )
     def test_too_short_input_hfc(self, config):
         """Checks conformal model historical forecasts with minimum required input and too short input."""
@@ -1003,7 +996,6 @@ class TestConformalModel:
             last_points_only,
             overlap_end,
             train_length,
-            use_multi_series,
             ocs,
             n,
             use_covs,
@@ -1015,37 +1007,71 @@ class TestConformalModel:
         ocl = OUT_LEN
         horizon_ocs = n + ocs
         add_train_length = train_length - 1 if train_length is not None else 0
-        # min length to generate 1 forecast
-        min_len_val_series = icl + 2 * horizon_ocs + add_train_length
+        # min length to generate 1 conformal forecast
+        min_len_val_series = (
+            icl + horizon_ocs * (1 + int(not overlap_end)) + add_train_length
+        )
 
-        series_train = tg.linear_timeseries(length=min_len_val_series + (ocl + ocs - 1))
-        series = series_train[:min_len_val_series]
+        series_train = [tg.linear_timeseries(length=icl + ocl + ocs)] * 2
+        series = tg.linear_timeseries(length=min_len_val_series)
+
+        # define cal series to get the minimum required cal set
+        if overlap_end:
+            # with overlap_end `series` has the exact length to generate one forecast after the end of the input series
+            # Therefore, `series` has already the minimum length for one calibrated forecast
+            cal_series = series
+        else:
+            # without overlap_end, we use a shorter input, since the last forecast is within the input series
+            # (it generates more residuals with useful information than the minimum requirements)
+            cal_series = series[:-horizon_ocs]
+
+        series_with_cal = series[: -(horizon_ocs + add_train_length)]
 
         model_params = {"output_chunk_shift": ocs}
-        covs_kwargs = {}
-        cal_covs_kwargs = {}
         covs_kwargs_train = {}
-        covs_kwargs_too_short = {}
+        covs_kwargs = {}
+        covs_with_cal_kwargs = {}
+        cal_covs_kwargs = {}
+        covs_kwargs_short = {}
         cal_covs_kwargs_short = {}
         if use_covs:
             model_params["lags_past_covariates"] = regr_kwargs["lags"]
-            # use shorter covariates, to test whether residuals are still properly extracted
-            covs_kwargs_train["past_covariates"] = [series_train] * 2
-            past_covs = series[: -(n + ocs)]
+            covs_kwargs_train["past_covariates"] = series_train
+
+            # `- horizon_ocs` to generate forecasts extending up until end of target series
+            if not overlap_end:
+                past_covs = series[:-horizon_ocs]
+            else:
+                past_covs = series
+
+            # calibration set is always generated internally with `overlap_end=True`
+            # make shorter to not compute residuals without useful information
+            cal_past_covs = cal_series[: -(1 + ocs)]
+
+            # last_points_only requires `horizon` residuals less
+            if last_points_only:
+                cal_past_covs = cal_past_covs[: (-(n - 1) or None)]
 
             # for auto-regression, we require longer past covariates
             if n > OUT_LEN:
                 past_covs = past_covs.append_values([1.0] * (n - OUT_LEN))
+                cal_past_covs = cal_past_covs.append_values([1.0] * (n - OUT_LEN))
 
+            # covariates lengths to generate exactly one forecast
             covs_kwargs["past_covariates"] = past_covs
-            covs_kwargs_too_short["past_covariates"] = past_covs[:-1]
-            # giving covs in calibration set requires one calibration example less
-            cal_covs_kwargs["cal_past_covariates"] = past_covs[:-1]
-            cal_covs_kwargs_short["cal_past_covariates"] = past_covs[:-2]
+            # giving a calibration set requires fewer forecasts
+            covs_with_cal_kwargs["past_covariates"] = past_covs[:-horizon_ocs]
+            cal_covs_kwargs["cal_past_covariates"] = cal_past_covs
+
+            # use too short covariates to check that errors are raised
+            covs_kwargs_short["past_covariates"] = covs_kwargs["past_covariates"][:-1]
+            cal_covs_kwargs_short["cal_past_covariates"] = cal_covs_kwargs[
+                "cal_past_covariates"
+            ][:-1]
 
         model = ConformalNaiveModel(
             train_model(
-                series=[series_train] * 2,
+                series=series_train,
                 model_params=model_params,
                 **covs_kwargs_train,
             ),
@@ -1059,35 +1085,35 @@ class TestConformalModel:
             "forecast_horizon": n,
         }
         # prediction works with long enough input
-        preds1 = model.historical_forecasts(
+        hfcs = model.historical_forecasts(
             series=series,
             **covs_kwargs,
             **hfc_kwargs,
         )
-        preds2 = model.historical_forecasts(
-            series=series[: -(n + ocs)],
-            cal_series=series[: -(n + ocs)],
-            **covs_kwargs,
+        hfcs_cal = model.historical_forecasts(
+            series=series_with_cal,
+            cal_series=cal_series,
+            **covs_with_cal_kwargs,
             **cal_covs_kwargs,
             **hfc_kwargs,
         )
         if last_points_only:
-            preds1 = [preds1]
-            preds2 = [preds2]
+            hfcs = [hfcs]
+            hfcs_cal = [hfcs_cal]
 
-        # assert len(preds1) == 1 + n * int(overlap_end)
-        assert len(preds1) == len(preds2) == 1 + n * int(overlap_end)
+        assert len(hfcs) == len(hfcs_cal) == 1
+        for hfc, hfc_cal in zip(hfcs, hfcs_cal):
+            assert not np.isnan(hfc.all_values()).any().any()
+            assert not np.isnan(hfc_cal.all_values()).any().any()
 
-        for pred1, pred2 in zip(preds1, preds2):
-            assert not np.isnan(pred1.all_values()).any().any()
-            assert not np.isnan(pred2.all_values()).any().any()
         # input too short: without covariates, make `series` shorter. Otherwise, use the shorter covariates
         series_ = series[:-1] if not use_covs else series
+        cal_series_ = cal_series[:-1] if not use_covs else cal_series
 
         with pytest.raises(ValueError) as exc:
             _ = model.historical_forecasts(
                 series=series_,
-                **covs_kwargs_too_short,
+                **covs_kwargs_short,
                 **hfc_kwargs,
             )
         assert str(exc.value).startswith(
@@ -1096,18 +1122,19 @@ class TestConformalModel:
 
         with pytest.raises(ValueError) as exc:
             _ = model.historical_forecasts(
-                series=series[: -(n + ocs)],
-                cal_series=series_[: -(n + ocs)],
-                **covs_kwargs,
+                series=series_with_cal,
+                cal_series=cal_series_,
+                **covs_with_cal_kwargs,
                 **cal_covs_kwargs_short,
                 **hfc_kwargs,
             )
-        if not use_covs or n > 1:
+        if (not use_covs or n > 1 or (train_length or 1) > 1) and not (
+            last_points_only and use_covs and train_length is None
+        ):
             assert str(exc.value).startswith(
                 "Could not build the minimum required calibration input with the provided `cal_series`"
             )
         else:
-            # if `cal_past_covariates` are too short and `horizon=1`, then it raises error from the forecasting model
             assert str(exc.value).startswith(
                 "Cannot build a single input for prediction with the provided model"
             )
