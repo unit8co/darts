@@ -870,7 +870,7 @@ class TimeSeries:
 
         if df.index.is_monotonic_increasing:
             logger.warning(
-                "UserWarning: The `df` (time) index set from `time_col` is monotonically increasing. This "
+                "UserWarning: The (time) index from `df` is monotonically increasing. This "
                 "results in time series groups with non-overlapping (time) index. You can ignore this warning if the "
                 "index represents the actual index of each individual time series group."
             )
