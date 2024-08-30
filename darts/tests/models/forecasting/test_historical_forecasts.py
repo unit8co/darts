@@ -2646,7 +2646,9 @@ class TestHistoricalforecast:
                 stride=stride,
                 forecast_horizon=horizon,
             )
-        assert str(exc.value).startswith("Cannot build a single input for prediction")
+        assert str(exc.value).startswith(
+            "Could not build the minimum required calibration input with the provided `series`"
+        )
 
         if not isinstance(series_val, list):
             series_val = [series_val]
