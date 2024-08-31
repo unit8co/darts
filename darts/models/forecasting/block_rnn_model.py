@@ -210,7 +210,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
         n_rnn_layers: int = 1,
         hidden_fc_sizes: Optional[List] = None,
         dropout: float = 0.0,
-        activation: Optional[str] = None,
+        activation: str = "ReLU",
         **kwargs,
     ):
         """Block Recurrent Neural Network Model (RNNs).
