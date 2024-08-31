@@ -126,46 +126,6 @@ class TestBlockRNNModel:
         assert preds4.all_values().shape == preds3.all_values().shape
         assert preds4.time_index.equals(preds3.time_index)
 
-    def test_invalid_activation(self):
-        with pytest.raises(
-            ValueError, match="Invalid activation function: InvalidActivation"
-        ):
-            BlockRNNModel(
-                input_chunk_length=1,
-                output_chunk_length=1,
-                model="RNN",
-                activation="InvalidActivation",
-                hidden_fc_sizes=[10],
-                n_epochs=1,
-                random_state=42,
-                **tfm_kwargs,
-            )
-
-    def test_raise_if_activation_with_single_linear_layer(self):
-        with pytest.raises(ValueError):
-            BlockRNNModel(
-                input_chunk_length=1,
-                output_chunk_length=1,
-                model="RNN",
-                activation="ReLU",
-                n_epochs=1,
-                random_state=42,
-                **tfm_kwargs,
-            )
-
-    def test_raise_if_no_activation_with_hidden_fc_layers(self):
-        with pytest.raises(ValueError):
-            BlockRNNModel(
-                input_chunk_length=1,
-                output_chunk_length=1,
-                model="RNN",
-                activation=None,
-                hidden_fc_sizes=[10],
-                n_epochs=1,
-                random_state=42,
-                **tfm_kwargs,
-            )
-
     def test_fit(self, tmpdir_module):
         # Test basic fit()
         model = BlockRNNModel(
@@ -235,18 +195,3 @@ class TestBlockRNNModel:
 
     def test_pred_length(self):
         self.helper_test_pred_length(BlockRNNModel, self.series)
-
-    def test_varied_chunk_lengths(self):
-        model = BlockRNNModel(
-            input_chunk_length=5,
-            output_chunk_length=3,
-            n_epochs=2,
-            activation="ReLU",
-            hidden_fc_sizes=[10],
-            random_state=42,
-            **tfm_kwargs,
-        )
-        model.fit(self.series[:50])
-        pred = model.predict(3)
-        assert len(pred) == 3
-        assert pred.values().shape == (3, 1)

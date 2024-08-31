@@ -10,7 +10,7 @@ from typing import List, Optional, Tuple, Type, Union
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger, raise_if, raise_log
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLPastCovariatesModule,
     io_processor,
@@ -261,7 +261,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
             Fraction of neurons afected by Dropout.
         activation
             The name of a torch.nn activation function to be applied between the layers of the fully connected network.
-            Default: None.
+            Default: "ReLU".
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -449,34 +449,6 @@ class BlockRNNModel(PastCovariatesTorchModel):
                     logger=logger,
                 )
 
-        raise_if(
-            activation is None
-            and hidden_fc_sizes is not None
-            and len(hidden_fc_sizes) > 0,
-            "The model contains hidden fully connected layers, but the activation function is not set; "
-            "please specify a valid activation function or remove the hidden layers.",
-            logger=logger,
-        )
-
-        # check we got right activation function specified:
-        if activation is not None:
-            try:
-                getattr(nn, activation)
-            except AttributeError:
-                raise_log(
-                    ValueError(
-                        f"Invalid activation function: {activation}. "
-                        "Please use a valid torch.nn activation function name."
-                    ),
-                    logger=logger,
-                )
-            raise_if(
-                activation and (hidden_fc_sizes is None or len(hidden_fc_sizes) == 0),
-                "The activation function has been set, but the model does not contain hidden fully connected layers; "
-                "either set `activation=None` or increase `hidden_fc_sizes`.",
-                logger=logger,
-            )
-
         self.rnn_type_or_module = model
         self.hidden_fc_sizes = hidden_fc_sizes
         self.hidden_dim = hidden_dim
@@ -516,3 +488,11 @@ class BlockRNNModel(PastCovariatesTorchModel):
             **self.pl_module_params,
             **kwargs,
         )
+
+    def _check_ckpt_parameters(self, tfm_save):
+        # new parameters were added that will break loading weights
+        new_params = ["activation"]
+        for param in new_params:
+            if param not in tfm_save.model_params:
+                tfm_save.model_params[param] = "ReLU"
+        super()._check_ckpt_parameters(tfm_save)
