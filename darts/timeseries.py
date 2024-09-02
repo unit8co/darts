@@ -3249,6 +3249,12 @@ class TimeSeries:
 
         This works only for deterministic time series (i.e., made of 1 sample).
 
+        Notes
+        -----
+        0-indexing is enforced across all the encodings, see
+        :meth:`datetime_attribute_timeseries() <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
+        for more information.
+
         Parameters
         ----------
         attribute
