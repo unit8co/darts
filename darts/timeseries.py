@@ -909,7 +909,7 @@ class TimeSeries:
             )
 
         # sort on entire `df` to avoid having to sort individually later on
-        if not df.index.is_monotonic_increasing:
+        else:
             df = df.sort_index()
 
         groups = df.groupby(group_cols[0] if len(group_cols) == 1 else group_cols)
