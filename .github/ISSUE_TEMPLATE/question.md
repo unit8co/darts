@@ -1,5 +1,5 @@
 ---
-name: Documentation question
+name: General question
 about: Ask clarification about the documentation or a feature
 title: "[QUESTION]"
 labels: question, triage
