@@ -810,6 +810,50 @@ class TestTimeSeries:
         assert appended.time_index.equals(expected_idx)
         assert appended.components.equals(series.components)
 
+    def test_pre_and_append_values_empty(self):
+        series = linear_timeseries(start=1, length=9, freq=2)
+        appended = series.append_values([])
+        assert np.allclose(appended.values(), series.values())
+        appended = series.prepend_values([])
+        assert np.allclose(appended.values(), series.values())
+
+    def test_pre_and_append_values_shape(self):
+        series = TimeSeries.from_values(np.array([i for i in range(9)]))
+        values = np.array([i for i in range(4)]).reshape(4, 1)
+        appended = series.append_values(values)
+        prepended = series.prepend_values(values)
+        ts = TimeSeries.from_values(np.array([i for i in range(4)]))
+        expected_vals = np.concatenate([series.all_values(), ts.all_values()], axis=0)
+        expected_pre_vals = np.concatenate(
+            [ts.all_values(), series.all_values()], axis=0
+        )
+        assert appended._xa.shape[1:] == series._xa.shape[1:]
+        assert prepended._xa.shape[1:] == series._xa.shape[1:]
+        assert np.allclose(appended.all_values(), expected_vals)
+        assert np.allclose(prepended.all_values(), expected_pre_vals)
+
+        series = TimeSeries.from_values(np.array([i for i in range(9)]))
+        values = np.array([i for i in range(4)]).reshape(2, 2)
+        appended = series.append_values(values)
+        prepended = series.prepend_values(values)
+        ts = TimeSeries.from_values(np.array([i for i in range(4)]))
+        expected_vals = np.concatenate([series.all_values(), ts.all_values()], axis=0)
+        expected_pre_vals = np.concatenate(
+            [ts.all_values(), series.all_values()], axis=0
+        )
+        assert appended._xa.shape[1:] == series._xa.shape[1:]
+        assert prepended._xa.shape[1:] == series._xa.shape[1:]
+        assert np.allclose(appended.all_values(), expected_vals)
+        assert np.allclose(prepended.all_values(), expected_pre_vals)
+
+        series = TimeSeries.from_values(np.array([i for i in range(9)]).reshape(3, 3))
+        values = np.array([i for i in range(12)]).reshape(2, 2, 3)
+        appended = series.append_values(values)
+        prepended = series.prepend_values(values)
+        ts = TimeSeries.from_values(np.array([i for i in range(12)]))
+        assert appended._xa.shape[1:] == series._xa.shape[1:]
+        assert prepended._xa.shape[1:] == series._xa.shape[1:]
+
     def test_prepend(self):
         TestTimeSeries.helper_test_prepend(self, self.series1)
         # Check `prepend` deals with `RangeIndex` series correctly:
