@@ -523,3 +523,18 @@ def expand_arr(arr: np.ndarray, ndim: int):
     if len(shape) != ndim:
         arr = arr.reshape(shape + tuple(1 for _ in range(ndim - len(shape))))
     return arr
+
+
+def expand_arr_comp_sample(arr: np.ndarray, shape_0: tuple):
+    """Manipulates a np.ndarray to match the component and sample dimension"""
+    shape_1 = arr.shape
+
+    # Compute the total dimension size
+    dim_0 = np.array(shape_0)
+    dim_1 = np.array(shape_1)
+
+    # Try to "refill" an array by keeping all but the first (time) dimension fixed,
+    # that is: t * np.prod(dim_0[1:]) = np.prod(dim_1)
+    t = int(np.prod(dim_1) / np.prod(dim_0[1:]))
+    arr = arr.reshape((t,) + shape_0[1:])
+    return arr

@@ -53,7 +53,12 @@ from scipy.stats import kurtosis, skew
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
-from darts.utils.utils import expand_arr, generate_index, n_steps_between
+from darts.utils.utils import (
+    expand_arr,
+    expand_arr_comp_sample,
+    generate_index,
+    n_steps_between,
+)
 
 try:
     from typing import Literal
@@ -2881,6 +2886,29 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with the new values appended
         """
+
+        values = np.array(values) if not isinstance(values, np.ndarray) else values
+
+        # If the component and sample dimension don't match, we try to recast the values into the
+        # appropriate shape:
+        if values.shape[1:] != self._xa.values.shape[1:]:
+            logger.warning(
+                "The new values have a different component and sample dimension compared to the present series:"
+                f"Received : {values.shape[1:]}, expected: {self._xa.values.shape[1:]}."
+                "We try to recast the values into a fitting shape."
+            )
+            try:
+                values = expand_arr_comp_sample(values, self._xa.values.shape)
+                print(values)
+            except Exception:
+                raise_log(
+                    ValueError(
+                        "The reshaping of the values to match the series component and"
+                        "sample dimension cannot be performed."
+                    ),
+                    logger=logger,
+                )
+
         if self._has_datetime_index:
             idx = pd.DatetimeIndex(
                 [self.end_time() + i * self._freq for i in range(1, len(values) + 1)],
@@ -2892,6 +2920,7 @@ class TimeSeries:
                 stop=self.end_time() + (len(values) + 1) * self._freq,
                 step=self._freq,
             )
+
         return self.append(
             self.__class__.from_times_and_values(
                 values=values,
@@ -2940,6 +2969,28 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with the new values prepended.
         """
+
+        values = np.array(values) if not isinstance(values, np.ndarray) else values
+
+        # If the component and sample dimension don't match, we try to recast the values into the
+        # appropriate shape:
+        if values.shape[1:] != self._xa.values.shape[1:]:
+            logger.warning(
+                "The new values have a different component and sample dimension compared to the present series:"
+                f"Received : {values.shape[1:]}, expected: {self._xa.values.shape[1:]}."
+                "We try to recast the values into a fitting shape."
+            )
+            try:
+                values = expand_arr_comp_sample(values, self._xa.values.shape)
+                print(values)
+            except Exception:
+                raise_log(
+                    ValueError(
+                        "The reshaping of the values to match the series component and"
+                        "sample dimension cannot be performed. "
+                    ),
+                    logger=logger,
+                )
 
         if self._has_datetime_index:
             idx = pd.DatetimeIndex(
