@@ -166,8 +166,9 @@ class RegressionModel(GlobalForecastingModel):
             will be used per component in the multivariate series.
             If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model is
-            trained to predict at step 'output_chunk_length' in the future. Default: True.
+            If True, a separate model will be trained for each future lag to predict. If False, a single model
+            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
+            `output_chunk_length - n` for each step `n`). Default: True.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce

@@ -104,6 +104,56 @@ class TestTimeSeriesStaticCovariate:
             ts, TimeSeries.from_json(ts_json, static_covariates=ts.static_covariates)
         )
 
+    def test_from_group_dataframe(self):
+        # checks that the time_index is of RangeIndex type when the time_col is a(n) (unsorted) list and/or a Rangeindex
+        group = ["a", "a", "a", "b", "b", "b"]
+        values = np.arange(len(group))
+
+        # for time as a unsorted list
+        time = [2, 1, 0, 0, 1, 2]
+        df = pd.DataFrame({
+            "group": group,
+            "time": time,
+            "x": values,
+        })
+        ts = TimeSeries.from_group_dataframe(df, group_cols="group", time_col="time")
+
+        # check the time index
+        assert ts[0].time_index.equals(pd.RangeIndex(3))
+        assert ts[1].time_index.equals(pd.RangeIndex(3))
+
+        # check the values
+        assert (ts[0].values().flatten() == [values[2], values[1], values[0]]).all()
+        assert (ts[1].values().flatten() == [values[3], values[4], values[5]]).all()
+
+        # for time as Timestamps
+        time = pd.DatetimeIndex(
+            [pd.Timestamp("20240103") - pd.Timedelta(i, "d") for i in range(3)]
+            + [pd.Timestamp("20240101") + pd.Timedelta(i, "d") for i in range(3)]
+        )
+        df = pd.DataFrame({
+            "group": group,
+            "time": time,
+            "x": values,
+        })
+        ts = TimeSeries.from_group_dataframe(df, group_cols="group", time_col="time")
+
+        # check the time index
+        assert ts[0].time_index.equals(
+            pd.DatetimeIndex([
+                pd.Timestamp("20240101") + pd.Timedelta(i, "d") for i in range(3)
+            ])
+        )
+        assert ts[1].time_index.equals(
+            pd.DatetimeIndex([
+                pd.Timestamp("20240101") + pd.Timedelta(i, "d") for i in range(3)
+            ])
+        )
+
+        # check the values
+        assert (ts[0].values().flatten() == [values[2], values[1], values[0]]).all()
+        assert (ts[1].values().flatten() == [values[3], values[4], values[5]]).all()
+
     def test_timeseries_from_longitudinal_df(self):
         # univariate static covs: only group by "st1", keep static covs "st1"
         value_cols = ["a", "b", "c"]
