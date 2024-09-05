@@ -144,8 +144,7 @@ class _BlockRNNModule(CustomBlockRNNModule):
         Outputs
         -------
         y of shape `(batch_size, output_chunk_length, target_size, nr_params)`
-            Tensor containing the prediction at the last time step of the sequence, where optional activation
-            functions may have been applied between the layers of the fully connected network.
+            Tensor containing the prediction at the last time step of the sequence.
         """
 
         super().__init__(**kwargs)
