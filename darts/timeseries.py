@@ -2854,10 +2854,7 @@ class TimeSeries:
             "Both series must have the same number of components.",
             logger,
         )
-        # In the Rangeindex we never call this (especially when empty), thus not resulting in the
-        # bug when ultimately calling "other.start_time()"
-        # Checking that other.time_index is NOT EMPTY and only then entering should fix the issue
-        if self._has_datetime_index and (not other.time_index.empty):
+        if len(self) > 0 and len(other) > 0:
             raise_if_not(
                 other.start_time() == self.end_time() + self.freq,
                 "Appended TimeSeries must start one time step after current one.",
