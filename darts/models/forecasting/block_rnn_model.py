@@ -30,7 +30,7 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
         nr_params: int,
         num_layers_out_fc: Optional[List] = None,
         dropout: float = 0.0,
-        activation: Optional[str] = None,
+        activation: str = "ReLU",
         **kwargs,
     ):
         """This class allows to create custom block RNN modules that can later be used with Darts'
