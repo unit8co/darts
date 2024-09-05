@@ -762,6 +762,9 @@ class TestTimeSeries:
         assert test_series.time_index.equals(prepended_sq.time_index)
         assert prepended_sq.components.equals(test_series.components)
 
+        # component and sample dimension should match
+        assert prepended._xa.shape[1:] == test_series._xa.shape[1:]
+
     def test_slice(self):
         TestTimeSeries.helper_test_slice(self, self.series1)
 
@@ -797,62 +800,80 @@ class TestTimeSeries:
         assert appended.time_index.equals(expected_idx)
         assert appended.components.equals(series_1.components)
 
-    def test_append_values(self):
-        TestTimeSeries.helper_test_append_values(self, self.series1)
-        # Check `append_values` deals with `RangeIndex` series correctly:
-        series = linear_timeseries(start=1, length=5, freq=2)
-        appended = series.append_values(np.ones((2, 1, 1)))
-        expected_vals = np.concatenate(
-            [series.all_values(), np.ones((2, 1, 1))], axis=0
-        )
-        expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
+    @pytest.mark.parametrize(
+        "series, values, expected_vals, expected_idx",
+        [
+            (
+                TimeSeries.from_times_and_values(
+                    times=pd.DatetimeIndex(["20240101", "20240102", "20240103"]),
+                    values=np.arange(3),
+                ),
+                np.arange(2),
+                np.concatenate(
+                    [np.arange(3).reshape(3, 1, 1), np.arange(2).reshape(2, 1, 1)],
+                    axis=0,
+                ),
+                pd.DatetimeIndex([
+                    "20240101",
+                    "20240102",
+                    "20240103",
+                    "20240104",
+                    "20240105",
+                ]),
+            ),
+            (
+                linear_timeseries(start=1, length=5, freq=2),
+                np.ones((2, 1, 1)),
+                np.concatenate(
+                    [
+                        linear_timeseries(start=1, length=5, freq=2).all_values(),
+                        np.ones((2, 1, 1)),
+                    ],
+                    axis=0,
+                ),
+                pd.RangeIndex(start=1, stop=15, step=2),
+            ),
+            (
+                TimeSeries.from_values(np.arange(9)),
+                np.arange(4),
+                np.concatenate(
+                    [np.arange(9).reshape(9, 1, 1), np.arange(4).reshape(4, 1, 1)],
+                    axis=0,
+                ),
+                pd.RangeIndex(start=0, stop=13, step=1),
+            ),
+            (
+                TimeSeries.from_values(np.arange(9)),
+                np.arange(4).reshape(4, 1),
+                np.concatenate(
+                    [np.arange(9).reshape(9, 1, 1), np.arange(4).reshape(4, 1, 1)],
+                    axis=0,
+                ),
+                pd.RangeIndex(start=0, stop=13, step=1),
+            ),
+            (
+                TimeSeries.from_values(np.arange(9).reshape(3, 3)),
+                np.arange(3).reshape(1, 3),
+                np.concatenate(
+                    [np.arange(9).reshape(3, 3, 1), np.arange(3).reshape(1, 3, 1)],
+                    axis=0,
+                ),
+                pd.RangeIndex(start=0, stop=4, step=1),
+            ),
+            (
+                TimeSeries.from_values(np.arange(9).reshape(3, 3)),
+                [],
+                np.arange(9).reshape(3, 3, 1),
+                pd.RangeIndex(start=0, stop=3, step=1),
+            ),
+        ],
+    )
+    def test_append_values(self, series, values, expected_vals, expected_idx):
+        appended = series.append_values(values)
         assert np.allclose(appended.all_values(), expected_vals)
         assert appended.time_index.equals(expected_idx)
         assert appended.components.equals(series.components)
-
-    def test_pre_and_append_values_empty(self):
-        series = linear_timeseries(start=1, length=9, freq=2)
-        appended = series.append_values([])
-        assert np.allclose(appended.values(), series.values())
-        appended = series.prepend_values([])
-        assert np.allclose(appended.values(), series.values())
-
-    def test_pre_and_append_values_shape(self):
-        series = TimeSeries.from_values(np.array([i for i in range(9)]))
-        values = np.array([i for i in range(4)]).reshape(4, 1)
-        appended = series.append_values(values)
-        prepended = series.prepend_values(values)
-        ts = TimeSeries.from_values(np.array([i for i in range(4)]))
-        expected_vals = np.concatenate([series.all_values(), ts.all_values()], axis=0)
-        expected_pre_vals = np.concatenate(
-            [ts.all_values(), series.all_values()], axis=0
-        )
         assert appended._xa.shape[1:] == series._xa.shape[1:]
-        assert prepended._xa.shape[1:] == series._xa.shape[1:]
-        assert np.allclose(appended.all_values(), expected_vals)
-        assert np.allclose(prepended.all_values(), expected_pre_vals)
-
-        series = TimeSeries.from_values(np.array([i for i in range(9)]))
-        values = np.array([i for i in range(4)]).reshape(2, 2)
-        appended = series.append_values(values)
-        prepended = series.prepend_values(values)
-        ts = TimeSeries.from_values(np.array([i for i in range(4)]))
-        expected_vals = np.concatenate([series.all_values(), ts.all_values()], axis=0)
-        expected_pre_vals = np.concatenate(
-            [ts.all_values(), series.all_values()], axis=0
-        )
-        assert appended._xa.shape[1:] == series._xa.shape[1:]
-        assert prepended._xa.shape[1:] == series._xa.shape[1:]
-        assert np.allclose(appended.all_values(), expected_vals)
-        assert np.allclose(prepended.all_values(), expected_pre_vals)
-
-        series = TimeSeries.from_values(np.array([i for i in range(9)]).reshape(3, 3))
-        values = np.array([i for i in range(12)]).reshape(2, 2, 3)
-        appended = series.append_values(values)
-        prepended = series.prepend_values(values)
-        ts = TimeSeries.from_values(np.array([i for i in range(12)]))
-        assert appended._xa.shape[1:] == series._xa.shape[1:]
-        assert prepended._xa.shape[1:] == series._xa.shape[1:]
 
     def test_prepend(self):
         TestTimeSeries.helper_test_prepend(self, self.series1)
@@ -868,18 +889,80 @@ class TestTimeSeries:
         assert prepended.time_index.equals(expected_idx)
         assert prepended.components.equals(series_1.components)
 
-    def test_prepend_values(self):
-        TestTimeSeries.helper_test_prepend_values(self, self.series1)
-        # Check `prepend_values` deals with `RangeIndex` series correctly:
-        series = linear_timeseries(start=1, length=5, freq=2)
-        prepended = series.prepend_values(np.ones((2, 1, 1)))
-        expected_vals = np.concatenate(
-            [np.ones((2, 1, 1)), series.all_values()], axis=0
-        )
-        expected_idx = pd.RangeIndex(start=-3, stop=11, step=2)
-        assert np.allclose(prepended.all_values(), expected_vals)
-        assert prepended.time_index.equals(expected_idx)
-        assert prepended.components.equals(series.components)
+    @pytest.mark.parametrize(
+        "series, values, expected_vals, expected_idx",
+        [
+            (
+                TimeSeries.from_times_and_values(
+                    times=pd.DatetimeIndex(["20240103", "20240104", "20240105"]),
+                    values=np.arange(3),
+                ),
+                np.arange(2),
+                np.concatenate(
+                    [np.arange(2).reshape(2, 1, 1), np.arange(3).reshape(3, 1, 1)],
+                    axis=0,
+                ),
+                pd.DatetimeIndex([
+                    "20240101",
+                    "20240102",
+                    "20240103",
+                    "20240104",
+                    "20240105",
+                ]),
+            ),
+            (
+                linear_timeseries(start=1, length=5, freq=2),
+                np.ones((2, 1, 1)),
+                np.concatenate(
+                    [
+                        np.ones((2, 1, 1)),
+                        linear_timeseries(start=1, length=5, freq=2).all_values(),
+                    ],
+                    axis=0,
+                ),
+                pd.RangeIndex(start=-3, stop=10, step=2),
+            ),
+            (
+                TimeSeries.from_values(np.arange(9)),
+                np.arange(4),
+                np.concatenate(
+                    [np.arange(4).reshape(4, 1, 1), np.arange(9).reshape(9, 1, 1)],
+                    axis=0,
+                ),
+                pd.RangeIndex(start=-4, stop=9, step=1),
+            ),
+            (
+                TimeSeries.from_values(np.arange(9)),
+                np.arange(4).reshape(4, 1),
+                np.concatenate(
+                    [np.arange(4).reshape(4, 1, 1), np.arange(9).reshape(9, 1, 1)],
+                    axis=0,
+                ),
+                pd.RangeIndex(start=-4, stop=9, step=1),
+            ),
+            (
+                TimeSeries.from_values(np.arange(9).reshape(3, 3)),
+                np.arange(3).reshape(1, 3),
+                np.concatenate(
+                    [np.arange(3).reshape(1, 3, 1), np.arange(9).reshape(3, 3, 1)],
+                    axis=0,
+                ),
+                pd.RangeIndex(start=-1, stop=3, step=1),
+            ),
+            (
+                TimeSeries.from_values(np.arange(9).reshape(3, 3)),
+                [],
+                np.arange(9).reshape(3, 3, 1),
+                pd.RangeIndex(start=0, stop=3, step=1),
+            ),
+        ],
+    )
+    def test_prepend_values(self, series, values, expected_vals, expected_idx):
+        appended = series.prepend_values(values)
+        assert np.allclose(appended.all_values(), expected_vals)
+        assert appended.time_index.equals(expected_idx)
+        assert appended.components.equals(series.components)
+        assert appended._xa.shape[1:] == series._xa.shape[1:]
 
     @pytest.mark.parametrize(
         "config",
