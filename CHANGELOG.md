@@ -13,9 +13,12 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Added `IQRDetector`, that allows to detect anomalies using the interquartile range algorithm. [#2441] by [Igor Urbanik](https://github.com/u8-igor).
 - Added hyperparameters controlling the hidden layer sizes for the feature encoders in `TiDEModel`. [#2408](https://github.com/unit8co/darts/issues/2408) by [eschibli](https://github.com/eschibli).
-- Made README's forecasting model support table more colorblind-friendly. [#2433](https://github.com/unit8co/darts/pull/2433)
-- Updated the Ray Tune Hyperparameter Optimization example in the [user guide](https://unit8co.github.io/darts/userguide/hyperparameter_optimization.html) to work with the latest `ray` versions (`>=2.31.0`). [#2459](https://github.com/unit8co/darts/pull/2459) by [He Weilin](https://github.com/cnhwl).
 - Added support for broadcasting to TimeSeries on component and sample level. [#2476](https://https://github.com/unit8co/darts/pull/2476) by [Joel L.](https://github.com/Joelius300).
+- Various improvements in the documentation:
+  - Made README's forecasting model support table more colorblind-friendly. [#2433](https://github.com/unit8co/darts/pull/2433)
+  - Updated the Ray Tune Hyperparameter Optimization example in the [user guide](https://unit8co.github.io/darts/userguide/hyperparameter_optimization.html) to work with the latest `ray` versions (`>=2.31.0`). [#2459](https://github.com/unit8co/darts/pull/2459) by [He Weilin](https://github.com/cnhwl).
+  - Indicate that `multi_models=False` induce a lags shift for each step in `output_chunk_length` in `RegressionModel` and `LinearRegressionModel`. [#2511](https://github.com/unit8co/darts/pull/2511) by [Antoine Madrona](https://github.com/madtoinou).
+  - Added reference to `timeseries_generation.datetime_attribute_timeseries` in `TimeSeries.add_datetime_attribute` (0-indexing of encoding is enforced). [#2511](https://github.com/unit8co/darts/pull/2511) by [Antoine Madrona](https://github.com/madtoinou).
 
 **Fixed**
 
@@ -26,6 +29,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug when using `fit()` with a `RegressionModel` that uses an underlying `model` which does not support `sample_weight`. [#2445](https://github.com/unit8co/darts/pull/2445) by [He Weilin](https://github.com/cnhwl).
 - Fixed a bug preventing TimeSeries to be divided by xarray or ndarray. [#2476](https://https://github.com/unit8co/darts/pull/2476) by [Joel L.](https://github.com/Joelius300).
 - Fixed a bug when using `save()` and `load()` with a `RegressionEnsembleModel` that ensembles any `TorchForecastingModel`. [#2437](https://github.com/unit8co/darts/issues/2437) by [He Weilin](https://github.com/cnhwl).
+- Fixed a bug with `CrostonModel`, which actually does not support future covariates. [#2511](https://github.com/unit8co/darts/pull/2511) by [Antoine Madrona](https://github.com/madtoinou).
 
 **Dependencies**
 

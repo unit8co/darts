@@ -107,7 +107,7 @@ class TestTimeSeriesStaticCovariate:
     def test_from_group_dataframe(self):
         # checks that the time_index is of RangeIndex type when the time_col is a(n) (unsorted) list and/or a Rangeindex
         group = ["a", "a", "a", "b", "b", "b"]
-        values = np.random.randn(len(group))
+        values = np.arange(len(group))
 
         # for time as a unsorted list
         time = [2, 1, 0, 0, 1, 2]
