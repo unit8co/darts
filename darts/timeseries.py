@@ -2857,7 +2857,7 @@ class TimeSeries:
         if len(self) > 0 and len(other) > 0:
             raise_if_not(
                 other.start_time() == self.end_time() + self.freq,
-                "Appended TimeSeries must start one time step after current one.",
+                "Appended TimeSeries must start one (time) step after current one.",
                 logger,
             )
 
