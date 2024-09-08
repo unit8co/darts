@@ -383,7 +383,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         if activation not in ACTIVATIONS:
             raise_log(
                 ValueError(
-                    f"Invalid `activation={activation}`. Must be on of {ACTIVATIONS}."
+                    f"Invalid `activation={activation}`. Must be one of {ACTIVATIONS}."
                 ),
                 logger=logger,
             )
@@ -393,7 +393,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
             if norm_type not in NORMS:
                 raise_log(
                     ValueError(
-                        f"Invalid `norm_type={norm_type}`. Must be on of {NORMS}."
+                        f"Invalid `norm_type={norm_type}`. Must be one of {NORMS}."
                     ),
                     logger=logger,
                 )
@@ -497,7 +497,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         # B: batch size
         # L: input chunk length
         # T: output chunk length
-        # LT: latent time dimension (T if project_first_layer, L otherwise)
+        # SL: Residual block time dimension (T if project_first_layer, L otherwise)
         # C: target components
         # P: past cov features
         # F: future cov features
@@ -509,53 +509,57 @@ class _TSMixerModule(PLMixedCovariatesModule):
         # `x`: (B, L, H), `x_future`: (B, T, F), `x_static`: (B, C or 1, S)
         x, x_future, x_static = x_in
 
-        # (B, L, H) -> (B, LT, H)
+        # If project_first_layer, decoder style model with residual blocks in output time dimension
+        # (B, L, H) -> (B, SL, H)
         if self.project_first_layer:
             # swap feature and time dimensions (B, L, H) -> (B, H, L)
             x = _time_to_feature(x)
-            # linear transformations to LT (T in this case)
-            # (B, H, L) -> (B, H, LT)
+            # linear transformations to SL (T in this case)
+            # (B, H, L) -> (B, H, SL)
             x = self.fc_hist(x)
             # Transpose back
             # (B, H, T) -> (B, T, H)
             x = _time_to_feature(x)
+
+        # Otherwise, encoder-style model with residual blocks in input time dimension
+        # In the original paper this was not implimented for future covariates,
+        # but rather than ignoring them or raising an error we remap them to the input time dimension.
+        # Suboptimal but may be useful in some cases.
         elif self.future_cov_dim:
             # swap feature and time dimensions (B, L, F) -> (B, F, L)
             x_future = _time_to_feature(x_future)
-            # linear transformations to LT (L in this case)
-            # (B, F, T) -> (B, F, L)
+            # linear transformations to SL (L in this case)
+            # (B, F, T) -> (B, F, SL)
             x_future = self.fc_future(x_future)
             # Transpose back (B, L, F) -> (B, F, L)
             x_future = _time_to_feature(x_future)
 
-        # feature mixing for historical features (B, LT, H) -> (B, LT, H_S)
+        # feature mixing for historical features (B, SL, H) -> (B, SL, H_S)
         x = self.feature_mixing_hist(x)
         if self.future_cov_dim:
-            # feature mixing for future features (B, LT, F) -> (B, LT, H_S)
+            # feature mixing for future features (B, SL, F) -> (B, SL, H_S)
             x_future = self.feature_mixing_future(x_future)
-            # (B, LT, H_S) + (B, LT, H_S) -> (B, T, 2*H_S)
+            # (B, SL, H_S) + (B, SL, H_S) -> (B, T, 2*H_S)
             x = torch.cat([x, x_future], dim=-1)
 
         if self.static_cov_dim:
             # (B, C, S) -> (B, 1, C * S)
             x_static = x_static.reshape(x_static.shape[0], 1, -1)
-            # repeat to match time dim: (B, 1, C * S) -> (B, LT, C * S)
-            x_static = x_static.repeat(1,
-                                       (self.output_chunk_length if self.project_first_layer else self.input_chunk_length), 1)
+            # repeat to match time dim: (B, 1, C * S) -> (B, SL, C * S)
+            x_static = x_static.repeat(1, self.sequence_length, 1)
 
         for mixing_layer in self.conditional_mixer:
-            # conditional mixer layers with static covariates (B, LT, 2 * H_S), (B, LT, C * S) -> (B, LT, H_S)
+            # conditional mixer layers with static covariates (B, SL, 2 * H_S), (B, SL, C * S) -> (B, SL, H_S)
             x = mixing_layer(x, x_static=x_static)
 
-        # If not projecting first, project to the output time dimension
-        # In the original paper there is no fc_out layer, but we believe it is better to
-        # remap the time dimension before the feature dimension as the output feature dimension
-        # is likely to be 1 (or a small number) and the time dimension is likely to be larger.
-        # So we don't want to compress the feature dimension before remapping the time dimension.
+        # If we are in the input time dimension, we need to project to the output time dimension.
+        # The original paper did not a fc_out layer (as hidden_size == output_dim) so we needed to decide where to put it.
+        # We put the projection first as it as while both operations may be very compressive,
+        # we felt it more likely that output_dim << hidden_size than output_chunk_length << input_chunk_length.
         if not self.project_first_layer:
-            # (B, LT, H_S) -> (B, H_S, LT)
+            # (B, SL, H_S) -> (B, H_S, SL)
             x = _time_to_feature(x)
-            # (B, H_S, LT) -> (B, H_S, T)
+            # (B, H_S, SL) -> (B, H_S, T)
             x = self.fc_hist(x)
             # (B, H_S, T) -> (B, T, H_S)
             x = _time_to_feature(x)
