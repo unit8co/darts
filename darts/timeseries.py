@@ -2905,22 +2905,12 @@ class TimeSeries:
                 f"Received: {values.shape[1:]}, expected: {self._xa.values.shape[1:]}",
             )
 
-            if self._has_datetime_index:
-                idx = pd.DatetimeIndex(
-                    [
-                        self.end_time() + i * self._freq
-                        for i in range(1, len(values) + 1)
-                    ],
-                    freq=self._freq,
-                    name=self._time_index.name,
-                )
-            else:
-                idx = pd.RangeIndex(
-                    start=self.end_time() + self._freq,
-                    stop=self.end_time() + (len(values) + 1) * self._freq,
-                    step=self._freq,
-                    name=self._time_index.name,
-                )
+            idx = generate_index(
+                start=self.end_time() + self._freq,
+                end=self.end_time() + len(values) * self._freq,
+                freq=self._freq,
+                name=self._time_index.name,
+            )
 
             return self.append(
                 self.__class__.from_times_and_values(
