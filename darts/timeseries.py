@@ -2912,12 +2912,14 @@ class TimeSeries:
                         for i in range(1, len(values) + 1)
                     ],
                     freq=self._freq,
+                    name=self._time_index.name,
                 )
             else:
                 idx = pd.RangeIndex(
                     start=self.end_time() + self._freq,
                     stop=self.end_time() + (len(values) + 1) * self._freq,
                     step=self._freq,
+                    name=self._time_index.name,
                 )
 
             return self.append(
@@ -2990,12 +2992,14 @@ class TimeSeries:
                         for i in reversed(range(1, len(values) + 1))
                     ],
                     freq=self._freq,
+                    name=self._time_index.name,
                 )
             else:
                 idx = pd.RangeIndex(
                     self.start_time() - self.freq * len(values),
                     self.start_time(),
                     step=self.freq,
+                    name=self._time_index.name,
                 )
 
             return self.prepend(
