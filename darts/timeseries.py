@@ -867,39 +867,12 @@ class TimeSeries:
 
         if time_col:
             if np.issubdtype(df[time_col].dtype, object) or np.issubdtype(
-                df[time_col].dtype, np.integer
+                df[time_col].dtype, np.datetime64
             ):
-                # Try to convert to integers if needed and set index
-                try:
-                    df[time_col] = df[time_col].astype(int)
-                    df = df.set_index(df[time_col])
-                except ValueError:
-                    pass
-
-            if np.issubdtype(df[time_col].dtype, np.integer):
-                # The integer conversion worked or it was already an integer
-                pass
-
-            elif np.issubdtype(df[time_col].dtype, object):
-                # The integer conversion failed; try datetimes
-                try:
-                    df.index = pd.DatetimeIndex(df[time_col])
-                    df.drop(columns=time_col)
-                except ValueError:
-                    raise_log(
-                        AttributeError(
-                            "'time_col' is of 'object' dtype but doesn't contain valid timestamps"
-                        )
-                    )
-            elif np.issubdtype(df[time_col].dtype, np.datetime64):
                 df.index = pd.DatetimeIndex(df[time_col])
-                df.drop(columns=time_col)
+                df = df.drop(columns=time_col)
             else:
-                raise_log(
-                    AttributeError(
-                        "Invalid type of `time_col`: it needs to be of either 'str', 'datetime' or 'int' dtype."
-                    )
-                )
+                df = df.set_index(time_col)
 
         if df.index.is_monotonic_increasing:
             logger.warning(
