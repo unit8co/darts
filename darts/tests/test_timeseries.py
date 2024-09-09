@@ -805,7 +805,10 @@ class TestTimeSeries:
         [
             (
                 TimeSeries.from_times_and_values(
-                    times=pd.DatetimeIndex(["20240101", "20240102", "20240103"]),
+                    times=pd.DatetimeIndex(
+                        data=["20240101", "20240102", "20240103"],
+                        name="date",
+                    ),
                     values=np.arange(3),
                 ),
                 np.arange(2),
@@ -813,13 +816,16 @@ class TestTimeSeries:
                     [np.arange(3).reshape(3, 1, 1), np.arange(2).reshape(2, 1, 1)],
                     axis=0,
                 ),
-                pd.DatetimeIndex([
-                    "20240101",
-                    "20240102",
-                    "20240103",
-                    "20240104",
-                    "20240105",
-                ]),
+                pd.DatetimeIndex(
+                    data=[
+                        "20240101",
+                        "20240102",
+                        "20240103",
+                        "20240104",
+                        "20240105",
+                    ],
+                    name="date",
+                ),
             ),
             (
                 linear_timeseries(start=1, length=5, freq=2),
@@ -831,7 +837,7 @@ class TestTimeSeries:
                     ],
                     axis=0,
                 ),
-                pd.RangeIndex(start=1, stop=15, step=2),
+                pd.RangeIndex(start=1, stop=15, step=2, name="another_date"),
             ),
             (
                 TimeSeries.from_values(np.arange(9)),
@@ -840,7 +846,7 @@ class TestTimeSeries:
                     [np.arange(9).reshape(9, 1, 1), np.arange(4).reshape(4, 1, 1)],
                     axis=0,
                 ),
-                pd.RangeIndex(start=0, stop=13, step=1),
+                pd.RangeIndex(start=0, stop=13, step=1, name="date_days"),
             ),
             (
                 TimeSeries.from_values(np.arange(9)),
@@ -849,7 +855,7 @@ class TestTimeSeries:
                     [np.arange(9).reshape(9, 1, 1), np.arange(4).reshape(4, 1, 1)],
                     axis=0,
                 ),
-                pd.RangeIndex(start=0, stop=13, step=1),
+                pd.RangeIndex(start=0, stop=13, step=1, name="date"),
             ),
             (
                 TimeSeries.from_values(np.arange(9).reshape(3, 3)),
@@ -858,22 +864,24 @@ class TestTimeSeries:
                     [np.arange(9).reshape(3, 3, 1), np.arange(3).reshape(1, 3, 1)],
                     axis=0,
                 ),
-                pd.RangeIndex(start=0, stop=4, step=1),
+                pd.RangeIndex(start=0, stop=4, step=1, name="date"),
             ),
             (
                 TimeSeries.from_values(np.arange(9).reshape(3, 3)),
                 [],
                 np.arange(9).reshape(3, 3, 1),
-                pd.RangeIndex(start=0, stop=3, step=1),
+                pd.RangeIndex(start=0, stop=3, step=1, name="date"),
             ),
         ],
     )
     def test_append_values(self, series, values, expected_vals, expected_idx):
         appended = series.append_values(values)
+        print(series.time_index.name)
         assert np.allclose(appended.all_values(), expected_vals)
         assert appended.time_index.equals(expected_idx)
         assert appended.components.equals(series.components)
         assert appended._xa.shape[1:] == series._xa.shape[1:]
+        assert appended.time_index.name == series.time_index.name
 
     def test_prepend(self):
         TestTimeSeries.helper_test_prepend(self, self.series1)
@@ -894,7 +902,10 @@ class TestTimeSeries:
         [
             (
                 TimeSeries.from_times_and_values(
-                    times=pd.DatetimeIndex(["20240103", "20240104", "20240105"]),
+                    times=pd.DatetimeIndex(
+                        data=["20240103", "20240104", "20240105"],
+                        name="date",
+                    ),
                     values=np.arange(3),
                 ),
                 np.arange(2),
@@ -902,13 +913,16 @@ class TestTimeSeries:
                     [np.arange(2).reshape(2, 1, 1), np.arange(3).reshape(3, 1, 1)],
                     axis=0,
                 ),
-                pd.DatetimeIndex([
-                    "20240101",
-                    "20240102",
-                    "20240103",
-                    "20240104",
-                    "20240105",
-                ]),
+                pd.DatetimeIndex(
+                    data=[
+                        "20240101",
+                        "20240102",
+                        "20240103",
+                        "20240104",
+                        "20240105",
+                    ],
+                    name="date",
+                ),
             ),
             (
                 linear_timeseries(start=1, length=5, freq=2),
@@ -920,7 +934,7 @@ class TestTimeSeries:
                     ],
                     axis=0,
                 ),
-                pd.RangeIndex(start=-3, stop=10, step=2),
+                pd.RangeIndex(start=-3, stop=10, step=2, name="another_date"),
             ),
             (
                 TimeSeries.from_values(np.arange(9)),
@@ -929,7 +943,7 @@ class TestTimeSeries:
                     [np.arange(4).reshape(4, 1, 1), np.arange(9).reshape(9, 1, 1)],
                     axis=0,
                 ),
-                pd.RangeIndex(start=-4, stop=9, step=1),
+                pd.RangeIndex(start=-4, stop=9, step=1, name="date_days"),
             ),
             (
                 TimeSeries.from_values(np.arange(9)),
@@ -938,7 +952,7 @@ class TestTimeSeries:
                     [np.arange(4).reshape(4, 1, 1), np.arange(9).reshape(9, 1, 1)],
                     axis=0,
                 ),
-                pd.RangeIndex(start=-4, stop=9, step=1),
+                pd.RangeIndex(start=-4, stop=9, step=1, name="date"),
             ),
             (
                 TimeSeries.from_values(np.arange(9).reshape(3, 3)),
@@ -947,22 +961,23 @@ class TestTimeSeries:
                     [np.arange(3).reshape(1, 3, 1), np.arange(9).reshape(3, 3, 1)],
                     axis=0,
                 ),
-                pd.RangeIndex(start=-1, stop=3, step=1),
+                pd.RangeIndex(start=-1, stop=3, step=1, name="date"),
             ),
             (
                 TimeSeries.from_values(np.arange(9).reshape(3, 3)),
                 [],
                 np.arange(9).reshape(3, 3, 1),
-                pd.RangeIndex(start=0, stop=3, step=1),
+                pd.RangeIndex(start=0, stop=3, step=1, name="date"),
             ),
         ],
     )
     def test_prepend_values(self, series, values, expected_vals, expected_idx):
-        appended = series.prepend_values(values)
-        assert np.allclose(appended.all_values(), expected_vals)
-        assert appended.time_index.equals(expected_idx)
-        assert appended.components.equals(series.components)
-        assert appended._xa.shape[1:] == series._xa.shape[1:]
+        prepended = series.prepend_values(values)
+        assert np.allclose(prepended.all_values(), expected_vals)
+        assert prepended.time_index.equals(expected_idx)
+        assert prepended.components.equals(series.components)
+        assert prepended._xa.shape[1:] == series._xa.shape[1:]
+        assert prepended.time_index.name == series.time_index.name
 
     @pytest.mark.parametrize(
         "config",
