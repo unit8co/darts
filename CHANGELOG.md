@@ -22,6 +22,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed a bug when an empty array was passed to `append_values` (resp. `prepend_values`), and where the name of the timeseries time index was automatically set to name='time'. [#2522](https://github.com/unit8co/darts/pull/2522) by [Alessio Pellegrini](https://github.com/AlessiopSymplectic)
 - Fixed a bug when using `from_group_dataframe()` with a `time_col` of type integer, where the resulting time index was wrongly converted to a DatetimeIndex. [#2512](https://github.com/unit8co/darts/pull/2512) by [Alessio Pellegrini](https://github.com/AlessiopSymplectic)
 - Fixed a bug when using `historical_forecasts()` with a pre-trained `RegressionModel` that has no target lags `lags=None` but uses static covariates. [#2426](https://github.com/unit8co/darts/pull/2426) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug with `xgboost>=2.1.0`, where multi output regression was not properly handled. [#2426](https://github.com/unit8co/darts/pull/2426) by [Dennis Bader](https://github.com/dennisbader).
