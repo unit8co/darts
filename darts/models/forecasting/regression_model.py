@@ -30,10 +30,7 @@ if their static covariates do not have the same size, the shorter ones are padde
 from collections import OrderedDict
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
-from darts.dataprocessing.transformers import (
-    FittableDataTransformer,
-    InvertibleDataTransformer,
-)
+from darts.dataprocessing.pipeline import Pipeline
 
 try:
     from typing import Literal
@@ -1325,11 +1322,7 @@ class RegressionModel(GlobalForecastingModel):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
-        series_transformer: Optional[
-            Union[FittableDataTransformer, InvertibleDataTransformer]
-        ] = None,
-        past_covariates_transformer: Optional[FittableDataTransformer] = None,
-        future_covariates_transformer: Optional[FittableDataTransformer] = None,
+        data_transformers: Optional[Dict[str, Pipeline]] = None,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """
@@ -1367,8 +1360,7 @@ class RegressionModel(GlobalForecastingModel):
                 show_warnings=show_warnings,
                 verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
-                past_covariates_transformer=past_covariates_transformer,
-                future_covariates_transformer=future_covariates_transformer,
+                data_transformers=data_transformers,
                 **kwargs,
             )
         else:
@@ -1386,8 +1378,7 @@ class RegressionModel(GlobalForecastingModel):
                 show_warnings=show_warnings,
                 verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
-                past_covariates_transformer=past_covariates_transformer,
-                future_covariates_transformer=future_covariates_transformer,
+                data_transformers=data_transformers,
                 **kwargs,
             )
         return series2seq(hfc, seq_type_out=series_seq_type)

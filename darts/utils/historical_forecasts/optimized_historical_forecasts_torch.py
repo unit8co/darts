@@ -1,6 +1,4 @@
-from typing import Optional, Sequence, Union
-
-from darts.dataprocessing.transformers import InvertibleDataTransformer
+from typing import Dict, Optional, Sequence, Union
 
 try:
     from typing import Literal
@@ -12,6 +10,7 @@ import inspect
 import numpy as np
 import pandas as pd
 
+from darts.dataprocessing.pipeline import Pipeline
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils.historical_forecasts.utils import (
@@ -38,8 +37,7 @@ def _optimized_historical_forecasts(
     show_warnings: bool = True,
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
-    past_covariates_transformer: Optional[InvertibleDataTransformer] = None,
-    future_covariates_transformer: Optional[InvertibleDataTransformer] = None,
+    data_transformers: Optional[Dict[str, Pipeline]] = None,
     **kwargs,
 ) -> Union[Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
@@ -47,17 +45,21 @@ def _optimized_historical_forecasts(
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
+    if data_transformers is None:
+        data_transformers = dict()
     bounds = []
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
-        if past_covariates_ and past_covariates_transformer:
-            past_covariates_ = past_covariates_transformer.transform(past_covariates_)
-
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
-        if future_covariates_ and future_covariates_transformer:
-            future_covariates_ = future_covariates_transformer.transform(
+        # Pipeline/DataTransformer must already be fitted
+        if data_transformers.get("target"):
+            series_ = data_transformers["past"].transform(series_)
+        if past_covariates_ and data_transformers.get("past"):
+            past_covariates_ = data_transformers["past"].transform(past_covariates_)
+        if future_covariates_ and data_transformers.get("future"):
+            future_covariates_ = data_transformers["future"].transform(
                 future_covariates_
             )
 
@@ -157,4 +159,7 @@ def _optimized_historical_forecasts(
                 hierarchy=preds[0].hierarchy,
             )
         forecasts_list.append(preds)
+    # single data transformer accross all series and forecasts, using optimized inverse_transform
+    if "target" in data_transformers and data_transformers["target"].invertible():
+        forecasts_list = data_transformers["target"].inverse_transform(forecasts_list)
     return forecasts_list

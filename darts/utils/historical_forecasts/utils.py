@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 
+from darts.dataprocessing.pipeline import Pipeline
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils.ts_utils import get_series_seq_type, series2seq
@@ -210,6 +211,23 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 ),
                 logger,
             )
+
+    # ensure DataTransformer are already be fitted when using the optimized historical forecasts
+    if isinstance(n.data_transformers, dict) and n.enable_optimization:
+        for val_ in n.data_transformers.values():
+            transf = (
+                val_
+                if isinstance(val_, Pipeline)
+                else Pipeline(transformers=[val_], copy=False)
+            )
+            if transf.fittable() and not transf._fit_called():
+                raise_log(
+                    ValueError(
+                        "All the fittable entries `data_transformers` must already be fitted when "
+                        "`enable_optimization=True`."
+                    ),
+                    logger,
+                )
 
     if (
         n.sample_weight is not None

@@ -35,9 +35,9 @@ import pandas as pd
 
 from darts import metrics
 from darts.dataprocessing.encoders import SequentialEncoder
+from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import (
-    FittableDataTransformer,
-    InvertibleDataTransformer,
+    BaseDataTransformer,
 )
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.metrics.metrics import METRIC_TYPE
@@ -649,14 +649,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
-        series_transformer: Optional[
-            Union[FittableDataTransformer, InvertibleDataTransformer]
-        ] = None,
-        past_covariates_transformer: Optional[
-            Union[FittableDataTransformer, InvertibleDataTransformer]
-        ] = None,
-        future_covariates_transformer: Optional[
-            Union[FittableDataTransformer, InvertibleDataTransformer]
+        data_transformers: Optional[
+            Dict[str, Union[BaseDataTransformer, Pipeline]]
         ] = None,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
@@ -767,24 +761,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Default: ``False``
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
-
-        series_transformer
+        data_transformers
             If model is retrained and transformer is fittable, data transformer re-fit on the training data
             at each historical forecast step.
-            The fitted transformer is used to transform the input either for model training or prediction.
-            Inverse transformation will be applied to the prediction.
-
-        past_covariates_transformer
-            If model is retrained and transformer is fittable, data transformer re-fit on the training data
-            at each historical forecast step.
-            The fitted transformer is used to transform the input for model training
-
-        future_covariates_transformer
-            If model is retrained and transformer is fittable, data transformer re-fit on the training data
-            at each historical forecast step.
-            The fitted transformer is used to transform the input for model training
-
-
+            The fitted transformer is used to transform the input during both training and prediction.
+            If the transformation is invertible, the forecasts will be transformed back.
         fit_kwargs
             Additional arguments passed to the model `fit()` method.
         predict_kwargs
@@ -916,6 +897,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger,
             )
 
+        if data_transformers is None:
+            data_transformers = dict()
+        else:
+            data_transformers = {
+                key_: val_
+                if isinstance(val_, Pipeline)
+                else Pipeline(transformers=[val_], copy=True)
+                for key_, val_ in data_transformers.items()
+            }
+
         # remove unsupported arguments, raise exception if interference with historical forecasts logic
         fit_kwargs, predict_kwargs = _historical_forecasts_sanitize_kwargs(
             model=model,
@@ -948,8 +939,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 verbose=verbose,
                 show_warnings=show_warnings,
                 predict_likelihood_parameters=predict_likelihood_parameters,
-                past_covariates_transformer=past_covariates_transformer,
-                future_covariates_transformer=future_covariates_transformer,
+                data_transformers=data_transformers,
                 **predict_kwargs,
             )
 
@@ -1091,9 +1081,23 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if train_length_ and len(train_series) > train_length_:
                     train_series = train_series[-train_length_:]
 
-                series_transformed = False
-                past_covariates_transformed = False
-                future_covariates_transformed = False
+                if train_series and data_transformers.get("target"):
+                    if data_transformers["target"].fittable():
+                        data_transformers["target"].fit(train_series)
+                    train_series = data_transformers["target"].transform(train_series)
+                if past_covariates_ and data_transformers.get("past"):
+                    if data_transformers["past"].fittable():
+                        data_transformers["past"].fit(past_covariates_)
+                    past_covariates_ = data_transformers["past"].transform(
+                        past_covariates_
+                    )
+                if future_covariates_ and data_transformers.get("future"):
+                    if data_transformers["future"].fittable():
+                        data_transformers["future"].fit(future_covariates_)
+                    future_covariates_ = data_transformers["future"].transform(
+                        future_covariates_
+                    )
+
                 # testing `retrain` to exclude `False` and `0`
                 if (
                     retrain
@@ -1112,37 +1116,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     ):
                         # avoid fitting the same model multiple times
                         model = model.untrained_model()
-
-                        if series_transformer is not None:
-                            if isinstance(series_transformer, FittableDataTransformer):
-                                series_transformer.fit(train_series)
-                            train_series = series_transformer.transform(train_series)
-                            series_transformed = True
-
-                        if past_covariates_transformer is not None and past_covariates_:
-                            if isinstance(
-                                past_covariates_transformer, FittableDataTransformer
-                            ):
-                                past_covariates_transformer.fit(past_covariates_)
-                            past_covariates_ = past_covariates_transformer.transform(
-                                past_covariates_
-                            )
-                            past_covariates_transformed = True
-
-                        if (
-                            future_covariates_transformer is not None
-                            and future_covariates_
-                        ):
-                            if isinstance(
-                                future_covariates_transformer, FittableDataTransformer
-                            ):
-                                future_covariates_transformer.fit(future_covariates_)
-                            future_covariates_ = (
-                                future_covariates_transformer.transform(
-                                    future_covariates_
-                                )
-                            )
-                            future_covariates_transformed = True
 
                         model._fit_wrapper(
                             series=train_series,
@@ -1192,26 +1165,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         values=np.array([np.NaN]),
                     )
 
-                # transfrom TimeSeries even if model isn't retrained
-                if series_transformer is not None and not series_transformed:
-                    train_series = series_transformer.transform(train_series)
-
-                if (
-                    past_covariates_transformer is not None
-                    and not past_covariates_transformed
-                ):
-                    past_covariates_ = past_covariates_transformer.transform(
-                        past_covariates_
-                    )
-
-                if (
-                    future_covariates_transformer is not None
-                    and not future_covariates_transformed
-                ):
-                    future_covariates_ = future_covariates_transformer.transform(
-                        future_covariates_
-                    )
-
                 forecast = model._predict_wrapper(
                     n=forecast_horizon,
                     series=train_series,
@@ -1224,8 +1177,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     **predict_kwargs,
                 )
 
-                if series_transformer is not None:
-                    forecast = series_transformer.inverse_transform(forecast)
+                # target transformer is either already fitted or fitted during the retraining
+                if (
+                    "target" in data_transformers
+                    and data_transformers["target"].invertible()
+                ):
+                    forecast = data_transformers["target"].inverse_transform(forecast)
 
                 show_predict_warnings = False
 
@@ -1290,6 +1247,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         reduction: Union[Callable[..., float], None] = np.mean,
         verbose: bool = False,
         show_warnings: bool = True,
+        data_transformers: Optional[
+            Dict[str, Union[BaseDataTransformer, Pipeline]]
+        ] = None,
         metric_kwargs: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
@@ -1488,6 +1448,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             last_points_only=last_points_only,
             verbose=verbose,
             show_warnings=show_warnings,
+            data_transformers=data_transformers,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
             sample_weight=sample_weight,
@@ -1630,6 +1591,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         verbose=False,
         n_jobs: int = 1,
         n_random_samples: Optional[Union[int, float]] = None,
+        data_transformers: Optional[
+            Dict[str, Union[BaseDataTransformer, Pipeline]]
+        ] = None,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, str]] = None,
@@ -1813,6 +1777,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger,
             )
 
+        if data_transformers is None:
+            data_transformers = dict()
+        else:
+            data_transformers = {
+                key_: val_
+                if isinstance(val_, Pipeline)
+                else Pipeline(transformers=[val_], copy=True)
+                for key_, val_ in data_transformers.items()
+            }
+
         if fit_kwargs is None:
             fit_kwargs = dict()
         if predict_kwargs is None:
@@ -1870,11 +1844,32 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     last_points_only=last_points_only,
                     verbose=verbose,
                     show_warnings=show_warnings,
+                    data_transformers=data_transformers,
                     fit_kwargs=fit_kwargs,
                     predict_kwargs=predict_kwargs,
                     sample_weight=sample_weight,
                 )
             else:  # split mode
+                # TODO: use util method
+                if data_transformers.get("target") is not None:
+                    if data_transformers["target"].fittable():
+                        data_transformers["target"].fit(series)
+                    series = data_transformers["target"].transform(series)
+                if (
+                    data_transformers.get("past") is not None
+                    and past_covariates is not None
+                ):
+                    if data_transformers["past"].fittable():
+                        data_transformers["past"].fit(past_covariates)
+                    series = data_transformers["past"].transform(past_covariates)
+                if (
+                    data_transformers.get("future") is not None
+                    and future_covariates is not None
+                ):
+                    if data_transformers["future"].fittable():
+                        data_transformers["future"].fit(future_covariates)
+                    series = data_transformers["future"].transform(future_covariates)
+
                 model._fit_wrapper(
                     series=series,
                     past_covariates=past_covariates,
@@ -1891,6 +1886,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     verbose=verbose,
                     **predict_kwargs,
                 )
+                if (
+                    "target" in data_transformers
+                    and data_transformers["target"].invertible()
+                ):
+                    pred = data_transformers["target"].inverse_transform(pred)
                 error = metric(val_series, pred)
 
             return float(error)
@@ -2657,11 +2657,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
-        series_transformer: Optional[
-            Union[FittableDataTransformer, InvertibleDataTransformer]
-        ] = None,
-        past_covariates_transformer: Optional[FittableDataTransformer] = None,
-        future_covariates_transformer: Optional[FittableDataTransformer] = None,
+        data_transformers: Optional[Dict[str, BaseDataTransformer]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         logger.warning(
             "`optimized historical forecasts is not available for this model, use `historical_forecasts` instead."

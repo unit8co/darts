@@ -89,6 +89,10 @@ class Pipeline:
             isinstance(t, InvertibleDataTransformer) for t in self._transformers
         )
 
+        self._fittable = any(
+            isinstance(t, FittableDataTransformer) for t in self._transformers
+        )
+
         if verbose is not None:
             for transformer in self._transformers:
                 transformer.set_verbose(verbose)
@@ -216,6 +220,32 @@ class Pipeline:
             `True` if the pipeline is invertible, `False` otherwise
         """
         return self._invertible
+
+    def fittable(self) -> bool:
+        """
+        Returns whether the pipeline is fittable or not.
+        A pipeline is fittable if at least one of the transformers in the pipeline is fittable.
+
+        Returns
+        -------
+        bool
+            `True` if the pipeline is fittable, `False` otherwise
+        """
+        return self._fittable
+
+    def _fit_called(self) -> bool:
+        """
+        Returns whether all the transformers in the pipeline were fitted (when applicable).
+
+        Returns
+        -------
+        bool
+            `True` if all the fittable transformers are fitted, `False` otherwise
+        """
+        return all(
+            (not isinstance(t, FittableDataTransformer)) or t._fit_called
+            for t in self._transformers
+        )
 
     def __getitem__(self, key: Union[int, slice]) -> "Pipeline":
         """

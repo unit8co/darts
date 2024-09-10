@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Union
+from typing import Dict, Optional, Sequence, Union
 
 try:
     from typing import Literal
@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import sliding_window_view
 
-from darts.dataprocessing.transformers import InvertibleDataTransformer
+from darts.dataprocessing.pipeline import Pipeline
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator
@@ -34,8 +34,7 @@ def _optimized_historical_forecasts_last_points_only(
     show_warnings: bool = True,
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
-    past_covariates_transformer: Optional[InvertibleDataTransformer] = None,
-    future_covariates_transformer: Optional[InvertibleDataTransformer] = None,
+    data_transformers: Optional[Dict[str, Pipeline]] = None,
     **kwargs,
 ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
@@ -43,20 +42,22 @@ def _optimized_historical_forecasts_last_points_only(
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
+    if data_transformers is None:
+        data_transformers = dict()
     forecasts_list = []
     iterator = _build_tqdm_iterator(series, verbose)
     for idx, series_ in enumerate(iterator):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
-        if past_covariates_ and past_covariates_transformer:
-            past_covariates_ = past_covariates_transformer.fit_transform(
-                past_covariates_
-            )
-
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
-        if future_covariates_ and future_covariates_transformer:
-            future_covariates_ = future_covariates_transformer.fit_transform(
+        # Pipeline/DataTransformer must already be fitted
+        if data_transformers.get("target") is not None:
+            series = data_transformers["target"].transform(series)
+        if past_covariates_ and data_transformers.get("past") is not None:
+            past_covariates_ = data_transformers["past"].transform(past_covariates_)
+        if future_covariates_ and data_transformers.get("future") is not None:
+            future_covariates_ = data_transformers["future"].transform(
                 future_covariates_
             )
 
@@ -189,6 +190,9 @@ def _optimized_historical_forecasts_last_points_only(
                 hierarchy=series_.hierarchy,
             )
         )
+    # single data transformer accross all series and forecasts, using optimized inverse_transform
+    if "target" in data_transformers and data_transformers["target"].invertible():
+        forecasts_list = data_transformers["target"].inverse_transform(forecasts_list)
     return forecasts_list
 
 
@@ -206,8 +210,7 @@ def _optimized_historical_forecasts_all_points(
     show_warnings: bool = True,
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
-    past_covariates_transformer: Optional[InvertibleDataTransformer] = None,
-    future_covariates_transformer: Optional[InvertibleDataTransformer] = None,
+    data_transformers: Optional[Dict[str, Pipeline]] = None,
     **kwargs,
 ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
@@ -215,18 +218,23 @@ def _optimized_historical_forecasts_all_points(
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
+    if data_transformers is None:
+        data_transformers = dict()
     forecasts_list = []
     iterator = _build_tqdm_iterator(series, verbose)
     for idx, series_ in enumerate(iterator):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
-        if past_covariates_ and past_covariates_transformer:
-            past_covariates_ = past_covariates_transformer.transform(past_covariates_)
-
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
-        if future_covariates_ and future_covariates_transformer:
-            future_covariates_ = future_covariates_transformer.transform(
+
+        # Pipeline/DataTransformer must already be fitted
+        if data_transformers.get("target") is not None:
+            series = data_transformers["target"].transform(series)
+        if past_covariates_ and data_transformers.get("past") is not None:
+            past_covariates_ = data_transformers["past"].transform(past_covariates_)
+        if future_covariates_ and data_transformers.get("future") is not None:
+            future_covariates_ = data_transformers["future"].transform(
                 future_covariates_
             )
 
@@ -379,4 +387,7 @@ def _optimized_historical_forecasts_all_points(
             )
             forecasts_.append(forecast_value)
         forecasts_list.append(forecasts_)
+    # single data transformer accross all series and forecasts, using optimized inverse_transform
+    if "target" in data_transformers and data_transformers["target"].invertible():
+        forecasts_list = data_transformers["target"].inverse_transform(forecasts_list)
     return forecasts_list
