@@ -12,6 +12,7 @@ import pytest
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
+from sklearn.preprocessing import MaxAbsScaler, MinMaxScaler
 
 import darts
 from darts import TimeSeries
@@ -19,7 +20,12 @@ from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
     PastDatetimeAttributeEncoder,
 )
-from darts.dataprocessing.transformers import Scaler
+from darts.dataprocessing.pipeline import Pipeline
+from darts.dataprocessing.transformers import (
+    FittableDataTransformer,
+    InvertibleDataTransformer,
+    Scaler,
+)
 from darts.logging import get_logger
 from darts.metrics import mae, rmse
 from darts.models import (
@@ -1257,7 +1263,6 @@ class TestRegressionModels:
             overlap_end=False,
             last_points_only=True,
             verbose=False,
-            series_transformer=Scaler(),
         )
         assert len(result) == 21
 
@@ -1272,7 +1277,6 @@ class TestRegressionModels:
             overlap_end=False,
             last_points_only=True,
             verbose=False,
-            series_transformer=Scaler(),
         )
         assert len(result) == 21
 
@@ -1289,7 +1293,6 @@ class TestRegressionModels:
             overlap_end=False,
             last_points_only=True,
             verbose=False,
-            series_transformer=Scaler(),
         )
         assert len(result) == 21
 
@@ -2671,6 +2674,151 @@ class TestRegressionModels:
 
         for p1, p2 in zip(preds1, preds2):
             np.testing.assert_array_almost_equal(p1.values(), p2.values())
+
+    def test_historical_forecasts_with_scaler_no_retrain(self):
+        """Scaler is fitted when training the model, historical_forecasts is called with retrain=False"""
+        model = self.models[1](lags=5)
+        scaler = Scaler()
+        target_ts = scaler.fit_transform(self.sine_univariate5)
+        model.fit(target_ts)
+
+        hf_pipeline = model.historical_forecasts(
+            series=self.sine_univariate5,
+            start=0.8,
+            forecast_horizon=1,
+            stride=1,
+            retrain=False,
+            overlap_end=False,
+            last_points_only=True,
+            verbose=False,
+            enable_optimization=False,
+            data_transformers={"target": Pipeline([scaler])},
+        )
+        hf_scaler = model.historical_forecasts(
+            series=self.sine_univariate5,
+            start=0.8,
+            forecast_horizon=1,
+            stride=1,
+            retrain=False,
+            overlap_end=False,
+            last_points_only=True,
+            verbose=False,
+            enable_optimization=False,
+            data_transformers={"target": scaler},
+        )
+        hf_scaler_opti = model.historical_forecasts(
+            series=self.sine_univariate5,
+            start=0.8,
+            forecast_horizon=1,
+            stride=1,
+            retrain=False,
+            overlap_end=False,
+            last_points_only=True,
+            verbose=False,
+            enable_optimization=True,
+            data_transformers={"target": scaler},
+        )
+        # verify that the two approach are identical
+        np.testing.assert_almost_equal(
+            hf_scaler.values(),
+            hf_pipeline.values(),
+        )
+        np.testing.assert_almost_equal(
+            hf_scaler.values(),
+            hf_scaler_opti.values(),
+        )
+        # verify that the prediction are correcly scaled back
+        assert np.max(hf_pipeline.values()) > 1
+
+    @pytest.mark.parametrize(
+        "params",
+        [
+            (
+                {"series": sine_univariate5, "past_covariates": sine_univariate1},
+                {"past": Scaler(scaler=MinMaxScaler())},
+                {"lags": 5, "lags_past_covariates": 3},
+            ),
+            (
+                {"series": sine_univariate5, "past_covariates": sine_univariate1},
+                {"past": Scaler(scaler=MinMaxScaler())},
+                {"lags_past_covariates": 3},
+            ),
+            (
+                {"series": sine_univariate5, "future_covariates": sine_univariate2},
+                {"future": Scaler(scaler=MaxAbsScaler())},
+                {"lags": 5, "lags_future_covariates": [-1, 0]},
+            ),
+            (
+                {
+                    "series": sine_univariate5,
+                    "past_covariates": sine_univariate1,
+                    "future_covariates": sine_univariate2,
+                },
+                {"target": Scaler(), "past": Scaler()},
+                {
+                    "lags": 3,
+                    "lags_past_covariates": 2,
+                    "lags_future_covariates": [-1, 0],
+                },
+            ),
+        ],
+    )
+    def test_historical_forecasts_with_cov_scaler_no_retrain(self, params):
+        """Apply manually the scaler on the target and covariates"""
+        ts, hf_scaler, lags = params
+        ocl = 6
+        model = self.models[1](**lags, output_chunk_length=ocl)
+        model.fit(**ts)
+        # un-transformed series, scaler applied within the method
+        hf_auto = model.historical_forecasts(
+            **ts,
+            start=-ocl,
+            start_format="position",
+            forecast_horizon=ocl,
+            stride=1,
+            retrain=False,
+            overlap_end=False,
+            last_points_only=False,
+            verbose=False,
+            data_transformers=hf_scaler,
+            enable_optimization=False,
+        )[0]
+
+        # manually scaled series, no scaler
+        name_mapping = {
+            "target": "series",
+            "past": "past_covariates",
+            "future": "future_covariates",
+        }
+        for ts_name, scaler in hf_scaler.items():
+            if isinstance(scaler, FittableDataTransformer):
+                scaler = scaler.fit(ts[name_mapping[ts_name]][:-ocl])
+            ts[name_mapping[ts_name]] = scaler.transform(ts[name_mapping[ts_name]])
+
+        hf_manual = model.historical_forecasts(
+            **ts,
+            start=-ocl,
+            start_format="position",
+            forecast_horizon=ocl,
+            stride=1,
+            retrain=False,
+            overlap_end=False,
+            last_points_only=False,
+            verbose=False,
+            data_transformers=None,
+            enable_optimization=False,
+        )[0]
+
+        # scale back the forecasts
+        if isinstance(hf_scaler.get("target"), InvertibleDataTransformer):
+            hf_manual = hf_scaler["target"].inverse_transform(hf_manual)
+
+        # verify that the two approach are identical
+        assert hf_auto.time_index.equals(hf_manual.time_index)
+        np.testing.assert_almost_equal(
+            hf_auto.values(),
+            hf_manual.values(),
+        )
 
     @pytest.mark.parametrize(
         "config",
