@@ -945,3 +945,42 @@ def _process_predict_start_points_bounds(
     bounds[:, 1] -= steps_too_long
     cum_lengths = np.cumsum(np.diff(bounds) // stride + 1)
     return bounds, cum_lengths
+
+
+def _apply_data_transformers(
+    series: TimeSeries,
+    past_covariates: Optional[TimeSeries],
+    future_covariates: Optional[TimeSeries],
+    data_transformers: Dict[str, Pipeline],
+    max_future_cov_lag: int,
+    fit_transformers: bool,
+) -> Tuple[TimeSeries, TimeSeries, TimeSeries]:
+    """Transform each series using the corresponding Pipeline.
+
+    If the Pipeline is fittable and `fit_transformers=True`, the series are sliced to correspond
+    to the information available at model training time
+    """
+    transformed_ts = []
+    for ts_type, ts in zip(
+        ["target", "past", "future"], [series, past_covariates, future_covariates]
+    ):
+        if ts_type is None or data_transformers.get(ts_type) is None:
+            transformed_ts.append(ts)
+        else:
+            if fit_transformers and data_transformers[ts_type].fittable():
+                # must slice the ts to distinguish accessible information from future information
+                if ts_type == "past":
+                    # known information is aligned with the target series
+                    tmp_ts = ts.drop_after(series.end_time())
+                elif ts_type == "future":
+                    # known information goes up to the first forecasts iteration (in case of autoregression)
+                    tmp_ts = ts.drop_after(
+                        series.end_time() + max(0, max_future_cov_lag) * series.freq
+                    )
+                else:
+                    # nothing to do, the target series is already sliced appropriately
+                    tmp_ts = ts
+                data_transformers[ts_type].fit(tmp_ts)
+            # transforming the whole series
+            transformed_ts.append(data_transformers[ts_type].transform(ts))
+    return tuple(transformed_ts)

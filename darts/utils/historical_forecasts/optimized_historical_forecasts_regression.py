@@ -14,7 +14,10 @@ from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import create_lagged_prediction_data
-from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
+from darts.utils.historical_forecasts.utils import (
+    _apply_data_transformers,
+    _get_historical_forecast_boundaries,
+)
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -52,14 +55,14 @@ def _optimized_historical_forecasts_last_points_only(
             future_covariates[idx] if future_covariates is not None else None
         )
         # Pipeline/DataTransformer must already be fitted
-        if data_transformers.get("target") is not None:
-            series = data_transformers["target"].transform(series)
-        if past_covariates_ and data_transformers.get("past") is not None:
-            past_covariates_ = data_transformers["past"].transform(past_covariates_)
-        if future_covariates_ and data_transformers.get("future") is not None:
-            future_covariates_ = data_transformers["future"].transform(
-                future_covariates_
-            )
+        series_, past_covariates_, future_covariates_ = _apply_data_transformers(
+            series=series_,
+            past_covariates=past_covariates_,
+            future_covariates=future_covariates_,
+            data_transformers=data_transformers,
+            max_future_cov_lag=model.extreme_lags[5],
+            fit_transformers=False,
+        )
 
         freq = series_.freq
         forecast_components = (
@@ -229,14 +232,14 @@ def _optimized_historical_forecasts_all_points(
         )
 
         # Pipeline/DataTransformer must already be fitted
-        if data_transformers.get("target") is not None:
-            series = data_transformers["target"].transform(series)
-        if past_covariates_ and data_transformers.get("past") is not None:
-            past_covariates_ = data_transformers["past"].transform(past_covariates_)
-        if future_covariates_ and data_transformers.get("future") is not None:
-            future_covariates_ = data_transformers["future"].transform(
-                future_covariates_
-            )
+        series_, past_covariates_, future_covariates_ = _apply_data_transformers(
+            series=series_,
+            past_covariates=past_covariates_,
+            future_covariates=future_covariates_,
+            data_transformers=data_transformers,
+            max_future_cov_lag=model.extreme_lags[5],
+            fit_transformers=False,
+        )
 
         freq = series_.freq
         forecast_components = (

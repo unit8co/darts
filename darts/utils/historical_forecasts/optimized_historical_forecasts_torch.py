@@ -14,6 +14,7 @@ from darts.dataprocessing.pipeline import Pipeline
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils.historical_forecasts.utils import (
+    _apply_data_transformers,
     _get_historical_forecast_boundaries,
     _process_predict_start_points_bounds,
 )
@@ -54,14 +55,14 @@ def _optimized_historical_forecasts(
             future_covariates[idx] if future_covariates is not None else None
         )
         # Pipeline/DataTransformer must already be fitted
-        if data_transformers.get("target"):
-            series_ = data_transformers["past"].transform(series_)
-        if past_covariates_ and data_transformers.get("past"):
-            past_covariates_ = data_transformers["past"].transform(past_covariates_)
-        if future_covariates_ and data_transformers.get("future"):
-            future_covariates_ = data_transformers["future"].transform(
-                future_covariates_
-            )
+        series_, past_covariates_, future_covariates_ = _apply_data_transformers(
+            series=series_,
+            past_covariates=past_covariates_,
+            future_covariates=future_covariates_,
+            data_transformers=data_transformers,
+            max_future_cov_lag=model.extreme_lags[5],
+            fit_transformers=False,
+        )
 
         # obtain forecastable indexes boundaries, adjust target & covariates boundaries accordingly
         (

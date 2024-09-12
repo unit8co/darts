@@ -45,6 +45,7 @@ from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _adjust_historical_forecasts_time_index,
+    _apply_data_transformers,
     _get_historical_forecast_predict_index,
     _get_historical_forecast_train_index,
     _historical_forecasts_general_checks,
@@ -1081,21 +1082,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if train_length_ and len(train_series) > train_length_:
                     train_series = train_series[-train_length_:]
 
-                if train_series and data_transformers.get("target"):
-                    if data_transformers["target"].fittable():
-                        data_transformers["target"].fit(train_series)
-                    train_series = data_transformers["target"].transform(train_series)
-                if past_covariates_ and data_transformers.get("past"):
-                    if data_transformers["past"].fittable():
-                        data_transformers["past"].fit(past_covariates_)
-                    past_covariates_ = data_transformers["past"].transform(
-                        past_covariates_
-                    )
-                if future_covariates_ and data_transformers.get("future"):
-                    if data_transformers["future"].fittable():
-                        data_transformers["future"].fit(future_covariates_)
-                    future_covariates_ = data_transformers["future"].transform(
-                        future_covariates_
+                if len(data_transformers) > 0:
+                    # data transformers are always retrained to avoid data-leakage
+                    train_series, past_covariates_, future_covariates_ = (
+                        _apply_data_transformers(
+                            series=train_series,
+                            past_covariates=past_covariates_,
+                            future_covariates=future_covariates_,
+                            data_transformers=data_transformers,
+                            max_future_cov_lag=model.extreme_lags[5],
+                            fit_transformers=True,
+                        )
                     )
 
                 # testing `retrain` to exclude `False` and `0`
