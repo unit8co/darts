@@ -1064,6 +1064,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             else:
                 iterator = historical_forecasts_time_index[::stride]
 
+            # TODO: if not retrain, scale all the series in one go by fitting the transformer on data before "start"?
+
             # Either store the whole forecasts or only the last points of each forecast, depending on last_points_only
             forecasts = []
             last_points_times = []
@@ -1083,7 +1085,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     train_series = train_series[-train_length_:]
 
                 if len(data_transformers) > 0:
-                    # data transformers are always retrained to avoid data-leakage
+                    # data transformers are retrained between iterations to avoid data-leakage
                     train_series, past_covariates_, future_covariates_ = (
                         _apply_data_transformers(
                             series=train_series,

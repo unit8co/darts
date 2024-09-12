@@ -54,15 +54,16 @@ def _optimized_historical_forecasts_last_points_only(
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
-        # Pipeline/DataTransformer must already be fitted
-        series_, past_covariates_, future_covariates_ = _apply_data_transformers(
-            series=series_,
-            past_covariates=past_covariates_,
-            future_covariates=future_covariates_,
-            data_transformers=data_transformers,
-            max_future_cov_lag=model.extreme_lags[5],
-            fit_transformers=False,
-        )
+        # Pipeline/DataTransformer must already be fitted, transform everything in one go
+        if len(data_transformers) > 0:
+            series_, past_covariates_, future_covariates_ = _apply_data_transformers(
+                series=series_,
+                past_covariates=past_covariates_,
+                future_covariates=future_covariates_,
+                data_transformers=data_transformers,
+                max_future_cov_lag=model.extreme_lags[5],
+                fit_transformers=False,
+            )
 
         freq = series_.freq
         forecast_components = (
@@ -230,16 +231,16 @@ def _optimized_historical_forecasts_all_points(
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
-
-        # Pipeline/DataTransformer must already be fitted
-        series_, past_covariates_, future_covariates_ = _apply_data_transformers(
-            series=series_,
-            past_covariates=past_covariates_,
-            future_covariates=future_covariates_,
-            data_transformers=data_transformers,
-            max_future_cov_lag=model.extreme_lags[5],
-            fit_transformers=False,
-        )
+        # Pipeline/DataTransformer must already be fitted, transform everything in one go
+        if len(data_transformers) > 0:
+            series_, past_covariates_, future_covariates_ = _apply_data_transformers(
+                series=series_,
+                past_covariates=past_covariates_,
+                future_covariates=future_covariates_,
+                data_transformers=data_transformers,
+                max_future_cov_lag=model.extreme_lags[5],
+                fit_transformers=False,
+            )
 
         freq = series_.freq
         forecast_components = (
