@@ -6,8 +6,14 @@ from unittest.mock import ANY, patch
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.preprocessing import MaxAbsScaler, MinMaxScaler
 
-from darts.dataprocessing.transformers import Scaler
+from darts.dataprocessing.pipeline import Pipeline
+from darts.dataprocessing.transformers import (
+    FittableDataTransformer,
+    InvertibleDataTransformer,
+    Scaler,
+)
 from darts.datasets import AirPassengersDataset
 from darts.metrics import mape
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
@@ -815,3 +821,122 @@ class TestGlobalForecastingModels:
 
         res = model.residuals(ts)
         assert len(res) == 38 - (24 + 12)
+
+    @pytest.mark.parametrize(
+        "params",
+        product(
+            [
+                (
+                    {"series": sine_3_ts},
+                    {"target": Scaler()},
+                ),
+                (
+                    {"series": sine_3_ts, "past_covariates": sine_1_ts},
+                    {"past": Scaler(scaler=MinMaxScaler())},
+                ),
+                (
+                    {"series": sine_3_ts, "future_covariates": sine_1_ts},
+                    {"future": Scaler(scaler=MaxAbsScaler())},
+                ),
+                (
+                    {
+                        "series": sine_3_ts,
+                        "past_covariates": sine_2_ts,
+                        "future_covariates": sine_1_ts,
+                    },
+                    {"target": Scaler(), "past": Scaler()},
+                ),
+            ],
+            [True, False],
+        ),
+    )
+    def test_historical_forecasts_with_scaler(self, params):
+        """Apply manually the scaler on the target and covariates to compare with automatic scaling
+
+        Historical forecasts contains only one horizon to faciliate manually scaling
+        """
+        (ts, hf_scaler), retrain = params
+        ocl = 6
+        model = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=ocl,
+            n_epochs=2,
+            random_state=13,
+            **tfm_kwargs,
+        )
+        # pre-train on the entire unscaled target, overfitting/accuracy is not important
+        if not retrain:
+            model.fit(**ts)
+
+        hf_args = {
+            "start": -ocl,
+            "start_format": "position",
+            "forecast_horizon": ocl,
+            "stride": 1,
+            "retrain": retrain,
+            "overlap_end": False,
+            "last_points_only": False,
+            "verbose": False,
+            "enable_optimization": False,
+        }
+
+        # un-transformed series, scaler applied within the method
+        hf_auto = model.historical_forecasts(
+            **ts,
+            **hf_args,
+            data_transformers=hf_scaler,
+        )[0]
+
+        hf_auto_pipeline = model.historical_forecasts(
+            **ts,
+            **hf_args,
+            data_transformers={
+                key_: Pipeline([val_]) for key_, val_ in hf_scaler.items()
+            },
+        )[0]
+
+        # verify that the results are identical when using single Scaler or a Pipeline
+        assert hf_auto.time_index.equals(hf_auto_pipeline.time_index)
+        np.testing.assert_almost_equal(
+            hf_auto.values(),
+            hf_auto_pipeline.values(),
+        )
+
+        # manually scale the series
+        name_mapping = {
+            "target": "series",
+            "past": "past_covariates",
+            "future": "future_covariates",
+        }
+        ts_scaled = deepcopy(ts)
+        for ts_name in hf_scaler:
+            if isinstance(hf_scaler[ts_name], FittableDataTransformer):
+                if ts_name == "target" or ts_name == "past":
+                    tmp_ts = ts_scaled[name_mapping[ts_name]][:-ocl]
+                else:
+                    tmp_ts = ts_scaled[name_mapping[ts_name]][
+                        : -ocl + max(0, model.extreme_lags[5])
+                    ]
+                hf_scaler[ts_name].fit(tmp_ts)
+            # apply the scaler on the whole series
+            ts_scaled[name_mapping[ts_name]] = hf_scaler[ts_name].transform(
+                ts_scaled[name_mapping[ts_name]]
+            )
+
+        # manually generate the last forecast horizon
+        series = ts_scaled.pop("series")[:-ocl]
+        if retrain:
+            model = model.untrained_model()
+            model.fit(series=series, **ts_scaled)
+        hf_manual = model.predict(n=ocl, series=series, **ts_scaled)
+
+        # scale back the forecasts
+        if isinstance(hf_scaler.get("target"), InvertibleDataTransformer):
+            hf_manual = hf_scaler["target"].inverse_transform(hf_manual)
+
+        # verify that automatic and manual pre-scaling produce identical forecasts
+        assert hf_auto.time_index.equals(hf_manual.time_index)
+        np.testing.assert_almost_equal(
+            hf_auto.values(),
+            hf_manual.values(),
+        )
