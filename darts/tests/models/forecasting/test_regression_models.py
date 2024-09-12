@@ -2710,7 +2710,7 @@ class TestRegressionModels:
     def test_historical_forecasts_with_scaler(self, params):
         """Apply manually the scaler on the target and covariates to compare with automatic scaling
 
-        Historical forecasts contains only one horizon to faciliate manually scaling
+        Historical forecasts contains only one horizon to faciliate manual scaling
         """
         (ts, hf_scaler, lags), retrain = params
         ocl = 6
@@ -2788,6 +2788,32 @@ class TestRegressionModels:
         np.testing.assert_almost_equal(
             hf_auto.values(),
             hf_manual.values(),
+        )
+
+        # using optimized historical forecasts
+        hf_opti = model._optimized_historical_forecasts(
+            **ts,
+            **{
+                k_: hf_args[k_]
+                for k_ in [
+                    "start",
+                    "start_format",
+                    "forecast_horizon",
+                    "stride",
+                    "overlap_end",
+                    "last_points_only",
+                    "verbose",
+                ]
+            },
+            # already fitted scaler
+            data_transformers={
+                key_: Pipeline([val_]) for key_, val_ in hf_scaler.items()
+            },
+        )[0]
+        assert hf_manual.time_index.equals(hf_opti.time_index)
+        np.testing.assert_almost_equal(
+            hf_manual.values(),
+            hf_opti.values(),
         )
 
     @pytest.mark.parametrize(

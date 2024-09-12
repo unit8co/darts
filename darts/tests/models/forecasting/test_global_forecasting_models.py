@@ -853,7 +853,7 @@ class TestGlobalForecastingModels:
     def test_historical_forecasts_with_scaler(self, params):
         """Apply manually the scaler on the target and covariates to compare with automatic scaling
 
-        Historical forecasts contains only one horizon to faciliate manually scaling
+        Historical forecasts contains only one horizon to faciliate manual scaling
         """
         (ts, hf_scaler), retrain = params
         ocl = 6
