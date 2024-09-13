@@ -866,7 +866,13 @@ class TimeSeries:
         df = df[static_cov_cols + extract_value_cols + extract_time_col]
 
         if time_col:
-            df = df.set_index(df[time_col])
+            if np.issubdtype(df[time_col].dtype, object) or np.issubdtype(
+                df[time_col].dtype, np.datetime64
+            ):
+                df.index = pd.DatetimeIndex(df[time_col])
+                df = df.drop(columns=time_col)
+            else:
+                df = df.set_index(time_col)
 
         if df.index.is_monotonic_increasing:
             logger.warning(
@@ -876,7 +882,7 @@ class TimeSeries:
             )
 
         # sort on entire `df` to avoid having to sort individually later on
-        if not df.index.is_monotonic_increasing:
+        else:
             df = df.sort_index()
 
         groups = df.groupby(group_cols[0] if len(group_cols) == 1 else group_cols)
