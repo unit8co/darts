@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 try:
     from typing import Literal
@@ -10,11 +10,9 @@ import inspect
 import numpy as np
 import pandas as pd
 
-from darts.dataprocessing.pipeline import Pipeline
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils.historical_forecasts.utils import (
-    _apply_data_transformers,
     _get_historical_forecast_boundaries,
     _process_predict_start_points_bounds,
 )
@@ -38,33 +36,21 @@ def _optimized_historical_forecasts(
     show_warnings: bool = True,
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
-    data_transformers: Optional[Dict[str, Pipeline]] = None,
     **kwargs,
 ) -> Union[Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
     Optimized historical forecasts for TorchForecastingModels
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
+
+    The data_transformers are applied in historical_forecasts (input and predictions)
     """
-    if data_transformers is None:
-        data_transformers = dict()
     bounds = []
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
-        # Pipeline/DataTransformer must already be fitted, transform everything in one go
-        if len(data_transformers) > 0:
-            series_, past_covariates_, future_covariates_ = _apply_data_transformers(
-                series=series_,
-                past_covariates=past_covariates_,
-                future_covariates=future_covariates_,
-                data_transformers=data_transformers,
-                max_future_cov_lag=model.extreme_lags[5],
-                fit_transformers=False,
-            )
-
         # obtain forecastable indexes boundaries, adjust target & covariates boundaries accordingly
         (
             hist_fct_start,
@@ -161,7 +147,4 @@ def _optimized_historical_forecasts(
                 hierarchy=preds[0].hierarchy,
             )
         forecasts_list.append(preds)
-    # single data transformer accross all series and forecasts, using optimized inverse_transform
-    if "target" in data_transformers and data_transformers["target"].invertible():
-        forecasts_list = data_transformers["target"].inverse_transform(forecasts_list)
     return forecasts_list

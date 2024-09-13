@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 try:
     from typing import Literal
@@ -13,6 +13,7 @@ import pandas as pd
 from numpy.typing import ArrayLike
 
 from darts.dataprocessing.pipeline import Pipeline
+from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils.ts_utils import get_series_seq_type, series2seq
@@ -212,22 +213,34 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 logger,
             )
 
-    # ensure DataTransformer are already be fitted when using the optimized historical forecasts
-    if isinstance(n.data_transformers, dict) and n.enable_optimization:
-        for val_ in n.data_transformers.values():
-            transf = (
-                val_
-                if isinstance(val_, Pipeline)
-                else Pipeline(transformers=[val_], copy=False)
+    if isinstance(n.data_transformers, dict):
+        # checking the keys
+        supported_keys = {"series", "past_covariates", "future_covariates"}
+        incorrect_keys = set(n.data_transformers.keys()) - supported_keys
+        if len(incorrect_keys) > 0:
+            raise_log(
+                ValueError(
+                    f"The keys supported by `data_transformers` are {supported_keys}, received the following "
+                    f"incorrect keys: {incorrect_keys}."
+                ),
+                logger,
             )
-            if transf.fittable() and not transf._fit_called():
-                raise_log(
-                    ValueError(
-                        "All the fittable entries `data_transformers` must already be fitted when "
-                        "`enable_optimization=True`."
-                    ),
-                    logger,
+        # DataTransformer must already be fitted when no retraining is occuring
+        if not n.retrain:
+            for val_ in n.data_transformers.values():
+                transf = (
+                    val_
+                    if isinstance(val_, Pipeline)
+                    else Pipeline(transformers=[val_], copy=False)
                 )
+                if transf.fittable() and not transf._fit_called():
+                    raise_log(
+                        ValueError(
+                            "All the fittable entries in `data_transformers` must already be fitted when "
+                            "`retrain=False`."
+                        ),
+                        logger,
+                    )
 
     if (
         n.sample_weight is not None
@@ -947,40 +960,81 @@ def _process_predict_start_points_bounds(
     return bounds, cum_lengths
 
 
+def _convert_data_transformers(
+    data_transformers: Optional[Dict[str, Union[BaseDataTransformer, Pipeline]]],
+    copy: bool,
+) -> Dict[str, Pipeline]:
+    if data_transformers is None:
+        return dict()
+    else:
+        return {
+            key_: val_
+            if isinstance(val_, Pipeline)
+            else Pipeline(transformers=[val_], copy=copy)
+            for key_, val_ in data_transformers.items()
+        }
+
+
 def _apply_data_transformers(
-    series: TimeSeries,
-    past_covariates: Optional[TimeSeries],
-    future_covariates: Optional[TimeSeries],
+    series: Union[TimeSeries, List[TimeSeries]],
+    past_covariates: Optional[Union[TimeSeries, List[TimeSeries]]],
+    future_covariates: Optional[Union[TimeSeries, List[TimeSeries]]],
     data_transformers: Dict[str, Pipeline],
     max_future_cov_lag: int,
     fit_transformers: bool,
-) -> Tuple[TimeSeries, TimeSeries, TimeSeries]:
+) -> Tuple[
+    Union[TimeSeries, List[TimeSeries]],
+    Union[TimeSeries, List[TimeSeries]],
+    Union[TimeSeries, List[TimeSeries]],
+]:
     """Transform each series using the corresponding Pipeline.
 
     If the Pipeline is fittable and `fit_transformers=True`, the series are sliced to correspond
     to the information available at model training time
     """
+    # also, `global_fit`` is implicetly not supported
+    if fit_transformers and any(
+        isinstance(ts, list) for ts in [series, past_covariates, future_covariates]
+    ):
+        raise_log(
+            ValueError(
+                "The data transformers can be fitted only on one series at a time (due to slicing constraints) "
+                "but a list of series was passed",
+                logger,
+            )
+        )
     transformed_ts = []
     for ts_type, ts in zip(
-        ["target", "past", "future"], [series, past_covariates, future_covariates]
+        ["series", "past_covariates", "future_covariates"],
+        [series, past_covariates, future_covariates],
     ):
-        if ts_type is None or data_transformers.get(ts_type) is None:
+        if ts is None or data_transformers.get(ts_type) is None:
             transformed_ts.append(ts)
         else:
             if fit_transformers and data_transformers[ts_type].fittable():
                 # must slice the ts to distinguish accessible information from future information
-                if ts_type == "past":
+                if ts_type == "past_covariates":
                     # known information is aligned with the target series
                     tmp_ts = ts.drop_after(series.end_time())
-                elif ts_type == "future":
+                elif ts_type == "future_covariates":
                     # known information goes up to the first forecasts iteration (in case of autoregression)
                     tmp_ts = ts.drop_after(
-                        series.end_time() + max(0, max_future_cov_lag) * series.freq
+                        series.end_time() + max(0, max_future_cov_lag + 1) * series.freq
                     )
                 else:
                     # nothing to do, the target series is already sliced appropriately
                     tmp_ts = ts
                 data_transformers[ts_type].fit(tmp_ts)
-            # transforming the whole series
+            # transforming the series
             transformed_ts.append(data_transformers[ts_type].transform(ts))
     return tuple(transformed_ts)
+
+
+def _apply_inverse_data_transformers(
+    forecasts: Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]],
+    data_transformers: Dict[str, Pipeline],
+) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
+    if "series" in data_transformers and data_transformers["series"].invertible():
+        return data_transformers["series"].inverse_transform(forecasts)
+    else:
+        return forecasts

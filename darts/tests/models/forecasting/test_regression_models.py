@@ -12,7 +12,7 @@ import pytest
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
-from sklearn.preprocessing import MaxAbsScaler, MinMaxScaler
+from sklearn.preprocessing import MaxAbsScaler
 
 import darts
 from darts import TimeSeries
@@ -2680,7 +2680,7 @@ class TestRegressionModels:
                         "series": sine_univariate5 + 2,
                         "past_covariates": sine_univariate1 + 3,
                     },
-                    {"past": Scaler(scaler=MinMaxScaler())},
+                    {"past": Scaler()},
                     {"lags": 5, "lags_past_covariates": 3},
                 ),
                 (

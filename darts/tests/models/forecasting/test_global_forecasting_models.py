@@ -6,7 +6,7 @@ from unittest.mock import ANY, patch
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.preprocessing import MaxAbsScaler, MinMaxScaler
+from sklearn.preprocessing import MaxAbsScaler
 
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import (
@@ -832,7 +832,7 @@ class TestGlobalForecastingModels:
                 ),
                 (
                     {"series": sine_3_ts + 3, "past_covariates": sine_1_ts + 3},
-                    {"past": Scaler(scaler=MinMaxScaler())},
+                    {"past": Scaler()},
                 ),
                 (
                     {"series": sine_3_ts + 3, "future_covariates": sine_1_ts + 3},

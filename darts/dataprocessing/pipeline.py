@@ -209,6 +209,7 @@ class Pipeline:
                     data = transformer.inverse_transform(data)
             return data
 
+    @property
     def invertible(self) -> bool:
         """
         Returns whether the pipeline is invertible or not.
@@ -221,6 +222,7 @@ class Pipeline:
         """
         return self._invertible
 
+    @property
     def fittable(self) -> bool:
         """
         Returns whether the pipeline is fittable or not.
@@ -233,6 +235,7 @@ class Pipeline:
         """
         return self._fittable
 
+    @property
     def _fit_called(self) -> bool:
         """
         Returns whether all the transformers in the pipeline were fitted (when applicable).

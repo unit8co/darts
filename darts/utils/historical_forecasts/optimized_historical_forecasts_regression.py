@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 try:
     from typing import Literal
@@ -9,13 +9,11 @@ import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import sliding_window_view
 
-from darts.dataprocessing.pipeline import Pipeline
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.historical_forecasts.utils import (
-    _apply_data_transformers,
     _get_historical_forecast_boundaries,
 )
 from darts.utils.utils import generate_index
@@ -37,16 +35,15 @@ def _optimized_historical_forecasts_last_points_only(
     show_warnings: bool = True,
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
-    data_transformers: Optional[Dict[str, Pipeline]] = None,
     **kwargs,
 ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
     Optimized historical forecasts for RegressionModel with last_points_only = True
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
+
+    The data_transformers are applied in historical_forecasts (input and predictions)
     """
-    if data_transformers is None:
-        data_transformers = dict()
     forecasts_list = []
     iterator = _build_tqdm_iterator(series, verbose)
     for idx, series_ in enumerate(iterator):
@@ -54,16 +51,6 @@ def _optimized_historical_forecasts_last_points_only(
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
-        # Pipeline/DataTransformer must already be fitted, transform everything in one go
-        if len(data_transformers) > 0:
-            series_, past_covariates_, future_covariates_ = _apply_data_transformers(
-                series=series_,
-                past_covariates=past_covariates_,
-                future_covariates=future_covariates_,
-                data_transformers=data_transformers,
-                max_future_cov_lag=model.extreme_lags[5],
-                fit_transformers=False,
-            )
 
         freq = series_.freq
         forecast_components = (
@@ -191,9 +178,6 @@ def _optimized_historical_forecasts_last_points_only(
                 hierarchy=series_.hierarchy,
             )
         )
-    # single data transformer accross all series and forecasts, using optimized inverse_transform
-    if "target" in data_transformers and data_transformers["target"].invertible():
-        forecasts_list = data_transformers["target"].inverse_transform(forecasts_list)
     return forecasts_list
 
 
@@ -211,7 +195,6 @@ def _optimized_historical_forecasts_all_points(
     show_warnings: bool = True,
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
-    data_transformers: Optional[Dict[str, Pipeline]] = None,
     **kwargs,
 ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
@@ -219,8 +202,6 @@ def _optimized_historical_forecasts_all_points(
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
-    if data_transformers is None:
-        data_transformers = dict()
     forecasts_list = []
     iterator = _build_tqdm_iterator(series, verbose)
     for idx, series_ in enumerate(iterator):
@@ -228,16 +209,6 @@ def _optimized_historical_forecasts_all_points(
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
-        # Pipeline/DataTransformer must already be fitted, transform everything in one go
-        if len(data_transformers) > 0:
-            series_, past_covariates_, future_covariates_ = _apply_data_transformers(
-                series=series_,
-                past_covariates=past_covariates_,
-                future_covariates=future_covariates_,
-                data_transformers=data_transformers,
-                max_future_cov_lag=model.extreme_lags[5],
-                fit_transformers=False,
-            )
 
         freq = series_.freq
         forecast_components = (
@@ -389,7 +360,4 @@ def _optimized_historical_forecasts_all_points(
                 )
             )
         forecasts_list.append(forecasts_)
-    # single data transformer accross all series and forecasts, using optimized inverse_transform
-    if "target" in data_transformers and data_transformers["target"].invertible():
-        forecasts_list = data_transformers["target"].inverse_transform(forecasts_list)
     return forecasts_list
