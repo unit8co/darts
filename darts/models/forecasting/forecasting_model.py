@@ -966,12 +966,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         forecasts_list = []
         for idx, series_ in enumerate(outer_iterator):
-            past_covariates_ = (
-                past_covariates[idx] if past_covariates is not None else None
-            )
-            future_covariates_ = (
-                future_covariates[idx] if future_covariates is not None else None
-            )
+            past_covariates_ = past_covariates[idx] if past_covariates else None
+            future_covariates_ = future_covariates[idx] if future_covariates else None
 
             if isinstance(sample_weight, str):
                 sample_weight_ = sample_weight
@@ -1115,7 +1111,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     ):
                         # avoid fitting the same model multiple times
                         model = model.untrained_model()
-
                         model._fit_wrapper(
                             series=train_series,
                             past_covariates=past_covariates_,
@@ -1849,38 +1844,34 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     sample_weight=sample_weight,
                 )
             else:  # split mode
-                # TODO: use util method
-                if data_transformers.get("target") is not None:
-                    if data_transformers["target"].fittable():
-                        data_transformers["target"].fit(series)
-                    series = data_transformers["target"].transform(series)
-                if (
-                    data_transformers.get("past") is not None
-                    and past_covariates is not None
-                ):
-                    if data_transformers["past"].fittable():
-                        data_transformers["past"].fit(past_covariates)
-                    series = data_transformers["past"].transform(past_covariates)
-                if (
-                    data_transformers.get("future") is not None
-                    and future_covariates is not None
-                ):
-                    if data_transformers["future"].fittable():
-                        data_transformers["future"].fit(future_covariates)
-                    series = data_transformers["future"].transform(future_covariates)
+                if len(data_transformers) > 0:
+                    series_, past_covariates_, future_covariates_ = (
+                        _apply_data_transformers(
+                            series=series,
+                            past_covariates=past_covariates,
+                            future_covariates=future_covariates,
+                            data_transformers=data_transformers,
+                            max_future_cov_lag=model.extreme_lags[5],
+                            fit_transformers=True,
+                        )
+                    )
+                else:
+                    series_ = series
+                    past_covariates_ = past_covariates
+                    future_covariates_ = future_covariates
 
                 model._fit_wrapper(
-                    series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
+                    series=series_,
+                    past_covariates=past_covariates_,
+                    future_covariates=future_covariates_,
                     sample_weight=sample_weight,
                     **fit_kwargs,
                 )
                 pred = model._predict_wrapper(
                     n=len(val_series),
-                    series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
+                    series=series_,
+                    past_covariates=past_covariates_,
+                    future_covariates=future_covariates_,
                     num_samples=1,
                     verbose=verbose,
                     **predict_kwargs,
