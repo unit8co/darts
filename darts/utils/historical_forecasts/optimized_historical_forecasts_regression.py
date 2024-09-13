@@ -148,7 +148,7 @@ def _optimized_historical_forecasts_last_points_only(
         )
 
         # stride can be applied directly (same for input and historical forecasts)
-        X = X[0][::stride, :, 0]  # shape ()
+        X = X[0][::stride, :, 0]
 
         # repeat rows for probabilistic forecast
         forecast = model._predict_and_sample(
@@ -158,9 +158,6 @@ def _optimized_historical_forecasts_last_points_only(
             **kwargs,
         )
         # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
-
-        # transpose to
-        # (k, (forecastable_index_length-1)*num_samples, n_component, 1)
         # where k = output_chunk length if multi_models, 1 otherwise
 
         # reshape into (forecasted indexes, n_components, n_samples), components are interleaved
@@ -382,14 +379,15 @@ def _optimized_historical_forecasts_all_points(
         for idx_ftc, step_fct in enumerate(
             range(0, forecast.shape[0] * stride, stride)
         ):
-            forecast_value = TimeSeries.from_times_and_values(
-                times=new_times[step_fct : step_fct + forecast_horizon],
-                values=forecast[idx_ftc],
-                columns=forecast_components,
-                static_covariates=series_.static_covariates,
-                hierarchy=series_.hierarchy,
+            forecasts_.append(
+                TimeSeries.from_times_and_values(
+                    times=new_times[step_fct : step_fct + forecast_horizon],
+                    values=forecast[idx_ftc],
+                    columns=forecast_components,
+                    static_covariates=series_.static_covariates,
+                    hierarchy=series_.hierarchy,
+                )
             )
-            forecasts_.append(forecast_value)
         forecasts_list.append(forecasts_)
     # single data transformer accross all series and forecasts, using optimized inverse_transform
     if "target" in data_transformers and data_transformers["target"].invertible():
