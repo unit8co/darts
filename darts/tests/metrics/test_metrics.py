@@ -1241,7 +1241,7 @@ class TestMetrics:
 
         # should fail if kwargs are passed as args, because of the "*"
         with pytest.raises(TypeError):
-            metrics.r2_score(series00, series11, False, np.mean)
+            metrics.r2_score(series00, series11, False, 0.5, np.mean)
 
     def test_multiple_ts_rmse(self):
         # simple test

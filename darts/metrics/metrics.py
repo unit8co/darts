@@ -11,16 +11,24 @@ from inspect import signature
 from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import pandas as pd
 
 from darts import TimeSeries
 from darts.dataprocessing import dtw
 from darts.logging import get_logger, raise_log
-from darts.utils import _build_tqdm_iterator, _parallel_apply, n_steps_between
 from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
+from darts.utils.utils import (
+    _build_tqdm_iterator,
+    _parallel_apply,
+    likelihood_component_names,
+    n_steps_between,
+    quantile_names,
+)
 
 logger = get_logger(__name__)
 TIME_AX = 0
 COMP_AX = 1
+QNTL_AX = 2
 
 # Note: for new metrics added to this module to be able to leverage the two decorators, it is required both having
 # the `actual_series` and `pred_series` parameters, and not having other ``Sequence`` as args (since these decorators
@@ -151,10 +159,12 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
 
         # we flatten metrics along the time axis if n time steps == 1,
         # and/or along component axis if n components == 1
+        # and/or along the quantile axis if n quantiles == 1
         vals = [
             val[
                 slice(None) if val.shape[TIME_AX] != 1 else 0,
                 slice(None) if val.shape[COMP_AX] != 1 else 0,
+                slice(None) if val.shape[QNTL_AX] != 1 else 0,
             ]
             for val in vals
         ]
@@ -187,14 +197,40 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         pred_series = args[1]
         num_series_in_args = 2
 
-        if actual_series.width != pred_series.width:
-            raise_log(
-                ValueError(
-                    f"Mismatch between number of components in `actual_series` "
-                    f"(n={actual_series.width}) and `pred_series` (n={pred_series.width}."
-                ),
-                logger=logger,
+        # quantiles can only be in `kwargs`
+        q = kwargs.get("q", params["q"].default if "q" in params else None)
+        q = [q] if isinstance(q, float) else q
+
+        q_comp_names = q
+        if q is None:
+            if actual_series.width != pred_series.width:
+                raise_log(
+                    ValueError(
+                        f"Mismatch between number of components in `actual_series` "
+                        f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
+                    ),
+                    logger=logger,
+                )
+        elif not pred_series.is_stochastic:
+            # make sure all predicted quantile components are available
+            q_comp_names = pd.Index(
+                likelihood_component_names(
+                    components=actual_series.components,
+                    parameter_names=quantile_names(q=q),
+                )
             )
+            if not q_comp_names.isin(pred_series.components).all():
+                raise_log(
+                    ValueError(
+                        f"Computing a metric with quantile(s) `q={q}` is only supported for probabilistic "
+                        f"`pred_series` (num samples > 1) or `pred_series` containing the predicted "
+                        f"quantiles as columns / components. Either pass a probabilistic `pred_series` or "
+                        f"a series containing the expected quantile components: {q_comp_names.tolist()} "
+                    ),
+                    logger=logger,
+                )
+        if "q" in kwargs and q is not None:
+            kwargs["q"] = (np.array(q), q_comp_names)
 
         # handle `insample` parameters for scaled metrics
         input_series = (actual_series, pred_series)
@@ -212,7 +248,7 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             num_series_in_args += 1
 
         vals = func(*input_series, *args[num_series_in_args:], **kwargs)
-        if not 1 <= len(vals.shape) <= 2:
+        if not 2 <= len(vals.shape) <= 3:
             raise_log(
                 ValueError(
                     "Metric output must have 1 dimension for aggregated metrics (e.g. `mae()`, ...), "
@@ -220,7 +256,7 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                 ),
                 logger=logger,
             )
-        elif len(vals.shape) == 1:
+        elif len(vals.shape) == 2:
             vals = np.expand_dims(vals, TIME_AX)
 
         time_reduction = _get_reduction(
@@ -248,28 +284,59 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
 
 
 def _get_values(
-    vals: np.ndarray, stochastic_quantile: Optional[float] = 0.5
+    vals: np.ndarray,
+    vals_components: pd.Index,
+    actual_components: pd.Index,
+    stochastic_quantile: Optional[
+        Tuple[List[float], Union[List[float], pd.Index]]
+    ] = None,
 ) -> np.ndarray:
     """
     Returns a deterministic or probabilistic numpy array from the values of a time series.
     For stochastic input values, return either all sample values with (stochastic_quantile=None) or the quantile sample
-    value with (stochastic_quantile {>=0,<=1})
+    value with (quantile values {>=0,<=1})
+
+    Parameters
+    ----------
+    vals
+        A numpy array with the values of a TimeSeries (actual values or predictions).
+    vals_components
+        The components of the `vals` TimeSeries.
+    actual_components
+        The components of the actual TimeSeries.
+    stochastic_quantile
+        Optionally, a tuple with (quantile values, quantile values if `pred_series` is stochastic
+        and the quantile component names otherwise).
     """
+    if stochastic_quantile is not None:
+        q, q_names = stochastic_quantile
+    else:
+        q, q_names = None, None
+
     if vals.shape[2] == 1:  # deterministic
-        out = vals[:, :, 0]
-    else:  # stochastic
-        if stochastic_quantile is None:
-            out = vals
-        else:
-            out = np.quantile(vals, stochastic_quantile, axis=2)
-    return out
+        if isinstance(q_names, pd.Index):
+            # `q_names` are the component names of the predicted quantile parameters
+            # we extract the relevant quantile components with shape (times, components * quantiles)
+            vals = vals[:, vals_components.get_indexer(q_names)]
+            # rearrange into (times, components, quantiles)
+            vals = vals.reshape((len(vals), len(actual_components), -1))
+        return vals
+
+    # stochastic
+    if stochastic_quantile is None:
+        return vals
+
+    # compute multiple quantiles for all times and components; with shape: (quantiles, times, components)
+    out = np.quantile(vals, q, axis=2)
+    # rearrange into (times, components, quantiles)
+    return out.transpose(1, 2, 0)
 
 
 def _get_values_or_raise(
     series_a: TimeSeries,
     series_b: TimeSeries,
     intersect: bool,
-    stochastic_quantile: Optional[float] = 0.5,
+    stochastic_quantile: Optional[float] = None,
     remove_nan_union: bool = False,
     is_insample: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -299,13 +366,6 @@ def _get_values_or_raise(
     ValueError
         If `is_insample=False` and the two time series do not have at least a partially overlapping time index.
     """
-
-    if not series_a.width == series_b.width:
-        raise_log(
-            ValueError("The two time series must have the same number of components"),
-            logger=logger,
-        )
-
     if not isinstance(intersect, bool):
         raise_log(ValueError("The intersect parameter must be a bool"), logger=logger)
 
@@ -327,7 +387,12 @@ def _get_values_or_raise(
                 logger=logger,
             )
 
-        vals_b_det = _get_values(vals_b_common, stochastic_quantile=stochastic_quantile)
+        vals_b = _get_values(
+            vals=vals_b_common,
+            vals_components=series_b.components,
+            actual_components=series_a.components,
+            stochastic_quantile=stochastic_quantile,
+        )
     else:
         # for `insample` series we extract only values up until before start of `pred_series`
         # find how many steps `insample` overlaps into `series_b`
@@ -347,25 +412,23 @@ def _get_values_or_raise(
             )
         end = end or None
         vals_a_common = series_a.all_values(copy=make_copy)[:end]
-        vals_b_det = None
-    vals_a_det = _get_values(vals_a_common, stochastic_quantile=stochastic_quantile)
+        vals_b = None
+    vals_a = _get_values(
+        vals=vals_a_common,
+        vals_components=series_a.components,
+        actual_components=series_a.components,
+        stochastic_quantile=None,
+    )
 
     if not remove_nan_union or is_insample:
-        return vals_a_det, vals_b_det
+        return vals_a, vals_b
 
-    b_is_deterministic = bool(len(vals_b_det.shape) == 2)
-    if b_is_deterministic:
-        isnan_mask = np.logical_or(np.isnan(vals_a_det), np.isnan(vals_b_det))
-        isnan_mask_pred = isnan_mask
-    else:
-        isnan_mask = np.logical_or(
-            np.isnan(vals_a_det), np.isnan(vals_b_det).any(axis=2)
-        )
-        isnan_mask_pred = np.repeat(
-            np.expand_dims(isnan_mask, axis=-1), vals_b_det.shape[2], axis=2
-        )
-    return np.where(isnan_mask, np.nan, vals_a_det), np.where(
-        isnan_mask_pred, np.nan, vals_b_det
+    isnan_mask = np.expand_dims(
+        np.logical_or(np.isnan(vals_a), np.isnan(vals_b)).any(axis=2), axis=-1
+    )
+    isnan_mask_pred = np.repeat(isnan_mask, vals_b.shape[2], axis=2)
+    return np.where(isnan_mask, np.nan, vals_a), np.where(
+        isnan_mask_pred, np.nan, vals_b
     )
 
 
@@ -471,6 +534,7 @@ def err(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -496,6 +560,8 @@ def err(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -555,6 +621,7 @@ def merr(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -579,6 +646,8 @@ def merr(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -632,6 +701,7 @@ def ae(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -657,6 +727,8 @@ def ae(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -716,6 +788,7 @@ def mae(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -740,6 +813,8 @@ def mae(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -795,6 +870,7 @@ def ase(
     m: int = 1,
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -835,6 +911,8 @@ def ase(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -908,6 +986,7 @@ def mase(
     m: int = 1,
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -947,6 +1026,8 @@ def mase(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -1012,6 +1093,7 @@ def se(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -1037,6 +1119,8 @@ def se(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -1096,6 +1180,7 @@ def mse(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -1120,6 +1205,8 @@ def mse(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -1175,6 +1262,7 @@ def sse(
     m: int = 1,
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -1215,6 +1303,8 @@ def sse(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -1288,6 +1378,7 @@ def msse(
     m: int = 1,
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -1327,6 +1418,8 @@ def msse(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -1392,6 +1485,7 @@ def rmse(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -1416,6 +1510,8 @@ def rmse(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -1470,6 +1566,7 @@ def rmsse(
     m: int = 1,
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -1509,6 +1606,8 @@ def rmsse(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -1571,6 +1670,7 @@ def sle(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -1598,6 +1698,8 @@ def sle(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -1658,6 +1760,7 @@ def rmsle(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -1684,6 +1787,8 @@ def rmsle(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -1739,6 +1844,7 @@ def ape(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -1767,6 +1873,8 @@ def ape(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -1838,6 +1946,7 @@ def mape(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -1865,6 +1974,8 @@ def mape(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -1924,6 +2035,7 @@ def sape(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -1953,6 +2065,8 @@ def sape(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -2024,6 +2138,7 @@ def smape(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -2054,6 +2169,8 @@ def smape(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -2113,6 +2230,7 @@ def ope(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -2138,6 +2256,8 @@ def ope(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -2204,6 +2324,7 @@ def arre(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -2229,6 +2350,8 @@ def arre(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     time_reduction
         Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
@@ -2303,6 +2426,7 @@ def marre(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -2328,6 +2452,8 @@ def marre(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -2384,6 +2510,7 @@ def r2_score(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -2412,6 +2539,8 @@ def r2_score(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -2468,6 +2597,7 @@ def coefficient_of_variation(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -2495,6 +2625,8 @@ def coefficient_of_variation(
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -2629,9 +2761,9 @@ def dtw_metric(
 def qr(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    q: float = 0.5,
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = 0.5,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -2660,11 +2792,11 @@ def qr(
         The (sequence of) actual series.
     pred_series
         The (sequence of) predicted series.
-    q
-        The quantile (float [0, 1]) of interest for the risk evaluation.
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -2720,11 +2852,12 @@ def qr(
     z_hat = np.nansum(
         z_hat, axis=TIME_AX
     )  # aggregate all individual sample realizations
+    # quantile loss
+    q, _ = q
     z_hat_rho = np.quantile(
         z_hat, q=q, axis=1
-    )  # get the quantile from aggregated samples
+    ).T  # get the quantile from aggregated samples
 
-    # quantile loss
     errors = z_true - z_hat_rho
     losses = 2 * np.maximum((q - 1) * errors, q * errors)
     return losses / z_true
@@ -2735,9 +2868,9 @@ def qr(
 def ql(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    q: float = 0.5,
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = 0.5,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -2766,11 +2899,11 @@ def ql(
         The (sequence of) actual series.
     pred_series
         The (sequence of) predicted series.
-    q
-        The quantile (float [0, 1]) of interest for the loss.
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -2816,15 +2949,6 @@ def ql(
     List[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
-    if not pred_series.is_stochastic:
-        raise_log(
-            ValueError(
-                "quantile/pinball loss (ql) should only be computed for "
-                "stochastic predicted TimeSeries."
-            ),
-            logger=logger,
-        )
-
     y_true, y_pred = _get_values_or_raise(
         actual_series,
         pred_series,
@@ -2832,6 +2956,7 @@ def ql(
         stochastic_quantile=q,
         remove_nan_union=True,
     )
+    q, _ = q
     errors = y_true - y_pred
     losses = 2.0 * np.maximum((q - 1) * errors, q * errors)
     return losses
@@ -2842,9 +2967,9 @@ def ql(
 def mql(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-    q: float = 0.5,
     intersect: bool = True,
     *,
+    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = 0.5,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -2873,11 +2998,11 @@ def mql(
         The (sequence of) actual series.
     pred_series
         The (sequence of) predicted series.
-    q
-        The quantile (float [0, 1]) of interest for the loss.
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
+    q
+        The quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a

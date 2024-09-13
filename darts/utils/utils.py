@@ -67,6 +67,34 @@ freqs = {
 }
 
 
+def likelihood_component_names(
+    components: Union[pd.Index, List[str]], parameter_names: List[str]
+):
+    return [
+        f"{tgt_name}_{param_n}"
+        for tgt_name in components
+        for param_n in parameter_names
+    ]
+
+
+def quantile_names(q: Union[float, List[float]], component: Optional[str] = None):
+    """Generates formatted quantile names, optionally added to a component name.
+
+    Parameters
+    ----------
+    q
+        A float or list of floats with the quantiles to generate the names for.
+    component
+        Optionally, a component name to add to the the beginning of the quantile names.
+    """
+    # predicted quantile text format
+    comp = f"{component}_" if component is not None else ""
+    if isinstance(q, float):
+        return f"{comp}q{q:.2f}"
+    else:
+        return [f"{comp}q{q_i:.2f}" for q_i in q]
+
+
 def _build_tqdm_iterator(iterable, verbose, **kwargs):
     """
     Build an iterable, possibly using tqdm (either in notebook or regular mode)

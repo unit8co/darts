@@ -60,7 +60,11 @@ from darts import TimeSeries
 from darts.logging import raise_if_not
 
 # TODO: Table on README listing distribution, possible priors and wiki article
-from darts.utils.utils import _check_quantiles
+from darts.utils.utils import (
+    _check_quantiles,
+    likelihood_component_names,
+    quantile_names,
+)
 
 MIN_CAUCHY_GAMMA_SAMPLING = 1e-100
 
@@ -1354,11 +1358,10 @@ class QuantileRegression(Likelihood):
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
         """Each component have their own quantiles"""
-        return [
-            f"{tgt_name}_q{quantile:.2f}"
-            for tgt_name in input_series.components
-            for quantile in self.quantiles
-        ]
+        return likelihood_component_names(
+            components=input_series.components,
+            parameter_names=quantile_names(self.quantiles),
+        )
 
     def simplified_name(self) -> str:
         return "quantile"
