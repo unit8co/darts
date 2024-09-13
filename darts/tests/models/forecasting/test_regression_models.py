@@ -2676,25 +2676,34 @@ class TestRegressionModels:
         product(
             [
                 (
-                    {"series": sine_univariate5, "past_covariates": sine_univariate1},
+                    {
+                        "series": sine_univariate5 + 2,
+                        "past_covariates": sine_univariate1 + 3,
+                    },
                     {"past": Scaler(scaler=MinMaxScaler())},
                     {"lags": 5, "lags_past_covariates": 3},
                 ),
                 (
-                    {"series": sine_univariate5, "past_covariates": sine_univariate1},
+                    {
+                        "series": sine_univariate5 + 3,
+                        "past_covariates": sine_univariate1 + 2,
+                    },
                     {"past": Scaler(scaler=MaxAbsScaler())},
                     {"lags_past_covariates": 3},
                 ),
                 (
-                    {"series": sine_univariate5, "future_covariates": sine_univariate2},
+                    {
+                        "series": sine_univariate5 + 2,
+                        "future_covariates": sine_univariate2 + 3,
+                    },
                     {"future": Scaler()},
                     {"lags": 5, "lags_future_covariates": [-1, 0]},
                 ),
                 (
                     {
-                        "series": sine_univariate5,
-                        "past_covariates": sine_univariate1,
-                        "future_covariates": sine_univariate2,
+                        "series": sine_univariate5 + 1,
+                        "past_covariates": sine_univariate1 + 2,
+                        "future_covariates": sine_univariate2 + 3,
                     },
                     {"target": Scaler(), "past": Scaler()},
                     {

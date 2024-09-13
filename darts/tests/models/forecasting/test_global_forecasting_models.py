@@ -827,22 +827,22 @@ class TestGlobalForecastingModels:
         product(
             [
                 (
-                    {"series": sine_3_ts},
+                    {"series": sine_3_ts + 3},
                     {"target": Scaler()},
                 ),
                 (
-                    {"series": sine_3_ts, "past_covariates": sine_1_ts},
+                    {"series": sine_3_ts + 3, "past_covariates": sine_1_ts + 3},
                     {"past": Scaler(scaler=MinMaxScaler())},
                 ),
                 (
-                    {"series": sine_3_ts, "future_covariates": sine_1_ts},
+                    {"series": sine_3_ts + 3, "future_covariates": sine_1_ts + 3},
                     {"future": Scaler(scaler=MaxAbsScaler())},
                 ),
                 (
                     {
-                        "series": sine_3_ts,
-                        "past_covariates": sine_2_ts,
-                        "future_covariates": sine_1_ts,
+                        "series": sine_3_ts + 3,
+                        "past_covariates": sine_2_ts + 3,
+                        "future_covariates": sine_1_ts + 3,
                     },
                     {"target": Scaler(), "past": Scaler()},
                 ),
