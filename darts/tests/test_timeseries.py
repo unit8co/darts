@@ -11,7 +11,7 @@ from scipy.stats import kurtosis, skew
 
 from darts import TimeSeries, concatenate
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
-from darts.utils.utils import freqs, generate_index
+from darts.utils.utils import expand_arr, freqs, generate_index
 
 
 class TestTimeSeries:
@@ -801,82 +801,106 @@ class TestTimeSeries:
         assert appended.components.equals(series_1.components)
 
     @pytest.mark.parametrize(
-        "series, values, expected_vals, expected_idx",
-        [
-            (
-                TimeSeries.from_times_and_values(
-                    times=pd.DatetimeIndex(
-                        data=["20240101", "20240102", "20240103"],
-                        name="date",
-                    ),
-                    values=np.arange(3),
+        "config",
+        itertools.product(
+            [
+                (  # univariate array
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    np.array([0, 1]).reshape((2, 1, 1)),
                 ),
-                np.arange(2),
-                np.concatenate(
-                    [np.arange(3).reshape(3, 1, 1), np.arange(2).reshape(2, 1, 1)],
-                    axis=0,
+                (  # multivariate array
+                    np.array([0, 1, 2, 3, 4, 5]).reshape((3, 2, 1)),
+                    np.array([0, 1, 2, 3]).reshape((2, 2, 1)),
                 ),
-                pd.DatetimeIndex(
-                    data=[
-                        "20240101",
-                        "20240102",
-                        "20240103",
-                        "20240104",
-                        "20240105",
-                    ],
-                    name="date",
+                (  # empty array
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    np.array([]).reshape((0, 1, 1)),
                 ),
-            ),
-            (
-                linear_timeseries(start=1, length=5, freq=2),
-                np.ones((2, 1, 1)),
-                np.concatenate(
-                    [
-                        linear_timeseries(start=1, length=5, freq=2).all_values(),
-                        np.ones((2, 1, 1)),
-                    ],
-                    axis=0,
+                (
+                    # wrong number of components
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    np.array([0, 1, 2, 3]).reshape((2, 2, 1)),
                 ),
-                pd.RangeIndex(start=1, stop=15, step=2, name="another_date"),
-            ),
-            (
-                TimeSeries.from_values(np.arange(9)),
-                np.arange(4),
-                np.concatenate(
-                    [np.arange(9).reshape(9, 1, 1), np.arange(4).reshape(4, 1, 1)],
-                    axis=0,
+                (
+                    # wrong number of samples
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    np.array([0, 1, 2, 3]).reshape((2, 1, 2)),
                 ),
-                pd.RangeIndex(start=0, stop=13, step=1, name="date_days"),
-            ),
-            (
-                TimeSeries.from_values(np.arange(9)),
-                np.arange(4).reshape(4, 1),
-                np.concatenate(
-                    [np.arange(9).reshape(9, 1, 1), np.arange(4).reshape(4, 1, 1)],
-                    axis=0,
+                (  # univariate list with times
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    [0, 1],
                 ),
-                pd.RangeIndex(start=0, stop=13, step=1, name="date"),
-            ),
-            (
-                TimeSeries.from_values(np.arange(9).reshape(3, 3)),
-                np.arange(3).reshape(1, 3),
-                np.concatenate(
-                    [np.arange(9).reshape(3, 3, 1), np.arange(3).reshape(1, 3, 1)],
-                    axis=0,
+                (  # univariate list with times and components
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    [[0], [1]],
                 ),
-                pd.RangeIndex(start=0, stop=4, step=1, name="date"),
-            ),
-            (
-                TimeSeries.from_values(np.arange(9).reshape(3, 3)),
-                [],
-                np.arange(9).reshape(3, 3, 1),
-                pd.RangeIndex(start=0, stop=3, step=1, name="date"),
-            ),
-        ],
+                (  # univariate list with times, components and samples
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    [[[0]], [[1]]],
+                ),
+                (  # multivar with list has wrong shape
+                    np.array([0, 1, 2, 3]).reshape((2, 2, 1)),
+                    [[1, 2], [3, 4]],
+                ),
+                (  # list with wrong numer of components
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    [[1, 2], [3, 4]],
+                ),
+                (  # list with wrong numer of samples
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    [[[0, 1]], [[1, 2]]],
+                ),
+                (  # multivar input but list has wrong shape
+                    np.array([0, 1, 2, 3]).reshape((2, 2, 1)),
+                    [1, 2],
+                ),
+            ],
+            [True, False],
+            ["append_values", "prepend_values"],
+        ),
     )
-    def test_append_values(self, series, values, expected_vals, expected_idx):
-        appended = series.append_values(values)
-        print(series.time_index.name)
+    def test_append_and_prepend_values(self, config):
+        (series_vals, vals), is_datetime, method = config
+        start = "20240101" if is_datetime else 1
+        series_idx = generate_index(
+            start=start, length=len(series_vals), name="some_name"
+        )
+        series = TimeSeries.from_times_and_values(
+            times=series_idx,
+            values=series_vals,
+        )
+
+        # expand if it's a list
+        vals_arr = np.array(vals) if isinstance(vals, list) else vals
+        vals_arr = expand_arr(vals_arr, ndim=3)
+
+        ts_method = getattr(TimeSeries, method)
+
+        if vals_arr.shape[1:] != series_vals.shape[1:]:
+            with pytest.raises(ValueError) as exc:
+                _ = ts_method(series, vals)
+            assert str(exc.value).startswith(
+                "The (expanded) values must have the same number of components and samples"
+            )
+            return
+
+        appended = ts_method(series, vals)
+
+        if method == "append_values":
+            expected_vals = np.concatenate([series_vals, vals_arr], axis=0)
+            expected_idx = generate_index(
+                start=series.start_time(),
+                length=len(series_vals) + len(vals),
+                freq=series.freq,
+            )
+        else:
+            expected_vals = np.concatenate([vals_arr, series_vals], axis=0)
+            expected_idx = generate_index(
+                end=series.end_time(),
+                length=len(series_vals) + len(vals),
+                freq=series.freq,
+            )
+
         assert np.allclose(appended.all_values(), expected_vals)
         assert appended.time_index.equals(expected_idx)
         assert appended.components.equals(series.components)
@@ -896,88 +920,6 @@ class TestTimeSeries:
         assert np.allclose(prepended.all_values(), expected_vals)
         assert prepended.time_index.equals(expected_idx)
         assert prepended.components.equals(series_1.components)
-
-    @pytest.mark.parametrize(
-        "series, values, expected_vals, expected_idx",
-        [
-            (
-                TimeSeries.from_times_and_values(
-                    times=pd.DatetimeIndex(
-                        data=["20240103", "20240104", "20240105"],
-                        name="date",
-                    ),
-                    values=np.arange(3),
-                ),
-                np.arange(2),
-                np.concatenate(
-                    [np.arange(2).reshape(2, 1, 1), np.arange(3).reshape(3, 1, 1)],
-                    axis=0,
-                ),
-                pd.DatetimeIndex(
-                    data=[
-                        "20240101",
-                        "20240102",
-                        "20240103",
-                        "20240104",
-                        "20240105",
-                    ],
-                    name="date",
-                ),
-            ),
-            (
-                linear_timeseries(start=1, length=5, freq=2),
-                np.ones((2, 1, 1)),
-                np.concatenate(
-                    [
-                        np.ones((2, 1, 1)),
-                        linear_timeseries(start=1, length=5, freq=2).all_values(),
-                    ],
-                    axis=0,
-                ),
-                pd.RangeIndex(start=-3, stop=10, step=2, name="another_date"),
-            ),
-            (
-                TimeSeries.from_values(np.arange(9)),
-                np.arange(4),
-                np.concatenate(
-                    [np.arange(4).reshape(4, 1, 1), np.arange(9).reshape(9, 1, 1)],
-                    axis=0,
-                ),
-                pd.RangeIndex(start=-4, stop=9, step=1, name="date_days"),
-            ),
-            (
-                TimeSeries.from_values(np.arange(9)),
-                np.arange(4).reshape(4, 1),
-                np.concatenate(
-                    [np.arange(4).reshape(4, 1, 1), np.arange(9).reshape(9, 1, 1)],
-                    axis=0,
-                ),
-                pd.RangeIndex(start=-4, stop=9, step=1, name="date"),
-            ),
-            (
-                TimeSeries.from_values(np.arange(9).reshape(3, 3)),
-                np.arange(3).reshape(1, 3),
-                np.concatenate(
-                    [np.arange(3).reshape(1, 3, 1), np.arange(9).reshape(3, 3, 1)],
-                    axis=0,
-                ),
-                pd.RangeIndex(start=-1, stop=3, step=1, name="date"),
-            ),
-            (
-                TimeSeries.from_values(np.arange(9).reshape(3, 3)),
-                [],
-                np.arange(9).reshape(3, 3, 1),
-                pd.RangeIndex(start=0, stop=3, step=1, name="date"),
-            ),
-        ],
-    )
-    def test_prepend_values(self, series, values, expected_vals, expected_idx):
-        prepended = series.prepend_values(values)
-        assert np.allclose(prepended.all_values(), expected_vals)
-        assert prepended.time_index.equals(expected_idx)
-        assert prepended.components.equals(series.components)
-        assert prepended._xa.shape[1:] == series._xa.shape[1:]
-        assert prepended.time_index.name == series.time_index.name
 
     @pytest.mark.parametrize(
         "config",

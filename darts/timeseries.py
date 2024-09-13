@@ -2896,36 +2896,36 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with the new values appended
         """
-
-        # If values is empty -> do nothing. Otherwise, expand values (if necessary) to match
-        # the dimensions
         if len(values) == 0:
-            return self
+            return self.copy()
 
-        else:
-            values = np.array(values) if not isinstance(values, np.ndarray) else values
-            values = expand_arr(values, ndim=len(DIMS))
-            raise_if_not(
-                values.shape[1:] == self._xa.values.shape[1:],
-                "The values must have the same shape (components, sample) as the present series. "
-                f"Received: {values.shape[1:]}, expected: {self._xa.values.shape[1:]}",
+        values = np.array(values) if not isinstance(values, np.ndarray) else values
+        values = expand_arr(values, ndim=len(DIMS))
+        if not values.shape[1:] == self._xa.values.shape[1:]:
+            raise_log(
+                ValueError(
+                    f"The (expanded) values must have the same number of components and samples "
+                    f"(second and third dims) as the series to append to. "
+                    f"Received shape: {values.shape}, expected: {self._xa.values.shape}"
+                ),
+                logger=logger,
             )
 
-            idx = generate_index(
-                start=self.end_time() + self._freq,
-                end=self.end_time() + len(values) * self._freq,
-                freq=self._freq,
-                name=self._time_index.name,
-            )
+        idx = generate_index(
+            start=self.end_time() + self.freq,
+            length=len(values),
+            freq=self.freq,
+            name=self._time_index.name,
+        )
 
-            return self.append(
-                self.__class__.from_times_and_values(
-                    values=values,
-                    times=idx,
-                    fill_missing_dates=False,
-                    static_covariates=self.static_covariates,
-                )
+        return self.append(
+            self.__class__.from_times_and_values(
+                values=values,
+                times=idx,
+                fill_missing_dates=False,
+                static_covariates=self.static_covariates,
             )
+        )
 
     def prepend(self, other: Self) -> Self:
         """
@@ -2966,48 +2966,38 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with the new values prepended.
         """
-
-        # If values is empty -> do nothing. Otherwise, expand values (if necessary) to match
-        # the dimensions
         if len(values) == 0:
-            return self
+            return self.copy()
 
-        else:
-            values = np.array(values) if not isinstance(values, np.ndarray) else values
-            values = expand_arr(values, ndim=len(DIMS))
-            raise_if_not(
-                values.shape[1:] == self._xa.values.shape[1:],
-                "The values must have the same shape (components, sample) as the present series. "
-                f"Received: {values.shape[1:]}, expected: {self._xa.values.shape[1:]}",
+        values = np.array(values) if not isinstance(values, np.ndarray) else values
+        values = expand_arr(values, ndim=len(DIMS))
+        if not values.shape[1:] == self._xa.values.shape[1:]:
+            raise_log(
+                ValueError(
+                    f"The (expanded) values must have the same number of components and samples "
+                    f"(second and third dims) as the series to prepend to. "
+                    f"Received shape: {values.shape}, expected: {self._xa.values.shape}"
+                ),
+                logger=logger,
             )
 
-            if self._has_datetime_index:
-                idx = pd.DatetimeIndex(
-                    [
-                        self.start_time() - i * self._freq
-                        for i in reversed(range(1, len(values) + 1))
-                    ],
-                    freq=self._freq,
-                    name=self._time_index.name,
-                )
-            else:
-                idx = pd.RangeIndex(
-                    self.start_time() - self.freq * len(values),
-                    self.start_time(),
-                    step=self.freq,
-                    name=self._time_index.name,
-                )
+        idx = generate_index(
+            end=self.start_time() - self.freq,
+            length=len(values),
+            freq=self.freq,
+            name=self._time_index.name,
+        )
 
-            return self.prepend(
-                self.__class__.from_times_and_values(
-                    values=values,
-                    times=idx,
-                    fill_missing_dates=False,
-                    static_covariates=self.static_covariates,
-                    columns=self.columns,
-                    hierarchy=self.hierarchy,
-                )
+        return self.prepend(
+            self.__class__.from_times_and_values(
+                values=values,
+                times=idx,
+                fill_missing_dates=False,
+                static_covariates=self.static_covariates,
+                columns=self.columns,
+                hierarchy=self.hierarchy,
             )
+        )
 
     def with_times_and_values(
         self,
