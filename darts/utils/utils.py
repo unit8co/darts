@@ -429,8 +429,8 @@ def n_steps_between(
 
 
 def generate_index(
-    start: Optional[Union[pd.Timestamp, int]] = None,
-    end: Optional[Union[pd.Timestamp, int]] = None,
+    start: Optional[Union[pd.Timestamp, str, int]] = None,
+    end: Optional[Union[pd.Timestamp, str, int]] = None,
     length: Optional[int] = None,
     freq: Union[str, int, pd.DateOffset] = None,
     name: str = None,
@@ -441,7 +441,7 @@ def generate_index(
     Parameters
     ----------
     start
-        The start of the returned index. If a pandas Timestamp is passed, the index will be a pandas
+        The start of the returned index. If a pandas Timestamp or a date string is passed, the index will be a pandas
         DatetimeIndex. If an integer is passed, the index will be a pandas RangeIndex index. Works only with
         either `length` or `end`.
     end
@@ -476,6 +476,9 @@ def generate_index(
         "index generation with `start` and `end` requires equal object types of `start` and `end`",
         logger,
     )
+
+    start = pd.Timestamp(start) if isinstance(start, str) else start
+    end = pd.Timestamp(end) if isinstance(end, str) else end
 
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
         freq = "D" if freq is None else freq

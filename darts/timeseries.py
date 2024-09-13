@@ -53,7 +53,11 @@ from scipy.stats import kurtosis, skew
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
-from darts.utils.utils import expand_arr, generate_index, n_steps_between
+from darts.utils.utils import (
+    expand_arr,
+    generate_index,
+    n_steps_between,
+)
 
 try:
     from typing import Literal
@@ -2855,10 +2859,10 @@ class TimeSeries:
             "Both series must have the same number of components.",
             logger,
         )
-        if self._has_datetime_index:
+        if len(self) > 0 and len(other) > 0:
             raise_if_not(
                 other.start_time() == self.end_time() + self.freq,
-                "Appended TimeSeries must start one time step after current one.",
+                "Appended TimeSeries must start one (time) step after current one.",
                 logger,
             )
 
@@ -2892,17 +2896,28 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with the new values appended
         """
-        if self._has_datetime_index:
-            idx = pd.DatetimeIndex(
-                [self.end_time() + i * self._freq for i in range(1, len(values) + 1)],
-                freq=self._freq,
+        if len(values) == 0:
+            return self.copy()
+
+        values = np.array(values) if not isinstance(values, np.ndarray) else values
+        values = expand_arr(values, ndim=len(DIMS))
+        if not values.shape[1:] == self._xa.values.shape[1:]:
+            raise_log(
+                ValueError(
+                    f"The (expanded) values must have the same number of components and samples "
+                    f"(second and third dims) as the series to append to. "
+                    f"Received shape: {values.shape}, expected: {self._xa.values.shape}"
+                ),
+                logger=logger,
             )
-        else:
-            idx = pd.RangeIndex(
-                start=self.end_time() + self._freq,
-                stop=self.end_time() + (len(values) + 1) * self._freq,
-                step=self._freq,
-            )
+
+        idx = generate_index(
+            start=self.end_time() + self.freq,
+            length=len(values),
+            freq=self.freq,
+            name=self._time_index.name,
+        )
+
         return self.append(
             self.__class__.from_times_and_values(
                 values=values,
@@ -2951,21 +2966,27 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with the new values prepended.
         """
+        if len(values) == 0:
+            return self.copy()
 
-        if self._has_datetime_index:
-            idx = pd.DatetimeIndex(
-                [
-                    self.start_time() - i * self._freq
-                    for i in reversed(range(1, len(values) + 1))
-                ],
-                freq=self._freq,
+        values = np.array(values) if not isinstance(values, np.ndarray) else values
+        values = expand_arr(values, ndim=len(DIMS))
+        if not values.shape[1:] == self._xa.values.shape[1:]:
+            raise_log(
+                ValueError(
+                    f"The (expanded) values must have the same number of components and samples "
+                    f"(second and third dims) as the series to prepend to. "
+                    f"Received shape: {values.shape}, expected: {self._xa.values.shape}"
+                ),
+                logger=logger,
             )
-        else:
-            idx = pd.RangeIndex(
-                self.start_time() - self.freq * len(values),
-                self.start_time(),
-                step=self.freq,
-            )
+
+        idx = generate_index(
+            end=self.start_time() - self.freq,
+            length=len(values),
+            freq=self.freq,
+            name=self._time_index.name,
+        )
 
         return self.prepend(
             self.__class__.from_times_and_values(
