@@ -57,7 +57,11 @@ from darts.utils.ts_utils import (
     get_single_series,
     series2seq,
 )
-from darts.utils.utils import generate_index
+from darts.utils.utils import (
+    generate_index,
+    likelihood_component_names,
+    quantile_names,
+)
 
 logger = get_logger(__name__)
 
@@ -2037,9 +2041,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             residuals = [[res] for res in residuals]
 
         # sanity check residual output
+        n_comp_out = 1
+        q = metric_kwargs.get("q")
+        if q is not None:
+            q = [q] if isinstance(q, float) else q
+            n_comp_out = len(q)
         try:
-            res, fc = residuals[0][0], historical_forecasts[0][0]
-            _ = np.reshape(res, (len(fc), fc.n_components, 1))
+            series_, res, fc = series[0], residuals[0][0], historical_forecasts[0][0]
+            n_comp_out *= series_.n_components
+            _ = np.reshape(res, (len(fc), n_comp_out, 1))
         except Exception as err:
             raise_log(
                 ValueError(
@@ -2053,13 +2063,33 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # process residuals
         residuals_out = []
-        for fc_list, res_list in zip(historical_forecasts, residuals):
+        for series_, fc_list, res_list in zip(series, historical_forecasts, residuals):
             res_list_out = []
+            if q is not None and len(q) > 1:
+                # multi-quantile metrics yield more components
+                comp_names = likelihood_component_names(
+                    components=series_.components,
+                    parameter_names=quantile_names(q=q),
+                )
+            else:
+                comp_names = None
             for fc, res in zip(fc_list, res_list):
-                # make sure all residuals have shape (n time steps, n components, n samples=1)
+                # make sure all residuals have shape (n time steps, n components * n quantiles, n samples=1)
                 if len(res.shape) != 3:
-                    res = np.reshape(res, (len(fc), fc.n_components, 1))
-                res_list_out.append(res if values_only else fc.with_values(res))
+                    res = np.reshape(res, (len(fc), n_comp_out, 1))
+                if values_only or q is None or len(q) == 1:
+                    res = res if values_only else fc.with_values(res)
+                else:
+                    # multi quantile metric created more components
+                    res = TimeSeries.from_times_and_values(
+                        times=fc._time_index,
+                        values=res,
+                        columns=comp_names,
+                        static_covariates=fc.static_covariates,
+                        hierarchy=fc.hierarchy,
+                    )
+                res_list_out.append(res)
+
             residuals_out.append(res_list_out)
 
         # if required, reduce to `series` input type

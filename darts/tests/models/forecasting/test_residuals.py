@@ -1,15 +1,22 @@
 import itertools
 
 import numpy as np
+import pandas as pd
 import pytest
 
 import darts.metrics as metrics
+from darts import TimeSeries
 from darts.datasets import AirPassengersDataset
 from darts.logging import get_logger
 from darts.models import LinearRegressionModel, NaiveDrift, NaiveSeasonal
 from darts.tests.models.forecasting.test_regression_models import dummy_timeseries
 from darts.utils.timeseries_generation import constant_timeseries as ct
 from darts.utils.timeseries_generation import linear_timeseries as lt
+from darts.utils.utils import (
+    generate_index,
+    likelihood_component_names,
+    quantile_names,
+)
 
 logger = get_logger(__name__)
 
@@ -612,3 +619,191 @@ class TestResiduals:
         for res_nw, res_w in zip(res_non_weighted, res_weighted):
             with pytest.raises(AssertionError):
                 np.testing.assert_array_almost_equal(res_w, res_nw)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],  # last_points_only
+            [False, True],  # from stochastic predictions (or predicted quantiles)
+        ),
+    )
+    def test_quantiles_metrics(self, config):
+        """Tests backtest with different metric_kwargs based on historical forecasts generated on a sequence
+        `series` with last_points_only=False"""
+        lpo, stochastic_pred = config
+        metric = metrics.ae
+        # multi-quantile metrics yield more components
+        q_sorted = [0.05, 0.50, 0.60, 0.95]
+        q = [0.95, 0.05, 0.50, 0.60]
+
+        y = lt(length=20)
+        y = y.stack(y + 1.0)
+        q_comp_names_expected = pd.Index(
+            likelihood_component_names(
+                components=y.components,
+                parameter_names=quantile_names(q=q),
+            )
+        )
+        # historical forecasts
+        vals = np.random.random((10, 1, 100))
+        if not stochastic_pred:
+            vals = np.quantile(vals, q, axis=2).transpose(1, 0, 2)
+            comp_names = pd.Index(
+                likelihood_component_names(
+                    components=y.components,
+                    parameter_names=quantile_names(q=q_sorted),
+                )
+            )
+        else:
+            comp_names = y.components
+        vals = np.concatenate([vals, vals + 1], axis=1)
+        hfc = TimeSeries.from_times_and_values(
+            times=generate_index(start=y.start_time() + 10 * y.freq, length=10),
+            values=vals,
+            columns=comp_names,
+        )
+
+        y = [y, y]
+        if lpo:
+            hfc = [hfc, hfc]
+        else:
+            hfc = [[hfc, hfc], [hfc]]
+
+        metric_kwargs = {"component_reduction": None, "q": q}
+
+        model = NaiveDrift()
+
+        # return TimeSeries
+        bts = model.residuals(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            metric_kwargs=metric_kwargs,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        if lpo:
+            bts = [[bt] for bt in bts]
+
+        # `ae` with time and component reduction is equal to `mae` with component reduction
+        hfc_single = hfc[0][0] if not lpo else hfc[0]
+        bt_expected = metrics.ae(y[0], hfc_single, **metric_kwargs)
+        shape_expected = (len(hfc_single), len(q) * y[0].n_components)
+        for bt_list in bts:
+            for bt in bt_list:
+                assert bt.shape[:2] == shape_expected
+                assert bt.components.equals(q_comp_names_expected)
+                np.testing.assert_array_almost_equal(bt.values(), bt_expected)
+
+        # values only
+        bts = model.residuals(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            metric_kwargs=metric_kwargs,
+            values_only=True,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        if lpo:
+            bts = [[bt] for bt in bts]
+
+        # `ae` with time and component reduction is equal to `mae` with component reduction
+        for bt_list in bts:
+            for bt in bt_list:
+                assert bt.shape[:2] == shape_expected
+                np.testing.assert_array_almost_equal(bt[:, :, 0], bt_expected)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],  # last_points_only
+            [False, True],  # from stochastic predictions (or predicted quantiles)
+        ),
+    )
+    def test_metric_quantiles_lpo_false(self, config):
+        """Tests backtest with different metric_kwargs based on historical forecasts generated on a sequence
+        `series` with last_points_only=False"""
+        lpo, stochastic_pred = config
+        metric = metrics.ae
+        # multi-quantile metrics yield more components
+        q_sorted = [0.05, 0.50, 0.60, 0.95]
+        q = [0.95, 0.05, 0.50, 0.60]
+
+        y = lt(length=20)
+        y = y.stack(y + 1.0)
+        q_comp_names_expected = pd.Index(
+            likelihood_component_names(
+                components=y.components,
+                parameter_names=quantile_names(q=q),
+            )
+        )
+        # historical forecasts
+        vals = np.random.random((10, 1, 100))
+        if not stochastic_pred:
+            vals = np.quantile(vals, q, axis=2).transpose(1, 0, 2)
+            comp_names = pd.Index(
+                likelihood_component_names(
+                    components=y.components,
+                    parameter_names=quantile_names(q=q_sorted),
+                )
+            )
+        else:
+            comp_names = y.components
+        vals = np.concatenate([vals, vals + 1], axis=1)
+        hfc = TimeSeries.from_times_and_values(
+            times=generate_index(start=y.start_time() + 10 * y.freq, length=10),
+            values=vals,
+            columns=comp_names,
+        )
+
+        y = [y, y]
+        if lpo:
+            hfc = [hfc, hfc]
+        else:
+            hfc = [[hfc, hfc], [hfc]]
+
+        metric_kwargs = {"component_reduction": None, "q": q}
+
+        model = NaiveDrift()
+
+        # return TimeSeries
+        bts = model.residuals(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            metric_kwargs=metric_kwargs,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        if lpo:
+            bts = [[bt] for bt in bts]
+
+        # `ae` with time and component reduction is equal to `mae` with component reduction
+        hfc_single = hfc[0][0] if not lpo else hfc[0]
+        bt_expected = metrics.ae(y[0], hfc_single, **metric_kwargs)
+        shape_expected = (len(hfc_single), len(q) * y[0].n_components)
+        for bt_list in bts:
+            for bt in bt_list:
+                assert bt.shape[:2] == shape_expected
+                assert bt.components.equals(q_comp_names_expected)
+                np.testing.assert_array_almost_equal(bt.values(), bt_expected)
+
+        # values only
+        bts = model.residuals(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            metric_kwargs=metric_kwargs,
+            values_only=True,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        if lpo:
+            bts = [[bt] for bt in bts]
+
+        # `ae` with time and component reduction is equal to `mae` with component reduction
+        for bt_list in bts:
+            for bt in bt_list:
+                assert bt.shape[:2] == shape_expected
+                np.testing.assert_array_almost_equal(bt[:, :, 0], bt_expected)

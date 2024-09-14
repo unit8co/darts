@@ -1263,7 +1263,7 @@ class TestBacktesting:
             [True, False],  # last_points_only
         ),
     )
-    def test_metric_quantiles_lpo_false(self, config):
+    def test_metric_quantiles_lpo(self, config):
         """Tests backtest with different metric_kwargs based on historical forecasts generated on a sequence
         `series` with last_points_only=False"""
         metric, lpo = config
