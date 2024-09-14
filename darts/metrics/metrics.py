@@ -28,6 +28,7 @@ from darts.utils.utils import (
 logger = get_logger(__name__)
 TIME_AX = 0
 COMP_AX = 1
+SMPL_AX = 2
 
 # Note: for new metrics added to this module to be able to leverage the two decorators, it is required both having
 # the `actual_series` and `pred_series` parameters, and not having other ``Sequence`` as args (since these decorators
@@ -206,7 +207,7 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             q = np.array(q)
 
         if q is None:
-            if actual_series.width != pred_series.width:
+            if actual_series.n_components != pred_series.n_components:
                 raise_log(
                     ValueError(
                         f"Mismatch between number of components in `actual_series` "
@@ -245,7 +246,7 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         input_series = (actual_series, pred_series)
         if "insample" in params:
             insample = args[2]
-            if actual_series.width != insample.width:
+            if actual_series.n_components != insample.n_components:
                 raise_log(
                     ValueError(
                         f"Mismatch between number of components in `actual_series` "
