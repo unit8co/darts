@@ -1343,9 +1343,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             An numpy array of backtest scores. For single series and one of:
 
             - a single `metric` function, `historical_forecasts` generated with `last_points_only=False`
-              and backtest `reduction=None`. The output has shape (n forecasts,).
+              and backtest `reduction=None`. The output has shape (n forecasts, *).
             - multiple `metric` functions and `historical_forecasts` generated with `last_points_only=False`.
-              The output has shape (n metrics,) when using a backtest `reduction`, and (n metrics, n forecasts)
+              The output has shape (*, n metrics) when using a backtest `reduction`, and (n forecasts, *, n metrics)
               when `reduction=None`
             - multiple uni/multivariate series including `series_reduction` and at least one of
               `component_reduction=None` or `time_reduction=None` for "per time step metrics"
@@ -1491,22 +1491,24 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # get errors for each input `series`
         backtest_list = []
         for i in range(len(cum_len) - 1):
-            # errors_series with shape `(n metrics, n series specific historical forecasts)`
+            # errors_series with shape `(n metrics, n series specific historical forecasts, *)`
             errors_series = errors[:, cum_len[i] : cum_len[i + 1]]
 
             if reduction is not None:
-                # shape `(n metrics, n forecasts)` -> `(n metrics,)`
+                # shape `(n metrics, n forecasts, *)` -> `(n metrics, *)`
                 errors_series = reduction(errors_series, axis=1)
             elif last_points_only:
-                # shape `(n metrics, n forecasts = 1)` -> `(n metrics,)`
+                # shape `(n metrics, n forecasts = 1, *)` -> `(n metrics, *)`
                 errors_series = errors_series[:, 0]
 
             if len(metric) == 1:
                 # shape `(n metrics, *)` -> `(*,)`
                 errors_series = errors_series[0]
-            elif not last_points_only and reduction is None:
+            else:
                 # shape `(n metrics, *)` -> `(*, n metrics)`
-                errors_series = errors_series.T
+                errors_series = errors_series.transpose(
+                    tuple(i for i in range(1, errors_series.ndim)) + (0,)
+                )
 
             backtest_list.append(errors_series)
         return (

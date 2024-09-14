@@ -214,6 +214,9 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                     ),
                     logger=logger,
                 )
+            # by default, compute median
+            if pred_series.is_stochastic:
+                q = np.array([0.5])
         elif not pred_series.is_stochastic:
             # make sure all predicted quantile components are available
             if q_comp_names is None:

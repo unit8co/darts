@@ -26,6 +26,7 @@ from darts.utils.timeseries_generation import gaussian_timeseries as gt
 from darts.utils.timeseries_generation import linear_timeseries as lt
 from darts.utils.timeseries_generation import random_walk_timeseries as rt
 from darts.utils.timeseries_generation import sine_timeseries as st
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -1251,6 +1252,154 @@ class TestBacktesting:
         for bt_list in bts:
             for bt in bt_list:
                 np.testing.assert_array_almost_equal(bt, bt_expected)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [
+                [metrics.mae],  # mae does not support time_reduction
+                [metrics.mae, metrics.ae],  # ae supports time_reduction
+            ],
+            [True, False],  # last_points_only
+        ),
+    )
+    def test_metric_quantiles_lpo_false(self, config):
+        """Tests backtest with different metric_kwargs based on historical forecasts generated on a sequence
+        `series` with last_points_only=False"""
+        metric, lpo = config
+        y = lt(length=20)
+        y = y.stack(y + 1.0)
+        hfc = TimeSeries.from_times_and_values(
+            times=generate_index(start=y.start_time() + 10 * y.freq, length=10),
+            values=np.random.random((10, 1, 100)),
+        )
+        hfc = hfc.stack(hfc + 1.0)
+        y = [y, y]
+        if lpo:
+            hfc = [hfc, hfc]
+        else:
+            hfc = [[hfc, hfc], [hfc]]
+
+        q = [0.95, 0.05, 0.5, 0.60]
+        metric_kwargs = [{"component_reduction": np.median, "q": q}]
+        if len(metric) > 1:
+            # give metric specific kwargs
+            metric_kwargs.append({
+                "component_reduction": np.median,
+                "time_reduction": np.mean,
+                "q": q,
+            })
+
+        model = NaiveDrift()
+
+        bts = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            reduction=None,
+            metric_kwargs=metric_kwargs,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        if lpo:
+            bts = [[bt] for bt in bts]
+        # `ae` with time and component reduction is equal to `mae` with component reduction
+        hfc_single = hfc[0][0] if not lpo else hfc[0]
+        bt_expected = metrics.mae(y[0], hfc_single, component_reduction=np.median, q=q)
+        shape_expected = (len(q),)
+        if len(metric) > 1:
+            bt_expected = np.concatenate([bt_expected[:, None]] * 2, axis=1)
+            shape_expected += (len(metric),)
+        for bt_list in bts:
+            for bt in bt_list:
+                assert bt.shape == shape_expected
+                np.testing.assert_array_almost_equal(bt, bt_expected)
+
+        bts = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            reduction=np.mean,
+            metric_kwargs=metric_kwargs,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        for bt in bts:
+            assert bt.shape == shape_expected
+            np.testing.assert_array_almost_equal(bt, bt_expected)
+
+        def time_reduced_metric(*args, **kwargs):
+            return metrics.ae(*args, **kwargs, time_reduction=np.mean)
+
+        # check that single kwargs can be used for all metrics if params are supported
+        metric = [metric[0], time_reduced_metric]
+        bts = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            reduction=None,
+            metric_kwargs=metric_kwargs[0],
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        if lpo:
+            bts = [[bt] for bt in bts]
+        # `ae` with time and component reduction is equal to `mae` with component reduction
+        bt_expected = metrics.mae(y[0], hfc_single, component_reduction=np.median, q=q)
+        bt_expected = np.concatenate([bt_expected[:, None]] * 2, axis=1)
+        shape_expected = (len(q), len(metric))
+        for bt_list in bts:
+            for bt in bt_list:
+                assert bt.shape == shape_expected
+                np.testing.assert_array_almost_equal(bt, bt_expected)
+
+        bts = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            reduction=np.mean,
+            metric_kwargs=metric_kwargs[0],
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        for bt in bts:
+            assert bt.shape == shape_expected
+            np.testing.assert_array_almost_equal(bt, bt_expected)
+
+        # without component reduction
+        metric_kwargs = {"component_reduction": None, "q": q}
+        bts = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            reduction=None,
+            metric_kwargs=metric_kwargs,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        if lpo:
+            bts = [[bt] for bt in bts]
+        # `ae` with time and no component reduction is equal to `mae` without component reduction
+        bt_expected = metrics.mae(y[0], hfc_single, **metric_kwargs)
+        bt_expected = np.concatenate([bt_expected[:, None]] * 2, axis=1)
+        shape_expected = (len(q) * y[0].width, len(metric))
+        for bt_list in bts:
+            for bt in bt_list:
+                assert bt.shape == shape_expected
+                np.testing.assert_array_almost_equal(bt, bt_expected)
+
+        bts = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            reduction=np.mean,
+            metric_kwargs=metric_kwargs,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        for bt in bts:
+            assert bt.shape == shape_expected
+            np.testing.assert_array_almost_equal(bt, bt_expected)
 
     @pytest.mark.parametrize(
         "config",
