@@ -1197,6 +1197,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         reduction: Union[Callable[..., float], None] = np.mean,
         verbose: bool = False,
         show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+        enable_optimization: bool = True,
         metric_kwargs: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
@@ -1316,6 +1318,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Whether to print progress.
         show_warnings
             Whether to show warnings related to parameters `start`, and `train_length`.
+        predict_likelihood_parameters
+            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            supported for probabilistic models with `likelihood="quantile"`, `num_samples = 1` and
+            `n<=output_chunk_length`. Default: ``False``.
+        enable_optimization
+            Whether to use the optimized version of historical_forecasts when supported and available.
         metric_kwargs
             Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'component_reduction'`
             for reducing the component wise metrics, seasonality `'m'` for scaled metrics, etc. Will pass arguments to
@@ -1395,6 +1403,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             last_points_only=last_points_only,
             verbose=verbose,
             show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            enable_optimization=enable_optimization,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
             sample_weight=sample_weight,
@@ -1837,6 +1847,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         metric: METRIC_TYPE = metrics.err,
         verbose: bool = False,
         show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+        enable_optimization: bool = True,
         metric_kwargs: Optional[Dict[str, Any]] = None,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
@@ -1955,6 +1967,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Whether to print progress.
         show_warnings
             Whether to show warnings related to parameters `start`, and `train_length`.
+        predict_likelihood_parameters
+            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            supported for probabilistic models with `likelihood="quantile"`, `num_samples = 1` and
+            `n<=output_chunk_length`. Default: ``False``.
+        enable_optimization
+            Whether to use the optimized version of historical_forecasts when supported and available.
         metric_kwargs
             Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'m'` for scaled
             metrics, etc. Will pass arguments only if they are present in the corresponding metric signature. Ignores
@@ -2010,6 +2028,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             last_points_only=last_points_only,
             verbose=verbose,
             show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            enable_optimization=enable_optimization,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
             overlap_end=False,
@@ -2065,7 +2085,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         residuals_out = []
         for series_, fc_list, res_list in zip(series, historical_forecasts, residuals):
             res_list_out = []
-            if q is not None and len(q) > 1:
+            if q is not None:
                 # multi-quantile metrics yield more components
                 comp_names = likelihood_component_names(
                     components=series_.components,
@@ -2077,7 +2097,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 # make sure all residuals have shape (n time steps, n components * n quantiles, n samples=1)
                 if len(res.shape) != 3:
                     res = np.reshape(res, (len(fc), n_comp_out, 1))
-                if values_only or q is None or len(q) == 1:
+                if (
+                    values_only
+                    or q is None
+                    or (len(q) == 1 and res.shape[1] == fc.shape[1])
+                ):
                     res = res if values_only else fc.with_values(res)
                 else:
                     # multi quantile metric created more components

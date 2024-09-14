@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 import darts.metrics as metrics
-from darts import TimeSeries
+from darts import TimeSeries, concatenate
 from darts.datasets import AirPassengersDataset
 from darts.logging import get_logger
 from darts.models import LinearRegressionModel, NaiveDrift, NaiveSeasonal
@@ -807,3 +807,117 @@ class TestResiduals:
             for bt in bt_list:
                 assert bt.shape[:2] == shape_expected
                 np.testing.assert_array_almost_equal(bt[:, :, 0], bt_expected)
+
+    @pytest.mark.parametrize(
+        "lpo",
+        [True, False],  # last_points_only
+    )
+    def test_quantiles_from_model(self, lpo):
+        """Tests backtest with different metric_kwargs based on historical forecasts generated on a sequence
+        `series` with last_points_only=False"""
+        metric = metrics.ae
+        # multi-quantile metrics yield more components
+        q = [0.05, 0.50, 0.95]
+
+        y = lt(length=20)
+        y = y.stack(y + 1.0)
+        q_comp_names_expected = pd.Index(
+            likelihood_component_names(
+                components=y.components,
+                parameter_names=quantile_names(q=q),
+            )
+        )
+        y = [y, y]
+        metric_kwargs = {"component_reduction": None, "q": q}
+
+        icl = 3
+        model = LinearRegressionModel(
+            lags=icl, output_chunk_length=1, likelihood="quantile", quantiles=q
+        )
+        model.fit(y)
+
+        # quantile forecasts
+        bts = model.residuals(
+            series=y,
+            forecast_horizon=1,
+            metric=metric,
+            last_points_only=lpo,
+            metric_kwargs=metric_kwargs,
+            predict_likelihood_parameters=True,
+            retrain=False,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        if not lpo:
+            bts = [concatenate(bt, axis=0) for bt in bts]
+
+        # `ae` with time and component reduction is equal to `mae` with component reduction
+        shape_expected = (len(y[0]) - icl, len(q) * y[0].n_components)
+        for bt in bts:
+            assert bt.shape[:2] == shape_expected
+            assert bt.components.equals(q_comp_names_expected)
+
+        # probabilistic forecasts
+        bts_prob = model.residuals(
+            series=y,
+            forecast_horizon=1,
+            metric=metric,
+            last_points_only=lpo,
+            metric_kwargs=metric_kwargs,
+            predict_likelihood_parameters=False,
+            num_samples=1000,
+            retrain=False,
+            enable_optimization=False,
+        )
+        assert isinstance(bts_prob, list) and len(bts_prob) == 2
+        if not lpo:
+            bts_prob = [concatenate(bt, axis=0) for bt in bts_prob]
+        for bt_p, bt_q in zip(bts_prob, bts):
+            assert bt_p.shape == bt_q.shape
+            assert bt_p.components.equals(bt_q.components)
+            # check that the results are similar
+            assert np.abs(bt_p.all_values() - bt_q.all_values()).max() < 0.1
+
+        # single quantile
+        q_single = [0.05]
+        metric_kwargs = {"component_reduction": None, "q": q_single}
+        bts = model.residuals(
+            series=y,
+            forecast_horizon=1,
+            metric=metric,
+            last_points_only=lpo,
+            metric_kwargs=metric_kwargs,
+            predict_likelihood_parameters=True,
+            retrain=False,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        if not lpo:
+            bts = [concatenate(bt, axis=0) for bt in bts]
+
+        # `ae` with time and component reduction is equal to `mae` with component reduction
+        shape_expected = (len(y[0]) - icl, len(q_single) * y[0].n_components)
+        for bt in bts:
+            assert bt.shape[:2] == shape_expected
+            assert bt.components.equals(
+                pd.Index(
+                    likelihood_component_names(
+                        y[0].components, parameter_names=quantile_names(q_single)
+                    )
+                )
+            )
+
+        # wrong quantile
+        q_wrong = [0.99]
+        metric_kwargs = {"component_reduction": None, "q": q_wrong}
+        with pytest.raises(ValueError) as exc:
+            _ = model.residuals(
+                series=y,
+                forecast_horizon=1,
+                metric=metric,
+                last_points_only=lpo,
+                metric_kwargs=metric_kwargs,
+                predict_likelihood_parameters=True,
+                retrain=False,
+            )
+        assert str(exc.value).startswith(
+            "Computing a metric with quantile(s) `q=[0.99]` is only supported"
+        )
