@@ -7,8 +7,9 @@ import pandas as pd
 import pytest
 import sklearn.metrics
 
-from darts import TimeSeries
+from darts import TimeSeries, concatenate
 from darts.metrics import metrics
+from darts.utils.utils import likelihood_component_names, quantile_names
 
 
 def sklearn_mape(*args, **kwargs):
@@ -1539,3 +1540,213 @@ class TestMetrics:
 
         if val_exp is not None:
             assert (res == -1.0).all()
+
+    @pytest.mark.parametrize(
+        "config",
+        list(
+            itertools.product(
+                [
+                    # time dependent but with time reduction
+                    metrics.err,
+                    metrics.ae,
+                    metrics.se,
+                    metrics.sle,
+                    metrics.ase,
+                    metrics.sse,
+                    metrics.ape,
+                    metrics.sape,
+                    metrics.arre,
+                    metrics.ql,
+                    # time aggregates
+                    metrics.merr,
+                    metrics.mae,
+                    metrics.mse,
+                    metrics.rmse,
+                    metrics.rmsle,
+                    metrics.mase,
+                    metrics.msse,
+                    metrics.rmsse,
+                    metrics.mape,
+                    metrics.smape,
+                    metrics.ope,
+                    metrics.marre,
+                    metrics.r2_score,
+                    metrics.coefficient_of_variation,
+                    metrics.mql,
+                ],
+                [True, False],  # univariate series
+                [True, False],  # single series
+            )
+        ),
+    )
+    def test_metric_quantiles(self, config):
+        """Test output types and shapes for time aggregated metrics:
+        for single and multiple univariate or multivariate series, in combination
+        with different component and series reduction functions."""
+        np.random.seed(42)
+        metric, is_univar, is_single = config
+        params = inspect.signature(metric).parameters
+
+        n_comp = 1 if is_univar else 2
+
+        qs_all = [0.1, 0.5, 0.8]
+        components = [str(i) for i in range(n_comp)]
+
+        series_vals = np.random.random((10, n_comp, 1))
+
+        pred_prob_vals = np.random.random((10, n_comp, 100))
+
+        pred_vals_qs = []
+        for i in range(n_comp):
+            pred_vals_qs.append(
+                np.quantile(pred_prob_vals[:, [i]], qs_all, axis=2).transpose(1, 0, 2)
+            )
+        pred_vals_qs = np.concatenate(pred_vals_qs, axis=1)
+        pred_components = likelihood_component_names(
+            components=components, parameter_names=quantile_names(q=qs_all)
+        )
+
+        series = TimeSeries.from_values(series_vals, columns=components)
+        series_q_exp = concatenate(
+            [series[comp] for comp in components for _ in qs_all], axis=1
+        )
+        pred_prob = TimeSeries.from_values(pred_prob_vals, columns=components)
+        pred_qs = TimeSeries.from_values(pred_vals_qs, columns=pred_components)
+        pred_q0_1 = pred_qs[pred_components[::3]]
+        pred_q0_5 = pred_qs[pred_components[1::3]]
+        insample = series.shift(-len(series))
+        insample_q_exp = concatenate(
+            [insample[comp] for comp in components for _ in qs_all], axis=1
+        )
+        shape_time = (len(pred_qs),) if "time_reduction" in params else tuple()
+
+        if not is_single:
+            series = [series] * 2
+            series_q_exp = [series_q_exp] * 2
+            pred_prob = [pred_prob] * 2
+            pred_qs = [pred_qs] * 2
+            insample = [insample] * 2
+            insample_q_exp = [insample_q_exp] * 2
+            pred_q0_1 = [pred_q0_1] * 2
+            pred_q0_5 = [pred_q0_5] * 2
+
+        kwargs = {"actual_series": series}
+        if "insample" in params:
+            kwargs["insample"] = insample
+
+        def check_res(
+            pred_prob_, pred_qs_, shape_exp, series_reduction=None, **test_kwargs
+        ):
+            res_prob = metric(
+                pred_series=pred_prob_,
+                series_reduction=series_reduction,
+                **kwargs,
+                **test_kwargs,
+            )
+            res_qs = metric(
+                pred_series=pred_qs_,
+                series_reduction=series_reduction,
+                **kwargs,
+                **test_kwargs,
+            )
+            if is_single or series_reduction is not None:
+                res_prob = [res_prob]
+                res_qs = [res_qs]
+            if series_reduction is None and not is_single:
+                assert len(res_prob) == len(res_qs) == len(pred_prob_)
+
+            for res_p, res_q in zip(res_prob, res_qs):
+                assert res_p.shape == res_q.shape == shape_exp
+                np.testing.assert_array_almost_equal(res_p, res_q)
+
+        check_res(pred_prob, pred_qs, shape_time, q=0.1)
+        # one quantile as list
+        check_res(pred_prob, pred_qs, shape_time, q=[0.1])
+        # multiple quantiles
+        check_res(pred_prob, pred_qs, shape_time + (2,), q=[0.1, 0.8])
+        # all quantiles
+        check_res(pred_prob, pred_qs, shape_time + (3,), q=[0.1, 0.5, 0.8])
+        qs = [0.1, 0.8]
+        # component and series reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(qs),),
+            q=qs,
+            component_reduction=np.mean,
+            series_reduction=np.mean,
+        )
+        # no component reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(qs) * n_comp,),
+            q=qs,
+            component_reduction=None,
+            series_reduction=np.mean,
+        )
+        # no series reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(qs),),
+            q=qs,
+            component_reduction=np.mean,
+            series_reduction=None,
+        )
+        # no series and component reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(qs) * n_comp,),
+            q=qs,
+            component_reduction=None,
+            series_reduction=None,
+        )
+
+        # check that we get identical results as when computing each quantile component against the actual
+        # target component directly
+        kwargs_direct = copy.deepcopy(kwargs)
+        q_direct = {}
+        if metric.__name__ not in ["ql", "mql"]:
+            kwargs_direct["actual_series"] = series_q_exp
+            if "insample" in params:
+                kwargs_direct["insample"] = insample_q_exp
+        else:
+            q_direct["q"] = qs_all
+            kwargs_direct["actual_series"] = series
+
+        res_direct = metric(
+            pred_series=pred_qs, component_reduction=None, **kwargs_direct, **q_direct
+        )
+        res_qs = metric(
+            pred_series=pred_qs,
+            component_reduction=None,
+            q=qs_all,
+            **kwargs,
+        )
+        np.testing.assert_array_almost_equal(res_direct, res_qs)
+
+        # check the same for the reversed order
+        # quantile metrics follow the order [comp0_q0, comp0_q1, ..., comp1_q0, comp1_q1, ...]
+        comps_rev = likelihood_component_names(components, quantile_names(qs_all[::-1]))
+        if is_single:
+            pred_qs_rev = pred_qs[comps_rev]
+        else:
+            pred_qs_rev = [pq[comps_rev] for pq in pred_qs]
+
+        if "q" in q_direct:
+            q_direct["q"] = q_direct["q"][::-1]
+        res_direct = metric(
+            pred_series=pred_qs_rev,
+            component_reduction=None,
+            **q_direct,
+            **kwargs_direct,
+        )
+        res_qs = metric(
+            pred_series=pred_qs,
+            component_reduction=None,
+            q=qs_all[::-1],
+            **kwargs,
+        )
+        np.testing.assert_array_almost_equal(res_direct, res_qs)

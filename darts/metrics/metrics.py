@@ -28,7 +28,6 @@ from darts.utils.utils import (
 logger = get_logger(__name__)
 TIME_AX = 0
 COMP_AX = 1
-QNTL_AX = 2
 
 # Note: for new metrics added to this module to be able to leverage the two decorators, it is required both having
 # the `actual_series` and `pred_series` parameters, and not having other ``Sequence`` as args (since these decorators
@@ -159,12 +158,10 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
 
         # we flatten metrics along the time axis if n time steps == 1,
         # and/or along component axis if n components == 1
-        # and/or along the quantile axis if n quantiles == 1
         vals = [
             val[
                 slice(None) if val.shape[TIME_AX] != 1 else 0,
                 slice(None) if val.shape[COMP_AX] != 1 else 0,
-                slice(None) if val.shape[QNTL_AX] != 1 else 0,
             ]
             for val in vals
         ]
@@ -257,6 +254,7 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             num_series_in_args += 1
 
         vals = func(*input_series, *args[num_series_in_args:], **kwargs)
+        # bring vals to shape (n_time, n_comp, n_quantile)
         if not 2 <= len(vals.shape) <= 3:
             raise_log(
                 ValueError(
@@ -276,6 +274,7 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             sanity_check=False,
         )
         if time_reduction is not None:
+            # -> (1, n_comp, n_quantile)
             vals = np.expand_dims(time_reduction(vals, axis=TIME_AX), axis=TIME_AX)
 
         component_reduction = _get_reduction(
@@ -286,7 +285,11 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             sanity_check=False,
         )
         if component_reduction is not None:
-            vals = np.expand_dims(component_reduction(vals, axis=COMP_AX), axis=COMP_AX)
+            # -> (*, n_quantile)
+            vals = component_reduction(vals, axis=COMP_AX)
+        else:
+            # -> (*, n_comp * n_quantile), with order [c0_q0, c0_q1, ... c1_q0, c1_q1, ...]
+            vals = vals.reshape(vals.shape[0], -1)
         return vals
 
     return wrapper_multivariate_support
