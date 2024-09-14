@@ -85,8 +85,23 @@ class TestBlockRNNModel:
         model1.fit(self.series)
         preds1 = model1.predict(n=3)
 
-        # can create from a custom class itself
+        # can create from valid module name with ReLU activation
         model2 = BlockRNNModel(
+            input_chunk_length=1,
+            output_chunk_length=1,
+            model="RNN",
+            activation="ReLU",
+            hidden_fc_sizes=[10],
+            n_epochs=1,
+            random_state=42,
+            **tfm_kwargs,
+        )
+        model2.fit(self.series)
+        preds2 = model2.predict(n=3)
+        assert preds1.values().shape == preds2.values().shape
+
+        # can create from a custom class itself
+        model3 = BlockRNNModel(
             input_chunk_length=1,
             output_chunk_length=1,
             model=ModuleValid1,
@@ -94,11 +109,11 @@ class TestBlockRNNModel:
             random_state=42,
             **tfm_kwargs,
         )
-        model2.fit(self.series)
-        preds2 = model2.predict(n=3)
-        np.testing.assert_array_equal(preds1.all_values(), preds2.all_values())
+        model3.fit(self.series)
+        preds3 = model3.predict(n=3)
+        np.testing.assert_array_equal(preds1.all_values(), preds3.all_values())
 
-        model3 = BlockRNNModel(
+        model4 = BlockRNNModel(
             input_chunk_length=1,
             output_chunk_length=1,
             model=ModuleValid2,
@@ -106,10 +121,10 @@ class TestBlockRNNModel:
             random_state=42,
             **tfm_kwargs,
         )
-        model3.fit(self.series)
-        preds3 = model2.predict(n=3)
-        assert preds3.all_values().shape == preds2.all_values().shape
-        assert preds3.time_index.equals(preds2.time_index)
+        model4.fit(self.series)
+        preds4 = model4.predict(n=3)
+        assert preds4.all_values().shape == preds3.all_values().shape
+        assert preds4.time_index.equals(preds3.time_index)
 
     def test_fit(self, tmpdir_module):
         # Test basic fit()
