@@ -7,7 +7,14 @@ from darts import TimeSeries
 from darts.utils import _with_sanity_checks
 from darts.utils.missing_values import extract_subseries
 from darts.utils.ts_utils import retain_period_common_to_all
-from darts.utils.utils import expand_arr, freqs, generate_index, n_steps_between
+from darts.utils.utils import (
+    expand_arr,
+    freqs,
+    generate_index,
+    likelihood_component_names,
+    n_steps_between,
+    quantile_names,
+)
 
 
 class TestUtils:
@@ -587,3 +594,25 @@ class TestUtils:
         arr = expand_arr(arr, ndim=3)
         assert arr.shape == shape_expected
         np.testing.assert_array_almost_equal(arr, arr_expected)
+
+    def test_likelihood_component_names(self):
+        names = likelihood_component_names(["a", "b"], ["1", "2", "3"])
+        assert names == ["a_1", "a_2", "a_3", "b_1", "b_2", "b_3"]
+
+        assert (
+            likelihood_component_names(pd.Index(["a", "b"]), ["1", "2", "3"]) == names
+        )
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (0.25, "a_q0.25"),
+            (0.2501, "a_q0.25"),
+            ([0.25], ["a_q0.25"]),
+            ([0.25, 0.75], ["a_q0.25", "a_q0.75"]),
+        ],
+    )
+    def test_quantile_names(self, config):
+        q, names_expected = config
+        names = quantile_names(q, "a")
+        assert names == names_expected

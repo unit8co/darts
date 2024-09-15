@@ -68,12 +68,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
 
         params = signature(func).parameters
         n_jobs = kwargs.pop("n_jobs", params["n_jobs"].default)
-        if not isinstance(n_jobs, int):
-            raise_log(ValueError("n_jobs must be an integer"), logger=logger)
-
         verbose = kwargs.pop("verbose", params["verbose"].default)
-        if not isinstance(verbose, bool):
-            raise_log(ValueError("verbose must be a bool"), logger=logger)
 
         # sanity check reduction functions
         _ = _get_reduction(
@@ -380,9 +375,6 @@ def _get_values_or_raise(
     ValueError
         If `is_insample=False` and the two time series do not have at least a partially overlapping time index.
     """
-    if not isinstance(intersect, bool):
-        raise_log(ValueError("The intersect parameter must be a bool"), logger=logger)
-
     make_copy = False
     if not is_insample:
         # get the time intersection and values of the two series (corresponds to `actual_series` and `pred_series`
@@ -392,14 +384,6 @@ def _get_values_or_raise(
         else:
             vals_a_common = series_a.slice_intersect_values(series_b, copy=make_copy)
             vals_b_common = series_b.slice_intersect_values(series_a, copy=make_copy)
-
-        if not len(vals_a_common) == len(vals_b_common):
-            raise_log(
-                ValueError(
-                    "The two time series must have at least a partially overlapping time index."
-                ),
-                logger=logger,
-            )
 
         vals_b = _get_values(
             vals=vals_b_common,

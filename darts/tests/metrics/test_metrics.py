@@ -964,6 +964,15 @@ class TestMetrics:
         self.helper_test_nan(metric, **kwargs)
         self.helper_test_non_aggregate(metric, is_aggregate)
 
+        with pytest.raises(ValueError) as exc:
+            _ = metric(
+                TimeSeries.from_values(np.ones((3, 1, 1))),
+                TimeSeries.from_values(np.ones((3, 1, 1))),
+            )
+        assert str(exc.value).startswith(
+            "The difference between the max and min values must "
+        )
+
     @pytest.mark.parametrize(
         "metric",
         [
@@ -1035,10 +1044,10 @@ class TestMetrics:
         "config",
         [
             (metrics.ase, False, {"time_reduction": np.nanmean}),
-            # (metrics.sse, False, {"time_reduction": np.nanmean}),
-            # (metrics.mase, True, {}),
-            # (metrics.msse, True, {}),
-            # (metrics.rmsse, True, {}),
+            (metrics.sse, False, {"time_reduction": np.nanmean}),
+            (metrics.mase, True, {}),
+            (metrics.msse, True, {}),
+            (metrics.rmsse, True, {}),
         ],
     )
     def test_scaled_errors(self, config):
@@ -1111,6 +1120,9 @@ class TestMetrics:
         assert str(err.value).startswith(
             "The `insample` series must start before the `pred_series`"
         )
+        # wrong number of components
+        with pytest.raises(ValueError):
+            metric(self.series1, self.series2, insample.stack(insample))
         # multi-ts, second series is not a TimeSeries
         with pytest.raises(ValueError):
             metric([self.series1] * 2, self.series2, [insample] * 2)
@@ -1157,6 +1169,22 @@ class TestMetrics:
         )
         np.testing.assert_array_almost_equal(metrics.qr(s1, s12_stochastic, q=0.0), 0.0)
         np.testing.assert_array_almost_equal(metrics.qr(s2, s12_stochastic, q=1.0), 0.0)
+
+        # preds must be probabilistic
+        q_names = likelihood_component_names(
+            self.series1.components,
+            quantile_names([0.5]),
+        )
+        with pytest.raises(ValueError) as exc:
+            metrics.qr(
+                self.series1,
+                self.series1.with_columns_renamed(self.series1.components, q_names),
+                q=0.5,
+            )
+        assert (
+            str(exc.value)
+            == "quantile risk (qr) should only be computed for stochastic predicted TimeSeries."
+        )
 
     @pytest.mark.parametrize(
         "config",
@@ -1612,8 +1640,6 @@ class TestMetrics:
         )
         pred_prob = TimeSeries.from_values(pred_prob_vals, columns=components)
         pred_qs = TimeSeries.from_values(pred_vals_qs, columns=pred_components)
-        pred_q0_1 = pred_qs[pred_components[::3]]
-        pred_q0_5 = pred_qs[pred_components[1::3]]
         insample = series.shift(-len(series))
         insample_q_exp = concatenate(
             [insample[comp] for comp in components for _ in qs_all], axis=1
@@ -1627,8 +1653,6 @@ class TestMetrics:
             pred_qs = [pred_qs] * 2
             insample = [insample] * 2
             insample_q_exp = [insample_q_exp] * 2
-            pred_q0_1 = [pred_q0_1] * 2
-            pred_q0_5 = [pred_q0_5] * 2
 
         kwargs = {"actual_series": series}
         if "insample" in params:
@@ -1750,3 +1774,59 @@ class TestMetrics:
             **kwargs,
         )
         np.testing.assert_array_almost_equal(res_direct, res_qs)
+
+    def test_quantile_as_tuple(self):
+        """Test that `q` as tuple (list of quantiles, quantile component names) gives same results as `q`
+        as quantile values list."""
+        np.random.seed(42)
+        q = [0.25, 0.75]
+
+        series_a = TimeSeries.from_values(np.random.random((10, 2, 1)))
+        q_names = pd.Index(
+            likelihood_component_names(series_a.components, quantile_names(q))
+        )
+        series_b = TimeSeries.from_values(np.random.random((10, 4, 1)), columns=q_names)
+
+        np.testing.assert_array_almost_equal(
+            metrics.mae(series_a, series_b, q=(q, q_names)),
+            metrics.mae(series_a, series_b, q=q),
+        )
+
+    def test_custom_metric_wrong_output_shape(self):
+        """Test that custom metrics must have correct output dim."""
+
+        @metrics.multi_ts_support
+        @metrics.multivariate_support
+        def custom_metric(
+            actual_series,
+            pred_series,
+            intersect=True,
+            *,
+            q=None,
+            time_reduction=None,
+            component_reduction=np.nanmean,
+            series_reduction=None,
+            n_jobs=1,
+            verbose=False,
+            out_ndim=1,
+        ):
+            return np.ones(tuple(1 for _ in range(out_ndim)))
+
+        for ndim in [1, 4]:
+            with pytest.raises(ValueError) as exc:
+                custom_metric(self.series1, self.series2, out_ndim=ndim)
+            assert str(exc.value).startswith(
+                "Metric output must have 1 dimension for aggregated metrics"
+            )
+        for ndim in [2, 3]:
+            _ = custom_metric(self.series1, self.series2, out_ndim=ndim)
+
+    def test_wrong_error_scale(self):
+        with pytest.raises(ValueError) as exc:
+            _ = metrics._get_error_scale(
+                self.series1.shift(-len(self.series1)),
+                self.series1,
+                m=1,
+                metric="wrong_metric",
+            )
+        assert str(exc.value).startswith("unknown `metric=wrong_metric`")
