@@ -303,9 +303,7 @@ def _get_values(
     vals: np.ndarray,
     vals_components: pd.Index,
     actual_components: pd.Index,
-    stochastic_quantile: Optional[
-        Tuple[List[float], Union[List[float], pd.Index]]
-    ] = None,
+    stochastic_quantile: Optional[Tuple[List[float], Union[Optional[pd.Index]]]] = None,
 ) -> np.ndarray:
     """
     Returns a deterministic or probabilistic numpy array from the values of a time series.
@@ -433,7 +431,7 @@ def _get_values_or_raise(
         vals=vals_a_common,
         vals_components=series_a.components,
         actual_components=series_a.components,
-        stochastic_quantile=None,
+        stochastic_quantile=([0.5], None),
     )
 
     if not remove_nan_union or is_insample:
