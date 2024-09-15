@@ -2315,6 +2315,71 @@ class TestHistoricalforecast:
             assert len(hist_fc) == n + 1
 
     @pytest.mark.parametrize(
+        "lpo",
+        [False, True],  # last_points_only
+    )
+    def test_probabilistic_optimized_hist_fc_regression(self, lpo):
+        """Tests optimized probilistic historical forecasts for regression models."""
+        np.random.seed(42)
+        q = [0.05, 0.50, 0.95]
+
+        y = tg.linear_timeseries(length=20)
+        y = y.stack(y + 1.0)
+        y = [y, y]
+
+        icl = 3
+        model = LinearRegressionModel(
+            lags=icl,
+            output_chunk_length=4,
+            likelihood="quantile",
+            quantiles=q,
+            multi_models=True,
+        )
+        model.fit(y)
+        # probabilistic forecasts non-optimized
+        hfcs_no_opt = model.historical_forecasts(
+            series=y,
+            forecast_horizon=1,
+            last_points_only=lpo,
+            retrain=False,
+            enable_optimization=False,
+            num_samples=100,
+        )
+        # probabilistic forecasts optimized
+        hfcs_opt = model.historical_forecasts(
+            series=y,
+            forecast_horizon=1,
+            last_points_only=lpo,
+            retrain=False,
+            enable_optimization=True,
+            num_samples=100,
+        )
+        # quantile forecasts optimized
+        hfcs_opt_q = model.historical_forecasts(
+            series=y,
+            forecast_horizon=1,
+            last_points_only=lpo,
+            retrain=False,
+            enable_optimization=True,
+            num_samples=1,
+            predict_likelihood_parameters=True,
+        )
+        if lpo:
+            q_med = hfcs_opt_q[0].components[1::3].tolist()
+        if not lpo:
+            q_med = hfcs_opt_q[0][0].components[1::3].tolist()
+            hfcs_opt = [concatenate(hfc) for hfc in hfcs_opt]
+            hfcs_no_opt = [concatenate(hfc) for hfc in hfcs_no_opt]
+            hfcs_opt_q = [concatenate(hfc) for hfc in hfcs_opt_q]
+        hfcs_opt_q = [hfc[q_med] for hfc in hfcs_opt_q]
+
+        for hfc_opt, mean_opt_q, hfc_no_opt in zip(hfcs_opt, hfcs_opt_q, hfcs_no_opt):
+            mean_opt = hfc_opt.all_values().mean(axis=2)
+            mean_no_opt = hfc_no_opt.all_values().mean(axis=2)
+            assert np.abs(mean_opt - mean_no_opt).max() < 0.1
+            assert np.abs(mean_opt - mean_opt_q.values()).max() < 0.1
+
+    @pytest.mark.parametrize(
         "model_type,enable_optimization",
         product(["regression", "torch"], [True, False]),
     )
