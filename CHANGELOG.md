@@ -27,6 +27,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed bug when plotting a probabilistic multivariate series, where all confidence intervals (starting from 2nd component) had the same color as the median line. [#2532](https://github.com/unit8co/darts/pull/2532) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when passing an empty array to `TimeSeries.prepend/append_values()` raised an error. [#2522](https://github.com/unit8co/darts/pull/2522) by [Alessio Pellegrini](https://github.com/AlessiopSymplectic)
 - Fixed a bug with `TimeSeries.prepend/append_values()`, where the name of the (time) index was lost. [#2522](https://github.com/unit8co/darts/pull/2522) by [Alessio Pellegrini](https://github.com/AlessiopSymplectic)
 - Fixed a bug when using `from_group_dataframe()` with a `time_col` of type integer, where the resulting time index was wrongly converted to a DatetimeIndex. [#2512](https://github.com/unit8co/darts/pull/2512) by [Alessio Pellegrini](https://github.com/AlessiopSymplectic)

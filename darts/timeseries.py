@@ -4197,8 +4197,6 @@ class TimeSeries:
                 central_series = comp.mean(dim=DIMS[2])
 
             alpha = kwargs["alpha"] if "alpha" in kwargs else None
-            if not self.is_deterministic:
-                kwargs["alpha"] = 1
             if custom_labels:
                 label_to_use = label[i]
             else:
@@ -4210,15 +4208,18 @@ class TimeSeries:
                     label_to_use = f"{label}_{comp_name}"
             kwargs["label"] = label_to_use
 
+            kwargs_central = deepcopy(kwargs)
+            if not self.is_deterministic:
+                kwargs_central["alpha"] = 1
             if central_series.shape[0] > 1:
-                p = central_series.plot(*args, ax=ax, **kwargs)
+                p = central_series.plot(*args, ax=ax, **kwargs_central)
             # empty TimeSeries
             elif central_series.shape[0] == 0:
                 p = ax.plot(
                     [],
                     [],
                     *args,
-                    **kwargs,
+                    **kwargs_central,
                 )
                 ax.set_xlabel(self.time_index.name)
             else:
@@ -4227,7 +4228,7 @@ class TimeSeries:
                     central_series.values[0],
                     "o",
                     *args,
-                    **kwargs,
+                    **kwargs_central,
                 )
             color_used = p[0].get_color() if default_formatting else None
 
