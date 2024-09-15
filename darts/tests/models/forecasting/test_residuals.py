@@ -866,7 +866,6 @@ class TestResiduals:
             predict_likelihood_parameters=False,
             num_samples=1000,
             retrain=False,
-            enable_optimization=False,
         )
         assert isinstance(bts_prob, list) and len(bts_prob) == 2
         if not lpo:
