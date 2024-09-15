@@ -11,7 +11,7 @@ from scipy.stats import kurtosis, skew
 
 from darts import TimeSeries, concatenate
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
-from darts.utils.utils import freqs, generate_index
+from darts.utils.utils import expand_arr, freqs, generate_index
 
 
 class TestTimeSeries:
@@ -21,7 +21,7 @@ class TestTimeSeries:
     pd_series3 = pd.Series(range(15, 25), index=times)
     series1: TimeSeries = TimeSeries.from_series(pd_series1)
     series2: TimeSeries = TimeSeries.from_series(pd_series2)
-    series3: TimeSeries = TimeSeries.from_series(pd_series2)
+    series3: TimeSeries = TimeSeries.from_series(pd_series3)
 
     def test_creation(self):
         series_test = TimeSeries.from_series(self.pd_series1)
@@ -536,19 +536,19 @@ class TestTimeSeries:
         with pytest.raises(ValueError):
             self.series1.rescale_with_value(1)
 
-        seriesA = self.series3.rescale_with_value(0)
+        seriesA = self.series2.rescale_with_value(0)
         assert np.all(seriesA.values() == 0)
 
-        seriesB = self.series3.rescale_with_value(-5)
-        assert self.series3 * -1.0 == seriesB
+        seriesB = self.series2.rescale_with_value(-5)
+        assert self.series2 * -1.0 == seriesB
 
-        seriesC = self.series3.rescale_with_value(1)
-        assert self.series3 * 0.2 == seriesC
+        seriesC = self.series2.rescale_with_value(1)
+        assert self.series2 * 0.2 == seriesC
 
-        seriesD = self.series3.rescale_with_value(
+        seriesD = self.series2.rescale_with_value(
             1e20
         )  # TODO: test will fail if value > 1e24 due to num imprecision
-        assert self.series3 * 0.2e20 == seriesD
+        assert self.series2 * 0.2e20 == seriesD
 
     @staticmethod
     def helper_test_intersect(freq, is_mixed_freq: bool, is_univariate: bool):
@@ -762,6 +762,9 @@ class TestTimeSeries:
         assert test_series.time_index.equals(prepended_sq.time_index)
         assert prepended_sq.components.equals(test_series.components)
 
+        # component and sample dimension should match
+        assert prepended._xa.shape[1:] == test_series._xa.shape[1:]
+
     def test_slice(self):
         TestTimeSeries.helper_test_slice(self, self.series1)
 
@@ -797,18 +800,112 @@ class TestTimeSeries:
         assert appended.time_index.equals(expected_idx)
         assert appended.components.equals(series_1.components)
 
-    def test_append_values(self):
-        TestTimeSeries.helper_test_append_values(self, self.series1)
-        # Check `append_values` deals with `RangeIndex` series correctly:
-        series = linear_timeseries(start=1, length=5, freq=2)
-        appended = series.append_values(np.ones((2, 1, 1)))
-        expected_vals = np.concatenate(
-            [series.all_values(), np.ones((2, 1, 1))], axis=0
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [
+                (  # univariate array
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    np.array([0, 1]).reshape((2, 1, 1)),
+                ),
+                (  # multivariate array
+                    np.array([0, 1, 2, 3, 4, 5]).reshape((3, 2, 1)),
+                    np.array([0, 1, 2, 3]).reshape((2, 2, 1)),
+                ),
+                (  # empty array
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    np.array([]).reshape((0, 1, 1)),
+                ),
+                (
+                    # wrong number of components
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    np.array([0, 1, 2, 3]).reshape((2, 2, 1)),
+                ),
+                (
+                    # wrong number of samples
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    np.array([0, 1, 2, 3]).reshape((2, 1, 2)),
+                ),
+                (  # univariate list with times
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    [0, 1],
+                ),
+                (  # univariate list with times and components
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    [[0], [1]],
+                ),
+                (  # univariate list with times, components and samples
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    [[[0]], [[1]]],
+                ),
+                (  # multivar with list has wrong shape
+                    np.array([0, 1, 2, 3]).reshape((2, 2, 1)),
+                    [[1, 2], [3, 4]],
+                ),
+                (  # list with wrong numer of components
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    [[1, 2], [3, 4]],
+                ),
+                (  # list with wrong numer of samples
+                    np.array([0, 1, 2]).reshape((3, 1, 1)),
+                    [[[0, 1]], [[1, 2]]],
+                ),
+                (  # multivar input but list has wrong shape
+                    np.array([0, 1, 2, 3]).reshape((2, 2, 1)),
+                    [1, 2],
+                ),
+            ],
+            [True, False],
+            ["append_values", "prepend_values"],
+        ),
+    )
+    def test_append_and_prepend_values(self, config):
+        (series_vals, vals), is_datetime, method = config
+        start = "20240101" if is_datetime else 1
+        series_idx = generate_index(
+            start=start, length=len(series_vals), name="some_name"
         )
-        expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
+        series = TimeSeries.from_times_and_values(
+            times=series_idx,
+            values=series_vals,
+        )
+
+        # expand if it's a list
+        vals_arr = np.array(vals) if isinstance(vals, list) else vals
+        vals_arr = expand_arr(vals_arr, ndim=3)
+
+        ts_method = getattr(TimeSeries, method)
+
+        if vals_arr.shape[1:] != series_vals.shape[1:]:
+            with pytest.raises(ValueError) as exc:
+                _ = ts_method(series, vals)
+            assert str(exc.value).startswith(
+                "The (expanded) values must have the same number of components and samples"
+            )
+            return
+
+        appended = ts_method(series, vals)
+
+        if method == "append_values":
+            expected_vals = np.concatenate([series_vals, vals_arr], axis=0)
+            expected_idx = generate_index(
+                start=series.start_time(),
+                length=len(series_vals) + len(vals),
+                freq=series.freq,
+            )
+        else:
+            expected_vals = np.concatenate([vals_arr, series_vals], axis=0)
+            expected_idx = generate_index(
+                end=series.end_time(),
+                length=len(series_vals) + len(vals),
+                freq=series.freq,
+            )
+
         assert np.allclose(appended.all_values(), expected_vals)
         assert appended.time_index.equals(expected_idx)
         assert appended.components.equals(series.components)
+        assert appended._xa.shape[1:] == series._xa.shape[1:]
+        assert appended.time_index.name == series.time_index.name
 
     def test_prepend(self):
         TestTimeSeries.helper_test_prepend(self, self.series1)
@@ -823,19 +920,6 @@ class TestTimeSeries:
         assert np.allclose(prepended.all_values(), expected_vals)
         assert prepended.time_index.equals(expected_idx)
         assert prepended.components.equals(series_1.components)
-
-    def test_prepend_values(self):
-        TestTimeSeries.helper_test_prepend_values(self, self.series1)
-        # Check `prepend_values` deals with `RangeIndex` series correctly:
-        series = linear_timeseries(start=1, length=5, freq=2)
-        prepended = series.prepend_values(np.ones((2, 1, 1)))
-        expected_vals = np.concatenate(
-            [np.ones((2, 1, 1)), series.all_values()], axis=0
-        )
-        expected_idx = pd.RangeIndex(start=-3, stop=11, step=2)
-        assert np.allclose(prepended.all_values(), expected_vals)
-        assert prepended.time_index.equals(expected_idx)
-        assert prepended.components.equals(series.components)
 
     @pytest.mark.parametrize(
         "config",
@@ -974,6 +1058,57 @@ class TestTimeSeries:
         with pytest.raises(ZeroDivisionError):
             # Cannot divide by 0.
             self.series1 / 0
+
+    def test_ops_array(self):
+        # can work with xarray directly
+        series2_x = self.series2.data_array(copy=False)
+        assert self.series1 + self.series2 == self.series1 + series2_x
+        assert self.series1 - self.series2 == self.series1 - series2_x
+        assert self.series1 * self.series2 == self.series1 * series2_x
+        assert self.series1 / self.series2 == self.series1 / series2_x
+        assert self.series1**self.series2 == self.series1**series2_x
+        # can work with ndarray directly
+        series2_nd = self.series2.all_values(copy=False)
+        assert self.series1 + self.series2 == self.series1 + series2_nd
+        assert self.series1 - self.series2 == self.series1 - series2_nd
+        assert self.series1 * self.series2 == self.series1 * series2_nd
+        assert self.series1 / self.series2 == self.series1 / series2_nd
+        assert self.series1**self.series2 == self.series1**series2_nd
+
+    @pytest.mark.parametrize(
+        "broadcast_components,broadcast_samples",
+        itertools.product([True, False], [True, False]),
+    )
+    def test_ops_broadcasting(self, broadcast_components, broadcast_samples):
+        # generate random time-series
+        t, c, s = 10, 5, 3
+        arrayA = np.random.rand(t, c, s)
+        arrayB = np.random.rand(
+            t, 1 if broadcast_components else c, 1 if broadcast_samples else s
+        )
+
+        seriesA = TimeSeries.from_times_and_values(self.times, arrayA)
+        seriesB = TimeSeries.from_times_and_values(self.times, arrayB)
+
+        seriesAdd = TimeSeries.from_times_and_values(self.times, arrayA + arrayB)
+        seriesSub = TimeSeries.from_times_and_values(self.times, arrayA - arrayB)
+        seriesMul = TimeSeries.from_times_and_values(self.times, arrayA * arrayB)
+        seriesDiv = TimeSeries.from_times_and_values(self.times, arrayA / arrayB)
+        seriesPow = TimeSeries.from_times_and_values(self.times, arrayA**arrayB)
+
+        # assert different operations; must be equivalent to operations with scalar
+        assert seriesA + seriesB == seriesAdd
+        assert seriesA - seriesB == seriesSub
+        assert seriesA * seriesB == seriesMul
+        assert seriesA / seriesB == seriesDiv
+        assert seriesA**seriesB == seriesPow
+
+        # it also works with numpy arrays directly
+        assert seriesA + arrayB == seriesAdd
+        assert seriesA - arrayB == seriesSub
+        assert seriesA * arrayB == seriesMul
+        assert seriesA / arrayB == seriesDiv
+        assert seriesA**arrayB == seriesPow
 
     def test_getitem_datetime_index(self):
         series_short: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
