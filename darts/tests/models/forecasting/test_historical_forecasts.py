@@ -2315,12 +2315,16 @@ class TestHistoricalforecast:
             assert len(hist_fc) == n + 1
 
     @pytest.mark.parametrize(
-        "lpo",
-        [False, True],  # last_points_only
+        "config",
+        product(
+            [False, True],  # last_points_only
+            [True, False],  # multi_models
+        ),
     )
-    def test_probabilistic_optimized_hist_fc_regression(self, lpo):
+    def test_probabilistic_optimized_hist_fc_regression(self, config):
         """Tests optimized probilistic historical forecasts for regression models."""
         np.random.seed(42)
+        lpo, multi_models = config
         q = [0.05, 0.50, 0.95]
 
         y = tg.linear_timeseries(length=20)
@@ -2333,7 +2337,7 @@ class TestHistoricalforecast:
             output_chunk_length=4,
             likelihood="quantile",
             quantiles=q,
-            multi_models=True,
+            multi_models=multi_models,
         )
         model.fit(y)
         # probabilistic forecasts non-optimized
@@ -2343,7 +2347,7 @@ class TestHistoricalforecast:
             last_points_only=lpo,
             retrain=False,
             enable_optimization=False,
-            num_samples=100,
+            num_samples=1000,
         )
         # probabilistic forecasts optimized
         hfcs_opt = model.historical_forecasts(
@@ -2352,7 +2356,7 @@ class TestHistoricalforecast:
             last_points_only=lpo,
             retrain=False,
             enable_optimization=True,
-            num_samples=100,
+            num_samples=1000,
         )
         # quantile forecasts optimized
         hfcs_opt_q = model.historical_forecasts(
@@ -2361,7 +2365,6 @@ class TestHistoricalforecast:
             last_points_only=lpo,
             retrain=False,
             enable_optimization=True,
-            num_samples=1,
             predict_likelihood_parameters=True,
         )
         if lpo:
