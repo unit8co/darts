@@ -233,7 +233,7 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                     if isinstance(val_, Pipeline)
                     else Pipeline(transformers=[val_], copy=False)
                 )
-                if transf.fittable() and not transf._fit_called():
+                if transf.fittable and not transf._fit_called:
                     raise_log(
                         ValueError(
                             "All the fittable entries in `data_transformers` must already be fitted when "
@@ -1011,7 +1011,7 @@ def _apply_data_transformers(
         if ts is None or data_transformers.get(ts_type) is None:
             transformed_ts.append(ts)
         else:
-            if fit_transformers and data_transformers[ts_type].fittable():
+            if fit_transformers and data_transformers[ts_type].fittable:
                 # must slice the ts to distinguish accessible information from future information
                 if ts_type == "past_covariates":
                     # known information is aligned with the target series
@@ -1034,7 +1034,7 @@ def _apply_inverse_data_transformers(
     forecasts: Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]],
     data_transformers: Dict[str, Pipeline],
 ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
-    if "series" in data_transformers and data_transformers["series"].invertible():
+    if "series" in data_transformers and data_transformers["series"].invertible:
         return data_transformers["series"].inverse_transform(forecasts)
     else:
         return forecasts

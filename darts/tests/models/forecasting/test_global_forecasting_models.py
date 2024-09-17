@@ -828,15 +828,15 @@ class TestGlobalForecastingModels:
             [
                 (
                     {"series": sine_3_ts + 3},
-                    {"target": Scaler()},
+                    {"series": Scaler()},
                 ),
                 (
                     {"series": sine_3_ts + 3, "past_covariates": sine_1_ts + 3},
-                    {"past": Scaler()},
+                    {"past_covariates": Scaler()},
                 ),
                 (
                     {"series": sine_3_ts + 3, "future_covariates": sine_1_ts + 3},
-                    {"future": Scaler(scaler=MaxAbsScaler())},
+                    {"future_covariates": Scaler(scaler=MaxAbsScaler())},
                 ),
                 (
                     {
@@ -844,7 +844,7 @@ class TestGlobalForecastingModels:
                         "past_covariates": sine_2_ts + 3,
                         "future_covariates": sine_1_ts + 3,
                     },
-                    {"target": Scaler(), "past": Scaler()},
+                    {"series": Scaler(), "past_covariates": Scaler()},
                 ),
             ],
             [True, False],
@@ -903,25 +903,16 @@ class TestGlobalForecastingModels:
         )
 
         # manually scale the series
-        name_mapping = {
-            "target": "series",
-            "past": "past_covariates",
-            "future": "future_covariates",
-        }
         ts_scaled = deepcopy(ts)
         for ts_name in hf_scaler:
             if isinstance(hf_scaler[ts_name], FittableDataTransformer):
-                if ts_name == "target" or ts_name == "past":
-                    tmp_ts = ts_scaled[name_mapping[ts_name]][:-ocl]
+                if ts_name == "series" or ts_name == "past_covariates":
+                    tmp_ts = ts_scaled[ts_name][:-ocl]
                 else:
-                    tmp_ts = ts_scaled[name_mapping[ts_name]][
-                        : -ocl + max(0, model.extreme_lags[5])
-                    ]
+                    tmp_ts = ts_scaled[ts_name][: -ocl + max(0, model.extreme_lags[5])]
                 hf_scaler[ts_name].fit(tmp_ts)
             # apply the scaler on the whole series
-            ts_scaled[name_mapping[ts_name]] = hf_scaler[ts_name].transform(
-                ts_scaled[name_mapping[ts_name]]
-            )
+            ts_scaled[ts_name] = hf_scaler[ts_name].transform(ts_scaled[ts_name])
 
         # manually generate the last forecast horizon
         series = ts_scaled.pop("series")[:-ocl]
@@ -931,8 +922,8 @@ class TestGlobalForecastingModels:
         hf_manual = model.predict(n=ocl, series=series, **ts_scaled)
 
         # scale back the forecasts
-        if isinstance(hf_scaler.get("target"), InvertibleDataTransformer):
-            hf_manual = hf_scaler["target"].inverse_transform(hf_manual)
+        if isinstance(hf_scaler.get("series"), InvertibleDataTransformer):
+            hf_manual = hf_scaler["series"].inverse_transform(hf_manual)
 
         # verify that automatic and manual pre-scaling produce identical forecasts
         assert hf_auto.time_index.equals(hf_manual.time_index)

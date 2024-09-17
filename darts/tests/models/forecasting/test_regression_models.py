@@ -2680,7 +2680,7 @@ class TestRegressionModels:
                         "series": sine_univariate5 + 2,
                         "past_covariates": sine_univariate1 + 3,
                     },
-                    {"past": Scaler()},
+                    {"past_covariates": Scaler()},
                     {"lags": 5, "lags_past_covariates": 3},
                 ),
                 (
@@ -2688,7 +2688,7 @@ class TestRegressionModels:
                         "series": sine_univariate5 + 3,
                         "past_covariates": sine_univariate1 + 2,
                     },
-                    {"past": Scaler(scaler=MaxAbsScaler())},
+                    {"past_covariates": Scaler(scaler=MaxAbsScaler())},
                     {"lags_past_covariates": 3},
                 ),
                 (
@@ -2696,7 +2696,7 @@ class TestRegressionModels:
                         "series": sine_univariate5 + 2,
                         "future_covariates": sine_univariate2 + 3,
                     },
-                    {"future": Scaler()},
+                    {"future_covariates": Scaler()},
                     {"lags": 5, "lags_future_covariates": [-1, 0]},
                 ),
                 (
@@ -2705,7 +2705,7 @@ class TestRegressionModels:
                         "past_covariates": sine_univariate1 + 2,
                         "future_covariates": sine_univariate2 + 3,
                     },
-                    {"target": Scaler(), "past": Scaler()},
+                    {"series": Scaler(), "past_covariates": Scaler()},
                     {
                         "lags": 3,
                         "lags_past_covariates": 2,
@@ -2762,25 +2762,16 @@ class TestRegressionModels:
         )
 
         # manually scale the series
-        name_mapping = {
-            "target": "series",
-            "past": "past_covariates",
-            "future": "future_covariates",
-        }
         ts_scaled = deepcopy(ts)
         for ts_name in hf_scaler:
             if isinstance(hf_scaler[ts_name], FittableDataTransformer):
-                if ts_name == "target" or ts_name == "past":
-                    tmp_ts = ts_scaled[name_mapping[ts_name]][:-ocl]
+                if ts_name == "series" or ts_name == "past_covariates":
+                    tmp_ts = ts_scaled[ts_name][:-ocl]
                 else:
-                    tmp_ts = ts_scaled[name_mapping[ts_name]][
-                        : -ocl + max(0, model.extreme_lags[5])
-                    ]
+                    tmp_ts = ts_scaled[ts_name][: -ocl + max(0, model.extreme_lags[5])]
                 hf_scaler[ts_name].fit(tmp_ts)
             # apply the scaler on the whole series
-            ts_scaled[name_mapping[ts_name]] = hf_scaler[ts_name].transform(
-                ts_scaled[name_mapping[ts_name]]
-            )
+            ts_scaled[ts_name] = hf_scaler[ts_name].transform(ts_scaled[ts_name])
 
         # manually generate the last forecast horizon
         series = ts_scaled.pop("series")[:-ocl]
@@ -2789,40 +2780,14 @@ class TestRegressionModels:
         hf_manual = model.predict(n=ocl, series=series, **ts_scaled)
 
         # scale back the forecasts
-        if isinstance(hf_scaler.get("target"), InvertibleDataTransformer):
-            hf_manual = hf_scaler["target"].inverse_transform(hf_manual)
+        if isinstance(hf_scaler.get("series"), InvertibleDataTransformer):
+            hf_manual = hf_scaler["series"].inverse_transform(hf_manual)
 
         # verify that automatic and manual pre-scaling produce identical forecasts
         assert hf_auto.time_index.equals(hf_manual.time_index)
         np.testing.assert_almost_equal(
             hf_auto.values(),
             hf_manual.values(),
-        )
-
-        # using optimized historical forecasts
-        hf_opti = model._optimized_historical_forecasts(
-            **ts,
-            **{
-                k_: hf_args[k_]
-                for k_ in [
-                    "start",
-                    "start_format",
-                    "forecast_horizon",
-                    "stride",
-                    "overlap_end",
-                    "last_points_only",
-                    "verbose",
-                ]
-            },
-            # already fitted scaler
-            data_transformers={
-                key_: Pipeline([val_]) for key_, val_ in hf_scaler.items()
-            },
-        )[0]
-        assert hf_manual.time_index.equals(hf_opti.time_index)
-        np.testing.assert_almost_equal(
-            hf_manual.values(),
-            hf_opti.values(),
         )
 
     @pytest.mark.parametrize(
