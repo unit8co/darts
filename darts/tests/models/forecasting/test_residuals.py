@@ -632,8 +632,7 @@ class TestResiduals:
         lpo, stochastic_pred = config
         metric = metrics.ae
         # multi-quantile metrics yield more components
-        q_sorted = [0.05, 0.50, 0.60, 0.95]
-        q = [0.95, 0.05, 0.50, 0.60]
+        q = [0.05, 0.50, 0.60, 0.95]
 
         y = lt(length=20)
         y = y.stack(y + 1.0)
@@ -646,11 +645,11 @@ class TestResiduals:
         # historical forecasts
         vals = np.random.random((10, 1, 100))
         if not stochastic_pred:
-            vals = np.quantile(vals, q, axis=2).transpose(1, 0, 2)
+            vals = np.quantile(vals, q, axis=2).transpose((1, 0, 2))
             comp_names = pd.Index(
                 likelihood_component_names(
                     components=y.components,
-                    parameter_names=quantile_names(q=q_sorted),
+                    parameter_names=quantile_names(q=q),
                 )
             )
         else:

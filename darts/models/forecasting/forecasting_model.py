@@ -2064,15 +2064,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             residuals = [[res] for res in residuals]
 
         # sanity check residual output
-        n_comp_out = 1
         q = metric_kwargs.get("q")
         if q is not None:
             q = [q] if isinstance(q, float) else q
-            n_comp_out = len(q)
         try:
             series_, res, fc = series[0], residuals[0][0], historical_forecasts[0][0]
-            n_comp_out *= series_.n_components
-            _ = np.reshape(res, (len(fc), n_comp_out, 1))
+            _ = np.reshape(res, (len(fc), -1, 1))
         except Exception as err:
             raise_log(
                 ValueError(
@@ -2099,19 +2096,19 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             for fc, res in zip(fc_list, res_list):
                 # make sure all residuals have shape (n time steps, n components * n quantiles, n samples=1)
                 if len(res.shape) != 3:
-                    res = np.reshape(res, (len(fc), n_comp_out, 1))
+                    res = np.reshape(res, (len(fc), -1, 1))
                 if values_only:
                     res = res
-                elif q is None or (len(q) == 1 and res.shape[1] == fc.shape[1]):
+                # TODO: requires sorted quantile metrics
+                elif q is None or res.shape[1] == fc.n_components:
                     res = fc.with_values(res)
                 else:
-                    # multi quantile metric created more components
+                    # quantile metrics created different number of components;
+                    # create new series with unknown components
                     res = TimeSeries.from_times_and_values(
                         times=fc._time_index,
                         values=res,
                         columns=comp_names,
-                        static_covariates=fc.static_covariates,
-                        hierarchy=fc.hierarchy,
                     )
                 res_list_out.append(res)
 

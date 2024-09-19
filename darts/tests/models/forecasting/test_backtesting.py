@@ -1279,7 +1279,7 @@ class TestBacktesting:
         else:
             hfc = [[hfc, hfc], [hfc]]
 
-        q = [0.95, 0.05, 0.5, 0.60]
+        q = [0.05, 0.5, 0.60, 0.95]
         metric_kwargs = [{"component_reduction": np.median, "q": q}]
         if len(metric) > 1:
             # give metric specific kwargs

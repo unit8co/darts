@@ -134,6 +134,38 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             num_series_in_args += int("insample" not in kwargs)
             kwargs.pop("insample", 0)
 
+        # handle `q` (quantile) parameter for probabilistic (or quantile) forecasts
+        if "q" in params:
+            # convert `q` to tuple of (quantile values, optional quantile component names)
+            q = kwargs.get("q", params["q"].default)
+            q_comp_names = None
+            if q is None:
+                kwargs["q"] = None
+            else:
+                if isinstance(q, tuple):
+                    q, q_comp_names = q
+                if isinstance(q, float):
+                    q = np.array([q])
+                else:
+                    q = np.array(q)
+
+                if not np.all(q[1:] - q[:-1] > 0.0):
+                    raise_log(
+                        ValueError(
+                            "`q` must be of type `float`, or a sequence of increasing order with unique values only. "
+                            f"Received `q={q}`."
+                        ),
+                        logger=logger,
+                    )
+                if not np.all(q >= 0.0) & np.all(q <= 1.0):
+                    raise_log(
+                        ValueError(
+                            f"All `q` values must be in the range `(>=0,<=1)`. Received `q={q}`."
+                        ),
+                        logger=logger,
+                    )
+                kwargs["q"] = (q, q_comp_names)
+
         iterator = _build_tqdm_iterator(
             iterable=zip(*input_series),
             verbose=verbose,
@@ -190,17 +222,7 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         pred_series = args[1]
         num_series_in_args = 2
 
-        # quantiles can only be in `kwargs`
-        q = kwargs.get("q", params["q"].default if "q" in params else None)
-        q_comp_names = None
-        if isinstance(q, tuple):
-            q, q_comp_names = q
-
-        if isinstance(q, float):
-            q = np.array([q])
-        elif q is not None:
-            q = np.array(q)
-
+        q, q_comp_names = kwargs.get("q"), None
         if q is None:
             # without quantiles, the number of components must match
             if actual_series.n_components != pred_series.n_components:
@@ -214,30 +236,41 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             # compute median for stochastic predictions
             if pred_series.is_stochastic:
                 q = np.array([0.5])
-        elif not pred_series.is_stochastic:
-            # make sure all predicted quantile components are available
-            if q_comp_names is None:
-                q_comp_names = pd.Index(
-                    likelihood_component_names(
-                        components=actual_series.components,
-                        parameter_names=quantile_names(q=q),
-                    )
-                )
-            if not q_comp_names.isin(pred_series.components).all():
+        else:
+            # `q` is required to be a tuple (handled by `multi_ts_support` wrapper)
+            if not isinstance(q, tuple) or not len(q) == 2:
                 raise_log(
                     ValueError(
-                        f"Computing a metric with quantile(s) `q={q}` is only supported for probabilistic "
-                        f"`pred_series` (num samples > 1) or `pred_series` containing the predicted "
-                        f"quantiles as columns / components. Either pass a probabilistic `pred_series` or "
-                        f"a series containing the expected quantile components: {q_comp_names.tolist()} "
+                        "`q` must be of tuple of `(np.ndarray, Optional[pd.Index])` "
+                        "where the (quantile values, optioanl quantile component names). "
+                        f"Received `q={q}`."
                     ),
                     logger=logger,
                 )
-        else:
-            # stochastic predictions are stored in sample dimension -> no component names required
-            q_comp_names = None
+            q, q_comp_names = q
+            if not pred_series.is_stochastic:
+                # quantile component names are required if the predictions are not stochastic (as for stocahstic
+                # predictions, the quantiles can be retrieved from the sample dimension for each component)
+                if q_comp_names is None:
+                    q_comp_names = pd.Index(
+                        likelihood_component_names(
+                            components=actual_series.components,
+                            parameter_names=quantile_names(q=q),
+                        )
+                    )
+                if not q_comp_names.isin(pred_series.components).all():
+                    raise_log(
+                        ValueError(
+                            f"Computing a metric with quantile(s) `q={q}` is only supported for probabilistic "
+                            f"`pred_series` (num samples > 1) or `pred_series` containing the predicted "
+                            f"quantiles as columns / components. Either pass a probabilistic `pred_series` or "
+                            f"a series containing the expected quantile components: {q_comp_names.tolist()} "
+                        ),
+                        logger=logger,
+                    )
+
         if "q" in params:
-            kwargs["q"] = q, q_comp_names
+            kwargs["q"] = (q, q_comp_names)
 
         # handle `insample` parameters for scaled metrics
         input_series = (actual_series, pred_series)
@@ -3101,3 +3134,21 @@ def mql(
         ),
         axis=TIME_AX,
     )
+
+
+# @interval_support
+# @multi_ts_support
+# @multivariate_support
+# def interval_width(
+#     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+#     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+#     intersect: bool = True,
+#     *,
+#     q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = 0.5,
+#     q_interval: [Tuple[float, float]]
+#     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+#     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+#     n_jobs: int = 1,
+#     verbose: bool = False,
+# ) -> METRIC_OUTPUT_TYPE:
+#     if

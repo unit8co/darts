@@ -1751,29 +1751,33 @@ class TestMetrics:
         )
         np.testing.assert_array_almost_equal(res_direct, res_qs)
 
-        # check the same for the reversed order
-        # quantile metrics follow the order [comp0_q0, comp0_q1, ..., comp1_q0, comp1_q1, ...]
-        comps_rev = likelihood_component_names(components, quantile_names(qs_all[::-1]))
-        if is_single:
-            pred_qs_rev = pred_qs[comps_rev]
-        else:
-            pred_qs_rev = [pq[comps_rev] for pq in pred_qs]
+    def test_invalid_quantiles(self):
+        np.random.seed(42)
+        series_a = TimeSeries.from_values(np.random.random((10, 2, 1)))
+        series_b = TimeSeries.from_values(np.random.random((10, 2, 10)))
 
-        if "q" in q_direct:
-            q_direct["q"] = q_direct["q"][::-1]
-        res_direct = metric(
-            pred_series=pred_qs_rev,
-            component_reduction=None,
-            **q_direct,
-            **kwargs_direct,
-        )
-        res_qs = metric(
-            pred_series=pred_qs,
-            component_reduction=None,
-            q=qs_all[::-1],
-            **kwargs,
-        )
-        np.testing.assert_array_almost_equal(res_direct, res_qs)
+        # unsorted metrics
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.mae(series_a, series_b, q=[0.2, 0.1])
+        assert "a sequence of increasing order" in str(exc.value)
+
+        # non-unique values metrics
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.mae(series_a, series_b, q=[0.2, 0.2])
+        assert "with unique values only" in str(exc.value)
+
+        # q > 1
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.mae(series_a, series_b, q=[0.2, 1.01])
+        assert "must be in the range `(>=0,<=1)`" in str(exc.value)
+
+        # q < 0
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.mae(series_a, series_b, q=[-0.01, 0.2])
+        assert "must be in the range `(>=0,<=1)`" in str(exc.value)
+
+        # but sorted, unique, and valid quantiles work
+        _ = metrics.mae(series_a, series_b, q=[0.0, 0.5, 1.0])
 
     def test_quantile_as_tuple(self):
         """Test that `q` as tuple (list of quantiles, quantile component names) gives same results as `q`
