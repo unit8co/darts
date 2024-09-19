@@ -202,6 +202,7 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             q = np.array(q)
 
         if q is None:
+            # without quantiles, the number of components must match
             if actual_series.n_components != pred_series.n_components:
                 raise_log(
                     ValueError(
@@ -210,7 +211,7 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                     ),
                     logger=logger,
                 )
-            # by default, compute median
+            # compute median for stochastic predictions
             if pred_series.is_stochastic:
                 q = np.array([0.5])
         elif not pred_series.is_stochastic:
@@ -233,6 +234,7 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                     logger=logger,
                 )
         else:
+            # stochastic predictions are stored in sample dimension -> no component names required
             q_comp_names = None
         if "q" in params:
             kwargs["q"] = q, q_comp_names
@@ -320,13 +322,13 @@ def _get_values(
         Optionally, a tuple with
         (quantile values, `None` if `pred_series` is stochastic else the quantile component names).
     """
-    # return stochastic values (times, components, samples)
+    # return values as is (times, components, samples)
     if stochastic_quantile is None:
         return vals
 
     q, q_names = stochastic_quantile
     if vals.shape[SMPL_AX] == 1:  # deterministic (or quantile components) input
-        if isinstance(q_names, pd.Index):
+        if q_names is not None:
             # `q_names` are the component names of the predicted quantile parameters
             # we extract the relevant quantile components with shape (times, components * quantiles)
             vals = vals[:, vals_components.get_indexer(q_names)]
