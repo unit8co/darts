@@ -1816,7 +1816,7 @@ class TestMetrics:
             with pytest.raises(ValueError) as exc:
                 custom_metric(self.series1, self.series2, out_ndim=ndim)
             assert str(exc.value).startswith(
-                "Metric output must have 1 dimension for aggregated metrics"
+                "Metric output must have 2 dimensions (n components, n quantiles) for aggregated metrics"
             )
         for ndim in [2, 3]:
             _ = custom_metric(self.series1, self.series2, out_ndim=ndim)

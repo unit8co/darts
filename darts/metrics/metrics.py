@@ -257,12 +257,14 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         if not 2 <= len(vals.shape) <= 3:
             raise_log(
                 ValueError(
-                    "Metric output must have 1 dimension for aggregated metrics (e.g. `mae()`, ...), "
-                    "or 2 dimension for time dependent metrics (e.g. `ae()`, ...)"
+                    "Metric output must have 2 dimensions (n components, n quantiles) "
+                    "for aggregated metrics (e.g. `mae()`, ...), "
+                    "or 3 dimension (n times, n components, n quantiles)  "
+                    "for time dependent metrics (e.g. `ae()`, ...)"
                 ),
                 logger=logger,
             )
-        elif len(vals.shape) == 2:
+        if len(vals.shape) == 2:
             vals = np.expand_dims(vals, TIME_AX)
 
         time_reduction = _get_reduction(
@@ -301,7 +303,8 @@ def _get_values(
     stochastic_quantile: Optional[Tuple[List[float], Union[Optional[pd.Index]]]] = None,
 ) -> np.ndarray:
     """
-    Returns a deterministic or probabilistic numpy array from the values of a time series.
+    Returns a deterministic or probabilistic numpy array from the values of a time series of shape
+    (times, components, samples / quantiles).
     For stochastic input values, return either all sample values with (stochastic_quantile=None) or the quantile sample
     value with (quantile values {>=0,<=1})
 
@@ -314,15 +317,15 @@ def _get_values(
     actual_components
         The components of the actual TimeSeries.
     stochastic_quantile
-        Optionally, a tuple with (quantile values, quantile values if `pred_series` is stochastic
-        and the quantile component names otherwise).
+        Optionally, a tuple with
+        (quantile values, `None` if `pred_series` is stochastic else the quantile component names).
     """
-    if stochastic_quantile is not None:
-        q, q_names = stochastic_quantile
-    else:
-        q, q_names = None, None
+    # return stochastic values (times, components, samples)
+    if stochastic_quantile is None:
+        return vals
 
-    if vals.shape[2] == 1:  # deterministic
+    q, q_names = stochastic_quantile
+    if vals.shape[SMPL_AX] == 1:  # deterministic (or quantile components) input
         if isinstance(q_names, pd.Index):
             # `q_names` are the component names of the predicted quantile parameters
             # we extract the relevant quantile components with shape (times, components * quantiles)
@@ -331,14 +334,11 @@ def _get_values(
             vals = vals.reshape((len(vals), len(actual_components), -1))
         return vals
 
-    # stochastic
-    if stochastic_quantile is None:
-        return vals
-
+    # probabilistic input
     # compute multiple quantiles for all times and components; with shape: (quantiles, times, components)
-    out = np.quantile(vals, q, axis=2)
+    out = np.quantile(vals, q, axis=SMPL_AX)
     # rearrange into (times, components, quantiles)
-    return out.transpose(1, 2, 0)
+    return out.transpose((1, 2, 0))
 
 
 def _get_values_or_raise(
@@ -422,9 +422,9 @@ def _get_values_or_raise(
         return vals_a, vals_b
 
     isnan_mask = np.expand_dims(
-        np.logical_or(np.isnan(vals_a), np.isnan(vals_b)).any(axis=2), axis=-1
+        np.logical_or(np.isnan(vals_a), np.isnan(vals_b)).any(axis=SMPL_AX), axis=-1
     )
-    isnan_mask_pred = np.repeat(isnan_mask, vals_b.shape[2], axis=2)
+    isnan_mask_pred = np.repeat(isnan_mask, vals_b.shape[SMPL_AX], axis=SMPL_AX)
     return np.where(isnan_mask, np.nan, vals_a), np.where(
         isnan_mask_pred, np.nan, vals_b
     )

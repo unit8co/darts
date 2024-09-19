@@ -758,6 +758,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Default: ``False``
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
         fit_kwargs
             Additional arguments passed to the model `fit()` method.
         predict_kwargs
@@ -1324,6 +1325,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             `n<=output_chunk_length`. Default: ``False``.
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
         metric_kwargs
             Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'component_reduction'`
             for reducing the component wise metrics, seasonality `'m'` for scaled metrics, etc. Will pass arguments to
@@ -1973,6 +1975,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             `n<=output_chunk_length`. Default: ``False``.
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
         metric_kwargs
             Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'m'` for scaled
             metrics, etc. Will pass arguments only if they are present in the corresponding metric signature. Ignores
@@ -2097,12 +2100,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 # make sure all residuals have shape (n time steps, n components * n quantiles, n samples=1)
                 if len(res.shape) != 3:
                     res = np.reshape(res, (len(fc), n_comp_out, 1))
-                if (
-                    values_only
-                    or q is None
-                    or (len(q) == 1 and res.shape[1] == fc.shape[1])
-                ):
-                    res = res if values_only else fc.with_values(res)
+                if values_only:
+                    res = res
+                elif q is None or (len(q) == 1 and res.shape[1] == fc.shape[1]):
+                    res = fc.with_values(res)
                 else:
                     # multi quantile metric created more components
                     res = TimeSeries.from_times_and_values(

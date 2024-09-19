@@ -1264,8 +1264,7 @@ class TestBacktesting:
         ),
     )
     def test_metric_quantiles_lpo(self, config):
-        """Tests backtest with different metric_kwargs based on historical forecasts generated on a sequence
-        `series` with last_points_only=False"""
+        """Tests backtest with quantile metrics from expected probabilistic or quantile historical forecasts."""
         metric, lpo = config
         y = lt(length=20)
         y = y.stack(y + 1.0)

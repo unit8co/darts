@@ -70,6 +70,17 @@ freqs = {
 def likelihood_component_names(
     components: Union[pd.Index, List[str]], parameter_names: List[str]
 ):
+    """Generates formatted likelihood parameter names for components and parameter names.
+
+    The order of the returned names is: `[comp1_param_1, ... comp1_param_n, ..., comp_n_param_n]`.
+
+    Parameters
+    ----------
+    components
+        A sequence of component names to add to the beginning of the returned names.
+    parameter_names
+        A sequence of likelihood parameter names to add to the end of the returned names.
+    """
     return [
         f"{tgt_name}_{param_n}"
         for tgt_name in components
@@ -85,7 +96,7 @@ def quantile_names(q: Union[float, List[float]], component: Optional[str] = None
     q
         A float or list of floats with the quantiles to generate the names for.
     component
-        Optionally, a component name to add to the the beginning of the quantile names.
+        Optionally, a component name to add to the beginning of the quantile names.
     """
     # predicted quantile text format
     comp = f"{component}_" if component is not None else ""
