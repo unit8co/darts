@@ -8,7 +8,7 @@ Some metrics to compare time series.
 import inspect
 from functools import wraps
 from inspect import signature
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -39,6 +39,51 @@ METRIC_TYPE = Callable[
     ...,
     METRIC_OUTPUT_TYPE,
 ]
+
+
+def interval_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
+    """
+    This decorator adds support for quantile interval metrics with sanity checks, processing, and extraction of
+    quantiles from the intervals.
+    """
+
+    @wraps(func)
+    def wrapper_interval_support(*args, **kwargs):
+        q = kwargs.get("q")
+        if q is not None:
+            raise_log(
+                ValueError(
+                    "`q` is not supported for quantile interval metrics; use `q_interval` instead."
+                )
+            )
+        q_interval = kwargs.get("q_interval")
+        if q_interval is None:
+            raise_log(
+                ValueError("Quantile interval metrics require setting `q_interval`.")
+            )
+        if isinstance(q_interval, tuple):
+            q_interval = [q_interval]
+        q_interval = np.array(q_interval)
+        if not q_interval.ndim == 2 or q_interval.shape[1] != 2:
+            raise_log(
+                ValueError(
+                    "`q_interval` must be a tuple (float, float) or a sequence of tuples (float, float)."
+                ),
+                logger=logger,
+            )
+        if not np.all(q_interval[:, 1] - q_interval[:, 0] > 0):
+            raise_log(
+                ValueError(
+                    "all intervals in `q_interval` must be tuples of (lower q, upper q) with `lower q > upper q`. "
+                    f"Received `q_interval={q_interval}`"
+                ),
+                logger=logger,
+            )
+        kwargs["q_interval"] = q_interval
+        kwargs["q"] = np.sort(np.unique(q_interval))
+        return func(*args, **kwargs)
+
+    return wrapper_interval_support
 
 
 def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
@@ -335,13 +380,12 @@ def _get_values(
     vals: np.ndarray,
     vals_components: pd.Index,
     actual_components: pd.Index,
-    stochastic_quantile: Optional[Tuple[List[float], Union[Optional[pd.Index]]]] = None,
+    q: Optional[Tuple[Sequence[float], Union[Optional[pd.Index]]]] = None,
 ) -> np.ndarray:
     """
     Returns a deterministic or probabilistic numpy array from the values of a time series of shape
     (times, components, samples / quantiles).
-    For stochastic input values, return either all sample values with (stochastic_quantile=None) or the quantile sample
-    value with (quantile values {>=0,<=1})
+    To extract quantile (sample) values from quantile or stachastic `vals`, use `q`.
 
     Parameters
     ----------
@@ -351,15 +395,16 @@ def _get_values(
         The components of the `vals` TimeSeries.
     actual_components
         The components of the actual TimeSeries.
-    stochastic_quantile
-        Optionally, a tuple with
-        (quantile values, `None` if `pred_series` is stochastic else the quantile component names).
+    q
+        Optionally, for stochastic or quantile series/values, return deterministic quantile values.
+        If not `None`, must a tuple with (quantile values,
+        `None` if `pred_series` is stochastic else the quantile component names).
     """
     # return values as is (times, components, samples)
-    if stochastic_quantile is None:
+    if q is None:
         return vals
 
-    q, q_names = stochastic_quantile
+    q, q_names = q
     if vals.shape[SMPL_AX] == 1:  # deterministic (or quantile components) input
         if q_names is not None:
             # `q_names` are the component names of the predicted quantile parameters
@@ -380,12 +425,12 @@ def _get_values_or_raise(
     series_a: TimeSeries,
     series_b: TimeSeries,
     intersect: bool,
-    stochastic_quantile: Optional[float] = None,
+    q: Optional[Tuple[Sequence[float], Union[Optional[pd.Index]]]] = None,
     remove_nan_union: bool = False,
     is_insample: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Returns the processed numpy values of two time series. Processing can be customized with arguments
-    `intersect, stochastic_quantile, remove_nan_union`.
+    `intersect, q, remove_nan_union`.
 
     Parameters
     ----------
@@ -396,9 +441,10 @@ def _get_values_or_raise(
         A deterministic or stochastic ``TimeSeries`` instance (the predictions `pred_series`).
     intersect
         A boolean for whether to only consider the time intersection between `series_a` and `series_b`
-    stochastic_quantile
-        Optionally, for stochastic predicted series, return either all sample values with (`stochastic_quantile=None`)
-        or any deterministic quantile sample values by setting `stochastic_quantile=quantile` {>=0,<=1}.
+    q
+        Optionally, for predicted stochastic or quantile series, return deterministic quantile values.
+        If not `None`, must a tuple with (quantile values,
+        `None` if `pred_series` is stochastic else the quantile component names).
     remove_nan_union
         By setting `remove_non_union` to True, sets all values from `series_a` and `series_b` to `np.nan` at indices
         where any of the two series contain a NaN value. Only effective when `is_insample=False`.
@@ -424,7 +470,7 @@ def _get_values_or_raise(
             vals=vals_b_common,
             vals_components=series_b.components,
             actual_components=series_a.components,
-            stochastic_quantile=stochastic_quantile,
+            q=q,
         )
     else:
         # for `insample` series we extract only values up until before start of `pred_series`
@@ -450,7 +496,7 @@ def _get_values_or_raise(
         vals=vals_a_common,
         vals_components=series_a.components,
         actual_components=series_a.components,
-        stochastic_quantile=([0.5], None),
+        q=([0.5], None),
     )
 
     if not remove_nan_union or is_insample:
@@ -463,6 +509,31 @@ def _get_values_or_raise(
     return np.where(isnan_mask, np.nan, vals_a), np.where(
         isnan_mask_pred, np.nan, vals_b
     )
+
+
+def _get_quantile_intervals(
+    vals: np.ndarray,
+    q: Tuple[Sequence[float], Any],
+    q_interval: np.ndarray = None,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Returns the lower and upper bound values from `vals` for all quantile intervals in `q_interval`.
+
+    Parameters
+    ----------
+    vals
+        A numpy array with predicted quantile values of shape (n times, n components, n quantiles).
+    q
+        A tuple with (quantile values, any).
+    q_interval
+        A numpy array with the lower and upper quantile interval bound of shape (n intervals, 2).
+    """
+    q, _ = q
+    # find index of every `q_interval` value in `q`; we have guarantees from support wrappers:
+    # - `q` has increasing order
+    # - `vals` has same order as `q` in dim 3 (quantile dim)
+    # - `q_interval` holds (lower q, upper q) in that order
+    q_idx = np.searchsorted(q, q_interval.flatten()).reshape(q_interval.shape)
+    return vals[:, :, q_idx[:, 0]], vals[:, :, q_idx[:, 1]]
 
 
 def _get_wrapped_metric(
@@ -646,7 +717,7 @@ def err(
         pred_series,
         intersect,
         remove_nan_union=False,
-        stochastic_quantile=q,
+        q=q,
     )
     return y_true - y_pred
 
@@ -818,7 +889,7 @@ def ae(
         pred_series,
         intersect,
         remove_nan_union=False,
-        stochastic_quantile=q,
+        q=q,
     )
     return np.abs(y_true - y_pred)
 
@@ -1217,7 +1288,7 @@ def se(
         pred_series,
         intersect,
         remove_nan_union=False,
-        stochastic_quantile=q,
+        q=q,
     )
     return (y_true - y_pred) ** 2
 
@@ -1805,7 +1876,7 @@ def sle(
         pred_series,
         intersect,
         remove_nan_union=False,
-        stochastic_quantile=q,
+        q=q,
     )
     y_true, y_pred = np.log(y_true + 1), np.log(y_pred + 1)
     return (y_true - y_pred) ** 2
@@ -1990,7 +2061,7 @@ def ape(
         pred_series,
         intersect,
         remove_nan_union=False,
-        stochastic_quantile=q,
+        q=q,
     )
     if not (y_true != 0).all():
         raise_log(
@@ -2187,7 +2258,7 @@ def sape(
         pred_series,
         intersect,
         remove_nan_union=True,
-        stochastic_quantile=q,
+        q=q,
     )
     if not np.logical_or(y_true != 0, y_pred != 0).all():
         raise_log(
@@ -2374,7 +2445,7 @@ def ope(
         pred_series,
         intersect,
         remove_nan_union=True,
-        stochastic_quantile=q,
+        q=q,
     )
     y_true_sum, y_pred_sum = (
         np.nansum(y_true, axis=TIME_AX),
@@ -2481,7 +2552,7 @@ def arre(
         pred_series,
         intersect,
         remove_nan_union=True,
-        stochastic_quantile=q,
+        q=q,
     )
     y_max, y_min = np.nanmax(y_true, axis=TIME_AX), np.nanmin(y_true, axis=TIME_AX)
     if not (y_max > y_min).all():
@@ -2664,7 +2735,7 @@ def r2_score(
         pred_series,
         intersect,
         remove_nan_union=True,
-        stochastic_quantile=q,
+        q=q,
     )
     ss_errors = np.nansum((y_true - y_pred) ** 2, axis=TIME_AX)
     y_hat = np.nanmean(y_true, axis=TIME_AX)
@@ -2751,7 +2822,7 @@ def coefficient_of_variation(
         pred_series,
         intersect,
         remove_nan_union=True,
-        stochastic_quantile=q,
+        q=q,
     )
     # not calling rmse as y_true and y_pred are np.ndarray
     return (
@@ -2931,7 +3002,7 @@ def qr(
         actual_series,
         pred_series,
         intersect,
-        stochastic_quantile=None,
+        q=None,
         remove_nan_union=True,
     )
     z_true = np.nansum(z_true, axis=TIME_AX)
@@ -3039,7 +3110,7 @@ def ql(
         actual_series,
         pred_series,
         intersect,
-        stochastic_quantile=q,
+        q=q,
         remove_nan_union=True,
     )
     q, _ = q
@@ -3136,19 +3207,28 @@ def mql(
     )
 
 
-# @interval_support
-# @multi_ts_support
-# @multivariate_support
-# def interval_width(
-#     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-#     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-#     intersect: bool = True,
-#     *,
-#     q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = 0.5,
-#     q_interval: [Tuple[float, float]]
-#     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
-#     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
-#     n_jobs: int = 1,
-#     verbose: bool = False,
-# ) -> METRIC_OUTPUT_TYPE:
-#     if
+@interval_support
+@multi_ts_support
+@multivariate_support
+def iw(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    *,
+    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
+    time_reduction: Optional[Callable[..., np.ndarray]] = None,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=True,
+        q=q,
+    )
+    y_pred_lo, y_pred_hi = _get_quantile_intervals(y_pred, q=q, q_interval=q_interval)
+    return y_pred_hi - y_pred_lo

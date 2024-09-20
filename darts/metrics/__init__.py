@@ -57,6 +57,7 @@ from darts.metrics.metrics import (
     coefficient_of_variation,
     dtw_metric,
     err,
+    iw,
     mae,
     mape,
     marre,
@@ -90,6 +91,7 @@ TIME_DEPENDENT_METRICS = {
     se,
     sle,
     sse,
+    iw,
 }
 
 __all__ = [
@@ -120,4 +122,5 @@ __all__ = [
     "sle",
     "smape",
     "sse",
+    "iw",
 ]

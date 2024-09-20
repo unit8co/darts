@@ -66,6 +66,19 @@ def metric_rmsle(y_true, y_pred, **kwargs):
     )
 
 
+def metric_iw(y_true, y_pred, q_interval=None, **kwargs):
+    # this tests assumes `y_pred` are stochastic values
+    if isinstance(q_interval, tuple):
+        q_interval = [q_interval]
+    q_interval = np.array(q_interval)
+    q_lo = q_interval[:, 0]
+    q_hi = q_interval[:, 1]
+    y_pred_lo = np.quantile(y_pred, q_lo, axis=2).transpose(1, 2, 0)
+    y_pred_hi = np.quantile(y_pred, q_hi, axis=2).transpose(1, 2, 0)
+    res = y_pred_hi - y_pred_lo
+    return res.reshape(len(y_pred), -1)
+
+
 class TestMetrics:
     np.random.seed(42)
     pd_train = pd.Series(
@@ -1608,7 +1621,7 @@ class TestMetrics:
         ),
     )
     def test_metric_quantiles(self, config):
-        """Test output types and shapes for time aggregated metrics:
+        """Test output types and shapes for time aggregated metrics with quantiles:
         for single and multiple univariate or multivariate series, in combination
         with different component and series reduction functions."""
         np.random.seed(42)
@@ -1756,7 +1769,7 @@ class TestMetrics:
         series_a = TimeSeries.from_values(np.random.random((10, 2, 1)))
         series_b = TimeSeries.from_values(np.random.random((10, 2, 10)))
 
-        # unsorted metrics
+        # unsorted quantiles
         with pytest.raises(ValueError) as exc:
             _ = metrics.mae(series_a, series_b, q=[0.2, 0.1])
         assert "a sequence of increasing order" in str(exc.value)
@@ -1834,3 +1847,281 @@ class TestMetrics:
                 metric="wrong_metric",
             )
         assert str(exc.value).startswith("unknown `metric=wrong_metric`")
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # only time dependent quantile interval metrics
+            (metrics.iw, metric_iw),
+        ],
+    )
+    def test_metric_quantile_interval_accuracy(self, config):
+        """Test output types and shapes for time dependent metrics with quantile intervals:
+        for single and multiple univariate or multivariate series, in combination
+        with different component and series reduction functions."""
+        np.random.seed(42)
+        metric, metric_ref = config
+        n_comp = 2
+        components = [str(i) for i in range(n_comp)]
+        series_vals = np.random.random((10, n_comp, 1))
+        pred_prob_vals = np.random.random((10, n_comp, 100))
+        series = TimeSeries.from_values(series_vals, columns=components)
+        pred_prob = TimeSeries.from_values(pred_prob_vals, columns=components)
+
+        def check_ref(**test_kwargs):
+            res_prob = metric(
+                actual_series=series,
+                pred_series=pred_prob,
+                series_reduction=None,
+                component_reduction=None,
+                time_reduction=None,
+                **test_kwargs,
+            )
+            res_ref = metric_ref(
+                y_true=series.all_values(),
+                y_pred=pred_prob.all_values(),
+                **test_kwargs,
+            )
+            np.testing.assert_array_almost_equal(res_prob, res_ref)
+
+        # one interval as tuple
+        check_ref(q_interval=(0.1, 0.5))
+        # one interval in list
+        check_ref(q_interval=[(0.1, 0.5)])
+        # multiple intervals
+        check_ref(q_interval=[(0.1, 0.5), (0.5, 0.8)])
+
+    @pytest.mark.parametrize(
+        "config",
+        list(
+            itertools.product(
+                [
+                    # time dependent but with time reduction
+                    metrics.iw
+                ],
+                [True, False],  # univariate series
+                [True, False],  # single series
+            )
+        ),
+    )
+    def test_metric_quantile_interval(self, config):
+        """Test output types and shapes for time aggregated metrics with quantile intervals:
+        for single and multiple univariate or multivariate series, in combination
+        with different component and series reduction functions."""
+        np.random.seed(42)
+        metric, is_univar, is_single = config
+        params = inspect.signature(metric).parameters
+
+        n_comp = 1 if is_univar else 2
+
+        qs_all = [0.1, 0.5, 0.8]
+        components = [str(i) for i in range(n_comp)]
+
+        series_vals = np.random.random((10, n_comp, 1))
+        pred_prob_vals = np.random.random((10, n_comp, 100))
+
+        pred_vals_qs = []
+        for i in range(n_comp):
+            pred_vals_qs.append(
+                np.quantile(pred_prob_vals[:, [i]], qs_all, axis=2).transpose(1, 0, 2)
+            )
+        pred_vals_qs = np.concatenate(pred_vals_qs, axis=1)
+        pred_components = likelihood_component_names(
+            components=components, parameter_names=quantile_names(q=qs_all)
+        )
+
+        series = TimeSeries.from_values(series_vals, columns=components)
+        pred_prob = TimeSeries.from_values(pred_prob_vals, columns=components)
+        pred_qs = TimeSeries.from_values(pred_vals_qs, columns=pred_components)
+        shape_time = (len(pred_qs),) if "time_reduction" in params else tuple()
+
+        if not is_single:
+            series = [series] * 2
+            pred_prob = [pred_prob] * 2
+            pred_qs = [pred_qs] * 2
+
+        kwargs = {"actual_series": series}
+
+        def check_res(
+            pred_prob_, pred_qs_, shape_exp, series_reduction=None, **test_kwargs
+        ):
+            res_prob = metric(
+                actual_series=series,
+                pred_series=pred_prob_,
+                series_reduction=series_reduction,
+                **test_kwargs,
+            )
+            res_qs = metric(
+                actual_series=series,
+                pred_series=pred_qs_,
+                series_reduction=series_reduction,
+                **test_kwargs,
+            )
+            if is_single or series_reduction is not None:
+                res_prob = [res_prob]
+                res_qs = [res_qs]
+            if series_reduction is None and not is_single:
+                assert len(res_prob) == len(res_qs) == len(pred_prob_)
+
+            for res_p, res_q in zip(res_prob, res_qs):
+                assert res_p.shape == res_q.shape == shape_exp
+                np.testing.assert_array_almost_equal(res_p, res_q)
+            return res_qs
+
+        # one interval as tuple
+        res = check_res(pred_prob, pred_qs, shape_time, q_interval=(0.1, 0.5))
+        # one interval in list
+        res2 = check_res(pred_prob, pred_qs, shape_time, q_interval=[(0.1, 0.5)])
+        np.testing.assert_array_almost_equal(res, res2)
+        # multiple intervals
+        check_res(
+            pred_prob, pred_qs, shape_time + (2,), q_interval=[(0.1, 0.5), (0.5, 0.8)]
+        )
+        # all intervals
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (3,),
+            q_interval=[(0.1, 0.5), (0.5, 0.8), (0.1, 0.8)],
+        )
+        q_intervals = [(0.1, 0.5), (0.5, 0.8)]
+        # component and series reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(q_intervals),),
+            q_interval=q_intervals,
+            component_reduction=np.mean,
+            series_reduction=np.mean,
+        )
+        # no component reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(q_intervals) * n_comp,),
+            q_interval=q_intervals,
+            component_reduction=None,
+            series_reduction=np.mean,
+        )
+        # no series reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(q_intervals),),
+            q_interval=q_intervals,
+            component_reduction=np.mean,
+            series_reduction=None,
+        )
+        # no series and component reduction
+        check_res(
+            pred_prob,
+            pred_qs,
+            shape_time + (len(q_intervals) * n_comp,),
+            q_interval=q_intervals,
+            component_reduction=None,
+            series_reduction=None,
+        )
+
+        # check that we get identical results as when computing intervals separately
+        res_lo = metric(
+            pred_series=pred_qs,
+            component_reduction=None,
+            q_interval=(0.1, 0.5),
+            **kwargs,
+        )
+        res_hi = metric(
+            pred_series=pred_qs,
+            component_reduction=None,
+            q_interval=(0.5, 0.8),
+            **kwargs,
+        )
+        res_multi = metric(
+            pred_series=pred_qs,
+            component_reduction=None,
+            q_interval=[(0.1, 0.5), (0.5, 0.8)],
+            **kwargs,
+        )
+        if is_single:
+            res_lo = [res_lo]
+            res_hi = [res_hi]
+            res_multi = [res_multi]
+        res_lo_hi = []
+        for res_lo_, res_hi_ in zip(res_lo, res_hi):
+            if res_lo_.ndim == 1:
+                res_lo_ = np.expand_dims(res_lo_, -1)
+                res_hi_ = np.expand_dims(res_hi_, -1)
+                res_lo_hi_ = np.concatenate([res_lo_, res_hi_], axis=1)
+            else:
+                res_lo_hi_ = np.concatenate(
+                    [(res_lo_[:, i], res_hi_[:, i]) for i in range(n_comp)],
+                ).T
+
+            res_lo_hi.append(res_lo_hi_)
+        np.testing.assert_array_almost_equal(res_lo_hi, res_multi)
+
+    def test_invalid_quantile_intervals(self):
+        np.random.seed(42)
+        series_a = TimeSeries.from_values(np.random.random((10, 2, 1)))
+        series_b = TimeSeries.from_values(np.random.random((10, 2, 10)))
+
+        # q not supported
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q=[0.2])
+        assert str(exc.value).startswith(
+            "`q` is not supported for quantile interval metrics"
+        )
+
+        # no quantile interval
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q_interval=None)
+        assert str(exc.value).startswith(
+            "Quantile interval metrics require setting `q_interval`."
+        )
+
+        # invalid interval type
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q_interval=0.6)
+        assert (
+            str(exc.value)
+            == "`q_interval` must be a tuple (float, float) or a sequence of tuples (float, float)."
+        )
+
+        # invalid tuple length
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q_interval=(0.1, 0.2, 0.3))
+        assert (
+            str(exc.value)
+            == "`q_interval` must be a tuple (float, float) or a sequence of tuples (float, float)."
+        )
+
+        # one tuple has invalid length invalid tuple length (raises a numpy error)
+        with pytest.raises(ValueError):
+            _ = metrics.iw(series_a, series_b, q_interval=[(0.1, 0.2), (0.2, 0.3, 0.4)])
+
+        # interval upper bound too high
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q_interval=(0.1, 1.1))
+        assert str(exc.value).startswith(
+            "All `q` values must be in the range `(>=0,<=1)`."
+        )
+
+        # interval lower bound too low
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q_interval=(-0.01, 0.1))
+        assert str(exc.value).startswith(
+            "All `q` values must be in the range `(>=0,<=1)`."
+        )
+
+        # lower interval equal to higher interval
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q_interval=(0.2, 0.2))
+        assert str(exc.value).startswith(
+            "all intervals in `q_interval` must be tuples of (lower q, upper q)"
+        )
+
+        # lower interval higher than higher interval
+        with pytest.raises(ValueError) as exc:
+            _ = metrics.iw(series_a, series_b, q_interval=(0.3, 0.2))
+        assert str(exc.value).startswith(
+            "all intervals in `q_interval` must be tuples of (lower q, upper q)"
+        )
