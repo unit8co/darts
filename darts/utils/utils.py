@@ -6,7 +6,7 @@ Additional util functions
 from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
-from typing import Callable, Iterator, List, Optional, Tuple, TypeVar, Union
+from typing import Callable, Iterator, List, Optional, Sequence, Tuple, TypeVar, Union
 
 import numpy as np
 import pandas as pd
@@ -104,6 +104,27 @@ def quantile_names(q: Union[float, List[float]], component: Optional[str] = None
         return f"{comp}q{q:.2f}"
     else:
         return [f"{comp}q{q_i:.2f}" for q_i in q]
+
+
+def quantile_interval_names(
+    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]],
+    component: Optional[str] = None,
+):
+    """Generates formatted quantile interval names, optionally added to a component name.
+
+    Parameters
+    ----------
+    q_interval
+        A tuple or multiple tuples with the (lower bound, upper bound) of the quantile intervals.
+    component
+        Optionally, a component name to add to the beginning of the quantile names.
+    """
+    # predicted quantile text format
+    comp = f"{component}_" if component is not None else ""
+    if isinstance(q_interval, tuple):
+        return f"{comp}q{q_interval[0]:.2f}_q{q_interval[1]:.2f}"
+    else:
+        return [f"{comp}q{q_lo:.2f}_q{q_hi:.2f}" for q_lo, q_hi in q_interval]
 
 
 def _build_tqdm_iterator(iterable, verbose, **kwargs):

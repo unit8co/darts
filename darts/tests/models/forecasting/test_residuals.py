@@ -15,6 +15,7 @@ from darts.utils.timeseries_generation import linear_timeseries as lt
 from darts.utils.utils import (
     generate_index,
     likelihood_component_names,
+    quantile_interval_names,
     quantile_names,
 )
 
@@ -623,25 +624,36 @@ class TestResiduals:
     @pytest.mark.parametrize(
         "config",
         itertools.product(
+            [metrics.ae, metrics.iw],  # quantile (interval) metrics
             [True, False],  # last_points_only
             [False, True],  # from stochastic predictions (or predicted quantiles)
         ),
     )
     def test_residuals_with_quantiles_metrics(self, config):
         """Tests residuals with quantile metrics from expected probabilistic or quantile historical forecasts."""
-        lpo, stochastic_pred = config
-        metric = metrics.ae
+        metric, lpo, stochastic_pred = config
+        is_interval_metric = metric.__name__ == "iw"
+
         # multi-quantile metrics yield more components
         q = [0.05, 0.50, 0.60, 0.95]
+        q_interval = [(0.05, 0.50), (0.50, 0.60), (0.60, 0.95), (0.05, 0.60)]
 
         y = lt(length=20)
         y = y.stack(y + 1.0)
-        q_comp_names_expected = pd.Index(
-            likelihood_component_names(
-                components=y.components,
-                parameter_names=quantile_names(q=q),
+        if not is_interval_metric:
+            q_comp_names_expected = pd.Index(
+                likelihood_component_names(
+                    components=y.components,
+                    parameter_names=quantile_names(q),
+                )
             )
-        )
+        else:
+            q_comp_names_expected = pd.Index(
+                likelihood_component_names(
+                    components=y.components,
+                    parameter_names=quantile_interval_names(q_interval),
+                )
+            )
         # historical forecasts
         vals = np.random.random((10, 1, 100))
         if not stochastic_pred:
@@ -667,7 +679,11 @@ class TestResiduals:
         else:
             hfc = [[hfc, hfc], [hfc]]
 
-        metric_kwargs = {"component_reduction": None, "q": q}
+        metric_kwargs = {"component_reduction": None}
+        if not is_interval_metric:
+            metric_kwargs["q"] = q
+        else:
+            metric_kwargs["q_interval"] = q_interval
 
         model = NaiveDrift()
 
@@ -685,7 +701,7 @@ class TestResiduals:
 
         # `ae` with time and component reduction is equal to `mae` with component reduction
         hfc_single = hfc[0][0] if not lpo else hfc[0]
-        bt_expected = metrics.ae(y[0], hfc_single, **metric_kwargs)
+        bt_expected = metric(y[0], hfc_single, **metric_kwargs)
         shape_expected = (len(hfc_single), len(q) * y[0].n_components)
         for bt_list in bts:
             for bt in bt_list:
@@ -713,26 +729,47 @@ class TestResiduals:
                 np.testing.assert_array_almost_equal(bt[:, :, 0], bt_expected)
 
     @pytest.mark.parametrize(
-        "lpo",
-        [True, False],  # last_points_only
+        "config",
+        list(
+            itertools.product(
+                [metrics.ae, metrics.iw],  # quantile (interval) metrics
+                [True, False],  # last_points_only
+            )
+        ),
     )
-    def test_quantiles_from_model(self, lpo):
+    def test_quantiles_from_model(self, config):
         """Tests residuals from quantile regression model works for both direct likelihood parameter prediction or
         sampled prediction by giving the correct metrics kwargs."""
-        metric = metrics.ae
+        metric, lpo = config
+
+        is_interval_metric = metric.__name__ == "iw"
+
         # multi-quantile metrics yield more components
         q = [0.05, 0.50, 0.95]
+        q_interval = [(0.05, 0.50), (0.50, 0.95), (0.05, 0.95)]
 
         y = lt(length=20)
         y = y.stack(y + 1.0)
-        q_comp_names_expected = pd.Index(
-            likelihood_component_names(
-                components=y.components,
-                parameter_names=quantile_names(q=q),
+        if not is_interval_metric:
+            q_comp_names_expected = pd.Index(
+                likelihood_component_names(
+                    components=y.components,
+                    parameter_names=quantile_names(q),
+                )
             )
-        )
+        else:
+            q_comp_names_expected = pd.Index(
+                likelihood_component_names(
+                    components=y.components,
+                    parameter_names=quantile_interval_names(q_interval),
+                )
+            )
         y = [y, y]
-        metric_kwargs = {"component_reduction": None, "q": q}
+        metric_kwargs = {"component_reduction": None}
+        if not is_interval_metric:
+            metric_kwargs["q"] = q
+        else:
+            metric_kwargs["q_interval"] = q_interval
 
         icl = 3
         model = LinearRegressionModel(
@@ -781,8 +818,13 @@ class TestResiduals:
             assert np.abs(bt_p.all_values() - bt_q.all_values()).max() < 0.1
 
         # single quantile
-        q_single = [0.05]
-        metric_kwargs = {"component_reduction": None, "q": q_single}
+        q_single = 0.05
+        q_interval_single = (0.05, 0.50)
+        metric_kwargs = {"component_reduction": None}
+        if not is_interval_metric:
+            metric_kwargs["q"] = q_single
+        else:
+            metric_kwargs["q_interval"] = q_interval_single
         bts = model.residuals(
             series=y,
             forecast_horizon=1,
@@ -797,20 +839,30 @@ class TestResiduals:
             bts = [concatenate(bt, axis=0) for bt in bts]
 
         # `ae` with time and component reduction is equal to `mae` with component reduction
-        shape_expected = (len(y[0]) - icl, len(q_single) * y[0].n_components)
+        shape_expected = (len(y[0]) - icl, y[0].n_components)
         for bt in bts:
             assert bt.shape[:2] == shape_expected
             assert bt.components.equals(
                 pd.Index(
                     likelihood_component_names(
-                        y[0].components, parameter_names=quantile_names(q_single)
+                        y[0].components,
+                        parameter_names=(
+                            quantile_names([q_single])
+                            if not is_interval_metric
+                            else quantile_interval_names([q_interval_single])
+                        ),
                     )
                 )
             )
 
         # wrong quantile
         q_wrong = [0.99]
-        metric_kwargs = {"component_reduction": None, "q": q_wrong}
+        q_interval_wrong = (0.05, 0.99)
+        metric_kwargs = {"component_reduction": None}
+        if not is_interval_metric:
+            metric_kwargs["q"] = q_wrong
+        else:
+            metric_kwargs["q_interval"] = q_interval_wrong
         with pytest.raises(ValueError) as exc:
             _ = model.residuals(
                 series=y,
@@ -822,5 +874,6 @@ class TestResiduals:
                 retrain=False,
             )
         assert str(exc.value).startswith(
-            "Computing a metric with quantile(s) `q=[0.99]` is only supported"
+            f"Computing a metric with quantile(s) "
+            f"`q={'[0.99]' if not is_interval_metric else '[0.05 0.99]'}` is only supported"
         )

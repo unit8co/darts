@@ -1259,13 +1259,21 @@ class TestBacktesting:
             [
                 [metrics.mae],  # mae does not support time_reduction
                 [metrics.mae, metrics.ae],  # ae supports time_reduction
+                [metrics.miw],  # quantile interval metric
+                [metrics.miw, metrics.iw],
             ],
             [True, False],  # last_points_only
         ),
     )
     def test_metric_quantiles_lpo(self, config):
-        """Tests backtest with quantile metrics from expected probabilistic or quantile historical forecasts."""
+        """Tests backtest with quantile and quantile interval metrics from expected probabilistic or quantile
+        historical forecasts."""
         metric, lpo = config
+        is_interval_metric = metric[0].__name__ == "miw"
+
+        q = [0.05, 0.5, 0.60, 0.95]
+        q_interval = [(0.05, 0.50), (0.50, 0.60), (0.60, 0.95), (0.05, 0.60)]
+
         y = lt(length=20)
         y = y.stack(y + 1.0)
         hfc = TimeSeries.from_times_and_values(
@@ -1279,15 +1287,22 @@ class TestBacktesting:
         else:
             hfc = [[hfc, hfc], [hfc]]
 
-        q = [0.05, 0.5, 0.60, 0.95]
-        metric_kwargs = [{"component_reduction": np.median, "q": q}]
+        metric_kwargs = [{"component_reduction": np.median}]
+        if not is_interval_metric:
+            metric_kwargs[0]["q"] = q
+        else:
+            metric_kwargs[0]["q_interval"] = q_interval
         if len(metric) > 1:
             # give metric specific kwargs
-            metric_kwargs.append({
+            metric_kwargs2 = {
                 "component_reduction": np.median,
                 "time_reduction": np.mean,
-                "q": q,
-            })
+            }
+            if not is_interval_metric:
+                metric_kwargs2["q"] = q
+            else:
+                metric_kwargs2["q_interval"] = q_interval
+            metric_kwargs.append(metric_kwargs2)
 
         model = NaiveDrift()
 
@@ -1304,7 +1319,10 @@ class TestBacktesting:
             bts = [[bt] for bt in bts]
         # `ae` with time and component reduction is equal to `mae` with component reduction
         hfc_single = hfc[0][0] if not lpo else hfc[0]
-        bt_expected = metrics.mae(y[0], hfc_single, component_reduction=np.median, q=q)
+        q_kwargs = {"q": q} if not is_interval_metric else {"q_interval": q_interval}
+        bt_expected = metric[0](
+            y[0], hfc_single, component_reduction=np.median, **q_kwargs
+        )
         shape_expected = (len(q),)
         if len(metric) > 1:
             bt_expected = np.concatenate([bt_expected[:, None]] * 2, axis=1)
@@ -1328,7 +1346,8 @@ class TestBacktesting:
             np.testing.assert_array_almost_equal(bt, bt_expected)
 
         def time_reduced_metric(*args, **kwargs):
-            return metrics.ae(*args, **kwargs, time_reduction=np.mean)
+            metric_f = metrics.iw if is_interval_metric else metrics.ae
+            return metric_f(*args, **kwargs, time_reduction=np.mean)
 
         # check that single kwargs can be used for all metrics if params are supported
         metric = [metric[0], time_reduced_metric]
@@ -1343,8 +1362,10 @@ class TestBacktesting:
         assert isinstance(bts, list) and len(bts) == 2
         if lpo:
             bts = [[bt] for bt in bts]
-        # `ae` with time and component reduction is equal to `mae` with component reduction
-        bt_expected = metrics.mae(y[0], hfc_single, component_reduction=np.median, q=q)
+        # `ae` / `miw` with time and component reduction is equal to `mae` / `miw` with component reduction
+        bt_expected = metric[0](
+            y[0], hfc_single, component_reduction=np.median, **q_kwargs
+        )
         bt_expected = np.concatenate([bt_expected[:, None]] * 2, axis=1)
         shape_expected = (len(q), len(metric))
         for bt_list in bts:
@@ -1366,7 +1387,11 @@ class TestBacktesting:
             np.testing.assert_array_almost_equal(bt, bt_expected)
 
         # without component reduction
-        metric_kwargs = {"component_reduction": None, "q": q}
+        metric_kwargs = {"component_reduction": None}
+        if not is_interval_metric:
+            metric_kwargs["q"] = q
+        else:
+            metric_kwargs["q_interval"] = q_interval
         bts = model.backtest(
             series=y,
             historical_forecasts=hfc,
@@ -1378,8 +1403,9 @@ class TestBacktesting:
         assert isinstance(bts, list) and len(bts) == 2
         if lpo:
             bts = [[bt] for bt in bts]
-        # `ae` with time and no component reduction is equal to `mae` without component reduction
-        bt_expected = metrics.mae(y[0], hfc_single, **metric_kwargs)
+
+        # `ae` / `iw` with time and no component reduction is equal to `mae` / `miw` without component reduction
+        bt_expected = metric[0](y[0], hfc_single, **metric_kwargs)
         bt_expected = np.concatenate([bt_expected[:, None]] * 2, axis=1)
         shape_expected = (len(q) * y[0].width, len(metric))
         for bt_list in bts:

@@ -60,6 +60,7 @@ from darts.utils.ts_utils import (
 from darts.utils.utils import (
     generate_index,
     likelihood_component_names,
+    quantile_interval_names,
     quantile_names,
 )
 
@@ -2064,9 +2065,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             residuals = [[res] for res in residuals]
 
         # sanity check residual output
-        q = metric_kwargs.get("q")
-        if q is not None:
-            q = [q] if isinstance(q, float) else q
+        q, q_interval = metric_kwargs.get("q"), metric_kwargs.get("q_interval")
         try:
             series_, res, fc = series[0], residuals[0][0], historical_forecasts[0][0]
             _ = np.reshape(res, (len(fc), -1, 1))
@@ -2086,10 +2085,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         for series_, fc_list, res_list in zip(series, historical_forecasts, residuals):
             res_list_out = []
             if q is not None:
+                q = [q] if isinstance(q, float) else q
                 # multi-quantile metrics yield more components
                 comp_names = likelihood_component_names(
                     components=series_.components,
-                    parameter_names=quantile_names(q=q),
+                    parameter_names=quantile_names(q),
+                )
+            # `q` and `q_interval` are mutually exclusive
+            elif q_interval is not None:
+                # multi-quantile metrics yield more components
+                q_interval = (
+                    [q_interval] if isinstance(q_interval, tuple) else q_interval
+                )
+                comp_names = likelihood_component_names(
+                    components=series_.components,
+                    parameter_names=quantile_interval_names(q_interval),
                 )
             else:
                 comp_names = None
@@ -2099,11 +2109,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     res = np.reshape(res, (len(fc), -1, 1))
                 if values_only:
                     res = res
-                # TODO: requires sorted quantile metrics
-                elif q is None or res.shape[1] == fc.n_components:
+                elif (q is None and q_interval is None) and res.shape[
+                    1
+                ] == fc.n_components:
                     res = fc.with_values(res)
                 else:
-                    # quantile metrics created different number of components;
+                    # quantile (interval) metrics created different number of components;
                     # create new series with unknown components
                     res = TimeSeries.from_times_and_values(
                         times=fc._time_index,

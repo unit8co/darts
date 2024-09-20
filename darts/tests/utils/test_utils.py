@@ -13,6 +13,7 @@ from darts.utils.utils import (
     generate_index,
     likelihood_component_names,
     n_steps_between,
+    quantile_interval_names,
     quantile_names,
 )
 
@@ -615,4 +616,18 @@ class TestUtils:
     def test_quantile_names(self, config):
         q, names_expected = config
         names = quantile_names(q, "a")
+        assert names == names_expected
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            ((0.25, 0.5), "a_q0.25_q0.50"),
+            ((0.2501, 0.4999), "a_q0.25_q0.50"),
+            ([(0.25, 0.5)], ["a_q0.25_q0.50"]),
+            ([(0.25, 0.50), (0.6, 0.75)], ["a_q0.25_q0.50", "a_q0.60_q0.75"]),
+        ],
+    )
+    def test_quantile_interval_names(self, config):
+        q, names_expected = config
+        names = quantile_interval_names(q, "a")
         assert names == names_expected
