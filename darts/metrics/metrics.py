@@ -537,13 +537,21 @@ def _get_quantile_intervals(
 
 
 def _get_wrapped_metric(
-    func: Callable[..., METRIC_OUTPUT_TYPE],
+    func: Callable[..., METRIC_OUTPUT_TYPE], n_wrappers: int = 2
 ) -> Callable[..., METRIC_OUTPUT_TYPE]:
     """Returns the inner metric function `func` which bypasses the decorators `multi_ts_support` and
     `multivariate_support`. It significantly decreases process time compared to calling `func` directly.
     Only use this to compute a pre-defined metric within the scope of another metric.
     """
-    return func.__wrapped__.__wrapped__
+    if not 2 <= n_wrappers <= 3:
+        raise_log(
+            NotImplementedError("Only 2-3 wrappers are currently supported"),
+            logger=logger,
+        )
+    if n_wrappers == 2:
+        return func.__wrapped__.__wrapped__
+    else:
+        return func.__wrapped__.__wrapped__.__wrapped__
 
 
 def _get_reduction(
@@ -652,8 +660,9 @@ def err(
 
     .. math:: y_t - \\hat{y}_t
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -742,8 +751,9 @@ def merr(
 
     .. math:: \\frac{1}{T}\\sum_{t=1}^T{(y_t - \\hat{y}_t)}
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -824,8 +834,9 @@ def ae(
 
     .. math:: |y_t - \\hat{y}_t|
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -914,8 +925,9 @@ def mae(
 
     .. math:: \\frac{1}{T}\\sum_{t=1}^T{|y_t - \\hat{y}_t|}
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1006,8 +1018,9 @@ def ase(
 
     .. math:: E_m = MAE(y_{m:t_p}, y_{0:t_p - m}).
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1122,8 +1135,9 @@ def mase(
 
     .. math:: E_m = MAE(y_{m:t_p}, y_{0:t_p - m}).
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1223,8 +1237,9 @@ def se(
 
     .. math:: (y_t - \\hat{y}_t)^2.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1313,8 +1328,9 @@ def mse(
 
     .. math:: \\frac{1}{T}\\sum_{t=1}^T{(y_t - \\hat{y}_t)^2}.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1405,8 +1421,9 @@ def sse(
 
     .. math:: E_m = MSE(y_{m:t_p}, y_{0:t_p - m}).
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1521,8 +1538,9 @@ def msse(
 
     .. math:: E_m = MSE(y_{m:t_p}, y_{0:t_p - m}).
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1621,8 +1639,9 @@ def rmse(
 
     .. math:: \\sqrt{\\frac{1}{T}\\sum_{t=1}^T{(y_t - \\hat{y}_t)^2}}
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1711,8 +1730,9 @@ def rmsse(
 
     .. math:: E_m = RMSE(y_{m:t_p}, y_{0:t_p - m}).
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1811,8 +1831,9 @@ def sle(
 
     using the natural logarithm.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1904,8 +1925,9 @@ def rmsle(
 
     using the natural logarithm.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -1991,8 +2013,9 @@ def ape(
     Note that it will raise a `ValueError` if :math:`y_t = 0` for some :math:`t`. Consider using
     the Absolute Scaled Error (:func:`~darts.metrics.metrics.ase`) in these cases.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -2096,8 +2119,9 @@ def mape(
     Note that it will raise a `ValueError` if :math:`y_t = 0` for some :math:`t`. Consider using
     the Mean Absolute Scaled Error (:func:`~darts.metrics.metrics.mase`) in these cases.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -2188,8 +2212,9 @@ def sape(
     Note that it will raise a `ValueError` if :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0` for some
     :math:`t`. Consider using the Absolute Scaled Error (:func:`~darts.metrics.metrics.ase`)  in these cases.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -2296,8 +2321,9 @@ def smape(
     for some :math:`t`. Consider using the Mean Absolute Scaled Error (:func:`~darts.metrics.metrics.mase`) in these
     cases.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -2384,8 +2410,9 @@ def ope(
     .. math:: 100 \\cdot \\left| \\frac{\\sum_{t=1}^{T}{y_t}
               - \\sum_{t=1}^{T}{\\hat{y}_t}}{\\sum_{t=1}^{T}{y_t}} \\right|.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -2482,8 +2509,9 @@ def arre(
 
     .. math:: 100 \\cdot \\left| \\frac{y_t - \\hat{y}_t} {\\max_t{y_t} - \\min_t{y_t}} \\right|
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -2588,8 +2616,9 @@ def marre(
     .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T} {\\left| \\frac{y_t - \\hat{y}_t} {\\max_t{y_t} -
               \\min_t{y_t}} \\right|}
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -2676,8 +2705,9 @@ def r2_score(
 
     This metric is not symmetric.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -2766,8 +2796,9 @@ def coefficient_of_variation(
     where :math:`RMSE` is the Root Mean Squared Error (:func:`~darts.metrics.metrics.rmse`), and :math:`\\bar{y}` is
     the average of :math:`y` over all time steps.
 
-    If any of the series is stochastic (containing several samples), :math:`\\hat{y}_t` is the median over all samples
-    for time step :math:`t`.
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
 
     Parameters
     ----------
@@ -3037,7 +3068,8 @@ def ql(
     """Quantile Loss (QL).
 
     Also known as Pinball Loss. QL is a metric that quantifies the accuracy of a specific quantile :math:`q` from the
-    predicted value distribution of a stochastic/probabilistic `pred_series` containing N samples.
+    predicted deterministic quantiles or value distribution of a stochastic/probabilistic `pred_series` containing N
+    samples.
 
     QL computes the quantile of all sample values and the loss per time step.
 
@@ -3046,7 +3078,7 @@ def ql(
 
     .. math:: 2 \\max((q - 1) (y_t - \\hat{y}_{t,q}), q (y_t - \\hat{y}_{t,q})),
 
-    where :math:`\\hat{y}_{t,q}` is the quantile :math:`q` of all predicted sample values at time :math:`t`.
+    where :math:`\\hat{y}_{t,q}` is quantile value :math:`q` (of all predicted quantiles or samples) at time :math:`t`.
     The factor `2` makes the loss more interpretable, as for `q=0.5` the loss is identical to the Absolute Error
     (:func:`~darts.metrics.metrics.ae`).
 
@@ -3135,7 +3167,8 @@ def mql(
     """Mean Quantile Loss (MQL).
 
     Also known as Pinball Loss. QL is a metric that quantifies the accuracy of a specific quantile :math:`q` from the
-    predicted value distribution of a stochastic/probabilistic `pred_series` containing N samples.
+    predicted deterministic quantiles or value distribution of a stochastic/probabilistic `pred_series` containing N
+    samples.
 
     MQL first computes the quantile of all sample values and the loss per time step, and then takes the mean over the
     time axis.
@@ -3145,7 +3178,7 @@ def mql(
 
     .. math:: 2 \\frac{1}{T}\\sum_{t=1}^T{\\max((q - 1) (y_t - \\hat{y}_{t,q}), q (y_t - \\hat{y}_{t,q}))},
 
-    where :math:`\\hat{y}_{t,q}` is the quantile :math:`q` of all predicted sample values at time :math:`t`.
+    where :math:`\\hat{y}_{t,q}` is quantile value :math:`q` (of all predicted quantiles or samples) at time :math:`t`.
     The factor `2` makes the loss more interpretable, as for `q=0.5` the loss is identical to the Mean Absolute Error
     (:func:`~darts.metrics.metrics.mae`).
 
@@ -3215,14 +3248,86 @@ def iw(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
     q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
+    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
+    """Interval Width (IL).
+
+    IL gives the width of predicted quantile intervals.
+
+    For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
+    it is computed per component/column, quantile interval, and time step
+    :math:`t` as:
+
+    .. math:: \\hat{y}_{t,qh} - \\hat{y}_{t,ql}
+
+    where :math:`\\hat{y}_{t,qh}` are the upper bound quantile values (of all predicted quantiles or samples) at time
+    :math:`t`, and :math:`\\hat{y}_{t,ql}` are the lower bound quantile values.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    q_interval
+        The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence tuples
+        (multiple intervals) with elements (low quantile, high quantile).
+    q
+        Quantiles `q` not supported by this metric; use `q_interval` instead.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    time_reduction
+        Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        time axis. If `None`, will return a metric per time step.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Returns
+    -------
+    float
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n time steps, n components) without time
+        and component reductions. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
+    List[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+    """
     y_true, y_pred = _get_values_or_raise(
         actual_series,
         pred_series,
@@ -3232,3 +3337,93 @@ def iw(
     )
     y_pred_lo, y_pred_hi = _get_quantile_intervals(y_pred, q=q, q_interval=q_interval)
     return y_pred_hi - y_pred_lo
+
+
+@interval_support
+@multi_ts_support
+@multivariate_support
+def miw(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    *,
+    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
+    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Interval Width (IL).
+
+    IL gives the width of predicted quantile intervals aggregated over time.
+
+    For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
+    it is computed per component/column, quantile interval, and time step
+    :math:`t` as:
+
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T{\\hat{y}_{t,qh} - \\hat{y}_{t,ql}}
+
+    where :math:`\\hat{y}_{t,qh}` are the upper bound quantile values (of all predicted quantiles or samples) at time
+    :math:`t`, and :math:`\\hat{y}_{t,ql}` are the lower bound quantile values.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    q_interval
+        The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence tuples
+        (multiple intervals) with elements (low quantile, high quantile).
+    q
+        Quantiles `q` not supported by this metric; use `q_interval` instead.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Returns
+    -------
+    float
+        A single metric score for:
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+
+        - single multivariate series and at least `component_reduction=None`.
+        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
+    List[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+    """
+    return np.nanmean(
+        _get_wrapped_metric(iw, n_wrappers=3)(
+            actual_series,
+            pred_series,
+            intersect,
+            q=q,
+            q_interval=q_interval,
+        ),
+        axis=TIME_AX,
+    )

@@ -1897,7 +1897,8 @@ class TestMetrics:
             itertools.product(
                 [
                     # time dependent but with time reduction
-                    metrics.iw
+                    metrics.iw,
+                    metrics.miw,
                 ],
                 [True, False],  # univariate series
                 [True, False],  # single series
@@ -2022,7 +2023,9 @@ class TestMetrics:
             series_reduction=None,
         )
 
-        # check that we get identical results as when computing intervals separately
+        # check that we get identical results as when computing intervals separately (on the time aggregated case)
+        if "time_reduction" in params:
+            kwargs["time_reduction"] = np.mean
         res_lo = metric(
             pred_series=pred_qs,
             component_reduction=None,
@@ -2047,15 +2050,14 @@ class TestMetrics:
             res_multi = [res_multi]
         res_lo_hi = []
         for res_lo_, res_hi_ in zip(res_lo, res_hi):
-            if res_lo_.ndim == 1:
+            if res_lo_.ndim == 0:
                 res_lo_ = np.expand_dims(res_lo_, -1)
                 res_hi_ = np.expand_dims(res_hi_, -1)
-                res_lo_hi_ = np.concatenate([res_lo_, res_hi_], axis=1)
+                res_lo_hi_ = np.concatenate([res_lo_, res_hi_])
             else:
                 res_lo_hi_ = np.concatenate(
-                    [(res_lo_[:, i], res_hi_[:, i]) for i in range(n_comp)],
-                ).T
-
+                    [(res_lo_[i], res_hi_[i]) for i in range(n_comp)],
+                )
             res_lo_hi.append(res_lo_hi_)
         np.testing.assert_array_almost_equal(res_lo_hi, res_multi)
 
