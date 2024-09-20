@@ -11,10 +11,14 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- Added `IQRDetector`, that allows to detect anomalies using the interquartile range algorithm. [#2441] by [Igor Urbanik](https://github.com/u8-igor).
+- Added `IQRDetector`, that allows to detect anomalies using the interquartile range algorithm. [#2441](https://github.com/unit8co/darts/issues/2441) by [Igor Urbanik](https://github.com/u8-igor).
 - Added hyperparameters controlling the hidden layer sizes for the feature encoders in `TiDEModel`. [#2408](https://github.com/unit8co/darts/issues/2408) by [eschibli](https://github.com/eschibli).
 - Added hyperparameter `activation` to `BlockRNNModel` to specify the activation function in case of a multi-layer output network. [#2408](https://github.com/unit8co/darts/issues/2408) by [eschibli](https://github.com/eschibli).
 - Added support for broadcasting to TimeSeries on component and sample level. [#2476](https://https://github.com/unit8co/darts/pull/2476) by [Joel L.](https://github.com/Joelius300).
+- Added support for computing metrics, backtest, and residuals on one or multiple quantiles `q`, either from probabilistic predictions or predicted quantiles. [#2530](https://github.com/unit8co/darts/issues/2530) by [Dennis Bader](https://github.com/dennisbader).
+- Added quantile interval metrics: `miw` (Mean Interval Width, time aggregated) and `iw` (Interval Width, per time step / non-aggregated) which compute the width of quantile intervals `q_intervals` (expected to be a tuple or sequence of tuples with (lower quantile, upper quantile). [#2530](https://github.com/unit8co/darts/issues/2530) by [Dennis Bader](https://github.com/dennisbader).
+- Added property `TimeSeries.shape` to get the shape of the time series. [#2530](https://github.com/unit8co/darts/issues/2530) by [Dennis Bader](https://github.com/dennisbader).
+- Added support for parameters `enable_optimization` and `predict_likelihood_parameters` to the forecasting models' `backtest()` and `residuals()` methods. [#2530](https://github.com/unit8co/darts/issues/2530) by [Dennis Bader](https://github.com/dennisbader).
 - Helper function `darts.utils.utils.generate_index()` now accepts datetime strings as `start` and `end` parameters to generate the pandas DatetimeIndex. [#2522](https://github.com/unit8co/darts/pull/2522) by [Dennis Bader](https://github.com/dennisbader).
 - Various improvements in the documentation:
   - Made README's forecasting model support table more colorblind-friendly. [#2433](https://github.com/unit8co/darts/pull/2433)
