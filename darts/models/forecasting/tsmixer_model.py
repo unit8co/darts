@@ -475,7 +475,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         Returns
         -------
         torch.torch.Tensor
-            The output  Tensorof shape `(batch_size, output_chunk_length, output_dim, nr_params)`.
+            The output  Tensor of shape `(batch_size, output_chunk_length, output_dim, nr_params)`.
         """
         # B: batch size
         # L: input chunk length

@@ -38,6 +38,7 @@ if TORCH_AVAILABLE:
         TiDEModel,
         TransformerModel,
         TSMixerModel,
+        TimeNetModel,
     )
     from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 
@@ -175,6 +176,22 @@ if TORCH_AVAILABLE:
                 "num_encoder_layers": 2,
                 "num_decoder_layers": 2,
                 "dim_feedforward": 16,
+                "batch_size": 32,
+                "n_epochs": NB_EPOCH,
+                **tfm_kwargs,
+            },
+            (IN_LEN, OUT_LEN),
+            "PastCovariates",
+        ),
+        (
+            TimeNetModel,
+            {
+                "input_chunk_length": IN_LEN,
+                "output_chunk_length": OUT_LEN,
+                "hidden_size": 4,
+                "num_layers": 1,
+                "num_kernels": 2,
+                "top_k": 1,
                 "batch_size": 32,
                 "n_epochs": NB_EPOCH,
                 **tfm_kwargs,

@@ -36,6 +36,7 @@ if TORCH_AVAILABLE:
         TiDEModel,
         TransformerModel,
         TSMixerModel,
+        TimeNetModel,
     )
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
     from darts.utils.likelihood_models import (
@@ -137,6 +138,19 @@ if TORCH_AVAILABLE:
         ),
         (
             TransformerModel,
+            {
+                "input_chunk_length": 10,
+                "output_chunk_length": 5,
+                "n_epochs": 20,
+                "random_state": 0,
+                "likelihood": GaussianLikelihood(),
+                **tfm_kwargs,
+            },
+            0.03,
+            0.04,
+        ),
+        (
+            TimeNetModel,
             {
                 "input_chunk_length": 10,
                 "output_chunk_length": 5,

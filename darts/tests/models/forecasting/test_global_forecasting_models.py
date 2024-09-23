@@ -35,6 +35,7 @@ from darts.models import (
     TiDEModel,
     TransformerModel,
     TSMixerModel,
+    TimeNetModel,
 )
 from darts.models.forecasting.torch_forecasting_model import (
     DualCovariatesTorchModel,
@@ -153,6 +154,14 @@ models_cls_kwargs_errs = [
     ),
     (
         TSMixerModel,
+        {
+            "n_epochs": 10,
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
+        60.0,
+    ),
+    (
+        TimeNetModel,
         {
             "n_epochs": 10,
             "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
