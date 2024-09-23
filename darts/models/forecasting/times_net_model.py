@@ -116,6 +116,8 @@ class _TimesNetModule(PLPastCovariatesModule):
         num_layers: int,
         num_kernels: int,
         top_k: int,
+        embed_type:str="fixed",
+        freq:str="h",
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -124,7 +126,9 @@ class _TimesNetModule(PLPastCovariatesModule):
         self.output_dim = output_dim
         self.nr_params = nr_params
 
-        self.embedding = DataEmbedding(input_dim, hidden_size, "fixed", "h", 0.1)
+        # embed_type and freq are placeholders and are not used until the futures 
+        # covariate in the forward method are figured out
+        self.embedding = DataEmbedding(input_dim, hidden_size, embed_type=embed_type, freq=freq, dropout=0.1)
 
         self.model = nn.ModuleList([
             TimesBlock(
@@ -148,7 +152,7 @@ class _TimesNetModule(PLPastCovariatesModule):
         x, _ = x_in
 
         # Embedding
-        x = self.embedding(x, None)
+        x = self.embedding(x, None) # TODO: future covariate would go here
         x = self.predict_linear(x.transpose(1, 2)).transpose(1, 2)
 
         # TimesNet
