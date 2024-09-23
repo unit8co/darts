@@ -24,7 +24,13 @@ from darts.utils.ts_utils import (
     get_single_series,
     series2seq,
 )
-from darts.utils.utils import generate_index, n_steps_between
+from darts.utils.utils import (
+    _check_quantiles,
+    generate_index,
+    likelihood_component_names,
+    n_steps_between,
+    quantile_names,
+)
 
 logger = get_logger(__name__)
 
@@ -59,9 +65,9 @@ def cqr_score_asym(row, quantile_lo_col, quantile_hi_col):
 class ConformalModel(GlobalForecastingModel, ABC):
     def __init__(
         self,
-        model,
-        alpha: Union[float, Tuple[float, float]],
-        quantiles: Optional[List[float]] = None,
+        model: GlobalForecastingModel,
+        quantiles: List[float],
+        # alpha: Union[float, Tuple[float, float]],
     ):
         """Base Conformal Prediction Model
 
@@ -80,20 +86,27 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 ValueError("`model` must be a pre-trained `GlobalForecastingModel`."),
                 logger=logger,
             )
+        _check_quantiles(quantiles)
         super().__init__(add_encoders=None)
 
-        if isinstance(alpha, float):
-            self.symmetrical = True
-            self.q_hats = pd.DataFrame(columns=["q_hat_sym"])
-        else:
-            self.symmetrical = False
-            self.alpha_lo, self.alpha_hi = alpha
-            self.q_hats = pd.DataFrame(columns=["q_hat_lo", "q_hat_hi"])
-
         self.model = model
-        self.noncon_scores = dict()
-        self.alpha = alpha
+
         self.quantiles = quantiles
+        self._quantiles_no_med = [q for q in quantiles if q != 0.5]
+
+        # if isinstance(alpha, float):
+        #     self.symmetrical = True
+        #     self.q_hats = pd.DataFrame(columns=["q_hat_sym"])
+        #     self.quantiles = [0.5 * (1 - alpha), 1 - 0.5 * (1 - alpha)]
+        # else:
+        #     self.symmetrical = False
+        #     self.alpha_lo, self.alpha_hi = alpha
+        #     self.q_hats = pd.DataFrame(columns=["q_hat_lo", "q_hat_hi"])
+        #     self.quantiles = [1 - 0.5 * (1 - alpha_) for alpha_ in alpha]
+        # self.quantiles = self.quantiles[:1] + [0.50] + self.quantiles[1:]
+        # self.noncon_scores = dict()
+        # self.alpha = alpha
+        # self.quantiles = quantiles
         self._fit_called = True
 
     def fit(
@@ -619,7 +632,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             # historical conformal prediction
             if last_points_only:
                 for idx, pred_vals in enumerate(
-                    s_hfcs.values(copy=False)[first_fc_idx:last_fc_idx:stride]
+                    s_hfcs.all_values(copy=False)[first_fc_idx:last_fc_idx:stride]
                 ):
                     pred_vals = np.expand_dims(pred_vals, 0)
                     cp_pred = conformal_predict(idx, pred_vals)
@@ -640,7 +653,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 cp_hfcs.append(cp_preds)
             else:
                 for idx, pred in enumerate(s_hfcs[first_fc_idx:last_fc_idx:stride]):
-                    pred_vals = pred.values(copy=False)
+                    pred_vals = pred.all_values(copy=False)
                     cp_pred = conformal_predict(idx, pred_vals)
                     cp_pred = _build_forecast_series(
                         points_preds=cp_pred,
@@ -675,24 +688,16 @@ class ConformalModel(GlobalForecastingModel, ABC):
         """Computes the upper and lower calibrated forecast intervals based on residuals."""
 
     @staticmethod
-    def _apply_interval(pred, q_hat):
+    def _apply_interval(pred: np.ndarray, q_hat: Tuple[np.ndarray, np.ndarray]):
         """Applies the calibrated interval to the predicted values. Returns an array with 3 predicted columns
         (lower bound, model forecast, upper bound) per component.
 
         E.g. output is `(target1_cq_low, target1_pred, target1_cq_high, target2_cq_low, ...)`
         """
-        n_comps = pred.shape[1]
-        pred = np.concatenate([pred + q_hat[0], pred, pred + q_hat[1]], axis=1)
-        if n_comps == 1:
-            return pred
-
-        n_cal_comps = 3
-        # pre-compute axes swap (source and destination) for applying calibration intervals
-        axes_src = [i for i in range(n_comps * n_cal_comps)]
-        axes_dst = []
-        for i in range(n_comps):
-            axes_dst += axes_src[i::n_comps]
-        return pred[:, axes_dst]
+        # shape (forecast horizon, n components, n quantiles)
+        pred = np.concatenate([pred + q_hat[0], pred, pred + q_hat[1]], axis=2)
+        # -> (forecast horizon, n components * n quantiles)
+        return pred.reshape(len(pred), -1)
 
     @property
     @abstractmethod
@@ -794,11 +799,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
             return {"q_hat_sym": q_hat}
 
     def _cp_component_names(self, input_series) -> List[str]:
-        return [
-            f"{tgt_name}{param_n}"
-            for tgt_name in input_series.components
-            for param_n in ["_cq_lo", "", "_cq_hi"]
-        ]
+        return likelihood_component_names(
+            input_series.components, quantile_names(self.quantiles)
+        )
 
     @property
     def output_chunk_length(self) -> Optional[int]:
@@ -988,13 +991,19 @@ def _get_evaluate_metrics_from_dataset(
 
 
 class ConformalNaiveModel(ConformalModel):
-    def __init__(self, model, alpha: Union[float, Tuple[float, float]]):
-        if not isinstance(alpha, float):
-            raise_log(
-                ValueError("`alpha` must be a `float`."),
-                logger=logger,
+    def __init__(
+        self,
+        model: GlobalForecastingModel,
+        quantiles: List[float],
+    ):
+        super().__init__(model=model, quantiles=quantiles)
+        half_idx = int(len(self.quantiles) / 2)
+        self.intervals = [
+            q_high - q_low
+            for q_high, q_low in zip(
+                self.quantiles[half_idx + 1 :][::-1], self.quantiles[:half_idx]
             )
-        super().__init__(model=model, alpha=alpha)
+        ]
 
     def _calibrate_interval(
         self, residuals: np.ndarray
@@ -1006,7 +1015,8 @@ class ConformalNaiveModel(ConformalModel):
         residuals
             The residuals are expected to have shape (horizon, n components, n historical forecasts * n samples)
         """
-        q_hat = np.quantile(residuals, q=self.alpha, axis=2)
+        # shape (forecast horizon, n components, n quantile intervals)
+        q_hat = np.quantile(residuals, q=self.intervals, axis=2).transpose((1, 2, 0))
         return -q_hat, q_hat
 
     @property

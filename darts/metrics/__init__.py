@@ -3,7 +3,7 @@ Metrics
 -------
 
 For deterministic forecasts (point predictions with `num_samples == 1`), probabilistic forecasts (`num_samples > 1`),
-and quantile forecasts. For probablistic and quantile forecasts, use parameter `q` to define the quantile(s) to
+and quantile forecasts. For probabilistic and quantile forecasts, use parameter `q` to define the quantile(s) to
 compute the deterministic metrics on:
 
     - Aggregated over time:
@@ -41,7 +41,7 @@ compute the deterministic metrics on:
             - :func:`sAPE <darts.metrics.metrics.sape>`: symmetric Absolute Percentage Error
             - :func:`ARRE <darts.metrics.metrics.arre>`: Absolute Ranged Relative Error
 
-For probabilistic forecasts (storchastic predictions with `num_samples >> 1`):
+For probabilistic forecasts (storchastic predictions with `num_samples >> 1`) and quantile forecasts:
     - Aggregated over time:
         - :func:`MQL <darts.metrics.metrics.mql>`: Mean Quantile Loss
         - :func:`QR <darts.metrics.metrics.qr>`: Quantile Risk
