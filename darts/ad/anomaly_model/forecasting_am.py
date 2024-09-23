@@ -132,6 +132,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             `train_length`.
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
         model_fit_kwargs
             Parameters to be passed on to the forecast model `fit()` method.
 
@@ -212,6 +213,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             `train_length`.
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
         return_model_prediction
             Whether to return the forecasting model prediction along with the anomaly scores.
 
@@ -299,6 +301,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             `train_length`.
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
 
         Returns
         -------
@@ -394,6 +397,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             `train_length`.
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
         metric
             The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
@@ -499,6 +503,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             `train_length`.
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
         anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not).
         names_of_scorers
