@@ -1,11 +1,10 @@
 from typing import Tuple
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from darts.models.forecasting.embed import DataEmbedding
+from darts.models.components.embed import DataEmbedding
 from darts.models.forecasting.pl_forecasting_module import (
     PLPastCovariatesModule,
     io_processor,
@@ -107,7 +106,7 @@ class TimesBlock(nn.Module):
         return res
 
 
-class _TimeNetModule(PLPastCovariatesModule):
+class _TimesNetModule(PLPastCovariatesModule):
     def __init__(
         self,
         input_dim: int,
@@ -166,7 +165,7 @@ class _TimeNetModule(PLPastCovariatesModule):
         return y
 
 
-class TimeNetModel(PastCovariatesTorchModel):
+class TimesNetModel(PastCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
@@ -179,7 +178,7 @@ class TimeNetModel(PastCovariatesTorchModel):
         **kwargs,
     ):
         """
-        TimeNet model for time series forecasting.
+        TimesNet model for time series forecasting.
 
         Parameters:
         -----------
@@ -331,13 +330,13 @@ class TimeNetModel(PastCovariatesTorchModel):
         Examples
         --------
         >>> from darts.datasets import WeatherDataset
-        >>> from darts.models import TimeNetModel
+        >>> from darts.models import TimesNetModel
         >>> series = WeatherDataset().load()
         >>> # predicting atmospheric pressure
         >>> target = series['p (mbar)'][:100]
         >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
         >>> past_cov = series['rain (mm)'][:100]
-        >>> model = TimeNetModel(
+        >>> model = TimesNetModel(
         >>>     input_chunk_length=6,
         >>>     output_chunk_length=6,
         >>>     n_epochs=20
@@ -368,7 +367,7 @@ class TimeNetModel(PastCovariatesTorchModel):
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
-        return _TimeNetModule(
+        return _TimesNetModule(
             input_dim=input_dim,
             output_dim=output_dim,
             nr_params=nr_params,

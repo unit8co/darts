@@ -42,7 +42,7 @@ PyTorch (Lightning)-based Models (`GlobalForecastingModel <https://unit8co.githu
     - :class:`~darts.models.forecasting.nhits.NHiTSModel`
     - :class:`~darts.models.forecasting.tcn_model.TCNModel`
     - :class:`~darts.models.forecasting.transformer_model.TransformerModel`
-    - :class:`~darts.models.forecasting.time_net_model.TimeNetModel`
+    - :class:`~darts.models.forecasting.time_net_model.TimesNetModel`
     - :class:`~darts.models.forecasting.tft_model.TFTModel`
     - :class:`~darts.models.forecasting.dlinear.DLinearModel`
     - :class:`~darts.models.forecasting.nlinear.NLinearModel`

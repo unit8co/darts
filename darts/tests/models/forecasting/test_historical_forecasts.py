@@ -36,9 +36,9 @@ if TORCH_AVAILABLE:
         TCNModel,
         TFTModel,
         TiDEModel,
+        TimesNetModel,
         TransformerModel,
         TSMixerModel,
-        TimeNetModel,
     )
     from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 
@@ -184,7 +184,7 @@ if TORCH_AVAILABLE:
             "PastCovariates",
         ),
         (
-            TimeNetModel,
+            TimesNetModel,
             {
                 "input_chunk_length": IN_LEN,
                 "output_chunk_length": OUT_LEN,

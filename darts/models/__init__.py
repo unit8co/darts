@@ -33,6 +33,7 @@ from darts.models.forecasting.regression_ensemble_model import RegressionEnsembl
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.models.forecasting.tbats_model import BATS, TBATS
 from darts.models.forecasting.theta import FourTheta, Theta
+from darts.models.forecasting.times_net_model import TimesNetModel
 from darts.models.forecasting.varima import VARIMA
 
 try:
@@ -50,7 +51,7 @@ try:
     from darts.models.forecasting.tcn_model import TCNModel
     from darts.models.forecasting.tft_model import TFTModel
     from darts.models.forecasting.tide_model import TiDEModel
-    from darts.models.forecasting.time_net_model import TimeNetModel
+    from darts.models.forecasting.times_net_model import TimesNetModel
     from darts.models.forecasting.transformer_model import TransformerModel
     from darts.models.forecasting.tsmixer_model import TSMixerModel
 except ModuleNotFoundError:
@@ -72,7 +73,7 @@ except ModuleNotFoundError:
     TFTModel = NotImportedModule(module_name="(Py)Torch", warn=False)
     TiDEModel = NotImportedModule(module_name="(Py)Torch", warn=False)
     TransformerModel = NotImportedModule(module_name="(Py)Torch", warn=False)
-    TimeNetModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    TimesNetModel = NotImportedModule(module_name="(Py)Torch", warn=False)
     TSMixerModel = NotImportedModule(module_name="(Py)Torch", warn=False)
 
 try:
@@ -153,7 +154,7 @@ __all__ = [
     "TFTModel",
     "TiDEModel",
     "TransformerModel",
-    "TimeNetModel",
+    "TimesNetModel",
     "TSMixerModel",
     "Prophet",
     "CatBoostModel",

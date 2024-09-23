@@ -34,9 +34,9 @@ if TORCH_AVAILABLE:
         TCNModel,
         TFTModel,
         TiDEModel,
+        TimeNetModel,
         TransformerModel,
         TSMixerModel,
-        TimeNetModel,
     )
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
     from darts.utils.likelihood_models import (
