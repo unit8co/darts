@@ -59,7 +59,12 @@ from darts.utils.ts_utils import (
     get_single_series,
     series2seq,
 )
-from darts.utils.utils import generate_index
+from darts.utils.utils import (
+    generate_index,
+    likelihood_component_names,
+    quantile_interval_names,
+    quantile_names,
+)
 
 logger = get_logger(__name__)
 
@@ -756,6 +761,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Default: ``False``
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
         fit_kwargs
             Additional arguments passed to the model `fit()` method.
         predict_kwargs
@@ -1195,6 +1201,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         reduction: Union[Callable[..., float], None] = np.mean,
         verbose: bool = False,
         show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+        enable_optimization: bool = True,
         metric_kwargs: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
@@ -1314,6 +1322,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Whether to print progress.
         show_warnings
             Whether to show warnings related to parameters `start`, and `train_length`.
+        predict_likelihood_parameters
+            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            supported for probabilistic models with `likelihood="quantile"`, `num_samples = 1` and
+            `n<=output_chunk_length`. Default: ``False``.
+        enable_optimization
+            Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
         metric_kwargs
             Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'component_reduction'`
             for reducing the component wise metrics, seasonality `'m'` for scaled metrics, etc. Will pass arguments to
@@ -1345,9 +1360,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             An numpy array of backtest scores. For single series and one of:
 
             - a single `metric` function, `historical_forecasts` generated with `last_points_only=False`
-              and backtest `reduction=None`. The output has shape (n forecasts,).
+              and backtest `reduction=None`. The output has shape (n forecasts, *).
             - multiple `metric` functions and `historical_forecasts` generated with `last_points_only=False`.
-              The output has shape (n metrics,) when using a backtest `reduction`, and (n metrics, n forecasts)
+              The output has shape (*, n metrics) when using a backtest `reduction`, and (n forecasts, *, n metrics)
               when `reduction=None`
             - multiple uni/multivariate series including `series_reduction` and at least one of
               `component_reduction=None` or `time_reduction=None` for "per time step metrics"
@@ -1393,6 +1408,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             last_points_only=last_points_only,
             verbose=verbose,
             show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            enable_optimization=enable_optimization,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
             sample_weight=sample_weight,
@@ -1448,22 +1465,24 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # get errors for each input `series`
         backtest_list = []
         for i in range(len(cum_len) - 1):
-            # errors_series with shape `(n metrics, n series specific historical forecasts)`
+            # errors_series with shape `(n metrics, n series specific historical forecasts, *)`
             errors_series = errors[:, cum_len[i] : cum_len[i + 1]]
 
             if reduction is not None:
-                # shape `(n metrics, n forecasts)` -> `(n metrics,)`
+                # shape `(n metrics, n forecasts, *)` -> `(n metrics, *)`
                 errors_series = reduction(errors_series, axis=1)
             elif last_points_only:
-                # shape `(n metrics, n forecasts = 1)` -> `(n metrics,)`
+                # shape `(n metrics, n forecasts = 1, *)` -> `(n metrics, *)`
                 errors_series = errors_series[:, 0]
 
             if len(metric) == 1:
                 # shape `(n metrics, *)` -> `(*,)`
                 errors_series = errors_series[0]
-            elif not last_points_only and reduction is None:
+            else:
                 # shape `(n metrics, *)` -> `(*, n metrics)`
-                errors_series = errors_series.T
+                errors_series = errors_series.transpose(
+                    tuple(i for i in range(1, errors_series.ndim)) + (0,)
+                )
 
             backtest_list.append(errors_series)
         return (
@@ -1789,6 +1808,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         metric: METRIC_TYPE = metrics.err,
         verbose: bool = False,
         show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+        enable_optimization: bool = True,
         metric_kwargs: Optional[Dict[str, Any]] = None,
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
@@ -1909,6 +1930,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Whether to print progress.
         show_warnings
             Whether to show warnings related to parameters `start`, and `train_length`.
+        predict_likelihood_parameters
+            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            supported for probabilistic models with `likelihood="quantile"`, `num_samples = 1` and
+            `n<=output_chunk_length`. Default: ``False``.
+        enable_optimization
+            Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
         metric_kwargs
             Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'m'` for scaled
             metrics, etc. Will pass arguments only if they are present in the corresponding metric signature. Ignores
@@ -1964,6 +1992,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             last_points_only=last_points_only,
             verbose=verbose,
             show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            enable_optimization=enable_optimization,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
             overlap_end=overlap_end,
@@ -1995,9 +2025,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         )
 
         # sanity check residual output
+        q, q_interval = metric_kwargs.get("q"), metric_kwargs.get("q_interval")
         try:
-            res, fc = residuals[0][0], historical_forecasts[0][0]
-            _ = np.reshape(res, (len(fc), fc.n_components, 1))
+            series_, res, fc = series[0], residuals[0][0], historical_forecasts[0][0]
+            _ = np.reshape(res, (len(fc), -1, 1))
         except Exception as err:
             raise_log(
                 ValueError(
@@ -2011,13 +2042,47 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # process residuals
         residuals_out = []
-        for fc_list, res_list in zip(historical_forecasts, residuals):
+        for series_, fc_list, res_list in zip(series, historical_forecasts, residuals):
             res_list_out = []
+            if q is not None:
+                q = [q] if isinstance(q, float) else q
+                # multi-quantile metrics yield more components
+                comp_names = likelihood_component_names(
+                    components=series_.components,
+                    parameter_names=quantile_names(q),
+                )
+            # `q` and `q_interval` are mutually exclusive
+            elif q_interval is not None:
+                # multi-quantile metrics yield more components
+                q_interval = (
+                    [q_interval] if isinstance(q_interval, tuple) else q_interval
+                )
+                comp_names = likelihood_component_names(
+                    components=series_.components,
+                    parameter_names=quantile_interval_names(q_interval),
+                )
+            else:
+                comp_names = None
             for fc, res in zip(fc_list, res_list):
-                # make sure all residuals have shape (n time steps, n components, n samples=1)
+                # make sure all residuals have shape (n time steps, n components * n quantiles, n samples=1)
                 if len(res.shape) != 3:
-                    res = np.reshape(res, (len(fc), fc.n_components, 1))
-                res_list_out.append(res if values_only else fc.with_values(res))
+                    res = np.reshape(res, (len(fc), -1, 1))
+                if values_only:
+                    res = res
+                elif (q is None and q_interval is None) and res.shape[
+                    1
+                ] == fc.n_components:
+                    res = fc.with_values(res)
+                else:
+                    # quantile (interval) metrics created different number of components;
+                    # create new series with unknown components
+                    res = TimeSeries.from_times_and_values(
+                        times=fc._time_index,
+                        values=res,
+                        columns=comp_names,
+                    )
+                res_list_out.append(res)
+
             residuals_out.append(res_list_out)
 
         # if required, reduce to `series` input type

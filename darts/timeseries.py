@@ -74,6 +74,7 @@ logger = get_logger(__name__)
 # dimension names in the DataArray
 # the "time" one can be different, if it has a name in the underlying Series/DataFrame.
 DIMS = ("time", "component", "sample")
+AXES = {"time": 0, "component": 1, "sample": 2}
 
 VALID_INDEX_TYPES = (pd.DatetimeIndex, pd.RangeIndex)
 STATIC_COV_TAG = "static_covariates"
@@ -1362,14 +1363,19 @@ class TimeSeries:
         )
 
     @property
+    def shape(self) -> Tuple[int]:
+        """The shape of the series (n_timesteps, n_components, n_samples)."""
+        return self._xa.shape
+
+    @property
     def n_samples(self) -> int:
         """Number of samples contained in the series."""
-        return len(self._xa.sample)
+        return self.shape[AXES["sample"]]
 
     @property
     def n_components(self) -> int:
         """Number of components (dimensions) contained in the series."""
-        return len(self._xa.component)
+        return self.shape[AXES["component"]]
 
     @property
     def width(self) -> int:
@@ -1379,12 +1385,12 @@ class TimeSeries:
     @property
     def n_timesteps(self) -> int:
         """Number of time steps in the series."""
-        return len(self._time_index)
+        return self.shape[AXES["time"]]
 
     @property
     def is_deterministic(self) -> bool:
         """Whether this series is deterministic."""
-        return self.n_samples == 1
+        return self.shape[AXES["sample"]] == 1
 
     @property
     def is_stochastic(self) -> bool:
@@ -1399,7 +1405,7 @@ class TimeSeries:
     @property
     def is_univariate(self) -> bool:
         """Whether this series is univariate."""
-        return self.n_components == 1
+        return self.shape[AXES["component"]] == 1
 
     @property
     def freq(self) -> Union[pd.DateOffset, int]:
