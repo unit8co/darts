@@ -37,7 +37,6 @@ ignore = [
     "E402",  # todo: use noqa per line
     "E731",  # Do not assign a `lambda` expression, use a `def`
 ]
-ignore-init-module-imports = true
 unfixable = ["F401"]
 
 [tool.ruff.lint.pydocstyle]
