@@ -56,7 +56,11 @@ from darts.utils.historical_forecasts import (
 )
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
-from darts.utils.utils import _check_quantiles
+from darts.utils.utils import (
+    _check_quantiles,
+    likelihood_component_names,
+    quantile_names,
+)
 
 logger = get_logger(__name__)
 
@@ -1668,17 +1672,15 @@ class _LikelihoodMixin:
     ) -> List[str]:
         return self._likelihood_generate_components_names(
             input_series,
-            [f"q{quantile:.2f}" for quantile in self._model_container.keys()],
+            quantile_names(q=self._model_container.keys()),
         )
 
     def _likelihood_generate_components_names(
         self, input_series: TimeSeries, parameter_names: List[str]
     ) -> List[str]:
-        return [
-            f"{tgt_name}_{param_n}"
-            for tgt_name in input_series.components
-            for param_n in parameter_names
-        ]
+        return likelihood_component_names(
+            components=input_series.components, parameter_names=parameter_names
+        )
 
 
 class _QuantileModelContainer(OrderedDict):
