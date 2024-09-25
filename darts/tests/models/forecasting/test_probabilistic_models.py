@@ -34,7 +34,7 @@ if TORCH_AVAILABLE:
         TCNModel,
         TFTModel,
         TiDEModel,
-        TimeNetModel,
+        TimesNetModel,
         TransformerModel,
         TSMixerModel,
     )
@@ -150,7 +150,7 @@ if TORCH_AVAILABLE:
             0.04,
         ),
         (
-            TimeNetModel,
+            TimesNetModel,
             {
                 "input_chunk_length": 10,
                 "output_chunk_length": 5,

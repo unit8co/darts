@@ -48,7 +48,6 @@ from darts.models import (
     TimesNetModel,
     TransformerModel,
     TSMixerModel,
-    iTransformerModel,
 )
 from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
@@ -104,7 +103,6 @@ models = [
     (TFTModel, {"add_relative_index": 2, **kwargs, **tft_light_kwargs}),
     (TiDEModel, kwargs),
     (TransformerModel, dict(kwargs, **trafo_light_kwargs)),
-    (iTransformerModel, kwargs),
     (TimesNetModel, kwargs),
     (TSMixerModel, kwargs),
     (GlobalNaiveSeasonal, kwargs),

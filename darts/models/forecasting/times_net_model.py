@@ -1,8 +1,39 @@
+"""
+TimesNet Model
+-------
+The implementation is built upon the Time Series Library's TimesNet model
+<https://github.com/thuml/Time-Series-Library/blob/main/models/TimesNet.py>
+
+-------
+MIT License
+
+Copyright (c) 2021 THUML @ Tsinghua University
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
 from typing import Tuple
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from packaging import version
 
 from darts.models.components.embed import DataEmbedding
 from darts.models.forecasting.pl_forecasting_module import (
@@ -18,12 +49,12 @@ class Inception_Block_V1(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.num_kernels = num_kernels
-        kernels = []
-        for i in range(self.num_kernels):
-            kernels.append(
-                nn.Conv2d(in_channels, out_channels, kernel_size=2 * i + 1, padding=i)
-            )
-        self.kernels = nn.ModuleList(kernels)
+
+        self.kernels = nn.ModuleList([
+            nn.Conv2d(in_channels, out_channels, kernel_size=2 * i + 1, padding=i)
+            for i in range(self.num_kernels)
+        ])
+
         if init_weight:
             self._initialize_weights()
 
@@ -35,23 +66,27 @@ class Inception_Block_V1(nn.Module):
                     nn.init.constant_(m.bias, 0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        res_list = []
-        for i in range(self.num_kernels):
-            res_list.append(self.kernels[i](x))
-        res = torch.stack(res_list, dim=-1).mean(-1)
-        return res
+        res = torch.stack([kernel(x) for kernel in self.kernels], dim=-1)
+        return torch.mean(res, dim=-1)
 
 
-def FFT_for_Period(x, k=2):
+def FFT_for_Period(x, k: int = 2):
     # [B, T, C]
     xf = torch.fft.rfft(x, dim=1)
     # find period by amplitudes
     frequency_list = abs(xf).mean(0).mean(-1)
     frequency_list[0] = 0
     _, top_list = torch.topk(frequency_list, k)
-    top_list = top_list.detach().cpu().numpy()
-    period = x.shape[1] // top_list
+
+    T = torch.tensor(x.shape[1], dtype=torch.int64)
+    period = (T / top_list).to(torch.int64)
     return period, abs(xf).mean(-1)[:, top_list]
+
+
+if version.parse(torch.__version__) >= version.parse("2.0.0"):
+    import torch.jit
+
+    FFT_for_Period = torch.jit.script(FFT_for_Period)
 
 
 class TimesBlock(nn.Module):
@@ -71,8 +106,7 @@ class TimesBlock(nn.Module):
         period_list, period_weight = FFT_for_Period(x, self.k)
 
         res = []
-        for i in range(self.k):
-            period = period_list[i]
+        for period in period_list:
             # padding
             if (self.seq_len + self.pred_len) % period != 0:
                 length = (((self.seq_len + self.pred_len) // period) + 1) * period
@@ -116,19 +150,48 @@ class _TimesNetModule(PLPastCovariatesModule):
         num_layers: int,
         num_kernels: int,
         top_k: int,
-        embed_type:str="fixed",
-        freq:str="h",
+        embed_type: str = "fixed",
+        freq: str = "h",
         **kwargs,
     ):
+        """
+        input_size
+            The dimensionality of the TimeSeries instances that will be fed to the the fit and predict functions.
+        output_size
+            The dimensionality of the output time series.
+        nr_params
+            The number of parameters of the likelihood (or 1 if no likelihood is used).
+        hidden_size : int
+            The size of the hidden layers in the model.
+        num_layers : int
+            The number of TimesBlock layers in the model.
+        num_kernels : int
+            The number of kernels in each Inception block within the TimesBlock.
+        top_k : int
+            The number of top frequencies to consider in the FFT analysis.
+        embed_type : str, optional
+            The type of embedding to use. Default is "fixed".
+        freq : str, optional
+            The frequency of the time series. Default is "h" (hourly).
+        **kwargs
+            Additional keyword arguments passed to the parent PLPastCovariatesModule.
+
+        Notes
+        -----
+        - The `embed_type` and `freq` parameters are currently placeholders and are not fully utilized
+          in the current implementation.
+        """
         super().__init__(**kwargs)
 
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.nr_params = nr_params
 
-        # embed_type and freq are placeholders and are not used until the futures 
+        # embed_type and freq are placeholders and are not used until the futures
         # covariate in the forward method are figured out
-        self.embedding = DataEmbedding(input_dim, hidden_size, embed_type=embed_type, freq=freq, dropout=0.1)
+        self.embedding = DataEmbedding(
+            input_dim, hidden_size, embed_type=embed_type, freq=freq, dropout=0.1
+        )
 
         self.model = nn.ModuleList([
             TimesBlock(
@@ -152,7 +215,7 @@ class _TimesNetModule(PLPastCovariatesModule):
         x, _ = x_in
 
         # Embedding
-        x = self.embedding(x, None) # TODO: future covariate would go here
+        x = self.embedding(x, None)  # TODO: future covariate would go here
         x = self.predict_linear(x.transpose(1, 2)).transpose(1, 2)
 
         # TimesNet
@@ -184,20 +247,42 @@ class TimesNetModel(PastCovariatesTorchModel):
         """
         TimesNet model for time series forecasting.
 
-        Parameters:
-        -----------
-        input_chunk_length : int
-            The length of the input sequence
-        output_chunk_length : int
-            The length of the forecast horizon
-        hidden_size : int, optional (default=64)
-            The hidden size of the model
-        num_layers : int, optional (default=5)
-            The number of TimesBlock layers
-        num_kernels : int, optional (default=6)
-            The number of kernels in each Inception block
-        top_k : int, optional (default=2)
-            The number of top frequencies to consider in the FFT analysis
+        This model is based on the paper "TimesNet: Temporal 2D-Variation Modeling for General Time Series Analysis"
+        by Haixu Wu et al. (2023). TimesNet uses a combination of 2D convolutions and frequency domain analysis
+        to capture both temporal patterns and periodic variations in time series data.
+        https://arxiv.org/abs/2210.02186
+
+        Parameters
+        ----------
+        input_chunk_length
+            Number of time steps in the past to take as a model input (per chunk). Applies to the target
+            series, and past and/or future covariates (if the model supports it).
+        output_chunk_length
+            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
+            from future covariates to use as a model input (if the model supports future covariates). It is not the same
+            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
+            auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
+            the model from using future values of past and / or future covariates for prediction (depending on the
+            model's covariate support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
+        hidden_size : int, optional
+            The hidden size of the model, controlling the dimensionality of the internal representations.
+            Default: 32.
+        num_layers : int, optional
+            The number of TimesBlock layers in the model. Each layer processes the input sequence
+            using 2D convolutions and frequency domain analysis. Default: 2.
+        num_kernels : int, optional
+            The number of kernels in each Inception block within the TimesBlock. This controls
+            the variety of convolution operations applied to the input. Default: 6.
+        top_k : int, optional
+            The number of top frequencies to consider in the FFT analysis. This parameter influences
+            how many periodic components are extracted from the input sequence. Default: 5.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
