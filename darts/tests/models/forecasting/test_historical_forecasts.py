@@ -22,6 +22,7 @@ from darts.models import (
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
+from darts.utils.utils import likelihood_component_names, quantile_names
 
 if TORCH_AVAILABLE:
     import torch
@@ -2633,6 +2634,7 @@ class TestHistoricalforecast:
             use_multi_series,
             ocs,
         ) = config
+        q = [0.1, 0.5, 0.9]
         # compute minimum series length to generate n forecasts
         icl = 3
         ocl = 5
@@ -2644,7 +2646,6 @@ class TestHistoricalforecast:
             self.ts_pass_train[:10],
             self.ts_pass_val[: min_len_val_series + n_forecasts - 1],
         )
-
         if use_int_idx:
             series_train = TimeSeries.from_values(
                 series_train.all_values(), columns=series_train.columns
@@ -2701,7 +2702,7 @@ class TestHistoricalforecast:
             fc = [fc, fc.shift(1)] if fc is not None else None
 
         # conformal model
-        model = ConformalNaiveModel(forecasting_model, alpha=0.8)
+        model = ConformalNaiveModel(forecasting_model, quantiles=q)
 
         # cannot perform auto regression with output chunk shift
         if ocs and horizon > ocl:
@@ -2803,9 +2804,9 @@ class TestHistoricalforecast:
                 first_ts_expected = hfc[0].start_time()
                 last_ts_expected = hfc[-1].end_time()
 
-            cols_excpected = []
-            for col in series.columns:
-                cols_excpected += [f"{col}_cq_lo", f"{col}", f"{col}_cq_hi"]
+            cols_excpected = likelihood_component_names(
+                series.columns, quantile_names(q)
+            )
             # check length match between optimized and default hist fc
             assert len(hfc) == n_pred_series_expected
             # check hist fc start
@@ -2840,6 +2841,7 @@ class TestHistoricalforecast:
             use_multi_series,
             ocs,
         ) = config
+        q = [0.1, 0.5, 0.9]
         # compute minimum series length to generate n forecasts
         icl = 3
         ocl = 5
@@ -2906,7 +2908,7 @@ class TestHistoricalforecast:
             forecast_horizon=horizon,
         )
         # compute conformal historical forecasts (skips some of the first forecasts to get minimum required cal set)
-        model = ConformalNaiveModel(forecasting_model, alpha=0.8)
+        model = ConformalNaiveModel(forecasting_model, quantiles=q)
         hist_fct = model.historical_forecasts(
             series=series_val,
             retrain=False,
@@ -2977,9 +2979,9 @@ class TestHistoricalforecast:
                 )
                 last_ts_expected = series.end_time()
 
-            cols_excpected = []
-            for col in series.columns:
-                cols_excpected += [f"{col}_cq_lo", f"{col}", f"{col}_cq_hi"]
+            cols_excpected = likelihood_component_names(
+                series.columns, quantile_names(q)
+            )
             # check historical forecasts dimensions
             assert len(hfc) == n_pred_series_expected
             # check hist fc start

@@ -1017,7 +1017,7 @@ class ConformalNaiveModel(ConformalModel):
         """
         # shape (forecast horizon, n components, n quantile intervals)
         q_hat = np.quantile(residuals, q=self.intervals, axis=2).transpose((1, 2, 0))
-        return -q_hat, q_hat
+        return -q_hat, q_hat[:, :, ::-1]
 
     @property
     def _residuals_metric(self):

@@ -18,6 +18,7 @@ from darts.models import (
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
+from darts.utils.utils import likelihood_component_names, quantile_names
 
 IN_LEN = 3
 OUT_LEN = 3
@@ -38,11 +39,13 @@ def train_model(*args, model_type="regression", model_params=None, **kwargs):
         return NLinearModel(**torch_kwargs, **model_params).fit(*args, **kwargs)
 
 
+q = [0.1, 0.5, 0.9]
+
 # pre-trained global model for conformal models
 models_cls_kwargs_errs = [
     (
         ConformalNaiveModel,
-        {"alpha": 0.8},
+        {"quantiles": q},
         "regression",
     ),
 ]
@@ -50,7 +53,7 @@ models_cls_kwargs_errs = [
 if TORCH_AVAILABLE:
     models_cls_kwargs_errs.append((
         ConformalNaiveModel,
-        {"alpha": 0.8},
+        {"quantiles": q},
         "torch",
     ))
 
@@ -106,23 +109,23 @@ class TestConformalModel:
         model_err_msg = "`model` must be a pre-trained `GlobalForecastingModel`."
         # un-trained local model
         with pytest.raises(ValueError) as exc:
-            ConformalNaiveModel(model=local_model, alpha=0.8)
+            ConformalNaiveModel(model=local_model, quantiles=q)
         assert str(exc.value) == model_err_msg
 
         # pre-trained local model
         local_model.fit(series)
         with pytest.raises(ValueError) as exc:
-            ConformalNaiveModel(model=local_model, alpha=0.8)
+            ConformalNaiveModel(model=local_model, quantiles=q)
         assert str(exc.value) == model_err_msg
 
         # un-trained global model
         with pytest.raises(ValueError) as exc:
-            ConformalNaiveModel(model=global_model, alpha=0.0)
+            ConformalNaiveModel(model=global_model, quantiles=q)
         assert str(exc.value) == model_err_msg
 
         # pre-trained local model should work
         global_model.fit(series)
-        _ = ConformalNaiveModel(model=global_model, alpha=0.8)
+        _ = ConformalNaiveModel(model=global_model, quantiles=q)
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_save_model_parameters(self, config):
@@ -165,8 +168,11 @@ class TestConformalModel:
         pred_fc = model.model.predict(n=self.horizon)
         assert pred_fc.time_index.equals(pred.time_index)
         # the center forecasts must be equal to the forecasting model forecast
+        fc_columns = likelihood_component_names(
+            self.ts_pass_val.columns, quantile_names([0.5])
+        )
         np.testing.assert_array_almost_equal(
-            pred[self.ts_pass_val.columns.tolist()].all_values(), pred_fc.all_values()
+            pred[fc_columns].all_values(), pred_fc.all_values()
         )
         assert pred.static_covariates is None
 
@@ -202,10 +208,13 @@ class TestConformalModel:
         assert not np.isnan(pred.all_values()).any().any()
 
         # the center forecasts must be equal to the forecasting model forecast
+        fc_columns = likelihood_component_names(
+            self.ts_pass_val.columns, quantile_names([0.5])
+        )
         pred_fc = model.model.predict(n=self.horizon, series=self.ts_pass_train)
         assert pred_fc.time_index.equals(pred.time_index)
         np.testing.assert_array_almost_equal(
-            pred[self.ts_pass_val.columns.tolist()].all_values(), pred_fc.all_values()
+            pred[fc_columns].all_values(), pred_fc.all_values()
         )
 
         # using a calibration series also requires an input series
@@ -238,7 +247,7 @@ class TestConformalModel:
             assert not np.isnan(pred.all_values()).any().any()
             np.testing.assert_array_almost_equal(
                 pred_fc.all_values(),
-                pred[self.ts_pass_val.columns.tolist()].all_values(),
+                pred[fc_columns].all_values(),
             )
 
         # using a calibration series requires to have same number of series as target
@@ -310,7 +319,7 @@ class TestConformalModel:
     @pytest.mark.parametrize(
         "config",
         itertools.product(
-            [(ConformalNaiveModel, {"alpha": 0.8}, "regression")],
+            [(ConformalNaiveModel, {"quantiles": [0.1, 0.5, 0.9]}, "regression")],
             [
                 {"lags_past_covariates": IN_LEN},
                 {"lags_future_covariates": (IN_LEN, OUT_LEN)},
@@ -408,8 +417,11 @@ class TestConformalModel:
             series=self.ts_pass_train,
             **cov_kwargs_notrain,
         )
+        fc_columns = likelihood_component_names(
+            self.ts_pass_val.columns, quantile_names([0.5])
+        )
         np.testing.assert_array_almost_equal(
-            pred[self.ts_pass_val.columns.tolist()].all_values(),
+            pred[fc_columns].all_values(),
             pred_fc.all_values(),
         )
 
@@ -530,7 +542,7 @@ class TestConformalModel:
             lags=IN_LEN, output_chunk_length=OUT_LEN, **model_kwargs
         )
         model_instance.fit(series=series, past_covariates=pc, future_covariates=fc)
-        model = ConformalNaiveModel(model_instance, alpha=0.8)
+        model = ConformalNaiveModel(model_instance, quantiles=q)
 
         preds = model.predict(
             n=horizon, series=series, past_covariates=pc, future_covariates=fc
@@ -541,9 +553,7 @@ class TestConformalModel:
             preds = [preds]
 
         for s_, preds_ in zip(series, preds):
-            cols_expected = []
-            for col in s_.columns:
-                cols_expected += [f"{col}{q}" for q in ["_cq_lo", "", "_cq_hi"]]
+            cols_expected = likelihood_component_names(s_.columns, quantile_names(q))
             assert preds_.columns.tolist() == cols_expected
             assert len(preds_) == horizon
             assert preds_.start_time() == s_.end_time() + s_.freq
@@ -552,15 +562,19 @@ class TestConformalModel:
     def test_output_chunk_shift(self):
         model_params = {"output_chunk_shift": 1}
         model = ConformalNaiveModel(
-            train_model(self.ts_pass_train, model_params=model_params), alpha=0.8
+            train_model(self.ts_pass_train, model_params=model_params), quantiles=q
         )
         pred = model.predict(n=1)
         pred_fc = model.model.predict(n=1)
 
         assert pred_fc.time_index.equals(pred.time_index)
         # the center forecasts must be equal to the forecasting model forecast
+        fc_columns = likelihood_component_names(
+            self.ts_pass_train.columns, quantile_names([0.5])
+        )
+
         np.testing.assert_array_almost_equal(
-            pred[self.ts_pass_train.columns.tolist()].all_values(), pred_fc.all_values()
+            pred[fc_columns].all_values(), pred_fc.all_values()
         )
 
         pred_cal = model.predict(n=1, cal_series=self.ts_pass_train)
@@ -574,25 +588,25 @@ class TestConformalModel:
             [1, 3, 5],  # horizon
             [True, False],  # univariate series
             [True, False],  # single series
+            [q, [0.2, 0.3, 0.5, 0.7, 0.8]],
         ),
     )
     def test_naive_conformal_model_predict(self, config):
         """Verifies that naive conformal model computes the correct intervals
         The naive approach computes it as follows:
 
-        - pred_upper = pred + q_alpha(absolute error, past)
+        - pred_upper = pred + q_interval(absolute error, past)
         - pred_middle = pred
-        - pred_lower = pred - q_alpha(absolute error, past)
+        - pred_lower = pred - q_interval(absolute error, past)
 
-        Where q_alpha(absolute error) is the `alpha` quantile of all historic absolute errors between
-        `pred`, and the target series.
+        Where q_interval(absolute error) is the `q_hi - q_hi` quantile value of all historic absolute errors
+        between `pred`, and the target series.
         """
-        n, is_univar, is_single = config
-        alpha = 0.8
+        n, is_univar, is_single, quantiles = config
         series = self.helper_prepare_series(is_univar, is_single)
         model_fc = train_model(series)
         pred_fc_list = model_fc.predict(n, series=series)
-        model = ConformalNaiveModel(model=model_fc, alpha=alpha)
+        model = ConformalNaiveModel(model=model_fc, quantiles=quantiles)
         pred_cal_list = model.predict(n, series=series)
         pred_cal_list_with_cal = model.predict(n, series=series, cal_series=series)
 
@@ -620,7 +634,7 @@ class TestConformalModel:
 
             pred_vals = pred_fc.all_values()
             pred_vals_expected = self.helper_compute_naive_pred_cal(
-                residuals, pred_vals, n, alpha
+                residuals, pred_vals, n, quantiles
             )
             np.testing.assert_array_almost_equal(
                 pred_cal.all_values(), pred_vals_expected
@@ -636,6 +650,7 @@ class TestConformalModel:
             [0, 1],  # output chunk shift
             [None, 1],  # train length
             [False, True],  # use covariates
+            [q, [0.2, 0.3, 0.5, 0.7, 0.8]],  # quantiles
         ),
     )
     def test_naive_conformal_model_historical_forecasts(self, config):
@@ -647,12 +662,13 @@ class TestConformalModel:
         - with and without training length
         - with and without covariates in the forecast and calibration sets.
         """
-        n, is_univar, is_single, ocs, train_length, use_covs = config
+        n, is_univar, is_single, ocs, train_length, use_covs, quantiles = config
+        n_q = len(quantiles)
+        half_idx = n_q // 2
         if ocs and n > OUT_LEN:
             # auto-regression not allowed with ocs
             return
 
-        alpha = 0.8
         series = self.helper_prepare_series(is_univar, is_single)
         model_params = {"output_chunk_shift": ocs}
 
@@ -709,7 +725,7 @@ class TestConformalModel:
         )
 
         # conformal forecasts
-        model = ConformalNaiveModel(model=model_fc, alpha=alpha)
+        model = ConformalNaiveModel(model=model_fc, quantiles=quantiles)
         # without calibration set
         hfc_conf_list = model.historical_forecasts(
             series=series,
@@ -755,7 +771,7 @@ class TestConformalModel:
 
                 pred_vals = pred_fc.all_values()
                 pred_vals_expected = self.helper_compute_naive_pred_cal(
-                    residuals, pred_vals, n, alpha, train_length=train_length
+                    residuals, pred_vals, n, quantiles, train_length=train_length
                 )
                 np.testing.assert_array_almost_equal(
                     pred_cal.all_values(), pred_vals_expected
@@ -769,14 +785,11 @@ class TestConformalModel:
             hfc_0_vals = hfc_conf_with_cal[0].all_values()
             for hfc_i in hfc_conf_with_cal[1:]:
                 hfc_i_vals = hfc_i.all_values()
-                np.testing.assert_array_almost_equal(
-                    hfc_0_vals[:, 1::3] - hfc_0_vals[:, 0::3],
-                    hfc_i_vals[:, 1::3] - hfc_i_vals[:, 0::3],
-                )
-                np.testing.assert_array_almost_equal(
-                    hfc_0_vals[:, 2::3] - hfc_0_vals[:, 1::3],
-                    hfc_i_vals[:, 2::3] - hfc_i_vals[:, 1::3],
-                )
+                for q_idx in range(n_q):
+                    np.testing.assert_array_almost_equal(
+                        hfc_0_vals[:, half_idx::n_q] - hfc_0_vals[:, q_idx::n_q],
+                        hfc_i_vals[:, half_idx::n_q] - hfc_i_vals[:, q_idx::n_q],
+                    )
 
         if use_covs:
             # `cal_covs_kwargs_exact` will not compute the last example in overlap_end (this one has anyways no
@@ -862,35 +875,59 @@ class TestConformalModel:
 
     @staticmethod
     def helper_compute_naive_pred_cal(
-        residuals, pred_vals, n, alpha, train_length=None
+        residuals, pred_vals, n, quantiles, train_length=None
     ):
         train_length = train_length or 0
-        q_hats = []
-        # compute the quantile `alpha` of all past residuals (absolute "per time step" errors between historical
-        # forecasts and the target series)
-        for idx in range(n):
-            res_end = residuals.shape[2] - idx
-            if train_length:
-                res_start = res_end - train_length
-            else:
-                res_start = n - (idx + 1)
-            res_n = residuals[idx][:, res_start:res_end]
-            q_hat_n = np.quantile(res_n, q=alpha, axis=1)
-            q_hats.append(q_hat_n)
-        q_hats = np.expand_dims(np.array(q_hats), -1)
-        # the prediciton interval is given by pred +/- q_hat
         n_comps = pred_vals.shape[1]
-        pred_vals_expected = []
-        for col_idx in range(n_comps):
-            q_col = q_hats[:, col_idx]
-            pred_col = pred_vals[:, col_idx]
-            pred_col_expected = np.concatenate(
-                [pred_col - q_col, pred_col, pred_col + q_col], axis=1
-            )
-            pred_col_expected = np.expand_dims(pred_col_expected, -1)
-            pred_vals_expected.append(pred_col_expected)
-        pred_vals_expected = np.concatenate(pred_vals_expected, axis=1)
-        return pred_vals_expected
+        half_idx = len(quantiles) // 2
+        alphas = np.array(quantiles[half_idx + 1 :][::-1]) - np.array(
+            quantiles[:half_idx]
+        )
+        pred_expected = []
+        for alpha_idx, alpha in enumerate(alphas):
+            q_hats = []
+            # compute the quantile `alpha` of all past residuals (absolute "per time step" errors between historical
+            # forecasts and the target series)
+            for idx in range(n):
+                res_end = residuals.shape[2] - idx
+                if train_length:
+                    res_start = res_end - train_length
+                else:
+                    res_start = n - (idx + 1)
+                res_n = residuals[idx][:, res_start:res_end]
+                q_hat_n = np.quantile(res_n, q=alpha, axis=1)
+                q_hats.append(q_hat_n)
+            q_hats = np.expand_dims(np.array(q_hats), -1)
+            # the prediciton interval is given by pred +/- q_hat
+            pred_vals_expected = []
+            for col_idx in range(n_comps):
+                q_col = q_hats[:, col_idx]
+                pred_col = pred_vals[:, col_idx]
+                pred_col_expected = np.concatenate(
+                    [pred_col - q_col, pred_col, pred_col + q_col], axis=1
+                )
+                pred_col_expected = np.expand_dims(pred_col_expected, 1)
+                pred_vals_expected.append(pred_col_expected)
+            pred_vals_expected = np.concatenate(pred_vals_expected, axis=1)
+            pred_expected.append(pred_vals_expected)
+
+        # reorder to have columns going from lowest quantiles to highest per component
+        pred_expected_reshaped = []
+        for comp_idx in range(n_comps):
+            for q_idx in [0, 1, 2]:
+                for pred_idx in range(len(pred_expected)):
+                    # upper quantiles will have reversed order
+                    if q_idx == 2:
+                        pred_idx = len(pred_expected) - 1 - pred_idx
+                    pred_ = pred_expected[pred_idx][:, comp_idx, q_idx]
+                    pred_ = pred_.reshape(-1, 1, 1)
+
+                    # q_hat_idx = q_idx + comp_idx * 3 + alpha_idx * 3 * n_comps
+                    pred_expected_reshaped.append(pred_)
+                    # only add median quantile once
+                    if q_idx == 1:
+                        break
+        return np.concatenate(pred_expected_reshaped, axis=1)
 
     @pytest.mark.parametrize(
         "config",
@@ -936,7 +973,7 @@ class TestConformalModel:
                 model_params=model_params,
                 **covs_kwargs_train,
             ),
-            alpha=0.8,
+            quantiles=q,
         )
 
         # prediction works with long enough input
@@ -1075,7 +1112,7 @@ class TestConformalModel:
                 model_params=model_params,
                 **covs_kwargs_train,
             ),
-            alpha=0.8,
+            quantiles=q,
         )
 
         hfc_kwargs = {
