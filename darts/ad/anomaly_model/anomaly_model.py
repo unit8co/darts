@@ -317,7 +317,7 @@ class AnomalyModel(ABC):
 
     @property
     def scorers_are_univariate(self):
-        """Whether any of the Scorers is trainable."""
+        """Whether any of the Scorers is univariate."""
         return any(s.is_univariate for s in self.scorers)
 
     @property
