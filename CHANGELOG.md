@@ -40,6 +40,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug preventing TimeSeries to be divided by xarray or ndarray. [#2476](https://https://github.com/unit8co/darts/pull/2476) by [Joel L.](https://github.com/Joelius300).
 - Fixed a bug when using `save()` and `load()` with a `RegressionEnsembleModel` that ensembles any `TorchForecastingModel`. [#2437](https://github.com/unit8co/darts/issues/2437) by [He Weilin](https://github.com/cnhwl).
 - Fixed a bug with `CrostonModel`, which actually does not support future covariates. [#2511](https://github.com/unit8co/darts/pull/2511) by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed the comment of `scorers_are_univariate` in class `AnomalyModel`. [#2452](https://github.com/unit8co/darts/pull/2542) by [He Weilin](https://github.com/cnhwl).
 
 **Dependencies**
 
