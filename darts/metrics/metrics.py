@@ -656,7 +656,7 @@ def err(
     """Error (ERR).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column and time step :math:`t` as:
+    component/column, (optional) quantile, and time step :math:`t` as:
 
     .. math:: y_t - \\hat{y}_t
 
@@ -701,16 +701,18 @@ def err(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
+        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        `len(q) > 1`. For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
@@ -747,7 +749,7 @@ def merr(
     """Mean Error (MERR).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\frac{1}{T}\\sum_{t=1}^T{(y_t - \\hat{y}_t)}
 
@@ -787,16 +789,19 @@ def merr(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -830,7 +835,7 @@ def ae(
     """Absolute Error (AE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column and time step :math:`t` as:
+    component/column, (optional) quantile, and time step :math:`t` as:
 
     .. math:: |y_t - \\hat{y}_t|
 
@@ -875,16 +880,18 @@ def ae(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
+        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        `len(q) > 1`. For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
@@ -921,7 +928,7 @@ def mae(
     """Mean Absolute Error (MAE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\frac{1}{T}\\sum_{t=1}^T{|y_t - \\hat{y}_t|}
 
@@ -961,16 +968,19 @@ def mae(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -1008,7 +1018,7 @@ def ase(
     It is the Absolute Error (AE) scaled by the Mean AE (MAE) of the naive m-seasonal forecast.
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column and time step :math:`t` as:
+    component/column, (optional) quantile, and time step :math:`t` as:
 
     .. math:: \\frac{AE(y_{t_p+1:t_p+T}, \\hat{y}_{t_p+1:t_p+T})}{E_m},
 
@@ -1072,16 +1082,18 @@ def ase(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
+        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        `len(q) > 1`. For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
@@ -1125,7 +1137,7 @@ def mase(
     It is the Mean Absolute Error (MAE) scaled by the MAE of the naive m-seasonal forecast.
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\frac{MAE(y_{t_p+1:t_p+T}, \\hat{y}_{t_p+1:t_p+T})}{E_m},
 
@@ -1184,16 +1196,19 @@ def mase(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -1233,7 +1248,7 @@ def se(
     """Squared Error (SE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column and time step :math:`t` as:
+    component/column, (optional) quantile, and time step :math:`t` as:
 
     .. math:: (y_t - \\hat{y}_t)^2.
 
@@ -1278,16 +1293,18 @@ def se(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
+        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        `len(q) > 1`. For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
@@ -1324,7 +1341,7 @@ def mse(
     """Mean Squared Error (MSE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\frac{1}{T}\\sum_{t=1}^T{(y_t - \\hat{y}_t)^2}.
 
@@ -1364,16 +1381,19 @@ def mse(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -1411,7 +1431,7 @@ def sse(
     It is the Squared Error (SE) scaled by the Mean SE (MSE) of the naive m-seasonal forecast.
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column and time step :math:`t` as:
+    component/column, (optional) quantile, and time step :math:`t` as:
 
     .. math:: \\frac{SE(y_{t_p+1:t_p+T}, \\hat{y}_{t_p+1:t_p+T})}{E_m},
 
@@ -1475,16 +1495,18 @@ def sse(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
+        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        `len(q) > 1`. For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
@@ -1528,7 +1550,7 @@ def msse(
     It is the Mean Squared Error (MSE) scaled by the MSE of the naive m-seasonal forecast.
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\frac{MSE(y_{t_p+1:t_p+T}, \\hat{y}_{t_p+1:t_p+T})}{E_m},
 
@@ -1587,16 +1609,19 @@ def msse(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -1635,7 +1660,7 @@ def rmse(
     """Root Mean Squared Error (RMSE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\sqrt{\\frac{1}{T}\\sum_{t=1}^T{(y_t - \\hat{y}_t)^2}}
 
@@ -1675,16 +1700,19 @@ def rmse(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -1720,7 +1748,7 @@ def rmsse(
     It is the Root Mean Squared Error (RMSE) scaled by the RMSE of the naive m-seasonal forecast.
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\frac{RMSE(y_{t_p+1:t_p+T}, \\hat{y}_{t_p+1:t_p+T})}{E_m},
 
@@ -1779,16 +1807,19 @@ def rmsse(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -1825,7 +1856,7 @@ def sle(
     """Squared Log Error (SLE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column and time step :math:`t` as:
+    component/column, (optional) quantile, and time step :math:`t` as:
 
     .. math:: \\left(\\log{(y_t + 1)} - \\log{(\\hat{y} + 1)}\\right)^2
 
@@ -1872,16 +1903,18 @@ def sle(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
+        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        `len(q) > 1`. For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
@@ -1919,7 +1952,7 @@ def rmsle(
     """Root Mean Squared Log Error (RMSLE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: \\sqrt{\\frac{1}{T}\\sum_{t=1}^T{\\left(\\log{(y_t + 1)} - \\log{(\\hat{y}_t + 1)}\\right)^2}}
 
@@ -1961,16 +1994,19 @@ def rmsle(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -2059,16 +2095,18 @@ def ape(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
+        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        `len(q) > 1`. For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
@@ -2112,7 +2150,7 @@ def mape(
     """Mean Absolute Percentage Error (MAPE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
-    percentage value per component/column with:
+    percentage value per component/column and (optional) quantile with:
 
     .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T}{\\left| \\frac{y_t - \\hat{y}_t}{y_t} \\right|}
 
@@ -2160,16 +2198,19 @@ def mape(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -2204,7 +2245,7 @@ def sape(
     """symmetric Absolute Percentage Error (sAPE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
-    percentage value per component/column and time step :math:`t` with:
+    percentage value per component/column, (optional) quantile and time step :math:`t` with:
 
     .. math::
         200 \\cdot \\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|}
@@ -2258,16 +2299,18 @@ def sape(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
+        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        `len(q) > 1`. For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
@@ -2311,7 +2354,7 @@ def smape(
     """symmetric Mean Absolute Percentage Error (sMAPE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
-    percentage value per component/column with:
+    percentage value per component/column and (optional) quantile with:
 
     .. math::
         200 \\cdot \\frac{1}{T}
@@ -2362,16 +2405,19 @@ def smape(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -2405,7 +2451,7 @@ def ope(
     """Overall Percentage Error (OPE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
-    percentage value per component/column with:
+    percentage value per component/column and (optional) quantile with:
 
     .. math:: 100 \\cdot \\left| \\frac{\\sum_{t=1}^{T}{y_t}
               - \\sum_{t=1}^{T}{\\hat{y}_t}}{\\sum_{t=1}^{T}{y_t}} \\right|.
@@ -2451,16 +2497,19 @@ def ope(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -2505,7 +2554,7 @@ def arre(
     """Absolute Ranged Relative Error (ARRE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
-    percentage value per component/column and time step :math:`t` with:
+    percentage value per component/column, (optional) quantile and time step :math:`t` with:
 
     .. math:: 100 \\cdot \\left| \\frac{y_t - \\hat{y}_t} {\\max_t{y_t} - \\min_t{y_t}} \\right|
 
@@ -2555,16 +2604,18 @@ def arre(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
+        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        `len(q) > 1`. For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
@@ -2611,7 +2662,7 @@ def marre(
     """Mean Absolute Ranged Relative Error (MARRE).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
-    percentage value per component/column with:
+    percentage value per component/column and (optional) quantile with:
 
     .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T} {\\left| \\frac{y_t - \\hat{y}_t} {\\max_t{y_t} -
               \\min_t{y_t}} \\right|}
@@ -2697,7 +2748,7 @@ def r2_score(
     """Coefficient of Determination :math:`R^2` (see [1]_ for more details).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and (optional) quantile as:
 
     .. math:: 1 - \\frac{\\sum_{t=1}^T{(y_t - \\hat{y}_t)^2}}{\\sum_{t=1}^T{(y_t - \\bar{y})^2}},
 
@@ -2741,16 +2792,19 @@ def r2_score(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -2789,7 +2843,7 @@ def coefficient_of_variation(
     """Coefficient of Variation (percentage).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as a percentage value with:
+    component/column and (optional) quantile as a percentage value with:
 
     .. math:: 100 \\cdot \\text{RMSE}(y_t, \\hat{y}_t) / \\bar{y},
 
@@ -2832,16 +2886,19 @@ def coefficient_of_variation(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -2920,16 +2977,19 @@ def dtw_metric(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -2966,7 +3026,7 @@ def qr(
     sample values summed up along the time axis (QL computes the quantile and loss per time step).
 
     For the true series :math:`y` and predicted stochastic/probabilistic series (containing N samples) :math:`\\hat{y}`
-    of of shape :math:`T \\times N`, it is computed per column/component as:
+    of of shape :math:`T \\times N`, it is computed per column/component and quantile as:
 
     .. math:: 2 \\frac{QL(Z, \\hat{Z}_q)}{Z},
 
@@ -3006,16 +3066,19 @@ def qr(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -3074,7 +3137,7 @@ def ql(
     QL computes the quantile of all sample values and the loss per time step.
 
     For the true series :math:`y` and predicted stochastic/probabilistic series (containing N samples) :math:`\\hat{y}`
-    of of shape :math:`T \\times N`, it is computed per column/component and time step :math:`t` as:
+    of of shape :math:`T \\times N`, it is computed per column/component, quantile and time step :math:`t` as:
 
     .. math:: 2 \\max((q - 1) (y_t - \\hat{y}_{t,q}), q (y_t - \\hat{y}_{t,q})),
 
@@ -3119,16 +3182,18 @@ def ql(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
+        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        `len(q) > 1`. For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
@@ -3174,7 +3239,7 @@ def mql(
     time axis.
 
     For the true series :math:`y` and predicted stochastic/probabilistic series (containing N samples) :math:`\\hat{y}`
-    of of shape :math:`T \\times N`, it is computed per column/component as:
+    of of shape :math:`T \\times N`, it is computed per column/component and quantile as:
 
     .. math:: 2 \\frac{1}{T}\\sum_{t=1}^T{\\max((q - 1) (y_t - \\hat{y}_{t,q}), q (y_t - \\hat{y}_{t,q}))},
 
@@ -3214,16 +3279,19 @@ def mql(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -3258,16 +3326,17 @@ def iw(
 ) -> METRIC_OUTPUT_TYPE:
     """Interval Width (IL).
 
-    IL gives the width of predicted quantile intervals.
+    IL gives the length / width of predicted quantile intervals.
 
     For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
-    it is computed per component/column, quantile interval, and time step
+    it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step
     :math:`t` as:
 
-    .. math:: \\hat{y}_{t,qh} - \\hat{y}_{t,ql}
+    .. math:: U_t - L_t,
 
-    where :math:`\\hat{y}_{t,qh}` are the upper bound quantile values (of all predicted quantiles or samples) at time
-    :math:`t`, and :math:`\\hat{y}_{t,ql}` are the lower bound quantile values.
+    where :math:`U_t` are the predicted upper bound quantile values :math:`\\hat{y}_{q_h,t}` (of all predicted
+    quantiles or samples) at time :math:`t`, and :math:`L_t` are the predicted lower bound quantile values
+    :math:`\\hat{y}_{q_l,t}`.
 
     Parameters
     ----------
@@ -3309,16 +3378,18 @@ def iw(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q_interval) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components) without time
-        and component reductions. For:
+        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time
+        and component reductions, and shape (n time steps, n q intervals) without time but component reduction and
+        `len(q_interval) > 1`. For:
 
+        - the input from the `float` return case above but with `len(q_interval) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
@@ -3354,18 +3425,19 @@ def miw(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """Mean Interval Width (IL).
+    """Mean Interval Width (MIL).
 
-    IL gives the width of predicted quantile intervals aggregated over time.
+    MIL gives the time-aggregated length / width of predicted quantile intervals.
 
     For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
-    it is computed per component/column, quantile interval, and time step
+    it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step
     :math:`t` as:
 
-    .. math:: \\frac{1}{T}\\sum_{t=1}^T{\\hat{y}_{t,qh} - \\hat{y}_{t,ql}}
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T{U_t - L_t},
 
-    where :math:`\\hat{y}_{t,qh}` are the upper bound quantile values (of all predicted quantiles or samples) at time
-    :math:`t`, and :math:`\\hat{y}_{t,ql}` are the lower bound quantile values.
+    where :math:`U_t` are the predicted upper bound quantile values :math:`\\hat{y}_{q_h,t}` (of all predicted
+    quantiles or samples) at time :math:`t`, and :math:`L_t` are the predicted lower bound quantile values
+    :math:`\\hat{y}_{q_l,t}`.
 
     Parameters
     ----------
@@ -3402,16 +3474,19 @@ def miw(
     Returns
     -------
     float
-        A single metric score for:
+        A single metric score for (with `len(q_interval) <= 1`):
 
         - single univariate series.
         - single multivariate series with `component_reduction`.
-        - sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,) without component reduction. For:
+        A numpy array of metric scores. The array has shape (n components * n q intervals,) without component reduction,
+        and shape (n q intervals,) with component reduction and `len(q_interval) > 1`.
+        For:
 
+        - the input from the `float` return case above but with `len(q_interval) > 1`.
         - single multivariate series and at least `component_reduction=None`.
-        - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
     List[float]
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
@@ -3419,6 +3494,231 @@ def miw(
     """
     return np.nanmean(
         _get_wrapped_metric(iw, n_wrappers=3)(
+            actual_series,
+            pred_series,
+            intersect,
+            q=q,
+            q_interval=q_interval,
+        ),
+        axis=TIME_AX,
+    )
+
+
+@interval_support
+@multi_ts_support
+@multivariate_support
+def iws(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    *,
+    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
+    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    time_reduction: Optional[Callable[..., np.ndarray]] = None,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Interval Winkler Score (IWS) [1]_.
+
+    IWS gives the length / width of the quantile intervals plus a penalty if the observation is outside the interval.
+
+    For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
+    it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step :math:`t` as:
+
+    .. math::
+        \\begin{equation}
+            \\begin{cases}
+                (U_t - L_t) + \\frac{1}{q_l} (L_t - y_t) & \\text{if } y_t < L_t \\\\
+                (U_t - L_t) & \\text{if } L_t \\leq y_t \\leq U_t \\\\
+                (U_t - L_t) + \\frac{1}{1 - q_h} (y_t - U_t) & \\text{if } y_t > U_t
+            \\end{cases}
+        \\end{equation},
+
+    where :math:`U_t` are the predicted upper bound quantile values :math:`\\hat{y}_{q_h,t}` (of all predicted
+    quantiles or samples) at time :math:`t`, and :math:`L_t` are the predicted lower bound quantile values
+    :math:`\\hat{y}_{q_l,t}`.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    q_interval
+        The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence tuples
+        (multiple intervals) with elements (low quantile, high quantile).
+    q
+        Quantiles `q` not supported by this metric; use `q_interval` instead.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    time_reduction
+        Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        time axis. If `None`, will return a metric per time step.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Returns
+    -------
+    float
+        A single metric score for (with `len(q_interval) <= 1`):
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time
+        and component reductions, and shape (n time steps, n q intervals) without time but component reduction and
+        `len(q_interval) > 1`. For:
+
+        - the input from the `float` return case above but with `len(q_interval) > 1`.
+        - single multivariate series and at least `component_reduction=None`.
+        - single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
+    List[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    References
+    ----------
+    .. [1] https://otexts.com/fpp3/distaccuracy.html
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=True,
+        q=q,
+    )
+    y_pred_lo, y_pred_hi = _get_quantile_intervals(y_pred, q=q, q_interval=q_interval)
+    interval_width = y_pred_hi - y_pred_lo
+
+    # `c_alpha = 2 / alpha` corresponds to:
+    #   - `1 / (1 - q_hi)` for the high quantile
+    #   - `1 / q_lo` for the low quantile
+    c_alpha_hi = 1 / (1 - q_interval[:, 1])
+    c_alpha_lo = 1 / q_interval[:, 0]
+
+    score = np.where(
+        y_true < y_pred_lo,
+        interval_width + c_alpha_lo * (y_pred_lo - y_true),
+        np.where(
+            y_true > y_pred_hi,
+            interval_width + c_alpha_hi * (y_true - y_pred_hi),
+            interval_width,
+        ),
+    )
+    return score
+
+
+@interval_support
+@multi_ts_support
+@multivariate_support
+def miws(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    *,
+    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
+    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Interval Winkler Score (IWS) [1]_.
+
+    MIWS gives the time-aggregated length / width of the quantile intervals plus a penalty if the observation is
+    outside the interval.
+
+    For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
+    it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step :math:`t` as:
+
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T{W_t(y_t, \\hat{y}_{t}, q_h, q_l)},
+
+    where :math:`W` is the Winkler Score :func:`~darts.metrics.metrics.iws`.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    q_interval
+        The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence tuples
+        (multiple intervals) with elements (low quantile, high quantile).
+    q
+        Quantiles `q` not supported by this metric; use `q_interval` instead.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Returns
+    -------
+    float
+        A single metric score for (with `len(q_interval) <= 1`):
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components * n q intervals,) without component reduction,
+        and shape (n q intervals,) with component reduction and `len(q_interval) > 1`.
+        For:
+
+        - the input from the `float` return case above but with `len(q_interval) > 1`.
+        - single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
+    List[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    References
+    ----------
+    .. [1] https://otexts.com/fpp3/distaccuracy.html
+    """
+    return np.nanmean(
+        _get_wrapped_metric(iws, n_wrappers=3)(
             actual_series,
             pred_series,
             intersect,
