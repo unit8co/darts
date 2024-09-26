@@ -1,7 +1,39 @@
+"""
+TimesNet Model
+-------
+The implementation is built upon the Time Series Library's TimesNet model
+<https://github.com/thuml/Time-Series-Library/blob/main/layers/Embed.py>
+
+-------
+MIT License
+
+Copyright (c) 2021 THUML @ Tsinghua University
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
 import math
 
 import torch
 import torch.nn as nn
+
+from darts.utils.torch import MonteCarloDropout
 
 
 class PositionalEmbedding(nn.Module):
@@ -125,7 +157,7 @@ class DataEmbedding(nn.Module):
             if embed_type != "timeF"
             else TimeFeatureEmbedding(d_model=d_model, embed_type=embed_type, freq=freq)
         )
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout = MonteCarloDropout(p=dropout)
 
     def forward(self, x, x_mark):
         if x_mark is None:
@@ -143,7 +175,7 @@ class DataEmbedding_inverted(nn.Module):
     def __init__(self, c_in, d_model, embed_type="fixed", freq="h", dropout=0.1):
         super().__init__()
         self.value_embedding = nn.Linear(c_in, d_model)
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout = MonteCarloDropout(p=dropout)
 
     def forward(self, x, x_mark):
         x = x.permute(0, 2, 1)
@@ -167,7 +199,7 @@ class DataEmbedding_wo_pos(nn.Module):
             if embed_type != "timeF"
             else TimeFeatureEmbedding(d_model=d_model, embed_type=embed_type, freq=freq)
         )
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout = MonteCarloDropout(p=dropout)
 
     def forward(self, x, x_mark):
         if x_mark is None:
@@ -192,7 +224,7 @@ class PatchEmbedding(nn.Module):
         self.position_embedding = PositionalEmbedding(d_model)
 
         # Residual dropout
-        self.dropout = nn.Dropout(dropout)
+        self.dropout = MonteCarloDropout(p=dropout)
 
     def forward(self, x):
         # do patching
