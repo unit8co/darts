@@ -1,12 +1,12 @@
 import numpy as np
 import pandas as pd
 import pytest
+import torch
 
 from darts import TimeSeries
 from darts.models.forecasting.times_net_model import FFT_for_Period, TimesNetModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
-import torch
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -122,7 +122,6 @@ class TestTimesNetModel:
 
 
 class TestT_FFT_for_Period:
-
     sample_input = (
         torch.sin(torch.linspace(0, 4 * torch.pi, 100)).unsqueeze(0).unsqueeze(-1)
     )
