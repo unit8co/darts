@@ -131,6 +131,23 @@ class TestConformalModel:
         global_model.fit(series)
         _ = ConformalNaiveModel(model=global_model, quantiles=q)
 
+        # non-centered quantiles
+        with pytest.raises(ValueError) as exc:
+            ConformalNaiveModel(model=global_model, quantiles=[0.2, 0.5, 0.6])
+        assert str(exc.value) == (
+            "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles higher than `q=0.5`"
+        )
+
+        # quantiles missing median
+        with pytest.raises(ValueError) as exc:
+            ConformalNaiveModel(model=global_model, quantiles=[0.1, 0.9])
+        assert str(exc.value) == "median quantile `q=0.5` must be in `quantiles`"
+
+        # too low and high quantiles
+        with pytest.raises(ValueError) as exc:
+            ConformalNaiveModel(model=global_model, quantiles=[-0.1, 0.5, 1.1])
+        assert str(exc.value) == "All provided quantiles must be between 0 and 1."
+
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_save_model_parameters(self, config):
         # model creation parameters were saved before. check if re-created model has same params as original
