@@ -1,13 +1,17 @@
 import pytest
 import torch
-import math
-from torch import nn
 
-from darts.models.components.embed import *
-
-import pytest
-import torch
-import math
+from darts.models.components.embed import (
+    DataEmbedding,
+    DataEmbedding_inverted,
+    DataEmbedding_wo_pos,
+    FixedEmbedding,
+    PatchEmbedding,
+    PositionalEmbedding,
+    TemporalEmbedding,
+    TimeFeatureEmbedding,
+    TokenEmbedding,
+)
 
 
 class TestEmbedding:
@@ -191,4 +195,4 @@ class TestEmbedding:
         seq_len = 100
         x = torch.randn(batch_size, seq_len, 10)  # Incorrect feature size
         with pytest.raises(RuntimeError):
-            output = embedding(x)
+            embedding(x)
