@@ -718,7 +718,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     res_end_idx = -(forecast_horizon - (irr + 1))
                     res_.append(res[irr : res_end_idx or None, abs(res_end_idx)])
                 res = np.concatenate(res_, axis=2).T
-            assert not np.isnan(res).any().any()
 
             # get the last forecast index based on the residual examples
             if cal_series is None:
@@ -727,9 +726,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 )
             else:
                 last_fc_idx = len(s_hfcs)
-
-            if last_fc_idx > len(s_hfcs):
-                raise_log(ValueError("blabla"), logger=logger)
 
             q_hat = None
             if cal_series is not None:
@@ -756,12 +752,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     )
 
                     cal_res = res[:, :, cal_start:cal_end]
-
-                    # TODO: remove checks
-                    len_exp = cal_end - (cal_start or 0)
-                    if cal_res.shape[2] != len_exp:
-                        raise_log(ValueError("Too short cal"), logger=logger)
-
                     q_hat_ = self._calibrate_interval(cal_res)
                 else:
                     # with a calibration set, use a constant q_hat
