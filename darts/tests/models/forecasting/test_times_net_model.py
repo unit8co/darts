@@ -3,9 +3,10 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
-from darts.models.forecasting.times_net_model import TimesNetModel
+from darts.models.forecasting.times_net_model import FFT_for_Period, TimesNetModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
+import torch
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -118,3 +119,57 @@ class TestTimesNetModel:
         model.fit(target)
         pred = model.predict(n=12)
         assert len(pred) == 12
+
+
+class TestT_FFT_for_Period:
+
+    sample_input = (
+        torch.sin(torch.linspace(0, 4 * torch.pi, 100)).unsqueeze(0).unsqueeze(-1)
+    )
+
+    def test_FFT_for_Period_output_shape(self):
+        period, amplitudes = FFT_for_Period(self.sample_input)
+
+        assert isinstance(period, torch.Tensor)
+        assert isinstance(amplitudes, torch.Tensor)
+        assert period.shape == (2,)  # Default k=2
+        assert amplitudes.shape == (1, 2)  # (B, k)
+
+    def test_FFT_for_Period_custom_k(self):
+        k = 3
+        period, amplitudes = FFT_for_Period(self.sample_input, k=k)
+
+        assert period.shape == (k,)
+        assert amplitudes.shape == (1, k)
+
+    def test_FFT_for_Period_period_values(self):
+        period, _ = FFT_for_Period(self.sample_input)
+
+        # The main period should be close to 50 (half of the input length)
+        assert torch.isclose(period[0], torch.tensor(50), rtol=0.1)
+
+    def test_FFT_for_Period_amplitude_values(self):
+        _, amplitudes = FFT_for_Period(self.sample_input)
+
+        # Amplitudes should be non-negative
+        assert torch.all(amplitudes >= 0)
+
+    def test_FFT_for_Period_different_shapes(self):
+        # Test with different input shapes
+        x1 = torch.randn(2, 100, 3)  # [B, T, C] = [2, 100, 3]
+        x2 = torch.randn(1, 200, 1)  # [B, T, C] = [1, 200, 1]
+
+        period1, amplitudes1 = FFT_for_Period(x1)
+        period2, amplitudes2 = FFT_for_Period(x2)
+
+        assert period1.shape == (2,)
+        assert amplitudes1.shape == (2, 2)
+        assert period2.shape == (2,)
+        assert amplitudes2.shape == (1, 2)
+
+    def test_FFT_for_Period_zero_frequency_removal(self):
+        x = torch.ones(1, 100, 1)  # Constant input
+        _, amplitudes = FFT_for_Period(x)
+
+        # The amplitude of the zero frequency should be zero
+        assert torch.isclose(amplitudes[0, 0], torch.tensor(0.0))
