@@ -15,6 +15,7 @@ from darts import TimeSeries, metrics
 from darts.logging import get_logger, raise_log
 from darts.metrics.metrics import METRIC_TYPE
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.models.utils import TORCH_AVAILABLE
 from darts.utils import _with_sanity_checks
 from darts.utils.historical_forecasts.utils import _historical_forecasts_start_warnings
 from darts.utils.timeseries_generation import _build_forecast_series
@@ -31,6 +32,11 @@ from darts.utils.utils import (
     n_steps_between,
     quantile_names,
 )
+
+if TORCH_AVAILABLE:
+    from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+else:
+    TorchForecastingModel = None
 
 logger = get_logger(__name__)
 
@@ -803,16 +809,60 @@ class ConformalModel(GlobalForecastingModel, ABC):
     def save(
         self, path: Optional[Union[str, os.PathLike, BinaryIO]] = None, **pkl_kwargs
     ) -> None:
-        # TODO: Use new save/load logic from EnsembleModel
-        model_name = self.__class__.__name__
-        raise_log(
-            NotImplementedError(
-                f"`{model_name}` does not support saving / loading. Instead, "
-                f"save the underlying forecasting model `{self.model.__class__.__name__}` using its dedicated "
-                f"save / load functionality, and create a new `{model_name}` with it.",
-            ),
-            logger=logger,
-        )
+        """
+        Saves the conformal model under a given path or file handle.
+
+        Additionally, two files are stored if `self.model` is a `TorchForecastingModel`.
+
+        Example for saving and loading a :class:`ConformalNaiveModel`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.datasets import AirPassengersDataset
+                from darts.models import ConformalNaiveModel, LinearRegressionModel
+
+                series = AirPassengersDataset().load()
+                forecasting_model = LinearRegressionModel(lags=4).fit(series)
+
+                model = ConformalNaiveModel(
+                    model=forecasting_model,
+                    quantiles=[0.1, 0.5, 0.9],
+                )
+
+                model.save("my_model.pkl")
+                model_loaded = ConformalNaiveModel.load("my_model.pkl")
+            ..
+
+        Parameters
+        ----------
+        path
+            Path or file handle under which to save the ensemble model at its current state. If no path is specified,
+            the ensemble model is automatically saved under ``"{ConformalNaiveModel}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
+            If the forecasting model is a `TorchForecastingModel`, two files (model object and checkpoint) are saved
+            under ``"{path}.{ModelClass}.pt"`` and ``"{path}.{ModelClass}.ckpt"``.
+        pkl_kwargs
+            Keyword arguments passed to `pickle.dump()`
+        """
+
+        if path is None:
+            # default path
+            path = self._default_save_path() + ".pkl"
+
+        super().save(path, **pkl_kwargs)
+
+        if TORCH_AVAILABLE and issubclass(type(self.model), TorchForecastingModel):
+            path_tfm = f"{path}.{type(self.model).__name__}.pt"
+            self.model.save(path=path_tfm)
+
+    @staticmethod
+    def load(path: Union[str, os.PathLike, BinaryIO]) -> "ConformalModel":
+        model: ConformalModel = GlobalForecastingModel.load(path)
+
+        if TORCH_AVAILABLE and issubclass(type(model.model), TorchForecastingModel):
+            path_tfm = f"{path}.{type(model.model).__name__}.pt"
+            model.model = TorchForecastingModel.load(path_tfm)
+        return model
 
     @abstractmethod
     def _calibrate_interval(

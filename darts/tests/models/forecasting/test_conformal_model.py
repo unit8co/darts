@@ -153,11 +153,48 @@ class TestConformalModel:
         model = model_cls(
             train_model(self.ts_pass_train, model_type=model_type), **kwargs
         )
+        model_prediction = model.predict(5)
 
-        model_path = os.path.join(tmpdir_fn, "model_test.pkl")
-        with pytest.raises(NotImplementedError) as exc:
-            model.save(model_path)
-        assert "does not support saving / loading" in str(exc.value)
+        # check if save and load methods work and
+        # if loaded conformal model creates same forecasts as original ensemble models
+        cwd = os.getcwd()
+        os.chdir(tmpdir_fn)
+        expected_suffixes = [
+            ".pkl",
+            ".pkl.NLinearModel.pt",
+            ".pkl.NLinearModel.pt.ckpt",
+        ]
+
+        # test save
+        model.save()
+        model.save(os.path.join(tmpdir_fn, f"{model_cls.__name__}.pkl"))
+
+        assert os.path.exists(tmpdir_fn)
+        files = os.listdir(tmpdir_fn)
+        if model_type == "torch":
+            # 1 from conformal model, 2 from torch, * 2 as `save()` was called twice
+            assert len(files) == 6
+            for f in files:
+                assert f.startswith(model_cls.__name__)
+            suffix_counts = {
+                suffix: sum(1 for p in os.listdir(tmpdir_fn) if p.endswith(suffix))
+                for suffix in expected_suffixes
+            }
+            assert all(count == 2 for count in suffix_counts.values())
+        else:
+            assert len(files) == 2
+            for f in files:
+                assert f.startswith(model_cls.__name__) and f.endswith(".pkl")
+
+        # test load
+        pkl_files = []
+        for filename in os.listdir(tmpdir_fn):
+            if filename.endswith(".pkl"):
+                pkl_files.append(os.path.join(tmpdir_fn, filename))
+        for p in pkl_files:
+            loaded_model = model_cls.load(p)
+            assert model_prediction == loaded_model.predict(5)
+        os.chdir(cwd)
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_single_ts(self, config):
