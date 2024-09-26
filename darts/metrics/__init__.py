@@ -72,6 +72,42 @@ from darts.metrics.metrics import (
     coefficient_of_variation,
     dtw_metric,
     err,
+    ic,
+    iw,
+    iws,
+    mae,
+    mape,
+    marre,
+    mase,
+    merr,
+    mic,
+    miw,
+    miws,
+    mql,
+    mse,
+    msse,
+    ope,
+    ql,
+    qr,
+    r2_score,
+    rmse,
+    rmsle,
+    rmsse,
+    sape,
+    se,
+    sle,
+    smape,
+    sse,
+)
+
+ALL_METRICS = {
+    ae,
+    ape,
+    arre,
+    ase,
+    coefficient_of_variation,
+    dtw_metric,
+    err,
     iw,
     iws,
     mae,
@@ -96,7 +132,9 @@ from darts.metrics.metrics import (
     sle,
     smape,
     sse,
-)
+    ic,
+    mic,
+}
 
 TIME_DEPENDENT_METRICS = {
     ae,
@@ -111,7 +149,19 @@ TIME_DEPENDENT_METRICS = {
     sse,
     iw,
     iws,
+    ic,
 }
+
+Q_INTERVAL_METRICS = {
+    iw,
+    iws,
+    miw,
+    miws,
+    ic,
+    mic,
+}
+
+NON_Q_METRICS = {dtw_metric}
 
 __all__ = [
     "ae",
@@ -145,4 +195,6 @@ __all__ = [
     "miw",
     "iws",
     "miws",
+    "ic",
+    "mic",
 ]

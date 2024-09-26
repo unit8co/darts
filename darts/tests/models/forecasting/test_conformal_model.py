@@ -8,7 +8,7 @@ import pytest
 
 from darts import TimeSeries, concatenate
 from darts.datasets import AirPassengersDataset
-from darts.metrics import ae
+from darts.metrics import ae, ic, mic
 from darts.models import (
     ConformalNaiveModel,
     LinearRegressionModel,
@@ -18,7 +18,11 @@ from darts.models import (
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import likelihood_component_names, quantile_names
+from darts.utils.utils import (
+    likelihood_component_names,
+    quantile_interval_names,
+    quantile_names,
+)
 
 IN_LEN = 3
 OUT_LEN = 3
@@ -1175,3 +1179,73 @@ class TestConformalModel:
             assert str(exc.value).startswith(
                 "Cannot build a single input for prediction with the provided model"
             )
+
+    @pytest.mark.parametrize("quantiles", [[0.1, 0.5, 0.9], [0.1, 0.3, 0.5, 0.7, 0.9]])
+    def test_backtest_and_residuals(self, quantiles):
+        """Residuals and backtest are already tested for quantile, and interval metrics based on stochastic or quantile
+        forecasts. So, a simple check that they give expected results should be enough.
+        """
+        n_q = len(quantiles)
+        half_idx = n_q // 2
+        q_interval = [
+            (q_lo, q_hi)
+            for q_lo, q_hi in zip(quantiles[:half_idx], quantiles[half_idx + 1 :][::-1])
+        ]
+        lpo = False
+
+        # series long enough for 2 hfcs
+        series = self.helper_prepare_series(True, True).append_values([0.1])
+        # conformal model
+        model = ConformalNaiveModel(model=train_model(series), quantiles=quantiles)
+
+        hfc = model.historical_forecasts(
+            series=series, forecast_horizon=5, last_points_only=lpo
+        )
+        bt = model.backtest(
+            series=series, historical_forecasts=hfc, last_points_only=lpo, metric=mic
+        )
+        # default backtest is equal to backtest with metric kwargs
+        np.testing.assert_array_almost_equal(
+            bt,
+            model.backtest(
+                series=series,
+                historical_forecasts=hfc,
+                last_points_only=lpo,
+                metric=mic,
+                metric_kwargs={"q_interval": q_interval},
+            ),
+        )
+        np.testing.assert_array_almost_equal(
+            mic(
+                [series] * len(hfc),
+                hfc,
+                q_interval=q_interval,
+                series_reduction=np.mean,
+            ),
+            bt,
+        )
+
+        residuals = model.residuals(
+            series=series, historical_forecasts=hfc, last_points_only=lpo, metric=ic
+        )
+        # default residuals is equal to residuals with metric kwargs
+        assert residuals == model.residuals(
+            series=series,
+            historical_forecasts=hfc,
+            last_points_only=lpo,
+            metric=ic,
+            metric_kwargs={"q_interval": q_interval},
+        )
+        expected_vals = ic([series] * len(hfc), hfc, q_interval=q_interval)
+        expected_residuals = []
+        for vals, hfc_ in zip(expected_vals, hfc):
+            expected_residuals.append(
+                TimeSeries.from_times_and_values(
+                    times=hfc_.time_index,
+                    values=vals,
+                    columns=likelihood_component_names(
+                        series.components, quantile_interval_names(q_interval)
+                    ),
+                )
+            )
+        assert residuals == expected_residuals
