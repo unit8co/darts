@@ -100,6 +100,32 @@ def metric_iws(y_true, y_pred, q_interval=None, **kwargs):
     return res.reshape(len(y_pred), -1)
 
 
+def metric_ic(y_true, y_pred, q_interval=None, **kwargs):
+    # this tests assumes `y_pred` are stochastic values
+    if isinstance(q_interval, tuple):
+        q_interval = [q_interval]
+    q_interval = np.array(q_interval)
+    q_lo = q_interval[:, 0]
+    q_hi = q_interval[:, 1]
+    y_pred_lo = np.quantile(y_pred, q_lo, axis=2).transpose(1, 2, 0)
+    y_pred_hi = np.quantile(y_pred, q_hi, axis=2).transpose(1, 2, 0)
+    res = np.where((y_pred_lo <= y_true) & (y_true <= y_pred_hi), 1, 0)
+    return res.reshape(len(y_pred), -1)
+
+
+def metric_incs_qr(y_true, y_pred, q_interval=None, **kwargs):
+    # this tests assumes `y_pred` are stochastic values
+    if isinstance(q_interval, tuple):
+        q_interval = [q_interval]
+    q_interval = np.array(q_interval)
+    q_lo = q_interval[:, 0]
+    q_hi = q_interval[:, 1]
+    y_pred_lo = np.quantile(y_pred, q_lo, axis=2).transpose(1, 2, 0)
+    y_pred_hi = np.quantile(y_pred, q_hi, axis=2).transpose(1, 2, 0)
+    res = np.maximum(y_pred_lo - y_true, y_true - y_pred_hi)
+    return res.reshape(len(y_pred), -1)
+
+
 class TestMetrics:
     np.random.seed(42)
     pd_train = pd.Series(
@@ -1875,6 +1901,8 @@ class TestMetrics:
             # only time dependent quantile interval metrics
             (metrics.iw, metric_iw),
             (metrics.iws, metric_iws),
+            (metrics.ic, metric_ic),
+            (metrics.incs_qr, metric_incs_qr),
         ],
     )
     def test_metric_quantile_interval_accuracy(self, config):
@@ -1923,6 +1951,10 @@ class TestMetrics:
                     metrics.miw,
                     metrics.iws,
                     metrics.miws,
+                    metrics.ic,
+                    metrics.mic,
+                    metrics.incs_qr,
+                    metrics.mincs_qr,
                 ],
                 [True, False],  # univariate series
                 [True, False],  # single series

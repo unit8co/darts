@@ -1,5 +1,4 @@
 import os
-import re
 from abc import ABC, abstractmethod
 from typing import Any, BinaryIO, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -35,8 +34,10 @@ from darts.utils.utils import (
 
 if TORCH_AVAILABLE:
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+    from darts.utils.likelihood_models import QuantileRegression
 else:
     TorchForecastingModel = None
+    QuantileRegression = None
 
 logger = get_logger(__name__)
 
@@ -79,7 +80,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         model
-            A pre-trained forecasting model.
+            A pre-trained global forecasting model.
         quantiles
             Optionally, a list of quantiles centered around the median `q=0.5` to use. For example quantiles
             [0.1, 0.5, 0.9] correspond to a (0.9 - 0.1) = 80% coverage interval around the median (model forecast).
@@ -103,16 +104,21 @@ class ConformalModel(GlobalForecastingModel, ABC):
         self._quantiles_no_med = [q for q in quantiles if q != 0.5]
         self._likelihood = "quantile"
 
+        half_idx = int(len(self.quantiles) / 2)
+        self.intervals = [
+            q_high - q_low
+            for q_high, q_low in zip(
+                self.quantiles[half_idx + 1 :][::-1], self.quantiles[:half_idx]
+            )
+        ]
+
         # if isinstance(alpha, float):
         #     self.symmetrical = True
         #     self.q_hats = pd.DataFrame(columns=["q_hat_sym"])
-        #     self.quantiles = [0.5 * (1 - alpha), 1 - 0.5 * (1 - alpha)]
         # else:
         #     self.symmetrical = False
         #     self.alpha_lo, self.alpha_hi = alpha
         #     self.q_hats = pd.DataFrame(columns=["q_hat_lo", "q_hat_hi"])
-        #     self.quantiles = [1 - 0.5 * (1 - alpha_) for alpha_ in alpha]
-        # self.quantiles = self.quantiles[:1] + [0.50] + self.quantiles[1:]
         # self.noncon_scores = dict()
         # self.alpha = alpha
         # self.quantiles = quantiles
@@ -1075,98 +1081,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         return self._likelihood
 
 
-def uncertainty_evaluate(df_forecast: pd.DataFrame) -> pd.DataFrame:
-    """Evaluate conformal prediction on test dataframe.
-
-    Parameters
-    ----------
-        df_forecast : pd.DataFrame
-            forecast dataframe with the conformal prediction intervals
-
-    Returns
-    -------
-        pd.DataFrame
-            table containing evaluation metrics such as interval_width and miscoverage_rate
-    """
-    # Remove beginning rows used as lagged regressors (if any), or future dataframes without y-values
-    # therefore, this ensures that all forecast rows for evaluation contains both y and y-hat
-    df_forecast_eval = df_forecast.dropna(subset=["y", "yhat1"]).reset_index(drop=True)
-
-    # Get evaluation params
-    df_eval = pd.DataFrame()
-    cols = df_forecast_eval.columns
-    yhat_cols = [col for col in cols if "%" in col]
-    n_forecasts = int(re.search("yhat(\\d+)", yhat_cols[-1]).group(1))
-
-    # get the highest and lowest quantile percentages
-    quantiles = []
-    for col in yhat_cols:
-        match = re.search(r"\d+\.\d+", col)
-        if match:
-            quantiles.append(float(match.group()))
-    quantiles = sorted(set(quantiles))
-
-    # Begin conformal evaluation steps
-    for step_number in range(1, n_forecasts + 1):
-        y = df_forecast_eval["y"].values
-        # only relevant if show_all_PI is true
-        if len([col for col in cols if "qhat" in col]) > 0:
-            qhat_cols = [col for col in cols if f"qhat{step_number}" in col]
-            yhat_lo = df_forecast_eval[qhat_cols[0]].values
-            yhat_hi = df_forecast_eval[qhat_cols[-1]].values
-        else:
-            yhat_lo = df_forecast_eval[f"yhat{step_number} {quantiles[0]}%"].values
-            yhat_hi = df_forecast_eval[f"yhat{step_number} {quantiles[-1]}%"].values
-        interval_width, miscoverage_rate = _get_evaluate_metrics_from_dataset(
-            y, yhat_lo, yhat_hi
-        )
-
-        # Construct row dataframe with current timestep using its q-hat, interval width, and miscoverage rate
-        col_names = ["interval_width", "miscoverage_rate"]
-        row = [interval_width, miscoverage_rate]
-        df_row = pd.DataFrame(
-            [row],
-            columns=pd.MultiIndex.from_product([[f"yhat{step_number}"], col_names]),
-        )
-
-        # Add row dataframe to overall evaluation dataframe with all forecasted timesteps
-        df_eval = pd.concat([df_eval, df_row], axis=1)
-
-    return df_eval
-
-
-def _get_evaluate_metrics_from_dataset(
-    y: np.ndarray, yhat_lo: np.ndarray, yhat_hi: np.ndarray
-) -> Tuple[float, float]:
-    #     df_forecast_eval: pd.DataFrame,
-    #     quantile_lo_col: str,
-    #     quantile_hi_col: str,
-    # ) -> Tuple[float, float]:
-    """Infers evaluation parameters based on the evaluation dataframe columns.
-
-    Parameters
-    ----------
-        df_forecast_eval : pd.DataFrame
-            forecast dataframe with the conformal prediction intervals
-
-    Returns
-    -------
-        float, float
-            conformal prediction evaluation metrics
-    """
-    # Interval width (efficiency metric)
-    quantile_lo_mean = np.mean(yhat_lo)
-    quantile_hi_mean = np.mean(yhat_hi)
-    interval_width = quantile_hi_mean - quantile_lo_mean
-
-    # Miscoverage rate (validity metric)
-    n_covered = np.sum((y >= yhat_lo) & (y <= yhat_hi))
-    coverage_rate = n_covered / len(y)
-    miscoverage_rate = 1 - coverage_rate
-
-    return interval_width, miscoverage_rate
-
-
 class ConformalNaiveModel(ConformalModel):
     def __init__(
         self,
@@ -1178,19 +1092,76 @@ class ConformalNaiveModel(ConformalModel):
         Parameters
         ----------
         model
-            A pre-trained forecasting model.
+            A pre-trained global forecasting model.
         quantiles
             Optionally, a list of quantiles centered around the median `q=0.5` to use. For example quantiles
             [0.1, 0.5, 0.9] correspond to a (0.9 - 0.1) = 80% coverage interval around the median (model forecast).
         """
         super().__init__(model=model, quantiles=quantiles)
-        half_idx = int(len(self.quantiles) / 2)
-        self.intervals = [
-            q_high - q_low
-            for q_high, q_low in zip(
-                self.quantiles[half_idx + 1 :][::-1], self.quantiles[:half_idx]
+
+    def _calibrate_interval(
+        self, residuals: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Computes the lower and upper calibrated forecast intervals based on residuals.
+
+        Parameters
+        ----------
+        residuals
+            The residuals are expected to have shape (horizon, n components, n historical forecasts * n samples)
+        """
+        # shape (forecast horizon, n components, n quantile intervals)
+        q_hat = np.quantile(residuals, q=self.intervals, axis=2).transpose((1, 2, 0))
+        return -q_hat, q_hat[:, :, ::-1]
+
+    @property
+    def _residuals_metric(self):
+        return metrics.ae
+
+
+class ConformalQRModel(ConformalModel):
+    def __init__(
+        self,
+        model: GlobalForecastingModel,
+        quantiles: List[float],
+    ):
+        """Conformalized Quantile Regression Model.
+
+        Parameters
+        ----------
+        model
+            A pre-trained global forecasting model using a Quantile Regression likelihood.
+            If `model` is a `RegressionModel`, it must have been created with `likelihood='quantile'` and a list of
+            quantiles `quantiles`.
+            If `model` is a `RegressionModel`, it must have been created with
+            `likelihood=darts.utils.likelihood_models.QuantileRegression(quantiles)` with a list of `quantiles`.
+        quantiles
+            Optionally, a list of quantiles centered around the median `q=0.5` to use. For example quantiles
+            [0.1, 0.5, 0.9] correspond to a (0.9 - 0.1) = 80% coverage interval around the median (model forecast).
+        """
+        if not hasattr(model, "likelihood"):
+            raise_log(
+                ValueError("`model` must must support `likelihood`."), logger=logger
             )
-        ]
+        if TORCH_AVAILABLE and isinstance(model, TorchForecastingModel):
+            if not isinstance(model.likelihood, QuantileRegression):
+                raise_log(
+                    ValueError(
+                        "Since `model` is a `TorchForecastingModel` it must use `likelihood=QuantileRegression()`."
+                    ),
+                    logger=logger,
+                )
+            else:
+                quantiles = model.likelihood.quantiles
+        else:  # regression models
+            if model.likelihood != "quantile":
+                raise_log(
+                    ValueError(
+                        f"Since `model` is a `{model.__class__.__name__} it must use `likelihood='quantile'`."
+                    ),
+                    logger=logger,
+                )
+            quantiles = model.quantiles
+        super().__init__(model=model, quantiles=quantiles)
 
     def _calibrate_interval(
         self, residuals: np.ndarray

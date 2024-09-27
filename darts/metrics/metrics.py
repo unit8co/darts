@@ -3934,3 +3934,205 @@ def mic(
         ),
         axis=TIME_AX,
     )
+
+
+@interval_support
+@multi_ts_support
+@multivariate_support
+def incs_qr(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    *,
+    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
+    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    time_reduction: Optional[Callable[..., np.ndarray]] = None,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Interval Non-Conformity Score for Quantile Regression (INCS_QR).
+
+    INCS_QR gives the absolute error to the closest predicted quantile interval bound when the observation is outside
+    the interval. Otherwise, it gives the negative absolute error to the closer bound.
+
+    For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
+    it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step :math:`t` as:
+
+    .. math:: \\max(L_t - y_t, y_t - U_t)
+
+    where :math:`U_t` are the predicted upper bound quantile values :math:`\\hat{y}_{q_h,t}` (of all predicted
+    quantiles or samples) at time :math:`t`, and :math:`L_t` are the predicted lower bound quantile values
+    :math:`\\hat{y}_{q_l,t}`.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    q_interval
+        The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence tuples
+        (multiple intervals) with elements (low quantile, high quantile).
+    q
+        Quantiles `q` not supported by this metric; use `q_interval` instead.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    time_reduction
+        Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        time axis. If `None`, will return a metric per time step.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Returns
+    -------
+    float
+        A single metric score for (with `len(q_interval) <= 1`):
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time
+        and component reductions, and shape (n time steps, n q intervals) without time but component reduction and
+        `len(q_interval) > 1`. For:
+
+        - the input from the `float` return case above but with `len(q_interval) > 1`.
+        - single multivariate series and at least `component_reduction=None`.
+        - single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
+    List[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    References
+    ----------
+    .. [1] https://otexts.com/fpp3/distaccuracy.html
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=True,
+        q=q,
+    )
+    y_pred_lo, y_pred_hi = _get_quantile_intervals(y_pred, q=q, q_interval=q_interval)
+    return np.maximum(y_pred_lo - y_true, y_true - y_pred_hi)
+
+
+@interval_support
+@multi_ts_support
+@multivariate_support
+def mincs_qr(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    *,
+    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
+    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Interval Non-Conformity Score for Quantile Regression (MINCS_QR).
+
+    MINCS_QR gives the time-aggregated INCS_QR :func:`~darts.metrics.metrics.incs_qr`.
+
+    For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
+    it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step :math:`t` as:
+
+    .. math:: \\frac{1}{T}\\sum_{t=1}^T{INCS_QR(y_t, \\hat{y}_{t}, q_h, q_l)},
+
+    where :math:`INCS_QR` is the Interval Non-Conformity Score for Quantile Regression
+    :func:`~darts.metrics.metrics.incs_qr`.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    q_interval
+        The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence tuples
+        (multiple intervals) with elements (low quantile, high quantile).
+    q
+        Quantiles `q` not supported by this metric; use `q_interval` instead.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Returns
+    -------
+    float
+        A single metric score for (with `len(q_interval) <= 1`):
+
+        - single univariate series.
+        - single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components * n q intervals,) without component reduction,
+        and shape (n q intervals,) with component reduction and `len(q_interval) > 1`.
+        For:
+
+        - the input from the `float` return case above but with `len(q_interval) > 1`.
+        - single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    List[float]
+        Same as for type `float` but for a sequence of series.
+    List[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    References
+    ----------
+    .. [1] https://otexts.com/fpp3/distaccuracy.html
+    """
+    return np.nanmean(
+        _get_wrapped_metric(ic, n_wrappers=3)(
+            actual_series,
+            pred_series,
+            intersect,
+            q=q,
+            q_interval=q_interval,
+        ),
+        axis=TIME_AX,
+    )

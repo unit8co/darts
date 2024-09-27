@@ -51,6 +51,9 @@ For probabilistic forecasts (storchastic predictions with `num_samples >> 1`) an
     Quantile interval metrics:
         - :func:`MIW <darts.metrics.metrics.miw>`: Mean Interval Width
         - :func:`MWS <darts.metrics.metrics.miws>`: Mean Interval Winkler Score
+        - :func:`MIC <darts.metrics.metrics.mic>`: Mean Interval Coverage
+        - :func:`MINCS_QR <darts.metrics.metrics.mincs_qr>`: Mean Interval Non-Conformity Score for Quantile Regression
+
 - Per time step:
     Quantile metrics:
         - :func:`QL <darts.metrics.metrics.ql>`: Quantile Loss
@@ -58,6 +61,8 @@ For probabilistic forecasts (storchastic predictions with `num_samples >> 1`) an
     Quantile interval metrics:
         - :func:`IW <darts.metrics.metrics.iw>`: Interval Width
         - :func:`WS <darts.metrics.metrics.iws>`: Interval Winkler Score
+        - :func:`IC <darts.metrics.metrics.ic>`: Interval Coverage
+        - :func:`INCS_QR <darts.metrics.metrics.incs_qr>`: Interval Non-Conformity Score for Quantile Regression
 
 For Dynamic Time Warping (DTW) (aggregated over time):
 
@@ -73,6 +78,7 @@ from darts.metrics.metrics import (
     dtw_metric,
     err,
     ic,
+    incs_qr,
     iw,
     iws,
     mae,
@@ -81,6 +87,7 @@ from darts.metrics.metrics import (
     mase,
     merr,
     mic,
+    mincs_qr,
     miw,
     miws,
     mql,
@@ -134,6 +141,8 @@ ALL_METRICS = {
     sse,
     ic,
     mic,
+    incs_qr,
+    mincs_qr,
 }
 
 TIME_DEPENDENT_METRICS = {
@@ -150,6 +159,7 @@ TIME_DEPENDENT_METRICS = {
     iw,
     iws,
     ic,
+    incs_qr,
 }
 
 Q_INTERVAL_METRICS = {
@@ -159,6 +169,7 @@ Q_INTERVAL_METRICS = {
     miws,
     ic,
     mic,
+    incs_qr,
 }
 
 NON_Q_METRICS = {dtw_metric}
@@ -197,4 +208,6 @@ __all__ = [
     "miws",
     "ic",
     "mic",
+    "incs_qr",
+    "mincs_qr",
 ]
