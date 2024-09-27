@@ -11,6 +11,7 @@ from darts.datasets import AirPassengersDataset
 from darts.metrics import ae, ic, mic
 from darts.models import (
     ConformalNaiveModel,
+    ConformalQRModel,
     LinearRegressionModel,
     NaiveSeasonal,
     NLinearModel,
@@ -34,16 +35,25 @@ torch_kwargs = dict(
     **tfm_kwargs,
 )
 
+q = [0.1, 0.5, 0.9]
 
-def train_model(*args, model_type="regression", model_params=None, **kwargs):
+
+def train_model(
+    *args, model_type="regression", model_params=None, quantiles=None, **kwargs
+):
     model_params = model_params or {}
     if model_type == "regression":
         return LinearRegressionModel(**regr_kwargs, **model_params).fit(*args, **kwargs)
+    elif model_type == "regression_qr":
+        return LinearRegressionModel(
+            likelihood="quantile",
+            quantiles=quantiles,
+            **regr_kwargs,
+            **model_params,
+        ).fit(*args, **kwargs)
     else:
         return NLinearModel(**torch_kwargs, **model_params).fit(*args, **kwargs)
 
-
-q = [0.1, 0.5, 0.9]
 
 # pre-trained global model for conformal models
 models_cls_kwargs_errs = [
@@ -52,6 +62,7 @@ models_cls_kwargs_errs = [
         {"quantiles": q},
         "regression",
     ),
+    (ConformalQRModel, {"quantiles": q}, "regression_qr"),
 ]
 
 if TORCH_AVAILABLE:
@@ -153,7 +164,10 @@ class TestConformalModel:
         # model creation parameters were saved before. check if re-created model has same params as original
         model_cls, kwargs, model_type = config
         model = model_cls(
-            model=train_model(self.ts_pass_train, model_type=model_type), **kwargs
+            model=train_model(
+                self.ts_pass_train, model_type=model_type, quantiles=kwargs["quantiles"]
+            ),
+            **kwargs,
         )
         model_fresh = model.untrained_model()
         assert model._model_params.keys() == model_fresh._model_params.keys()
@@ -168,7 +182,10 @@ class TestConformalModel:
         # check if save and load methods work and if loaded model creates same forecasts as original model
         model_cls, kwargs, model_type = config
         model = model_cls(
-            train_model(self.ts_pass_train, model_type=model_type), **kwargs
+            train_model(
+                self.ts_pass_train, model_type=model_type, quantiles=kwargs["quantiles"]
+            ),
+            **kwargs,
         )
         model_prediction = model.predict(5)
 
@@ -217,7 +234,10 @@ class TestConformalModel:
     def test_single_ts(self, config):
         model_cls, kwargs, model_type = config
         model = model_cls(
-            train_model(self.ts_pass_train, model_type=model_type), **kwargs
+            train_model(
+                self.ts_pass_train, model_type=model_type, quantiles=kwargs["quantiles"]
+            ),
+            **kwargs,
         )
         pred = model.predict(n=self.horizon)
         assert pred.n_components == self.ts_pass_train.n_components * 3
@@ -248,12 +268,14 @@ class TestConformalModel:
                 n=self.horizon, series=self.ts_pass_train.stack(self.ts_pass_train)
             )
 
-    @pytest.mark.parametrize("config", models_cls_kwargs_errs)
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs[:])
     def test_multi_ts(self, config):
         model_cls, kwargs, model_type = config
         model = model_cls(
             train_model(
-                [self.ts_pass_train, self.ts_pass_train_1], model_type=model_type
+                [self.ts_pass_train, self.ts_pass_train_1],
+                model_type=model_type,
+                quantiles=kwargs["quantiles"],
             ),
             **kwargs,
         )
@@ -549,7 +571,10 @@ class TestConformalModel:
         Also check that the static covariates are present in the forecasted series
         """
         model_cls, kwargs, model_type = config
-        model = model_cls(train_model(ts, model_type=model_type), **kwargs)
+        model = model_cls(
+            train_model(ts, model_type=model_type, quantiles=kwargs["quantiles"]),
+            **kwargs,
+        )
         assert model.uses_static_covariates
         pred = model.predict(OUT_LEN)
         assert pred.static_covariates is None
@@ -620,7 +645,8 @@ class TestConformalModel:
     def test_output_chunk_shift(self):
         model_params = {"output_chunk_shift": 1}
         model = ConformalNaiveModel(
-            train_model(self.ts_pass_train, model_params=model_params), quantiles=q
+            train_model(self.ts_pass_train, model_params=model_params, quantiles=q),
+            quantiles=q,
         )
         pred = model.predict(n=1)
         pred_fc = model.model.predict(n=1)

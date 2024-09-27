@@ -109,7 +109,7 @@ except ImportError:
     XGBModel = NotImportedModule(module_name="XGBoost")
 
 # Conformal Prediction
-from darts.models.cp.conformal_model import ConformalNaiveModel
+from darts.models.cp.conformal_model import ConformalNaiveModel, ConformalQRModel
 
 # Filtering
 from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
@@ -168,4 +168,5 @@ __all__ = [
     "NaiveEnsembleModel",
     "EnsembleModel",
     "ConformalNaiveModel",
+    "ConformalQRModel",
 ]

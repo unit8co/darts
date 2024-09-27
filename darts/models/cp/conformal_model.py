@@ -104,11 +104,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
         self._quantiles_no_med = [q for q in quantiles if q != 0.5]
         self._likelihood = "quantile"
 
-        half_idx = int(len(self.quantiles) / 2)
+        self.idx_q_med = int(len(self.quantiles) / 2)
         self.intervals = [
             q_high - q_low
             for q_high, q_low in zip(
-                self.quantiles[half_idx + 1 :][::-1], self.quantiles[:half_idx]
+                self.quantiles[self.idx_q_med + 1 :][::-1],
+                self.quantiles[: self.idx_q_med],
             )
         ]
 
@@ -205,10 +206,11 @@ class ConformalModel(GlobalForecastingModel, ABC):
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            num_samples=num_samples,
+            # num_samples=num_samples,
             verbose=verbose,
             predict_likelihood_parameters=predict_likelihood_parameters,
             show_warnings=show_warnings,
+            **self._get_forecast_params(),
         )
         # convert to multi series case with `last_points_only=False`
         preds = [[pred] for pred in preds]
@@ -218,7 +220,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             series=cal_series,
             past_covariates=cal_past_covariates,
             future_covariates=cal_future_covariates,
-            num_samples=num_samples,
+            # num_samples=num_samples,
             forecast_horizon=n,
             retrain=False,
             overlap_end=True,
@@ -226,6 +228,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             show_warnings=show_warnings,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            **self._get_forecast_params(),
         )
         cal_preds = self._calibrate_forecasts(
             series=series,
@@ -346,7 +349,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            num_samples=num_samples,
+            # num_samples=num_samples,
             forecast_horizon=forecast_horizon,
             retrain=False,
             overlap_end=overlap_end,
@@ -357,6 +360,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             enable_optimization=enable_optimization,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
+            **self._get_forecast_params(),
         )
         # optionally, generate calibration forecasts
         if cal_series is None:
@@ -366,7 +370,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 series=cal_series,
                 past_covariates=cal_past_covariates,
                 future_covariates=cal_future_covariates,
-                num_samples=num_samples,
+                # num_samples=num_samples,
                 forecast_horizon=forecast_horizon,
                 retrain=False,
                 overlap_end=True,
@@ -377,6 +381,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 enable_optimization=enable_optimization,
                 fit_kwargs=fit_kwargs,
                 predict_kwargs=predict_kwargs,
+                **self._get_forecast_params(),
             )
         calibrated_forecasts = self._calibrate_forecasts(
             series=series,
@@ -552,6 +557,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         # - predict_likelihood_parameters
         # - tqdm iterator over series
         # - support for different CP algorithms
+        metric, metric_kwargs = self._residuals_metric
         residuals = self.model.residuals(
             series=series if cal_series is None else cal_series,
             historical_forecasts=forecasts if cal_series is None else cal_forecasts,
@@ -560,7 +566,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             show_warnings=show_warnings,
             values_only=True,
-            metric=self._residuals_metric,
+            metric=metric,
+            metric_kwargs=metric_kwargs,
         )
 
         cp_hfcs = []
@@ -860,28 +867,30 @@ class ConformalModel(GlobalForecastingModel, ABC):
             model.model = TorchForecastingModel.load(path_tfm)
         return model
 
+    def _get_forecast_params(self):
+        if self.model.supports_probabilistic_prediction:
+            return {"num_samples": 500}
+        else:
+            return {"num_samples": 1}
+
     @abstractmethod
     def _calibrate_interval(
         self, residuals: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Computes the upper and lower calibrated forecast intervals based on residuals."""
 
-    @staticmethod
-    def _apply_interval(pred: np.ndarray, q_hat: Tuple[np.ndarray, np.ndarray]):
-        """Applies the calibrated interval to the predicted values. Returns an array with 3 predicted columns
-        (lower bound, model forecast, upper bound) per component.
-
-        E.g. output is `(target1_cq_low, target1_pred, target1_cq_high, target2_cq_low, ...)`
+    @abstractmethod
+    def _apply_interval(self, pred: np.ndarray, q_hat: Tuple[np.ndarray, np.ndarray]):
+        """Implements the logic to apply the calibrated interval to the predicted values.
+        Must return an array with shape (n times, n components * n quantiles, 1).
         """
-        # shape (forecast horizon, n components, n quantiles)
-        pred = np.concatenate([pred + q_hat[0], pred, pred + q_hat[1]], axis=2)
-        # -> (forecast horizon, n components * n quantiles)
-        return pred.reshape(len(pred), -1)
+        pass
 
     @property
     @abstractmethod
-    def _residuals_metric(self):
-        """Gives the "per time step" metric used to compute residuals."""
+    def _residuals_metric(self) -> Tuple[METRIC_TYPE, Optional[dict]]:
+        """Gives the "per time step" metric and optional metric kwargs used to compute residuals /
+        non-conformity scores."""
 
     def _get_nonconformity_scores(self, df_cal: pd.DataFrame, step_number: int) -> dict:
         """Get the nonconformity scores using the given conformal prediction technique.
@@ -1113,9 +1122,20 @@ class ConformalNaiveModel(ConformalModel):
         q_hat = np.quantile(residuals, q=self.intervals, axis=2).transpose((1, 2, 0))
         return -q_hat, q_hat[:, :, ::-1]
 
+    def _apply_interval(self, pred: np.ndarray, q_hat: Tuple[np.ndarray, np.ndarray]):
+        """Applies the calibrated interval to the predicted values. Returns an array with `len(quantiles)`
+        conformalized quantile predictions (lower quantiles, model forecast, upper quantiles) per component.
+
+        E.g. output is `(target1_q1, target1_pred, target1_q2, target2_q1, ...)`
+        """
+        # shape (forecast horizon, n components, n quantiles)
+        pred = np.concatenate([pred + q_hat[0], pred, pred + q_hat[1]], axis=2)
+        # -> (forecast horizon, n components * n quantiles)
+        return pred.reshape(len(pred), -1)
+
     @property
-    def _residuals_metric(self):
-        return metrics.ae
+    def _residuals_metric(self) -> Tuple[METRIC_TYPE, Optional[dict]]:
+        return metrics.ae, None
 
 
 class ConformalQRModel(ConformalModel):
@@ -1174,9 +1194,41 @@ class ConformalQRModel(ConformalModel):
             The residuals are expected to have shape (horizon, n components, n historical forecasts * n samples)
         """
         # shape (forecast horizon, n components, n quantile intervals)
-        q_hat = np.quantile(residuals, q=self.intervals, axis=2).transpose((1, 2, 0))
+        n_comps = residuals.shape[1] // len(self.intervals)
+        n_intervals = len(self.intervals)
+        #
+        # is there a more efficient way?
+        q_hat_tmp = np.quantile(residuals, q=self.intervals, axis=2).transpose((
+            1,
+            2,
+            0,
+        ))
+        q_hat = np.empty((len(residuals), n_comps, n_intervals))
+        for i in range(n_intervals):
+            for c in range(n_comps):
+                q_hat[:, c, i] = q_hat_tmp[:, i + c * n_intervals, i]
         return -q_hat, q_hat[:, :, ::-1]
 
+    def _apply_interval(self, pred: np.ndarray, q_hat: Tuple[np.ndarray, np.ndarray]):
+        """Applies the calibrated interval to the predicted quantiles. Returns an array with `len(quantiles)`
+        conformalized quantile predictions (lower quantiles, model forecast, upper quantiles) per component.
+
+        E.g. output is `(target1_q1, target1_pred, target1_q2, target2_q1, ...)`
+        """
+        # get quantile predictions with shape (n times, n components, n quantiles)
+        pred = np.quantile(pred, self.quantiles, axis=2).transpose((1, 2, 0))
+        # shape (forecast horizon, n components, n quantiles)
+        pred = np.concatenate(
+            [
+                pred[:, :, : self.idx_q_med] + q_hat[0],  # lower quantiles
+                pred[:, :, self.idx_q_med : self.idx_q_med + 1],  # model forecast
+                pred[:, :, self.idx_q_med + 1 :] + q_hat[1],  # upper quantiles
+            ],
+            axis=2,
+        )
+        # -> (forecast horizon, n components * n quantiles)
+        return pred.reshape(len(pred), -1)
+
     @property
-    def _residuals_metric(self):
-        return metrics.ae
+    def _residuals_metric(self) -> Tuple[METRIC_TYPE, Optional[dict]]:
+        return metrics.incs_qr, {"q_interval": self._q_intervals}
