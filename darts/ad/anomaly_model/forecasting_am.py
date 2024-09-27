@@ -447,6 +447,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
         metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
+        multivariate_plot: bool = False,
         **score_kwargs,
     ):
         """Plot the results of the anomaly model.
@@ -535,6 +536,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             names_of_scorers=names_of_scorers,
             title=title,
             metric=metric,
+            multivariate_plot=multivariate_plot,
             **score_kwargs,
         )
 
