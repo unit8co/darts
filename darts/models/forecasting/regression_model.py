@@ -1143,10 +1143,18 @@ class RegressionModel(GlobalForecastingModel):
         # same for covariate matrices
         for cov_type, data in covariate_matrices.items():
             covariate_matrices[cov_type] = np.repeat(data, num_samples, axis=0)
+
+        # for concatenating target with predictions (or quantile parameters)
+        if predict_likelihood_parameters and self.likelihood is not None:
+            # with `multi_models=False`, the predictions are concatenated with the past target, even if `n<=ocl`
+            # to make things work, we just append the first predicted parameter (it will never be accessed)
+            sample_slice = slice(0, None, self.num_parameters)
+        else:
+            sample_slice = slice(None)
+
         # prediction
         predictions = []
         last_step_shift = 0
-
         # t_pred indicates the number of time steps after the first prediction
         for t_pred in range(0, n, step):
             # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
@@ -1157,7 +1165,9 @@ class RegressionModel(GlobalForecastingModel):
 
             # concatenate previous iteration forecasts
             if "target" in self.lags and predictions:
-                series_matrix = np.concatenate([series_matrix, predictions[-1]], axis=1)
+                series_matrix = np.concatenate(
+                    [series_matrix, predictions[-1][:, :, sample_slice]], axis=1
+                )
 
             # extract and concatenate lags from target and covariates series
             X = _create_lagged_data_autoregression(
