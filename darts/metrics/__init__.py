@@ -2,7 +2,10 @@
 Metrics
 -------
 
-For deterministic forecasts (point predictions with `num_samples == 1`):
+For deterministic forecasts (point predictions with `num_samples == 1`), probabilistic forecasts (`num_samples > 1`),
+and quantile forecasts. For probablistic and quantile forecasts, use parameter `q` to define the quantile(s) to
+compute the deterministic metrics on:
+
     - Aggregated over time:
         Absolute metrics:
             - :func:`MERR <darts.metrics.metrics.merr>`: Mean Error
@@ -42,8 +45,10 @@ For probabilistic forecasts (storchastic predictions with `num_samples >> 1`):
     - Aggregated over time:
         - :func:`MQL <darts.metrics.metrics.mql>`: Mean Quantile Loss
         - :func:`QR <darts.metrics.metrics.qr>`: Quantile Risk
+        - :func:`MIW <darts.metrics.metrics.miw>`: Mean Interval Width
     - Per time step:
         - :func:`QL <darts.metrics.metrics.ql>`: Quantile Loss
+        - :func:`IW <darts.metrics.metrics.iw>`: Interval Width
 
 For Dynamic Time Warping (DTW) (aggregated over time):
     - :func:`DTW <darts.metrics.metrics.dtw_metric>`: Dynamic Time Warping Metric
@@ -57,11 +62,13 @@ from darts.metrics.metrics import (
     coefficient_of_variation,
     dtw_metric,
     err,
+    iw,
     mae,
     mape,
     marre,
     mase,
     merr,
+    miw,
     mql,
     mse,
     msse,
@@ -90,6 +97,7 @@ TIME_DEPENDENT_METRICS = {
     se,
     sle,
     sse,
+    iw,
 }
 
 __all__ = [
@@ -120,4 +128,6 @@ __all__ = [
     "sle",
     "smape",
     "sse",
+    "iw",
+    "miw",
 ]
