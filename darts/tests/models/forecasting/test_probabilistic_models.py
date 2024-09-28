@@ -367,7 +367,7 @@ class TestProbabilisticModels:
 
         model = model_cls(
             lags=3,
-            output_chunk_length=horizon,
+            output_chunk_length=2,
             random_state=seed,
             **lkl["kwargs"],
             multi_models=multi_models,
