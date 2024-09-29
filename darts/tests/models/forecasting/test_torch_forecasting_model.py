@@ -45,6 +45,7 @@ from darts.models import (
     TCNModel,
     TFTModel,
     TiDEModel,
+    TimesNetModel,
     TransformerModel,
     TSMixerModel,
 )
@@ -102,6 +103,7 @@ models = [
     (TFTModel, {"add_relative_index": 2, **kwargs, **tft_light_kwargs}),
     (TiDEModel, kwargs),
     (TransformerModel, dict(kwargs, **trafo_light_kwargs)),
+    (TimesNetModel, kwargs),
     (TSMixerModel, kwargs),
     (GlobalNaiveSeasonal, kwargs),
     (GlobalNaiveAggregate, kwargs),

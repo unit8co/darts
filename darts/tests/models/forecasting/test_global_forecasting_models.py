@@ -33,6 +33,7 @@ from darts.models import (
     TCNModel,
     TFTModel,
     TiDEModel,
+    TimesNetModel,
     TransformerModel,
     TSMixerModel,
 )
@@ -153,6 +154,14 @@ models_cls_kwargs_errs = [
     ),
     (
         TSMixerModel,
+        {
+            "n_epochs": 10,
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
+        60.0,
+    ),
+    (
+        TimesNetModel,
         {
             "n_epochs": 10,
             "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],

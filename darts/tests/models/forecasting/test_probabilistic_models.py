@@ -34,6 +34,7 @@ if TORCH_AVAILABLE:
         TCNModel,
         TFTModel,
         TiDEModel,
+        TimesNetModel,
         TransformerModel,
         TSMixerModel,
     )
@@ -154,6 +155,19 @@ if TORCH_AVAILABLE:
         ),
         (
             TransformerModel,
+            {
+                "input_chunk_length": 10,
+                "output_chunk_length": 5,
+                "n_epochs": 20,
+                "random_state": 0,
+                "likelihood": GaussianLikelihood(),
+                **tfm_kwargs,
+            },
+            0.03,
+            0.04,
+        ),
+        (
+            TimesNetModel,
             {
                 "input_chunk_length": 10,
                 "output_chunk_length": 5,
