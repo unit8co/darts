@@ -318,7 +318,7 @@ class RNNModel(DualCovariatesTorchModel):
         n_rnn_layers
             The number of recurrent layers.
         dropout
-            Fraction of neurons afected by Dropout.
+            Fraction of neurons affected by Dropout.
         training_length
             The length of both input (target and covariates) and output (target) time series used during
             training. Must have a larger value than `input_chunk_length`, because otherwise during training

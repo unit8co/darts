@@ -303,7 +303,7 @@ class TestCreateLaggedPredictionData:
                 time_idx = np.searchsorted(series_times, time)
                 X_row = []
                 for lag in lags:
-                    # Offet by particular lag value:
+                    # Offset by particular lag value:
                     idx_to_get = time_idx + lag
                     # Account for prepended values:
                     idx_to_get -= num_prepended

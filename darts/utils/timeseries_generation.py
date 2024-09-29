@@ -641,7 +641,7 @@ def datetime_attribute_timeseries(
     if attribute in ONE_INDEXED_FREQS:
         values -= 1
 
-    # leap years insert an additional day on the 29th of Feburary
+    # leap years insert an additional day on the 29th of February
     if attribute in {"dayofyear", "day_of_year"} and any(time_index.is_leap_year):
         num_values_dict[attribute] += 1
 

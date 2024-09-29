@@ -116,9 +116,9 @@ class TestCreateLaggedTrainingData:
         Helper function called by `get_feature_times` that extracts all times within a
         `target_series` that can be used to create a feature and label. More specifically,
         we can create features and labels for times within `target_series` that have *both*:
-            1. At least `max_lag = -min(lags)` values preceeding them, since these preceeding
+            1. At least `max_lag = -min(lags)` values presceeding them, since these preceeding
             values are required to construct a feature vector for that time. Since the first `max_lag`
-            times do not fulfill this condition, they are exluded *if* values from `target_series` are
+            times do not fulfill this condition, they are excluded *if* values from `target_series` are
             to be added to `X`.
             2. At least `(output_chunk_length - 1)` values after them, because the all times from
             time `t` to time `t + output_chunk_length - 1` will be used as labels. Since the last
@@ -325,7 +325,7 @@ class TestCreateLaggedTrainingData:
                 time_idx = np.searchsorted(series_times, time)
                 X_row = []
                 for lag in lags:
-                    # Offet by particular lag value:
+                    # Offset by particular lag value:
                     idx_to_get = time_idx + lag
                     # Account for prepended values:
                     idx_to_get -= num_prepended
@@ -2557,7 +2557,7 @@ class TestCreateLaggedTrainingData:
                     "past_2_pastcov_lag-2",
                 ],
             ),
-            # no lags for target, future covariates lags are not in the compoments order
+            # no lags for target, future covariates lags are not in the components order
             (
                 target_with_static_cov,
                 None,

@@ -558,11 +558,11 @@ class TestTimeSeriesStaticCovariate:
             values=np.random.random((10, 2))
         ).with_static_covariates(static_covs)
         assert ts.static_covariates.dtypes["num"] == ts.dtype == "float64"
-        assert ts.static_covariates.dtypes["cat"] == object
+        assert ts.static_covariates.dtypes["cat"] is object
 
         ts = ts.astype(np.float32)
         assert ts.static_covariates.dtypes["num"] == ts.dtype == "float32"
-        assert ts.static_covariates.dtypes["cat"] == object
+        assert ts.static_covariates.dtypes["cat"] is object
 
     def test_get_item(self):
         # multi component static covariates

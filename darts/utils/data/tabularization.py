@@ -126,8 +126,8 @@ def create_lagged_data(
     of each series.
 
     If the provided series are stochastic (i.e. `series.n_components > 1`), then an `X` and `y` array will be
-    constructed for each sample; the arrays corresponding to each sample are concatenated togather along the `2`nd
-    axis of `X` and `y`. In other words, `create_lagged_data` is vectorised over the sample axis of the `target_series`,
+    constructed for each sample; the arrays corresponding to each sample are concatenated together along the `2`nd
+    axis of `X` and `y`. In other words, `create_lagged_data` is vectorized over the sample axis of the `target_series`,
     `past_covariates`, and `future_covariates` inputs. Importantly, if stochastic series are provided, each series must
     have the same number of samples, otherwise an error will be thrown.
 

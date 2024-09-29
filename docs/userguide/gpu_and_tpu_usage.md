@@ -152,7 +152,7 @@ Beyond this, no other major modification to your models is necessary other than 
 
 This method automatically selects all available GPUs for training. Manual setting of the number of devices is also possible.
 
-The `ddp` family of strategies creates indiviual subprocesses for each GPU, so contents of the memory (notably the `Dataloder`) gets copied over. Thus, as per the [description of lightning docs](https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html#distributed-data-parallel) caution is advised in setting the `Dataloader(num_workers=N)` too high, since according to it:
+The `ddp` family of strategies creates individual subprocesses for each GPU, so contents of the memory (notably the `Dataloder`) gets copied over. Thus, as per the [description of lightning docs](https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html#distributed-data-parallel) caution is advised in setting the `Dataloader(num_workers=N)` too high, since according to it:
 
 "Dataloader(num_workers=N), where N is large, bottlenecks training with DDP… ie: it will be VERY slow or won’t work at all. This is a PyTorch limitation."
 
