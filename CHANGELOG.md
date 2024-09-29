@@ -29,6 +29,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed a bug when predicting with `predict_likelihood_parameters=True`, `n > 1` and a `RegressionModel` with `multi_models=False` that uses a `likelihood`. The prediction now works without raising an exception. [#2545](https://github.com/unit8co/darts/pull/2545) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when performing probabilistic optimized historical forecasts (`num_samples>1, retrain=False, enable_optimization=True`) with regression models, where reshaping the array resulted in a wrong order of samples across components and forecasts. [#2534](https://github.com/unit8co/darts/pull/2534) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed bug when plotting a probabilistic multivariate series, where all confidence intervals (starting from 2nd component) had the same color as the median line. [#2532](https://github.com/unit8co/darts/pull/2532) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when passing an empty array to `TimeSeries.prepend/append_values()` raised an error. [#2522](https://github.com/unit8co/darts/pull/2522) by [Alessio Pellegrini](https://github.com/AlessiopSymplectic)
