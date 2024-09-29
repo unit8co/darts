@@ -82,7 +82,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         model
             A pre-trained global forecasting model.
         quantiles
-            Optionally, a list of quantiles centered around the median `q=0.5` to use. For example quantiles
+            A list of quantiles centered around the median `q=0.5` to use. For example quantiles
             [0.1, 0.5, 0.9] correspond to a (0.9 - 0.1) = 80% coverage interval around the median (model forecast).
         """
         if not isinstance(model, GlobalForecastingModel) or not model._fit_called:
@@ -1103,7 +1103,7 @@ class ConformalNaiveModel(ConformalModel):
         model
             A pre-trained global forecasting model.
         quantiles
-            Optionally, a list of quantiles centered around the median `q=0.5` to use. For example quantiles
+            A list of quantiles centered around the median `q=0.5` to use. For example quantiles
             [0.1, 0.5, 0.9] correspond to a (0.9 - 0.1) = 80% coverage interval around the median (model forecast).
         """
         super().__init__(model=model, quantiles=quantiles)
@@ -1128,6 +1128,9 @@ class ConformalNaiveModel(ConformalModel):
 
         E.g. output is `(target1_q1, target1_pred, target1_q2, target2_q1, ...)`
         """
+        # stochastic predictions
+        if pred.shape[2] != 1:
+            pred = np.expand_dims(np.quantile(pred, 0.5, axis=2), -1)
         # shape (forecast horizon, n components, n quantiles)
         pred = np.concatenate([pred + q_hat[0], pred, pred + q_hat[1]], axis=2)
         # -> (forecast horizon, n components * n quantiles)
@@ -1155,32 +1158,17 @@ class ConformalQRModel(ConformalModel):
             If `model` is a `RegressionModel`, it must have been created with
             `likelihood=darts.utils.likelihood_models.QuantileRegression(quantiles)` with a list of `quantiles`.
         quantiles
-            Optionally, a list of quantiles centered around the median `q=0.5` to use. For example quantiles
+            A list of quantiles centered around the median `q=0.5` to use. For example quantiles
             [0.1, 0.5, 0.9] correspond to a (0.9 - 0.1) = 80% coverage interval around the median (model forecast).
         """
-        if not hasattr(model, "likelihood"):
+        if not model.supports_probabilistic_prediction:
             raise_log(
-                ValueError("`model` must must support `likelihood`."), logger=logger
+                ValueError(
+                    "`model` must must support probabilistic forecasting. Consider using a `likelihood` at "
+                    "forecasting model creation, or use another conformal model."
+                ),
+                logger=logger,
             )
-        if TORCH_AVAILABLE and isinstance(model, TorchForecastingModel):
-            if not isinstance(model.likelihood, QuantileRegression):
-                raise_log(
-                    ValueError(
-                        "Since `model` is a `TorchForecastingModel` it must use `likelihood=QuantileRegression()`."
-                    ),
-                    logger=logger,
-                )
-            else:
-                quantiles = model.likelihood.quantiles
-        else:  # regression models
-            if model.likelihood != "quantile":
-                raise_log(
-                    ValueError(
-                        f"Since `model` is a `{model.__class__.__name__} it must use `likelihood='quantile'`."
-                    ),
-                    logger=logger,
-                )
-            quantiles = model.quantiles
         super().__init__(model=model, quantiles=quantiles)
 
     def _calibrate_interval(
