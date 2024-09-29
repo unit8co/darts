@@ -287,14 +287,14 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                 raise_log(
                     ValueError(
                         "`q` must be of tuple of `(np.ndarray, Optional[pd.Index])` "
-                        "where the (quantile values, optioanl quantile component names). "
+                        "where the (quantile values, optional quantile component names). "
                         f"Received `q={q}`."
                     ),
                     logger=logger,
                 )
             q, q_comp_names = q
             if not pred_series.is_stochastic:
-                # quantile component names are required if the predictions are not stochastic (as for stocahstic
+                # quantile component names are required if the predictions are not stochastic (as for stochastic
                 # predictions, the quantiles can be retrieved from the sample dimension for each component)
                 if q_comp_names is None:
                     q_comp_names = pd.Index(
@@ -611,7 +611,7 @@ def _get_error_scale(
     """Computes the error scale based on a naive seasonal forecasts on `insample` values with seasonality `m`."""
     if not isinstance(m, int):
         raise_log(
-            ValueError(f"Seasonality `m` must be of type `int`, recevied `m={m}`"),
+            ValueError(f"Seasonality `m` must be of type `int`, received `m={m}`"),
             logger=logger,
         )
 

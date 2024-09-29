@@ -412,7 +412,7 @@ class TestTorchForecastingModel:
                 load_encoders=False,
                 map_location="cpu",
             )
-        # overwritte undeclared encoders
+        # overwrite undeclared encoders
         model_no_enc.load_weights_from_checkpoint(
             auto_name,
             work_dir=tmpdir_fn,
@@ -466,7 +466,7 @@ class TestTorchForecastingModel:
             model_name="other_encoder_load",
             add_encoders=encoders_other_past,
         )
-        # cannot overwritte different declared encoders
+        # cannot overwrite different declared encoders
         with pytest.raises(ValueError):
             model_other_enc_load.load_weights(
                 model_path_manual,
@@ -528,7 +528,7 @@ class TestTorchForecastingModel:
             model_name="same_encoder_other_transform",
             add_encoders=encoders_past_other_transformer,
         )
-        # cannot overwritte different declared encoders
+        # cannot overwrite different declared encoders
         with pytest.raises(ValueError):
             model_new_enc_other_transformer.load_weights(
                 model_path_manual,
@@ -555,7 +555,7 @@ class TestTorchForecastingModel:
             model_name="encoder_2_components_past",
             add_encoders=encoders_2_past,
         )
-        # cannot overwritte different declared encoders
+        # cannot overwrite different declared encoders
         with pytest.raises(ValueError):
             model_new_enc_2_past.load_weights(
                 model_path_manual,
@@ -576,7 +576,7 @@ class TestTorchForecastingModel:
             model_name="encoder_past_n_future",
             add_encoders=encoders_past_n_future,
         )
-        # cannot overwritte different declared encoders
+        # cannot overwrite different declared encoders
         with pytest.raises(ValueError):
             model_new_enc_past_n_future.load_weights(
                 model_path_manual,
@@ -664,7 +664,7 @@ class TestTorchForecastingModel:
         )
         # check that weights from checkpoint give identical predictions as weights from manual save
         assert preds_manual_from_weights == preds_auto_from_weights
-        # model with explicitely no likelihood
+        # model with explicitly no likelihood
         model_no_likelihood = self.helper_create_DLinearModel(
             work_dir=tmpdir_fn, model_name="no_likelihood", likelihood=None
         )

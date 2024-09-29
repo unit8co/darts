@@ -2323,7 +2323,7 @@ class TestHistoricalforecast:
         ),
     )
     def test_probabilistic_optimized_hist_fc_regression(self, config):
-        """Tests optimized probilistic historical forecasts for regression models."""
+        """Tests optimized probabilistic historical forecasts for regression models."""
         np.random.seed(42)
         lpo, multi_models, n = config
         ocl = 2

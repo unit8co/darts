@@ -115,7 +115,7 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         To add a new naive model:
         - subclass from `_GlobalNaiveModel` with implementation of private method `_create_model` that creates an
             object of:
-        - subclass from `_GlobalNaiveModule` with implemention of private method `_forward`
+        - subclass from `_GlobalNaiveModule` with implementation of private method `_forward`
 
         .. note::
             - Model checkpointing with `save_checkpoints=True`, and checkpoint loading with `load_from_checkpoint()`

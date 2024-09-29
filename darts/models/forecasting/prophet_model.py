@@ -111,7 +111,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 }
             ..
         cap
-            Parameter specifiying the maximum carrying capacity when predicting with logistic growth.
+            Parameter specifying the maximum carrying capacity when predicting with logistic growth.
             Mandatory when `growth = 'logistic'`, otherwise ignored.
             See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
             on logistic forecasts.
@@ -121,7 +121,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
             where each number indicates the carrying capacity at this index.
         floor
-            Parameter specifiying the minimum carrying capacity when predicting logistic growth.
+            Parameter specifying the minimum carrying capacity when predicting logistic growth.
             Optional when `growth = 'logistic'` (defaults to 0), otherwise ignored.
             See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
             on logistic forecasts.

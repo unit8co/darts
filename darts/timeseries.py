@@ -3387,7 +3387,7 @@ class TimeSeries:
         kwargs
             some keyword arguments for the `xarray.resample` method, notably `offset` or `base` to indicate where
             to start the resampling and avoid nan at the first value of the resampled TimeSeries
-            For more informations, see the `xarray resample() documentation
+            For more information, see the `xarray resample() documentation
             <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html>`_.
 
         Examples

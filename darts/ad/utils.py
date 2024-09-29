@@ -666,7 +666,7 @@ def _plot_series(series, ax_id, linewidth, label_name, **kwargs):
     series
         The series to plot.
     ax_id
-        The axis the series will be ploted on.
+        The axis the series will be plotted on.
     linewidth
         Thickness of the line.
     label_name

@@ -529,7 +529,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def on_save_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         # we must save the dtype for correct parameter precision at loading time
         checkpoint["model_dtype"] = self.dtype
-        # we must save the shape of the input to be able to instanciate the model without calling fit_from_dataset
+        # we must save the shape of the input to be able to instantiate the model without calling fit_from_dataset
         checkpoint["train_sample_shape"] = self.train_sample_shape
         # we must save the loss to properly restore it when resuming training
         checkpoint["loss_fn"] = self.criterion

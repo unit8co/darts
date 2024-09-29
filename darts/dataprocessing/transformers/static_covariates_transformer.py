@@ -260,9 +260,9 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         """
         Returns a boolean array indicating which components of the UNTRANSFORMED
         `stat_covs` are numerical and a boolean array indicating which components
-        of the UNTRANSFORMED `stat_covs` are categoical.
+        of the UNTRANSFORMED `stat_covs` are categorical.
 
-        It's important to recognise that these masks only apply to the UNTRANSFORMED
+        It's important to recognize that these masks only apply to the UNTRANSFORMED
         static covariates since some transformations can generate multiple new components
         from a single component (e.g. one-hot encoding).
         """
@@ -327,9 +327,9 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         """
         Returns a boolean array indicating which components of the TRANSFORMED
         `stat_covs` are numerical and a boolean array indicating which components
-        of the TRANSFORMED `stat_covs` are categoical.
+        of the TRANSFORMED `stat_covs` are categorical.
 
-        It's important to recognise that these masks only apply to the UNTRANSFORMED
+        It's important to recognize that these masks only apply to the UNTRANSFORMED
         static covariates since some transformations can generate multiple new components
         from a single component (e.g. one-hot encoding).
         """

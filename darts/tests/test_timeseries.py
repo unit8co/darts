@@ -507,7 +507,7 @@ class TestTimeSeries:
             with pytest.raises(ValueError):
                 test_series.split_before(value)
 
-        # Test split points between series indeces
+        # Test split points between series indices
         times = pd.date_range("20130101", "20130120", freq="2D")
         pd_series = pd.Series(range(10), index=times)
         test_series2: TimeSeries = TimeSeries.from_series(pd_series)
@@ -842,11 +842,11 @@ class TestTimeSeries:
                     np.array([0, 1, 2, 3]).reshape((2, 2, 1)),
                     [[1, 2], [3, 4]],
                 ),
-                (  # list with wrong numer of components
+                (  # list with wrong number of components
                     np.array([0, 1, 2]).reshape((3, 1, 1)),
                     [[1, 2], [3, 4]],
                 ),
-                (  # list with wrong numer of samples
+                (  # list with wrong number of samples
                     np.array([0, 1, 2]).reshape((3, 1, 1)),
                     [[[0, 1]], [[1, 2]]],
                 ),
@@ -2410,8 +2410,8 @@ class TestTimeSeriesFromDataFrame:
         assert list(ts.time_index.tz_localize("CET")) == list(time_range_MS)
         assert ts.time_index.tz is None
 
-        serie = pd.Series(data=values, index=time_range_MS)
-        ts = TimeSeries.from_series(pd_series=serie)
+        series = pd.Series(data=values, index=time_range_MS)
+        ts = TimeSeries.from_series(pd_series=series)
         assert list(ts.time_index) == list(time_range_MS.tz_localize(None))
         assert list(ts.time_index.tz_localize("CET")) == list(time_range_MS)
         assert ts.time_index.tz is None
@@ -2432,8 +2432,8 @@ class TestTimeSeriesFromDataFrame:
         assert list(ts.time_index.tz_localize("CET")) == list(time_range_H)
         assert ts.time_index.tz is None
 
-        serie = pd.Series(data=values, index=time_range_H)
-        ts = TimeSeries.from_series(pd_series=serie)
+        series = pd.Series(data=values, index=time_range_H)
+        ts = TimeSeries.from_series(pd_series=series)
         assert list(ts.time_index) == list(time_range_H.tz_localize(None))
         assert list(ts.time_index.tz_localize("CET")) == list(time_range_H)
         assert ts.time_index.tz is None
