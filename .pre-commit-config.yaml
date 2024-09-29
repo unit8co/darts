@@ -30,4 +30,3 @@ repos:
       - id: ruff-format
       # validate if all is fine with preview mode
       - id: ruff
-
