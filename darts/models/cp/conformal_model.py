@@ -34,10 +34,8 @@ from darts.utils.utils import (
 
 if TORCH_AVAILABLE:
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
-    from darts.utils.likelihood_models import QuantileRegression
 else:
     TorchForecastingModel = None
-    QuantileRegression = None
 
 logger = get_logger(__name__)
 
@@ -69,11 +67,15 @@ def cqr_score_asym(row, quantile_lo_col, quantile_hi_col):
     )
 
 
+# class NCScorer
+
+
 class ConformalModel(GlobalForecastingModel, ABC):
     def __init__(
         self,
         model: GlobalForecastingModel,
         quantiles: List[float],
+        symmetric: bool = True,
     ):
         """Base Conformal Prediction Model.
 
@@ -84,6 +86,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
         quantiles
             A list of quantiles centered around the median `q=0.5` to use. For example quantiles
             [0.1, 0.5, 0.9] correspond to a (0.9 - 0.1) = 80% coverage interval around the median (model forecast).
+        symmetric
+            Whether to use symmetric non-conformity scores. If `False`, uses asymmetric scores (individual scores
+            for lower- and upper quantile interval bounds).
         """
         if not isinstance(model, GlobalForecastingModel) or not model._fit_called:
             raise_log(
@@ -105,14 +110,15 @@ class ConformalModel(GlobalForecastingModel, ABC):
         self._likelihood = "quantile"
 
         self.idx_q_med = int(len(self.quantiles) / 2)
-        self.intervals = [
+        self.intervals = np.array([
             q_high - q_low
             for q_high, q_low in zip(
                 self.quantiles[self.idx_q_med + 1 :][::-1],
                 self.quantiles[: self.idx_q_med],
             )
-        ]
+        ])
 
+        self.symmetric = symmetric
         # if isinstance(alpha, float):
         #     self.symmetrical = True
         #     self.q_hats = pd.DataFrame(columns=["q_hat_sym"])
@@ -1095,6 +1101,7 @@ class ConformalNaiveModel(ConformalModel):
         self,
         model: GlobalForecastingModel,
         quantiles: List[float],
+        symmetric: bool = True,
     ):
         """Naive Conformal Prediction Model.
 
@@ -1105,8 +1112,11 @@ class ConformalNaiveModel(ConformalModel):
         quantiles
             A list of quantiles centered around the median `q=0.5` to use. For example quantiles
             [0.1, 0.5, 0.9] correspond to a (0.9 - 0.1) = 80% coverage interval around the median (model forecast).
+        symmetric
+            Whether to use symmetric non-conformity scores. If `False`, uses asymmetric scores (individual scores
+            for lower- and upper quantile interval bounds).
         """
-        super().__init__(model=model, quantiles=quantiles)
+        super().__init__(model=model, quantiles=quantiles, symmetric=symmetric)
 
     def _calibrate_interval(
         self, residuals: np.ndarray
@@ -1118,9 +1128,21 @@ class ConformalNaiveModel(ConformalModel):
         residuals
             The residuals are expected to have shape (horizon, n components, n historical forecasts * n samples)
         """
-        # shape (forecast horizon, n components, n quantile intervals)
-        q_hat = np.quantile(residuals, q=self.intervals, axis=2).transpose((1, 2, 0))
-        return -q_hat, q_hat[:, :, ::-1]
+        if self.symmetric:
+            # shape (forecast horizon, n components, n quantile intervals)
+            q_hat = np.quantile(residuals, q=self.intervals, axis=2).transpose((
+                1,
+                2,
+                0,
+            ))
+            return -q_hat, q_hat[:, :, ::-1]
+
+        # for asymmetric, use intervals `1 - alpha / 2`
+        intervals = 1 - (1 - self.intervals) / 2
+        n_comps = residuals.shape[1]
+        res = np.concatenate([-residuals, residuals], axis=1)
+        q_hat = np.quantile(res, q=intervals, axis=2).transpose((1, 2, 0))
+        return -q_hat[:, :n_comps, :], q_hat[:, n_comps:, ::-1]
 
     def _apply_interval(self, pred: np.ndarray, q_hat: Tuple[np.ndarray, np.ndarray]):
         """Applies the calibrated interval to the predicted values. Returns an array with `len(quantiles)`
@@ -1138,7 +1160,10 @@ class ConformalNaiveModel(ConformalModel):
 
     @property
     def _residuals_metric(self) -> Tuple[METRIC_TYPE, Optional[dict]]:
-        return metrics.ae, None
+        if self.symmetric:
+            return metrics.ae, None
+        else:
+            return metrics.err, None
 
 
 class ConformalQRModel(ConformalModel):
@@ -1146,20 +1171,20 @@ class ConformalQRModel(ConformalModel):
         self,
         model: GlobalForecastingModel,
         quantiles: List[float],
+        symmetric: bool = True,
     ):
         """Conformalized Quantile Regression Model.
 
         Parameters
         ----------
         model
-            A pre-trained global forecasting model using a Quantile Regression likelihood.
-            If `model` is a `RegressionModel`, it must have been created with `likelihood='quantile'` and a list of
-            quantiles `quantiles`.
-            If `model` is a `RegressionModel`, it must have been created with
-            `likelihood=darts.utils.likelihood_models.QuantileRegression(quantiles)` with a list of `quantiles`.
+            A pre-trained probabilistic global forecasting model using a `likelihood`.
         quantiles
             A list of quantiles centered around the median `q=0.5` to use. For example quantiles
             [0.1, 0.5, 0.9] correspond to a (0.9 - 0.1) = 80% coverage interval around the median (model forecast).
+        symmetric
+            Whether to use symmetric non-conformity scores. If `False`, uses asymmetric scores (individual scores
+            for lower- and upper quantile interval bounds).
         """
         if not model.supports_probabilistic_prediction:
             raise_log(
@@ -1169,7 +1194,7 @@ class ConformalQRModel(ConformalModel):
                 ),
                 logger=logger,
             )
-        super().__init__(model=model, quantiles=quantiles)
+        super().__init__(model=model, quantiles=quantiles, symmetric=symmetric)
 
     def _calibrate_interval(
         self, residuals: np.ndarray
@@ -1182,20 +1207,36 @@ class ConformalQRModel(ConformalModel):
             The residuals are expected to have shape (horizon, n components, n historical forecasts * n samples)
         """
         # shape (forecast horizon, n components, n quantile intervals)
-        n_comps = residuals.shape[1] // len(self.intervals)
+        n_comps = residuals.shape[1] // (
+            len(self.intervals) * (1 + int(not self.symmetric))
+        )
         n_intervals = len(self.intervals)
-        #
-        # is there a more efficient way?
-        q_hat_tmp = np.quantile(residuals, q=self.intervals, axis=2).transpose((
-            1,
-            2,
-            0,
-        ))
-        q_hat = np.empty((len(residuals), n_comps, n_intervals))
-        for i in range(n_intervals):
-            for c in range(n_comps):
-                q_hat[:, c, i] = q_hat_tmp[:, i + c * n_intervals, i]
-        return -q_hat, q_hat[:, :, ::-1]
+
+        def q_hat_from_residuals(residuals_, intervals_):
+            # is there a more efficient way?
+            q_hat_tmp = np.quantile(residuals_, q=intervals_, axis=2).transpose((
+                1,
+                2,
+                0,
+            ))
+            q_hat_ = np.empty((len(residuals_), n_comps, n_intervals))
+            for i in range(n_intervals):
+                for c in range(n_comps):
+                    q_hat_[:, c, i] = q_hat_tmp[:, i + c * n_intervals, i]
+            return q_hat_
+
+        if self.symmetric:
+            # symmetric has one nc-score per intervals
+            q_hat = q_hat_from_residuals(residuals, self.intervals)
+            return -q_hat, q_hat[:, :, ::-1]
+        else:
+            # asymmetric has two nc-score per intervals (for lower and upper quantiles)
+            half_idx = residuals.shape[1] // 2
+            # for asymmetric, use intervals `1 - alpha / 2`
+            intervals = 1 - (1 - self.intervals) / 2
+            q_hat_lo = q_hat_from_residuals(residuals[:, :half_idx], intervals)
+            q_hat_hi = q_hat_from_residuals(residuals[:, half_idx:], intervals)
+            return -q_hat_lo, q_hat_hi[:, :, ::-1]
 
     def _apply_interval(self, pred: np.ndarray, q_hat: Tuple[np.ndarray, np.ndarray]):
         """Applies the calibrated interval to the predicted quantiles. Returns an array with `len(quantiles)`
@@ -1219,4 +1260,7 @@ class ConformalQRModel(ConformalModel):
 
     @property
     def _residuals_metric(self) -> Tuple[METRIC_TYPE, Optional[dict]]:
-        return metrics.incs_qr, {"q_interval": self._q_intervals}
+        return metrics.incs_qr, {
+            "q_interval": self._q_intervals,
+            "symmetric": self.symmetric,
+        }

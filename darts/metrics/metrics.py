@@ -3945,6 +3945,7 @@ def incs_qr(
     intersect: bool = True,
     *,
     q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
+    symmetric: bool = True,
     q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
@@ -3978,6 +3979,9 @@ def incs_qr(
     q_interval
         The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence tuples
         (multiple intervals) with elements (low quantile, high quantile).
+    symmetric
+        Whether to return symmetric non-conformity scores. If `False`, returns asymmetric scores (individual scores
+        for lower- and upper quantile interval bounds; returned in the component axis).
     q
         Quantiles `q` not supported by this metric; use `q_interval` instead.
     component_reduction
@@ -4039,8 +4043,10 @@ def incs_qr(
         q=q,
     )
     y_pred_lo, y_pred_hi = _get_quantile_intervals(y_pred, q=q, q_interval=q_interval)
-    # return np.concatenate([y_pred_lo - y_true, y_true - y_pred_hi], axis=SMPL_AX)
-    return np.maximum(y_pred_lo - y_true, y_true - y_pred_hi)
+    if symmetric:
+        return np.maximum(y_pred_lo - y_true, y_true - y_pred_hi)
+    else:
+        return np.concatenate([y_pred_lo - y_true, y_true - y_pred_hi], axis=SMPL_AX)
 
 
 @interval_support
@@ -4052,6 +4058,7 @@ def mincs_qr(
     intersect: bool = True,
     *,
     q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
+    symmetric: bool = True,
     q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -4082,6 +4089,9 @@ def mincs_qr(
     q_interval
         The quantile interval(s) to compute the metric on. Must be a tuple (single interval) or sequence tuples
         (multiple intervals) with elements (low quantile, high quantile).
+    symmetric
+        Whether to return symmetric non-conformity scores. If `False`, returns asymmetric scores (individual scores
+        for lower- and upper quantile interval bounds; returned in the component axis).
     q
         Quantiles `q` not supported by this metric; use `q_interval` instead.
     component_reduction
@@ -4134,6 +4144,7 @@ def mincs_qr(
             intersect,
             q=q,
             q_interval=q_interval,
+            symmetric=symmetric,
         ),
         axis=TIME_AX,
     )
