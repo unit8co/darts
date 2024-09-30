@@ -40,36 +40,6 @@ else:
 logger = get_logger(__name__)
 
 
-def cqr_score_sym(row, quantile_lo_col, quantile_hi_col):
-    return (
-        [None, None]
-        if row[quantile_lo_col] is None or row[quantile_hi_col] is None
-        else [
-            max(row[quantile_lo_col] - row["y"], row["y"] - row[quantile_hi_col]),
-            0
-            if row[quantile_lo_col] - row["y"] > row["y"] - row[quantile_hi_col]
-            else 1,
-        ]
-    )
-
-
-def cqr_score_asym(row, quantile_lo_col, quantile_hi_col):
-    return (
-        [None, None]
-        if row[quantile_lo_col] is None or row[quantile_hi_col] is None
-        else [
-            row[quantile_lo_col] - row["y"],
-            row["y"] - row[quantile_hi_col],
-            0
-            if row[quantile_lo_col] - row["y"] > row["y"] - row[quantile_hi_col]
-            else 1,
-        ]
-    )
-
-
-# class NCScorer
-
-
 class ConformalModel(GlobalForecastingModel, ABC):
     def __init__(
         self,
@@ -98,37 +68,27 @@ class ConformalModel(GlobalForecastingModel, ABC):
         _check_quantiles(quantiles)
         super().__init__(add_encoders=None)
 
-        self.model = model
-
+        # quantiles and interval setup
         self.quantiles = quantiles
-        half_idx = len(quantiles) // 2
-        self._q_intervals = [
+        self.idx_median = quantiles.index(0.5)
+        self.interval_bounds = [
             (q_l, q_h)
-            for q_l, q_h in zip(quantiles[:half_idx], quantiles[half_idx + 1 :][::-1])
+            for q_l, q_h in zip(
+                quantiles[: self.idx_median], quantiles[self.idx_median + 1 :][::-1]
+            )
         ]
-        self._quantiles_no_med = [q for q in quantiles if q != 0.5]
-        self._likelihood = "quantile"
-
-        self.idx_q_med = int(len(self.quantiles) / 2)
-        self.intervals = np.array([
+        self.interval_range = np.array([
             q_high - q_low
             for q_high, q_low in zip(
-                self.quantiles[self.idx_q_med + 1 :][::-1],
-                self.quantiles[: self.idx_q_med],
+                self.quantiles[self.idx_median + 1 :][::-1],
+                self.quantiles[: self.idx_median],
             )
         ])
-
         self.symmetric = symmetric
-        # if isinstance(alpha, float):
-        #     self.symmetrical = True
-        #     self.q_hats = pd.DataFrame(columns=["q_hat_sym"])
-        # else:
-        #     self.symmetrical = False
-        #     self.alpha_lo, self.alpha_hi = alpha
-        #     self.q_hats = pd.DataFrame(columns=["q_hat_lo", "q_hat_hi"])
-        # self.noncon_scores = dict()
-        # self.alpha = alpha
-        # self.quantiles = quantiles
+
+        # model setup
+        self.model = model
+        self._likelihood = "quantile"
         self._fit_called = True
 
     def fit(
@@ -252,59 +212,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
             return cal_preds[0][0]
         else:
             return [cp[0] for cp in cal_preds]
-        # for step_number in range(1, self.n_forecasts + 1):
-        #     # conformalize
-        #     noncon_scores = self._get_nonconformity_scores(df_cal, step_number)
-        #     q_hat = self._get_q_hat(df_cal, noncon_scores)
-        #     y_hat_col = f"yhat{step_number}"
-        #     y_hat_lo_col = f"{y_hat_col} {min(self.quantiles) * 100}%"
-        #     y_hat_hi_col = f"{y_hat_col} {max(self.quantiles) * 100}%"
-        #     if self.method == "naive" and self.symmetrical:
-        #         q_hat_sym = q_hat["q_hat_sym"]
-        #         df[y_hat_lo_col] = df[y_hat_col] - q_hat_sym
-        #         df[y_hat_hi_col] = df[y_hat_col] + q_hat_sym
-        #     elif self.method == "cqr" and self.symmetrical:
-        #         q_hat_sym = q_hat["q_hat_sym"]
-        #         df[y_hat_lo_col] = df[y_hat_lo_col] - q_hat_sym
-        #         df[y_hat_hi_col] = df[y_hat_hi_col] + q_hat_sym
-        #     elif self.method == "cqr" and not self.symmetrical:
-        #         q_hat_lo = q_hat["q_hat_lo"]
-        #         q_hat_hi = q_hat["q_hat_hi"]
-        #         df[y_hat_lo_col] = df[y_hat_lo_col] - q_hat_lo
-        #         df[y_hat_hi_col] = df[y_hat_hi_col] + q_hat_hi
-        #     else:
-        #         raise ValueError(
-        #             f"Unknown conformal prediction method '{self.method}'. Please input either 'naive' or 'cqr'."
-        #         )
-        #     if step_number == 1:
-        #         # save nonconformity scores of the first timestep
-        #         self.noncon_scores = noncon_scores
-        #
-        #     # append the dictionary of q_hats to the dataframe based on the keys of the dictionary
-        #     q_hat_df = pd.DataFrame([q_hat])
-        #     self.q_hats = pd.concat([self.q_hats, q_hat_df], ignore_index=True)
-        #
-        #     # if show_all_PI is True, add the quantile regression prediction intervals
-        #     if show_all_PI:
-        #         df_quantiles = [col for col in df_qr.columns if "%" in col and f"yhat{step_number}" in col]
-        #         df_add = df_qr[df_quantiles]
-        #
-        #         if self.method == "naive":
-        #             cp_lo_col = f"yhat{step_number} - qhat{step_number}"  # e.g. yhat1 - qhat1
-        #             cp_hi_col = f"yhat{step_number} + qhat{step_number}"  # e.g. yhat1 + qhat1
-        #             df.rename(columns={y_hat_lo_col: cp_lo_col, y_hat_hi_col: cp_hi_col}, inplace=True)
-        #         elif self.method == "cqr":
-        #             qr_lo_col = (
-        #                 f"yhat{step_number} {max(self.quantiles) * 100}% - qhat{step_number}"  #e.g. yhat1 95% - qhat1
-        #             )
-        #             qr_hi_col = (
-        #                 f"yhat{step_number} {min(self.quantiles) * 100}% + qhat{step_number}"  #e.g. yhat1 5% + qhat1
-        #             )
-        #             df.rename(columns={y_hat_lo_col: qr_lo_col, y_hat_hi_col: qr_hi_col}, inplace=True)
-        #
-        #         df = pd.concat([df, df_add], axis=1, ignore_index=False)
-        #
-        # return df
 
     @_with_sanity_checks("_historical_forecasts_sanity_checks")
     def historical_forecasts(
@@ -445,7 +352,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             for metric_ in metric:
                 if metric_ in metrics.ALL_METRICS:
                     if metric_ in metrics.Q_INTERVAL_METRICS:
-                        metric_kwargs.append({"q_interval": self._q_intervals})
+                        metric_kwargs.append({"q_interval": self.interval_bounds})
                     elif metric_ not in metrics.NON_Q_METRICS:
                         metric_kwargs.append({"q": self.quantiles})
                     else:
@@ -509,7 +416,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         # make user's life easier by adding quantile intervals, or quantiles directly
         if metric_kwargs is None and metric in metrics.ALL_METRICS:
             if metric in metrics.Q_INTERVAL_METRICS:
-                metric_kwargs = {"q_interval": self._q_intervals}
+                metric_kwargs = {"q_interval": self.interval_bounds}
             elif metric not in metrics.NON_Q_METRICS:
                 metric_kwargs = {"q": self.quantiles}
             else:
@@ -562,7 +469,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         # - num_samples
         # - predict_likelihood_parameters
         # - tqdm iterator over series
-        # - support for different CP algorithms
         metric, metric_kwargs = self._residuals_metric
         residuals = self.model.residuals(
             series=series if cal_series is None else cal_series,
@@ -898,100 +804,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         """Gives the "per time step" metric and optional metric kwargs used to compute residuals /
         non-conformity scores."""
 
-    def _get_nonconformity_scores(self, df_cal: pd.DataFrame, step_number: int) -> dict:
-        """Get the nonconformity scores using the given conformal prediction technique.
-
-        Parameters
-        ----------
-            df_cal : pd.DataFrame
-                calibration dataframe
-            step_number : int
-                i-th step ahead forecast
-
-            Returns
-            -------
-                Dict[str, np.ndarray]
-                    dictionary with one entry (symmetrical) or two entries (asymmetrical) of nonconformity scores
-
-        """
-        y_hat_col = f"yhat{step_number}"
-        if self.method == "cqr":
-            # CQR nonconformity scoring function
-            quantile_lo = str(min(self.quantiles) * 100)
-            quantile_hi = str(max(self.quantiles) * 100)
-            quantile_lo_col = f"{y_hat_col} {quantile_lo}%"
-            quantile_hi_col = f"{y_hat_col} {quantile_hi}%"
-            if self.symmetrical:
-                scores_df = df_cal.apply(
-                    cqr_score_sym,
-                    axis=1,
-                    result_type="expand",
-                    quantile_lo_col=quantile_lo_col,
-                    quantile_hi_col=quantile_hi_col,
-                )
-                scores_df.columns = ["scores", "arg"]
-                noncon_scores = scores_df["scores"].values
-            else:  # asymmetrical intervals
-                scores_df = df_cal.apply(
-                    cqr_score_asym,
-                    axis=1,
-                    result_type="expand",
-                    quantile_lo_col=quantile_lo_col,
-                    quantile_hi_col=quantile_hi_col,
-                )
-                scores_df.columns = ["scores_lo", "scores_hi", "arg"]
-                noncon_scores_lo = scores_df["scores_lo"].values
-                noncon_scores_hi = scores_df["scores_hi"].values
-                # Remove NaN values
-                noncon_scores_lo: Any = noncon_scores_lo[~pd.isnull(noncon_scores_lo)]
-                noncon_scores_hi: Any = noncon_scores_hi[~pd.isnull(noncon_scores_hi)]
-                # Sort
-                noncon_scores_lo.sort()
-                noncon_scores_hi.sort()
-                # return dict of nonconformity scores
-                return {
-                    "noncon_scores_hi": noncon_scores_lo,
-                    "noncon_scores_lo": noncon_scores_hi,
-                }
-        else:  # self.method == "naive"
-            # Naive nonconformity scoring function
-            noncon_scores = abs(df_cal["y"] - df_cal[y_hat_col]).values
-        # Remove NaN values
-        noncon_scores: Any = noncon_scores[~pd.isnull(noncon_scores)]
-        # Sort
-        noncon_scores.sort()
-
-        return {"noncon_scores": noncon_scores}
-
-    def _get_q_hat(self, noncon_scores: dict) -> dict:
-        """Get the q_hat that is derived from the nonconformity scores.
-
-        Parameters
-        ----------
-            noncon_scores : dict
-                dictionary with one entry (symmetrical) or two entries (asymmetrical) of nonconformity scores
-
-            Returns
-            -------
-                Dict[str, float]
-                    upper and lower q_hat value, or the one-sided prediction interval width
-
-        """
-        # Get the q-hat index and value
-        if self.method == "cqr" and self.symmetrical is False:
-            noncon_scores_lo = noncon_scores["noncon_scores_lo"]
-            noncon_scores_hi = noncon_scores["noncon_scores_hi"]
-            q_hat_idx_lo = int(len(noncon_scores_lo) * self.alpha_lo)
-            q_hat_idx_hi = int(len(noncon_scores_hi) * self.alpha_hi)
-            q_hat_lo = noncon_scores_lo[-q_hat_idx_lo]
-            q_hat_hi = noncon_scores_hi[-q_hat_idx_hi]
-            return {"q_hat_lo": q_hat_lo, "q_hat_hi": q_hat_hi}
-        else:
-            noncon_scores = noncon_scores["noncon_scores"]
-            q_hat_idx = int(len(noncon_scores) * self.alpha)
-            q_hat = noncon_scores[-q_hat_idx]
-            return {"q_hat_sym": q_hat}
-
     def _cp_component_names(self, input_series) -> List[str]:
         return likelihood_component_names(
             input_series.components, quantile_names(self.quantiles)
@@ -1130,7 +942,7 @@ class ConformalNaiveModel(ConformalModel):
         """
         if self.symmetric:
             # shape (forecast horizon, n components, n quantile intervals)
-            q_hat = np.quantile(residuals, q=self.intervals, axis=2).transpose((
+            q_hat = np.quantile(residuals, q=self.interval_range, axis=2).transpose((
                 1,
                 2,
                 0,
@@ -1138,7 +950,7 @@ class ConformalNaiveModel(ConformalModel):
             return -q_hat, q_hat[:, :, ::-1]
 
         # for asymmetric, use intervals `1 - alpha / 2`
-        intervals = 1 - (1 - self.intervals) / 2
+        intervals = 1 - (1 - self.interval_range) / 2
         n_comps = residuals.shape[1]
         res = np.concatenate([-residuals, residuals], axis=1)
         q_hat = np.quantile(res, q=intervals, axis=2).transpose((1, 2, 0))
@@ -1208,9 +1020,9 @@ class ConformalQRModel(ConformalModel):
         """
         # shape (forecast horizon, n components, n quantile intervals)
         n_comps = residuals.shape[1] // (
-            len(self.intervals) * (1 + int(not self.symmetric))
+            len(self.interval_range) * (1 + int(not self.symmetric))
         )
-        n_intervals = len(self.intervals)
+        n_intervals = len(self.interval_range)
 
         def q_hat_from_residuals(residuals_, intervals_):
             # is there a more efficient way?
@@ -1227,13 +1039,13 @@ class ConformalQRModel(ConformalModel):
 
         if self.symmetric:
             # symmetric has one nc-score per intervals
-            q_hat = q_hat_from_residuals(residuals, self.intervals)
+            q_hat = q_hat_from_residuals(residuals, self.interval_range)
             return -q_hat, q_hat[:, :, ::-1]
         else:
             # asymmetric has two nc-score per intervals (for lower and upper quantiles)
             half_idx = residuals.shape[1] // 2
             # for asymmetric, use intervals `1 - alpha / 2`
-            intervals = 1 - (1 - self.intervals) / 2
+            intervals = 1 - (1 - self.interval_range) / 2
             q_hat_lo = q_hat_from_residuals(residuals[:, :half_idx], intervals)
             q_hat_hi = q_hat_from_residuals(residuals[:, half_idx:], intervals)
             return -q_hat_lo, q_hat_hi[:, :, ::-1]
@@ -1249,9 +1061,9 @@ class ConformalQRModel(ConformalModel):
         # shape (forecast horizon, n components, n quantiles)
         pred = np.concatenate(
             [
-                pred[:, :, : self.idx_q_med] + q_hat[0],  # lower quantiles
-                pred[:, :, self.idx_q_med : self.idx_q_med + 1],  # model forecast
-                pred[:, :, self.idx_q_med + 1 :] + q_hat[1],  # upper quantiles
+                pred[:, :, : self.idx_median] + q_hat[0],  # lower quantiles
+                pred[:, :, self.idx_median : self.idx_median + 1],  # model forecast
+                pred[:, :, self.idx_median + 1 :] + q_hat[1],  # upper quantiles
             ],
             axis=2,
         )
@@ -1261,6 +1073,6 @@ class ConformalQRModel(ConformalModel):
     @property
     def _residuals_metric(self) -> Tuple[METRIC_TYPE, Optional[dict]]:
         return metrics.incs_qr, {
-            "q_interval": self._q_intervals,
+            "q_interval": self.interval_bounds,
             "symmetric": self.symmetric,
         }
