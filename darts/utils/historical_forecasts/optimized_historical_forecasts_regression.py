@@ -13,7 +13,9 @@ from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import create_lagged_prediction_data
-from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
+from darts.utils.historical_forecasts.utils import (
+    _get_historical_forecast_boundaries,
+)
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -39,6 +41,8 @@ def _optimized_historical_forecasts_last_points_only(
     Optimized historical forecasts for RegressionModel with last_points_only = True
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
+
+    The data_transformers are applied in historical_forecasts (input and predictions)
     """
     forecasts_list = []
     iterator = _build_tqdm_iterator(series, verbose)
@@ -47,6 +51,7 @@ def _optimized_historical_forecasts_last_points_only(
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
+
         freq = series_.freq
         forecast_components = (
             model._likelihood_components_names(series_)
@@ -209,6 +214,7 @@ def _optimized_historical_forecasts_all_points(
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
+
         freq = series_.freq
         forecast_components = (
             model._likelihood_components_names(series_)
@@ -358,6 +364,5 @@ def _optimized_historical_forecasts_all_points(
                     hierarchy=series_.hierarchy,
                 )
             )
-
         forecasts_list.append(forecasts_)
     return forecasts_list
