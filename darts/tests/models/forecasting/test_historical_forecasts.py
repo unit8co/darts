@@ -2821,7 +2821,7 @@ class TestHistoricalforecast:
         "config",
         itertools.product(
             [False, True],  # last points only
-            [None, 1, 2],  # train length
+            [None, 1, 2],  # cal length
             [False, True],  # use start
             ["value", "position"],  # start format
             [False, True],  # use integer indexed series
@@ -2829,12 +2829,12 @@ class TestHistoricalforecast:
             [0, 1],  # output chunk shift
         ),
     )
-    def test_conformal_historical_start_train_length(self, config):
+    def test_conformal_historical_start_cal_length(self, config):
         """Tests naive conformal model with start, train length, calibration set, and center forecasts against
         the forecasting model's forecast."""
         (
             last_points_only,
-            train_length,
+            cal_length,
             use_start,
             start_format,
             use_int_idx,
@@ -2847,9 +2847,9 @@ class TestHistoricalforecast:
         ocl = 5
         horizon = 5
         horizon_ocs = horizon + ocs
-        add_train_length = train_length - 1 if train_length is not None else 0
+        add_cal_length = cal_length - 1 if cal_length is not None else 0
         add_start = 2 * int(use_start)
-        min_len_val_series = icl + 2 * horizon_ocs + add_train_length + add_start
+        min_len_val_series = icl + 2 * horizon_ocs + add_cal_length + add_start
         n_forecasts = 3
         # get train and val series of that length
         series_train, series_val = (
@@ -2881,7 +2881,7 @@ class TestHistoricalforecast:
         forecasting_model.fit(series_train)
 
         # optionally compute the start as a positional index
-        start_position = icl + horizon_ocs + add_train_length + add_start
+        start_position = icl + horizon_ocs + add_cal_length + add_start
         start = None
         if use_start:
             if start_format == "value":
@@ -2908,11 +2908,12 @@ class TestHistoricalforecast:
             forecast_horizon=horizon,
         )
         # compute conformal historical forecasts (skips some of the first forecasts to get minimum required cal set)
-        model = ConformalNaiveModel(forecasting_model, quantiles=q)
+        model = ConformalNaiveModel(
+            forecasting_model, quantiles=q, cal_length=cal_length
+        )
         hist_fct = model.historical_forecasts(
             series=series_val,
             retrain=False,
-            train_length=train_length,
             start=start,
             start_format=start_format,
             last_points_only=last_points_only,
@@ -2923,7 +2924,6 @@ class TestHistoricalforecast:
             series=series_val,
             cal_series=series_val,
             retrain=False,
-            train_length=train_length,
             start=start,
             start_format=start_format,
             last_points_only=last_points_only,
@@ -2957,7 +2957,7 @@ class TestHistoricalforecast:
                 - horizon_ocs  # skip first forecasts to avoid look-ahead bias
                 - horizon_ocs  # cannot compute with `overlap_end=False`
                 + 1  # minimum one forecast
-                - add_train_length  # skip based on train length
+                - add_cal_length  # skip based on train length
                 - add_start  # skip based on start
                 + add_start_series_2  # skip based on start if second series
             )

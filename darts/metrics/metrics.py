@@ -3824,10 +3824,6 @@ def ic(
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
-
-    References
-    ----------
-    .. [1] https://otexts.com/fpp3/distaccuracy.html
     """
     y_true, y_pred = _get_values_or_raise(
         actual_series,
@@ -3919,10 +3915,6 @@ def mic(
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
-
-    References
-    ----------
-    .. [1] https://otexts.com/fpp3/distaccuracy.html
     """
     return np.nanmean(
         _get_wrapped_metric(ic, n_wrappers=3)(
@@ -4030,10 +4022,6 @@ def incs_qr(
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
-
-    References
-    ----------
-    .. [1] https://otexts.com/fpp3/distaccuracy.html
     """
     y_true, y_pred = _get_values_or_raise(
         actual_series,
@@ -4132,10 +4120,6 @@ def mincs_qr(
         Same as for type `float` but for a sequence of series.
     List[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
-
-    References
-    ----------
-    .. [1] https://otexts.com/fpp3/distaccuracy.html
     """
     return np.nanmean(
         _get_wrapped_metric(ic, n_wrappers=3)(

@@ -14,9 +14,6 @@ This file contains several abstract classes:
       as well as past and future values of some future covariates.
     * SplitCovariatesTorchModel(TorchForecastingModel) for torch models consuming past-observed as well as future
       values of some future covariates.
-
-    * TorchParametricProbabilisticForecastingModel(TorchForecastingModel) is the super-class of all probabilistic torch
-      forecasting models.
 """
 
 import copy
