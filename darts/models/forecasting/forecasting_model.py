@@ -943,7 +943,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # (otherwise use tqdm on the inner loop).
             outer_iterator = series
         else:
-            outer_iterator = _build_tqdm_iterator(series, verbose)
+            outer_iterator = _build_tqdm_iterator(
+                series, verbose, total=len(series), desc="historical forecasts"
+            )
 
         # deactivate the warning after displaying it once if show_warnings is True
         show_predict_warnings = show_warnings
@@ -1038,7 +1040,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             if len(series) == 1:
                 # Only use tqdm if there's no outer loop
                 iterator = _build_tqdm_iterator(
-                    historical_forecasts_time_index[::stride], verbose
+                    historical_forecasts_time_index[::stride],
+                    verbose,
+                    total=(len(historical_forecasts_time_index) - 1) // stride + 1,
+                    desc="historical forecasts",
                 )
             else:
                 iterator = historical_forecasts_time_index[::stride]
@@ -1708,7 +1713,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # iterate through all combinations of the provided parameters and choose the best one
         iterator = _build_tqdm_iterator(
-            zip(params_cross_product), verbose, total=len(params_cross_product)
+            zip(params_cross_product),
+            verbose,
+            total=len(params_cross_product),
+            desc="gridsearch",
         )
 
         def _evaluate_combination(param_combination) -> float:

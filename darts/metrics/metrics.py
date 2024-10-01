@@ -215,6 +215,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             iterable=zip(*input_series),
             verbose=verbose,
             total=len(actual_series),
+            desc=f"metric `{func.__name__}()`",
         )
 
         # `vals` is a list of series metrics of length `len(actual_series)`. Each metric has shape

@@ -23,7 +23,7 @@ from darts.logging import get_logger, raise_log
 from darts.metrics.metrics import METRIC_TYPE
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.models.utils import TORCH_AVAILABLE
-from darts.utils import _with_sanity_checks
+from darts.utils import _build_tqdm_iterator, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import _historical_forecasts_start_warnings
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.ts_utils import (
@@ -487,7 +487,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         # TODO: add support for:
         # - num_samples
         # - predict_likelihood_parameters
-        # - tqdm iterator over series
         cal_length = self.cal_length
         metric, metric_kwargs = self._residuals_metric
         residuals = self.model.residuals(
@@ -502,10 +501,19 @@ class ConformalModel(GlobalForecastingModel, ABC):
             metric_kwargs=metric_kwargs,
         )
 
+        outer_iterator = enumerate(zip(series, forecasts, residuals))
+        if len(series) > 1:
+            # Use tqdm on the outer loop only if there's more than one series to iterate over
+            # (otherwise use tqdm on the inner loop).
+            outer_iterator = _build_tqdm_iterator(
+                outer_iterator,
+                verbose,
+                total=len(series),
+                desc="conformal forecasts",
+            )
+
         cp_hfcs = []
-        for series_idx, (series_, s_hfcs, res) in enumerate(
-            zip(series, forecasts, residuals)
-        ):
+        for series_idx, (series_, s_hfcs, res) in outer_iterator:
             cp_preds = []
 
             # no historical forecasts were generated
@@ -704,9 +712,23 @@ class ConformalModel(GlobalForecastingModel, ABC):
             # historical conformal prediction
             # for each forecast, compute calibrated quantile intervals based on past residuals
             if last_points_only:
-                for idx, pred_vals in enumerate(
+                inner_iterator = enumerate(
                     s_hfcs.all_values(copy=False)[first_fc_idx:last_fc_idx:stride]
-                ):
+                )
+            else:
+                inner_iterator = enumerate(s_hfcs[first_fc_idx:last_fc_idx:stride])
+
+            if len(series) == 1:
+                # Only use progress bar if there's no outer loop
+                inner_iterator = _build_tqdm_iterator(
+                    inner_iterator,
+                    verbose,
+                    total=(last_fc_idx - 1 - first_fc_idx) // stride + 1,
+                    desc="conformal forecasts",
+                )
+
+            if last_points_only:
+                for idx, pred_vals in inner_iterator:
                     pred_vals = np.expand_dims(pred_vals, 0)
                     cp_pred = conformal_predict(idx, pred_vals)
                     cp_preds.append(cp_pred)
@@ -725,7 +747,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 )
                 cp_hfcs.append(cp_preds)
             else:
-                for idx, pred in enumerate(s_hfcs[first_fc_idx:last_fc_idx:stride]):
+                for idx, pred in inner_iterator:
                     pred_vals = pred.all_values(copy=False)
                     cp_pred = conformal_predict(idx, pred_vals)
                     cp_pred = _build_forecast_series(
