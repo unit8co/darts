@@ -38,6 +38,7 @@ from darts.utils.utils import (
     likelihood_component_names,
     n_steps_between,
     quantile_names,
+    sample_from_quantiles,
 )
 
 if TORCH_AVAILABLE:
@@ -86,9 +87,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
         super().__init__(add_encoders=None)
 
         # quantiles and interval setup
-        self.quantiles = quantiles
+        self.quantiles = np.array(quantiles)
         self.idx_median = quantiles.index(0.5)
-        self.interval_bounds = [
+        self.q_interval = [
             (q_l, q_h)
             for q_l, q_h in zip(
                 quantiles[: self.idx_median], quantiles[self.idx_median + 1 :][::-1]
@@ -224,6 +225,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             forecasts=preds,
             cal_series=cal_series,
             cal_forecasts=cal_hfcs,
+            num_samples=num_samples,
             forecast_horizon=n,
             overlap_end=True,
             last_points_only=False,
@@ -324,6 +326,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             cal_forecasts=cal_hfcs,
             start=start,
             start_format=start_format,
+            num_samples=num_samples,
             forecast_horizon=forecast_horizon,
             stride=stride,
             overlap_end=overlap_end,
@@ -372,7 +375,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             for metric_ in metric:
                 if metric_ in metrics.ALL_METRICS:
                     if metric_ in metrics.Q_INTERVAL_METRICS:
-                        metric_kwargs.append({"q_interval": self.interval_bounds})
+                        metric_kwargs.append({"q_interval": self.q_interval})
                     elif metric_ not in metrics.NON_Q_METRICS:
                         metric_kwargs.append({"q": self.quantiles})
                     else:
@@ -436,7 +439,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         # make user's life easier by adding quantile intervals, or quantiles directly
         if metric_kwargs is None and metric in metrics.ALL_METRICS:
             if metric in metrics.Q_INTERVAL_METRICS:
-                metric_kwargs = {"q_interval": self.interval_bounds}
+                metric_kwargs = {"q_interval": self.q_interval}
             elif metric not in metrics.NON_Q_METRICS:
                 metric_kwargs = {"q": self.quantiles}
             else:
@@ -475,6 +478,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         cal_forecasts: Optional[
             Union[Sequence[Sequence[TimeSeries]], Sequence[TimeSeries]]
         ] = None,
+        num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
@@ -707,7 +711,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 else:
                     # with a calibration set, use a constant q_hat
                     q_hat_ = q_hat
-                return self._apply_interval(pred_vals_, q_hat_)
+                vals = self._apply_interval(pred_vals_, q_hat_)
+                if num_samples > 1:
+                    vals = sample_from_quantiles(
+                        vals, self.quantiles, num_samples=num_samples
+                    )
+                return vals
 
             # historical conformal prediction
             # for each forecast, compute calibrated quantile intervals based on past residuals
@@ -717,7 +726,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 )
             else:
                 inner_iterator = enumerate(s_hfcs[first_fc_idx:last_fc_idx:stride])
-
+            comp_names_out = (
+                self._cp_component_names(series_) if num_samples == 1 else None
+            )
             if len(series) == 1:
                 # Only use progress bar if there's no outer loop
                 inner_iterator = _build_tqdm_iterator(
@@ -735,7 +746,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 cp_preds = _build_forecast_series(
                     points_preds=np.concatenate(cp_preds, axis=0),
                     input_series=series_,
-                    custom_columns=self._cp_component_names(series_),
+                    custom_columns=comp_names_out,
                     time_index=generate_index(
                         start=s_hfcs._time_index[first_fc_idx],
                         length=len(cp_preds),
@@ -753,7 +764,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     cp_pred = _build_forecast_series(
                         points_preds=cp_pred,
                         input_series=series_,
-                        custom_columns=self._cp_component_names(series_),
+                        custom_columns=comp_names_out,
                         time_index=pred._time_index,
                         with_static_covs=False,
                         with_hierarchy=False,
@@ -994,20 +1005,27 @@ class ConformalNaiveModel(ConformalModel):
     def _calibrate_interval(
         self, residuals: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
-        if self.symmetric:
-            # shape (forecast horizon, n components, n quantile intervals)
-            q_hat = np.quantile(residuals, q=self.interval_range_sym, axis=2).transpose((
-                1,
-                2,
-                0,
-            ))
-            return -q_hat, q_hat[:, :, ::-1]
+        def q_hat_from_residuals(residuals_):
+            # compute quantiles of shape (forecast horizon, n components, n quantile intervals)
+            return np.quantile(
+                residuals_,
+                q=self.interval_range_sym,
+                method="higher",
+                axis=2,
+            ).transpose((1, 2, 0))
 
-        # asymmetric
-        n_comps = residuals.shape[1]
-        res = np.concatenate([-residuals, residuals], axis=1)
-        q_hat = np.quantile(res, q=self.interval_range_sym, axis=2).transpose((1, 2, 0))
-        return -q_hat[:, :n_comps, :], q_hat[:, n_comps:, ::-1]
+        # residuals shape (horizon, n components, n past forecasts)
+        if self.symmetric:
+            # symmetric (from metric `ae()`)
+            q_hat = q_hat_from_residuals(residuals)
+            return -q_hat, q_hat[:, :, ::-1]
+        else:
+            # asymmetric (from metric `err()`)
+            q_hat = q_hat_from_residuals(
+                np.concatenate([-residuals, residuals], axis=1)
+            )
+            n_comps = residuals.shape[1]
+            return -q_hat[:, :n_comps, :], q_hat[:, n_comps:, ::-1]
 
     def _apply_interval(self, pred: np.ndarray, q_hat: Tuple[np.ndarray, np.ndarray]):
         # convert stochastic predictions to median
@@ -1083,12 +1101,8 @@ class ConformalQRModel(ConformalModel):
             # compute quantiles with shape (horizon, n components, n quantile intervals)
             # over all past residuals
             q_hat_tmp = np.quantile(
-                residuals_, q=self.interval_range_sym, axis=2
-            ).transpose((
-                1,
-                2,
-                0,
-            ))
+                residuals_, q=self.interval_range_sym, method="higher", axis=2
+            ).transpose((1, 2, 0))
             q_hat_ = np.empty((len(residuals_), n_comps, n_intervals))
             for i in range(n_intervals):
                 for c in range(n_comps):
@@ -1096,12 +1110,13 @@ class ConformalQRModel(ConformalModel):
             return q_hat_
 
         if self.symmetric:
-            # symmetric has one nc-score per intervals
+            # symmetric has one nc-score per intervals (from metric `incs_qr(symmetric=True)`)
             # residuals shape (horizon, n components * n intervals, n past forecasts)
             q_hat = q_hat_from_residuals(residuals)
             return -q_hat, q_hat[:, :, ::-1]
         else:
-            # asymmetric has two nc-score per intervals (for lower and upper quantiles)
+            # asymmetric has two nc-score per intervals (for lower and upper quantiles, from metric
+            # `incs_qe(symmetric=False)`)
             # lower and upper residuals are concatenated along axis=1;
             # residuals shape (horizon, n components * n intervals * 2, n past forecasts)
             half_idx = residuals.shape[1] // 2
@@ -1127,6 +1142,6 @@ class ConformalQRModel(ConformalModel):
     @property
     def _residuals_metric(self) -> Tuple[METRIC_TYPE, Optional[dict]]:
         return metrics.incs_qr, {
-            "q_interval": self.interval_bounds,
+            "q_interval": self.q_interval,
             "symmetric": self.symmetric,
         }

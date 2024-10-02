@@ -586,3 +586,74 @@ def expand_arr(arr: np.ndarray, ndim: int):
     if len(shape) != ndim:
         arr = arr.reshape(shape + tuple(1 for _ in range(ndim - len(shape))))
     return arr
+
+
+def sample_from_quantiles(
+    vals: np.ndarray,
+    quantiles: np.ndarray,
+    num_samples: int,
+):
+    """Generates `num_samples` samples from quantile predictions using linear interpolation. The generated samples
+    should have quantile values close to the quantile predictions. For the lowest and highest quantiles, the lowest
+    and highest quantile predictions are repeated.
+
+    Parameters
+    ----------
+    vals
+        A numpy array of quantile predictions/values. Either an array with two dimensions
+        (n times, n components * n quantiles), or with three dimensions (n times, n components, n quantiles).
+        In the two-dimensional case, the order is first by ascending column, then by ascending quantile value
+        `(comp_0_q_0, comp_0_q_1, ... comp_n_q_m)`
+    quantiles
+        A numpy array of quantiles.
+    num_samples
+        The number of samples to generate.
+    """
+    if not 2 <= vals.ndim <= 3:
+        raise_log(
+            ValueError(
+                "`vals` must have either two dimensions with `(n times, n components * n quantiles)` or three "
+                "dimensions with shape `(n times, n components, n quantiles)`"
+            )
+        )
+    n_time_steps = len(vals)
+    n_quantiles = len(quantiles)
+    if vals.ndim == 2:
+        if vals.shape[1] % n_quantiles > 0:
+            raise_log(
+                ValueError(
+                    "`vals` with two dimension must have shape `(n times, n components * n quantiles)`."
+                )
+            )
+        vals = vals.reshape((n_time_steps, -1, n_quantiles))
+    elif vals.ndim == 3 and vals.shape[2] != n_quantiles:
+        raise_log(
+            ValueError(
+                "`vals` with three dimension must have shape `(n times, n components, n quantiles)`."
+            )
+        )
+    n_columns = vals.shape[1]
+
+    # Generate uniform random samples
+    random_samples = np.random.uniform(0, 1, (n_time_steps, n_columns, num_samples))
+    # Find the indices of the quantiles just below and above the random samples
+    lower_indices = np.searchsorted(quantiles, random_samples, side="right") - 1
+    upper_indices = lower_indices + 1
+
+    # Handle edge cases
+    lower_indices = np.clip(lower_indices, 0, n_quantiles - 1)
+    upper_indices = np.clip(upper_indices, 0, n_quantiles - 1)
+
+    # Gather the corresponding quantile values and vals values
+    q_lower = quantiles[lower_indices]
+    q_upper = quantiles[upper_indices]
+    z_lower = np.take_along_axis(vals, lower_indices, axis=2)
+    z_upper = np.take_along_axis(vals, upper_indices, axis=2)
+
+    y = z_lower
+    # Linear interpolation
+    mask = q_lower != q_upper
+    y[mask] = z_lower[mask] + (z_upper[mask] - z_lower[mask]) * (
+        random_samples[mask] - q_lower[mask]
+    ) / (q_upper[mask] - q_lower[mask])
+    return y
