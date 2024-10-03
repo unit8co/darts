@@ -63,13 +63,48 @@ class ConformalModel(GlobalForecastingModel, ABC):
     ):
         """Base Conformal Prediction Model.
 
+        Base class for any probabilistic conformal model. A conformal model calibrates the predictions from any
+        pre-trained global forecasting model. It does not have to be trained, and can generated calibrated forecasts
+        directly using the underlying trained forecasting model. Since it is a probabilistic model, you can generate
+        forecasts in two ways (when calling `predict()`, `historical_forecasts()`, ...):
+
+        - Predict the calibrated quantile intervals directly: Pass parameters `predict_likelihood_parameters=True`, and
+          `num_samples=1` to the forecast method.
+        - Predict stochastic samples from the calibrated quantile intervals: Pass parameters
+          `predict_likelihood_parameters=False`, and `num_samples>>1` to the forecast method.
+
+        Conformal models can be applied to any of Darts' global forecasting model, as long as the model has been
+        fitted before. In general the workflow of the models to produce one calibrated forecast/prediction is as
+        follows:
+
+        - Extract a calibration set: The number of calibration examples from the most recent past to use for one
+          conformal prediction can be defined at model creation with parameter `cal_length`. To make your life simpler,
+          we support two modes:
+            - Automatic extraction of the calibration set from the past of your input series (`series`,
+              `past_covariates`, ...). This is the default mode and our predict/forecasting/backtest/.... API is
+              identical to any other forecasting model
+            - Supply a fixed calibration set with parameters `cal_series`, `cal_past_covariates`, ... .
+        - Generate historical forecasts on the calibration set (using the forecasting model)
+        - Compute the errors/non-conformity scores (specific to each conformal model) on these historical forecasts
+        - Compute the quantile values from the errors / non-conformity scores (using our desired quantiles set at model
+          creation with parameter `quantiles`).
+        - Compute the conformal prediction: Add the calibrated intervals to (or adjust the existing intervals of) the
+          forecasting model's predictions.
+
+        Some notes:
+
+        - When computing historical_forecasts(), backtest(), residuals(), ... the above is applied for each forecast
+          (the forecasting model's historical forecasts are only generated once for efficiency).
+        - For multi-horizon forecasts, the above is applied for each step in the horizon separately
+
         Parameters
         ----------
         model
             A pre-trained global forecasting model.
         quantiles
             A list of quantiles centered around the median `q=0.5` to use. For example quantiles
-            [0.1, 0.5, 0.9] correspond to a (0.9 - 0.1) = 80% coverage interval around the median (model forecast).
+            [0.1, 0.2, 0.5, 0.8 0.9] correspond to two intervals with (0.9 - 0.1) = 80%, and (0.8 - 0.2) 60% coverage
+            around the median (model forecast).
         symmetric
             Whether to use symmetric non-conformity scores. If `False`, uses asymmetric scores (individual scores
             for lower- and upper quantile interval bounds).
@@ -851,13 +886,58 @@ class ConformalNaiveModel(ConformalModel):
     ):
         """Naive Conformal Prediction Model.
 
+        A probabilistic model that adds calibrated intervals around the median forecast from a pre-trained
+        global forecasting model. It does not have to be trained and can generated calibrated forecasts
+        directly using the underlying trained forecasting model. It supports two symmetry modes:
+
+        - `symmetric=True`:
+            - The lower and upper interval bounds are calibrated with the same magnitude.
+            - Non-conformity scores: uses metric `ae()` (see absolute error :func:`~darts.metrics.metrics.ae`) to
+              compute the non-conformity scores on the calibration set.
+        - `symmetric=False`
+            - The lower and upper interval bounds are calibrated separately.
+            - Non-conformity scores: uses metric `err()` (see error :func:`~darts.metrics.metrics.err`) to compute the
+              non-conformity scores on the calibration set for the upper bounds, an `-err()` for the lower bounds.
+
+        Since it is a probabilistic model, you can generate forecasts in two ways (when calling `predict()`,
+        `historical_forecasts()`, ...):
+
+        - Predict the calibrated quantile intervals directly: Pass parameters `predict_likelihood_parameters=True`, and
+          `num_samples=1` to the forecast method.
+        - Predict stochastic samples from the calibrated quantile intervals: Pass parameters
+          `predict_likelihood_parameters=False`, and `num_samples>>1` to the forecast method.
+
+        Conformal models can be applied to any of Darts' global forecasting model, as long as the model has been
+        fitted before. In general the workflow of the models to produce one calibrated forecast/prediction is as
+        follows:
+
+        - Extract a calibration set: The number of calibration examples from the most recent past to use for one
+          conformal prediction can be defined at model creation with parameter `cal_length`. To make your life simpler,
+          we support two modes:
+            - Automatic extraction of the calibration set from the past of your input series (`series`,
+              `past_covariates`, ...). This is the default mode and our predict/forecasting/backtest/.... API is
+              identical to any other forecasting model
+            - Supply a fixed calibration set with parameters `cal_series`, `cal_past_covariates`, ... .
+        - Generate historical forecasts on the calibration set (using the forecasting model)
+        - Compute the errors/non-conformity scores (as defined above) on these historical forecasts
+        - Compute the quantile values from the errors / non-conformity scores (using our desired quantiles set at model
+          creation with parameter `quantiles`).
+        - Compute the conformal prediction: Add the calibrated intervals to the forecasting model's predictions.
+
+        Some notes:
+
+        - When computing historical_forecasts(), backtest(), residuals(), ... the above is applied for each forecast
+          (the forecasting model's historical forecasts are only generated once for efficiency).
+        - For multi-horizon forecasts, the above is applied for each step in the horizon separately
+
         Parameters
         ----------
         model
             A pre-trained global forecasting model.
         quantiles
             A list of quantiles centered around the median `q=0.5` to use. For example quantiles
-            [0.1, 0.5, 0.9] correspond to a (0.9 - 0.1) = 80% coverage interval around the median (model forecast).
+            [0.1, 0.2, 0.5, 0.8 0.9] correspond to two intervals with (0.9 - 0.1) = 80%, and (0.8 - 0.2) 60% coverage
+            around the median (model forecast).
         symmetric
             Whether to use symmetric non-conformity scores. If `True`, uses metric `ae()` (see
             :func:`~darts.metrics.metrics.ae`) to compute the non-conformity scores. If `False`, uses metric `-err()`
@@ -932,13 +1012,60 @@ class ConformalQRModel(ConformalModel):
     ):
         """Conformalized Quantile Regression Model.
 
+        A probabilistic model that calibrates the quantile predictions from a pre-trained probabilistic global
+        forecasting model. It does not have to be trained and can generated calibrated forecasts
+        directly using the underlying trained forecasting model. It supports two symmetry modes:
+
+        - `symmetric=True`:
+            - The lower and upper quantile predictions are calibrated with the same magnitude.
+            - Non-conformity scores: uses metric `incs_qr(symmetric=True)` (see Non-Conformity Score for Quantile
+              Regression :func:`~darts.metrics.metrics.incs_qr`) to compute the non-conformity scores on the calibration
+              set.
+        - `symmetric=False`
+            - The lower and upper quantile predictions are calibrated separately.
+            - Non-conformity scores: uses metric `incs_qr(symmetric=False)` (see Non-Conformity Score for Quantile
+              Regression :func:`~darts.metrics.metrics.incs_qr`) to compute the non-conformity scores for the upper and
+              lower bound separately.
+
+        Since it is a probabilistic model, you can generate forecasts in two ways (when calling `predict()`,
+        `historical_forecasts()`, ...):
+
+        - Predict the calibrated quantile intervals directly: Pass parameters `predict_likelihood_parameters=True`, and
+          `num_samples=1` to the forecast method.
+        - Predict stochastic samples from the calibrated quantile intervals: Pass parameters
+          `predict_likelihood_parameters=False`, and `num_samples>>1` to the forecast method.
+
+        Conformal models can be applied to any of Darts' global forecasting model, as long as the model has been
+        fitted before. In general the workflow of the models to produce one calibrated forecast/prediction is as
+        follows:
+
+        - Extract a calibration set: The number of calibration examples from the most recent past to use for one
+          conformal prediction can be defined at model creation with parameter `cal_length`. To make your life simpler,
+          we support two modes:
+            - Automatic extraction of the calibration set from the past of your input series (`series`,
+              `past_covariates`, ...). This is the default mode and our predict/forecasting/backtest/.... API is
+              identical to any other forecasting model
+            - Supply a fixed calibration set with parameters `cal_series`, `cal_past_covariates`, ... .
+        - Generate historical forecasts (quantile predictions) on the calibration set (using the forecasting model)
+        - Compute the errors/non-conformity scores (as defined above) on these historical quantile predictions
+        - Compute the quantile values from the errors / non-conformity scores (using our desired quantiles set at model
+          creation with parameter `quantiles`).
+        - Compute the conformal prediction: Calibrate the predicted quantiles from the forecasting model's predictions.
+
+        Some notes:
+
+        - When computing historical_forecasts(), backtest(), residuals(), ... the above is applied for each forecast
+          (the forecasting model's historical forecasts are only generated once for efficiency).
+        - For multi-horizon forecasts, the above is applied for each step in the horizon separately
+
         Parameters
         ----------
         model
             A pre-trained probabilistic global forecasting model using a `likelihood`.
         quantiles
             A list of quantiles centered around the median `q=0.5` to use. For example quantiles
-            [0.1, 0.5, 0.9] correspond to a (0.9 - 0.1) = 80% coverage interval around the median (model forecast).
+            [0.1, 0.2, 0.5, 0.8 0.9] correspond to two intervals with (0.9 - 0.1) = 80%, and (0.8 - 0.2) 60% coverage
+            around the median (model forecast).
         symmetric
             Whether to use symmetric non-conformity scores. If `True`, uses symmetric metric
             `incs_qr(..., symmetric=True)` (see :func:`~darts.metrics.metrics.incs_qr`) to compute the non-conformity
