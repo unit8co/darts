@@ -1027,7 +1027,7 @@ class TestRegressionModels:
                 future_covariates=self.sine_multivariate1,
             )
 
-        model_instance = model(lags=4, lags_future_covariates=3, multi_models=mode)
+        model_instance = model(lags=4, lags_future_covariates=(0, 3), multi_models=mode)
         with pytest.raises(ValueError):
             # testing lags_covariate but no covariate during fit
             model_instance.fit(series=self.sine_univariate1)

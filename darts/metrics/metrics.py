@@ -4123,7 +4123,7 @@ def mincs_qr(
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
-        _get_wrapped_metric(ic, n_wrappers=3)(
+        _get_wrapped_metric(incs_qr, n_wrappers=3)(
             actual_series,
             pred_series,
             intersect,
