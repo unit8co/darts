@@ -38,6 +38,7 @@ from darts.utils.utils import (
     likelihood_component_names,
     n_steps_between,
     quantile_names,
+    random_method,
     sample_from_quantiles,
 )
 
@@ -50,6 +51,7 @@ logger = get_logger(__name__)
 
 
 class ConformalModel(GlobalForecastingModel, ABC):
+    @random_method
     def __init__(
         self,
         model: GlobalForecastingModel,
@@ -57,6 +59,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         symmetric: bool = True,
         cal_length: Optional[int] = None,
         num_samples: int = 500,
+        random_state: Optional[int] = None,
     ):
         """Base Conformal Prediction Model.
 
@@ -77,6 +80,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Number of times a prediction is sampled from the underlying `model` if it is probabilistic. Uses `1` for
             deterministic models. This is different to the `num_samples` produced by the conformal model which can be
             set in downstream forecasting tasks.
+        random_state
+            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
         """
         if not isinstance(model, GlobalForecastingModel) or not model._fit_called:
             raise_log(
@@ -342,6 +347,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             else calibrated_forecasts
         )
 
+    @random_method
     def _calibrate_forecasts(
         self,
         series: Sequence[TimeSeries],

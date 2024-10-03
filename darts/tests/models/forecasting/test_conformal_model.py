@@ -222,7 +222,6 @@ class TestConformalModel:
             ),
             **kwargs,
         )
-        model_prediction = model.predict(5, **pred_kwargs)
 
         # check if save and load methods work and
         # if loaded conformal model creates same forecasts as original ensemble models
@@ -235,6 +234,8 @@ class TestConformalModel:
         # test save
         model.save()
         model.save(os.path.join(tmpdir_fn, f"{model_cls.__name__}.pkl"))
+
+        model_prediction = model.predict(5, **pred_kwargs)
 
         assert os.path.exists(tmpdir_fn)
         files = os.listdir(tmpdir_fn)

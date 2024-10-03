@@ -6,12 +6,23 @@ Additional util functions
 from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
-from typing import Callable, Iterator, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from pandas._libs.tslibs.offsets import BusinessMixin
+from sklearn.utils import check_random_state
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
 
@@ -23,6 +34,9 @@ except ModuleNotFoundError:
     get_ipython = None
 
 logger = get_logger(__name__)
+
+MAX_TORCH_SEED_VALUE = (1 << 31) - 1  # to accommodate 32-bit architectures
+MAX_NUMPY_SEED_VALUE = (1 << 31) - 1
 
 
 # Enums
@@ -262,6 +276,26 @@ def _parallel_apply(
         delayed(fn)(*sample, *fn_args, **fn_kwargs) for sample in iterator
     )
     return returned_data
+
+
+def _is_method(func: Callable[..., Any]) -> bool:
+    """Check if the specified function is a method.
+
+    Parameters
+    ----------
+    func
+        the function to inspect.
+
+    Returns
+    -------
+    bool
+        true if `func` is a method, false otherwise.
+    """
+    spec = signature(func)
+    if len(spec.parameters) > 0:
+        if list(spec.parameters.keys())[0] == "self":
+            return True
+    return False
 
 
 def _check_quantiles(quantiles):
@@ -657,3 +691,43 @@ def sample_from_quantiles(
         random_samples[mask] - q_lower[mask]
     ) / (q_upper[mask] - q_lower[mask])
     return y
+
+
+def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
+    """Decorator usable on any method within a class that will provide a random context.
+
+    The decorator will store a `_random_instance` property on the object in order to persist successive calls to the
+    RNG.
+
+    This is the equivalent to `darts.utils.torch.random_method` but for non-torch models.
+
+    Parameters
+    ----------
+    decorated
+        A method to be run in an isolated torch random context.
+    """
+    # check that @random_method has been applied to a method.
+    if not _is_method(decorated):
+        raise_log(ValueError("@random_method can only be used on methods."), logger)
+
+    @wraps(decorated)
+    def decorator(self, *args, **kwargs):
+        if "random_state" in kwargs.keys():
+            # get random state for first time from model constructor
+            self._random_instance = check_random_state(
+                kwargs["random_state"]
+            ).get_state()
+        elif not hasattr(self, "_random_instance"):
+            # get random state for first time from other method
+            self._random_instance = check_random_state(
+                np.random.randint(0, high=MAX_NUMPY_SEED_VALUE)
+            ).get_state()
+
+        # handle the randomness
+        np.random.set_state(self._random_instance)
+        result = decorated(self, *args, **kwargs)
+        # update the random state after the function call
+        self._random_instance = np.random.get_state()
+        return result
+
+    return decorator
