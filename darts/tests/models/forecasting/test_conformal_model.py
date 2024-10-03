@@ -272,7 +272,7 @@ class TestConformalModel:
             ),
             **kwargs,
         )
-        pred = model.predict(n=self.horizon)
+        pred = model.predict(n=self.horizon, **pred_lklp)
         assert pred.n_components == self.ts_pass_train.n_components * 3
         assert not np.isnan(pred.all_values()).any().any()
 
@@ -288,20 +288,24 @@ class TestConformalModel:
         assert pred.static_covariates is None
 
         # using a different `n`, gives different results, since we can generate more residuals for the horizon
-        pred1 = model.predict(n=1)
+        pred1 = model.predict(n=1, **pred_lklp)
         assert not pred1 == pred
 
         # giving the same series as calibration set must give the same results
-        pred_cal = model.predict(n=self.horizon, cal_series=self.ts_pass_train)
+        pred_cal = model.predict(
+            n=self.horizon, cal_series=self.ts_pass_train, **pred_lklp
+        )
         np.testing.assert_array_almost_equal(pred.all_values(), pred_cal.all_values())
 
         # wrong dimension
         with pytest.raises(ValueError):
             model.predict(
-                n=self.horizon, series=self.ts_pass_train.stack(self.ts_pass_train)
+                n=self.horizon,
+                series=self.ts_pass_train.stack(self.ts_pass_train),
+                **pred_lklp,
             )
 
-    @pytest.mark.parametrize("config", models_cls_kwargs_errs[:])
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_multi_ts(self, config):
         model_cls, kwargs, model_type = config
         model = model_cls(
@@ -316,7 +320,7 @@ class TestConformalModel:
             # when model is fit from >1 series, one must provide a series in argument
             model.predict(n=1)
 
-        pred = model.predict(n=self.horizon, series=self.ts_pass_train)
+        pred = model.predict(n=self.horizon, series=self.ts_pass_train, **pred_lklp)
         assert pred.n_components == self.ts_pass_train.n_components * 3
         assert not np.isnan(pred.all_values()).any().any()
 
@@ -333,12 +337,13 @@ class TestConformalModel:
         # using a calibration series also requires an input series
         with pytest.raises(ValueError):
             # when model is fit from >1 series, one must provide a series in argument
-            model.predict(n=1, cal_series=self.ts_pass_train)
+            model.predict(n=1, cal_series=self.ts_pass_train, **pred_lklp)
         # giving the same series as calibration set must give the same results
         pred_cal = model.predict(
             n=self.horizon,
             series=self.ts_pass_train,
             cal_series=self.ts_pass_train,
+            **pred_lklp,
         )
         np.testing.assert_array_almost_equal(pred.all_values(), pred_cal.all_values())
 
@@ -346,6 +351,7 @@ class TestConformalModel:
         pred_list = model.predict(
             n=self.horizon,
             series=[self.ts_pass_train, self.ts_pass_train_1],
+            **pred_lklp,
         )
         pred_fc_list = model.model.predict(
             n=self.horizon,
@@ -370,6 +376,7 @@ class TestConformalModel:
                 n=1,
                 series=[self.ts_pass_train, self.ts_pass_val],
                 cal_series=self.ts_pass_train,
+                **pred_lklp,
             )
         assert (
             str(exc.value)
@@ -382,6 +389,7 @@ class TestConformalModel:
                 n=1,
                 series=[self.ts_pass_train, self.ts_pass_val],
                 cal_series=[self.ts_pass_train] * 3,
+                **pred_lklp,
             )
         assert (
             str(exc.value)
@@ -393,6 +401,7 @@ class TestConformalModel:
             n=self.horizon,
             series=[self.ts_pass_train, self.ts_pass_train_1],
             cal_series=[self.ts_pass_train, self.ts_pass_train_1],
+            **pred_lklp,
         )
         for pred, pred_cal in zip(pred_list, pred_cal_list):
             np.testing.assert_array_almost_equal(
@@ -405,6 +414,7 @@ class TestConformalModel:
             n=self.horizon,
             series=[self.ts_pass_train, self.ts_pass_train_1],
             cal_series=[self.ts_pass_train, self.ts_pass_train],
+            **pred_lklp,
         )
 
         pred_0_vals = pred_cal_list[0].all_values()
@@ -427,6 +437,7 @@ class TestConformalModel:
                     self.ts_pass_train,
                     self.ts_pass_train.stack(self.ts_pass_train),
                 ],
+                **pred_lklp,
             )
 
     @pytest.mark.parametrize(
@@ -523,7 +534,7 @@ class TestConformalModel:
         )
 
         pred = model.predict(
-            n=self.horizon, series=self.ts_pass_train, **cov_kwargs_notrain
+            n=self.horizon, series=self.ts_pass_train, **cov_kwargs_notrain, **pred_lklp
         )
         pred_fc = model_fc.predict(
             n=self.horizon,
@@ -549,41 +560,43 @@ class TestConformalModel:
         if is_past:
             # can only predict up until ocl
             with pytest.raises(ValueError):
-                _ = model.predict(n=OUT_LEN + 1)
+                _ = model.predict(n=OUT_LEN + 1, **pred_lklp)
             # wrong covariates dimension
             with pytest.raises(ValueError):
                 covs = cov_kwargs_train[cov_name]
                 covs = {cov_name: covs.stack(covs)}
-                _ = model.predict(n=OUT_LEN + 1, **covs)
+                _ = model.predict(n=OUT_LEN + 1, **covs, **pred_lklp)
             # with past covariates from train we can predict up until output_chunk_length
-            pred1 = model.predict(n=OUT_LEN)
-            pred2 = model.predict(n=OUT_LEN, series=self.ts_pass_train)
-            pred3 = model.predict(n=OUT_LEN, **cov_kwargs_train)
+            pred1 = model.predict(n=OUT_LEN, **pred_lklp)
+            pred2 = model.predict(n=OUT_LEN, series=self.ts_pass_train, **pred_lklp)
+            pred3 = model.predict(n=OUT_LEN, **cov_kwargs_train, **pred_lklp)
             pred4 = model.predict(
-                n=OUT_LEN, **cov_kwargs_train, series=self.ts_pass_train
+                n=OUT_LEN, **cov_kwargs_train, series=self.ts_pass_train, **pred_lklp
             )
         else:
             # with future covariates we need additional time steps to predict
             with pytest.raises(ValueError):
-                _ = model.predict(n=1)
+                _ = model.predict(n=1, **pred_lklp)
             with pytest.raises(ValueError):
-                _ = model.predict(n=1, series=self.ts_pass_train)
+                _ = model.predict(n=1, series=self.ts_pass_train, **pred_lklp)
             with pytest.raises(ValueError):
-                _ = model.predict(n=1, **cov_kwargs_train)
+                _ = model.predict(n=1, **cov_kwargs_train, **pred_lklp)
             with pytest.raises(ValueError):
-                _ = model.predict(n=1, **cov_kwargs_train, series=self.ts_pass_train)
+                _ = model.predict(
+                    n=1, **cov_kwargs_train, series=self.ts_pass_train, **pred_lklp
+                )
             # wrong covariates dimension
             with pytest.raises(ValueError):
                 covs = cov_kwargs_notrain[cov_name]
                 covs = {cov_name: covs.stack(covs)}
-                _ = model.predict(n=OUT_LEN + 1, **covs)
-            pred1 = model.predict(n=OUT_LEN, **cov_kwargs_notrain)
+                _ = model.predict(n=OUT_LEN + 1, **covs, **pred_lklp)
+            pred1 = model.predict(n=OUT_LEN, **cov_kwargs_notrain, **pred_lklp)
             pred2 = model.predict(
-                n=OUT_LEN, series=self.ts_pass_train, **cov_kwargs_notrain
+                n=OUT_LEN, series=self.ts_pass_train, **cov_kwargs_notrain, **pred_lklp
             )
-            pred3 = model.predict(n=OUT_LEN, **cov_kwargs_notrain)
+            pred3 = model.predict(n=OUT_LEN, **cov_kwargs_notrain, **pred_lklp)
             pred4 = model.predict(
-                n=OUT_LEN, **cov_kwargs_notrain, series=self.ts_pass_train
+                n=OUT_LEN, **cov_kwargs_notrain, series=self.ts_pass_train, **pred_lklp
             )
 
         assert pred1 == pred2
@@ -661,7 +674,11 @@ class TestConformalModel:
         model = ConformalNaiveModel(model_instance, quantiles=q)
 
         preds = model.predict(
-            n=horizon, series=series, past_covariates=pc, future_covariates=fc
+            n=horizon,
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            **pred_lklp,
         )
 
         if is_single:
@@ -681,7 +698,7 @@ class TestConformalModel:
             train_model(self.ts_pass_train, model_params=model_params, quantiles=q),
             quantiles=q,
         )
-        pred = model.predict(n=1)
+        pred = model.predict(n=1, **pred_lklp)
         pred_fc = model.model.predict(n=1)
 
         assert pred_fc.time_index.equals(pred.time_index)
@@ -694,7 +711,7 @@ class TestConformalModel:
             pred[fc_columns].all_values(), pred_fc.all_values()
         )
 
-        pred_cal = model.predict(n=1, cal_series=self.ts_pass_train)
+        pred_cal = model.predict(n=1, cal_series=self.ts_pass_train, **pred_lklp)
         assert pred_fc.time_index.equals(pred_cal.time_index)
         # the center forecasts must be equal to the forecasting model forecast
         np.testing.assert_array_almost_equal(pred_cal.all_values(), pred.all_values())
@@ -765,8 +782,10 @@ class TestConformalModel:
             cal_length=cal_length,
         )
         pred_fc_list = model.model.predict(n, series=series, **pred_kwargs)
-        pred_cal_list = model.predict(n, series=series)
-        pred_cal_list_with_cal = model.predict(n, series=series, cal_series=series)
+        pred_cal_list = model.predict(n, series=series, **pred_lklp)
+        pred_cal_list_with_cal = model.predict(
+            n, series=series, cal_series=series, **pred_lklp
+        )
 
         if issubclass(model_cls, ConformalNaiveModel):
             metric = ae if symmetric else err
@@ -906,6 +925,7 @@ class TestConformalModel:
             last_points_only=False,
             stride=1,
             **covs_kwargs,
+            **pred_lklp,
         )
         # with calibration set and covariates that can generate all calibration forecasts in the overlap
         hfc_conf_list_with_cal = model.historical_forecasts(
@@ -917,6 +937,7 @@ class TestConformalModel:
             cal_series=series,
             **covs_kwargs,
             **cal_covs_kwargs_overlap,
+            **pred_lklp,
         )
 
         if is_single:
@@ -979,6 +1000,7 @@ class TestConformalModel:
                 cal_series=series,
                 **covs_kwargs,
                 **cal_covs_kwargs_exact,
+                **pred_lklp,
             )
 
             # `cal_covs_kwargs_short` will compute example less that contains useful information
@@ -991,6 +1013,7 @@ class TestConformalModel:
                 cal_series=series,
                 **covs_kwargs,
                 **cal_covs_kwargs_short,
+                **pred_lklp,
             )
             if is_single:
                 hfc_conf_list_with_cal_exact = [hfc_conf_list_with_cal_exact]
@@ -1014,6 +1037,7 @@ class TestConformalModel:
             last_points_only=True,
             stride=1,
             **covs_kwargs,
+            **pred_lklp,
         )
         hfc_lpo_list_with_cal = model.historical_forecasts(
             series=series,
@@ -1024,6 +1048,7 @@ class TestConformalModel:
             cal_series=series,
             **covs_kwargs,
             **cal_covs_kwargs_overlap,
+            **pred_lklp,
         )
         if is_single:
             hfc_lpo_list = [hfc_lpo_list]
@@ -1056,12 +1081,14 @@ class TestConformalModel:
             forecast_horizon=2,
             last_points_only=True,
             stride=1,
+            **pred_lklp,
         )
         hfcs_prob = model_prob.historical_forecasts(
             series,
             forecast_horizon=2,
             last_points_only=True,
             stride=1,
+            **pred_lklp,
         )
         assert isinstance(hfcs_det, list) and len(hfcs_det) == 2
         assert isinstance(hfcs_prob, list) and len(hfcs_prob) == 2
@@ -1485,10 +1512,14 @@ class TestConformalModel:
         model = ConformalNaiveModel(model=train_model(series), quantiles=quantiles)
 
         hfc = model.historical_forecasts(
-            series=series, forecast_horizon=5, last_points_only=lpo
+            series=series, forecast_horizon=5, last_points_only=lpo, **pred_lklp
         )
         bt = model.backtest(
-            series=series, historical_forecasts=hfc, last_points_only=lpo, metric=mic
+            series=series,
+            historical_forecasts=hfc,
+            last_points_only=lpo,
+            metric=mic,
+            metric_kwargs={"q_interval": model.q_interval},
         )
         # default backtest is equal to backtest with metric kwargs
         np.testing.assert_array_almost_equal(
@@ -1512,7 +1543,11 @@ class TestConformalModel:
         )
 
         residuals = model.residuals(
-            series=series, historical_forecasts=hfc, last_points_only=lpo, metric=ic
+            series=series,
+            historical_forecasts=hfc,
+            last_points_only=lpo,
+            metric=ic,
+            metric_kwargs={"q_interval": q_interval},
         )
         # default residuals is equal to residuals with metric kwargs
         assert residuals == model.residuals(

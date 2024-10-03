@@ -354,8 +354,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ),
                 logger,
             )
-
-        if self.output_chunk_shift and n > self.output_chunk_length:
+        is_autoregression = (
+            False
+            if self.output_chunk_length is None
+            else (n > self.output_chunk_length)
+        )
+        if self.output_chunk_shift and is_autoregression:
             raise_log(
                 ValueError(
                     "Cannot perform auto-regression `(n > output_chunk_length)` with a model that uses a "

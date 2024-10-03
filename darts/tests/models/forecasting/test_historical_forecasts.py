@@ -2635,6 +2635,7 @@ class TestHistoricalforecast:
             ocs,
         ) = config
         q = [0.1, 0.5, 0.9]
+        pred_lklp = {"num_samples": 1, "predict_likelihood_parameters": True}
         # compute minimum series length to generate n forecasts
         icl = 3
         ocl = 5
@@ -2716,6 +2717,7 @@ class TestHistoricalforecast:
                     overlap_end=overlap_end,
                     stride=stride,
                     forecast_horizon=horizon,
+                    **pred_lklp,
                 )
             assert str(exc.value).startswith("Cannot perform auto-regression")
             return
@@ -2730,6 +2732,7 @@ class TestHistoricalforecast:
             overlap_end=overlap_end,
             stride=stride,
             forecast_horizon=horizon,
+            **pred_lklp,
         )
         # raises error with too short target series
         with pytest.raises(ValueError) as exc:
@@ -2742,6 +2745,7 @@ class TestHistoricalforecast:
                 overlap_end=overlap_end,
                 stride=stride,
                 forecast_horizon=horizon,
+                **pred_lklp,
             )
         assert str(exc.value).startswith(
             "Could not build the minimum required calibration input with the provided `series`"
@@ -2842,6 +2846,7 @@ class TestHistoricalforecast:
             ocs,
         ) = config
         q = [0.1, 0.5, 0.9]
+        pred_lklp = {"num_samples": 1, "predict_likelihood_parameters": True}
         # compute minimum series length to generate n forecasts
         icl = 3
         ocl = 5
@@ -2918,6 +2923,7 @@ class TestHistoricalforecast:
             start_format=start_format,
             last_points_only=last_points_only,
             forecast_horizon=horizon,
+            **pred_lklp,
         )
         # using a calibration series should not skip any forecasts
         hist_fct_cal = model.historical_forecasts(
@@ -2928,6 +2934,7 @@ class TestHistoricalforecast:
             start_format=start_format,
             last_points_only=last_points_only,
             forecast_horizon=horizon,
+            **pred_lklp,
         )
 
         if not isinstance(series_val, list):
