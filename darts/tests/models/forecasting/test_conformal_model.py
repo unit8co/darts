@@ -34,7 +34,7 @@ torch_kwargs = dict(
     {"input_chunk_length": IN_LEN, "output_chunk_length": OUT_LEN, "random_state": 0},
     **tfm_kwargs,
 )
-
+pred_lklp = {"num_samples": 1, "predict_likelihood_parameters": True}
 q = [0.1, 0.5, 0.9]
 
 
@@ -210,22 +210,22 @@ class TestConformalModel:
                 continue
             assert val == model_fresh._model_params[param]
 
-    @pytest.mark.parametrize("config", models_cls_kwargs_errs)
+    @pytest.mark.parametrize(
+        "config", itertools.product(models_cls_kwargs_errs, [{}, pred_lklp])
+    )
     def test_save_load_model(self, tmpdir_fn, config):
         # check if save and load methods work and if loaded model creates same forecasts as original model
-        model_cls, kwargs, model_type = config
+        (model_cls, kwargs, model_type), pred_kwargs = config
         model = model_cls(
             train_model(
                 self.ts_pass_train, model_type=model_type, quantiles=kwargs["quantiles"]
             ),
             **kwargs,
         )
-        model_prediction = model.predict(5)
+        model_prediction = model.predict(5, **pred_kwargs)
 
         # check if save and load methods work and
         # if loaded conformal model creates same forecasts as original ensemble models
-        cwd = os.getcwd()
-        os.chdir(tmpdir_fn)
         expected_suffixes = [
             ".pkl",
             ".pkl.NLinearModel.pt",
@@ -260,8 +260,7 @@ class TestConformalModel:
                 pkl_files.append(os.path.join(tmpdir_fn, filename))
         for p in pkl_files:
             loaded_model = model_cls.load(p)
-            assert model_prediction == loaded_model.predict(5)
-        os.chdir(cwd)
+            assert model_prediction == loaded_model.predict(5, **pred_kwargs)
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_single_ts(self, config):
@@ -1136,18 +1135,18 @@ class TestConformalModel:
                 if is_naive and symmetric:
                     # identical correction for upper and lower bounds
                     # metric is `ae()`
-                    q_hat_n = np.quantile(res_n, q=alpha, axis=1)
+                    q_hat_n = np.quantile(res_n, q=alpha, method="higher", axis=1)
                     q_hats.append((-q_hat_n, q_hat_n))
                 elif is_naive:
                     # correction separately for upper and lower bounds
                     # metric is `err()`
-                    q_hat_hi = np.quantile(res_n, q=alpha, axis=1)
-                    q_hat_lo = np.quantile(-res_n, q=alpha, axis=1)
+                    q_hat_hi = np.quantile(res_n, q=alpha, method="higher", axis=1)
+                    q_hat_lo = np.quantile(-res_n, q=alpha, method="higher", axis=1)
                     q_hats.append((-q_hat_lo, q_hat_hi))
                 elif symmetric:  # CQR symmetric
                     # identical correction for upper and lower bounds
                     # metric is `incs_qr(symmetric=True)`
-                    q_hat_n = np.quantile(res_n, q=alpha, axis=1)
+                    q_hat_n = np.quantile(res_n, q=alpha, method="higher", axis=1)
                     q_hats.append((-q_hat_n, q_hat_n))
                 else:  # CQR asymmetric
                     # correction separately for upper and lower bounds
@@ -1157,8 +1156,12 @@ class TestConformalModel:
                     # residuals have shape (n components * n intervals * 2)
                     # the factor 2 comes from the metric being computed for lower, and upper bounds separately
                     # (comp_1_qlow_1, comp_1_qlow_2, ... comp_n_qlow_m, comp_1_qhigh_1, ...)
-                    q_hat_lo = np.quantile(res_n[:half_idx], q=alpha, axis=1)
-                    q_hat_hi = np.quantile(res_n[half_idx:], q=alpha, axis=1)
+                    q_hat_lo = np.quantile(
+                        res_n[:half_idx], q=alpha, method="higher", axis=1
+                    )
+                    q_hat_hi = np.quantile(
+                        res_n[half_idx:], q=alpha, method="higher", axis=1
+                    )
                     q_hats.append((
                         -q_hat_lo[alpha_idx :: len(alphas)],
                         q_hat_hi[alpha_idx :: len(alphas)],

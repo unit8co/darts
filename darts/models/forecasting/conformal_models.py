@@ -200,7 +200,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             future_covariates=future_covariates,
             num_samples=self.num_samples,
             verbose=verbose,
-            predict_likelihood_parameters=predict_likelihood_parameters,
+            predict_likelihood_parameters=False,
             show_warnings=show_warnings,
         )
         # convert to multi series case with `last_points_only=False`
@@ -218,7 +218,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             last_points_only=False,
             verbose=verbose,
             show_warnings=show_warnings,
-            predict_likelihood_parameters=predict_likelihood_parameters,
+            predict_likelihood_parameters=False,
         )
         cal_preds = self._calibrate_forecasts(
             series=series,
@@ -231,6 +231,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             last_points_only=False,
             verbose=verbose,
             show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
         )
         # convert historical forecasts output to simple forecast / prediction
         if called_with_single_series:
@@ -294,7 +295,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             last_points_only=last_points_only,
             verbose=verbose,
             show_warnings=show_warnings,
-            predict_likelihood_parameters=predict_likelihood_parameters,
+            predict_likelihood_parameters=False,
             enable_optimization=enable_optimization,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
@@ -314,7 +315,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 last_points_only=last_points_only,
                 verbose=verbose,
                 show_warnings=show_warnings,
-                predict_likelihood_parameters=predict_likelihood_parameters,
+                predict_likelihood_parameters=False,
                 enable_optimization=enable_optimization,
                 fit_kwargs=fit_kwargs,
                 predict_kwargs=predict_kwargs,
@@ -324,150 +325,21 @@ class ConformalModel(GlobalForecastingModel, ABC):
             forecasts=hfcs,
             cal_series=cal_series,
             cal_forecasts=cal_hfcs,
+            num_samples=num_samples,
             start=start,
             start_format=start_format,
-            num_samples=num_samples,
             forecast_horizon=forecast_horizon,
             stride=stride,
             overlap_end=overlap_end,
             last_points_only=last_points_only,
             verbose=verbose,
             show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
         )
         return (
             calibrated_forecasts[0]
             if called_with_single_series
             else calibrated_forecasts
-        )
-
-    def backtest(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        historical_forecasts: Optional[
-            Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
-        ] = None,
-        num_samples: int = 1,
-        train_length: Optional[int] = None,
-        start: Optional[Union[pd.Timestamp, float, int]] = None,
-        start_format: Literal["position", "value"] = "value",
-        forecast_horizon: int = 1,
-        stride: int = 1,
-        retrain: Union[bool, int, Callable[..., bool]] = True,
-        overlap_end: bool = False,
-        last_points_only: bool = False,
-        metric: Union[METRIC_TYPE, List[METRIC_TYPE]] = metrics.miw,
-        reduction: Union[Callable[..., float], None] = np.mean,
-        verbose: bool = False,
-        show_warnings: bool = True,
-        predict_likelihood_parameters: bool = False,
-        enable_optimization: bool = True,
-        metric_kwargs: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
-        fit_kwargs: Optional[Dict[str, Any]] = None,
-        predict_kwargs: Optional[Dict[str, Any]] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-    ) -> Union[float, np.ndarray, List[float], List[np.ndarray]]:
-        # make user's life easier by adding quantile intervals, or quantiles directly
-        if metric_kwargs is None:
-            metric = [metric] if not isinstance(metric, list) else metric
-            metric_kwargs = []
-            for metric_ in metric:
-                if metric_ in metrics.ALL_METRICS:
-                    if metric_ in metrics.Q_INTERVAL_METRICS:
-                        metric_kwargs.append({"q_interval": self.q_interval})
-                    elif metric_ not in metrics.NON_Q_METRICS:
-                        metric_kwargs.append({"q": self.quantiles})
-                    else:
-                        metric_kwargs.append({})
-                else:
-                    metric_kwargs.append({})
-        return super().backtest(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            historical_forecasts=historical_forecasts,
-            num_samples=num_samples,
-            train_length=train_length,
-            start=start,
-            start_format=start_format,
-            forecast_horizon=forecast_horizon,
-            stride=stride,
-            retrain=retrain,
-            overlap_end=overlap_end,
-            last_points_only=last_points_only,
-            metric=metric,
-            reduction=reduction,
-            verbose=verbose,
-            show_warnings=show_warnings,
-            predict_likelihood_parameters=predict_likelihood_parameters,
-            enable_optimization=enable_optimization,
-            metric_kwargs=metric_kwargs,
-            fit_kwargs=fit_kwargs,
-            predict_kwargs=predict_kwargs,
-            sample_weight=sample_weight,
-        )
-
-    def residuals(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        historical_forecasts: Optional[
-            Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
-        ] = None,
-        num_samples: int = 1,
-        train_length: Optional[int] = None,
-        start: Optional[Union[pd.Timestamp, float, int]] = None,
-        start_format: Literal["position", "value"] = "value",
-        forecast_horizon: int = 1,
-        stride: int = 1,
-        retrain: Union[bool, int, Callable[..., bool]] = True,
-        overlap_end: bool = False,
-        last_points_only: bool = True,
-        metric: METRIC_TYPE = metrics.iw,
-        verbose: bool = False,
-        show_warnings: bool = True,
-        predict_likelihood_parameters: bool = False,
-        enable_optimization: bool = True,
-        metric_kwargs: Optional[Dict[str, Any]] = None,
-        fit_kwargs: Optional[Dict[str, Any]] = None,
-        predict_kwargs: Optional[Dict[str, Any]] = None,
-        values_only: bool = False,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-    ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
-        # make user's life easier by adding quantile intervals, or quantiles directly
-        if metric_kwargs is None and metric in metrics.ALL_METRICS:
-            if metric in metrics.Q_INTERVAL_METRICS:
-                metric_kwargs = {"q_interval": self.q_interval}
-            elif metric not in metrics.NON_Q_METRICS:
-                metric_kwargs = {"q": self.quantiles}
-            else:
-                metric_kwargs = {}
-        return super().residuals(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            historical_forecasts=historical_forecasts,
-            num_samples=num_samples,
-            train_length=train_length,
-            start=start,
-            start_format=start_format,
-            forecast_horizon=forecast_horizon,
-            stride=stride,
-            retrain=retrain,
-            overlap_end=overlap_end,
-            last_points_only=last_points_only,
-            metric=metric,
-            verbose=verbose,
-            show_warnings=show_warnings,
-            predict_likelihood_parameters=predict_likelihood_parameters,
-            enable_optimization=enable_optimization,
-            metric_kwargs=metric_kwargs,
-            fit_kwargs=fit_kwargs,
-            predict_kwargs=predict_kwargs,
-            values_only=values_only,
-            sample_weight=sample_weight,
         )
 
     def _calibrate_forecasts(
@@ -487,6 +359,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         last_points_only: bool = True,
         verbose: bool = False,
         show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
         # TODO: add support for:
         # - num_samples
@@ -712,7 +585,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     # with a calibration set, use a constant q_hat
                     q_hat_ = q_hat
                 vals = self._apply_interval(pred_vals_, q_hat_)
-                if num_samples > 1:
+                if not predict_likelihood_parameters:
                     vals = sample_from_quantiles(
                         vals, self.quantiles, num_samples=num_samples
                     )
@@ -727,7 +600,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
             else:
                 inner_iterator = enumerate(s_hfcs[first_fc_idx:last_fc_idx:stride])
             comp_names_out = (
-                self._cp_component_names(series_) if num_samples == 1 else None
+                self._cp_component_names(series_)
+                if predict_likelihood_parameters
+                else None
             )
             if len(series) == 1:
                 # Only use progress bar if there's no outer loop
@@ -866,7 +741,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     @property
     def output_chunk_length(self) -> Optional[int]:
-        return self.model.output_chunk_length
+        return None
 
     @property
     def output_chunk_shift(self) -> int:
