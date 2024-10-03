@@ -564,6 +564,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 last_fc_idx = len(s_hfcs)
 
             q_hat = None
+            # with a calibration set, the calibrated interval is constant across all forecasts
             if cal_series is not None:
                 if cal_length is not None:
                     res = res[:, :, -cal_length:]
@@ -637,7 +638,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     with_static_covs=False,
                     with_hierarchy=False,
                 )
-                cp_hfcs.append(cp_preds)
             else:
                 for idx, pred in inner_iterator:
                     pred_vals = pred.all_values(copy=False)
@@ -651,7 +651,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                         with_hierarchy=False,
                     )
                     cp_preds.append(cp_pred)
-                cp_hfcs.append(cp_preds)
+            cp_hfcs.append(cp_preds)
         return cp_hfcs
 
     def save(
@@ -723,6 +723,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         residuals
             The residuals are expected to have shape (horizon, n components, n historical forecasts * n samples)
         """
+        pass
 
     @abstractmethod
     def _apply_interval(self, pred: np.ndarray, q_hat: Tuple[np.ndarray, np.ndarray]):
@@ -738,6 +739,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
     def _residuals_metric(self) -> Tuple[METRIC_TYPE, Optional[dict]]:
         """Gives the "per time step" metric and optional metric kwargs used to compute residuals /
         non-conformity scores."""
+        pass
 
     def _cp_component_names(self, input_series) -> List[str]:
         """Gives the component names for generated forecasts."""
@@ -747,6 +749,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     @property
     def output_chunk_length(self) -> Optional[int]:
+        # conformal models can predict any horizon if the calibration set is large enough
         return None
 
     @property
@@ -798,14 +801,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     @property
     def supports_sample_weight(self) -> bool:
-        """Whether the model supports a validation set during training."""
         return False
 
     @property
     def supports_likelihood_parameter_prediction(self) -> bool:
-        """EnsembleModel can predict likelihood parameters if all its forecasting models were fitted with the
-        same likelihood.
-        """
         return True
 
     @property
@@ -814,30 +813,18 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     @property
     def uses_past_covariates(self) -> bool:
-        """
-        Whether the model uses past covariates, once fitted.
-        """
         return self.model.uses_past_covariates
 
     @property
     def uses_future_covariates(self) -> bool:
-        """
-        Whether the model uses future covariates, once fitted.
-        """
         return self.model.uses_future_covariates
 
     @property
     def uses_static_covariates(self) -> bool:
-        """
-        Whether the model uses static covariates, once fitted.
-        """
         return self.model.uses_static_covariates
 
     @property
     def considers_static_covariates(self) -> bool:
-        """
-        Whether the model considers static covariates, if there are any.
-        """
         return self.model.considers_static_covariates
 
     @property
@@ -853,6 +840,7 @@ class ConformalNaiveModel(ConformalModel):
         symmetric: bool = True,
         cal_length: Optional[int] = None,
         num_samples: int = 500,
+        random_state: Optional[int] = None,
     ):
         """Naive Conformal Prediction Model.
 
@@ -874,6 +862,8 @@ class ConformalNaiveModel(ConformalModel):
             Number of times a prediction is sampled from the underlying `model` if it is probabilistic. Uses `1` for
             deterministic models. This is different to the `num_samples` produced by the conformal model which can be
             set in downstream forecasting tasks.
+        random_state
+            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
         """
         super().__init__(
             model=model,
@@ -881,6 +871,7 @@ class ConformalNaiveModel(ConformalModel):
             symmetric=symmetric,
             cal_length=cal_length,
             num_samples=num_samples,
+            random_state=random_state,
         )
 
     def _calibrate_interval(
@@ -930,6 +921,7 @@ class ConformalQRModel(ConformalModel):
         symmetric: bool = True,
         cal_length: Optional[int] = None,
         num_samples: int = 500,
+        random_state: Optional[int] = None,
     ):
         """Conformalized Quantile Regression Model.
 
@@ -952,6 +944,8 @@ class ConformalQRModel(ConformalModel):
             Number of times a prediction is sampled from the underlying `model` if it is probabilistic. Uses `1` for
             deterministic models. This is different to the `num_samples` produced by the conformal model which can be
             set in downstream forecasting tasks.
+        random_state
+            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
         """
         if not model.supports_probabilistic_prediction:
             raise_log(
@@ -967,6 +961,7 @@ class ConformalQRModel(ConformalModel):
             symmetric=symmetric,
             cal_length=cal_length,
             num_samples=num_samples,
+            random_state=random_state,
         )
 
     def _calibrate_interval(
@@ -991,12 +986,12 @@ class ConformalQRModel(ConformalModel):
             return q_hat_
 
         if self.symmetric:
-            # symmetric has one nc-score per intervals (from metric `incs_qr(symmetric=True)`)
+            # symmetric has one nc-score per interval (from metric `incs_qr(symmetric=True)`)
             # residuals shape (horizon, n components * n intervals, n past forecasts)
             q_hat = q_hat_from_residuals(residuals)
             return -q_hat, q_hat[:, :, ::-1]
         else:
-            # asymmetric has two nc-score per intervals (for lower and upper quantiles, from metric
+            # asymmetric has two nc-score per interval (for lower and upper quantiles, from metric
             # `incs_qe(symmetric=False)`)
             # lower and upper residuals are concatenated along axis=1;
             # residuals shape (horizon, n components * n intervals * 2, n past forecasts)
