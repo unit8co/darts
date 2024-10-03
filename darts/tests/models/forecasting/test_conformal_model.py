@@ -1108,13 +1108,14 @@ class TestConformalModel:
         return series
 
     def helper_compare_preds(self, cp_pred, pred_expected, model_type, tol_rel=0.1):
+        if isinstance(cp_pred, TimeSeries):
+            cp_pred = cp_pred.all_values(copy=False)
         if model_type == "regression":
             # deterministic fc model should give almost identical results
-            np.testing.assert_array_almost_equal(cp_pred.all_values(), pred_expected)
+            np.testing.assert_array_almost_equal(cp_pred, pred_expected)
         else:
             # probabilistic fc models have some randomness
-            cp_pred_vals = cp_pred.all_values()
-            diffs_rel = np.abs((cp_pred_vals - pred_expected) / pred_expected)
+            diffs_rel = np.abs((cp_pred - pred_expected) / pred_expected)
             assert (diffs_rel < tol_rel).all().all()
 
     @staticmethod
@@ -1570,3 +1571,32 @@ class TestConformalModel:
                 )
             )
         assert residuals == expected_residuals
+
+    def test_predict_probabilistic_equals_quantile(self):
+        """Tests that sampled quantiles predictions have approx. the same quantiles as direct quantile predictions."""
+        quantiles = [0.1, 0.3, 0.5, 0.7, 0.9]
+
+        # multiple multivariate series
+        series = self.helper_prepare_series(False, False)
+
+        # conformal model
+        model = ConformalNaiveModel(model=train_model(series), quantiles=quantiles)
+        # direct quantile predictions
+        pred_quantiles = model.predict(n=3, series=series, **pred_lklp)
+        # smapled predictions
+        pred_samples = model.predict(n=3, series=series, num_samples=500)
+        for pred_q, pred_s in zip(pred_quantiles, pred_samples):
+            assert pred_q.n_samples == 1
+            assert pred_q.n_components == series[0].n_components * len(quantiles)
+            assert pred_s.n_samples == 500
+            assert pred_s.n_components == series[0].n_components
+
+            vals_q = pred_q.all_values()
+            vals_s = pred_s.all_values()
+            vals_s_q = np.quantile(vals_s, quantiles, axis=2).transpose((1, 2, 0))
+            vals_s_q = vals_s_q.reshape(vals_q.shape)
+            self.helper_compare_preds(
+                vals_s_q,
+                vals_q,
+                model_type="regression_prob",
+            )

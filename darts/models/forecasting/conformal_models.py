@@ -127,8 +127,15 @@ class ConformalModel(GlobalForecastingModel, ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        **kwargs,
     ) -> "ConformalModel":
-        # does not have to be trained
+        # does not have to be trained, but we allow it for unified API
+        self.model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            **kwargs,
+        )
         return self
 
     def predict(
