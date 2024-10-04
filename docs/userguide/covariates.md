@@ -154,6 +154,7 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
 | [TiDEModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tide_model.html#darts.models.forecasting.tide_model.TiDEModel)                                                                                                                                         | ✅               |         ✅         |         ✅         |
 | [TSMixerModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tsmixer_model.html#darts.models.forecasting.tsmixer_model.TSMixerModel)                                                                                                                             | ✅               |         ✅         |         ✅         |
 | Ensemble Models (f)                                                                                                                                                                                                                                                                       | ✅               |         ✅         |         ✅         |
+| Conformal Prediction Models (g)                                                                                                                                                                                                                                                           | ✅               |         ✅         |         ✅         |
 
 **Table 1: Darts' forecasting models and their covariate support**
 
@@ -169,6 +170,8 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
 (e) [BlockRNNModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel) including `LSTM` and `GRU`
 
 (f) Ensemble Model including [RegressionEnsembleModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel), and [NaiveEnsembleModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel). The covariate support is given by the covariate support of the ensembled forecasting models.
+
+(g) Conformal Prediction Model including [ConformalNaiveModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalNaiveModel), and [ConformalQRModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalQRModel). The covariate support is given by the covariate support of the underlying forecasting model.
 
 ----
 
