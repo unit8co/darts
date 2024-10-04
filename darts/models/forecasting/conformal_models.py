@@ -164,6 +164,39 @@ class ConformalModel(GlobalForecastingModel, ABC):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         **kwargs,
     ) -> "ConformalModel":
+        """Fit/train the underlying forecasting model on (potentially multiple) series.
+
+        Optionally, one or multiple past and/or future covariates series can be provided as well, depending on the
+        forecasting model used. The number of covariates series must match the number of target series.
+
+        Notes
+        -----
+        Conformal Models do not required calling `fit()`, since they use pre-trained global forecasting models.
+        You can call `predict()` directly. Also, make sure that the input series used in `predict()` corresponds to
+        a calibration set, and not the same as used during training with `fit()`.
+
+        Parameters
+        ----------
+        series
+            One or several target time series. The model will be trained to forecast these time series.
+            The series may or may not be multivariate, but if multiple series are provided
+            they must have the same number of components.
+        past_covariates
+            One or several past-observed covariate time series. These time series will not be forecast, but can
+            be used by some models as an input. The covariate(s) may or may not be multivariate, but if multiple
+            covariates are provided they must have the same number of components. If `past_covariates` is provided,
+            it must contain the same number of series as `series`.
+        future_covariates
+            One or several future-known covariate time series. These time series will not be forecast, but can
+            be used by some models as an input. The covariate(s) may or may not be multivariate, but if multiple
+            covariates are provided they must have the same number of components. If `future_covariates` is provided,
+            it must contain the same number of series as `series`.
+
+        Returns
+        -------
+        self
+            Fitted model.
+        """
         # does not have to be trained, but we allow it for unified API
         self.model.fit(
             series=series,
@@ -179,14 +212,88 @@ class ConformalModel(GlobalForecastingModel, ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]] = None,
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
-        cal_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """Forecasts calibrated quantile intervals (or samples from calibrated intervals) for `n` time steps after the
+        end of the `series`.
+
+        It is important that the input series for prediction correspond to a calibration set - a set different to the
+        series that the underlying forecasting `model` was trained one.
+
+        Since it is a probabilistic model, you can generate forecasts in two ways:
+
+        - Predict the calibrated quantile intervals directly: Pass parameters `predict_likelihood_parameters=True`, and
+          `num_samples=1` to the forecast method.
+        - Predict stochastic samples from the calibrated quantile intervals: Pass parameters
+          `predict_likelihood_parameters=False`, and `num_samples>>1` to the forecast method.
+
+        Under the hood, the simplified workflow to produce one calibrated forecast/prediction for every step in the
+        horizon `n` is as follows:
+
+        - Extract a calibration set: The number of calibration examples from the most recent past to use for one
+          conformal prediction can be defined at model creation with parameter `cal_length`. To make your life simpler,
+          we support two modes:
+            - Automatic extraction of the calibration set from the past of your input series (`series`,
+              `past_covariates`, ...). This is the default mode.
+            - Supply a fixed calibration set with parameters `cal_series`, `cal_past_covariates`, ... .
+        - Generate historical forecasts on the calibration set (using the forecasting model)
+        - Compute the errors/non-conformity scores (specific to each conformal model) on these historical forecasts
+        - Compute the quantile values from the errors / non-conformity scores (using our desired quantiles set at model
+          creation with parameter `quantiles`).
+        - Compute the conformal prediction: Add the calibrated intervals to (or adjust the existing intervals of) the
+          forecasting model's predictions.
+
+        Parameters
+        ----------
+        n
+            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
+        series
+            A series or sequence of series, representing the history of the target series whose future is to be
+            predicted. If `cal_series` is `None`, will use the past of this series for calibration.
+        past_covariates
+            Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
+            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
+            use this series for calibration.
+        future_covariates
+            Optionally, a (sequence of) future-known covariate time series for every input time series in `series`.
+            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
+            use this series for calibration.
+        cal_series
+            Optionally, a (sequence of) target series for every input time series in `series` to use for calibration
+            instead of `series`.
+        cal_past_covariates
+            Optionally, a (sequence of) past covariates series for every input time series in `series` to use for
+            calibration instead of `past_covariates`.
+        cal_future_covariates
+            Optionally, a future covariates series for every input time series in `series` to use for calibration
+            instead of `future_covariates`.
+        num_samples
+            Number of times a prediction is sampled from the calibrated quantile predictions using linear
+            interpolation in-between the quantiles. For larger values, the sample distribution approximates the
+            calibrated quantile predictions.
+        verbose
+            Whether to print the progress.
+        predict_likelihood_parameters
+            If set to `True`, generates the quantile predictions directly. Only supported with `num_samples = 1`.
+        show_warnings
+            Whether to show warnings related auto-regression and past covariates usage.
+
+        Returns
+        -------
+        Union[TimeSeries, Sequence[TimeSeries]]
+            If `series` is not specified, this function returns a single time series containing the `n`
+            next points after then end of the training series.
+            If `series` is given and is a simple ``TimeSeries``, this function returns the `n` next points
+            after the end of `series`.
+            If `series` is given and is a sequence of several time series, this function returns
+            a sequence where each element contains the corresponding `n` points forecasts.
+        """
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
             if self.model.training_series is None:
@@ -292,11 +399,14 @@ class ConformalModel(GlobalForecastingModel, ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        forecast_horizon: int = 1,
         num_samples: int = 1,
         train_length: Optional[int] = None,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
-        forecast_horizon: int = 1,
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
         overlap_end: bool = False,
@@ -308,10 +418,134 @@ class ConformalModel(GlobalForecastingModel, ABC):
         fit_kwargs: Optional[Dict[str, Any]] = None,
         predict_kwargs: Optional[Dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        cal_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
+        """Generates calibrated historical forecasts by simulating predictions at various points in time throughout the
+        history of the provided (potentially multiple) `series`. This process involves retrospectively applying the
+        model to different time steps, as if the forecasts were made in real-time at those specific moments. This
+        allows for an evaluation of the model's performance over the entire duration of the series, providing insights
+        into its predictive accuracy and robustness across different historical periods.
+
+        Currently, conformal models only support the pre-trained historical forecasts mode (`retrain=False`).
+        Parameters `retrain` and `train_length` are ignored.
+
+        **Pre-trained Mode:** First, all historical forecasts are generated using the underlying pre-trained global
+        forecasting model (see :meth:`ForecastingModel.historical_forecasts()
+        <darts.models.forecasting.forecasting_model.ForecastingModel.historical_forecasts>` for more info). Then it
+        repeatedly builds a calibration set by either expanding from the beginning of the historical forecasts or by
+        using a fixed-length `cal_length` (the start point can also be configured with `start` and `start_format`).
+        The next forecast of length `forecast_horizon` is then calibrated on this calibration set. Subsequently, the
+        end of the calibration set is moved forward by `stride` time steps, and the process is repeated.
+        You can also use a fixed calibration set to calibrate all forecasts equally by passing `cal_series`, and
+        optional `cal_past_covariates` and `cal_future_covariates`.
+
+        By default, with `last_points_only=True`, this method returns a single time series (or a sequence of time
+        series) composed of the last point from each calibrated historical forecast. This time series will thus have a
+        frequency of `series.freq * stride`.
+        If `last_points_only=False`, it will instead return a list (or a sequence of lists) of the full calibrate
+        historical forecast series each with frequency `series.freq`.
+
+        Parameters
+        ----------
+        series
+            A (sequence of) target time series used to successively compute the historical forecasts. If `cal_series`
+            is `None`, will use the past of this series for calibration.
+        past_covariates
+            Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
+            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
+            use this series for calibration.
+        future_covariates
+            Optionally, a (sequence of) future-known covariate time series for every input time series in `series`.
+            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
+            use this series for calibration.
+        cal_series
+            Optionally, a (sequence of) target series for every input time series in `series` to use as a fixed
+            calibration set instead of `series`.
+        cal_past_covariates
+            Optionally, a (sequence of) past covariates series for every input time series in `series` to use as a fixed
+            calibration set instead of `past_covariates`.
+        cal_future_covariates
+            Optionally, a future covariates series for every input time series in `series` to use as a fixed
+            calibration set instead of `future_covariates`.
+        forecast_horizon
+            The forecast horizon for the predictions.
+        num_samples
+            Number of times a prediction is sampled from the calibrated quantile predictions using linear
+            interpolation in-between the quantiles. For larger values, the sample distribution approximates the
+            calibrated quantile predictions.
+        train_length
+            Currently ignored by conformal models.
+        start
+            Optionally, the first point in time at which a prediction is computed. This parameter supports:
+            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            If an ``int``, it is either the index position of the first prediction point for `series` with a
+            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
+            the index position with `start_format="position"`.
+            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If ``None``, the first prediction point will automatically be set to:
+
+            - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
+              predictable point is earlier than the first trainable point.
+            - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),
+              or `retrain` is a ``Callable`` and the first trainable point is earlier than the first predictable point.
+            - the first trainable point (given `train_length`) otherwise
+
+            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
+            shifted by `output_chunk_shift` points into the future.
+            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
+            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
+            (default behavior with ``None``) and start at the first trainable/predictable point.
+        start_format
+            Defines the `start` format.
+            If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
+            range from `(-len(series), len(series) - 1)`.
+            If set to ``'value'``, `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``.
+        stride
+            The number of time steps between two consecutive predictions.
+        retrain
+            Currently ignored by conformal models.
+        overlap_end
+            Whether the returned forecasts can go beyond the series' end or not.
+        last_points_only
+            Whether to return only the last point of each historical forecast. If set to ``True``, the method returns a
+            single ``TimeSeries`` (for each time series in `series`) containing the successive point forecasts.
+            Otherwise, returns a list of historical ``TimeSeries`` forecasts.
+        verbose
+            Whether to print the progress.
+        show_warnings
+            Whether to show warnings related to historical forecasts optimization, or parameters `start` and
+            `train_length`.
+        predict_likelihood_parameters
+            If set to `True`, generates the quantile predictions directly. Only supported with `num_samples = 1`.
+        enable_optimization
+            Whether to use the optimized version of `historical_forecasts` when supported and available.
+            Default: ``True``.
+        fit_kwargs
+            Currently ignored by conformal models.
+        predict_kwargs
+            Optionally, some additional arguments passed to the model `predict()` method.
+        sample_weight
+            Currently ignored by conformal models.
+
+        Returns
+        -------
+        TimeSeries
+            A single historical forecast for a single `series` and `last_points_only=True`: it contains only the
+            predictions at step `forecast_horizon` from all historical forecasts.
+        List[TimeSeries]
+            A list of historical forecasts for:
+
+            - a sequence (list) of `series` and `last_points_only=True`: for each series, it contains only the
+              predictions at step `forecast_horizon` from all historical forecasts.
+            - a single `series` and `last_points_only=False`: for each historical forecast, it contains the entire
+              horizon `forecast_horizon`.
+        List[List[TimeSeries]]
+            A list of lists of historical forecasts for a sequence of `series` and `last_points_only=False`. For each
+            series, and historical forecast, it contains the entire horizon `forecast_horizon`. The outer list
+            is over the series provided in the input sequence, and the inner lists contain the historical forecasts for
+            each series.
+        """
         called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
@@ -389,6 +623,466 @@ class ConformalModel(GlobalForecastingModel, ABC):
             else calibrated_forecasts
         )
 
+    def backtest(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        historical_forecasts: Optional[
+            Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
+        ] = None,
+        forecast_horizon: int = 1,
+        num_samples: int = 1,
+        train_length: Optional[int] = None,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["position", "value"] = "value",
+        stride: int = 1,
+        retrain: Union[bool, int, Callable[..., bool]] = True,
+        overlap_end: bool = False,
+        last_points_only: bool = False,
+        metric: Union[METRIC_TYPE, List[METRIC_TYPE]] = metrics.mape,
+        reduction: Union[Callable[..., float], None] = np.mean,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+        enable_optimization: bool = True,
+        metric_kwargs: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
+        fit_kwargs: Optional[Dict[str, Any]] = None,
+        predict_kwargs: Optional[Dict[str, Any]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+    ) -> Union[float, np.ndarray, List[float], List[np.ndarray]]:
+        """Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.
+
+        If `historical_forecasts` are provided, the metric(s) (given by the `metric` function) is evaluated directly on
+        all forecasts and actual values. The same `series` and `last_points_only` value must be passed that were used
+        to generate the historical forecasts. Finally, the method returns an optional `reduction` (the mean by default)
+        of all these metric scores.
+
+        If `historical_forecasts` is ``None``, it first generates the historical forecasts with the parameters given
+        below (see :meth:`ConformalModel.historical_forecasts()
+        <darts.models.forecasting.conformal_models.ConformalModel.historical_forecasts>` for more info) and then
+        evaluates as described above.
+
+        The metric(s) can be further customized `metric_kwargs` (e.g. control the aggregation over components, time
+        steps, multiple series, other required arguments such as `q` for quantile metrics, ...).
+
+        Notes
+        -----
+        Darts has several metrics to evaluate probabilistic forecasts. For conformal models, we recommend using
+        quantile interval metrics (see `here <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_).
+        You can specify which intervals to evaluate by setting `metric_kwargs={'q_interval': my_intervals}`. To check
+        all intervals used by your conformal model `my_model`, you can set ``{'q_interval': my_model.q_interval}``.
+
+        Parameters
+        ----------
+        series
+            A (sequence of) target time series used to successively compute the historical forecasts. If `cal_series`
+            is `None`, will use the past of this series for calibration.
+        past_covariates
+            Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
+            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
+            use this series for calibration.
+        future_covariates
+            Optionally, a (sequence of) future-known covariate time series for every input time series in `series`.
+            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
+            use this series for calibration.
+        cal_series
+            Optionally, a (sequence of) target series for every input time series in `series` to use as a fixed
+            calibration set instead of `series`.
+        cal_past_covariates
+            Optionally, a (sequence of) past covariates series for every input time series in `series` to use as a fixed
+            calibration set instead of `past_covariates`.
+        cal_future_covariates
+            Optionally, a future covariates series for every input time series in `series` to use as a fixed
+            calibration set instead of `future_covariates`.
+        historical_forecasts
+            Optionally, the (or a sequence of / a sequence of sequences of) historical forecasts time series to be
+            evaluated. Corresponds to the output of :meth:`historical_forecasts()
+            <darts.models.forecasting.conformal_models.ConformalModel.historical_forecasts>`. The same `series` and
+            `last_points_only` values must be passed that were used to generate the historical forecasts. If provided,
+            will skip historical forecasting and ignore all parameters except `series`, `last_points_only`, `metric`,
+            and `reduction`.
+        forecast_horizon
+            The forecast horizon for the predictions.
+        num_samples
+            Number of times a prediction is sampled from the calibrated quantile predictions using linear
+            interpolation in-between the quantiles. For larger values, the sample distribution approximates the
+            calibrated quantile predictions.
+        train_length
+            Currently ignored by conformal models.
+        start
+            Optionally, the first point in time at which a prediction is computed. This parameter supports:
+            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            If an ``int``, it is either the index position of the first prediction point for `series` with a
+            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
+            the index position with `start_format="position"`.
+            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If ``None``, the first prediction point will automatically be set to:
+
+            - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
+              predictable point is earlier than the first trainable point.
+            - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),
+              or `retrain` is a ``Callable`` and the first trainable point is earlier than the first predictable point.
+            - the first trainable point (given `train_length`) otherwise
+
+            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
+            shifted by `output_chunk_shift` points into the future.
+            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
+            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
+            (default behavior with ``None``) and start at the first trainable/predictable point.
+        start_format
+            Defines the `start` format.
+            If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
+            range from `(-len(series), len(series) - 1)`.
+            If set to ``'value'``, `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``.
+        stride
+            The number of time steps between two consecutive predictions.
+        retrain
+            Currently ignored by conformal models.
+        overlap_end
+            Whether the returned forecasts can go beyond the series' end or not.
+        last_points_only
+            Whether to return only the last point of each historical forecast. If set to ``True``, the method returns a
+            single ``TimeSeries`` (for each time series in `series`) containing the successive point forecasts.
+            Otherwise, returns a list of historical ``TimeSeries`` forecasts.
+        metric
+            A metric function or a list of metric functions. Each metric must either be a Darts metric (see `here
+            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that has an
+            identical signature as Darts' metrics, uses decorators :func:`~darts.metrics.metrics.multi_ts_support` and
+            :func:`~darts.metrics.metrics.multi_ts_support`, and returns the metric score.
+        reduction
+            A function used to combine the individual error scores obtained when `last_points_only` is set to `False`.
+            When providing several metric functions, the function will receive the argument `axis = 1` to obtain single
+            value for each metric function.
+            If explicitly set to `None`, the method will return a list of the individual error scores instead.
+            Set to ``np.mean`` by default.
+        verbose
+            Whether to print the progress.
+        show_warnings
+            Whether to show warnings related to historical forecasts optimization, or parameters `start` and
+            `train_length`.
+        predict_likelihood_parameters
+            If set to `True`, generates the quantile predictions directly. Only supported with `num_samples = 1`.
+        enable_optimization
+            Whether to use the optimized version of `historical_forecasts` when supported and available.
+            Default: ``True``.
+        metric_kwargs
+            Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'component_reduction'`
+            for reducing the component wise metrics, seasonality `'m'` for scaled metrics, etc. Will pass arguments to
+            each metric separately and only if they are present in the corresponding metric signature. Parameter
+            `'insample'` for scaled metrics (e.g. mase`, `rmsse`, ...) is ignored, as it is handled internally.
+        fit_kwargs
+            Currently ignored by conformal models.
+        predict_kwargs
+            Optionally, some additional arguments passed to the model `predict()` method.
+        sample_weight
+            Currently ignored by conformal models.
+
+        Returns
+        -------
+        float
+            A single backtest score for single uni/multivariate series, a single `metric` function and:
+
+            - `historical_forecasts` generated with `last_points_only=True`
+            - `historical_forecasts` generated with `last_points_only=False` and using a backtest `reduction`
+        np.ndarray
+            An numpy array of backtest scores. For single series and one of:
+
+            - a single `metric` function, `historical_forecasts` generated with `last_points_only=False`
+              and backtest `reduction=None`. The output has shape (n forecasts, *).
+            - multiple `metric` functions and `historical_forecasts` generated with `last_points_only=False`.
+              The output has shape (*, n metrics) when using a backtest `reduction`, and (n forecasts, *, n metrics)
+              when `reduction=None`
+            - multiple uni/multivariate series including `series_reduction` and at least one of
+              `component_reduction=None` or `time_reduction=None` for "per time step metrics"
+        List[float]
+            Same as for type `float` but for a sequence of series. The returned metric list has length
+            `len(series)` with the `float` metric for each input `series`.
+        List[np.ndarray]
+            Same as for type `np.ndarray` but for a sequence of series. The returned metric list has length
+            `len(series)` with the `np.ndarray` metrics for each input `series`.
+        """
+        historical_forecasts = historical_forecasts or self.historical_forecasts(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            cal_series=cal_series,
+            cal_past_covariates=cal_past_covariates,
+            cal_future_covariates=cal_future_covariates,
+            num_samples=num_samples,
+            train_length=train_length,
+            start=start,
+            start_format=start_format,
+            forecast_horizon=forecast_horizon,
+            stride=stride,
+            retrain=retrain,
+            last_points_only=last_points_only,
+            verbose=verbose,
+            show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            enable_optimization=enable_optimization,
+            fit_kwargs=fit_kwargs,
+            predict_kwargs=predict_kwargs,
+            overlap_end=overlap_end,
+            sample_weight=sample_weight,
+        )
+        return super().backtest(
+            series=series,
+            historical_forecasts=historical_forecasts,
+            forecast_horizon=forecast_horizon,
+            num_samples=num_samples,
+            train_length=train_length,
+            start=start,
+            start_format=start_format,
+            stride=stride,
+            retrain=retrain,
+            overlap_end=overlap_end,
+            last_points_only=last_points_only,
+            metric=metric,
+            reduction=reduction,
+            verbose=verbose,
+            show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            enable_optimization=enable_optimization,
+            metric_kwargs=metric_kwargs,
+            fit_kwargs=fit_kwargs,
+            predict_kwargs=predict_kwargs,
+            sample_weight=sample_weight,
+        )
+
+    def residuals(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        cal_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        historical_forecasts: Optional[
+            Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
+        ] = None,
+        forecast_horizon: int = 1,
+        num_samples: int = 1,
+        train_length: Optional[int] = None,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["position", "value"] = "value",
+        stride: int = 1,
+        retrain: Union[bool, int, Callable[..., bool]] = True,
+        overlap_end: bool = False,
+        last_points_only: bool = True,
+        metric: METRIC_TYPE = metrics.err,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+        enable_optimization: bool = True,
+        metric_kwargs: Optional[Dict[str, Any]] = None,
+        fit_kwargs: Optional[Dict[str, Any]] = None,
+        predict_kwargs: Optional[Dict[str, Any]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        values_only: bool = False,
+    ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
+        """Compute the residuals that the model produced for historical forecasts on (potentially multiple) `series`.
+
+        This function computes the difference (or one of Darts' "per time step" metrics) between the actual
+        observations from `series` and the fitted values obtained by training the model on `series` (or using a
+        pre-trained model with `retrain=False`). Not all models support fitted values, so we use historical forecasts
+        as an approximation for them.
+
+        In sequence this method performs:
+
+        - use pre-computed `historical_forecasts` or compute historical forecasts for each series (see
+          :meth:`~darts.models.forecasting.conformal_models.ConformalModel.historical_forecasts` for more details).
+          How the historical forecasts are generated can be configured with parameters `num_samples`, `train_length`,
+          `start`, `start_format`, `forecast_horizon`, `stride`, `retrain`, `last_points_only`, `fit_kwargs`, and
+          `predict_kwargs`.
+        - compute a backtest using a "per time step" `metric` between the historical forecasts and `series` per
+          component/column and time step (see
+          :meth:`~darts.models.forecasting.conformal_models.ConformalModel.backtest` for more details). By default,
+          uses the residuals :func:`~darts.metrics.metrics.err` (error) as a `metric`.
+        - create and return `TimeSeries` (or simply a np.ndarray with `values_only=True`) with the time index from
+          historical forecasts, and values from the metrics per component and time step.
+
+        This method works for single or multiple univariate or multivariate series.
+        It uses the median prediction (when dealing with stochastic forecasts).
+
+        Notes
+        -----
+        Darts has several metrics to evaluate probabilistic forecasts. For conformal models, we recommend using
+        "per time step" quantile interval metrics (see `here
+        <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_). You can specify which intervals to
+        evaluate by setting `metric_kwargs={'q_interval': my_intervals}`. To check all intervals used by your conformal
+        model `my_model`, you can set ``{'q_interval': my_model.q_interval}``.
+
+        Parameters
+        ----------
+        series
+            A (sequence of) target time series used to successively compute the historical forecasts. If `cal_series`
+            is `None`, will use the past of this series for calibration.
+        past_covariates
+            Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
+            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
+            use this series for calibration.
+        future_covariates
+            Optionally, a (sequence of) future-known covariate time series for every input time series in `series`.
+            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
+            use this series for calibration.
+        cal_series
+            Optionally, a (sequence of) target series for every input time series in `series` to use as a fixed
+            calibration set instead of `series`.
+        cal_past_covariates
+            Optionally, a (sequence of) past covariates series for every input time series in `series` to use as a fixed
+            calibration set instead of `past_covariates`.
+        cal_future_covariates
+            Optionally, a future covariates series for every input time series in `series` to use as a fixed
+            calibration set instead of `future_covariates`.
+        historical_forecasts
+            Optionally, the (or a sequence of / a sequence of sequences of) historical forecasts time series to be
+            evaluated. Corresponds to the output of :meth:`historical_forecasts()
+            <darts.models.forecasting.conformal_models.ConformalModel.historical_forecasts>`. The same `series` and
+            `last_points_only` values must be passed that were used to generate the historical forecasts. If provided,
+            will skip historical forecasting and ignore all parameters except `series`, `last_points_only`, `metric`,
+            and `reduction`.
+        forecast_horizon
+            The forecast horizon for the predictions.
+        num_samples
+            Number of times a prediction is sampled from the calibrated quantile predictions using linear
+            interpolation in-between the quantiles. For larger values, the sample distribution approximates the
+            calibrated quantile predictions.
+        train_length
+            Currently ignored by conformal models.
+        start
+            Optionally, the first point in time at which a prediction is computed. This parameter supports:
+            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            If an ``int``, it is either the index position of the first prediction point for `series` with a
+            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
+            the index position with `start_format="position"`.
+            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If ``None``, the first prediction point will automatically be set to:
+
+            - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
+              predictable point is earlier than the first trainable point.
+            - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),
+              or `retrain` is a ``Callable`` and the first trainable point is earlier than the first predictable point.
+            - the first trainable point (given `train_length`) otherwise
+
+            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
+            shifted by `output_chunk_shift` points into the future.
+            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
+            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
+            (default behavior with ``None``) and start at the first trainable/predictable point.
+        start_format
+            Defines the `start` format.
+            If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
+            range from `(-len(series), len(series) - 1)`.
+            If set to ``'value'``, `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``.
+        stride
+            The number of time steps between two consecutive predictions.
+        retrain
+            Currently ignored by conformal models.
+        overlap_end
+            Whether the returned forecasts can go beyond the series' end or not.
+        last_points_only
+            Whether to return only the last point of each historical forecast. If set to ``True``, the method returns a
+            single ``TimeSeries`` (for each time series in `series`) containing the successive point forecasts.
+            Otherwise, returns a list of historical ``TimeSeries`` forecasts.
+        metric
+            Either one of Darts' "per time step" metrics (see `here
+            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that has an
+            identical signature as Darts' "per time step" metrics, uses decorators
+            :func:`~darts.metrics.metrics.multi_ts_support` and :func:`~darts.metrics.metrics.multi_ts_support`,
+            and returns one value per time step.
+        verbose
+            Whether to print the progress.
+        show_warnings
+            Whether to show warnings related to historical forecasts optimization, or parameters `start` and
+            `train_length`.
+        predict_likelihood_parameters
+            If set to `True`, generates the quantile predictions directly. Only supported with `num_samples = 1`.
+        enable_optimization
+            Whether to use the optimized version of `historical_forecasts` when supported and available.
+            Default: ``True``.
+        metric_kwargs
+            Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'m'` for scaled
+            metrics, etc. Will pass arguments only if they are present in the corresponding metric signature. Ignores
+            reduction arguments `"series_reduction", "component_reduction", "time_reduction"`, and parameter
+            `'insample'` for scaled metrics (e.g. mase`, `rmsse`, ...), as they are handled internally.
+        fit_kwargs
+            Currently ignored by conformal models.
+        predict_kwargs
+            Optionally, some additional arguments passed to the model `predict()` method.
+        sample_weight
+            Currently ignored by conformal models.
+        values_only
+            Whether to return the residuals as `np.ndarray`. If `False`, returns residuals as `TimeSeries`.
+
+        Returns
+        -------
+        TimeSeries
+            Residual `TimeSeries` for a single `series` and `historical_forecasts` generated with
+            `last_points_only=True`.
+        List[TimeSeries]
+            A list of residual `TimeSeries` for a sequence (list) of `series` with `last_points_only=True`.
+            The residual list has length `len(series)`.
+        List[List[TimeSeries]]
+            A list of lists of residual `TimeSeries` for a sequence of `series` with `last_points_only=False`.
+            The outer residual list has length `len(series)`. The inner lists consist of the residuals from
+            all possible series-specific historical forecasts.
+        """
+        historical_forecasts = historical_forecasts or self.historical_forecasts(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            cal_series=cal_series,
+            cal_past_covariates=cal_past_covariates,
+            cal_future_covariates=cal_future_covariates,
+            num_samples=num_samples,
+            train_length=train_length,
+            start=start,
+            start_format=start_format,
+            forecast_horizon=forecast_horizon,
+            stride=stride,
+            retrain=retrain,
+            last_points_only=last_points_only,
+            verbose=verbose,
+            show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            enable_optimization=enable_optimization,
+            fit_kwargs=fit_kwargs,
+            predict_kwargs=predict_kwargs,
+            overlap_end=overlap_end,
+            sample_weight=sample_weight,
+        )
+        return super().residuals(
+            series=series,
+            historical_forecasts=historical_forecasts,
+            forecast_horizon=forecast_horizon,
+            num_samples=num_samples,
+            train_length=train_length,
+            start=start,
+            start_format=start_format,
+            stride=stride,
+            retrain=retrain,
+            overlap_end=overlap_end,
+            last_points_only=last_points_only,
+            metric=metric,
+            verbose=verbose,
+            show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            enable_optimization=enable_optimization,
+            metric_kwargs=metric_kwargs,
+            fit_kwargs=fit_kwargs,
+            predict_kwargs=predict_kwargs,
+            sample_weight=sample_weight,
+            values_only=values_only,
+        )
+
     @random_method
     def _calibrate_forecasts(
         self,
@@ -409,9 +1103,26 @@ class ConformalModel(GlobalForecastingModel, ABC):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
-        # TODO: add support for:
-        # - num_samples
-        # - predict_likelihood_parameters
+        """Generate calibrated historical forecasts.
+
+        In general the workflow of the models to produce one calibrated forecast/prediction per step in the horizon
+        is as follows:
+
+        - Generate historical forecasts for `series` and optional calibration set (`cal_series`) (using the forecasting
+          model)
+        - Extract a calibration set: The forecasts from the most recent past to use as calibration
+          for one conformal prediction. The number of examples to use can be defined at model creation with parameter
+          `cal_length`. We support two modes:
+            - Automatic extraction of the calibration set from the past of your input series (`series`,
+              `past_covariates`, ...). This is the default mode and our predict/forecasting/backtest/.... API is
+              identical to any other forecasting model
+            - Supply a fixed calibration set with parameters `cal_series`, `cal_past_covariates`, ... .
+        - Compute the errors/non-conformity scores (specific to each conformal model) on these historical forecasts
+        - Compute the quantile values from the errors / non-conformity scores (using our desired quantiles set at model
+          creation with parameter `quantiles`).
+        - Compute the conformal prediction: Add the calibrated intervals to (or adjust the existing intervals of) the
+          forecasting model's predictions.
+        """
         cal_length = self.cal_length
         metric, metric_kwargs = self._residuals_metric
         residuals = self.model.residuals(
@@ -843,7 +1554,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     @property
     def supports_sample_weight(self) -> bool:
-        return False
+        return self.model.supports_sample_weight
 
     @property
     def supports_likelihood_parameter_prediction(self) -> bool:
