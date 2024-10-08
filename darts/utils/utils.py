@@ -6,7 +6,7 @@ Additional util functions
 from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
-from typing import Callable, Iterator, List, Optional, Tuple, TypeVar, Union
+from typing import Callable, Iterator, List, Optional, Sequence, Tuple, TypeVar, Union
 
 import numpy as np
 import pandas as pd
@@ -65,6 +65,66 @@ freqs = {
     "us": "us" if pd_above_v22 else "U",
     "ns": "ns" if pd_above_v22 else "N",
 }
+
+
+def likelihood_component_names(
+    components: Union[pd.Index, List[str]], parameter_names: List[str]
+):
+    """Generates formatted likelihood parameter names for components and parameter names.
+
+    The order of the returned names is: `[comp1_param_1, ... comp1_param_n, ..., comp_n_param_n]`.
+
+    Parameters
+    ----------
+    components
+        A sequence of component names to add to the beginning of the returned names.
+    parameter_names
+        A sequence of likelihood parameter names to add to the end of the returned names.
+    """
+    return [
+        f"{tgt_name}_{param_n}"
+        for tgt_name in components
+        for param_n in parameter_names
+    ]
+
+
+def quantile_names(q: Union[float, List[float]], component: Optional[str] = None):
+    """Generates formatted quantile names, optionally added to a component name.
+
+    Parameters
+    ----------
+    q
+        A float or list of floats with the quantiles to generate the names for.
+    component
+        Optionally, a component name to add to the beginning of the quantile names.
+    """
+    # predicted quantile text format
+    comp = f"{component}_" if component is not None else ""
+    if isinstance(q, float):
+        return f"{comp}q{q:.2f}"
+    else:
+        return [f"{comp}q{q_i:.2f}" for q_i in q]
+
+
+def quantile_interval_names(
+    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]],
+    component: Optional[str] = None,
+):
+    """Generates formatted quantile interval names, optionally added to a component name.
+
+    Parameters
+    ----------
+    q_interval
+        A tuple or multiple tuples with the (lower bound, upper bound) of the quantile intervals.
+    component
+        Optionally, a component name to add to the beginning of the quantile names.
+    """
+    # predicted quantile text format
+    comp = f"{component}_" if component is not None else ""
+    if isinstance(q_interval, tuple):
+        return f"{comp}q{q_interval[0]:.2f}_q{q_interval[1]:.2f}"
+    else:
+        return [f"{comp}q{q_lo:.2f}_q{q_hi:.2f}" for q_lo, q_hi in q_interval]
 
 
 def _build_tqdm_iterator(iterable, verbose, **kwargs):
@@ -429,8 +489,8 @@ def n_steps_between(
 
 
 def generate_index(
-    start: Optional[Union[pd.Timestamp, int]] = None,
-    end: Optional[Union[pd.Timestamp, int]] = None,
+    start: Optional[Union[pd.Timestamp, str, int]] = None,
+    end: Optional[Union[pd.Timestamp, str, int]] = None,
     length: Optional[int] = None,
     freq: Union[str, int, pd.DateOffset] = None,
     name: str = None,
@@ -441,7 +501,7 @@ def generate_index(
     Parameters
     ----------
     start
-        The start of the returned index. If a pandas Timestamp is passed, the index will be a pandas
+        The start of the returned index. If a pandas Timestamp or a date string is passed, the index will be a pandas
         DatetimeIndex. If an integer is passed, the index will be a pandas RangeIndex index. Works only with
         either `length` or `end`.
     end
@@ -476,6 +536,9 @@ def generate_index(
         "index generation with `start` and `end` requires equal object types of `start` and `end`",
         logger,
     )
+
+    start = pd.Timestamp(start) if isinstance(start, str) else start
+    end = pd.Timestamp(end) if isinstance(end, str) else end
 
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
         freq = "D" if freq is None else freq

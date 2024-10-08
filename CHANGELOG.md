@@ -11,9 +11,15 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- Added `IQRDetector`, that allows to detect anomalies using the interquartile range algorithm. [#2441] by [Igor Urbanik](https://github.com/u8-igor).
+- Added `IQRDetector`, that allows to detect anomalies using the interquartile range algorithm. [#2441](https://github.com/unit8co/darts/issues/2441) by [Igor Urbanik](https://github.com/u8-igor).
 - Added hyperparameters controlling the hidden layer sizes for the feature encoders in `TiDEModel`. [#2408](https://github.com/unit8co/darts/issues/2408) by [eschibli](https://github.com/eschibli).
+- Added hyperparameter `activation` to `BlockRNNModel` to specify the activation function in case of a multi-layer output network. [#2408](https://github.com/unit8co/darts/issues/2408) by [eschibli](https://github.com/eschibli).
 - Added support for broadcasting to TimeSeries on component and sample level. [#2476](https://https://github.com/unit8co/darts/pull/2476) by [Joel L.](https://github.com/Joelius300).
+- Added support for computing metrics, backtest, and residuals on one or multiple quantiles `q`, either from probabilistic predictions or predicted quantiles. [#2530](https://github.com/unit8co/darts/issues/2530) by [Dennis Bader](https://github.com/dennisbader).
+- Added quantile interval metrics: `miw` (Mean Interval Width, time aggregated) and `iw` (Interval Width, per time step / non-aggregated) which compute the width of quantile intervals `q_intervals` (expected to be a tuple or sequence of tuples with (lower quantile, upper quantile). [#2530](https://github.com/unit8co/darts/issues/2530) by [Dennis Bader](https://github.com/dennisbader).
+- Added property `TimeSeries.shape` to get the shape of the time series. [#2530](https://github.com/unit8co/darts/issues/2530) by [Dennis Bader](https://github.com/dennisbader).
+- Added support for parameters `enable_optimization` and `predict_likelihood_parameters` to the forecasting models' `backtest()` and `residuals()` methods. [#2530](https://github.com/unit8co/darts/issues/2530) by [Dennis Bader](https://github.com/dennisbader).
+- Helper function `darts.utils.utils.generate_index()` now accepts datetime strings as `start` and `end` parameters to generate the pandas DatetimeIndex. [#2522](https://github.com/unit8co/darts/pull/2522) by [Dennis Bader](https://github.com/dennisbader).
 - Various improvements in the documentation:
   - Made README's forecasting model support table more colorblind-friendly. [#2433](https://github.com/unit8co/darts/pull/2433)
   - Updated the Ray Tune Hyperparameter Optimization example in the [user guide](https://unit8co.github.io/darts/userguide/hyperparameter_optimization.html) to work with the latest `ray` versions (`>=2.31.0`). [#2459](https://github.com/unit8co/darts/pull/2459) by [He Weilin](https://github.com/cnhwl).
@@ -22,6 +28,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed a bug when predicting with `predict_likelihood_parameters=True`, `n > 1` and a `RegressionModel` with `multi_models=False` that uses a `likelihood`. The prediction now works without raising an exception. [#2545](https://github.com/unit8co/darts/pull/2545) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug when performing probabilistic optimized historical forecasts (`num_samples>1, retrain=False, enable_optimization=True`) with regression models, where reshaping the array resulted in a wrong order of samples across components and forecasts. [#2534](https://github.com/unit8co/darts/pull/2534) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed bug when plotting a probabilistic multivariate series, where all confidence intervals (starting from 2nd component) had the same color as the median line. [#2532](https://github.com/unit8co/darts/pull/2532) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug when passing an empty array to `TimeSeries.prepend/append_values()` raised an error. [#2522](https://github.com/unit8co/darts/pull/2522) by [Alessio Pellegrini](https://github.com/AlessiopSymplectic)
+- Fixed a bug with `TimeSeries.prepend/append_values()`, where the name of the (time) index was lost. [#2522](https://github.com/unit8co/darts/pull/2522) by [Alessio Pellegrini](https://github.com/AlessiopSymplectic)
 - Fixed a bug when using `from_group_dataframe()` with a `time_col` of type integer, where the resulting time index was wrongly converted to a DatetimeIndex. [#2512](https://github.com/unit8co/darts/pull/2512) by [Alessio Pellegrini](https://github.com/AlessiopSymplectic)
 - Fixed a bug when using `historical_forecasts()` with a pre-trained `RegressionModel` that has no target lags `lags=None` but uses static covariates. [#2426](https://github.com/unit8co/darts/pull/2426) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug with `xgboost>=2.1.0`, where multi output regression was not properly handled. [#2426](https://github.com/unit8co/darts/pull/2426) by [Dennis Bader](https://github.com/dennisbader).
@@ -30,6 +41,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug preventing TimeSeries to be divided by xarray or ndarray. [#2476](https://https://github.com/unit8co/darts/pull/2476) by [Joel L.](https://github.com/Joelius300).
 - Fixed a bug when using `save()` and `load()` with a `RegressionEnsembleModel` that ensembles any `TorchForecastingModel`. [#2437](https://github.com/unit8co/darts/issues/2437) by [He Weilin](https://github.com/cnhwl).
 - Fixed a bug with `CrostonModel`, which actually does not support future covariates. [#2511](https://github.com/unit8co/darts/pull/2511) by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed the comment of `scorers_are_univariate` in class `AnomalyModel`. [#2452](https://github.com/unit8co/darts/pull/2542) by [He Weilin](https://github.com/cnhwl).
 
 **Dependencies**
 
