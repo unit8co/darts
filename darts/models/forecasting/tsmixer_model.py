@@ -366,7 +366,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
             Whether to apply normalization before or after mixing.
         project_first_layer
             Whether to project to the output time dimension at the first layer (default),
-            or at the end of the module. Projecting last is recommended if there are 
+            or at the end of the module. Projecting last is recommended if there are
             no future covariates, while projecting first is recommended if there are
             important future covariates.
         """
