@@ -267,7 +267,7 @@ class _ConditionalMixerLayer(nn.Module):
         super().__init__()
 
         mixing_input = input_dim
-        # TODO investigate dimension mismatch
+
         if static_cov_dim != 0:
             self.feature_mixing_static = _FeatureMixing(
                 sequence_length=sequence_length,
@@ -553,7 +553,8 @@ class _TSMixerModule(PLMixedCovariatesModule):
             x = mixing_layer(x, x_static=x_static)
 
         # If we are in the input time dimension, we need to project to the output time dimension.
-        # The original paper did not a fc_out layer (as hidden_size == output_dim) so we needed to decide where to put it.
+        # The original paper did not a fc_out layer (as hidden_size == output_dim)
+        # (so we needed to decide where to put it)
         # We put the projection first as it as while both operations may be very compressive,
         # we felt it more likely that output_dim << hidden_size than output_chunk_length << input_chunk_length.
         if not self.project_first_layer:
