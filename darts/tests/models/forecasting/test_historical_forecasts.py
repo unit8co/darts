@@ -802,24 +802,54 @@ class TestHistoricalforecast:
                 "Model cannot be fit/trained with `future_covariates`."
             )
 
-    def test_sanity_check_invalid_start(self):
+    def test_sanity_check_start(self):
         timeidx_ = tg.linear_timeseries(length=10)
         rangeidx_step1 = tg.linear_timeseries(start=0, length=10, freq=1)
         rangeidx_step2 = tg.linear_timeseries(start=0, length=10, freq=2)
 
+        # invalid start float
+        model = LinearRegressionModel(lags=1)
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(rangeidx_step1, start=1.1)
+        assert str(msg.value).startswith(
+            "if `start` is a float, must be between 0.0 and 1.0."
+        )
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(rangeidx_step1, start=-0.1)
+        assert str(msg.value).startswith(
+            "if `start` is a float, must be between 0.0 and 1.0."
+        )
+
+        # invalid start type
+        with pytest.raises(TypeError) as msg:
+            model.historical_forecasts(rangeidx_step1, start=[0.1])
+        assert str(msg.value).startswith(
+            "`start` must be either `float`, `int`, `pd.Timestamp` or `None`."
+        )
+
+        # label_index (timestamp) with range index series
+        model = LinearRegressionModel(lags=1)
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(
+                rangeidx_step1, start=timeidx_.end_time() + timeidx_.freq
+            )
+        assert str(msg.value).startswith(
+            "if `start` is a `pd.Timestamp`, all series must be indexed with a `pd.DatetimeIndex`"
+        )
+
         # label_index (int), too large
         with pytest.raises(ValueError) as msg:
-            LinearRegressionModel(lags=1).historical_forecasts(timeidx_, start=11)
+            model.historical_forecasts(timeidx_, start=11)
         assert str(msg.value).startswith("`start` index `11` is out of bounds")
         with pytest.raises(ValueError) as msg:
-            LinearRegressionModel(lags=1).historical_forecasts(
+            model.historical_forecasts(
                 rangeidx_step1, start=rangeidx_step1.end_time() + rangeidx_step1.freq
             )
         assert str(msg.value).startswith(
             "`start` index `10` is larger than the last index"
         )
         with pytest.raises(ValueError) as msg:
-            LinearRegressionModel(lags=1).historical_forecasts(
+            model.historical_forecasts(
                 rangeidx_step2, start=rangeidx_step2.end_time() + rangeidx_step2.freq
             )
         assert str(msg.value).startswith(
@@ -828,68 +858,143 @@ class TestHistoricalforecast:
 
         # label_index (timestamp) too high
         with pytest.raises(ValueError) as msg:
-            LinearRegressionModel(lags=1).historical_forecasts(
+            model.historical_forecasts(
                 timeidx_, start=timeidx_.end_time() + timeidx_.freq
             )
         assert str(msg.value).startswith(
             "`start` time `2000-01-11 00:00:00` is after the last timestamp `2000-01-10 00:00:00`"
         )
 
-        # label_index, invalid
+        # label_index (timestamp), before series start and stride does not allow to find valid start point in series
         with pytest.raises(ValueError) as msg:
-            LinearRegressionModel(lags=1).historical_forecasts(rangeidx_step2, start=11)
-        assert str(msg.value).startswith("The provided point is not a valid index")
-
-        # label_index, too low
-        with pytest.raises(ValueError) as msg:
-            LinearRegressionModel(lags=1).historical_forecasts(
-                timeidx_, start=timeidx_.start_time() - timeidx_.freq
+            model.historical_forecasts(
+                timeidx_,
+                start=timeidx_.start_time() - timeidx_.freq,
+                stride=len(timeidx_) + 1,
             )
-        assert str(msg.value).startswith(
-            "`start` time `1999-12-31 00:00:00` is before the first timestamp `2000-01-01 00:00:00`"
-        )
-        with pytest.raises(ValueError) as msg:
-            LinearRegressionModel(lags=1).historical_forecasts(
-                rangeidx_step1, start=rangeidx_step1.start_time() - rangeidx_step1.freq
-            )
-        assert str(msg.value).startswith(
-            "`start` index `-1` is smaller than the first index `0`"
-        )
-        with pytest.raises(ValueError) as msg:
-            LinearRegressionModel(lags=1).historical_forecasts(
-                rangeidx_step2, start=rangeidx_step2.start_time() - rangeidx_step2.freq
-            )
-        assert str(msg.value).startswith(
-            "`start` index `-2` is smaller than the first index `0`"
+        assert str(msg.value) == (
+            "`start` index `1999-12-31 00:00:00` is smaller than the first time index `2000-01-01 00:00:00` "
+            "for series at index: 0, and could not find a valid start point within the time index that lies a "
+            "round-multiple of `stride=11` ahead of `start` (first inferred start is `2000-01-11 00:00:00`, "
+            "but last time index is `2000-01-10 00:00:00`."
         )
 
-        # positional_index, predicting only the last position
-        LinearRegressionModel(lags=1).historical_forecasts(
-            timeidx_, start=9, start_format="position"
+        # label_index (timestamp), before trainable/predictable index and stride does not allow to find valid start
+        # point in series
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(
+                timeidx_, start=timeidx_.start_time(), stride=len(timeidx_)
+            )
+        assert str(msg.value) == (
+            "`start` index `2000-01-01 00:00:00` is smaller than the first historical forecastable time index "
+            "`2000-01-04 00:00:00` for series at index: 0, and could not find a valid start point within the "
+            "historical forecastable time index that lies a round-multiple of `stride=10` ahead of `start` "
+            "(first inferred start is `2000-01-11 00:00:00`, but last historical forecastable time index is "
+            "`2000-01-10 00:00:00`."
         )
+
+        # label_index (int), too low and stride does not allow to find valid start point in series
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(
+                rangeidx_step1,
+                start=rangeidx_step1.start_time() - rangeidx_step1.freq,
+                stride=len(rangeidx_step1) + 1,
+            )
+        assert str(msg.value) == (
+            "`start` index `-1` is smaller than the first time index `0` for series at index: 0, and could not "
+            "find a valid start point within the time index that lies a round-multiple of `stride=11` ahead of "
+            "`start` (first inferred start is `10`, but last time index is `9`."
+        )
+
+        # label_index (int), before trainable/predictable index and stride does not allow to find valid start
+        # point in series
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(
+                rangeidx_step1,
+                start=rangeidx_step1.start_time(),
+                stride=len(rangeidx_step1),
+            )
+        assert str(msg.value) == (
+            "`start` index `0` is smaller than the first historical forecastable time index `3` for series at "
+            "index: 0, and could not find a valid start point within the historical forecastable time index "
+            "that lies a round-multiple of `stride=10` ahead of `start` (first inferred start is `10`, but last "
+            "historical forecastable time index is `9`."
+        )
+
+        # positional_index with time index, predicting only the last position
+        preds = model.historical_forecasts(timeidx_, start=9, start_format="position")
+        assert len(preds) == 1
+        assert preds.start_time() == timeidx_.time_index[9]
 
         # positional_index, predicting from the first position with retrain=True
-        with pytest.raises(ValueError) as msg:
-            LinearRegressionModel(lags=1).historical_forecasts(
-                timeidx_, start=-10, start_format="position"
-            )
-        assert str(msg.value).endswith(", resulting in an empty training set.")
+        preds1 = model.historical_forecasts(
+            timeidx_, start=-10, start_format="position"
+        )
+        # positional_index, before start of series gives same results
+        preds2 = model.historical_forecasts(
+            timeidx_, start=-11, start_format="position"
+        )
+        assert (
+            len(preds1) == len(preds2) == len(timeidx_) - model.min_train_series_length
+        )
+        assert (
+            preds1.start_time()
+            == preds2.start_time()
+            == timeidx_.time_index[model.min_train_series_length]
+        )
 
         # positional_index, beyond boundaries
         with pytest.raises(ValueError) as msg:
-            LinearRegressionModel(lags=1).historical_forecasts(
-                timeidx_, start=10, start_format="position"
+            model.historical_forecasts(timeidx_, start=10, start_format="position")
+        assert str(msg.value).startswith(
+            "`start` index `10` is out of bounds for series of length 10"
+        )
+
+        # positional_index with range index, predicting only the last position
+        preds = model.historical_forecasts(
+            rangeidx_step2, start=9, start_format="position"
+        )
+        assert len(preds) == 1
+        assert preds.start_time() == rangeidx_step2.time_index[9]
+
+        # positional_index, predicting from the first position with retrain=True
+        preds1 = model.historical_forecasts(
+            rangeidx_step2, start=-10, start_format="position"
+        )
+        # positional_index, before start of series gives same results
+        preds2 = model.historical_forecasts(
+            rangeidx_step2, start=-11, start_format="position"
+        )
+        assert (
+            len(preds1)
+            == len(preds2)
+            == len(rangeidx_step2) - model.min_train_series_length
+        )
+        assert (
+            preds1.start_time()
+            == preds2.start_time()
+            == rangeidx_step2.time_index[model.min_train_series_length]
+        )
+
+        # positional_index, beyond boundaries
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(
+                rangeidx_step2, start=10, start_format="position"
             )
         assert str(msg.value).startswith(
             "`start` index `10` is out of bounds for series of length 10"
         )
-        with pytest.raises(ValueError) as msg:
-            LinearRegressionModel(lags=1).historical_forecasts(
-                timeidx_, start=-11, start_format="position"
-            )
-        assert str(msg.value).startswith(
-            "`start` index `-11` is out of bounds for series of length 10"
-        )
+
+    # def test_start_points(self):
+    #     timeidx_ = tg.linear_timeseries(length=10)
+    #     rangeidx_step1 = tg.linear_timeseries(start=0, length=10, freq=1)
+    #     rangeidx_step2 = tg.linear_timeseries(start=0, length=10, freq=2)
+    #
+    #     # label_index, invalid
+    #     pred = LinearRegressionModel(lags=1).historical_forecasts(
+    #         rangeidx_step2, start=11
+    #     )
+    #     assert pred.start_time() == (11 // rangeidx_step2.freq) * rangeidx_step2.freq
 
     @pytest.mark.parametrize("config", models_reg_no_cov_cls_kwargs)
     def test_regression_auto_start_multiple_no_cov(self, config):
