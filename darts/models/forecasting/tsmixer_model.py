@@ -267,6 +267,7 @@ class _ConditionalMixerLayer(nn.Module):
         super().__init__()
 
         mixing_input = input_dim
+
         if static_cov_dim != 0:
             self.feature_mixing_static = _FeatureMixing(
                 sequence_length=sequence_length,
@@ -328,6 +329,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         dropout: float,
         norm_type: Union[str, nn.Module],
         normalize_before: bool,
+        project_first_layer: bool = True,
         **kwargs,
     ) -> None:
         """
@@ -362,6 +364,11 @@ class _TSMixerModule(PLMixedCovariatesModule):
             Type of normalization to use.
         normalize_before
             Whether to apply normalization before or after mixing.
+        project_first_layer
+            Whether to project to the output time dimension at the first layer (default),
+            or at the end of the module. Projecting last is recommended if there are
+            no future covariates, while projecting first is recommended if there are
+            important future covariates.
         """
         super().__init__(**kwargs)
         self.input_dim = input_dim
@@ -369,11 +376,14 @@ class _TSMixerModule(PLMixedCovariatesModule):
         self.future_cov_dim = future_cov_dim
         self.static_cov_dim = static_cov_dim
         self.nr_params = nr_params
+        self.project_first_layer = project_first_layer
+
+        self.sequence_length = self.output_chunk_length if project_first_layer else self.input_chunk_length
 
         if activation not in ACTIVATIONS:
             raise_log(
                 ValueError(
-                    f"Invalid `activation={activation}`. Must be on of {ACTIVATIONS}."
+                    f"Invalid `activation={activation}`. Must be one of {ACTIVATIONS}."
                 ),
                 logger=logger,
             )
@@ -383,7 +393,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
             if norm_type not in NORMS:
                 raise_log(
                     ValueError(
-                        f"Invalid `norm_type={norm_type}`. Must be on of {NORMS}."
+                        f"Invalid `norm_type={norm_type}`. Must be one of {NORMS}."
                     ),
                     logger=logger,
                 )
@@ -402,16 +412,23 @@ class _TSMixerModule(PLMixedCovariatesModule):
             "normalize_before": normalize_before,
         }
 
-        self.fc_hist = nn.Linear(self.input_chunk_length, self.output_chunk_length)
+        # Projects from the input time dimension to the output time dimension
+        self.fc_hist = nn.Linear(
+            self.input_chunk_length, self.output_chunk_length)
+
+        # Projects from the output time dimension to the input time dimension
+        self.fc_future = nn.Linear(
+            self.output_chunk_length, self.input_chunk_length)
+
         self.feature_mixing_hist = _FeatureMixing(
-            sequence_length=self.output_chunk_length,
+            sequence_length=self.sequence_length,
             input_dim=input_dim + past_cov_dim + future_cov_dim,
             output_dim=hidden_size,
             **mixer_params,
         )
         if future_cov_dim:
             self.feature_mixing_future = _FeatureMixing(
-                sequence_length=self.output_chunk_length,
+                sequence_length=self.sequence_length,
                 input_dim=future_cov_dim,
                 output_dim=hidden_size,
                 **mixer_params,
@@ -419,7 +436,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         else:
             self.feature_mixing_future = None
         self.conditional_mixer = self._build_mixer(
-            prediction_length=self.output_chunk_length,
+            sequence_length=self.sequence_length,
             num_blocks=num_blocks,
             hidden_size=hidden_size,
             future_cov_dim=future_cov_dim,
@@ -430,7 +447,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
 
     @staticmethod
     def _build_mixer(
-        prediction_length: int,
+        sequence_length: int,
         num_blocks: int,
         hidden_size: int,
         future_cov_dim: int,
@@ -448,7 +465,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
             layer = _ConditionalMixerLayer(
                 input_dim=input_dim_block,
                 output_dim=hidden_size,
-                sequence_length=prediction_length,
+                sequence_length=sequence_length,
                 static_cov_dim=static_cov_dim,
                 **kwargs,
             )
@@ -480,6 +497,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         # B: batch size
         # L: input chunk length
         # T: output chunk length
+        # SL: Residual block time dimension (T if project_first_layer, L otherwise)
         # C: target components
         # P: past cov features
         # F: future cov features
@@ -491,35 +509,67 @@ class _TSMixerModule(PLMixedCovariatesModule):
         # `x`: (B, L, H), `x_future`: (B, T, F), `x_static`: (B, C or 1, S)
         x, x_future, x_static = x_in
 
-        # swap feature and time dimensions (B, L, H) -> (B, H, L)
-        x = _time_to_feature(x)
-        # linear transformations to horizon (B, H, L) -> (B, H, T)
-        x = self.fc_hist(x)
-        # (B, H, T) -> (B, T, H)
-        x = _time_to_feature(x)
+        # If project_first_layer, decoder style model with residual blocks in output time dimension
+        # (B, L, H) -> (B, SL, H)
+        if self.project_first_layer:
+            # swap feature and time dimensions (B, L, H) -> (B, H, L)
+            x = _time_to_feature(x)
+            # linear transformations to SL (T in this case)
+            # (B, H, L) -> (B, H, SL)
+            x = self.fc_hist(x)
+            # Transpose back
+            # (B, H, T) -> (B, T, H)
+            x = _time_to_feature(x)
 
-        # feature mixing for historical features (B, T, H) -> (B, T, H_S)
+        # Otherwise, encoder-style model with residual blocks in input time dimension
+        # In the original paper this was not implimented for future covariates,
+        # but rather than ignoring them or raising an error we remap them to the input time dimension.
+        # Suboptimal but may be useful in some cases.
+        elif self.future_cov_dim:
+            # swap feature and time dimensions (B, L, F) -> (B, F, L)
+            x_future = _time_to_feature(x_future)
+            # linear transformations to SL (L in this case)
+            # (B, F, T) -> (B, F, SL)
+            x_future = self.fc_future(x_future)
+            # Transpose back (B, L, F) -> (B, F, L)
+            x_future = _time_to_feature(x_future)
+
+        # feature mixing for historical features (B, SL, H) -> (B, SL, H_S)
         x = self.feature_mixing_hist(x)
         if self.future_cov_dim:
-            # feature mixing for future features (B, T, F) -> (B, T, H_S)
+            # feature mixing for future features (B, SL, F) -> (B, SL, H_S)
             x_future = self.feature_mixing_future(x_future)
-            # (B, T, H_S) + (B, T, H_S) -> (B, T, 2*H_S)
+            # (B, SL, H_S) + (B, SL, H_S) -> (B, T, 2*H_S)
             x = torch.cat([x, x_future], dim=-1)
 
         if self.static_cov_dim:
             # (B, C, S) -> (B, 1, C * S)
             x_static = x_static.reshape(x_static.shape[0], 1, -1)
-            # repeat to match horizon (B, 1, C * S) -> (B, T, C * S)
-            x_static = x_static.repeat(1, self.output_chunk_length, 1)
+            # repeat to match time dim: (B, 1, C * S) -> (B, SL, C * S)
+            x_static = x_static.repeat(1, self.sequence_length, 1)
 
         for mixing_layer in self.conditional_mixer:
-            # conditional mixer layers with static covariates (B, T, 2 * H_S), (B, T, C * S) -> (B, T, H_S)
+            # conditional mixer layers with static covariates (B, SL, 2 * H_S), (B, SL, C * S) -> (B, SL, H_S)
             x = mixing_layer(x, x_static=x_static)
+
+        # If we are in the input time dimension, we need to project to the output time dimension.
+        # The original paper did not a fc_out layer (as hidden_size == output_dim)
+        # (so we needed to decide where to put it)
+        # We put the projection first as it as while both operations may be very compressive,
+        # we felt it more likely that output_dim << hidden_size than output_chunk_length << input_chunk_length.
+        if not self.project_first_layer:
+            # (B, SL, H_S) -> (B, H_S, SL)
+            x = _time_to_feature(x)
+            # (B, H_S, SL) -> (B, H_S, T)
+            x = self.fc_hist(x)
+            # (B, H_S, T) -> (B, T, H_S)
+            x = _time_to_feature(x)
 
         # linear transformation to generate the forecast (B, T, H_S) -> (B, T, C * N_P)
         x = self.fc_out(x)
         # (B, T, C * N_P) -> (B, T, C, N_P)
-        x = x.view(-1, self.output_chunk_length, self.output_dim, self.nr_params)
+        x = x.view(-1, self.output_chunk_length,
+                   self.output_dim, self.nr_params)
         return x
 
 
@@ -537,6 +587,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         norm_type: Union[str, nn.Module] = "LayerNorm",
         normalize_before: bool = False,
         use_static_covariates: bool = True,
+        project_first_layer: bool = True,
         **kwargs,
     ) -> None:
         """Time-Series Mixer (TSMixer): An All-MLP Architecture for Time Series.
@@ -591,6 +642,10 @@ class TSMixerModel(MixedCovariatesTorchModel):
             `"LayerNormNoBias", "LayerNorm", "TimeBatchNorm2d"`. Otherwise, must be a custom `nn.Module`.
         normalize_before
             Whether to apply layer normalization before or after mixer layer.
+        project_first_layer
+            Whether to project to the output time dimension at the first layer (default), or at the end of the module.
+            Projecting last is recommended if there are no future covariates, while projecting first is recommended if
+            there are important future covariates.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -774,6 +829,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         self.normalize_before = normalize_before
         self.norm_type = norm_type
         self.hidden_size = hidden_size
+        self.project_first_layer = project_first_layer
         self._considers_static_covariates = use_static_covariates
 
     def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
@@ -825,6 +881,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
             dropout=self.dropout,
             norm_type=self.norm_type,
             normalize_before=self.normalize_before,
+            project_first_layer=self.project_first_layer,
             **self.pl_module_params,
         )
 
