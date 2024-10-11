@@ -25,7 +25,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Updated the Ray Tune Hyperparameter Optimization example in the [user guide](https://unit8co.github.io/darts/userguide/hyperparameter_optimization.html) to work with the latest `ray` versions (`>=2.31.0`). [#2459](https://github.com/unit8co/darts/pull/2459) by [He Weilin](https://github.com/cnhwl).
   - Indicate that `multi_models=False` induce a lags shift for each step in `output_chunk_length` in `RegressionModel` and `LinearRegressionModel`. [#2511](https://github.com/unit8co/darts/pull/2511) by [Antoine Madrona](https://github.com/madtoinou).
   - Added reference to `timeseries_generation.datetime_attribute_timeseries` in `TimeSeries.add_datetime_attribute` (0-indexing of encoding is enforced). [#2511](https://github.com/unit8co/darts/pull/2511) by [Antoine Madrona](https://github.com/madtoinou).
-  - Added `project_first_layer` keyword to `TSMixerModel` (default False), allowing the option of projecting to `output_chunk_length` at the end, rather than the beginning, of the model. This could improve performance when past covariates are more important the future covariates. 
+  - Added `project_first_layer` keyword to `TSMixerModel` (default False), allowing the option of projecting to `output_chunk_length` at the end, rather than the beginning, of the model. This could improve performance when past covariates are more important the future covariates.
 
 **Fixed**
 
