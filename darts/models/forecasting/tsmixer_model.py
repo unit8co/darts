@@ -378,7 +378,9 @@ class _TSMixerModule(PLMixedCovariatesModule):
         self.nr_params = nr_params
         self.project_first_layer = project_first_layer
 
-        self.sequence_length = self.output_chunk_length if project_first_layer else self.input_chunk_length
+        self.sequence_length = (
+            self.output_chunk_length if project_first_layer else self.input_chunk_length
+        )
 
         if activation not in ACTIVATIONS:
             raise_log(
@@ -413,12 +415,10 @@ class _TSMixerModule(PLMixedCovariatesModule):
         }
 
         # Projects from the input time dimension to the output time dimension
-        self.fc_hist = nn.Linear(
-            self.input_chunk_length, self.output_chunk_length)
+        self.fc_hist = nn.Linear(self.input_chunk_length, self.output_chunk_length)
 
         # Projects from the output time dimension to the input time dimension
-        self.fc_future = nn.Linear(
-            self.output_chunk_length, self.input_chunk_length)
+        self.fc_future = nn.Linear(self.output_chunk_length, self.input_chunk_length)
 
         self.feature_mixing_hist = _FeatureMixing(
             sequence_length=self.sequence_length,
@@ -568,8 +568,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         # linear transformation to generate the forecast (B, T, H_S) -> (B, T, C * N_P)
         x = self.fc_out(x)
         # (B, T, C * N_P) -> (B, T, C, N_P)
-        x = x.view(-1, self.output_chunk_length,
-                   self.output_dim, self.nr_params)
+        x = x.view(-1, self.output_chunk_length, self.output_dim, self.nr_params)
         return x
 
 
