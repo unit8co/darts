@@ -1020,7 +1020,7 @@ class TestHistoricalforecast:
             )
         ),
     )
-    def test_historical_forecasts_start_value_too_early(self, caplog, config):
+    def test_historical_forecasts_start_too_early(self, caplog, config):
         """If start is not within the trainable/forecastable index, it should start a round-multiple of `stride` ahead
         of `start`. Checks for:
         - correct warnings
@@ -1119,91 +1119,6 @@ class TestHistoricalforecast:
             )
             assert warning_short not in caplog.text
             assert pred.start_time() == start_expected
-
-    @pytest.mark.parametrize(
-        "config",
-        itertools.product(
-            [
-                (
-                    "2000-01-01 00:00:00",  # start
-                    1,  # stride
-                    "2000-01-01 03:00:00",  # expected start
-                    "h",  # freq
-                ),
-                ("2000-01-01 00:00:00", 2, "2000-01-01 04:00:00", "h"),
-                ("1999-01-01 00:00:00", 6, "2000-01-01 06:00:00", "h"),
-                ("2000-01-01 00:00:00", 2, "2000-01-01 08:00:00", "2h"),
-                # special case where start is not in the frequency -> start will be converted
-                # to "2000-01-01 00:00:00", and then it's adjusted to be withing the historical fc index
-                ("1999-12-31 23:00:00", 2, "2000-01-01 08:00:00", "2h"),
-                # integer index
-                (0, 1, 3, 1),
-                (0, 2, 4, 1),
-                (-24, 6, 6, 1),
-                (0, 2, 8, 2),
-                # special case where start is not in the frequency -> start will be converted
-                # to 0, and then it's adjusted to be withing the historical fc index
-                (-1, 2, 8, 2),
-            ],
-            [True, False],  # retrain
-            [True, False] if TORCH_AVAILABLE else [False],  # use torch model
-        ),
-    )
-    def test_historical_forecasts_start_position_too_early(self, caplog, config):
-        """If start is not within the trainable/forecastable index, it should start a round-multiple of `stride` ahead
-        of `start`."""
-        # the configuration is defined for `retrain = True`
-        (start, stride, start_expected, freq), retrain, use_torch_model = config
-        if isinstance(freq, str):
-            start, start_expected = pd.Timestamp(start), pd.Timestamp(start_expected)
-            start_series = pd.Timestamp("2000-01-01 00:00:00")
-        else:
-            start_series = 0
-        series = tg.linear_timeseries(
-            start=start_series,
-            length=7,
-            freq=freq,
-        )
-        # when hist fc `start` is not in the valid frequency range, it is converted to a time that is valid.
-        # e.g. `start="1999-12-31 23:00:00:` with `freq="2h"` is converted to `"2000-01-01 00:00:00"`
-        adjust_start = n_steps_between(end=start_series, start=start, freq=freq)
-        start_time_expected = series.start_time() - adjust_start * series.freq
-        if use_torch_model:
-            kwargs = copy.deepcopy(tfm_kwargs)
-            kwargs["pl_trainer_kwargs"]["fast_dev_run"] = True
-            # use ocl=2 to have same `min_train_length` as the regression model
-            model = BlockRNNModel(
-                input_chunk_length=1, output_chunk_length=2, n_epochs=1, **kwargs
-            )
-        else:
-            model = LinearRegressionModel(lags=1)
-        if not retrain:
-            model.fit(series)
-            # if the stride is shorter than the train series length, retrain=False can start earlier
-            if stride <= model.min_train_series_length:
-                start_expected -= (
-                    model.min_train_series_length + model.extreme_lags[0]
-                ) * series.freq
-        # label index
-        warning_expected = (
-            f"`start` time `{start_time_expected}` is before the first predictable/trainable historical forecasting "
-            f"point for series at index: 0. Using the first historical forecasting point `{start_expected}` that "
-            f"lies a round-multiple of `stride={stride}` ahead of `start`. To hide these warnings, set "
-            "`show_warnings=False`."
-        )
-
-        enable_optimizations = [False] if retrain else [False, True]
-        for enable_optimization in enable_optimizations:
-            with caplog.at_level(logging.WARNING):
-                pred = model.historical_forecasts(
-                    series,
-                    start=start,
-                    stride=stride,
-                    retrain=retrain,
-                    enable_optimization=enable_optimization,
-                )
-                assert warning_expected in caplog.text
-                assert pred.start_time() == start_expected
 
     @pytest.mark.parametrize("config", models_reg_no_cov_cls_kwargs)
     def test_regression_auto_start_multiple_no_cov(self, config):

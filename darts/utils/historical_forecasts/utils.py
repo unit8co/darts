@@ -117,13 +117,15 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                         logger,
                     )
             elif isinstance(n.start, (int, np.int64)):
-                out_of_bound_error = False
-                if n.start_format == "position":
-                    if n.start > 0 and n.start >= len(series_):
-                        out_of_bound_error = True
-                elif series_.has_datetime_index:  # formal "value" and datetime index
+                if n.start_format == "position" or series_.has_datetime_index:
                     if n.start >= len(series_):
-                        out_of_bound_error = True
+                        raise_log(
+                            ValueError(
+                                f"`start` index `{n.start}` is out of bounds for series of length {len(series_)} "
+                                f"at index: {idx}."
+                            ),
+                            logger,
+                        )
                 elif n.start > series_.time_index[-1]:  # format "value" and range index
                     raise_log(
                         ValueError(
@@ -133,21 +135,12 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                         logger,
                     )
 
-                if out_of_bound_error:
-                    raise_log(
-                        ValueError(
-                            f"`start` index `{n.start}` is out of bounds for series of length {len(series_)} "
-                            f"at index: {idx}."
-                        ),
-                        logger,
-                    )
-
             # find valid start position relative to the series start time, otherwise raise an error
             start_idx, _ = _get_start_index(
                 series_, idx, n.start, n.start_format, n.stride
             )
 
-            # check that overlap_end and start together form a valid combination
+            # check that `overlap_end` and `start` are a valid combination
             overlap_end = n.overlap_end
             if (
                 not overlap_end
@@ -284,7 +277,7 @@ def _get_start_index(
     stride: int,
     historical_forecasts_time_index: Optional[TimeIndex] = None,
 ):
-    """Finds a valid start historical forecast start point within either `series` or `historical_forecasts_time_index`
+    """Finds a valid historical forecast start point within either `series` or `historical_forecasts_time_index`
     (depending on whether `historical_forecasts_time_index` is passed, denoted as `ref`).
 
     - If `start` is larger or equal to the first index of `ref`, uses `start` directly.
@@ -338,18 +331,18 @@ def _get_start_index(
         is_historical_forecast=False,
     )
     if historical_forecasts_time_index is not None:
-        # at this point, we know that `start_idx` is within `series`; find the position of that time step relative to
-        # all hist fc points
         hfc_start, hfc_end = (
             historical_forecasts_time_index[0],
             historical_forecasts_time_index[-1],
         )
+        # at this point, we know that `start_idx` is within `series`. Now, find the position of that time step
+        # relative to the first forecastable point
         rel_start_hfc = n_steps_between(
             series._time_index[start_idx], hfc_start, freq=series.freq
         )
         # get the positional index of `hfc_start` in `series`
         hfc_start_idx = start_idx - rel_start_hfc
-        # potentially, adjust the position to inside positional index of
+        # potentially, adjust the position to be inside the forecastable points
         hfc_start_idx += _adjust_start(rel_start_hfc, stride)
         _check_start(
             series=series,
@@ -663,11 +656,12 @@ def _adjust_historical_forecasts_time_index(
         )
         start_time = series._time_index[start_idx]
 
-        if start_idx_orig >= 0:
-            start_time_orig = series._time_index[start_idx_orig]
-        else:
-            start_time_orig = series.start_time() + start_idx_orig * series.freq
-        if start_time != start_time_orig and show_warnings:
+        if start_idx != start_idx_orig and show_warnings:
+            if start_idx_orig >= 0:
+                start_time_orig = series._time_index[start_idx_orig]
+            else:
+                start_time_orig = series.start_time() + start_idx_orig * series.freq
+
             if start_format == "position" or (
                 not isinstance(start, pd.Timestamp) and series._has_datetime_index
             ):
