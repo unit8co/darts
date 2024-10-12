@@ -329,6 +329,7 @@ def _get_start_index(
         series=series,
         start_idx=start_idx,
         start=start,
+        start_format=start_format,
         series_start=series_start,
         ref_start=series_start,
         ref_end=series_end,
@@ -354,6 +355,7 @@ def _get_start_index(
             series=series,
             start_idx=hfc_start_idx,
             start=start,
+            start_format=start_format,
             series_start=series_start,
             ref_start=hfc_start,
             ref_end=hfc_end,
@@ -385,6 +387,7 @@ def _check_start(
     series: TimeSeries,
     start_idx: int,
     start: Union[pd.Timestamp, int, float],
+    start_format: Literal["value", "position"],
     series_start: Union[pd.Timestamp, int],
     ref_start: Union[pd.Timestamp, int],
     ref_end: Union[pd.Timestamp, int],
@@ -395,14 +398,26 @@ def _check_start(
     if start_idx < len(series):
         return
 
+    if start_format == "position" or (
+        not isinstance(start, pd.Timestamp) and series._has_datetime_index
+    ):
+        start_format_msg = f"position `{start}` corresponding to timestamp "
+        if isinstance(start, float):
+            # fraction of series
+            start = series.get_index_at_point(start)
+        else:
+            start = series.start_time() + start * series.freq
+    else:
+        start_format_msg = "time "
     ref_msg = "" if not is_historical_forecast else "historical forecastable "
     start_new = series_start + start_idx * series.freq
     raise_log(
         ValueError(
-            f"`start` index `{start}` is smaller than the first {ref_msg}time index `{ref_start}` "
-            f"for series at index: {series_idx}, and could not find a valid start point within the "
-            f"{ref_msg}time index that lies a round-multiple of `stride={stride}` ahead of `start` "
-            f"(first inferred start is `{start_new}`, but last {ref_msg}time index is `{ref_end}`."
+            f"`start` {start_format_msg}`{start}` is smaller than the first {ref_msg}time index "
+            f"`{ref_start}` for series at index: {series_idx}, and could not find a valid start "
+            f"point within the {ref_msg}time index that lies a round-multiple of `stride={stride}` "
+            f"ahead of `start` (first inferred start is `{start_new}`, but last {ref_msg}time index "
+            f"is `{ref_end}`."
         ),
         logger=logger,
     )
@@ -683,9 +698,11 @@ def _adjust_historical_forecasts_time_index(
         else:
             start_time_orig = series.start_time() + start_idx_orig * series.freq
         if start_time != start_time_orig and show_warnings:
-            if not isinstance(start, pd.Timestamp):
+            if start_format == "position" or (
+                not isinstance(start, pd.Timestamp) and series._has_datetime_index
+            ):
                 start_value_msg = (
-                    f"value `{start}` corresponding to timestamp `{start_time_orig}`"
+                    f"position `{start}` corresponding to timestamp `{start_time_orig}`"
                 )
             else:
                 start_value_msg = f"time `{start_time_orig}`"
