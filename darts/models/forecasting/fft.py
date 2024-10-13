@@ -356,7 +356,7 @@ class FFT(LocalForecastingModel):
         ]
 
         # set all other values in the frequency domain to 0
-        self.fft_values_filtered = np.zeros(len(self.fft_values), dtype=np.complex_)
+        self.fft_values_filtered = np.zeros(len(self.fft_values), dtype=np.complex128)
         self.fft_values_filtered[self.filtered_indices] = self.fft_values[
             self.filtered_indices
         ]
