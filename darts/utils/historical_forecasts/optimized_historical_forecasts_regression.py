@@ -74,6 +74,7 @@ def _optimized_historical_forecasts_last_points_only(
             start_format=start_format,
             forecast_horizon=forecast_horizon,
             overlap_end=overlap_end,
+            stride=stride,
             freq=freq,
             show_warnings=show_warnings,
         )
@@ -236,6 +237,7 @@ def _optimized_historical_forecasts_all_points(
             start_format=start_format,
             forecast_horizon=forecast_horizon,
             overlap_end=overlap_end,
+            stride=stride,
             freq=freq,
             show_warnings=show_warnings,
         )

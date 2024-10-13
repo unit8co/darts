@@ -706,11 +706,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
               or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
             - the first trainable point (given `train_length`) otherwise
 
+            Note: If `start` is not within the trainable / forecastable points, uses the closest valid start point that
+              is a round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
             Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
-            shifted by `output_chunk_shift` points into the future.
-            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
+              shifted by `output_chunk_shift` points into the future.
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
-            (default behavior with ``None``) and start at the first trainable/predictable point.
+              (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
             Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
             `pd.RangeIndex`.
@@ -1018,6 +1019,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 historical_forecasts_time_index=historical_forecasts_time_index,
                 start=start,
                 start_format=start_format,
+                stride=stride,
                 show_warnings=show_warnings,
             )
 
@@ -1267,9 +1269,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
               or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
             - the first trainable point (given `train_length`) otherwise
 
-            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
+            Note: If `start` is not within the trainable / forecastable points, uses the closest valid start point that
+              is a round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
+            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
+              shifted by `output_chunk_shift` points into the future.
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
-            (default behavior with ``None``) and start at the first trainable/predictable point.
+              (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
             Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
             `pd.RangeIndex`.
@@ -1628,9 +1633,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
               or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
             - the first trainable point (given `train_length`) otherwise
 
-            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
+            Note: If `start` is not within the trainable / forecastable points, uses the closest valid start point that
+              is a round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
+            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
+              shifted by `output_chunk_shift` points into the future.
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
-            (default behavior with ``None``) and start at the first trainable/predictable point.
+              (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
             Only used in expanding window mode. Defines the `start` format. Only effective when `start` is an integer
             and `series` is indexed with a `pd.RangeIndex`.
@@ -1924,9 +1932,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
               or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
             - the first trainable point (given `train_length`) otherwise
 
-            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
+            Note: If `start` is not within the trainable / forecastable points, uses the closest valid start point that
+              is a round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
+            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
+              shifted by `output_chunk_shift` points into the future.
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
-            (default behavior with ``None``) and start at the first trainable/predictable point.
+              (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
             Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
             `pd.RangeIndex`.

@@ -69,6 +69,7 @@ def _optimized_historical_forecasts(
             start_format=start_format,
             forecast_horizon=forecast_horizon,
             overlap_end=overlap_end,
+            stride=stride,
             freq=series_.freq,
             show_warnings=show_warnings,
         )
