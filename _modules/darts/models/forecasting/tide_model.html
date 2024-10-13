@@ -34,7 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -256,6 +256,8 @@
         <span class="n">temporal_width_future</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">use_layer_norm</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">temporal_hidden_size_past</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">temporal_hidden_size_future</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Pytorch module implementing the TiDE architecture.</span>
@@ -286,6 +288,10 @@
 <span class="sd">            The width of the past covariate embedding space.</span>
 <span class="sd">        temporal_width_future</span>
 <span class="sd">            The width of the future covariate embedding space.</span>
+<span class="sd">        temporal_hidden_size_past</span>
+<span class="sd">            The width of the hidden layers in the past covariate projection Residual Block.</span>
+<span class="sd">        temporal_hidden_size_future</span>
+<span class="sd">            The width of the hidden layers in the future covariate projection Residual Block.</span>
 <span class="sd">        use_layer_norm</span>
 <span class="sd">            Whether to use layer normalization in the Residual Blocks.</span>
 <span class="sd">        dropout</span>
@@ -323,6 +329,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_past</span> <span class="o">=</span> <span class="n">temporal_width_past</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_future</span> <span class="o">=</span> <span class="n">temporal_width_future</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temporal_hidden_size_past</span> <span class="o">=</span> <span class="n">temporal_hidden_size_past</span> <span class="ow">or</span> <span class="n">hidden_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temporal_hidden_size_future</span> <span class="o">=</span> <span class="n">temporal_hidden_size_future</span> <span class="ow">or</span> <span class="n">hidden_size</span>
 
         <span class="c1"># past covariates handling: either feature projection, raw features, or no features</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">past_cov_projection</span> <span class="o">=</span> <span class="kc">None</span>
@@ -331,7 +339,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">past_cov_projection</span> <span class="o">=</span> <span class="n">_ResidualBlock</span><span class="p">(</span>
                 <span class="n">input_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">past_cov_dim</span><span class="p">,</span>
                 <span class="n">output_dim</span><span class="o">=</span><span class="n">temporal_width_past</span><span class="p">,</span>
-                <span class="n">hidden_size</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span>
+                <span class="n">hidden_size</span><span class="o">=</span><span class="n">temporal_hidden_size_past</span><span class="p">,</span>
                 <span class="n">use_layer_norm</span><span class="o">=</span><span class="n">use_layer_norm</span><span class="p">,</span>
                 <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span><span class="p">,</span>
             <span class="p">)</span>
@@ -349,7 +357,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_projection</span> <span class="o">=</span> <span class="n">_ResidualBlock</span><span class="p">(</span>
                 <span class="n">input_dim</span><span class="o">=</span><span class="n">future_cov_dim</span><span class="p">,</span>
                 <span class="n">output_dim</span><span class="o">=</span><span class="n">temporal_width_future</span><span class="p">,</span>
-                <span class="n">hidden_size</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span>
+                <span class="n">hidden_size</span><span class="o">=</span><span class="n">temporal_hidden_size_future</span><span class="p">,</span>
                 <span class="n">use_layer_norm</span><span class="o">=</span><span class="n">use_layer_norm</span><span class="p">,</span>
                 <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span><span class="p">,</span>
             <span class="p">)</span>
@@ -550,6 +558,8 @@
         <span class="n">hidden_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span>
         <span class="n">temporal_width_past</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
         <span class="n">temporal_width_future</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="n">temporal_hidden_size_past</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">temporal_hidden_size_future</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">temporal_decoder_hidden</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
         <span class="n">use_layer_norm</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
@@ -599,11 +609,19 @@
 <span class="sd">        hidden_size</span>
 <span class="sd">            The width of the layers in the residual blocks of the encoder and decoder.</span>
 <span class="sd">        temporal_width_past</span>
-<span class="sd">            The width of the layers in the past covariate projection residual block. If `0`,</span>
+<span class="sd">            The width of the output layer in the past covariate projection residual block. If `0`,</span>
 <span class="sd">            will bypass feature projection and use the raw feature data.</span>
 <span class="sd">        temporal_width_future</span>
-<span class="sd">            The width of the layers in the future covariate projection residual block. If `0`,</span>
+<span class="sd">            The width of the output layer in the future covariate projection residual block. If `0`,</span>
 <span class="sd">            will bypass feature projection and use the raw feature data.</span>
+<span class="sd">        temporal_hidden_size_past</span>
+<span class="sd">            The width of the hidden layer in the past covariate projection residual block. If not specified,</span>
+<span class="sd">            defaults to `hidden_size`, which is the width of the hidden layer in the encoder and decoder.</span>
+<span class="sd">            This is likely to be too large in many cases, so it is recommended to set this parameter explicitly.</span>
+<span class="sd">        temporal_hidden_size_future</span>
+<span class="sd">            The width of the hidden layer in the future covariate projection residual block. If not specified,</span>
+<span class="sd">            defaults to `hidden_size`, which is the width of the hidden layer in the encoder and decoder.</span>
+<span class="sd">            This is likely to be too large in many cases, so it is recommended to set this parameter explicitly.</span>
 <span class="sd">        temporal_decoder_hidden</span>
 <span class="sd">            The width of the layers in the temporal decoder.</span>
 <span class="sd">        use_layer_norm</span>
@@ -801,6 +819,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">hidden_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_past</span> <span class="o">=</span> <span class="n">temporal_width_past</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_future</span> <span class="o">=</span> <span class="n">temporal_width_future</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temporal_hidden_size_past</span> <span class="o">=</span> <span class="n">temporal_hidden_size_past</span> <span class="ow">or</span> <span class="n">hidden_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temporal_hidden_size_future</span> <span class="o">=</span> <span class="n">temporal_hidden_size_future</span> <span class="ow">or</span> <span class="n">hidden_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">temporal_decoder_hidden</span> <span class="o">=</span> <span class="n">temporal_decoder_hidden</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_considers_static_covariates</span> <span class="o">=</span> <span class="n">use_static_covariates</span>
@@ -868,6 +888,8 @@
             <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
             <span class="n">temporal_width_past</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_past</span><span class="p">,</span>
             <span class="n">temporal_width_future</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">temporal_width_future</span><span class="p">,</span>
+            <span class="n">temporal_hidden_size_past</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">temporal_hidden_size_past</span><span class="p">,</span>
+            <span class="n">temporal_hidden_size_future</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">temporal_hidden_size_future</span><span class="p">,</span>
             <span class="n">temporal_decoder_hidden</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">temporal_decoder_hidden</span><span class="p">,</span>
             <span class="n">use_layer_norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">use_layer_norm</span><span class="p">,</span>
             <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
@@ -880,7 +902,15 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">True</span></div>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">_check_ckpt_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tfm_save</span><span class="p">):</span>
+        <span class="c1"># new parameters were added that will break loading weights</span>
+        <span class="n">new_params</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;temporal_hidden_size_past&quot;</span><span class="p">,</span> <span class="s2">&quot;temporal_hidden_size_future&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">new_params</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">param</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tfm_save</span><span class="o">.</span><span class="n">model_params</span><span class="p">:</span>
+                <span class="n">tfm_save</span><span class="o">.</span><span class="n">model_params</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_check_ckpt_parameters</span><span class="p">(</span><span class="n">tfm_save</span><span class="p">)</span></div>
 </pre></div>
 
               </div>

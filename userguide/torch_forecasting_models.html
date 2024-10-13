@@ -35,7 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -974,9 +974,8 @@ of backward passes per epoch and has the potential to better parallelize computa
 </section>
 <section id="tune-num-loader-workers">
 <h3>Tune <code class="docutils literal notranslate"><span class="pre">num_loader_workers</span></code><a class="headerlink" href="#tune-num-loader-workers" title="Permalink to this heading">¶</a></h3>
-<p>All deep learning models in Darts have a parameter <code class="docutils literal notranslate"><span class="pre">num_loader_workers</span></code> in their <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions, which
-configures the <code class="docutils literal notranslate"><span class="pre">num_workers</span></code> parameter in the PyTorch <code class="docutils literal notranslate"><span class="pre">DataLoaders</span></code>. By default
-it is set to 0, which means that the main process will also take care of loading the data. Setting <code class="docutils literal notranslate"><span class="pre">num_workers</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> will use additional workers to load the data. This typically incurs some overhead (notably increasing memory consumption), but in some cases it can also substantially improve performance.
+<p>All deep learning models in Darts have a parameter <code class="docutils literal notranslate"><span class="pre">dataloader_kwargs</span></code> in their <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions, which configures the PyTorch DataLoaders. The <code class="docutils literal notranslate"><span class="pre">num_workers</span></code> parameter for PyTorch DataLoaders can be set using the <code class="docutils literal notranslate"><span class="pre">num_workers</span></code> key in the <code class="docutils literal notranslate"><span class="pre">dataloader_kwargs</span></code> dictionary.
+Setting <code class="docutils literal notranslate"><span class="pre">num_workers</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> will use additional workers to load the data. This typically incurs some overhead (notably increasing memory consumption), but in some cases it can also substantially improve performance.
 The ideal value depends on many factors such as the batch size, whether you are using a GPU, the number of CPU cores available, and whether
 loading the data involved I/O operations (if the series are stored on disk).</p>
 </section>

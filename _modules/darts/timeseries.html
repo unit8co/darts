@@ -34,7 +34,7 @@
     <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -215,6 +215,7 @@
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">StringIO</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">matplotlib.axes</span>
@@ -227,7 +228,11 @@
 
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.utils</span> <span class="kn">import</span> <span class="n">_build_tqdm_iterator</span><span class="p">,</span> <span class="n">_parallel_apply</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">expand_arr</span><span class="p">,</span> <span class="n">generate_index</span><span class="p">,</span> <span class="n">n_steps_between</span>
+<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">expand_arr</span><span class="p">,</span>
+    <span class="n">generate_index</span><span class="p">,</span>
+    <span class="n">n_steps_between</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
@@ -244,6 +249,7 @@
 <span class="c1"># dimension names in the DataArray</span>
 <span class="c1"># the &quot;time&quot; one can be different, if it has a name in the underlying Series/DataFrame.</span>
 <span class="n">DIMS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="s2">&quot;component&quot;</span><span class="p">,</span> <span class="s2">&quot;sample&quot;</span><span class="p">)</span>
+<span class="n">AXES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;component&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;sample&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
 
 <span class="n">VALID_INDEX_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">)</span>
 <span class="n">STATIC_COV_TAG</span> <span class="o">=</span> <span class="s2">&quot;static_covariates&quot;</span>
@@ -1039,11 +1045,25 @@
 
         <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">static_cov_cols</span> <span class="o">+</span> <span class="n">extract_value_cols</span> <span class="o">+</span> <span class="n">extract_time_col</span><span class="p">]</span>
 
-        <span class="c1"># sort on entire `df` to avoid having to sort individually later on</span>
         <span class="k">if</span> <span class="n">time_col</span><span class="p">:</span>
-            <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">time_col</span><span class="p">])</span>
-            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">time_col</span><span class="p">)</span>
-        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">time_col</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span>
+                <span class="n">df</span><span class="p">[</span><span class="n">time_col</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span>
+            <span class="p">):</span>
+                <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">time_col</span><span class="p">])</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">time_col</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">time_col</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">is_monotonic_increasing</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;UserWarning: The (time) index from `df` is monotonically increasing. This &quot;</span>
+                <span class="s2">&quot;results in time series groups with non-overlapping (time) index. You can ignore this warning if the &quot;</span>
+                <span class="s2">&quot;index represents the actual index of each individual time series group.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># sort on entire `df` to avoid having to sort individually later on</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
 
         <span class="n">groups</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">group_cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">group_cols</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">group_cols</span><span class="p">)</span>
 
@@ -1422,7 +1442,7 @@
 <span class="sd">        TimeSeries</span>
 <span class="sd">            The time series object converted from the JSON String</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span><span class="n">json_str</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;split&quot;</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span><span class="n">StringIO</span><span class="p">(</span><span class="n">json_str</span><span class="p">),</span> <span class="n">orient</span><span class="o">=</span><span class="s2">&quot;split&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span>
             <span class="n">df</span><span class="p">,</span> <span class="n">static_covariates</span><span class="o">=</span><span class="n">static_covariates</span><span class="p">,</span> <span class="n">hierarchy</span><span class="o">=</span><span class="n">hierarchy</span>
         <span class="p">)</span></div>
@@ -1518,14 +1538,19 @@
         <span class="p">)</span>
 
     <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The shape of the series (n_timesteps, n_components, n_samples).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">n_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Number of samples contained in the series.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">sample</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">AXES</span><span class="p">[</span><span class="s2">&quot;sample&quot;</span><span class="p">]]</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">n_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Number of components (dimensions) contained in the series.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">component</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">AXES</span><span class="p">[</span><span class="s2">&quot;component&quot;</span><span class="p">]]</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">width</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
@@ -1535,12 +1560,12 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">n_timesteps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Number of time steps in the series.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">AXES</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]]</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_deterministic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether this series is deterministic.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">AXES</span><span class="p">[</span><span class="s2">&quot;sample&quot;</span><span class="p">]]</span> <span class="o">==</span> <span class="mi">1</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_stochastic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -1555,7 +1580,7 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_univariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether this series is univariate.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">==</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">AXES</span><span class="p">[</span><span class="s2">&quot;component&quot;</span><span class="p">]]</span> <span class="o">==</span> <span class="mi">1</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">freq</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DateOffset</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
@@ -3015,10 +3040,10 @@
             <span class="s2">&quot;Both series must have the same number of components.&quot;</span><span class="p">,</span>
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_datetime_index</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">raise_if_not</span><span class="p">(</span>
                 <span class="n">other</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
-                <span class="s2">&quot;Appended TimeSeries must start one time step after current one.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Appended TimeSeries must start one (time) step after current one.&quot;</span><span class="p">,</span>
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
 
@@ -3052,17 +3077,28 @@
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A new TimeSeries with the new values appended</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_datetime_index</span><span class="p">:</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span>
-                <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)],</span>
-                <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">,</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">values</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">expand_arr</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">ndim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">DIMS</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The (expanded) values must have the same number of components and samples &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;(second and third dims) as the series to append to. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Received shape: </span><span class="si">{</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, expected: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span>
-                <span class="n">start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">,</span>
-                <span class="n">stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">,</span>
-                <span class="n">step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">,</span>
-            <span class="p">)</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span>
+            <span class="n">start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+            <span class="n">length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span>
+            <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span>
+
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
                 <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
@@ -3111,21 +3147,27 @@
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A new TimeSeries with the new values prepended.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_datetime_index</span><span class="p">:</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">-</span> <span class="n">i</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span>
-                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
-                <span class="p">],</span>
-                <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">,</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">values</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">expand_arr</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">ndim</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">DIMS</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The (expanded) values must have the same number of components and samples &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;(second and third dims) as the series to prepend to. &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Received shape: </span><span class="si">{</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, expected: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span>
-                <span class="n">step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
-            <span class="p">)</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span>
+            <span class="n">end</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+            <span class="n">length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span>
+            <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepend</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
@@ -3415,6 +3457,12 @@
 
 <span class="sd">        This works only for deterministic time series (i.e., made of 1 sample).</span>
 
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        0-indexing is enforced across all the encodings, see</span>
+<span class="sd">        :meth:`datetime_attribute_timeseries() &lt;darts.utils.timeseries_generation.datetime_attribute_timeseries&gt;`</span>
+<span class="sd">        for more information.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        attribute</span>
@@ -3493,7 +3541,9 @@
             <span class="p">)</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="TimeSeries.resample"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.resample">[docs]</a>    <span class="k">def</span> <span class="nf">resample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freq</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;pad&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+<div class="viewcode-block" id="TimeSeries.resample"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.resample">[docs]</a>    <span class="k">def</span> <span class="nf">resample</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">freq</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DateOffset</span><span class="p">],</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;pad&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build a reindexed ``TimeSeries`` with a given frequency.</span>
 <span class="sd">        Provided method is used to fill holes in reindexed TimeSeries, by default &#39;pad&#39;.</span>
@@ -3502,7 +3552,7 @@
 <span class="sd">        ----------</span>
 <span class="sd">        freq</span>
 <span class="sd">            The new time difference between two adjacent entries in the returned TimeSeries.</span>
-<span class="sd">            A DateOffset alias is expected.</span>
+<span class="sd">            Expects a `pandas.DateOffset` or `DateOffset` alias.</span>
 <span class="sd">        method:</span>
 <span class="sd">            Method to fill holes in reindexed TimeSeries (note this does not fill NaNs that already were present):</span>
 
@@ -3545,6 +3595,8 @@
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A reindexed TimeSeries with given frequency.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">freq</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DateOffset</span><span class="p">):</span>
+            <span class="n">freq</span> <span class="o">=</span> <span class="n">freq</span><span class="o">.</span><span class="n">freqstr</span>
 
         <span class="n">resample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span>
             <span class="n">indexer</span><span class="o">=</span><span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">:</span> <span class="n">freq</span><span class="p">},</span>
@@ -4320,8 +4372,6 @@
                 <span class="n">central_series</span> <span class="o">=</span> <span class="n">comp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
 
             <span class="n">alpha</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;alpha&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="kc">None</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_deterministic</span><span class="p">:</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
             <span class="k">if</span> <span class="n">custom_labels</span><span class="p">:</span>
                 <span class="n">label_to_use</span> <span class="o">=</span> <span class="n">label</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
@@ -4333,15 +4383,18 @@
                     <span class="n">label_to_use</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">comp_name</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">label_to_use</span>
 
+            <span class="n">kwargs_central</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_deterministic</span><span class="p">:</span>
+                <span class="n">kwargs_central</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
             <span class="k">if</span> <span class="n">central_series</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="n">p</span> <span class="o">=</span> <span class="n">central_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">central_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs_central</span><span class="p">)</span>
             <span class="c1"># empty TimeSeries</span>
             <span class="k">elif</span> <span class="n">central_series</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
                     <span class="p">[],</span>
                     <span class="p">[],</span>
                     <span class="o">*</span><span class="n">args</span><span class="p">,</span>
-                    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">kwargs_central</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
@@ -4350,7 +4403,7 @@
                     <span class="n">central_series</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
                     <span class="s2">&quot;o&quot;</span><span class="p">,</span>
                     <span class="o">*</span><span class="n">args</span><span class="p">,</span>
-                    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">kwargs_central</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="n">color_used</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_color</span><span class="p">()</span> <span class="k">if</span> <span class="n">default_formatting</span> <span class="k">else</span> <span class="kc">None</span>
 
@@ -4774,11 +4827,24 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">other_vals</span> <span class="o">=</span> <span class="n">other</span>
 
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">other_vals</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
-            <span class="s2">&quot;Attempted to perform operation on two TimeSeries of unequal shapes.&quot;</span><span class="p">,</span>
-            <span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="n">t</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">other_shape</span> <span class="o">=</span> <span class="n">other_vals</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+            <span class="c1"># can combine arrays if shapes are equal (t, c, s)</span>
+            <span class="n">other_shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+            <span class="c1"># or broadcast [t, 1, 1] onto [t, c, s]</span>
+            <span class="ow">or</span> <span class="n">other_shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># or broadcast [t, c, 1] onto [t, c, s]</span>
+            <span class="ow">or</span> <span class="n">other_shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># or broadcast [t, 1, s] onto [t, c, s]</span>
+            <span class="ow">or</span> <span class="n">other_shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">s</span><span class="p">),</span>
+        <span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Attempted to perform operation on two TimeSeries of unequal shapes.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="n">new_xa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">new_xa</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">combine_fn</span><span class="p">(</span><span class="n">new_xa</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">other_vals</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span>
@@ -5154,12 +5220,18 @@
             <span class="p">)</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">xa_</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
+                <span class="n">other_vals</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">data_array</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">):</span>
+                <span class="n">other_vals</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">values</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">other_vals</span> <span class="o">=</span> <span class="n">other</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">other_vals</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
                 <span class="n">raise_log</span><span class="p">(</span>
                     <span class="ne">ZeroDivisionError</span><span class="p">(</span><span class="s2">&quot;Cannot divide by a TimeSeries with a value 0.&quot;</span><span class="p">),</span>
                     <span class="n">logger</span><span class="p">,</span>
                 <span class="p">)</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_arrays</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">:</span> <span class="n">s1</span> <span class="o">/</span> <span class="n">s2</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_arrays</span><span class="p">(</span><span class="n">other_vals</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">:</span> <span class="n">s1</span> <span class="o">/</span> <span class="n">s2</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">raise_log</span><span class="p">(</span>
                 <span class="ne">TypeError</span><span class="p">(</span>

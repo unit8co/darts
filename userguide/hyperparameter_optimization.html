@@ -35,7 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -397,37 +397,50 @@ for a more complete example.</p>
 <section id="hyperparameter-optimization-with-ray-tune">
 <h2>Hyperparameter optimization with Ray Tune<a class="headerlink" href="#hyperparameter-optimization-with-ray-tune" title="Permalink to this heading">¶</a></h2>
 <p><a class="reference external" href="https://docs.ray.io/en/latest/tune/examples/tune-pytorch-lightning.html">Ray Tune</a> is another option for hyperparameter optimization with automatic pruning.</p>
-<p>Here is an example of how to use Ray Tune to with the <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code> model using the <a class="reference external" href="https://blog.ml.cmu.edu/2018/12/12/massively-parallel-hyperparameter-optimization/">Asynchronous Hyperband scheduler</a>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<p>Here is an example of how to use Ray Tune to with the <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code> model using the <a class="reference external" href="https://blog.ml.cmu.edu/2018/12/12/massively-parallel-hyperparameter-optimization/">Asynchronous Hyperband scheduler</a>. The example was tested with ray version <code class="docutils literal notranslate"><span class="pre">ray==2.32.0</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pytorch_lightning</span> <span class="k">as</span> <span class="nn">pl</span>
 <span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks</span> <span class="kn">import</span> <span class="n">EarlyStopping</span>
 <span class="kn">from</span> <span class="nn">ray</span> <span class="kn">import</span> <span class="n">tune</span>
+<span class="kn">from</span> <span class="nn">ray.train</span> <span class="kn">import</span> <span class="n">RunConfig</span>
 <span class="kn">from</span> <span class="nn">ray.tune</span> <span class="kn">import</span> <span class="n">CLIReporter</span>
-<span class="kn">from</span> <span class="nn">ray.tune.integration.pytorch_lightning</span> <span class="kn">import</span> <span class="n">TuneReportCallback</span>
+<span class="kn">from</span> <span class="nn">ray.tune.integration.pytorch_lightning</span> <span class="kn">import</span> <span class="n">TuneReportCheckpointCallback</span>
 <span class="kn">from</span> <span class="nn">ray.tune.schedulers</span> <span class="kn">import</span> <span class="n">ASHAScheduler</span>
-<span class="kn">from</span> <span class="nn">torchmetrics</span> <span class="kn">import</span> <span class="n">MeanAbsoluteError</span><span class="p">,</span> <span class="n">MeanAbsolutePercentageError</span><span class="p">,</span> <span class="n">MetricCollection</span>
+<span class="kn">from</span> <span class="nn">ray.tune.tuner</span> <span class="kn">import</span> <span class="n">Tuner</span>
+<span class="kn">from</span> <span class="nn">torchmetrics</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MeanAbsoluteError</span><span class="p">,</span>
+    <span class="n">MeanAbsolutePercentageError</span><span class="p">,</span>
+    <span class="n">MetricCollection</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
 <span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
 <span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NBEATSModel</span>
 
+
 <span class="k">def</span> <span class="nf">train_model</span><span class="p">(</span><span class="n">model_args</span><span class="p">,</span> <span class="n">callbacks</span><span class="p">,</span> <span class="n">train</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
-    <span class="n">torch_metrics</span> <span class="o">=</span> <span class="n">MetricCollection</span><span class="p">([</span><span class="n">MeanAbsolutePercentageError</span><span class="p">(),</span> <span class="n">MeanAbsoluteError</span><span class="p">()])</span>
+    <span class="n">torch_metrics</span> <span class="o">=</span> <span class="n">MetricCollection</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">MeanAbsolutePercentageError</span><span class="p">(),</span> <span class="n">MeanAbsoluteError</span><span class="p">()]</span>
+    <span class="p">)</span>
     <span class="c1"># Create the model using model_args from Ray Tune</span>
     <span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span>
         <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
-        <span class="n">n_epochs</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+        <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
         <span class="n">torch_metrics</span><span class="o">=</span><span class="n">torch_metrics</span><span class="p">,</span>
         <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;callbacks&quot;</span><span class="p">:</span> <span class="n">callbacks</span><span class="p">,</span> <span class="s2">&quot;enable_progress_bar&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
-        <span class="o">**</span><span class="n">model_args</span><span class="p">)</span>
+        <span class="o">**</span><span class="n">model_args</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
         <span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
         <span class="n">val_series</span><span class="o">=</span><span class="n">val</span><span class="p">,</span>
     <span class="p">)</span>
 
+
 <span class="c1"># Read data:</span>
-<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
 <span class="c1"># Create training and validation sets:</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="mi">1957</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
@@ -443,10 +456,16 @@ for a more complete example.</p>
     <span class="n">monitor</span><span class="o">=</span><span class="s2">&quot;val_MeanAbsolutePercentageError&quot;</span><span class="p">,</span>
     <span class="n">patience</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
     <span class="n">min_delta</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
-    <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">,</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;min&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 
+
 <span class="c1"># set up ray tune callback</span>
+<span class="k">class</span> <span class="nc">TuneReportCallback</span><span class="p">(</span><span class="n">TuneReportCheckpointCallback</span><span class="p">,</span> <span class="n">pl</span><span class="o">.</span><span class="n">Callback</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
 <span class="n">tune_callback</span> <span class="o">=</span> <span class="n">TuneReportCallback</span><span class="p">(</span>
     <span class="p">{</span>
         <span class="s2">&quot;loss&quot;</span><span class="p">:</span> <span class="s2">&quot;val_loss&quot;</span><span class="p">,</span>
@@ -454,6 +473,17 @@ for a more complete example.</p>
     <span class="p">},</span>
     <span class="n">on</span><span class="o">=</span><span class="s2">&quot;validation_end&quot;</span><span class="p">,</span>
 <span class="p">)</span>
+
+<span class="c1"># Define the trainable function that will be tuned by Ray Tune</span>
+<span class="n">train_fn_with_parameters</span> <span class="o">=</span> <span class="n">tune</span><span class="o">.</span><span class="n">with_parameters</span><span class="p">(</span>
+    <span class="n">train_model</span><span class="p">,</span>
+    <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">tune_callback</span><span class="p">,</span> <span class="n">my_stopper</span><span class="p">],</span>
+    <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
+    <span class="n">val</span><span class="o">=</span><span class="n">val</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Set the resources to be used for each trial (disable GPU, if you don&#39;t have one)</span>
+<span class="n">resources_per_trial</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cpu&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span> <span class="s2">&quot;gpu&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 
 <span class="c1"># define the hyperparameter space</span>
 <span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
@@ -463,38 +493,33 @@ for a more complete example.</p>
     <span class="s2">&quot;dropout&quot;</span><span class="p">:</span> <span class="n">tune</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">),</span>
 <span class="p">}</span>
 
+<span class="c1"># the number of combinations to try</span>
+<span class="n">num_samples</span> <span class="o">=</span> <span class="mi">10</span>
+
+<span class="c1"># Configure the ASHA scheduler</span>
+<span class="n">scheduler</span> <span class="o">=</span> <span class="n">ASHAScheduler</span><span class="p">(</span><span class="n">max_t</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">grace_period</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">reduction_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c1"># Configure the CLI reporter to display the progress</span>
 <span class="n">reporter</span> <span class="o">=</span> <span class="n">CLIReporter</span><span class="p">(</span>
     <span class="n">parameter_columns</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
     <span class="n">metric_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">,</span> <span class="s2">&quot;MAPE&quot;</span><span class="p">,</span> <span class="s2">&quot;training_iteration&quot;</span><span class="p">],</span>
 <span class="p">)</span>
 
-<span class="n">resources_per_trial</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cpu&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span> <span class="s2">&quot;gpu&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
-
-<span class="c1"># the number of combinations to try</span>
-<span class="n">num_samples</span> <span class="o">=</span> <span class="mi">10</span>
-
-<span class="n">scheduler</span> <span class="o">=</span> <span class="n">ASHAScheduler</span><span class="p">(</span><span class="n">max_t</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">grace_period</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">reduction_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-
-<span class="n">train_fn_with_parameters</span> <span class="o">=</span> <span class="n">tune</span><span class="o">.</span><span class="n">with_parameters</span><span class="p">(</span>
-    <span class="n">train_model</span><span class="p">,</span> <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">my_stopper</span><span class="p">,</span> <span class="n">tune_callback</span><span class="p">],</span> <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="n">val</span><span class="p">,</span>
+<span class="c1"># Create the Tuner object and run the hyperparameter search</span>
+<span class="n">tuner</span> <span class="o">=</span> <span class="n">Tuner</span><span class="p">(</span>
+    <span class="n">trainable</span><span class="o">=</span><span class="n">tune</span><span class="o">.</span><span class="n">with_resources</span><span class="p">(</span>
+        <span class="n">train_fn_with_parameters</span><span class="p">,</span> <span class="n">resources</span><span class="o">=</span><span class="n">resources_per_trial</span>
+    <span class="p">),</span>
+    <span class="n">param_space</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+    <span class="n">tune_config</span><span class="o">=</span><span class="n">tune</span><span class="o">.</span><span class="n">TuneConfig</span><span class="p">(</span>
+        <span class="n">metric</span><span class="o">=</span><span class="s2">&quot;MAPE&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;min&quot;</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span> <span class="n">scheduler</span><span class="o">=</span><span class="n">scheduler</span>
+    <span class="p">),</span>
+    <span class="n">run_config</span><span class="o">=</span><span class="n">RunConfig</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;tune_darts&quot;</span><span class="p">,</span> <span class="n">progress_reporter</span><span class="o">=</span><span class="n">reporter</span><span class="p">),</span>
 <span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">tuner</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
 
-<span class="c1"># optimize hyperparameters by minimizing the MAPE on the validation set</span>
-<span class="n">analysis</span> <span class="o">=</span> <span class="n">tune</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-    <span class="n">train_fn_with_parameters</span><span class="p">,</span>
-    <span class="n">resources_per_trial</span><span class="o">=</span><span class="n">resources_per_trial</span><span class="p">,</span>
-    <span class="c1"># Using a metric instead of loss allows for</span>
-    <span class="c1"># comparison between different likelihood or loss functions.</span>
-    <span class="n">metric</span><span class="o">=</span><span class="s2">&quot;MAPE&quot;</span><span class="p">,</span>  <span class="c1"># any value in TuneReportCallback.</span>
-    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;min&quot;</span><span class="p">,</span>
-    <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
-    <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
-    <span class="n">scheduler</span><span class="o">=</span><span class="n">scheduler</span><span class="p">,</span>
-    <span class="n">progress_reporter</span><span class="o">=</span><span class="n">reporter</span><span class="p">,</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;tune_darts&quot;</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Best hyperparameters found were: &quot;</span><span class="p">,</span> <span class="n">analysis</span><span class="o">.</span><span class="n">best_config</span><span class="p">)</span>
+<span class="c1"># Print the best hyperparameters found</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Best hyperparameters found were: &quot;</span><span class="p">,</span> <span class="n">results</span><span class="o">.</span><span class="n">get_best_result</span><span class="p">()</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>

@@ -35,7 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -224,6 +224,11 @@
      </i>
     </label>
     <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.iqr_detector.html">
+       Interquartile Range (IQR) Detector
+      </a>
+     </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.detectors.quantile_detector.html">
        Quantile Detector
@@ -857,8 +862,11 @@
                 
   <span class="target" id="module-darts.metrics"></span><section id="metrics">
 <h1>Metrics<a class="headerlink" href="#metrics" title="Permalink to this heading">¶</a></h1>
-<dl class="simple">
-<dt>For deterministic forecasts (point predictions with <cite>num_samples == 1</cite>):</dt><dd><ul class="simple">
+<p>For deterministic forecasts (point predictions with <cite>num_samples == 1</cite>), probabilistic forecasts (<cite>num_samples &gt; 1</cite>),
+and quantile forecasts. For probablistic and quantile forecasts, use parameter <cite>q</cite> to define the quantile(s) to
+compute the deterministic metrics on:</p>
+<blockquote>
+<div><ul class="simple">
 <li><dl class="simple">
 <dt>Aggregated over time:</dt><dd><dl class="simple">
 <dt>Absolute metrics:</dt><dd><ul>
@@ -910,12 +918,14 @@
 </dl>
 </li>
 </ul>
-</dd>
+</div></blockquote>
+<dl class="simple">
 <dt>For probabilistic forecasts (storchastic predictions with <cite>num_samples &gt;&gt; 1</cite>):</dt><dd><ul class="simple">
 <li><dl class="simple">
 <dt>Aggregated over time:</dt><dd><ul>
 <li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.mql" title="darts.metrics.metrics.mql"><code class="xref py py-func docutils literal notranslate"><span class="pre">MQL</span></code></a>: Mean Quantile Loss</p></li>
 <li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.qr" title="darts.metrics.metrics.qr"><code class="xref py py-func docutils literal notranslate"><span class="pre">QR</span></code></a>: Quantile Risk</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.miw" title="darts.metrics.metrics.miw"><code class="xref py py-func docutils literal notranslate"><span class="pre">MIW</span></code></a>: Mean Interval Width</p></li>
 </ul>
 </dd>
 </dl>
@@ -923,6 +933,7 @@
 <li><dl class="simple">
 <dt>Per time step:</dt><dd><ul>
 <li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.ql" title="darts.metrics.metrics.ql"><code class="xref py py-func docutils literal notranslate"><span class="pre">QL</span></code></a>: Quantile Loss</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.iw" title="darts.metrics.metrics.iw"><code class="xref py py-func docutils literal notranslate"><span class="pre">IW</span></code></a>: Interval Width</p></li>
 </ul>
 </dd>
 </dl>

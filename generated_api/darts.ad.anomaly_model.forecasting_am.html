@@ -35,7 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -224,6 +224,11 @@
      </i>
     </label>
     <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.iqr_detector.html">
+       Interquartile Range (IQR) Detector
+      </a>
+     </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.detectors.quantile_detector.html">
        Quantile Detector
@@ -895,7 +900,7 @@ one of the scorers and output a list of <cite>N</cite> anomaly scores <cite>Time
 <td><p>Whether any of the Scorers is trainable.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.scorers_are_univariate" title="darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.scorers_are_univariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scorers_are_univariate</span></code></a></p></td>
-<td><p>Whether any of the Scorers is trainable.</p></td>
+<td><p>Whether any of the Scorers is univariate.</p></td>
 </tr>
 </tbody>
 </table>
@@ -959,7 +964,8 @@ deterministic models.</p></li>
 <li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to print progress.</p></li>
 <li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to show warnings related to historical forecasts optimization, or parameters <cite>start</cite> and
 <cite>train_length</cite>.</p></li>
-<li><p><strong>enable_optimization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the optimized version of historical_forecasts when supported and available.</p></li>
+<li><p><strong>enable_optimization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the optimized version of historical_forecasts when supported and available.
+Default: <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
 <li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘AUC_ROC’, ‘AUC_PR’]) – The name of the metric function to use. Must be one of “AUC_ROC” (Area Under the
 Receiver Operating Characteristic Curve) and “AUC_PR” (Average Precision from scores).
 Default: “AUC_ROC”.</p></li>
@@ -1020,7 +1026,8 @@ deterministic models.</p></li>
 <li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to print progress.</p></li>
 <li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to show warnings related to historical forecasts optimization, or parameters <cite>start</cite> and
 <cite>train_length</cite>.</p></li>
-<li><p><strong>enable_optimization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the optimized version of historical_forecasts when supported and available.</p></li>
+<li><p><strong>enable_optimization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the optimized version of historical_forecasts when supported and available.
+Default: <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
 <li><p><strong>model_fit_kwargs</strong> – Parameters to be passed on to the forecast model <cite>fit()</cite> method.</p></li>
 </ul>
 </dd>
@@ -1068,7 +1075,8 @@ deterministic models.</p></li>
 <li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to print progress.</p></li>
 <li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to show warnings related to historical forecasts optimization, or parameters <cite>start</cite> and
 <cite>train_length</cite>.</p></li>
-<li><p><strong>enable_optimization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the optimized version of historical_forecasts when supported and available.</p></li>
+<li><p><strong>enable_optimization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the optimized version of historical_forecasts when supported and available.
+Default: <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1114,7 +1122,8 @@ deterministic models.</p></li>
 <li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to print progress.</p></li>
 <li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to show warnings related to historical forecasts optimization, or parameters <cite>start</cite> and
 <cite>train_length</cite>.</p></li>
-<li><p><strong>enable_optimization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the optimized version of historical_forecasts when supported and available.</p></li>
+<li><p><strong>enable_optimization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the optimized version of historical_forecasts when supported and available.
+Default: <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
 <li><p><strong>return_model_prediction</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to return the forecasting model prediction along with the anomaly scores.</p></li>
 </ul>
 </dd>
@@ -1147,7 +1156,7 @@ The outer sequence is over the series, and inner sequence is over the scorers.</
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.scorers_are_univariate">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">scorers_are_univariate</span></span><a class="headerlink" href="#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.scorers_are_univariate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Whether any of the Scorers is trainable.</p>
+<dd><p>Whether any of the Scorers is univariate.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1195,7 +1204,8 @@ deterministic models.</p></li>
 <li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to print progress.</p></li>
 <li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to show warnings related to historical forecasts optimization, or parameters <cite>start</cite> and
 <cite>train_length</cite>.</p></li>
-<li><p><strong>enable_optimization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the optimized version of historical_forecasts when supported and available.</p></li>
+<li><p><strong>enable_optimization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the optimized version of historical_forecasts when supported and available.
+Default: <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
 <li><p><strong>anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – The ground truth of the anomalies (1 if it is an anomaly and 0 if not).</p></li>
 <li><p><strong>names_of_scorers</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.</p></li>
 <li><p><strong>title</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Title of the figure.</p></li>

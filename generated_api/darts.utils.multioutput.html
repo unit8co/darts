@@ -35,7 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -226,6 +226,11 @@
      </i>
     </label>
     <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.iqr_detector.html">
+       Interquartile Range (IQR) Detector
+      </a>
+     </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.detectors.quantile_detector.html">
        Quantile Detector
@@ -868,6 +873,18 @@
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">MultiOutputRegressor</span></code></p>
 <p><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.utils.multioutput.MultiOutputRegressor</span></code> with a modified <code class="docutils literal notranslate"><span class="pre">fit()</span></code> method that also slices
 validation data correctly. The validation data has to be passed as parameter <code class="docutils literal notranslate"><span class="pre">eval_set</span></code> in <code class="docutils literal notranslate"><span class="pre">**fit_params</span></code>.</p>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.multioutput.MultiOutputRegressor.supports_sample_weight" title="darts.utils.multioutput.MultiOutputRegressor.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
+<td><p>Whether model supports sample weight for training.</p></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="autosummary longtable table autosummary">
 <colgroup>
@@ -1199,6 +1216,17 @@ sub-estimator of a meta-estimator, e.g. used inside a
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.multioutput.MultiOutputRegressor.supports_sample_weight">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_sample_weight</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.multioutput.MultiOutputRegressor.supports_sample_weight" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether model supports sample weight for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
 </dd>
 </dl>
 </dd></dl>

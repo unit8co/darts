@@ -34,7 +34,7 @@
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -181,7 +181,7 @@
 <span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
 <span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">getcallargs</span><span class="p">,</span> <span class="n">signature</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -240,6 +240,66 @@
     <span class="s2">&quot;us&quot;</span><span class="p">:</span> <span class="s2">&quot;us&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;U&quot;</span><span class="p">,</span>
     <span class="s2">&quot;ns&quot;</span><span class="p">:</span> <span class="s2">&quot;ns&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;N&quot;</span><span class="p">,</span>
 <span class="p">}</span>
+
+
+<div class="viewcode-block" id="likelihood_component_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.likelihood_component_names">[docs]</a><span class="k">def</span> <span class="nf">likelihood_component_names</span><span class="p">(</span>
+    <span class="n">components</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">parameter_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates formatted likelihood parameter names for components and parameter names.</span>
+
+<span class="sd">    The order of the returned names is: `[comp1_param_1, ... comp1_param_n, ..., comp_n_param_n]`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    components</span>
+<span class="sd">        A sequence of component names to add to the beginning of the returned names.</span>
+<span class="sd">    parameter_names</span>
+<span class="sd">        A sequence of likelihood parameter names to add to the end of the returned names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tgt_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">param_n</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">for</span> <span class="n">tgt_name</span> <span class="ow">in</span> <span class="n">components</span>
+        <span class="k">for</span> <span class="n">param_n</span> <span class="ow">in</span> <span class="n">parameter_names</span>
+    <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="quantile_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.quantile_names">[docs]</a><span class="k">def</span> <span class="nf">quantile_names</span><span class="p">(</span><span class="n">q</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]],</span> <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates formatted quantile names, optionally added to a component name.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    q</span>
+<span class="sd">        A float or list of floats with the quantiles to generate the names for.</span>
+<span class="sd">    component</span>
+<span class="sd">        Optionally, a component name to add to the beginning of the quantile names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># predicted quantile text format</span>
+    <span class="n">comp</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">component</span><span class="si">}</span><span class="s2">_&quot;</span> <span class="k">if</span> <span class="n">component</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">comp</span><span class="si">}</span><span class="s2">q</span><span class="si">{</span><span class="n">q</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">comp</span><span class="si">}</span><span class="s2">q</span><span class="si">{</span><span class="n">q_i</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">q_i</span> <span class="ow">in</span> <span class="n">q</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="quantile_interval_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.quantile_interval_names">[docs]</a><span class="k">def</span> <span class="nf">quantile_interval_names</span><span class="p">(</span>
+    <span class="n">q_interval</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span>
+    <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates formatted quantile interval names, optionally added to a component name.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    q_interval</span>
+<span class="sd">        A tuple or multiple tuples with the (lower bound, upper bound) of the quantile intervals.</span>
+<span class="sd">    component</span>
+<span class="sd">        Optionally, a component name to add to the beginning of the quantile names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># predicted quantile text format</span>
+    <span class="n">comp</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">component</span><span class="si">}</span><span class="s2">_&quot;</span> <span class="k">if</span> <span class="n">component</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q_interval</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">comp</span><span class="si">}</span><span class="s2">q</span><span class="si">{</span><span class="n">q_interval</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_q</span><span class="si">{</span><span class="n">q_interval</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">comp</span><span class="si">}</span><span class="s2">q</span><span class="si">{</span><span class="n">q_lo</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_q</span><span class="si">{</span><span class="n">q_hi</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">q_lo</span><span class="p">,</span> <span class="n">q_hi</span> <span class="ow">in</span> <span class="n">q_interval</span><span class="p">]</span></div>
 
 
 <span class="k">def</span> <span class="nf">_build_tqdm_iterator</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">verbose</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -604,8 +664,8 @@
 
 
 <div class="viewcode-block" id="generate_index"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.generate_index">[docs]</a><span class="k">def</span> <span class="nf">generate_index</span><span class="p">(</span>
-    <span class="n">start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">end</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">end</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">freq</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DateOffset</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -616,7 +676,7 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    start</span>
-<span class="sd">        The start of the returned index. If a pandas Timestamp is passed, the index will be a pandas</span>
+<span class="sd">        The start of the returned index. If a pandas Timestamp or a date string is passed, the index will be a pandas</span>
 <span class="sd">        DatetimeIndex. If an integer is passed, the index will be a pandas RangeIndex index. Works only with</span>
 <span class="sd">        either `length` or `end`.</span>
 <span class="sd">    end</span>
@@ -651,6 +711,9 @@
         <span class="s2">&quot;index generation with `start` and `end` requires equal object types of `start` and `end`&quot;</span><span class="p">,</span>
         <span class="n">logger</span><span class="p">,</span>
     <span class="p">)</span>
+
+    <span class="n">start</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">start</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">end</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">end</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
         <span class="n">freq</span> <span class="o">=</span> <span class="s2">&quot;D&quot;</span> <span class="k">if</span> <span class="n">freq</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">freq</span>

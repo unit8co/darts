@@ -34,7 +34,7 @@
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
@@ -850,11 +850,19 @@
     <span class="k">if</span> <span class="n">one_hot</span><span class="p">:</span>
         <span class="n">values_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
         <span class="c1"># fill missing columns (in case not all values appear in time_index)</span>
-        <span class="n">attribute_range</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_values_dict</span><span class="p">[</span><span class="n">attribute</span><span class="p">])</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">attribute_range</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">values_df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
-                <span class="n">values_df</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">values_df</span> <span class="o">=</span> <span class="n">values_df</span><span class="p">[</span><span class="n">attribute_range</span><span class="p">]</span>
+        <span class="n">attribute_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">num_values_dict</span><span class="p">[</span><span class="n">attribute</span><span class="p">])</span>
+        <span class="n">is_missing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">attribute_range</span><span class="p">,</span> <span class="n">values_df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">invert</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># if there are attribute_range columns that are</span>
+        <span class="c1"># not in values_df.columns.values</span>
+        <span class="k">if</span> <span class="n">is_missing</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">dict_0</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="kc">False</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">attribute_range</span><span class="p">[</span><span class="n">is_missing</span><span class="p">]}</span>
+            <span class="c1"># Make a dataframe from the dictionary and concatenate it</span>
+            <span class="c1"># to the values values_df  in which the existing columns</span>
+            <span class="n">values_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">values_df</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">dict_0</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">values_df</span><span class="o">.</span><span class="n">index</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">values_df</span> <span class="o">=</span> <span class="n">values_df</span><span class="p">[</span><span class="n">attribute_range</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="n">with_columns</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">with_columns</span> <span class="o">=</span> <span class="p">[</span>

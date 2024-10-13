@@ -34,7 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -323,8 +323,9 @@
 <span class="sd">            Control the randomness in the fitting procedure and for sampling.</span>
 <span class="sd">            Default: ``None``.</span>
 <span class="sd">        multi_models</span>
-<span class="sd">            If True, a separate model will be trained for each future lag to predict. If False, a single model is</span>
-<span class="sd">            trained to predict at step &#39;output_chunk_length&#39; in the future. Default: True.</span>
+<span class="sd">            If True, a separate model will be trained for each future lag to predict. If False, a single model</span>
+<span class="sd">            is trained to predict all the steps in &#39;output_chunk_length&#39; (features lags are shifted back by</span>
+<span class="sd">            `output_chunk_length - n` for each step `n`). Default: True.</span>
 <span class="sd">        use_static_covariates</span>
 <span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
 <span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>
@@ -368,7 +369,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">=</span> <span class="n">likelihood</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood</span> <span class="o">=</span> <span class="n">likelihood</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># parse likelihood</span>

@@ -35,7 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -1621,7 +1621,7 @@ computing sMAPEs...
     <span class="p">},</span>
 <span class="p">)</span>
 
-<span class="n">nbeats_model_air</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">air_train</span><span class="p">,</span> <span class="n">num_loader_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="n">NUM_EPOCHS</span><span class="p">)</span>
+<span class="n">nbeats_model_air</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">air_train</span><span class="p">,</span> <span class="n">dataloader_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;num_workers&quot;</span><span class="p">:</span><span class="mi">4</span><span class="p">},</span> <span class="n">epochs</span><span class="o">=</span><span class="n">NUM_EPOCHS</span><span class="p">)</span>
 
 <span class="c1"># get predictions</span>
 <span class="n">nb_preds</span> <span class="o">=</span> <span class="n">nbeats_model_air</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">air_train</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">)</span>
@@ -1825,7 +1825,7 @@ done. There are 47087 series, with average training length 201.25202285131778
 <span class="c1"># Train</span>
 <span class="n">nbeats_model_m4</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
     <span class="n">m4_train</span><span class="p">,</span>
-    <span class="n">num_loader_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">dataloader_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;num_workers&quot;</span><span class="p">:</span><span class="mi">4</span><span class="p">},</span>
     <span class="n">epochs</span><span class="o">=</span><span class="n">NUM_EPOCHS</span><span class="p">,</span>
     <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">MAX_SAMPLES_PER_TS</span><span class="p">,</span>
 <span class="p">)</span>

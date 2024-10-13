@@ -34,7 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -177,8 +177,9 @@
 <span class="sd">Ensemble Model Base Class</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="p">(</span>
@@ -186,8 +187,14 @@
     <span class="n">GlobalForecastingModel</span><span class="p">,</span>
     <span class="n">LocalForecastingModel</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.models.utils</span> <span class="kn">import</span> <span class="n">TORCH_AVAILABLE</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
 <span class="kn">from</span> <span class="nn">darts.utils.ts_utils</span> <span class="kn">import</span> <span class="n">series2seq</span>
+
+<span class="k">if</span> <span class="n">TORCH_AVAILABLE</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">TorchForecastingModel</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">TorchForecastingModel</span> <span class="o">=</span> <span class="kc">None</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -551,6 +558,74 @@
                 <span class="n">pred</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_samples_reduction</span><span class="p">)</span> <span class="k">for</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">predictions</span>
             <span class="p">]</span>
         <span class="k">return</span> <span class="n">predictions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">is_single_series</span> <span class="k">else</span> <span class="n">predictions</span>
+
+<div class="viewcode-block" id="EnsembleModel.save"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.ensemble_model.html#darts.models.forecasting.ensemble_model.EnsembleModel.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">BinaryIO</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">pkl_kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Saves the ensemble model under a given path or file handle.</span>
+
+<span class="sd">        Additionally, two files are stored for each `TorchForecastingModel` under the forecasting models.</span>
+
+<span class="sd">        Example for saving and loading a :class:`RegressionEnsembleModel`:</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                from darts.models import RegressionEnsembleModel, LinearRegressionModel, TiDEModel</span>
+
+<span class="sd">                model = RegressionEnsembleModel(</span>
+<span class="sd">                    forecasting_models = [</span>
+<span class="sd">                        LinearRegressionModel(lags=4),</span>
+<span class="sd">                        TiDEModel(input_chunk_length=4, output_chunk_length=4),</span>
+<span class="sd">                        ],</span>
+<span class="sd">                        regression_train_n_points=10,</span>
+<span class="sd">                )</span>
+
+<span class="sd">                model.save(&quot;my_ensemble_model.pkl&quot;)</span>
+<span class="sd">                model_loaded = RegressionEnsembleModel.load(&quot;my_ensemble_model.pkl&quot;)</span>
+<span class="sd">            ..</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path</span>
+<span class="sd">            Path or file handle under which to save the ensemble model at its current state. If no path is specified,</span>
+<span class="sd">            the ensemble model is automatically saved under ``&quot;{RegressionEnsembleModel}_{YYYY-mm-dd_HH_MM_SS}.pkl&quot;``.</span>
+<span class="sd">            If the i-th model of `forecasting_models` is a TorchForecastingModel, two files (model object and</span>
+<span class="sd">            checkpoint) are saved under ``&quot;{path}.{ithModelClass}_{i}.pt&quot;`` and ``&quot;{path}.{ithModelClass}_{i}.ckpt&quot;``.</span>
+<span class="sd">        pkl_kwargs</span>
+<span class="sd">            Keyword arguments passed to `pickle.dump()`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># default path</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_save_path</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;.pkl&quot;</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">**</span><span class="n">pkl_kwargs</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">TORCH_AVAILABLE</span> <span class="ow">and</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="n">TorchForecastingModel</span><span class="p">):</span>
+                <span class="n">path_tfm</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">.pt&quot;</span>
+                <span class="n">m</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path_tfm</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EnsembleModel.load"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.ensemble_model.html#darts.models.forecasting.ensemble_model.EnsembleModel.load">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">BinaryIO</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;EnsembleModel&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Loads the ensemble model from a given path or file handle.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path</span>
+<span class="sd">            Path or file handle from which to load the ensemble model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">model</span><span class="p">:</span> <span class="n">EnsembleModel</span> <span class="o">=</span> <span class="n">GlobalForecastingModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">TORCH_AVAILABLE</span> <span class="ow">and</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">m</span><span class="p">),</span> <span class="n">TorchForecastingModel</span><span class="p">):</span>
+                <span class="n">path_tfm</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">m</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">.pt&quot;</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">TorchForecastingModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path_tfm</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span></div>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>

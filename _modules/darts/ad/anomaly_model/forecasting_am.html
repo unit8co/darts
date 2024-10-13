@@ -34,7 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -307,6 +307,7 @@
 <span class="sd">            `train_length`.</span>
 <span class="sd">        enable_optimization</span>
 <span class="sd">            Whether to use the optimized version of historical_forecasts when supported and available.</span>
+<span class="sd">            Default: ``True``.</span>
 <span class="sd">        model_fit_kwargs</span>
 <span class="sd">            Parameters to be passed on to the forecast model `fit()` method.</span>
 
@@ -387,6 +388,7 @@
 <span class="sd">            `train_length`.</span>
 <span class="sd">        enable_optimization</span>
 <span class="sd">            Whether to use the optimized version of historical_forecasts when supported and available.</span>
+<span class="sd">            Default: ``True``.</span>
 <span class="sd">        return_model_prediction</span>
 <span class="sd">            Whether to return the forecasting model prediction along with the anomaly scores.</span>
 
@@ -474,6 +476,7 @@
 <span class="sd">            `train_length`.</span>
 <span class="sd">        enable_optimization</span>
 <span class="sd">            Whether to use the optimized version of historical_forecasts when supported and available.</span>
+<span class="sd">            Default: ``True``.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -569,6 +572,7 @@
 <span class="sd">            `train_length`.</span>
 <span class="sd">        enable_optimization</span>
 <span class="sd">            Whether to use the optimized version of historical_forecasts when supported and available.</span>
+<span class="sd">            Default: ``True``.</span>
 <span class="sd">        metric</span>
 <span class="sd">            The name of the metric function to use. Must be one of &quot;AUC_ROC&quot; (Area Under the</span>
 <span class="sd">            Receiver Operating Characteristic Curve) and &quot;AUC_PR&quot; (Average Precision from scores).</span>
@@ -674,6 +678,7 @@
 <span class="sd">            `train_length`.</span>
 <span class="sd">        enable_optimization</span>
 <span class="sd">            Whether to use the optimized version of historical_forecasts when supported and available.</span>
+<span class="sd">            Default: ``True``.</span>
 <span class="sd">        anomalies</span>
 <span class="sd">            The ground truth of the anomalies (1 if it is an anomaly and 0 if not).</span>
 <span class="sd">        names_of_scorers</span>

@@ -35,7 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -226,6 +226,11 @@
      </i>
     </label>
     <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.iqr_detector.html">
+       Interquartile Range (IQR) Detector
+      </a>
+     </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.detectors.quantile_detector.html">
        Quantile Detector
@@ -987,22 +992,25 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.n_timesteps" title="darts.timeseries.TimeSeries.n_timesteps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_timesteps</span></code></a></p></td>
 <td><p>Number of time steps in the series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.static_covariates" title="darts.timeseries.TimeSeries.static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">static_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.shape" title="darts.timeseries.TimeSeries.shape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code></a></p></td>
+<td><p>The shape of the series (n_timesteps, n_components, n_samples).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.static_covariates" title="darts.timeseries.TimeSeries.static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">static_covariates</span></code></a></p></td>
 <td><p>Returns the static covariates contained in the series as a pandas DataFrame.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.time_dim" title="darts.timeseries.TimeSeries.time_dim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">time_dim</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.time_dim" title="darts.timeseries.TimeSeries.time_dim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">time_dim</span></code></a></p></td>
 <td><p>The name of the time dimension for this time series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.time_index" title="darts.timeseries.TimeSeries.time_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">time_index</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.time_index" title="darts.timeseries.TimeSeries.time_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">time_index</span></code></a></p></td>
 <td><p>The time index of this time series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.top_level_component" title="darts.timeseries.TimeSeries.top_level_component"><code class="xref py py-obj docutils literal notranslate"><span class="pre">top_level_component</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.top_level_component" title="darts.timeseries.TimeSeries.top_level_component"><code class="xref py py-obj docutils literal notranslate"><span class="pre">top_level_component</span></code></a></p></td>
 <td><p>The top level component name of this series, or None if the series has no hierarchy.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.top_level_series" title="darts.timeseries.TimeSeries.top_level_series"><code class="xref py py-obj docutils literal notranslate"><span class="pre">top_level_series</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.top_level_series" title="darts.timeseries.TimeSeries.top_level_series"><code class="xref py py-obj docutils literal notranslate"><span class="pre">top_level_series</span></code></a></p></td>
 <td><p>The univariate series containing the single top-level component of this series, or None if the series has no hierarchy.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.width" title="darts.timeseries.TimeSeries.width"><code class="xref py py-obj docutils literal notranslate"><span class="pre">width</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.width" title="darts.timeseries.TimeSeries.width"><code class="xref py py-obj docutils literal notranslate"><span class="pre">width</span></code></a></p></td>
 <td><p>&quot;Width&quot; (= number of components) of the series.</p></td>
 </tr>
 </tbody>
@@ -1272,6 +1280,10 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 of the time index of the series.</p>
 <p>The additional components are specified with <cite>attribute</cite>, such as ‘weekday’, ‘day’ or ‘month’.</p>
 <p>This works only for deterministic time series (i.e., made of 1 sample).</p>
+<p class="rubric">Notes</p>
+<p>0-indexing is enforced across all the encodings, see
+<a class="reference internal" href="darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="darts.utils.timeseries_generation.datetime_attribute_timeseries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">datetime_attribute_timeseries()</span></code></a>
+for more information.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -2843,8 +2855,8 @@ Provided method is used to fill holes in reindexed TimeSeries, by default ‘pad
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>freq</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The new time difference between two adjacent entries in the returned TimeSeries.
-A DateOffset alias is expected.</p></li>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DateOffset</span></code>]) – The new time difference between two adjacent entries in the returned TimeSeries.
+Expects a <cite>pandas.DateOffset</cite> or <cite>DateOffset</cite> alias.</p></li>
 <li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – <p>Method to fill holes in reindexed TimeSeries (note this does not fill NaNs that already were present):</p>
 <p>’pad’: propagate last valid observation forward to next valid</p>
 <p>’backfill’: use NEXT valid observation to fill.</p>
@@ -2906,6 +2918,17 @@ have been scaled accordingly.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.timeseries.TimeSeries.shape">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">shape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>The shape of the series (n_timesteps, n_components, n_samples).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>

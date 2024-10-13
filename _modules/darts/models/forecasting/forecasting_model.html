@@ -34,7 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -232,7 +232,12 @@
     <span class="n">get_single_series</span><span class="p">,</span>
     <span class="n">series2seq</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">generate_index</span>
+<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">generate_index</span><span class="p">,</span>
+    <span class="n">likelihood_component_names</span><span class="p">,</span>
+    <span class="n">quantile_interval_names</span><span class="p">,</span>
+    <span class="n">quantile_names</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -929,6 +934,7 @@
 <span class="sd">            Default: ``False``</span>
 <span class="sd">        enable_optimization</span>
 <span class="sd">            Whether to use the optimized version of historical_forecasts when supported and available.</span>
+<span class="sd">            Default: ``True``.</span>
 <span class="sd">        fit_kwargs</span>
 <span class="sd">            Additional arguments passed to the model `fit()` method.</span>
 <span class="sd">        predict_kwargs</span>
@@ -1368,6 +1374,8 @@
         <span class="n">reduction</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">enable_optimization</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">metric_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">fit_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">predict_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1487,6 +1495,13 @@
 <span class="sd">            Whether to print progress.</span>
 <span class="sd">        show_warnings</span>
 <span class="sd">            Whether to show warnings related to parameters `start`, and `train_length`.</span>
+<span class="sd">        predict_likelihood_parameters</span>
+<span class="sd">            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only</span>
+<span class="sd">            supported for probabilistic models with `likelihood=&quot;quantile&quot;`, `num_samples = 1` and</span>
+<span class="sd">            `n&lt;=output_chunk_length`. Default: ``False``.</span>
+<span class="sd">        enable_optimization</span>
+<span class="sd">            Whether to use the optimized version of historical_forecasts when supported and available.</span>
+<span class="sd">            Default: ``True``.</span>
 <span class="sd">        metric_kwargs</span>
 <span class="sd">            Additional arguments passed to `metric()`, such as `&#39;n_jobs&#39;` for parallelization, `&#39;component_reduction&#39;`</span>
 <span class="sd">            for reducing the component wise metrics, seasonality `&#39;m&#39;` for scaled metrics, etc. Will pass arguments to</span>
@@ -1518,9 +1533,9 @@
 <span class="sd">            An numpy array of backtest scores. For single series and one of:</span>
 
 <span class="sd">            - a single `metric` function, `historical_forecasts` generated with `last_points_only=False`</span>
-<span class="sd">              and backtest `reduction=None`. The output has shape (n forecasts,).</span>
+<span class="sd">              and backtest `reduction=None`. The output has shape (n forecasts, *).</span>
 <span class="sd">            - multiple `metric` functions and `historical_forecasts` generated with `last_points_only=False`.</span>
-<span class="sd">              The output has shape (n metrics,) when using a backtest `reduction`, and (n metrics, n forecasts)</span>
+<span class="sd">              The output has shape (*, n metrics) when using a backtest `reduction`, and (n forecasts, *, n metrics)</span>
 <span class="sd">              when `reduction=None`</span>
 <span class="sd">            - multiple uni/multivariate series including `series_reduction` and at least one of</span>
 <span class="sd">              `component_reduction=None` or `time_reduction=None` for &quot;per time step metrics&quot;</span>
@@ -1566,6 +1581,8 @@
             <span class="n">last_points_only</span><span class="o">=</span><span class="n">last_points_only</span><span class="p">,</span>
             <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
             <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
+            <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+            <span class="n">enable_optimization</span><span class="o">=</span><span class="n">enable_optimization</span><span class="p">,</span>
             <span class="n">fit_kwargs</span><span class="o">=</span><span class="n">fit_kwargs</span><span class="p">,</span>
             <span class="n">predict_kwargs</span><span class="o">=</span><span class="n">predict_kwargs</span><span class="p">,</span>
             <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
@@ -1666,22 +1683,24 @@
         <span class="c1"># get errors for each input `series`</span>
         <span class="n">backtest_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cum_len</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="c1"># errors_series with shape `(n metrics, n series specific historical forecasts)`</span>
+            <span class="c1"># errors_series with shape `(n metrics, n series specific historical forecasts, *)`</span>
             <span class="n">errors_series</span> <span class="o">=</span> <span class="n">errors</span><span class="p">[:,</span> <span class="n">cum_len</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="p">:</span> <span class="n">cum_len</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
 
             <span class="k">if</span> <span class="n">reduction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="c1"># shape `(n metrics, n forecasts)` -&gt; `(n metrics,)`</span>
+                <span class="c1"># shape `(n metrics, n forecasts, *)` -&gt; `(n metrics, *)`</span>
                 <span class="n">errors_series</span> <span class="o">=</span> <span class="n">reduction</span><span class="p">(</span><span class="n">errors_series</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">last_points_only</span><span class="p">:</span>
-                <span class="c1"># shape `(n metrics, n forecasts = 1)` -&gt; `(n metrics,)`</span>
+                <span class="c1"># shape `(n metrics, n forecasts = 1, *)` -&gt; `(n metrics, *)`</span>
                 <span class="n">errors_series</span> <span class="o">=</span> <span class="n">errors_series</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">metric</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="c1"># shape `(n metrics, *)` -&gt; `(*,)`</span>
                 <span class="n">errors_series</span> <span class="o">=</span> <span class="n">errors_series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">elif</span> <span class="ow">not</span> <span class="n">last_points_only</span> <span class="ow">and</span> <span class="n">reduction</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># shape `(n metrics, *)` -&gt; `(*, n metrics)`</span>
-                <span class="n">errors_series</span> <span class="o">=</span> <span class="n">errors_series</span><span class="o">.</span><span class="n">T</span>
+                <span class="n">errors_series</span> <span class="o">=</span> <span class="n">errors_series</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span>
+                    <span class="nb">tuple</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">errors_series</span><span class="o">.</span><span class="n">ndim</span><span class="p">))</span> <span class="o">+</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span>
+                <span class="p">)</span>
 
             <span class="n">backtest_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">errors_series</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">(</span>
@@ -2006,6 +2025,8 @@
         <span class="n">metric</span><span class="p">:</span> <span class="n">METRIC_TYPE</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">err</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">enable_optimization</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">metric_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">fit_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">predict_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2124,6 +2145,13 @@
 <span class="sd">            Whether to print progress.</span>
 <span class="sd">        show_warnings</span>
 <span class="sd">            Whether to show warnings related to parameters `start`, and `train_length`.</span>
+<span class="sd">        predict_likelihood_parameters</span>
+<span class="sd">            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only</span>
+<span class="sd">            supported for probabilistic models with `likelihood=&quot;quantile&quot;`, `num_samples = 1` and</span>
+<span class="sd">            `n&lt;=output_chunk_length`. Default: ``False``.</span>
+<span class="sd">        enable_optimization</span>
+<span class="sd">            Whether to use the optimized version of historical_forecasts when supported and available.</span>
+<span class="sd">            Default: ``True``.</span>
 <span class="sd">        metric_kwargs</span>
 <span class="sd">            Additional arguments passed to `metric()`, such as `&#39;n_jobs&#39;` for parallelization, `&#39;m&#39;` for scaled</span>
 <span class="sd">            metrics, etc. Will pass arguments only if they are present in the corresponding metric signature. Ignores</span>
@@ -2179,6 +2207,8 @@
             <span class="n">last_points_only</span><span class="o">=</span><span class="n">last_points_only</span><span class="p">,</span>
             <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
             <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
+            <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+            <span class="n">enable_optimization</span><span class="o">=</span><span class="n">enable_optimization</span><span class="p">,</span>
             <span class="n">fit_kwargs</span><span class="o">=</span><span class="n">fit_kwargs</span><span class="p">,</span>
             <span class="n">predict_kwargs</span><span class="o">=</span><span class="n">predict_kwargs</span><span class="p">,</span>
             <span class="n">overlap_end</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -2210,9 +2240,10 @@
             <span class="n">residuals</span> <span class="o">=</span> <span class="p">[[</span><span class="n">res</span><span class="p">]</span> <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">residuals</span><span class="p">]</span>
 
         <span class="c1"># sanity check residual output</span>
+        <span class="n">q</span><span class="p">,</span> <span class="n">q_interval</span> <span class="o">=</span> <span class="n">metric_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;q&quot;</span><span class="p">),</span> <span class="n">metric_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;q_interval&quot;</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">res</span><span class="p">,</span> <span class="n">fc</span> <span class="o">=</span> <span class="n">residuals</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">historical_forecasts</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fc</span><span class="p">),</span> <span class="n">fc</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">series_</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">fc</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">residuals</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">historical_forecasts</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fc</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
             <span class="n">raise_log</span><span class="p">(</span>
                 <span class="ne">ValueError</span><span class="p">(</span>
@@ -2226,13 +2257,47 @@
 
         <span class="c1"># process residuals</span>
         <span class="n">residuals_out</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">fc_list</span><span class="p">,</span> <span class="n">res_list</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">historical_forecasts</span><span class="p">,</span> <span class="n">residuals</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">series_</span><span class="p">,</span> <span class="n">fc_list</span><span class="p">,</span> <span class="n">res_list</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">historical_forecasts</span><span class="p">,</span> <span class="n">residuals</span><span class="p">):</span>
             <span class="n">res_list_out</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">q</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">q</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="k">else</span> <span class="n">q</span>
+                <span class="c1"># multi-quantile metrics yield more components</span>
+                <span class="n">comp_names</span> <span class="o">=</span> <span class="n">likelihood_component_names</span><span class="p">(</span>
+                    <span class="n">components</span><span class="o">=</span><span class="n">series_</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
+                    <span class="n">parameter_names</span><span class="o">=</span><span class="n">quantile_names</span><span class="p">(</span><span class="n">q</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="c1"># `q` and `q_interval` are mutually exclusive</span>
+            <span class="k">elif</span> <span class="n">q_interval</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># multi-quantile metrics yield more components</span>
+                <span class="n">q_interval</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="p">[</span><span class="n">q_interval</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q_interval</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="k">else</span> <span class="n">q_interval</span>
+                <span class="p">)</span>
+                <span class="n">comp_names</span> <span class="o">=</span> <span class="n">likelihood_component_names</span><span class="p">(</span>
+                    <span class="n">components</span><span class="o">=</span><span class="n">series_</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
+                    <span class="n">parameter_names</span><span class="o">=</span><span class="n">quantile_interval_names</span><span class="p">(</span><span class="n">q_interval</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">comp_names</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">for</span> <span class="n">fc</span><span class="p">,</span> <span class="n">res</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fc_list</span><span class="p">,</span> <span class="n">res_list</span><span class="p">):</span>
-                <span class="c1"># make sure all residuals have shape (n time steps, n components, n samples=1)</span>
+                <span class="c1"># make sure all residuals have shape (n time steps, n components * n quantiles, n samples=1)</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
-                    <span class="n">res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fc</span><span class="p">),</span> <span class="n">fc</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-                <span class="n">res_list_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">res</span> <span class="k">if</span> <span class="n">values_only</span> <span class="k">else</span> <span class="n">fc</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">res</span><span class="p">))</span>
+                    <span class="n">res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fc</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">values_only</span><span class="p">:</span>
+                    <span class="n">res</span> <span class="o">=</span> <span class="n">res</span>
+                <span class="k">elif</span> <span class="p">(</span><span class="n">q</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">q_interval</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="n">res</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span>
+                    <span class="mi">1</span>
+                <span class="p">]</span> <span class="o">==</span> <span class="n">fc</span><span class="o">.</span><span class="n">n_components</span><span class="p">:</span>
+                    <span class="n">res</span> <span class="o">=</span> <span class="n">fc</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># quantile (interval) metrics created different number of components;</span>
+                    <span class="c1"># create new series with unknown components</span>
+                    <span class="n">res</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+                        <span class="n">times</span><span class="o">=</span><span class="n">fc</span><span class="o">.</span><span class="n">_time_index</span><span class="p">,</span>
+                        <span class="n">values</span><span class="o">=</span><span class="n">res</span><span class="p">,</span>
+                        <span class="n">columns</span><span class="o">=</span><span class="n">comp_names</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="n">res_list_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
             <span class="n">residuals_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">res_list_out</span><span class="p">)</span>
 
         <span class="c1"># if required, reduce to `series` input type</span>

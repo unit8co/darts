@@ -8,5 +8,6 @@
         
         
         darts.ad.detectors.detectors
+        darts.ad.detectors.iqr_detector
         darts.ad.detectors.quantile_detector
         darts.ad.detectors.threshold_detector

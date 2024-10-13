@@ -34,7 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -213,6 +213,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils.validation</span> <span class="kn">import</span> <span class="n">has_fit_parameter</span>
 
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="n">GlobalForecastingModel</span>
@@ -230,7 +231,11 @@
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.utils.multioutput</span> <span class="kn">import</span> <span class="n">MultiOutputRegressor</span>
 <span class="kn">from</span> <span class="nn">darts.utils.ts_utils</span> <span class="kn">import</span> <span class="n">get_single_series</span><span class="p">,</span> <span class="n">seq2series</span><span class="p">,</span> <span class="n">series2seq</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">_check_quantiles</span>
+<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_check_quantiles</span><span class="p">,</span>
+    <span class="n">likelihood_component_names</span><span class="p">,</span>
+    <span class="n">quantile_names</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -335,8 +340,9 @@
 <span class="sd">            will be used per component in the multivariate series.</span>
 <span class="sd">            If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.</span>
 <span class="sd">        multi_models</span>
-<span class="sd">            If True, a separate model will be trained for each future lag to predict. If False, a single model is</span>
-<span class="sd">            trained to predict at step &#39;output_chunk_length&#39; in the future. Default: True.</span>
+<span class="sd">            If True, a separate model will be trained for each future lag to predict. If False, a single model</span>
+<span class="sd">            is trained to predict all the steps in &#39;output_chunk_length&#39; (features lags are shifted back by</span>
+<span class="sd">            `output_chunk_length - n` for each step `n`). Default: True.</span>
 <span class="sd">        use_static_covariates</span>
 <span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
 <span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>
@@ -876,8 +882,19 @@
                 <span class="n">val_sample_weight</span><span class="o">=</span><span class="n">val_sample_weight</span><span class="p">,</span>
                 <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
             <span class="p">)</span>
+
+        <span class="c1"># only use `sample_weight` if model supports it</span>
+        <span class="n">sample_weight_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">sample_weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">supports_sample_weight</span><span class="p">:</span>
+                <span class="n">sample_weight_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;sample_weight&quot;</span><span class="p">:</span> <span class="n">sample_weights</span><span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;`sample_weight` was ignored since underlying regression model&#39;s &quot;</span>
+                    <span class="s2">&quot;`fit()` method does not support it.&quot;</span>
+                <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-            <span class="n">training_samples</span><span class="p">,</span> <span class="n">training_labels</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weights</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+            <span class="n">training_samples</span><span class="p">,</span> <span class="n">training_labels</span><span class="p">,</span> <span class="o">**</span><span class="n">sample_weight_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
         <span class="p">)</span>
 
         <span class="c1"># generate and store the lagged components names (for feature importance analysis)</span>
@@ -1006,30 +1023,42 @@
         <span class="p">}</span>
 
         <span class="c1"># if multi-output regression</span>
+        <span class="n">use_mor</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">is_univariate</span> <span class="ow">or</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">&gt;</span> <span class="mi">1</span>
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">multi_models</span>
             <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">MultiOutputRegressor</span><span class="p">)</span>
         <span class="p">):</span>
-            <span class="n">val_set_name</span><span class="p">,</span> <span class="n">val_weight_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_set_params</span>
-            <span class="n">mor_kwargs</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;eval_set_name&quot;</span><span class="p">:</span> <span class="n">val_set_name</span><span class="p">,</span>
-                <span class="s2">&quot;eval_weight_name&quot;</span><span class="p">:</span> <span class="n">val_weight_name</span><span class="p">,</span>
-                <span class="s2">&quot;n_jobs&quot;</span><span class="p">:</span> <span class="n">n_jobs_multioutput_wrapper</span><span class="p">,</span>
-            <span class="p">}</span>
             <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="c1"># we have 2D sample (and time) weights, only supported in Darts</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">MultiOutputRegressor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">mor_kwargs</span><span class="p">)</span>
+                <span class="n">use_mor</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">elif</span> <span class="ow">not</span> <span class="p">(</span>
                 <span class="nb">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;_get_tags&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
                 <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_get_tags</span><span class="p">(),</span> <span class="nb">dict</span><span class="p">)</span>
                 <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_get_tags</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;multioutput&quot;</span><span class="p">)</span>
             <span class="p">):</span>
                 <span class="c1"># model does not support multi-output regression natively</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">MultiOutputRegressor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">mor_kwargs</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;CatBoostRegressor&quot;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_params</span><span class="p">()[</span><span class="s2">&quot;loss_function&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;RMSEWithUncertainty&quot;</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">MultiOutputRegressor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">mor_kwargs</span><span class="p">)</span>
+                <span class="n">use_mor</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">elif</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;CatBoostRegressor&quot;</span>
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_params</span><span class="p">()[</span><span class="s2">&quot;loss_function&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;RMSEWithUncertainty&quot;</span>
+            <span class="p">):</span>
+                <span class="n">use_mor</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">elif</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;XGBRegressor&quot;</span>
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="p">):</span>
+                <span class="c1"># since xgboost==2.1.0, likelihoods do not support native multi output regression</span>
+                <span class="n">use_mor</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="n">use_mor</span><span class="p">:</span>
+            <span class="n">val_set_name</span><span class="p">,</span> <span class="n">val_weight_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_set_params</span>
+            <span class="n">mor_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;eval_set_name&quot;</span><span class="p">:</span> <span class="n">val_set_name</span><span class="p">,</span>
+                <span class="s2">&quot;eval_weight_name&quot;</span><span class="p">:</span> <span class="n">val_weight_name</span><span class="p">,</span>
+                <span class="s2">&quot;n_jobs&quot;</span><span class="p">:</span> <span class="n">n_jobs_multioutput_wrapper</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">MultiOutputRegressor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">mor_kwargs</span><span class="p">)</span>
 
         <span class="c1"># warn if n_jobs_multioutput_wrapper was provided but not used</span>
         <span class="k">if</span> <span class="p">(</span>
@@ -1289,10 +1318,18 @@
         <span class="c1"># same for covariate matrices</span>
         <span class="k">for</span> <span class="n">cov_type</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">covariate_matrices</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">covariate_matrices</span><span class="p">[</span><span class="n">cov_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># for concatenating target with predictions (or quantile parameters)</span>
+        <span class="k">if</span> <span class="n">predict_likelihood_parameters</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># with `multi_models=False`, the predictions are concatenated with the past target, even if `n&lt;=ocl`</span>
+            <span class="c1"># to make things work, we just append the first predicted parameter (it will never be accessed)</span>
+            <span class="n">sample_slice</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_parameters</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sample_slice</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
         <span class="c1"># prediction</span>
         <span class="n">predictions</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">last_step_shift</span> <span class="o">=</span> <span class="mi">0</span>
-
         <span class="c1"># t_pred indicates the number of time steps after the first prediction</span>
         <span class="k">for</span> <span class="n">t_pred</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
             <span class="c1"># in case of autoregressive forecast `(t_pred &gt; 0)` and if `n` is not a round multiple of `step`,</span>
@@ -1303,7 +1340,9 @@
 
             <span class="c1"># concatenate previous iteration forecasts</span>
             <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span> <span class="ow">and</span> <span class="n">predictions</span><span class="p">:</span>
-                <span class="n">series_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">series_matrix</span><span class="p">,</span> <span class="n">predictions</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">series_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+                    <span class="p">[</span><span class="n">series_matrix</span><span class="p">,</span> <span class="n">predictions</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:,</span> <span class="p">:,</span> <span class="n">sample_slice</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
+                <span class="p">)</span>
 
             <span class="c1"># extract and concatenate lags from target and covariates series</span>
             <span class="n">X</span> <span class="o">=</span> <span class="n">_create_lagged_data_autoregression</span><span class="p">(</span>
@@ -1402,6 +1441,10 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
 
     <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_likelihood&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">supports_past_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;past&quot;</span><span class="p">,</span> <span class="p">[]))</span> <span class="o">&gt;</span> <span class="mi">0</span>
 
@@ -1417,6 +1460,15 @@
     <span class="k">def</span> <span class="nf">supports_val_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the model supports a validation set during training.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">supports_sample_weight</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the model supports a validation set during training.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">supports_sample_weight</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">MultiOutputRegressor</span><span class="p">)</span>
+            <span class="k">else</span> <span class="n">has_fit_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;sample_weight&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">val_set_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
@@ -1805,17 +1857,15 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span>
             <span class="n">input_series</span><span class="p">,</span>
-            <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;q</span><span class="si">{</span><span class="n">quantile</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">quantile</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="o">.</span><span class="n">keys</span><span class="p">()],</span>
+            <span class="n">quantile_names</span><span class="p">(</span><span class="n">q</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_likelihood_generate_components_names</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">parameter_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="p">[</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tgt_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">param_n</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="k">for</span> <span class="n">tgt_name</span> <span class="ow">in</span> <span class="n">input_series</span><span class="o">.</span><span class="n">components</span>
-            <span class="k">for</span> <span class="n">param_n</span> <span class="ow">in</span> <span class="n">parameter_names</span>
-        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">likelihood_component_names</span><span class="p">(</span>
+            <span class="n">components</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">components</span><span class="p">,</span> <span class="n">parameter_names</span><span class="o">=</span><span class="n">parameter_names</span>
+        <span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">_QuantileModelContainer</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">):</span>

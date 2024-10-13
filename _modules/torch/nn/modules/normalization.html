@@ -34,7 +34,7 @@
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
@@ -173,7 +173,8 @@
               <div>
                 
   <h1>Source code for torch.nn.modules.normalization</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span></span><span class="c1"># mypy: allow-untyped-defs</span>
+<span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">numbers</span>
 <span class="kn">from</span> <span class="nn">torch.nn.parameter</span> <span class="kn">import</span> <span class="n">Parameter</span>
 <span class="kn">from</span> <span class="nn">.module</span> <span class="kn">import</span> <span class="n">Module</span>
@@ -182,9 +183,9 @@
 <span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">init</span>
 
 <span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">Size</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;LocalResponseNorm&#39;</span><span class="p">,</span> <span class="s1">&#39;CrossMapLRN2d&#39;</span><span class="p">,</span> <span class="s1">&#39;LayerNorm&#39;</span><span class="p">,</span> <span class="s1">&#39;GroupNorm&#39;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;LocalResponseNorm&#39;</span><span class="p">,</span> <span class="s1">&#39;CrossMapLRN2d&#39;</span><span class="p">,</span> <span class="s1">&#39;LayerNorm&#39;</span><span class="p">,</span> <span class="s1">&#39;GroupNorm&#39;</span><span class="p">,</span> <span class="s1">&#39;RMSNorm&#39;</span><span class="p">]</span>
 
 <span class="k">class</span> <span class="nc">LocalResponseNorm</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies local response normalization over an input signal.</span>
@@ -465,6 +466,88 @@
     <span class="k">def</span> <span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{num_groups}</span><span class="s1">, </span><span class="si">{num_channels}</span><span class="s1">, eps=</span><span class="si">{eps}</span><span class="s1">, &#39;</span> \
             <span class="s1">&#39;affine=</span><span class="si">{affine}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">RMSNorm</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies Root Mean Square Layer Normalization over a mini-batch of inputs.</span>
+
+<span class="sd">    This layer implements the operation as described in</span>
+<span class="sd">    the paper `Root Mean Square Layer Normalization &lt;https://arxiv.org/pdf/1910.07467.pdf&gt;`__</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        y = \frac{x}{\sqrt{\mathrm{RMS}[x] + \epsilon}} * \gamma</span>
+
+<span class="sd">    The root mean squared norm is taken over the last ``D`` dimensions, where ``D``</span>
+<span class="sd">    is the dimension of :attr:`normalized_shape`. For example, if :attr:`normalized_shape`</span>
+<span class="sd">    is ``(3, 5)`` (a 2-dimensional shape), the rms norm is computed over</span>
+<span class="sd">    the last 2 dimensions of the input.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        normalized_shape (int or list or torch.Size): input shape from an expected input</span>
+<span class="sd">            of size</span>
+
+<span class="sd">            .. math::</span>
+<span class="sd">                [* \times \text{normalized\_shape}[0] \times \text{normalized\_shape}[1]</span>
+<span class="sd">                    \times \ldots \times \text{normalized\_shape}[-1]]</span>
+
+<span class="sd">            If a single integer is used, it is treated as a singleton list, and this module will</span>
+<span class="sd">            normalize over the last dimension which is expected to be of that specific size.</span>
+<span class="sd">        eps: a value added to the denominator for numerical stability. Default: :func:`torch.finfo(x.dtype).eps`</span>
+<span class="sd">        elementwise_affine: a boolean value that when set to ``True``, this module</span>
+<span class="sd">            has learnable per-element affine parameters initialized to ones (for weights)</span>
+<span class="sd">            and zeros (for biases). Default: ``True``.</span>
+
+<span class="sd">    Shape:</span>
+<span class="sd">        - Input: :math:`(N, *)`</span>
+<span class="sd">        - Output: :math:`(N, *)` (same shape as input)</span>
+
+<span class="sd">    Examples::</span>
+
+<span class="sd">        &gt;&gt;&gt; rms_norm = nn.RMSNorm([2, 3])</span>
+<span class="sd">        &gt;&gt;&gt; input = torch.randn(2, 2, 3)</span>
+<span class="sd">        &gt;&gt;&gt; rms_norm(input)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__constants__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;normalized_shape&#39;</span><span class="p">,</span> <span class="s1">&#39;eps&#39;</span><span class="p">,</span> <span class="s1">&#39;elementwise_affine&#39;</span><span class="p">]</span>
+    <span class="n">normalized_shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">eps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+    <span class="n">elementwise_affine</span><span class="p">:</span> <span class="nb">bool</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">normalized_shape</span><span class="p">:</span> <span class="n">_shape_t</span><span class="p">,</span> <span class="n">eps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">elementwise_affine</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                 <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factory_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;device&#39;</span><span class="p">:</span> <span class="n">device</span><span class="p">,</span> <span class="s1">&#39;dtype&#39;</span><span class="p">:</span> <span class="n">dtype</span><span class="p">}</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">normalized_shape</span><span class="p">,</span> <span class="n">numbers</span><span class="o">.</span><span class="n">Integral</span><span class="p">):</span>
+            <span class="c1"># mypy error: incompatible types in assignment</span>
+            <span class="n">normalized_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">normalized_shape</span><span class="p">,)</span>  <span class="c1"># type: ignore[assignment]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">normalized_shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">normalized_shape</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">elementwise_affine</span> <span class="o">=</span> <span class="n">elementwise_affine</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">elementwise_affine</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">normalized_shape</span><span class="p">,</span> <span class="o">**</span><span class="n">factory_kwargs</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">register_parameter</span><span class="p">(</span><span class="s1">&#39;weight&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Resets parameters based on their initialization used in __init__.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">elementwise_affine</span><span class="p">:</span>
+            <span class="n">init</span><span class="o">.</span><span class="n">ones_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Runs forward pass.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">rms_norm</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalized_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extra information about the module.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">{normalized_shape}</span><span class="s1">, eps=</span><span class="si">{eps}</span><span class="s1">, &#39;</span> \
+            <span class="s1">&#39;elementwise_affine=</span><span class="si">{elementwise_affine}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
 
 
 <span class="c1"># TODO: ContrastiveNorm2d</span>

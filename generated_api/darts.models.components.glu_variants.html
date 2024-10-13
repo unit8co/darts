@@ -35,7 +35,7 @@
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -224,6 +224,11 @@
      </i>
     </label>
     <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.iqr_detector.html">
+       Interquartile Range (IQR) Detector
+      </a>
+     </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.ad.detectors.quantile_detector.html">
        Quantile Detector
@@ -1495,8 +1500,16 @@ exception is the <code class="docutils literal notranslate"><span class="pre">re
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
-<li><p><strong>missing_keys</strong> is a list of str containing the missing keys</p></li>
-<li><p><strong>unexpected_keys</strong> is a list of str containing the unexpected keys</p></li>
+<li><dl class="simple">
+<dt><strong>missing_keys</strong> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>unexpected_keys</strong> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+</dd>
+</dl>
+</li>
 </ul>
 </p>
 </dd>
@@ -2983,8 +2996,16 @@ exception is the <code class="docutils literal notranslate"><span class="pre">re
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
-<li><p><strong>missing_keys</strong> is a list of str containing the missing keys</p></li>
-<li><p><strong>unexpected_keys</strong> is a list of str containing the unexpected keys</p></li>
+<li><dl class="simple">
+<dt><strong>missing_keys</strong> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>unexpected_keys</strong> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+</dd>
+</dl>
+</li>
 </ul>
 </p>
 </dd>
@@ -4471,8 +4492,16 @@ exception is the <code class="docutils literal notranslate"><span class="pre">re
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
-<li><p><strong>missing_keys</strong> is a list of str containing the missing keys</p></li>
-<li><p><strong>unexpected_keys</strong> is a list of str containing the unexpected keys</p></li>
+<li><dl class="simple">
+<dt><strong>missing_keys</strong> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>unexpected_keys</strong> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+</dd>
+</dl>
+</li>
 </ul>
 </p>
 </dd>
@@ -5959,8 +5988,16 @@ exception is the <code class="docutils literal notranslate"><span class="pre">re
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
-<li><p><strong>missing_keys</strong> is a list of str containing the missing keys</p></li>
-<li><p><strong>unexpected_keys</strong> is a list of str containing the unexpected keys</p></li>
+<li><dl class="simple">
+<dt><strong>missing_keys</strong> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>unexpected_keys</strong> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+</dd>
+</dl>
+</li>
 </ul>
 </p>
 </dd>
@@ -7447,8 +7484,16 @@ exception is the <code class="docutils literal notranslate"><span class="pre">re
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
-<li><p><strong>missing_keys</strong> is a list of str containing the missing keys</p></li>
-<li><p><strong>unexpected_keys</strong> is a list of str containing the unexpected keys</p></li>
+<li><dl class="simple">
+<dt><strong>missing_keys</strong> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>unexpected_keys</strong> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+</dd>
+</dl>
+</li>
 </ul>
 </p>
 </dd>
@@ -8935,8 +8980,16 @@ exception is the <code class="docutils literal notranslate"><span class="pre">re
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
-<li><p><strong>missing_keys</strong> is a list of str containing the missing keys</p></li>
-<li><p><strong>unexpected_keys</strong> is a list of str containing the unexpected keys</p></li>
+<li><dl class="simple">
+<dt><strong>missing_keys</strong> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>unexpected_keys</strong> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+</dd>
+</dl>
+</li>
 </ul>
 </p>
 </dd>
@@ -10423,8 +10476,16 @@ exception is the <code class="docutils literal notranslate"><span class="pre">re
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
-<li><p><strong>missing_keys</strong> is a list of str containing the missing keys</p></li>
-<li><p><strong>unexpected_keys</strong> is a list of str containing the unexpected keys</p></li>
+<li><dl class="simple">
+<dt><strong>missing_keys</strong> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>unexpected_keys</strong> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+</dd>
+</dl>
+</li>
 </ul>
 </p>
 </dd>
