@@ -843,20 +843,20 @@ class TestHistoricalforecast:
         # label_index (int), too large
         with pytest.raises(ValueError) as msg:
             model.historical_forecasts(timeidx_, start=11)
-        assert str(msg.value).startswith("`start` index `11` is out of bounds")
+        assert str(msg.value).startswith("`start` position `11` is out of bounds")
         with pytest.raises(ValueError) as msg:
             model.historical_forecasts(
                 rangeidx_step1, start=rangeidx_step1.end_time() + rangeidx_step1.freq
             )
         assert str(msg.value).startswith(
-            "`start` index `10` is larger than the last index"
+            "`start` time `10` is larger than the last index"
         )
         with pytest.raises(ValueError) as msg:
             model.historical_forecasts(
                 rangeidx_step2, start=rangeidx_step2.end_time() + rangeidx_step2.freq
             )
         assert str(msg.value).startswith(
-            "`start` index `20` is larger than the last index"
+            "`start` time `20` is larger than the last index"
         )
 
         # label_index (timestamp) too high
@@ -950,7 +950,7 @@ class TestHistoricalforecast:
         with pytest.raises(ValueError) as msg:
             model.historical_forecasts(timeidx_, start=10, start_format="position")
         assert str(msg.value).startswith(
-            "`start` index `10` is out of bounds for series of length 10"
+            "`start` position `10` is out of bounds for series of length 10"
         )
 
         # positional_index with range index, predicting only the last position
@@ -985,7 +985,7 @@ class TestHistoricalforecast:
                 rangeidx_step2, start=10, start_format="position"
             )
         assert str(msg.value).startswith(
-            "`start` index `10` is out of bounds for series of length 10"
+            "`start` position `10` is out of bounds for series of length 10"
         )
 
     @pytest.mark.parametrize(
@@ -1059,7 +1059,7 @@ class TestHistoricalforecast:
             if start < 0:
                 # negative position is relative to the end of the series
                 start -= len(series)
-            start_format_msg = f"position `{start}` corresponding to timestamp "
+            start_format_msg = f"position `{start}` corresponding to time "
         else:
             start_format_msg = "time "
 

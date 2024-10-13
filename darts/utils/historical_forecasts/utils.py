@@ -93,11 +93,6 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 logger,
             )
 
-        # verbose error messages
-        if not isinstance(n.start, pd.Timestamp):
-            start_value_msg = f"`start` value `{n.start}` corresponding to timestamp"
-        else:
-            start_value_msg = "`start` time"
         for idx, series_ in enumerate(series):
             # check specifically for int and Timestamp as error by `get_timestamp_at_point` is too generic
             if isinstance(n.start, pd.Timestamp):
@@ -121,7 +116,7 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                     if n.start >= len(series_):
                         raise_log(
                             ValueError(
-                                f"`start` index `{n.start}` is out of bounds for series of length {len(series_)} "
+                                f"`start` position `{n.start}` is out of bounds for series of length {len(series_)} "
                                 f"at index: {idx}."
                             ),
                             logger,
@@ -129,7 +124,7 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 elif n.start > series_.time_index[-1]:  # format "value" and range index
                     raise_log(
                         ValueError(
-                            f"`start` index `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
+                            f"`start` time `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
                             f"for series at index: {idx}."
                         ),
                         logger,
@@ -147,6 +142,16 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 and start_idx + n.forecast_horizon + model.output_chunk_shift
                 > len(series_)
             ):
+                # verbose error messages
+                if n.start_format == "position" or (
+                    not isinstance(n.start, pd.Timestamp)
+                    and series_._has_datetime_index
+                ):
+                    start_value_msg = (
+                        f"`start` position `{n.start}` corresponding to time"
+                    )
+                else:
+                    start_value_msg = "`start` time"
                 start = series_._time_index[start_idx]
                 raise_log(
                     ValueError(
@@ -395,7 +400,7 @@ def _check_start(
     if start_format == "position" or (
         not isinstance(start, pd.Timestamp) and series._has_datetime_index
     ):
-        start_format_msg = f"position `{start}` corresponding to timestamp "
+        start_format_msg = f"position `{start}` corresponding to time "
         if isinstance(start, float):
             # fraction of series
             start = series.get_index_at_point(start)
@@ -666,7 +671,7 @@ def _adjust_historical_forecasts_time_index(
                 not isinstance(start, pd.Timestamp) and series._has_datetime_index
             ):
                 start_value_msg = (
-                    f"position `{start}` corresponding to timestamp `{start_time_orig}`"
+                    f"position `{start}` corresponding to time `{start_time_orig}`"
                 )
             else:
                 start_value_msg = f"time `{start_time_orig}`"
