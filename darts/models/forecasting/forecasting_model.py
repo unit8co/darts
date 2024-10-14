@@ -3144,7 +3144,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
 
     @property
     def _supress_generate_predict_encoding(self) -> bool:
-        """Controls wether encodings should be generated in :func:`FutureCovariatesLocalForecastingModel.predict()``"""
+        """Controls whether encodings should be generated in :func:`FutureCovariatesLocalForecastingModel.predict()``"""
         return False
 
     @property

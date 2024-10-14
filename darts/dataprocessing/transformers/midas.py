@@ -54,14 +54,14 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             Whether to remove the NaNs from the start and the end of the transformed series.
         drop_static_covariates
             If set to `True`, the statics covariates of the input series won't be transferred to the output.
-            This migth be useful for multivariate series with component-specific static covariates.
+            This might be useful for multivariate series with component-specific static covariates.
         name
             A specific name for the scaler
         n_jobs
             The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
-            passed as input to a method, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+            passed as input to a method, parallelizing operations regarding different ``TimeSeries``. Defaults to `1`
             (sequential). Setting the parameter to `-1` means using all the available processors.
-            Note: for a small amount of data, the parallelisation overhead could end up increasing the total
+            Note: for a small amount of data, the parallelization overhead could end up increasing the total
             required amount of time.
         verbose
             Optionally, whether to print operations progress

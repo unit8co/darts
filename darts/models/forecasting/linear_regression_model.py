@@ -251,7 +251,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
 
                 self._model_container[quantile] = self.model
 
-            # replace the last trained QuantileRegressor with the dictionnary of Regressors.
+            # replace the last trained QuantileRegressor with the dictionary of Regressors.
             self.model = self._model_container
 
             return self

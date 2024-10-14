@@ -165,7 +165,7 @@ class FittableDetector(Detector):
         Returns
         -------
         Union[TimeSeries, Sequence[TimeSeries]]
-            Binary prediciton (1 if considered as an anomaly, 0 if not)
+            Binary prediction (1 if considered as an anomaly, 0 if not)
         """
         self.fit(series)
         return self.detect(series, name="series")

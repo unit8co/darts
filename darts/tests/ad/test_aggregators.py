@@ -292,7 +292,7 @@ class TestAnomalyDetectionAggregator:
 
     @pytest.mark.parametrize("config", list_NonFittableAggregator)
     def test_NonFittableAggregator_predict(self, config):
-        """Check that predict() works as intented"""
+        """Check that predict() works as intended"""
         aggregator_cls, cls_kwargs, _ = config
         aggregator = aggregator_cls(**cls_kwargs)
 

@@ -257,7 +257,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
         hidden_fc_sizes
             Sizes of hidden layers connecting the last hidden layer of the RNN module to the output, if any.
         dropout
-            Fraction of neurons afected by Dropout.
+            Fraction of neurons affected by Dropout.
         activation
             The name of a torch.nn activation function to be applied between the layers of the fully connected network.
             Default: "ReLU".

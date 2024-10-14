@@ -398,7 +398,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         Returns
         -------
         shaps_
-            A nested dictionary {horizon : {component : shap.Explaination}} containing the raw Explanations for all
+            A nested dictionary {horizon : {component : shap.Explanation}} containing the raw Explanations for all
             the horizons and components.
         """
 
