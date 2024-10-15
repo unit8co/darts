@@ -1020,7 +1020,19 @@ class TestConformalModel:
                 hfc_conf_list_with_cal_short = [hfc_conf_list_with_cal_short]
 
             # must match
-            assert hfc_conf_list_with_cal_exact == hfc_conf_list_with_cal
+            assert len(hfc_conf_list_with_cal_exact) == len(
+                hfc_conf_list_with_cal_short
+            )
+            for hfc_cal_exact, hfc_cal in zip(
+                hfc_conf_list_with_cal_exact, hfc_conf_list_with_cal
+            ):
+                assert len(hfc_cal_exact) == len(hfc_cal)
+                for hfc_cal_exact_, hfc_cal_ in zip(hfc_cal_exact, hfc_cal):
+                    assert hfc_cal_exact_.time_index.equals(hfc_cal_.time_index)
+                    assert hfc_cal_exact_.columns.equals(hfc_cal_.columns)
+                    np.testing.assert_array_almost_equal(
+                        hfc_cal_exact_.all_values(), hfc_cal_.all_values()
+                    )
 
             # second last forecast with shorter calibration set (that has one example less) must be equal to the
             # second last without calibration set
