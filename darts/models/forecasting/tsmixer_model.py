@@ -421,8 +421,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         # Projects from the output time dimension to the input time dimension
         # (if we are keeping the input time dimension/project_first_layer=False)
         if not self.project_first_layer:
-            self.fc_future = nn.Linear(
-                self.output_chunk_length, self.input_chunk_length)
+            self.fc_future = nn.Linear(self.output_chunk_length, self.input_chunk_length)
 
         self.feature_mixing_hist = _FeatureMixing(
             sequence_length=self.sequence_length,
