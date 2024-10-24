@@ -415,8 +415,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         }
 
         # Projects from the input time dimension to the output time dimension
-        self.fc_hist = nn.Linear(
-            self.input_chunk_length, self.output_chunk_length)
+        self.fc_hist = nn.Linear(self.input_chunk_length, self.output_chunk_length)
 
         # Projects from the output time dimension to the input time dimension
         # (if we are keeping the input time dimension/project_first_layer=False)
@@ -571,8 +570,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         # linear transformation to generate the forecast (B, T, H_S) -> (B, T, C * N_P)
         x = self.fc_out(x)
         # (B, T, C * N_P) -> (B, T, C, N_P)
-        x = x.view(-1, self.output_chunk_length,
-                   self.output_dim, self.nr_params)
+        x = x.view(-1, self.output_chunk_length, self.output_dim, self.nr_params)
         return x
 
 
