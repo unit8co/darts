@@ -1003,7 +1003,7 @@ class TestHistoricalforecast:
                     ("1999-01-01 00:00:00", 6, "2000-01-01 06:00:00", "h"),
                     ("2000-01-01 00:00:00", 2, "2000-01-01 08:00:00", "2h"),
                     # special case where start is not in the frequency -> start will be converted
-                    # to "2000-01-01 00:00:00", and then it's adjusted to be withing the historical fc index
+                    # to "2000-01-01 00:00:00", and then it's adjusted to be within the historical fc index
                     ("1999-12-31 23:00:00", 2, "2000-01-01 08:00:00", "2h"),
                     # integer index
                     (0, 1, 3, 1),
@@ -1011,7 +1011,7 @@ class TestHistoricalforecast:
                     (-24, 6, 6, 1),
                     (0, 2, 8, 2),
                     # special case where start is not in the frequency -> start will be converted
-                    # to 0, and then it's adjusted to be withing the historical fc index
+                    # to 0, and then it's adjusted to be within the historical fc index
                     (-1, 2, 8, 2),
                 ],
                 ["value", "position"],  # start format
