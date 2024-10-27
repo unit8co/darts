@@ -362,3 +362,23 @@ class TestTSMixerModel:
         output.mean().backward()
 
         assert input_tensor.grad is not None
+
+    @pytest.mark.parametrize("project_first_layer", [True, False])
+    def test_project_first(self, project_first_layer):
+        ts = tg.sine_timeseries(length=36)
+        input_len = 12
+        output_len = 6
+
+        model = TSMixerModel(
+            input_chunk_length=input_len,
+            output_chunk_length=output_len,
+            n_epochs=1,
+            project_first_layer=project_first_layer,
+            **tfm_kwargs,
+        )
+        model.fit(ts)
+
+        if project_first_layer:
+            assert model.model.sequence_length == output_len
+        else:
+            assert model.model.sequence_length == input_len
