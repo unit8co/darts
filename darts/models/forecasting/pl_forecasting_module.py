@@ -400,11 +400,18 @@ class PLForecastingModule(pl.LightningModule, ABC):
             return
 
         if self.likelihood:
-            metrics.update(self.likelihood.sample(output), target)
+            pred = self.likelihood.sample(output)
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
             # last dimension of model output, for properly computing the metric.
-            metrics.update(output.squeeze(dim=-1), target)
+            pred = output.squeeze(dim=-1)
+
+        # torch metrics require 2D targets of shape (batch size * ocl, num targets)
+        if self.n_targets > 1:
+            target = target.reshape(-1, self.n_targets)
+            pred = pred.reshape(-1, self.n_targets)
+
+        metrics.update(pred, target)
 
     def _compute_metrics(self, metrics):
         if not len(metrics):
