@@ -365,7 +365,7 @@ class TestTSMixerModel:
 
     @pytest.mark.parametrize("project_first_layer", [True, False])
     def test_project_first(self, project_first_layer):
-        ts = tg.sine_timeseries(length=36)
+        ts = tg.sine_timeseries(length=36, freq="h")
         input_len = 12
         output_len = 6
 
@@ -374,6 +374,8 @@ class TestTSMixerModel:
             output_chunk_length=output_len,
             n_epochs=1,
             project_first_layer=project_first_layer,
+            # Cover case of projecting future covs back to input dims
+            add_encoders={"cyclic": {"future": "hour"}},
             **tfm_kwargs,
         )
         model.fit(ts)
