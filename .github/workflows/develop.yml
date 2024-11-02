@@ -33,7 +33,7 @@ jobs:
       - name: "3. Create virtualenv"
         if: steps.virtualenv-cache.outputs.cache-hit != 'true'
         run: |
-          python -m -venv .venv
+          python -m venv .venv
 
       - name: "3. Install Dependencies"
         run: |
