@@ -28,13 +28,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements/dev-all.txt
 
-      - name: "4. Attach cache for pip"
+      - name: "4. Install libomp (for LightGBM)"
+        run: |
+          ./.github/scripts/libomp-${{ runner.os }}.sh
+
+      - name: "5. Attach cache for pip"
         uses: actions/cache@v4
         id: cache
         with:
           path: ~/.cache/pip
           key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-latest.txt') }}
 
-      - name: "5. Run tests"
+      - name: "6. Run tests"
         run: |
           pytest .
