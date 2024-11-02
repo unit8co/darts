@@ -10,7 +10,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-13]
+        os: [macos-13, ubuntu-latest]
         python-version: ['3.9']
         flavour: ['all']
 
@@ -24,11 +24,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: "3. Cache python environment"
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: virtualenv-cache
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ matrix.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt') }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt') }}
 
       - name: "3.1. (No-Cache) Setup Pip"
         if: steps.virtualenv-cache.outputs.cache-hit != 'true'
@@ -47,3 +47,10 @@ jobs:
       - name: "6. Run tests"
         run: |
           pytest .
+
+      - name: "7. Codecov upload"
+        if: ${{ matrix.flavour == 'all' }}
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
