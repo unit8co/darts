@@ -2828,3 +2828,28 @@ class TestHistoricalforecast:
                 == f"`sample_weight` at series index {invalid_idx} must contain "
                 f"at least all times of the corresponding target `series`."
             )
+
+    def test_historical_forecast_additional_sanity_checks(self):
+        model = LinearRegressionModel(lags=1)
+
+        # `stride <= 0`
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                stride=0,
+            )
+        assert (
+            str(err.value)
+            == "The provided stride parameter must be a positive integer."
+        )
+
+        # start_format="position" but `start` is not `int`
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                start=pd.Timestamp("01-01-2020"),
+                start_format="position",
+            )
+        assert str(err.value).startswith(
+            "Since `start_format='position'`, `start` must be an integer, received"
+        )
