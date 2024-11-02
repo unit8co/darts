@@ -134,6 +134,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
 
+      - name: "4. Install Dependencies"
+        run: |
+          pip install -r requirements/dev-all.txt
+
       - name: "4. Install Locally"
         run: |
           pip install .
