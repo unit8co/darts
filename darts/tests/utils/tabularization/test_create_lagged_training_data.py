@@ -2243,116 +2243,6 @@ class TestCreateLaggedTrainingData:
     @pytest.mark.parametrize(
         "config",
         [
-            # lags have the same minimum
-            (
-                target_with_static_cov,
-                None,
-                None,
-                {"static_0": [-4, -2], "static_1": [-4, -3]},
-                None,
-                None,
-                False,
-                [
-                    "static_0_target_lag-4",
-                    "static_1_target_lag-4",
-                    "static_1_target_lag-3",
-                    "static_0_target_lag-2",
-                ],
-            ),
-            # lags are not overlapping
-            (
-                target_with_static_cov,
-                None,
-                None,
-                {"static_0": [-4, -1], "static_1": [-3, -2]},
-                None,
-                None,
-                False,
-                [
-                    "static_0_target_lag-4",
-                    "static_1_target_lag-3",
-                    "static_1_target_lag-2",
-                    "static_0_target_lag-1",
-                ],
-            ),
-            # default lags for target, overlapping lags for past covariates
-            (
-                target_with_static_cov,
-                past,
-                None,
-                {"static_0": [-3], "static_1": [-3]},
-                {"past_0": [-4, -3], "past_1": [-3, -2], "past_2": [-2]},
-                None,
-                False,
-                [
-                    "static_0_target_lag-3",
-                    "static_1_target_lag-3",
-                    "past_0_pastcov_lag-4",
-                    "past_0_pastcov_lag-3",
-                    "past_1_pastcov_lag-3",
-                    "past_1_pastcov_lag-2",
-                    "past_2_pastcov_lag-2",
-                ],
-            ),
-            # no lags for target, future covariates lags are not in the compoments order
-            (
-                target_with_static_cov,
-                None,
-                future,
-                None,
-                None,
-                {
-                    "future_3": [-2, 0, 2],
-                    "future_0": [-4, 1],
-                    "future_2": [1],
-                    "future_1": [-2, 2],
-                },
-                False,
-                [
-                    "future_0_futcov_lag-4",
-                    "future_1_futcov_lag-2",
-                    "future_3_futcov_lag-2",
-                    "future_3_futcov_lag0",
-                    "future_0_futcov_lag1",
-                    "future_2_futcov_lag1",
-                    "future_1_futcov_lag2",
-                    "future_3_futcov_lag2",
-                ],
-            ),
-        ],
-    )
-    def test_create_lagged_component_names_different_lags(self, config):
-        """
-        Tests that `create_lagged_component_names` when lags are different across components.
-
-        The lagged features should be sorted by lags, then by components.
-        """
-        (
-            ts_tg,
-            ts_pc,
-            ts_fc,
-            lags_tg,
-            lags_pc,
-            lags_fc,
-            use_static_cov,
-            expected_lagged_features,
-        ) = config
-
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=ts_tg,
-            past_covariates=ts_pc,
-            future_covariates=ts_fc,
-            lags=lags_tg,
-            lags_past_covariates=lags_pc,
-            lags_future_covariates=lags_fc,
-            concatenate=False,
-            use_static_covariates=use_static_cov,
-        )
-        assert expected_lagged_features == created_lagged_features
-
-    @pytest.mark.parametrize(
-        "config",
-        [
             # target no static covariate
             (
                 target_with_no_cov,
@@ -2665,6 +2555,116 @@ class TestCreateLaggedTrainingData:
         assert expected_lagged_features == created_lagged_features_dict_lags
         assert expected_lagged_labels == created_lagged_labels
         assert expected_lagged_labels == created_lagged_labels_dict_lags
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # lags have the same minimum
+            (
+                target_with_static_cov,
+                None,
+                None,
+                {"static_0": [-4, -2], "static_1": [-4, -3]},
+                None,
+                None,
+                False,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-4",
+                    "static_1_target_lag-3",
+                    "static_0_target_lag-2",
+                ],
+            ),
+            # lags are not overlapping
+            (
+                target_with_static_cov,
+                None,
+                None,
+                {"static_0": [-4, -1], "static_1": [-3, -2]},
+                None,
+                None,
+                False,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-3",
+                    "static_1_target_lag-2",
+                    "static_0_target_lag-1",
+                ],
+            ),
+            # default lags for target, overlapping lags for past covariates
+            (
+                target_with_static_cov,
+                past,
+                None,
+                {"static_0": [-3], "static_1": [-3]},
+                {"past_0": [-4, -3], "past_1": [-3, -2], "past_2": [-2]},
+                None,
+                False,
+                [
+                    "static_0_target_lag-3",
+                    "static_1_target_lag-3",
+                    "past_0_pastcov_lag-4",
+                    "past_0_pastcov_lag-3",
+                    "past_1_pastcov_lag-3",
+                    "past_1_pastcov_lag-2",
+                    "past_2_pastcov_lag-2",
+                ],
+            ),
+            # no lags for target, future covariates lags are not in the compoments order
+            (
+                target_with_static_cov,
+                None,
+                future,
+                None,
+                None,
+                {
+                    "future_3": [-2, 0, 2],
+                    "future_0": [-4, 1],
+                    "future_2": [1],
+                    "future_1": [-2, 2],
+                },
+                False,
+                [
+                    "future_0_futcov_lag-4",
+                    "future_1_futcov_lag-2",
+                    "future_3_futcov_lag-2",
+                    "future_3_futcov_lag0",
+                    "future_0_futcov_lag1",
+                    "future_2_futcov_lag1",
+                    "future_1_futcov_lag2",
+                    "future_3_futcov_lag2",
+                ],
+            ),
+        ],
+    )
+    def test_create_lagged_component_names_different_lags(self, config):
+        """
+        Tests that `create_lagged_component_names` when lags are different across components.
+
+        The lagged features should be sorted by lags, then by components.
+        """
+        (
+            ts_tg,
+            ts_pc,
+            ts_fc,
+            lags_tg,
+            lags_pc,
+            lags_fc,
+            use_static_cov,
+            expected_lagged_features,
+        ) = config
+
+        created_lagged_features, _ = create_lagged_component_names(
+            target_series=ts_tg,
+            past_covariates=ts_pc,
+            future_covariates=ts_fc,
+            lags=lags_tg,
+            lags_past_covariates=lags_pc,
+            lags_future_covariates=lags_fc,
+            concatenate=False,
+            use_static_covariates=use_static_cov,
+        )
+        assert expected_lagged_features == created_lagged_features
 
     @pytest.mark.parametrize(
         "config",
