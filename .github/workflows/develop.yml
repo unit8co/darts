@@ -143,5 +143,6 @@ jobs:
           pip install .
 
       - name: "5. Run example ${{matrix.example-name}}"
+        working-directory: ./examples
         run: |
           papermill ${{matrix.example-name}} ${{matrix.example-name}}
