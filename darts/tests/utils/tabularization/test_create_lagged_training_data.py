@@ -2243,269 +2243,6 @@ class TestCreateLaggedTrainingData:
     @pytest.mark.parametrize(
         "config",
         [
-            # target no static covariate
-            (
-                target_with_no_cov,
-                None,
-                None,
-                [-2, -1],
-                None,
-                None,
-                False,
-                ["no_static_target_lag-2", "no_static_target_lag-1"],
-            ),
-            # target with static covariate (but don't use them in feature names)
-            (
-                target_with_static_cov,
-                None,
-                None,
-                [-4, -1],
-                None,
-                None,
-                False,
-                [
-                    "static_0_target_lag-4",
-                    "static_1_target_lag-4",
-                    "static_0_target_lag-1",
-                    "static_1_target_lag-1",
-                ],
-            ),
-            # target with static covariate (acting on global target components)
-            (
-                target_with_static_cov,
-                None,
-                None,
-                [-4, -1],
-                None,
-                None,
-                True,
-                [
-                    "static_0_target_lag-4",
-                    "static_1_target_lag-4",
-                    "static_0_target_lag-1",
-                    "static_1_target_lag-1",
-                    "dummy_statcov_target_global_components",
-                ],
-            ),
-            # target with static covariate (component specific)
-            (
-                target_with_static_cov2,
-                None,
-                None,
-                [-4, -1],
-                None,
-                None,
-                True,
-                [
-                    "static_0_target_lag-4",
-                    "static_1_target_lag-4",
-                    "static_0_target_lag-1",
-                    "static_1_target_lag-1",
-                    "dummy_statcov_target_static_0",
-                    "dummy_statcov_target_static_1",
-                ],
-            ),
-            # target with static covariate (component specific & multivariate)
-            (
-                target_with_static_cov3,
-                None,
-                None,
-                [-4, -1],
-                None,
-                None,
-                True,
-                [
-                    "static_0_target_lag-4",
-                    "static_1_target_lag-4",
-                    "static_0_target_lag-1",
-                    "static_1_target_lag-1",
-                    "dummy_statcov_target_static_0",
-                    "dummy_statcov_target_static_1",
-                    "dummy1_statcov_target_static_0",
-                    "dummy1_statcov_target_static_1",
-                ],
-            ),
-            # target + past
-            (
-                target_with_no_cov,
-                past,
-                None,
-                [-4, -3],
-                [-1],
-                None,
-                False,
-                [
-                    "no_static_target_lag-4",
-                    "no_static_target_lag-3",
-                    "past_0_pastcov_lag-1",
-                    "past_1_pastcov_lag-1",
-                    "past_2_pastcov_lag-1",
-                ],
-            ),
-            # target + future
-            (
-                target_with_no_cov,
-                None,
-                future,
-                [-2, -1],
-                None,
-                [3],
-                False,
-                [
-                    "no_static_target_lag-2",
-                    "no_static_target_lag-1",
-                    "future_0_futcov_lag3",
-                    "future_1_futcov_lag3",
-                    "future_2_futcov_lag3",
-                    "future_3_futcov_lag3",
-                ],
-            ),
-            # past + future
-            (
-                target_with_no_cov,
-                past,
-                future,
-                None,
-                [-1],
-                [2],
-                False,
-                [
-                    "past_0_pastcov_lag-1",
-                    "past_1_pastcov_lag-1",
-                    "past_2_pastcov_lag-1",
-                    "future_0_futcov_lag2",
-                    "future_1_futcov_lag2",
-                    "future_2_futcov_lag2",
-                    "future_3_futcov_lag2",
-                ],
-            ),
-            # target with static (not used) + past + future
-            (
-                target_with_static_cov,
-                past,
-                future,
-                [-2, -1],
-                [-1],
-                [2],
-                False,
-                [
-                    "static_0_target_lag-2",
-                    "static_1_target_lag-2",
-                    "static_0_target_lag-1",
-                    "static_1_target_lag-1",
-                    "past_0_pastcov_lag-1",
-                    "past_1_pastcov_lag-1",
-                    "past_2_pastcov_lag-1",
-                    "future_0_futcov_lag2",
-                    "future_1_futcov_lag2",
-                    "future_2_futcov_lag2",
-                    "future_3_futcov_lag2",
-                ],
-            ),
-            # multiple series with same components names, including past/future covariates
-            (
-                [target_with_static_cov, target_with_static_cov],
-                [past, past],
-                [future, future],
-                [-3],
-                [-1],
-                [2],
-                False,
-                [
-                    "static_0_target_lag-3",
-                    "static_1_target_lag-3",
-                    "past_0_pastcov_lag-1",
-                    "past_1_pastcov_lag-1",
-                    "past_2_pastcov_lag-1",
-                    "future_0_futcov_lag2",
-                    "future_1_futcov_lag2",
-                    "future_2_futcov_lag2",
-                    "future_3_futcov_lag2",
-                ],
-            ),
-            # multiple series with different components will use the first series as reference
-            (
-                [
-                    target_with_static_cov,
-                    target_with_no_cov.stack(target_with_no_cov),
-                ],
-                [past, past],
-                [future, past.stack(target_with_no_cov)],
-                [-2, -1],
-                [-1],
-                [2],
-                False,
-                [
-                    "static_0_target_lag-2",
-                    "static_1_target_lag-2",
-                    "static_0_target_lag-1",
-                    "static_1_target_lag-1",
-                    "past_0_pastcov_lag-1",
-                    "past_1_pastcov_lag-1",
-                    "past_2_pastcov_lag-1",
-                    "future_0_futcov_lag2",
-                    "future_1_futcov_lag2",
-                    "future_2_futcov_lag2",
-                    "future_3_futcov_lag2",
-                ],
-            ),
-        ],
-    )
-    def test_create_lagged_component_names(self, config):
-        """
-        Tests that `create_lagged_component_names` produces the expected features name depending
-        on the lags, output_chunk_length and covariates.
-
-        When lags are component-specific, they are identical across all the components.
-        """
-        (
-            ts_tg,
-            ts_pc,
-            ts_fc,
-            lags_tg,
-            lags_pc,
-            lags_fc,
-            use_static_cov,
-            expected_lagged_features,
-        ) = config
-        # lags as list
-        created_lagged_features, _ = create_lagged_component_names(
-            target_series=ts_tg,
-            past_covariates=ts_pc,
-            future_covariates=ts_fc,
-            lags=lags_tg,
-            lags_past_covariates=lags_pc,
-            lags_future_covariates=lags_fc,
-            concatenate=False,
-            use_static_covariates=use_static_cov,
-        )
-
-        # converts lags to dictionary format
-        lags_as_dict = self.convert_lags_to_dict(
-            ts_tg,
-            ts_pc,
-            ts_fc,
-            lags_tg,
-            lags_pc,
-            lags_fc,
-        )
-
-        created_lagged_features_dict_lags, _ = create_lagged_component_names(
-            target_series=ts_tg,
-            past_covariates=ts_pc,
-            future_covariates=ts_fc,
-            lags=lags_as_dict["target"],
-            lags_past_covariates=lags_as_dict["past"],
-            lags_future_covariates=lags_as_dict["future"],
-            concatenate=False,
-            use_static_covariates=use_static_cov,
-        )
-        assert expected_lagged_features == created_lagged_features
-        assert expected_lagged_features == created_lagged_features_dict_lags
-
-    @pytest.mark.parametrize(
-        "config",
-        [
             # lags have the same minimum
             (
                 target_with_static_cov,
@@ -2612,6 +2349,322 @@ class TestCreateLaggedTrainingData:
             use_static_covariates=use_static_cov,
         )
         assert expected_lagged_features == created_lagged_features
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # target no static covariate
+            (
+                target_with_no_cov,
+                None,
+                None,
+                [-2, -1],
+                None,
+                None,
+                False,
+                1,
+                ["no_static_target_lag-2", "no_static_target_lag-1"],
+                ["no_static_target_hrz0"],
+            ),
+            # target with static covariate (but don't use them in feature names)
+            (
+                target_with_static_cov,
+                None,
+                None,
+                [-4, -1],
+                None,
+                None,
+                False,
+                2,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-4",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                ],
+                [
+                    "static_0_target_hrz0",
+                    "static_1_target_hrz0",
+                    "static_0_target_hrz1",
+                    "static_1_target_hrz1",
+                ],
+            ),
+            # target with static covariate (acting on global target components)
+            (
+                target_with_static_cov,
+                None,
+                None,
+                [-4, -1],
+                None,
+                None,
+                True,
+                1,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-4",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                    "dummy_statcov_target_global_components",
+                ],
+                [
+                    "static_0_target_hrz0",
+                    "static_1_target_hrz0",
+                ],
+            ),
+            # target with static covariate (component specific)
+            (
+                target_with_static_cov2,
+                None,
+                None,
+                [-4, -1],
+                None,
+                None,
+                True,
+                1,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-4",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                    "dummy_statcov_target_static_0",
+                    "dummy_statcov_target_static_1",
+                ],
+                [
+                    "static_0_target_hrz0",
+                    "static_1_target_hrz0",
+                ],
+            ),
+            # target with static covariate (component specific & multivariate)
+            (
+                target_with_static_cov3,
+                None,
+                None,
+                [-4, -1],
+                None,
+                None,
+                True,
+                1,
+                [
+                    "static_0_target_lag-4",
+                    "static_1_target_lag-4",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                    "dummy_statcov_target_static_0",
+                    "dummy_statcov_target_static_1",
+                    "dummy1_statcov_target_static_0",
+                    "dummy1_statcov_target_static_1",
+                ],
+                [
+                    "static_0_target_hrz0",
+                    "static_1_target_hrz0",
+                ],
+            ),
+            # target + past
+            (
+                target_with_no_cov,
+                past,
+                None,
+                [-4, -3],
+                [-1],
+                None,
+                False,
+                1,
+                [
+                    "no_static_target_lag-4",
+                    "no_static_target_lag-3",
+                    "past_0_pastcov_lag-1",
+                    "past_1_pastcov_lag-1",
+                    "past_2_pastcov_lag-1",
+                ],
+                ["no_static_target_hrz0"],
+            ),
+            # target + future
+            (
+                target_with_no_cov,
+                None,
+                future,
+                [-2, -1],
+                None,
+                [3],
+                False,
+                1,
+                [
+                    "no_static_target_lag-2",
+                    "no_static_target_lag-1",
+                    "future_0_futcov_lag3",
+                    "future_1_futcov_lag3",
+                    "future_2_futcov_lag3",
+                    "future_3_futcov_lag3",
+                ],
+                ["no_static_target_hrz0"],
+            ),
+            # past + future
+            (
+                target_with_no_cov,
+                past,
+                future,
+                None,
+                [-1],
+                [2],
+                False,
+                1,
+                [
+                    "past_0_pastcov_lag-1",
+                    "past_1_pastcov_lag-1",
+                    "past_2_pastcov_lag-1",
+                    "future_0_futcov_lag2",
+                    "future_1_futcov_lag2",
+                    "future_2_futcov_lag2",
+                    "future_3_futcov_lag2",
+                ],
+                ["no_static_target_hrz0"],
+            ),
+            # target with static (not used) + past + future
+            (
+                target_with_static_cov,
+                past,
+                future,
+                [-2, -1],
+                [-1],
+                [2],
+                False,
+                1,
+                [
+                    "static_0_target_lag-2",
+                    "static_1_target_lag-2",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                    "past_0_pastcov_lag-1",
+                    "past_1_pastcov_lag-1",
+                    "past_2_pastcov_lag-1",
+                    "future_0_futcov_lag2",
+                    "future_1_futcov_lag2",
+                    "future_2_futcov_lag2",
+                    "future_3_futcov_lag2",
+                ],
+                [
+                    "static_0_target_hrz0",
+                    "static_1_target_hrz0",
+                ],
+            ),
+            # multiple series with same components names, including past/future covariates
+            (
+                [target_with_static_cov, target_with_static_cov],
+                [past, past],
+                [future, future],
+                [-3],
+                [-1],
+                [2],
+                False,
+                1,
+                [
+                    "static_0_target_lag-3",
+                    "static_1_target_lag-3",
+                    "past_0_pastcov_lag-1",
+                    "past_1_pastcov_lag-1",
+                    "past_2_pastcov_lag-1",
+                    "future_0_futcov_lag2",
+                    "future_1_futcov_lag2",
+                    "future_2_futcov_lag2",
+                    "future_3_futcov_lag2",
+                ],
+                [
+                    "static_0_target_hrz0",
+                    "static_1_target_hrz0",
+                ],
+            ),
+            # multiple series with different components will use the first series as reference
+            (
+                [
+                    target_with_static_cov,
+                    target_with_no_cov.stack(target_with_no_cov),
+                ],
+                [past, past],
+                [future, past.stack(target_with_no_cov)],
+                [-2, -1],
+                [-1],
+                [2],
+                False,
+                1,
+                [
+                    "static_0_target_lag-2",
+                    "static_1_target_lag-2",
+                    "static_0_target_lag-1",
+                    "static_1_target_lag-1",
+                    "past_0_pastcov_lag-1",
+                    "past_1_pastcov_lag-1",
+                    "past_2_pastcov_lag-1",
+                    "future_0_futcov_lag2",
+                    "future_1_futcov_lag2",
+                    "future_2_futcov_lag2",
+                    "future_3_futcov_lag2",
+                ],
+                [
+                    "static_0_target_hrz0",
+                    "static_1_target_hrz0",
+                ],
+            ),
+        ],
+    )
+    def test_create_lagged_component_names(self, config):
+        """
+        Tests that `create_lagged_component_names` produces the expected features name depending
+        on the lags, output_chunk_length and covariates.
+
+        When lags are component-specific, they are identical across all the components.
+        """
+        (
+            ts_tg,
+            ts_pc,
+            ts_fc,
+            lags_tg,
+            lags_pc,
+            lags_fc,
+            use_static_cov,
+            ocl,
+            expected_lagged_features,
+            expected_lagged_labels,
+        ) = config
+        # lags as list
+        created_lagged_features, created_lagged_labels = create_lagged_component_names(
+            target_series=ts_tg,
+            past_covariates=ts_pc,
+            future_covariates=ts_fc,
+            lags=lags_tg,
+            lags_past_covariates=lags_pc,
+            lags_future_covariates=lags_fc,
+            concatenate=False,
+            use_static_covariates=use_static_cov,
+            output_chunk_length=ocl,
+        )
+
+        # converts lags to dictionary format
+        lags_as_dict = self.convert_lags_to_dict(
+            ts_tg,
+            ts_pc,
+            ts_fc,
+            lags_tg,
+            lags_pc,
+            lags_fc,
+        )
+
+        created_lagged_features_dict_lags, created_lagged_labels_dict_lags = (
+            create_lagged_component_names(
+                target_series=ts_tg,
+                past_covariates=ts_pc,
+                future_covariates=ts_fc,
+                lags=lags_as_dict["target"],
+                lags_past_covariates=lags_as_dict["past"],
+                lags_future_covariates=lags_as_dict["future"],
+                concatenate=False,
+                use_static_covariates=use_static_cov,
+                output_chunk_length=ocl,
+            )
+        )
+        assert expected_lagged_features == created_lagged_features
+        assert expected_lagged_features == created_lagged_features_dict_lags
+        assert expected_lagged_labels == created_lagged_labels
+        assert expected_lagged_labels == created_lagged_labels_dict_lags
 
     @pytest.mark.parametrize(
         "config",
