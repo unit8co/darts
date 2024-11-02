@@ -23,24 +23,27 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: "3. Install dependencies"
+      - name: "3. Cache virtualenv"
+        uses: actions/cache@v3
+        id: virtualenv-cache
+        with:
+          path: .venv
+          key: ${{ matrix.os }}-${{ matrix.python-version }}-venv-${{ hashFiles('requirements/*.txt') }}
+
+      - name: "3. Create virtualenv"
+        if: steps.virtualenv-cache.outputs.cache-hit != 'true'
         run: |
-          # install pip and ALL requirements, and create requirements file for caching
-          python -m pip install --upgrade pip
-          pip install pip-tools
-          pip-compile requirements/core.txt requirements/notorch.txt requirements/torch.txt -o requirements-latest.txt
-          pip install -r requirements-latest.txt
+          python -m -venv .venv
+
+      - name: "3. Install Dependencies"
+        run: |
+          # activate and install ALL dependencies (potentially using cached files)
+          source .venv/bin/activate
+          python -m pip install -r requirements/dev-all.txt
 
       - name: "4. Install libomp (for LightGBM)"
         run: |
           ./.github/scripts/libomp-${{ runner.os }}.sh
-
-      - name: "5. Attach cache for pip"
-        uses: actions/cache@v4
-        id: cache
-        with:
-          path: ~/.cache/pip
-          key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-latest.txt') }}
 
       - name: "6. Run tests"
         run: |
