@@ -26,7 +26,9 @@ jobs:
       - name: "3. Install dependencies"
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements/dev-all.txt
+          pip install pip-tools
+          pip-compile requirements/core.txt requirements/notorch.txt requirements/torch.txt -o requirements-latest.txt
+          pip install -r requirements-latest.txt
 
       - name: "4. Install libomp (for LightGBM)"
         run: |
