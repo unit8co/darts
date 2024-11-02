@@ -16,10 +16,10 @@ jobs:
 
     steps:
       - name: "1. Clone repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: "2. Set up Python ${{ matrix.python-version }}"
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -28,17 +28,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements/dev-all.txt
 
-      - name: "4. Install libomp (for LightGBM)"
-        run: |
-         . /.github/scripts/libomp-${{ runner.os }}.sh
-
-      - name: "5. Attach cache for pip"
-        uses: actions/cache@v1
+      - name: "4. Attach cache for pip"
+        uses: actions/cache@v4
         id: cache
         with:
           path: ~/.cache/pip
           key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-latest.txt') }}
 
-      - name: "6. Run tests"
+      - name: "5. Run tests"
         run: |
           pytest .
