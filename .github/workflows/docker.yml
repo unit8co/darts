@@ -39,4 +39,4 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: false
-          tags: ["unit8/darts:${{ steps.bump_dry.outputs.tag }}", "unit8/darts:latest"]
+          tags: unit8/darts:${{ steps.bump_dry.outputs.tag }}, unit8/darts:latest
