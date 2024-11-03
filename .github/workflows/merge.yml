@@ -90,13 +90,19 @@ jobs:
         with:
           python-version: '3.9'
 
+      # use `uv` to retrieve the latest dependency versions
+      - name: "Compile Dependency Versions"
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv pip compile requirements/dev-all.txt > requirements-latest.txt
+
       # only restore cache but do not upload
       - name: "Restore cached python environment"
         uses: actions/cache/restore@v4
         id: pythonenv-cache
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt') }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt', 'requirements-latest.txt') }}
 
       - name: "Setup Pip"
         run: |
@@ -131,13 +137,19 @@ jobs:
         with:
           python-version: '3.9'
 
+      # use `uv` to retrieve the latest dependency versions
+      - name: "Compile Dependency Versions"
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv pip compile requirements/dev-all.txt > requirements-latest.txt
+
       # only restore cache but do not upload
       - name: "Restore cached python environment"
         uses: actions/cache/restore@v4
         id: pythonenv-cache
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt') }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt', 'requirements-latest.txt') }}
 
       - name: "Install pandoc"
         run: |
