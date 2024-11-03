@@ -1,14 +1,9 @@
-FROM ubuntu:latest
-
-# setup packages
-RUN apt-get update -y
-RUN apt-get install -y python3 python3-pip default-jre
-RUN pip3 install --upgrade pip3
+FROM python:3.10
 
 # install python requirements before copying the rest of the files
 # this way we can cache the requirements and not have to reinstall them
 COPY requirements/ /app/requirements/
-RUN pip3 install -r /app/requirements/dev-all.txt
+RUN pip install -r /app/requirements/dev-all.txt
 
 # copy local files
 COPY . /app
@@ -17,7 +12,7 @@ COPY . /app
 WORKDIR /app
 
 # install darts
-RUN pip3 install -e .
+RUN pip install -e .
 
 # assuming you are working from inside your darts directory:
 # docker build . -t darts-test:latest
