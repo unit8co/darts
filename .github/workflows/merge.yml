@@ -47,13 +47,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
 
-      - name: "Install `flavor=${{ matrix.flavor }}` Dependencies"
+      - name: "Install Dependencies Flavour ${{ matrix.flavour }}"
         run: |
-          if [ "${{ matrix.flavor }}" == "core" ]; then
+          if [ "${{ matrix.flavour }}" == "core" ]; then
             pip install -r requirements/core.txt -r requirements/dev.txt
-          elif [ "${{ matrix.flavor }}" == "torch" ]; then
+          elif [ "${{ matrix.flavour }}" == "torch" ]; then
             pip install -r requirements/core.txt -r requirements/torch.txt -r requirements/dev.txt
-          elif [ "${{ matrix.flavor }}" == "all" ]; then
+          elif [ "${{ matrix.flavour }}" == "all" ]; then
             pip install -r requirements/dev-all.txt
           fi
 
@@ -63,10 +63,11 @@ jobs:
 
       - name: "Run tests"
         run: |
-          if [ "${{ matrix.flavor }}" == "all" ]; then
+          if [ "${{ matrix.flavour }}" == "all" ]; then
             pytest --durations=50 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
           else
             pytest --durations=50
+          fi
 
       - name: "Codecov upload"
         if: ${{ matrix.flavour == 'all' }}
