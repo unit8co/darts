@@ -19,7 +19,7 @@ jobs:
         run: |
           sudo apt-get install -y pandoc
 
-        # downloading gradle multiple times in parallel can yield to connection errors
+        # downloading gradle multiple times in parallel can yield connection errors
       - name: "4. Cache gradle distribution"
         uses: actions/cache@v2
         with:
