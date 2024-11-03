@@ -6,6 +6,7 @@ on:
         bump_type:
           description: "Bump type (#major, #minor, #patch)"
           required: true
+  pull_request:
 
 jobs:
   deploy-docker:
