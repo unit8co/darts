@@ -21,7 +21,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DRY_RUN: true
-          BUMP_TYPE: ${{ github.event.inputs.bump_type}}
+          # BUMP_TYPE: ${{ github.event.inputs.bump_type}}
+          BUMP_TYPE: "#minor"
 
       - name: "Set up QEMU"
         uses: docker/setup-qemu-action@v3
