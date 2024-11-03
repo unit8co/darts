@@ -11,11 +11,22 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Improvements to `ForecastingModel`: Improved `start` handling for historical forecasts, backtest, residuals, and gridsearch. If `start` is not within the trainable / forecastable points, uses the closest valid start point that is a round multiple of `stride` ahead of start. Raises a ValueError, if no valid start point exists. This guarantees that all historical forecasts are `n * stride` points away from start, and will simplify many downstream tasks. [#2560](https://github.com/unit8co/darts/issues/2560) by [Dennis Bader](https://github.com/dennisbader).
+
 **Fixed**
+
+- Fixed a bug when using `darts.utils.data.tabularization.create_lagged_component_names()` with target `lags=None`, that did not return any lagged target label component names. [#2576](https://github.com/unit8co/darts/pull/2576) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 
 ### For developers of the library:
+
+**Improved**
+- Improvements to CI/CD: [#2584](https://github.com/unit8co/darts/pull/2584) by [Dennis Bader](https://github.com/dennisbader).
+  - updated all workflows with most recent action versions
+  - improved caching across `master` branch and its children
+  - fixed failing docker deployment
+  - removed `gradle` dependency in favor of native GitHub action plugins.
 
 ## [0.31.0](https://github.com/unit8co/darts/tree/0.31.0) (2024-10-13)
 
