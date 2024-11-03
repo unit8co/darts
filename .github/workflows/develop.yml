@@ -58,7 +58,7 @@ jobs:
 
       - name: "4. Install Dependencies"
         run: |
-          # install latest dependencies (potentially using cached files)
+          # install latest dependencies (potentially updating cached dependencies)
           pip install -U -r requirements/dev-all.txt
 
       - name: "5. Install libomp (for LightGBM)"
@@ -87,12 +87,13 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: "3. Cache python environment"
-        uses: actions/cache@v4
+      # only restore cache but do not upload
+      - name: "3. Restore cached python environment"
+        uses: actions/cache/restore@v4
         id: pythonenv-cache
         with:
           path: ${{ env.pythonLocation }}
-          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/core.txt', 'requirements/release.txt') }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt') }}
 
       - name: "4. Install pandoc"
         run: |
@@ -103,16 +104,20 @@ jobs:
         run: |
           python -m pip install --upgrade pip
 
-      - name: "4. Install Dependencies"
+      - name: "5. Install Dependencies"
         run: |
-          # install latest dependencies (potentially using cached files)
+          # install latest dependencies (potentially updating cached dependencies)
           pip install -U -r requirements/dev-all.txt
 
-      - name: "5. Install Locally"
+      - name: "6. Install libomp (for LightGBM)"
+        run: |
+          ./.github/scripts/libomp-${{ runner.os }}.sh
+
+      - name: "7. Install Locally"
         run: |
           pip install .
 
-      - name: "6. Build docs"
+      - name: "8. Build docs"
         run: |
           make --directory ./docs build-all-docs
 
@@ -130,19 +135,33 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: "3. Setup Pip"
+      # only restore cache but do not upload
+      - name: "3. Restore cached python environment"
+        uses: actions/cache/restore@v4
+        id: pythonenv-cache
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt') }}
+
+      - name: "(No-Cache) Setup Pip"
+        if: steps.pythonenv-cache.outputs.cache-hit != 'true'
         run: |
           python -m pip install --upgrade pip
 
       - name: "4. Install Dependencies"
         run: |
-          pip install -r requirements/dev-all.txt
+          # install latest dependencies (potentially updating cached dependencies)
+          pip install -U -r requirements/dev-all.txt
 
-      - name: "4. Install Locally"
+      - name: "5. Install libomp (for LightGBM)"
+        run: |
+          ./.github/scripts/libomp-${{ runner.os }}.sh
+
+      - name: "6. Install Locally"
         run: |
           pip install .
 
-      - name: "5. Run example ${{matrix.example-name}}"
+      - name: "7. Run example ${{matrix.example-name}}"
         working-directory: ./examples
         run: |
           papermill ${{matrix.example-name}} ${{matrix.example-name}}

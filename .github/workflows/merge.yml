@@ -10,29 +10,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "1. Clone repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: "2. Set up Python 3.10"
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-        # downloading gradle multiple times in parallel can yield to connection errors
-      - name: "3. Cache gradle distribution"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/wrapper/dists
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
-
-      - name: "3.1 Cache gradle packages"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/caches
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
+      - name: "3. Install Dev Dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/dev.txt
 
       - name: "4. Lint"
         run: |
-          ./gradlew lint
+          pre-commit run --all-files
 
   tests:
     runs-on: ${{ matrix.os }}
@@ -44,37 +36,37 @@ jobs:
 
     steps:
       - name: "1. Clone repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: "2. Set up Python ${{ matrix.python-version }}"
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-        # downloading gradle multiple times in parallel can yield to connection errors
-      - name: "3. Cache gradle distribution"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/wrapper/dists
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
-
-      - name: "3.1 Cache gradle packages"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/caches
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
-
-      - name: "4. Setup pip"
+      - name: "3. Setup pip"
         run: |
-          ./gradlew setupPip
+          python -m pip install --upgrade pip
+
+      - name: "4. Install `flavor=${{ matrix.flavor }}` Dependencies"
+        run: |
+          if [ "${{ matrix.flavor }}" == "core" ]; then
+            pip install -r requirements/core.txt -r requirements/dev.txt
+          elif [ "${{ matrix.flavor }}" == "torch" ]; then
+            pip install -r requirements/core.txt -r requirements/torch.txt -r requirements/dev.txt
+          elif [ "${{ matrix.flavor }}" == "all" ]; then
+            pip install -r requirements/dev-all.txt
+          fi
 
       - name: "5. Install libomp (for LightGBM)"
         run: |
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
-      - name: "6. Tests"
+      - name: "6. Run tests"
         run: |
-          ./gradlew "test_${{matrix.flavour}}"
+          if [ "${{ matrix.flavor }}" == "all" ]; then
+            pytest --durations=50 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
+          else
+            pytest --durations=50
 
       - name: "7. Codecov upload"
         if: ${{ matrix.flavour == 'all' }}
@@ -90,71 +82,67 @@ jobs:
         example-name: [00-quickstart.ipynb, 01-multi-time-series-and-covariates.ipynb, 02-data-processing.ipynb, 03-FFT-examples.ipynb, 04-RNN-examples.ipynb, 05-TCN-examples.ipynb, 06-Transformer-examples.ipynb, 07-NBEATS-examples.ipynb, 08-DeepAR-examples.ipynb, 09-DeepTCN-examples.ipynb, 10-Kalman-filter-examples.ipynb, 11-GP-filter-examples.ipynb, 12-Dynamic-Time-Warping-example.ipynb, 13-TFT-examples.ipynb, 15-static-covariates.ipynb, 16-hierarchical-reconciliation.ipynb, 18-TiDE-examples.ipynb, 19-EnsembleModel-examples.ipynb, 20-RegressionModel-examples.ipynb, 21-TSMixer-examples.ipynb, 22-anomaly-detection-examples.ipynb]
     steps:
       - name: "1. Clone repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: "2. Set up Python 3.9"
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
-      # downloading gradle multiple times in parallel can yield to connection errors
-      - name: "3. Cache gradle distribution"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/wrapper/dists
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+      - name: "3. Setup Pip"
+        run: |
+          python -m pip install --upgrade pip
 
-      - name: "3.1 Cache gradle packages"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/caches
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
+      - name: "4. Install Dependencies"
+        run: |
+          pip install -r requirements/dev-all.txt
+
+      - name: "5. Install Locally"
+        run: |
+          pip install .
 
       # TODO: why is this a matrix? there is no pip caching, and we restart this for each item in the matrix
-      - name: "4. Run examples ${{matrix.example-name}}"
+      - name: "6. Run example ${{matrix.example-name}}"
+        working-directory: ./examples
         run: |
-          ./gradlew checkExample -PexampleName=${{matrix.example-name}}
+          papermill ${{matrix.example-name}} ${{matrix.example-name}}
 
   docs:
     runs-on: ubuntu-latest
-
     steps:
       - name: "1. Clone repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: "2. Set up Python 3.9"
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
-      - name: "3. Install pandoc"
+      - name: "3. Cache python environment"
+        uses: actions/cache@v4
+        id: pythonenv-cache
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/core.txt', 'requirements/release.txt') }}
+
+      - name: "4. Install pandoc"
         run: |
           sudo apt-get install -y pandoc
 
-      # downloading gradle multiple times in parallel can yield to connection errors
-      - name: "4. Cache gradle distribution"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/wrapper/dists
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
-
-      - name: "4.1 Cache gradle packages"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/caches
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
-
-      - name: "5. Setup pip"
+      - name: "(No-Cache) Setup Pip"
+        if: steps.pythonenv-cache.outputs.cache-hit != 'true'
         run: |
-          ./gradlew setupPip
+          python -m pip install --upgrade pip
 
-      - name: "6. Attach cache for pip"
-        uses: actions/cache@v1
-        id: cache
-        with:
-          path: ~/.cache/pip
-          key: release-${{ runner.os }}-3.9-pip-${{ hashFiles('requirements/core.txt', 'requirements/release.txt') }}
+      - name: "5. Install Dependencies"
+        run: |
+          # install latest dependencies (potentially using cached files)
+          pip install -U -r requirements/dev-all.txt
+
+      - name: "6. Install Locally"
+        run: |
+          pip install .
 
       - name: "7. Build docs"
         run: |
-          ./gradlew buildDocs
+          make --directory ./docs build-all-docs
