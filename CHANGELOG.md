@@ -21,6 +21,13 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
+**Improved**
+- Improvements to CI/CD: [#2584](https://github.com/unit8co/darts/pull/2584) by [Dennis Bader](https://github.com/dennisbader).
+  - updated all workflows with most recent action versions
+  - improved caching across `master` branch and its children
+  - fixed failing docker deployment
+  - removed `gradle` dependency in favor of native GitHub action plugins.
+
 ## [0.31.0](https://github.com/unit8co/darts/tree/0.31.0) (2024-10-13)
 
 ### For users of the library:

@@ -48,19 +48,28 @@ and discuss it with some of the core team.
         * `refactor/`
         * …
     * Work on your update
-7. Check that your code passes all the tests and design new unit tests if needed: `./gradlew test_all`.
-8. Verify your tests coverage by running `./gradlew coverageTest`
-    * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested
-    lines with `./coverage.sh xml`
-9. If your contribution introduces a non-negligible change, add it to `CHANGELOG.md` under the "Unreleased" section.
+7. Check that your code passes all the tests and design new unit tests if needed: `pytest`.
+8. If your contribution introduces a non-negligible change, add it to `CHANGELOG.md` under the "Unreleased" section.
    You can already refer to the pull request. In addition, for tracking contributions we are happy if you provide
    your full name (if you want to) and link to your Github handle. Example:
    ```
    - Added new feature XYZ. [#001](https://https://github.com/unit8co/darts/pull/001)
      by [<Your Name>](https://github.com/<your-handle>).
    ```
-10. Create a pull request from your new branch into the **master** branch.
+9. Create a pull request from your new branch into the **master** branch.
+10. `Codecov` will add a test coverage report in the pull request. Make sure your test cover all changed lines.
 
+### Build the Documentation Locally
+
+You can build the documentation locally using `make`:
+
+```bash
+# make sure your latest changes are installed
+pip install .
+# build the docs
+make --directory=./docs build-all-docs
+```
+After that docs will be available in `./docs/build/html` directory. You can just open `./docs/build/html/index.html` using your favourite browser.
 
 ### Code Formatting and Linting
 
@@ -80,4 +89,4 @@ Please follow the procedure described in [INSTALL.md](https://github.com/unit8co
 to set up a x_64 emulated environment. For the development environment, instead of installing Darts with
 `pip install darts`, instead go to the darts cloned repo location and install the packages with: `pip install -r requirements/dev-all.txt`.
 If necessary, follow the same steps to setup libomp for lightgbm.
-Finally, verify your overall environment setup by successfully running all unitTests with gradlew or pytest.
+Finally, verify your overall environment setup by successfully running all unitTests with `pytest`.
