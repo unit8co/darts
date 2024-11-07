@@ -859,10 +859,21 @@ def create_lagged_component_names(
         [lags, lags_past_covariates, lags_future_covariates],
         ["target", "pastcov", "futcov"],
     ):
-        if variate is None or variate_lags is None:
+        if variate is None:
             continue
 
         components = get_single_series(variate).components.tolist()
+        # target labels
+        if variate_type == "target":
+            label_feature_names = [
+                f"{name}_target_hrz{lag}"
+                for lag in range(output_chunk_length)
+                for name in components
+            ]
+
+        if variate_lags is None:
+            continue
+
         if isinstance(variate_lags, dict):
             if "default_lags" in variate_lags:
                 raise_log(
@@ -891,13 +902,6 @@ def create_lagged_component_names(
             lagged_feature_names += [
                 f"{name}_{variate_type}_lag{lag}"
                 for lag in variate_lags
-                for name in components
-            ]
-
-        if variate_type == "target" and lags:
-            label_feature_names = [
-                f"{name}_target_hrz{lag}"
-                for lag in range(output_chunk_length)
                 for name in components
             ]
 
