@@ -1,4 +1,5 @@
 import itertools
+import logging
 import random
 from itertools import product
 
@@ -733,8 +734,7 @@ class TestBacktesting:
         assert round(abs(error[0] - expected[0]), 4) == 0
         assert round(abs(error[1] - expected[1]), 4) == 0
 
-    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
-    def test_backtest_regression(self):
+    def test_backtest_regression(self, caplog):
         np.random.seed(4)
 
         gaussian_series = gt(mean=2, length=50)
@@ -804,13 +804,26 @@ class TestBacktesting:
         assert score > 0.9
 
         # Using a too small start value
-        with pytest.raises(ValueError):
-            RandomForest(lags=12).backtest(series=target, start=0, forecast_horizon=3)
+        warning_expected = (
+            "`start` position `{0}` corresponding to time `{1}` is before the first "
+            "predictable/trainable historical forecasting point for series at index: 0. Using the first historical "
+            "forecasting point `2000-01-15 00:00:00` that lies a round-multiple of `stride=1` ahead of `start`. "
+            "To hide these warnings, set `show_warnings=False`."
+        )
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            _ = RandomForest(lags=12).backtest(
+                series=target, start=0, forecast_horizon=3
+            )
+            assert warning_expected.format(0, target.start_time()) in caplog.text
+        caplog.clear()
 
-        with pytest.raises(ValueError):
-            RandomForest(lags=12).backtest(
+        with caplog.at_level(logging.WARNING):
+            _ = RandomForest(lags=12).backtest(
                 series=target, start=0.01, forecast_horizon=3
             )
+            assert warning_expected.format(0.01, target.start_time()) in caplog.text
+        caplog.clear()
 
         # Using RandomForest's start default value
         score = RandomForest(lags=12, random_state=0).backtest(
@@ -939,7 +952,6 @@ class TestBacktesting:
 
         assert score == recalculated_score, "The metric scores should match"
 
-    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_random_search(self):
         np.random.seed(1)
 
@@ -958,7 +970,6 @@ class TestBacktesting:
         assert isinstance(result[2], float)
         assert min(param_range) <= result[1]["lags"] <= max(param_range)
 
-    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_n_random_samples_bad_arguments(self):
         dummy_series = get_dummy_series(ts_length=50)
 
@@ -981,7 +992,6 @@ class TestBacktesting:
                 params, dummy_series, forecast_horizon=1, n_random_samples=1.5
             )
 
-    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_n_random_samples(self):
         np.random.seed(1)
 

@@ -1310,7 +1310,7 @@ class TestTorchForecastingModel:
             10,
             10,
             n_epochs=1,
-            torch_metrics=metric,
+            torch_metrics=metric_collection,
             pl_trainer_kwargs=model_kwargs,
         )
         model.fit(self.multivariate_series)
