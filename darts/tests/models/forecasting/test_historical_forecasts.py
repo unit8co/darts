@@ -1140,9 +1140,9 @@ class TestHistoricalforecast:
             overlap_end=False,
         )
 
-        assert (
-            len(forecasts) == 2
-        ), f"Model {model_cls} did not return a list of historical forecasts"
+        assert len(forecasts) == 2, (
+            f"Model {model_cls} did not return a list of historical forecasts"
+        )
 
         theorical_forecast_length = (
             self.ts_val_length
@@ -1668,9 +1668,9 @@ class TestHistoricalforecast:
             overlap_end=False,
         )
 
-        assert (
-            len(forecasts_retrain) == 2
-        ), f"Model {model_cls} did not return a list of historical forecasts"
+        assert len(forecasts_retrain) == 2, (
+            f"Model {model_cls} did not return a list of historical forecasts"
+        )
 
         (
             min_target_lag,
@@ -1852,9 +1852,9 @@ class TestHistoricalforecast:
             retrain=retrain,
             overlap_end=False,
         )
-        assert (
-            len(forecasts) == 2
-        ), f"Model {model_cls} did not return a list of historical forecasts"
+        assert len(forecasts) == 2, (
+            f"Model {model_cls} did not return a list of historical forecasts"
+        )
 
         # with the required time spans we expect to get `n_fcs` forecasts
         if not retrain:
@@ -1879,9 +1879,9 @@ class TestHistoricalforecast:
             overlap_end=True,
         )
 
-        assert (
-            len(forecasts) == 2
-        ), f"Model {model_cls} did not return a list of historical forecasts"
+        assert len(forecasts) == 2, (
+            f"Model {model_cls} did not return a list of historical forecasts"
+        )
         # with overlap_end=True, we can generate additional `forecast_hrz`
         # with retrain=False, we can start `add_fcs` steps earlier
         # forecasts after the end of `series`
@@ -1941,9 +1941,9 @@ class TestHistoricalforecast:
             retrain=retrain,
             overlap_end=False,
         )
-        assert (
-            len(forecasts) == 2
-        ), f"Model {model_cls} did not return a list of historical forecasts"
+        assert len(forecasts) == 2, (
+            f"Model {model_cls} did not return a list of historical forecasts"
+        )
 
         # with the required time spans we expect to get `n_fcs` forecasts
         if not retrain:
@@ -1976,9 +1976,9 @@ class TestHistoricalforecast:
             retrain=retrain,
             overlap_end=True,
         )
-        assert (
-            len(forecasts) == 2
-        ), f"Model {model_cls} did not return a list of historical forecasts"
+        assert len(forecasts) == 2, (
+            f"Model {model_cls} did not return a list of historical forecasts"
+        )
         # with overlap_end=True, we can generate additional `forecast_hrz`
         # with retrain=False, we can start `add_fcs` steps earlier
         # forecasts after the end of `series`
@@ -2069,9 +2069,9 @@ class TestHistoricalforecast:
             retrain=retrain,
             overlap_end=False,
         )
-        assert (
-            len(forecasts) == 2
-        ), f"Model {model_cls} did not return a list of historical forecasts"
+        assert len(forecasts) == 2, (
+            f"Model {model_cls} did not return a list of historical forecasts"
+        )
 
         # with the required time spans we expect to get `n_fcs` forecasts
         if not retrain:
@@ -2113,9 +2113,9 @@ class TestHistoricalforecast:
             retrain=retrain,
             overlap_end=True,
         )
-        assert (
-            len(forecasts) == 2
-        ), f"Model {model_cls} did not return a list of historical forecasts"
+        assert len(forecasts) == 2, (
+            f"Model {model_cls} did not return a list of historical forecasts"
+        )
         # with overlap_end=True, we can generate additional `forecast_hrz`
         # with retrain=False, we can start `add_fcs` steps earlier
         # forecasts after the end of `series`
@@ -2218,9 +2218,9 @@ class TestHistoricalforecast:
             retrain=retrain,
             overlap_end=False,
         )
-        assert (
-            len(forecasts) == 2
-        ), f"Model {model_cls} did not return a list of historical forecasts"
+        assert len(forecasts) == 2, (
+            f"Model {model_cls} did not return a list of historical forecasts"
+        )
 
         # with the required time spans we expect to get `n_fcs` forecasts
         if not retrain:
@@ -2264,9 +2264,9 @@ class TestHistoricalforecast:
             retrain=retrain,
             overlap_end=True,
         )
-        assert (
-            len(forecasts) == 2
-        ), f"Model {model_cls} did not return a list of historical forecasts"
+        assert len(forecasts) == 2, (
+            f"Model {model_cls} did not return a list of historical forecasts"
+        )
         # with overlap_end=True, we can generate additional `forecast_hrz`
         # with retrain=False, we can start `add_fcs` steps earlier
         # forecasts after the end of `series`

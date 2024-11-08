@@ -529,7 +529,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         ]
         raise_if(
             len(missing_kws) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has missing mandatory keywords or empty arguments: '
+            f"Seasonality `{add_seasonality_call['name']}` has missing mandatory keywords or empty arguments: "
             f"{missing_kws}.",
             logger,
         )
@@ -547,7 +547,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         ]
         raise_if(
             len(invalid_kws) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has invalid keywords: {invalid_kws}. Only the '
+            f"Seasonality `{add_seasonality_call['name']}` has invalid keywords: {invalid_kws}. Only the "
             f"following arguments are supported: {list(seasonality_default)}",
             logger,
         )
@@ -560,8 +560,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         ]
         raise_if(
             len(invalid_types) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has invalid value dtypes: {invalid_types} must be '
-            f'of type {[seasonality_properties[kw]["dtype"] for kw in invalid_types]}.',
+            f"Seasonality `{add_seasonality_call['name']}` has invalid value dtypes: {invalid_types} must be "
+            f"of type {[seasonality_properties[kw]['dtype'] for kw in invalid_types]}.",
             logger,
         )
 

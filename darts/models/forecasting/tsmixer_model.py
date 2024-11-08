@@ -77,7 +77,7 @@ class TimeBatchNorm2d(nn.BatchNorm2d):
         if x.ndim != 3:
             raise_log(
                 ValueError(
-                    f"Expected 3D input Tensor, but got {x.ndim}D Tensor" " instead."
+                    f"Expected 3D input Tensor, but got {x.ndim}D Tensor instead."
                 ),
                 logger=logger,
             )

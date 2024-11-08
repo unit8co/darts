@@ -428,9 +428,9 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
         x = torch.ones((batch_size, 4, n_targets))
         try:
             agg = agg_fn(x, dim=1)
-            assert isinstance(
-                agg, torch.Tensor
-            ), "`agg_fn` output must be a torch Tensor."
+            assert isinstance(agg, torch.Tensor), (
+                "`agg_fn` output must be a torch Tensor."
+            )
             assert agg.shape == (
                 batch_size,
                 n_targets,
