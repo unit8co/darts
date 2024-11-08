@@ -1,4 +1,4 @@
-from typing import Dict, List, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 import pytest
@@ -132,7 +132,7 @@ class TestAnomalyDetectionAggregator:
         aggregator,
         series: TimeSeries,
         pred_series: TimeSeries,
-        expected_vals: Dict[str, float],
+        expected_vals: dict[str, float],
     ):
         """Evaluate model on given series, for all 4 supported metric functions"""
         for m_func in ["accuracy", "recall", "f1", "precision"]:
@@ -153,7 +153,7 @@ class TestAnomalyDetectionAggregator:
         aggregator,
         series: Sequence[TimeSeries],
         pred_series: Sequence[TimeSeries],
-        expected_vals: Dict[str, List[float]],
+        expected_vals: dict[str, list[float]],
     ):
         """Evaluate model on multiple series, for all 4 supported metric functions"""
         for m_func in ["accuracy", "recall", "f1", "precision"]:

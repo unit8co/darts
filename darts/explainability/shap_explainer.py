@@ -24,8 +24,9 @@ each of the (lagged) series.
    layout.
 """
 
+from collections.abc import Sequence
 from enum import Enum
-from typing import Dict, NewType, Optional, Sequence, Union
+from typing import NewType, Optional, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -374,7 +375,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         num_samples: Optional[int] = None,
         plot_type: Optional[str] = "dot",
         **kwargs,
-    ) -> Dict[int, Dict[str, shap.Explanation]]:
+    ) -> dict[int, dict[str, shap.Explanation]]:
         """
         Display a shap plot summary for each horizon and each component dimension of the target.
         This method reuses the initial background data as foreground (potentially sampled) to give a general importance
@@ -621,7 +622,7 @@ class _RegressionShapExplainers:
         foreground_X: pd.DataFrame,
         horizons: Optional[Sequence[int]] = None,
         target_components: Optional[Sequence[str]] = None,
-    ) -> Dict[int, Dict[str, shap.Explanation]]:
+    ) -> dict[int, dict[str, shap.Explanation]]:
         """
         Return a dictionary of dictionaries of shap.Explanation instances:
         - the first dimension corresponds to the n forecasts ahead we want to explain (Horizon).

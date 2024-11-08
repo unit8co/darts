@@ -1,7 +1,7 @@
 import copy
 import itertools
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 from unittest.mock import patch
 
 import numpy as np
@@ -2096,7 +2096,7 @@ class TestTorchForecastingModel:
             )
 
     def helper_equality_encoders(
-        self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
+        self, first_encoders: dict[str, Any], second_encoders: dict[str, Any]
     ):
         if first_encoders is None:
             first_encoders = {}
@@ -2107,7 +2107,7 @@ class TestTorchForecastingModel:
         }
 
     def helper_equality_encoders_transfo(
-        self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
+        self, first_encoders: dict[str, Any], second_encoders: dict[str, Any]
     ):
         if first_encoders is None:
             first_encoders = {}
@@ -2141,7 +2141,7 @@ class TestTorchForecastingModel:
         self,
         work_dir: Optional[str] = None,
         model_name: str = "unitest_model",
-        add_encoders: Optional[Dict] = None,
+        add_encoders: Optional[dict] = None,
         save_checkpoints: bool = False,
         likelihood: Optional[Likelihood] = None,
         output_chunk_length: int = 1,

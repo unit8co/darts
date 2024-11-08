@@ -1,7 +1,8 @@
 import itertools
 import warnings
+from collections.abc import Sequence
 from itertools import product
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -422,17 +423,17 @@ class TestCreateLaggedTrainingData:
 
     def helper_create_expected_lagged_data(
         self,
-        target: Optional[Union[TimeSeries, List[TimeSeries]]],
-        past: Optional[Union[TimeSeries, List[TimeSeries]]],
-        future: Optional[Union[TimeSeries, List[TimeSeries]]],
-        lags: Optional[Union[List[int], Dict[str, List[int]]]],
-        lags_past: Optional[Union[List[int], Dict[str, List[int]]]],
-        lags_future: Optional[Union[List[int], Dict[str, List[int]]]],
+        target: Optional[Union[TimeSeries, list[TimeSeries]]],
+        past: Optional[Union[TimeSeries, list[TimeSeries]]],
+        future: Optional[Union[TimeSeries, list[TimeSeries]]],
+        lags: Optional[Union[list[int], dict[str, list[int]]]],
+        lags_past: Optional[Union[list[int], dict[str, list[int]]]],
+        lags_future: Optional[Union[list[int], dict[str, list[int]]]],
         output_chunk_length: int,
         output_chunk_shift: int,
         multi_models: bool,
         max_samples_per_ts: Optional[int],
-    ) -> Tuple[np.ndarray, np.ndarray, Any]:
+    ) -> tuple[np.ndarray, np.ndarray, Any]:
         """Helper function to create the X and y arrays by building them block by block (one per covariates)."""
         feats_times = self.get_feature_times(
             target,
@@ -473,12 +474,12 @@ class TestCreateLaggedTrainingData:
         expected_y: np.ndarray,
         expected_times_x,
         expected_times_y,
-        target: Optional[Union[TimeSeries, List[TimeSeries]]],
-        past_cov: Optional[Union[TimeSeries, List[TimeSeries]]],
-        future_cov: Optional[Union[TimeSeries, List[TimeSeries]]],
-        lags: Optional[Union[List[int], Dict[str, List[int]]]],
-        lags_past: Optional[Union[List[int], Dict[str, List[int]]]],
-        lags_future: Optional[Union[List[int], Dict[str, List[int]]]],
+        target: Optional[Union[TimeSeries, list[TimeSeries]]],
+        past_cov: Optional[Union[TimeSeries, list[TimeSeries]]],
+        future_cov: Optional[Union[TimeSeries, list[TimeSeries]]],
+        lags: Optional[Union[list[int], dict[str, list[int]]]],
+        lags_past: Optional[Union[list[int], dict[str, list[int]]]],
+        lags_future: Optional[Union[list[int], dict[str, list[int]]]],
         output_chunk_length: int,
         output_chunk_shift: int,
         use_static_covariates: bool,

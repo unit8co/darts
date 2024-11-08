@@ -4,12 +4,8 @@ Static Covariates Transformer
 """
 
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Sequence, Tuple
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from collections.abc import Sequence
+from typing import Any, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -33,8 +29,8 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         self,
         transformer_num=None,
         transformer_cat=None,
-        cols_num: Optional[List[str]] = None,
-        cols_cat: Optional[List[str]] = None,
+        cols_num: Optional[list[str]] = None,
+        cols_cat: Optional[list[str]] = None,
         name="StaticCovariatesTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
@@ -153,7 +149,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
 
     @staticmethod
     def ts_fit(
-        series: Sequence[TimeSeries], params: Dict[str, Dict[str, Any]], *args, **kwargs
+        series: Sequence[TimeSeries], params: dict[str, dict[str, Any]], *args, **kwargs
     ):
         """
         Collates static covariates of all provided `TimeSeries` and fits the following parameters:
@@ -321,7 +317,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
     def _create_inv_component_masks(
         mask_num: np.ndarray,
         mask_cat: np.ndarray,
-        cat_mapping: Dict[str, str],
+        cat_mapping: dict[str, str],
         cols_cat: Sequence[str],
     ):
         """
@@ -360,7 +356,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
 
     @staticmethod
     def ts_transform(
-        series: TimeSeries, params: Dict[str, Any], *args, **kwargs
+        series: TimeSeries, params: dict[str, Any], *args, **kwargs
     ) -> TimeSeries:
         return StaticCovariatesTransformer._transform_static_covs(
             series, params["fitted"], method="transform"
@@ -368,7 +364,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
 
     @staticmethod
     def ts_inverse_transform(
-        series: TimeSeries, params: Dict[str, Any], *args, **kwargs
+        series: TimeSeries, params: dict[str, Any], *args, **kwargs
     ) -> TimeSeries:
         return StaticCovariatesTransformer._transform_static_covs(
             series, params["fitted"], method="inverse_transform"
@@ -377,7 +373,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
     @staticmethod
     def _transform_static_covs(
         series: TimeSeries,
-        fitted_params: Dict[str, Any],
+        fitted_params: dict[str, Any],
         method: Literal["transform", "inverse_transform"],
     ):
         """
@@ -426,7 +422,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
     @staticmethod
     def _extract_static_covs(
         series: TimeSeries, mask_num: np.ndarray, mask_cat: np.ndarray
-    ) -> Tuple[np.array, np.array]:
+    ) -> tuple[np.array, np.array]:
         """
         Extracts all static covariates from a `TimeSeries`, and then extracts the numerical
         and categorical components to transform from these static covariates.
@@ -441,7 +437,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         vals_cat: np.ndarray,
         mask_num: np.ndarray,
         mask_cat: np.ndarray,
-        col_map_cat: Dict[str, str],
+        col_map_cat: dict[str, str],
     ) -> pd.DataFrame:
         """
         Adds transformed static covariates back to original `TimeSeries`. The categorical component

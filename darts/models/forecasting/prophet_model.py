@@ -5,7 +5,8 @@ Facebook Prophet
 
 import logging
 import re
-from typing import Callable, List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -24,7 +25,7 @@ logger.level = logging.WARNING  # set to warning to suppress prophet logs
 class Prophet(FutureCovariatesLocalForecastingModel):
     def __init__(
         self,
-        add_seasonalities: Optional[Union[dict, List[dict]]] = None,
+        add_seasonalities: Optional[Union[dict, list[dict]]] = None,
         country_holidays: Optional[str] = None,
         suppress_stdout_stderror: bool = True,
         add_encoders: Optional[dict] = None,
@@ -314,7 +315,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
     def _check_seasonality_conditions(
         self, future_covariates: Optional[TimeSeries] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Checks if the conditions for custom conditional seasonalities are met. Each custom seasonality that has a
         `condition_name` other than None is checked. If the `condition_name` is not a column in the `future_covariates`

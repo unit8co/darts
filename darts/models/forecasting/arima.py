@@ -10,7 +10,8 @@ References
 .. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
 
-from typing import List, Literal, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Literal, Optional, Union
 
 try:
     from typing import TypeAlias
@@ -42,13 +43,13 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         p: IntOrIntSequence = 12,
         d: int = 1,
         q: IntOrIntSequence = 0,
-        seasonal_order: Tuple[int, IntOrIntSequence, IntOrIntSequence, int] = (
+        seasonal_order: tuple[int, IntOrIntSequence, IntOrIntSequence, int] = (
             0,
             0,
             0,
             0,
         ),
-        trend: Optional[Union[Literal["n", "c", "t", "ct"], List[int]]] = None,
+        trend: Optional[Union[Literal["n", "c", "t", "ct"], list[int]]] = None,
         random_state: Optional[int] = None,
         add_encoders: Optional[dict] = None,
     ):

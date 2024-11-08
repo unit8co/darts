@@ -10,7 +10,8 @@ A collection of simple benchmark models working with univariate, multivariate, s
 """
 
 from abc import ABC, abstractmethod
-from typing import Callable, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Callable, Optional, Union
 
 import torch
 
@@ -27,7 +28,7 @@ from darts.models.forecasting.torch_forecasting_model import (
 from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
 from darts.utils.data.training_dataset import MixedCovariatesTrainingDataset
 
-MixedCovariatesTrainTensorType = Tuple[
+MixedCovariatesTrainTensorType = tuple[
     torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
 ]
 
@@ -35,7 +36,7 @@ MixedCovariatesTrainTensorType = Tuple[
 logger = get_logger(__name__)
 
 
-def _extract_targets(batch: Tuple[torch.Tensor], n_targets: int):
+def _extract_targets(batch: tuple[torch.Tensor], n_targets: int):
     """Extracts and returns the target components from an input batch
 
     Parameters
@@ -74,7 +75,7 @@ class _GlobalNaiveModule(PLMixedCovariatesModule, ABC):
 
     @io_processor
     def forward(
-        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
+        self, x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
     ) -> torch.Tensor:
         """Naive model forward pass.
 
@@ -224,7 +225,7 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
     ) -> _GlobalNaiveModule:
         pass
 
-    def _verify_predict_sample(self, predict_sample: Tuple):
+    def _verify_predict_sample(self, predict_sample: tuple):
         # naive models do not have to be trained, predict sample does not
         # have to match the training sample
         pass

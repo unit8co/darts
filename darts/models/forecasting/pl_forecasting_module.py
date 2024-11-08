@@ -4,8 +4,9 @@ This file contains abstract classes for deterministic and probabilistic PyTorch 
 
 import copy
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from functools import wraps
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Optional, Union
 
 import pytorch_lightning as pl
 import torch
@@ -52,7 +53,7 @@ def io_processor(forward):
         # x is input batch tuple which by definition has the past features in the first element starting with the
         # first n target features
         # assuming `args[0][0]` is torch.Tensor we could clone it to prevent target re-normalization
-        x: Tuple = args[0][0].clone()
+        x: tuple = args[0][0].clone()
         # apply reversible instance normalization
         x[:, :, : self.n_targets] = self.rin(x[:, :, : self.n_targets])
         # run the forward pass
@@ -73,16 +74,16 @@ class PLForecastingModule(pl.LightningModule, ABC):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        train_sample_shape: Optional[Tuple] = None,
+        train_sample_shape: Optional[tuple] = None,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
         torch_metrics: Optional[
             Union[torchmetrics.Metric, torchmetrics.MetricCollection]
         ] = None,
         likelihood: Optional[Likelihood] = None,
         optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
-        optimizer_kwargs: Optional[Dict] = None,
+        optimizer_kwargs: Optional[dict] = None,
         lr_scheduler_cls: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
-        lr_scheduler_kwargs: Optional[Dict] = None,
+        lr_scheduler_kwargs: Optional[dict] = None,
         use_reversible_instance_norm: bool = False,
     ) -> None:
         """
@@ -276,7 +277,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.set_mc_dropout(active=False)
 
     def predict_step(
-        self, batch: Tuple, batch_idx: int, dataloader_idx: Optional[int] = None
+        self, batch: tuple, batch_idx: int, dataloader_idx: Optional[int] = None
     ) -> Sequence[TimeSeries]:
         """performs the prediction step
 
@@ -481,12 +482,12 @@ class PLForecastingModule(pl.LightningModule, ABC):
             return optimizer
 
     @abstractmethod
-    def _produce_train_output(self, input_batch: Tuple) -> torch.Tensor:
+    def _produce_train_output(self, input_batch: tuple) -> torch.Tensor:
         pass
 
     @abstractmethod
     def _get_batch_prediction(
-        self, n: int, input_batch: Tuple, roll_size: int
+        self, n: int, input_batch: tuple, roll_size: int
     ) -> torch.Tensor:
         """
         In charge of applying the recurrent logic for non-recurrent models.
@@ -523,7 +524,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None or len(self._get_mc_dropout_modules()) > 0
 
-    def _produce_predict_output(self, x: Tuple) -> torch.Tensor:
+    def _produce_predict_output(self, x: tuple) -> torch.Tensor:
         if self.likelihood:
             output = self(x)
             if self.predict_likelihood_parameters:
@@ -533,7 +534,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         else:
             return self(x).squeeze(dim=-1)
 
-    def on_save_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
+    def on_save_checkpoint(self, checkpoint: dict[str, Any]) -> None:
         # we must save the dtype for correct parameter precision at loading time
         checkpoint["model_dtype"] = self.dtype
         # we must save the shape of the input to be able to instantiate the model without calling fit_from_dataset
@@ -544,7 +545,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         checkpoint["torch_metrics_train"] = self.train_metrics
         checkpoint["torch_metrics_val"] = self.val_metrics
 
-    def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
+    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
         # by default our models are initialized as float32. For other dtypes, we need to cast to the correct precision
         # before parameters are loaded by PyTorch-Lightning
         dtype = checkpoint["model_dtype"]
@@ -621,7 +622,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
 
 class PLPastCovariatesModule(PLForecastingModule, ABC):
-    def _produce_train_output(self, input_batch: Tuple):
+    def _produce_train_output(self, input_batch: tuple):
         """
         Feeds PastCovariatesTorchModel with input and output chunks of a PastCovariatesSequentialDataset for
         training.
@@ -644,7 +645,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
         return self(inpt)
 
     def _get_batch_prediction(
-        self, n: int, input_batch: Tuple, roll_size: int
+        self, n: int, input_batch: tuple, roll_size: int
     ) -> torch.Tensor:
         """
         Feeds PastCovariatesTorchModel with input and output chunks of a PastCovariatesSequentialDataset to forecast
@@ -742,14 +743,14 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
 
 class PLFutureCovariatesModule(PLForecastingModule, ABC):
     def _get_batch_prediction(
-        self, n: int, input_batch: Tuple, roll_size: int
+        self, n: int, input_batch: tuple, roll_size: int
     ) -> torch.Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
 
 
 class PLDualCovariatesModule(PLForecastingModule, ABC):
     def _get_batch_prediction(
-        self, n: int, input_batch: Tuple, roll_size: int
+        self, n: int, input_batch: tuple, roll_size: int
     ) -> torch.Tensor:
         raise NotImplementedError(
             "TBD: The only DualCovariatesModel is an RNN with a specific implementation."
@@ -758,8 +759,8 @@ class PLDualCovariatesModule(PLForecastingModule, ABC):
 
 class PLMixedCovariatesModule(PLForecastingModule, ABC):
     def _produce_train_output(
-        self, input_batch: Tuple
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        self, input_batch: tuple
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Feeds MixedCovariatesTorchModel with input and output chunks of a MixedCovariatesSequentialDataset for
         training.
@@ -773,7 +774,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
 
     def _process_input_batch(
         self, input_batch
-    ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]:
+    ) -> tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]:
         """
         Converts output of MixedCovariatesDataset (training dataset) into an input/past- and
         output/future chunk.
@@ -812,7 +813,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
         return x_past, future_covariates, static_covariates
 
     def _get_batch_prediction(
-        self, n: int, input_batch: Tuple, roll_size: int
+        self, n: int, input_batch: tuple, roll_size: int
     ) -> torch.Tensor:
         """
         Feeds MixedCovariatesModel with input and output chunks of a MixedCovariatesSequentialDataset to forecast
@@ -946,6 +947,6 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
 
 class PLSplitCovariatesModule(PLForecastingModule, ABC):
     def _get_batch_prediction(
-        self, n: int, input_batch: Tuple, roll_size: int
+        self, n: int, input_batch: tuple, roll_size: int
     ) -> torch.Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")

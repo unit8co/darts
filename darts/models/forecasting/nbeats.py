@@ -4,7 +4,7 @@ N-BEATS
 """
 
 from enum import Enum
-from typing import List, NewType, Tuple, Union
+from typing import NewType, Union
 
 import numpy as np
 import torch
@@ -368,7 +368,7 @@ class _NBEATSModule(PLPastCovariatesModule):
         num_stacks: int,
         num_blocks: int,
         num_layers: int,
-        layer_widths: List[int],
+        layer_widths: list[int],
         expansion_coefficient_dim: int,
         trend_polynomial_degree: int,
         batch_norm: bool,
@@ -495,7 +495,7 @@ class _NBEATSModule(PLPastCovariatesModule):
         self.stacks_list[-1].blocks[-1].backcast_g.requires_grad_(False)
 
     @io_processor
-    def forward(self, x_in: Tuple):
+    def forward(self, x_in: tuple):
         x, _ = x_in
 
         # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
@@ -544,7 +544,7 @@ class NBEATSModel(PastCovariatesTorchModel):
         num_stacks: int = 30,
         num_blocks: int = 1,
         num_layers: int = 4,
-        layer_widths: Union[int, List[int]] = 256,
+        layer_widths: Union[int, list[int]] = 256,
         expansion_coefficient_dim: int = 5,
         trend_polynomial_degree: int = 2,
         dropout: float = 0.0,
@@ -817,7 +817,7 @@ class NBEATSModel(PastCovariatesTorchModel):
     def supports_multivariate(self) -> bool:
         return True
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (
             train_sample[1].shape[1] if train_sample[1] is not None else 0

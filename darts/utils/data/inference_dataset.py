@@ -5,7 +5,8 @@ Inference Dataset
 
 import bisect
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -241,7 +242,7 @@ class GenericInferenceDataset(InferenceDataset):
 
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -407,7 +408,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
 
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -481,7 +482,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
 
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -581,7 +582,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -690,7 +691,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -803,7 +804,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],

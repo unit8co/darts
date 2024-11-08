@@ -6,7 +6,8 @@ A forecasting model using a linear regression of some of the target series' lags
 covariate series lags in order to obtain a forecast.
 """
 
-from typing import List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 from scipy.optimize import linprog
@@ -34,7 +35,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
         likelihood: Optional[str] = None,
-        quantiles: Optional[List[float]] = None,
+        quantiles: Optional[list[float]] = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,

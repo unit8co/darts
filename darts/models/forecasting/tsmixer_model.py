@@ -22,7 +22,7 @@ Time-Series Mixer (TSMixer)
 # portions of the Software.
 # '
 
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Optional, Union
 
 import torch
 from torch import nn
@@ -36,7 +36,7 @@ from darts.models.forecasting.pl_forecasting_module import (
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.torch import MonteCarloDropout
 
-MixedCovariatesTrainTensorType = Tuple[
+MixedCovariatesTrainTensorType = tuple[
     torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
 ]
 
@@ -460,7 +460,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
     @io_processor
     def forward(
         self,
-        x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]],
+        x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]],
     ) -> torch.Tensor:
         # x_hist contains the historical time series data and the historical
         """TSMixer model forward pass.

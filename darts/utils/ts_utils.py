@@ -3,9 +3,10 @@ Additional util functions
 -------------------------
 """
 
+from collections.abc import Sequence
 from enum import Enum
 from functools import total_ordering
-from typing import List, Optional, Sequence, Union
+from typing import Optional, Union
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
@@ -241,7 +242,7 @@ def get_series_seq_type(
 
 
 # TODO: we do not check the time index here
-def retain_period_common_to_all(series: List[TimeSeries]) -> List[TimeSeries]:
+def retain_period_common_to_all(series: list[TimeSeries]) -> list[TimeSeries]:
     """
     Trims all series in the provided list, if necessary, so that the returned time series have
     a common span (corresponding to largest time sub-interval common to all series).

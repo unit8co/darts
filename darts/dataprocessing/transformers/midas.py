@@ -3,7 +3,8 @@ Mixed-data sampling (MIDAS) Transformer
 ---------------------------------------
 """
 
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
+from collections.abc import Mapping, Sequence
+from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -115,7 +116,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         params: Mapping[str, Any],
         *args,
         **kwargs,
-    ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+    ) -> Union[dict[str, Any], list[dict[str, Any]]]:
         """MIDAS needs the high frequency period name in order to easily reverse_transform
         TimeSeries, the parallelization is handled by `transform` and/or `inverse_transform`
         (see InvertibleDataTransformer.__init__() docstring).
