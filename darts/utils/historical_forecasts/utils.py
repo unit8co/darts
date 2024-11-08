@@ -161,6 +161,13 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                     logger,
                 )
 
+    # duplication of ForecastingModel.predict() check for the optimized historical forecasts implementations
+    if not model.supports_probabilistic_prediction and n.num_samples > 1:
+        raise_log(
+            ValueError("`num_samples > 1` is only supported for probabilistic models."),
+            logger,
+        )
+
     # check direct likelihood parameter prediction before fitting a model
     if n.predict_likelihood_parameters:
         if not model.supports_likelihood_parameter_prediction:
