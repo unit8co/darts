@@ -1289,6 +1289,49 @@ class TestRegressionModels:
         )
         assert len(result) == 21
 
+    @pytest.mark.parametrize("mode", [True, False])
+    def test_opti_historical_forecast_predict_checks(self, mode):
+        """
+        Verify that the sanity check implemented in ForecastingModel.predict are also defined for optimized historical
+        forecasts as it does not call this method
+        """
+        model = self.models[1](lags=5, multi_models=mode)
+
+        msg_expected = (
+            "The model has not been fitted yet, and `retrain` is ``False``. Either call `fit()` before "
+            "`historical_forecasts()`, or set `retrain` to something different than ``False``."
+        )
+        # untrained model, optimized
+        with pytest.raises(ValueError) as err:
+            model.historical_forecasts(
+                series=self.sine_univariate1,
+                start=0.9,
+                forecast_horizon=1,
+                retrain=False,
+                enable_optimization=True,
+                verbose=False,
+            )
+        assert str(err.value) == msg_expected
+
+        model.fit(
+            series=self.sine_univariate1,
+        )
+        # deterministic model, num_samples > 1, optimized
+        with pytest.raises(ValueError) as err:
+            model.historical_forecasts(
+                series=self.sine_univariate1,
+                start=0.9,
+                forecast_horizon=1,
+                retrain=False,
+                enable_optimization=True,
+                num_samples=10,
+                verbose=False,
+            )
+        assert (
+            str(err.value)
+            == "`num_samples > 1` is only supported for probabilistic models."
+        )
+
     @pytest.mark.parametrize(
         "config",
         [
