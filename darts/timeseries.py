@@ -42,7 +42,7 @@ from collections.abc import Sequence
 from copy import deepcopy
 from inspect import signature
 from io import StringIO
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Literal, Optional, Union
 
 import matplotlib.axes
 import matplotlib.pyplot as plt
@@ -59,11 +59,6 @@ from darts.utils.utils import (
     generate_index,
     n_steps_between,
 )
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 
 if sys.version_info >= (3, 11):
     from typing import Self

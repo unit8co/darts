@@ -23,7 +23,7 @@ We also show how to use the `TFTExplainer` in the example notebook of the `TFTMo
 """
 
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import Literal, Optional, Union
 
 import matplotlib.axes
 import matplotlib.pyplot as plt
@@ -37,12 +37,6 @@ from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.logging import get_logger, raise_log
 from darts.models import TFTModel
 from darts.utils.utils import generate_index
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
 
 logger = get_logger(__name__)
 

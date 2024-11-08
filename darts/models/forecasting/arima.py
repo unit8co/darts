@@ -10,12 +10,13 @@ References
 .. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
 
+import sys
 from collections.abc import Sequence
 from typing import Literal, Optional, Union
 
-try:
+if sys.version_info >= (3, 10):
     from typing import TypeAlias
-except ImportError:
+else:
     from typing_extensions import TypeAlias
 
 import numpy as np
