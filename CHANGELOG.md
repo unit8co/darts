@@ -29,6 +29,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - improved caching across `master` branch and its children
   - fixed failing docker deployment
   - removed `gradle` dependency in favor of native GitHub action plugins.
+- Updated ruff to v0.7.2 and target-version to python39, also fixed various typos [#2589](https://github.com/unit8co/darts/pull/2589) by [Greg DeVosNouri](https://github.com/gdevos010) and [Antoine Madrona](https://github.com/madtoinou).
 
 ## [0.31.0](https://github.com/unit8co/darts/tree/0.31.0) (2024-10-13)
 
@@ -55,7 +56,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Updated the Ray Tune Hyperparameter Optimization example in the [user guide](https://unit8co.github.io/darts/userguide/hyperparameter_optimization.html) to work with the latest `ray` versions (`>=2.31.0`). [#2459](https://github.com/unit8co/darts/pull/2459) by [He Weilin](https://github.com/cnhwl).
   - Indicate that `multi_models=False` induce a lags shift for each step in `output_chunk_length` in `RegressionModel` and `LinearRegressionModel`. [#2511](https://github.com/unit8co/darts/pull/2511) by [Antoine Madrona](https://github.com/madtoinou).
   - Added reference to `timeseries_generation.datetime_attribute_timeseries` in `TimeSeries.add_datetime_attribute` (0-indexing of encoding is enforced). [#2511](https://github.com/unit8co/darts/pull/2511) by [Antoine Madrona](https://github.com/madtoinou).
-  - Update ruff to v6.8. Also fixed many typos [#2548](https://github.com/unit8co/darts/pull/2548) by [Greg DeVosNouri](https://github.com/gdevos010)
 
 **Fixed**
 
