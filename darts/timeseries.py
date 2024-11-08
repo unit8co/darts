@@ -2170,7 +2170,7 @@ class TimeSeries:
 
             ``pd.Timestamp`` work only on series that are indexed with a ``pd.DatetimeIndex``. In such cases, the
             returned point will be the index of this timestamp if it is present in the series time index.
-            It it's not present in the time index, the index of the next timestamp is returned if `after=True`
+            If it's not present in the time index, the index of the next timestamp is returned if `after=True`
             (if it exists in the series), otherwise the index of the previous timestamp is returned
             (if it exists in the series).
 

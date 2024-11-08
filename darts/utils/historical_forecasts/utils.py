@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
 from darts.utils.utils import generate_index, n_steps_between
@@ -47,18 +47,18 @@ def _historical_forecasts_general_checks(model, series, kwargs):
     n = SimpleNamespace(**kwargs)
 
     # check forecast horizon
-    raise_if_not(
-        n.forecast_horizon > 0,
-        "The provided forecasting horizon must be a positive integer.",
-        logger,
-    )
+    if not n.forecast_horizon > 0:
+        raise_log(
+            ValueError("The provided forecasting horizon must be a positive integer."),
+            logger,
+        )
 
     # check stride
-    raise_if_not(
-        n.stride > 0,
-        "The provided stride parameter must be a positive integer.",
-        logger,
-    )
+    if not n.stride > 0:
+        raise_log(
+            ValueError("The provided stride parameter must be a positive integer."),
+            logger,
+        )
 
     series = series2seq(series)
 
@@ -78,28 +78,29 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                     f"`start_format` must be on of ['position', 'value']. Received '{n.start_format}'."
                 )
             )
-        if n.start_format == "position":
-            raise_if_not(
-                isinstance(n.start, (int, np.int64)),
-                f"Since `start_format='position'`, `start` must be an integer, received {type(n.start)}.",
+        if n.start_format == "position" and not isinstance(n.start, (int, np.int64)):
+            raise_log(
+                ValueError(
+                    f"Since `start_format='position'`, `start` must be an integer, received {type(n.start)}."
+                ),
+                logger,
+            )
+        if isinstance(n.start, float) and not 0.0 <= n.start <= 1.0:
+            raise_log(
+                ValueError("if `start` is a float, must be between 0.0 and 1.0."),
                 logger,
             )
 
-        if isinstance(n.start, float):
-            raise_if_not(
-                0.0 <= n.start <= 1.0,
-                "if `start` is a float, must be between 0.0 and 1.0.",
-                logger,
-            )
-
-        # verbose error messages
-        if not isinstance(n.start, pd.Timestamp):
-            start_value_msg = f"`start` value `{n.start}` corresponding to timestamp"
-        else:
-            start_value_msg = "`start` time"
         for idx, series_ in enumerate(series):
             # check specifically for int and Timestamp as error by `get_timestamp_at_point` is too generic
             if isinstance(n.start, pd.Timestamp):
+                if not series_._has_datetime_index:
+                    raise_log(
+                        ValueError(
+                            "if `start` is a `pd.Timestamp`, all series must be indexed with a `pd.DatetimeIndex`"
+                        ),
+                        logger,
+                    )
                 if n.start > series_.end_time():
                     raise_log(
                         ValueError(
@@ -108,70 +109,48 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                         ),
                         logger,
                     )
-                elif n.start < series_.start_time():
-                    raise_log(
-                        ValueError(
-                            f"`start` time `{n.start}` is before the first timestamp `{series_.start_time()}` of the "
-                            f"series at index: {idx}."
-                        ),
-                        logger,
-                    )
             elif isinstance(n.start, (int, np.int64)):
-                out_of_bound_error = False
-                if n.start_format == "position":
-                    if (n.start > 0 and n.start >= len(series_)) or (
-                        n.start < 0 and np.abs(n.start) > len(series_)
-                    ):
-                        out_of_bound_error = True
-                elif series_.has_datetime_index:
+                if n.start_format == "position" or series_.has_datetime_index:
                     if n.start >= len(series_):
-                        out_of_bound_error = True
-                elif n.start < series_.time_index[0]:
+                        raise_log(
+                            ValueError(
+                                f"`start` position `{n.start}` is out of bounds for series of length {len(series_)} "
+                                f"at index: {idx}."
+                            ),
+                            logger,
+                        )
+                elif n.start > series_.time_index[-1]:  # format "value" and range index
                     raise_log(
                         ValueError(
-                            f"`start` index `{n.start}` is smaller than the first index `{series_.time_index[0]}` "
+                            f"`start` time `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
                             f"for series at index: {idx}."
                         ),
                         logger,
                     )
-                elif n.start > series_.time_index[-1]:
-                    raise_log(
-                        ValueError(
-                            f"`start` index `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
-                            f"for series at index: {idx}."
-                        ),
-                        logger,
-                    )
 
-                if out_of_bound_error:
-                    raise_log(
-                        ValueError(
-                            f"`start` index `{n.start}` is out of bounds for series of length {len(series_)} "
-                            f"at index: {idx}."
-                        ),
-                        logger,
-                    )
+            # find valid start position relative to the series start time, otherwise raise an error
+            start_idx, _ = _get_start_index(
+                series_, idx, n.start, n.start_format, n.stride
+            )
 
-            if n.start_format == "value":
-                start = series_.get_timestamp_at_point(n.start)
-            else:
-                start = series_.time_index[n.start]
-
-            if n.retrain is not False and start == series_.start_time():
-                raise_log(
-                    ValueError(
-                        f"{start_value_msg} `{start}` is the first timestamp of the series {idx}, resulting in an "
-                        f"empty training set."
-                    ),
-                    logger,
-                )
-
-            # check that overlap_end and start together form a valid combination
+            # check that `overlap_end` and `start` are a valid combination
             overlap_end = n.overlap_end
             if (
                 not overlap_end
-                and start + (series_.freq * (n.forecast_horizon - 1)) not in series_
+                and start_idx + n.forecast_horizon + model.output_chunk_shift
+                > len(series_)
             ):
+                # verbose error messages
+                if n.start_format == "position" or (
+                    not isinstance(n.start, pd.Timestamp)
+                    and series_._has_datetime_index
+                ):
+                    start_value_msg = (
+                        f"`start` position `{n.start}` corresponding to time"
+                    )
+                else:
+                    start_value_msg = "`start` time"
+                start = series_._time_index[start_idx]
                 raise_log(
                     ValueError(
                         f"{start_value_msg} `{start}` is too late in the series {idx} to make any predictions with "
@@ -293,35 +272,152 @@ def _historical_forecasts_check_kwargs(
     return dict_kwargs
 
 
-def _historical_forecasts_start_warnings(
-    idx: int,
-    start: Union[pd.Timestamp, int],
-    start_time_: Union[int, pd.Timestamp],
-    historical_forecasts_time_index: TimeIndex,
+def _get_start_index(
+    series: TimeSeries,
+    series_idx: int,
+    start: Union[pd.Timestamp, int, float],
+    start_format: Literal["value", "position"],
+    stride: int,
+    historical_forecasts_time_index: Optional[TimeIndex] = None,
 ):
-    """Warnings when start value provided by user is not within the forecastable indexes boundaries"""
-    if not isinstance(start, pd.Timestamp):
-        start_value_msg = f"value `{start}` corresponding to timestamp `{start_time_}`"
-    else:
-        start_value_msg = f"time `{start_time_}`"
+    """Finds a valid historical forecast start point within either `series` or `historical_forecasts_time_index`
+    (depending on whether `historical_forecasts_time_index` is passed, denoted as `ref`).
 
-    if start_time_ < historical_forecasts_time_index[0]:
-        logger.warning(
-            f"`start` {start_value_msg} is before the first predictable/trainable historical "
-            f"forecasting point for series at index: {idx}. Ignoring `start` for this series and "
-            f"beginning at first trainable/predictable time: {historical_forecasts_time_index[0]}. "
-            f"To hide these warnings, set `show_warnings=False`."
-        )
+    - If `start` is larger or equal to the first index of `ref`, uses `start` directly.
+    - If `start` is before the first index of `ref`, tries to find a start point within `ref` that lies a
+      round-multiple `stride` time steps ahead of `start`.
+
+    Raises an error if the new start index from above is larger than the last index in `ref`.
+
+    Parameters
+    ----------
+    series
+        A time series. If `historical_forecasts_time_index` is `None`, will use this series' time index as a reference
+        index.
+    series_idx
+        The sequence index of the `series`.
+    start
+        The start point for historical forecasts.
+    start_format
+        The start format for historical forecasts.
+    stride
+        The stride for historical forecasts.
+    historical_forecasts_time_index
+        Optionally, the historical forecast index (or the boundaries only) to use as the reference index.
+    """
+    series_start, series_end = series._time_index[0], series._time_index[-1]
+    has_dti = series._has_datetime_index
+    # find start position relative to the series start time
+    if isinstance(start, float):
+        # fraction of series
+        rel_start = series.get_index_at_point(start)
+    elif start_format == "value" and not (isinstance(start, int) and has_dti):
+        # start is a time stamp for DatetimeIndex, and integer for RangeIndex
+        rel_start = n_steps_between(start, series_start, freq=series.freq)
     else:
-        logger.warning(
-            f"`start` {start_value_msg} is after the last trainable/predictable historical "
-            f"forecasting point for series at index: {idx}. This would results in empty historical "
-            f"forecasts. Ignoring `start` for this series and beginning at first trainable/"
-            f"predictable time: {historical_forecasts_time_index[0]}. Non-empty forecasts can be "
-            f"generated by setting `start` value to times between (including): "
-            f"{(historical_forecasts_time_index[0], historical_forecasts_time_index[-1])}. "
-            f"To hide these warnings, set `show_warnings=False`."
+        # start is a positional index
+        start: int
+        rel_start = start if start >= 0 else len(series) - abs(start)
+
+    # find actual start time
+    start_idx = _adjust_start(rel_start, stride)
+    _check_start(
+        series=series,
+        start_idx=start_idx,
+        start=start,
+        start_format=start_format,
+        series_start=series_start,
+        ref_start=series_start,
+        ref_end=series_end,
+        stride=stride,
+        series_idx=series_idx,
+        is_historical_forecast=False,
+    )
+    if historical_forecasts_time_index is not None:
+        hfc_start, hfc_end = (
+            historical_forecasts_time_index[0],
+            historical_forecasts_time_index[-1],
         )
+        # at this point, we know that `start_idx` is within `series`. Now, find the position of that time step
+        # relative to the first forecastable point
+        rel_start_hfc = n_steps_between(
+            series._time_index[start_idx], hfc_start, freq=series.freq
+        )
+        # get the positional index of `hfc_start` in `series`
+        hfc_start_idx = start_idx - rel_start_hfc
+        # potentially, adjust the position to be inside the forecastable points
+        hfc_start_idx += _adjust_start(rel_start_hfc, stride)
+        _check_start(
+            series=series,
+            start_idx=hfc_start_idx,
+            start=start,
+            start_format=start_format,
+            series_start=series_start,
+            ref_start=hfc_start,
+            ref_end=hfc_end,
+            stride=stride,
+            series_idx=series_idx,
+            is_historical_forecast=True,
+        )
+        start_idx = hfc_start_idx
+    return start_idx, rel_start
+
+
+def _adjust_start(rel_start, stride):
+    """If relative start position `rel_start` is negative, then adjust it to the first non-negative index that lies a
+    round-multiple of `stride` ahead of `rel_start`
+    """
+    if rel_start >= 0:
+        start_idx = rel_start
+    else:
+        # if `start` lies before the start time of `series` -> check if there is a valid start point in
+        # `series` that is a round-multiple of `stride` ahead of `start`
+        start_idx = (
+            rel_start
+            + (abs(rel_start) // stride + int(abs(rel_start) % stride > 0)) * stride
+        )
+    return start_idx
+
+
+def _check_start(
+    series: TimeSeries,
+    start_idx: int,
+    start: Union[pd.Timestamp, int, float],
+    start_format: Literal["value", "position"],
+    series_start: Union[pd.Timestamp, int],
+    ref_start: Union[pd.Timestamp, int],
+    ref_end: Union[pd.Timestamp, int],
+    stride: int,
+    series_idx: int,
+    is_historical_forecast: bool,
+):
+    """Raises an error if the start index (position) is not within the series."""
+    if start_idx < len(series):
+        return
+
+    if start_format == "position" or (
+        not isinstance(start, pd.Timestamp) and series._has_datetime_index
+    ):
+        start_format_msg = f"position `{start}` corresponding to time "
+        if isinstance(start, float):
+            # fraction of series
+            start = series.get_index_at_point(start)
+        else:
+            start = series.start_time() + start * series.freq
+    else:
+        start_format_msg = "time "
+    ref_msg = "" if not is_historical_forecast else "historical forecastable "
+    start_new = series_start + start_idx * series.freq
+    raise_log(
+        ValueError(
+            f"`start` {start_format_msg}`{start}` is smaller than the first {ref_msg}time index "
+            f"`{ref_start}` for series at index: {series_idx}, and could not find a valid start "
+            f"point within the {ref_msg}time index that lies a round-multiple of `stride={stride}` "
+            f"ahead of `start` (first inferred start is `{start_new}`, but last {ref_msg}time index "
+            f"is `{ref_end}`."
+        ),
+        logger=logger,
+    )
 
 
 def _get_historical_forecastable_time_index(
@@ -542,37 +638,51 @@ def _adjust_historical_forecasts_time_index(
     historical_forecasts_time_index: TimeIndex,
     start: Optional[Union[pd.Timestamp, float, int]],
     start_format: Literal["position", "value"],
+    stride: int,
     show_warnings: bool,
 ) -> TimeIndex:
     """
     Shrink the beginning and end of the historical forecasts time index based on the values of `start`,
     `forecast_horizon` and `overlap_end`.
     """
+    # retrieve actual start
     # when applicable, shift the start of the forecastable index based on `start`
     if start is not None:
-        if start_format == "value":
-            start_time_ = series.get_timestamp_at_point(start)
-        else:
-            start_time_ = series.time_index[start]
-        # ignore user-defined `start`
-        if (
-            not historical_forecasts_time_index[0]
-            <= start_time_
-            <= historical_forecasts_time_index[-1]
-        ):
-            if show_warnings:
-                _historical_forecasts_start_warnings(
-                    idx=series_idx,
-                    start=start,
-                    start_time_=start_time_,
-                    historical_forecasts_time_index=historical_forecasts_time_index,
-                )
-        else:
-            historical_forecasts_time_index = (
-                max(historical_forecasts_time_index[0], start_time_),
-                historical_forecasts_time_index[1],
-            )
+        # find valid start position relative to the hfc start time, otherwise raise an error
+        start_idx, start_idx_orig = _get_start_index(
+            series=series,
+            series_idx=series_idx,
+            start=start,
+            start_format=start_format,
+            stride=stride,
+            historical_forecasts_time_index=historical_forecasts_time_index,
+        )
+        start_time = series._time_index[start_idx]
 
+        if start_idx != start_idx_orig and show_warnings:
+            if start_idx_orig >= 0:
+                start_time_orig = series._time_index[start_idx_orig]
+            else:
+                start_time_orig = series.start_time() + start_idx_orig * series.freq
+
+            if start_format == "position" or (
+                not isinstance(start, pd.Timestamp) and series._has_datetime_index
+            ):
+                start_value_msg = (
+                    f"position `{start}` corresponding to time `{start_time_orig}`"
+                )
+            else:
+                start_value_msg = f"time `{start_time_orig}`"
+            logger.warning(
+                f"`start` {start_value_msg} is before the first predictable/trainable historical "
+                f"forecasting point for series at index: {series_idx}. Using the first historical forecasting "
+                f"point `{start_time}` that lies a round-multiple of `stride={stride}` "
+                f"ahead of `start`. To hide these warnings, set `show_warnings=False`."
+            )
+        historical_forecasts_time_index = (
+            max(historical_forecasts_time_index[0], start_time),
+            historical_forecasts_time_index[1],
+        )
     return historical_forecasts_time_index
 
 
@@ -719,6 +829,7 @@ def _get_historical_forecast_boundaries(
     start_format: Literal["position", "value"],
     forecast_horizon: int,
     overlap_end: bool,
+    stride: int,
     freq: pd.DateOffset,
     show_warnings: bool = True,
 ) -> Tuple[Any, ...]:
@@ -748,6 +859,7 @@ def _get_historical_forecast_boundaries(
         historical_forecasts_time_index=historical_forecasts_time_index,
         start=start,
         start_format=start_format,
+        stride=stride,
         show_warnings=show_warnings,
     )
 

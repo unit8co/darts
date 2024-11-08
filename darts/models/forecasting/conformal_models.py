@@ -24,7 +24,8 @@ from darts.metrics.metrics import METRIC_TYPE
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.models.utils import TORCH_AVAILABLE
 from darts.utils import _build_tqdm_iterator, _with_sanity_checks
-from darts.utils.historical_forecasts.utils import _historical_forecasts_start_warnings
+
+# from darts.utils.historical_forecasts.utils import _historical_forecasts_start_warnings
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.ts_utils import (
     SeriesType,
@@ -1254,22 +1255,23 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     or first_idx_start < first_idx_train
                 ):
                     first_idx_start = 0
-                    if show_warnings:
-                        # adjust to actual start point in case of output shift or `last_points_only=True`
-                        adjust_idx = (
-                            self.output_chunk_shift
-                            + int(last_points_only) * (forecast_horizon - 1)
-                        ) * series_.freq
-                        hfc_predict_index = (
-                            s_hfcs[first_idx_train].start_time() - adjust_idx,
-                            s_hfcs[last_idx].start_time() - adjust_idx,
-                        )
-                        _historical_forecasts_start_warnings(
-                            idx=series_idx,
-                            start=start,
-                            start_time_=start_time,
-                            historical_forecasts_time_index=hfc_predict_index,
-                        )
+                    # TODO: proper start handling
+                    # if show_warnings:
+                    #     # adjust to actual start point in case of output shift or `last_points_only=True`
+                    #     adjust_idx = (
+                    #         self.output_chunk_shift
+                    #         + int(last_points_only) * (forecast_horizon - 1)
+                    #     ) * series_.freq
+                    #     hfc_predict_index = (
+                    #         s_hfcs[first_idx_train].start_time() - adjust_idx,
+                    #         s_hfcs[last_idx].start_time() - adjust_idx,
+                    #     )
+                    #     _historical_forecasts_start_warnings(
+                    #         idx=series_idx,
+                    #         start=start,
+                    #         start_time_=start_time,
+                    #         historical_forecasts_time_index=hfc_predict_index,
+                    #     )
 
             # get final first index
             first_fc_idx = max([first_idx_train, first_idx_start])

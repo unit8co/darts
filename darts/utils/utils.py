@@ -57,7 +57,7 @@ class ModelMode(Enum):
     NONE = None
 
 
-# TODO: remove this once bumping min python version from 3.8 to 3.9 (pandas v2.2.0 not available for p38)
+# TODO: remove this at some point when we set a lower cap on pandas v2.2.0
 pd_above_v22 = pd.__version__ >= "2.2"
 freqs = {
     "YE": "YE" if pd_above_v22 else "A",

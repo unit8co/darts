@@ -3,8 +3,7 @@ joblib>=0.16.0
 matplotlib>=3.3.0
 nfoursid>=1.0.0
 numpy>=1.19.0,<2.0.0
-pandas>=1.0.5,<2.0.0; python_version < "3.9"
-pandas>=1.0.5; python_version >= "3.9"
+pandas>=1.0.5
 pmdarima>=1.8.0
 pyod>=0.9.5
 requests>=2.22.0
