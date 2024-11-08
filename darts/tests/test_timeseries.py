@@ -2410,8 +2410,8 @@ class TestTimeSeriesFromDataFrame:
         assert list(ts.time_index.tz_localize("CET")) == list(time_range_MS)
         assert ts.time_index.tz is None
 
-        series = pd.Series(data=values, index=time_range_MS)
-        ts = TimeSeries.from_series(pd_series=series)
+        serie = pd.Series(data=values, index=time_range_MS)
+        ts = TimeSeries.from_series(pd_series=serie)
         assert list(ts.time_index) == list(time_range_MS.tz_localize(None))
         assert list(ts.time_index.tz_localize("CET")) == list(time_range_MS)
         assert ts.time_index.tz is None

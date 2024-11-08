@@ -458,12 +458,12 @@ class RegressionEnsembleModel(EnsembleModel):
         ensembled = [
             self.regression_model.predict(
                 n=len(prediction),
-                series=series,
+                series=serie,
                 future_covariates=prediction,
                 num_samples=num_samples,
                 predict_likelihood_parameters=predict_likelihood_parameters,
             )
-            for series, prediction in zip(series, predictions)
+            for serie, prediction in zip(series, predictions)
         ]
         return seq2series(ensembled) if is_single_series else ensembled
 
