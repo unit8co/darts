@@ -24,13 +24,13 @@ from darts.metrics.metrics import METRIC_TYPE
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.models.utils import TORCH_AVAILABLE
 from darts.utils import _build_tqdm_iterator, _with_sanity_checks
-
-# from darts.utils.historical_forecasts.utils import _historical_forecasts_start_warnings
+from darts.utils.historical_forecasts.utils import (
+    _adjust_historical_forecasts_time_index,
+)
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.ts_utils import (
     SeriesType,
     get_series_seq_type,
-    get_single_series,
     series2seq,
 )
 from darts.utils.utils import (
@@ -61,6 +61,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         cal_length: Optional[int] = None,
         num_samples: int = 500,
         random_state: Optional[int] = None,
+        stride_cal: bool = False,
     ):
         """Base Conformal Prediction Model.
 
@@ -79,8 +80,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
         follows:
 
         - Extract a calibration set: The number of calibration examples from the most recent past to use for one
-          conformal prediction can be defined at model creation with parameter `cal_length`. To make your life simpler,
-          we support two modes:
+          conformal prediction can be defined at model creation with parameter `cal_length`. If `stride_cal` is `True`,
+          then the same `stride` from the forecasting methods is applied to the calibration set, and more calibration
+          examples are required (`cal_length * stride` historical forecasts that were generated with `stride=1`).
+          To make your life simpler, we support two modes:
             - Automatic extraction of the calibration set from the past of your input series (`series`,
               `past_covariates`, ...). This is the default mode and our predict/forecasting/backtest/.... API is
               identical to any other forecasting model
@@ -118,6 +121,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             set in downstream forecasting tasks.
         random_state
             Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
+        stride_cal
+            Whether to apply the same historical forecast `stride` to the non-conformity scores of the calibration set.
         """
         if not isinstance(model, GlobalForecastingModel) or not model._fit_called:
             raise_log(
@@ -154,6 +159,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         # model setup
         self.model = model
         self.cal_length = cal_length
+        self.stride_cal = stride_cal
         self.num_samples = num_samples if model.supports_probabilistic_prediction else 1
         self._likelihood = "quantile"
         self._fit_called = True
@@ -216,6 +222,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         cal_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         cal_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         cal_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        stride: int = 1,
         num_samples: int = 1,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
@@ -274,6 +281,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
         cal_future_covariates
             Optionally, a future covariates series for every input time series in `series` to use for calibration
             instead of `future_covariates`.
+        stride
+            The number of time steps between two consecutive predictions (and non-conformity scores) of the
+            calibration set. Right-bound by the first time step of the generated forecast.
         num_samples
             Number of times a prediction is sampled from the calibrated quantile predictions using linear
             interpolation in-between the quantiles. For larger values, the sample distribution approximates the
@@ -382,6 +392,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             cal_forecasts=cal_hfcs,
             num_samples=num_samples,
             forecast_horizon=n,
+            stride=stride,
             overlap_end=True,
             last_points_only=False,
             verbose=verbose,
@@ -1124,6 +1135,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
         - Compute the conformal prediction: Add the calibrated intervals to (or adjust the existing intervals of) the
           forecasting model's predictions.
         """
+        # TODO: add proper handling of `cal_stride` > 1
+        # cal_stride = stride if self.stride_cal else 1
         cal_length = self.cal_length
         metric, metric_kwargs = self._residuals_metric
         residuals = self.model.residuals(
@@ -1158,7 +1171,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 cp_hfcs.append(cp_preds)
                 continue
 
-            first_hfc = get_single_series(s_hfcs)
             last_hfc = s_hfcs if last_points_only else s_hfcs[-1]
 
             # compute the minimum required number of useful calibration residuals
@@ -1228,50 +1240,35 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     ),
                     logger=logger,
                 )
-            # skip solely based on `start`
+            # adjust first index based on `start`
             first_idx_start = 0
             if start is not None:
-                if isinstance(start, pd.Timestamp) or start_format == "value":
-                    start_time = start
-                else:
-                    start_time = series_._time_index[start]
-
+                # adjust forecastable index in case of output shift or `last_points_only=True`
+                adjust_idx = (
+                    self.output_chunk_shift
+                    + int(last_points_only) * (forecast_horizon - 1)
+                ) * series_.freq
+                historical_forecastable_index = (
+                    s_hfcs[first_idx_train].start_time() - adjust_idx,
+                    s_hfcs[-1].start_time() - adjust_idx,
+                )
+                # TODO: add proper start handling with `cal_stride>1`
+                # adjust forecastable index based on start, assuming hfcs were generated with `stride=1`
+                first_idx_start, _ = _adjust_historical_forecasts_time_index(
+                    series=series_,
+                    series_idx=series_idx,
+                    start=start,
+                    start_format=start_format,
+                    stride=stride,
+                    historical_forecasts_time_index=historical_forecastable_index,
+                    show_warnings=show_warnings,
+                )
+                # find position relative to start
                 first_idx_start = n_steps_between(
-                    end=start_time,
-                    start=first_hfc.start_time(),
+                    first_idx_start + adjust_idx,
+                    s_hfcs[0].start_time(),
                     freq=series_.freq,
                 )
-                # hfcs have shifted output; skip until end of shift
-                first_idx_start += self.output_chunk_shift
-                # hfcs only contain last predicted points; skip until end of first forecast
-                if last_points_only:
-                    first_idx_start += forecast_horizon - 1
-
-                # if start is out of bounds, we ignore it
-                last_idx = len(s_hfcs) - 1
-                if (
-                    first_idx_start < 0
-                    or first_idx_start > last_idx
-                    or first_idx_start < first_idx_train
-                ):
-                    first_idx_start = 0
-                    # TODO: proper start handling
-                    # if show_warnings:
-                    #     # adjust to actual start point in case of output shift or `last_points_only=True`
-                    #     adjust_idx = (
-                    #         self.output_chunk_shift
-                    #         + int(last_points_only) * (forecast_horizon - 1)
-                    #     ) * series_.freq
-                    #     hfc_predict_index = (
-                    #         s_hfcs[first_idx_train].start_time() - adjust_idx,
-                    #         s_hfcs[last_idx].start_time() - adjust_idx,
-                    #     )
-                    #     _historical_forecasts_start_warnings(
-                    #         idx=series_idx,
-                    #         start=start,
-                    #         start_time_=start_time,
-                    #         historical_forecasts_time_index=hfc_predict_index,
-                    #     )
 
             # get final first index
             first_fc_idx = max([first_idx_train, first_idx_start])
@@ -1596,6 +1593,7 @@ class ConformalNaiveModel(ConformalModel):
         cal_length: Optional[int] = None,
         num_samples: int = 500,
         random_state: Optional[int] = None,
+        stride_cal: bool = False,
     ):
         """Naive Conformal Prediction Model.
 
@@ -1625,8 +1623,10 @@ class ConformalNaiveModel(ConformalModel):
         follows:
 
         - Extract a calibration set: The number of calibration examples from the most recent past to use for one
-          conformal prediction can be defined at model creation with parameter `cal_length`. To make your life simpler,
-          we support two modes:
+          conformal prediction can be defined at model creation with parameter `cal_length`. If `stride_cal` is `True`,
+          then the same `stride` from the forecasting methods is applied to the calibration set, and more calibration
+          examples are required (`cal_length * stride` historical forecasts that were generated with `stride=1`).
+          To make your life simpler, we support two modes:
             - Automatic extraction of the calibration set from the past of your input series (`series`,
               `past_covariates`, ...). This is the default mode and our predict/forecasting/backtest/.... API is
               identical to any other forecasting model
@@ -1664,6 +1664,8 @@ class ConformalNaiveModel(ConformalModel):
             set in downstream forecasting tasks.
         random_state
             Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
+        stride_cal
+            Whether to apply the same historical forecast `stride` to the non-conformity scores of the calibration set.
         """
         super().__init__(
             model=model,
@@ -1672,6 +1674,7 @@ class ConformalNaiveModel(ConformalModel):
             cal_length=cal_length,
             num_samples=num_samples,
             random_state=random_state,
+            stride_cal=stride_cal,
         )
 
     def _calibrate_interval(
@@ -1722,6 +1725,7 @@ class ConformalQRModel(ConformalModel):
         cal_length: Optional[int] = None,
         num_samples: int = 500,
         random_state: Optional[int] = None,
+        stride_cal: bool = False,
     ):
         """Conformalized Quantile Regression Model.
 
@@ -1753,8 +1757,10 @@ class ConformalQRModel(ConformalModel):
         follows:
 
         - Extract a calibration set: The number of calibration examples from the most recent past to use for one
-          conformal prediction can be defined at model creation with parameter `cal_length`. To make your life simpler,
-          we support two modes:
+          conformal prediction can be defined at model creation with parameter `cal_length`. If `stride_cal` is `True`,
+          then the same `stride` from the forecasting methods is applied to the calibration set, and more calibration
+          examples are required (`cal_length * stride` historical forecasts that were generated with `stride=1`).
+          To make your life simpler, we support two modes:
             - Automatic extraction of the calibration set from the past of your input series (`series`,
               `past_covariates`, ...). This is the default mode and our predict/forecasting/backtest/.... API is
               identical to any other forecasting model
@@ -1793,6 +1799,8 @@ class ConformalQRModel(ConformalModel):
             set in downstream forecasting tasks.
         random_state
             Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
+        stride_cal
+            Whether to apply the same historical forecast `stride` to the non-conformity scores of the calibration set.
         """
         if not model.supports_probabilistic_prediction:
             raise_log(
@@ -1809,6 +1817,7 @@ class ConformalQRModel(ConformalModel):
             cal_length=cal_length,
             num_samples=num_samples,
             random_state=random_state,
+            stride_cal=stride_cal,
         )
 
     def _calibrate_interval(
