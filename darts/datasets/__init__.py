@@ -6,7 +6,6 @@ A few popular time series datasets
 """
 
 from pathlib import Path
-from typing import List
 
 import numpy as np
 import pandas as pd
@@ -559,7 +558,7 @@ class ElectricityDataset(DatasetLoaderCSV):
             )
         )
 
-    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+    def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         Load the electricity dataset as a list of univariate series, one for each household.
         """
@@ -658,7 +657,7 @@ class UberTLCDataset(DatasetLoaderCSV):
             )
         )
 
-    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+    def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         load the Uber TLC dataset as a list of univariate timeseries, one for each locationID.
         """
@@ -729,7 +728,7 @@ class ILINetDataset(DatasetLoaderCSV):
             )
         )
 
-    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+    def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         Load the ILINetDataset dataset as a list of univariate timeseries.
         """
@@ -766,7 +765,7 @@ class ExchangeRateDataset(DatasetLoaderCSV):
             )
         )
 
-    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+    def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         Load the ExchangeRateDataset dataset as a list of univariate timeseries, one for each country.
         """
@@ -805,7 +804,7 @@ class TrafficDataset(DatasetLoaderCSV):
             )
         )
 
-    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+    def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         Load the TrafficDataset dataset as a list of univariate timeseries, one for each ID.
         """
@@ -845,7 +844,7 @@ class WeatherDataset(DatasetLoaderCSV):
             )
         )
 
-    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+    def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         Load the WeatherDataset dataset as a list of univariate timeseries, one for weather indicator.
         """

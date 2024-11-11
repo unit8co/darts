@@ -5,7 +5,8 @@ Recurrent Neural Networks
 
 import inspect
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence, Tuple, Type, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import torch
 import torch.nn as nn
@@ -79,8 +80,8 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
     @io_processor
     @abstractmethod
     def forward(
-        self, x_in: Tuple, h: Optional[torch.Tensor] = None
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        self, x_in: tuple, h: Optional[torch.Tensor] = None
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """RNN Module forward.
 
         Parameters
@@ -102,7 +103,7 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
         """
         pass
 
-    def _produce_train_output(self, input_batch: Tuple) -> torch.Tensor:
+    def _produce_train_output(self, input_batch: tuple) -> torch.Tensor:
         (
             past_target,
             historic_future_covariates,
@@ -122,8 +123,8 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
         return self(model_input)[0]
 
     def _produce_predict_output(
-        self, x: Tuple, last_hidden_state: Optional[torch.Tensor] = None
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        self, x: tuple, last_hidden_state: Optional[torch.Tensor] = None
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """overwrite parent classes `_produce_predict_output` method"""
         output, hidden = self(x, last_hidden_state)
         if self.likelihood:
@@ -135,7 +136,7 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
             return output.squeeze(dim=-1), hidden
 
     def _get_batch_prediction(
-        self, n: int, input_batch: Tuple, roll_size: int
+        self, n: int, input_batch: tuple, roll_size: int
     ) -> torch.Tensor:
         """
         This model is recurrent, so we have to write a specific way to
@@ -251,8 +252,8 @@ class _RNNModule(CustomRNNModule):
 
     @io_processor
     def forward(
-        self, x_in: Tuple, h: Optional[torch.Tensor] = None
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        self, x_in: tuple, h: Optional[torch.Tensor] = None
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         x, _ = x_in
         # data is of size (batch_size, input_length, input_size)
         batch_size = x.shape[0]
@@ -274,7 +275,7 @@ class RNNModel(DualCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
-        model: Union[str, Type[CustomRNNModule]] = "RNN",
+        model: Union[str, type[CustomRNNModule]] = "RNN",
         hidden_dim: int = 25,
         n_rnn_layers: int = 1,
         dropout: float = 0.0,
@@ -318,7 +319,7 @@ class RNNModel(DualCovariatesTorchModel):
         n_rnn_layers
             The number of recurrent layers.
         dropout
-            Fraction of neurons afected by Dropout.
+            Fraction of neurons affected by Dropout.
         training_length
             The length of both input (target and covariates) and output (target) time series used during
             training. Must have a larger value than `input_chunk_length`, because otherwise during training
@@ -532,7 +533,7 @@ class RNNModel(DualCovariatesTorchModel):
         self.n_rnn_layers = n_rnn_layers
         self.training_length = training_length
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, historic_future_covariates, future_covariates, future_target)
         # historic_future_covariates and future_covariates have the same width
         input_dim = train_sample[0].shape[1] + (
@@ -597,7 +598,7 @@ class RNNModel(DualCovariatesTorchModel):
     @property
     def extreme_lags(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         Optional[int],

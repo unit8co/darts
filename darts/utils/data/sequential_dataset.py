@@ -3,7 +3,8 @@ Sequential Training Dataset
 ---------------------------
 """
 
-from typing import Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 
@@ -104,7 +105,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -199,7 +200,7 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -309,7 +310,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -433,7 +434,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -559,7 +560,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],

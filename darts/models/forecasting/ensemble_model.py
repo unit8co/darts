@@ -4,7 +4,8 @@ Ensemble Model Base Class
 
 import os
 from abc import abstractmethod
-from typing import BinaryIO, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import BinaryIO, Optional, Union
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import (
@@ -57,7 +58,7 @@ class EnsembleModel(GlobalForecastingModel):
 
     def __init__(
         self,
-        forecasting_models: List[ForecastingModel],
+        forecasting_models: list[ForecastingModel],
         train_num_samples: int,
         train_samples_reduction: Optional[Union[str, float]],
         train_forecasting_models: bool = True,
@@ -463,7 +464,7 @@ class EnsembleModel(GlobalForecastingModel):
     @property
     def extreme_lags(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         Optional[int],
@@ -530,7 +531,7 @@ class EnsembleModel(GlobalForecastingModel):
 
             # check the quantiles
             if lkl_simplified_name == "quantile":
-                quantiles: List[str] = (
+                quantiles: list[str] = (
                     likelihood.quantiles if is_obj_lkl else m.quantiles
                 )
                 if tmp_quantiles is None:

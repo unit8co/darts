@@ -4,7 +4,8 @@ Encoder Base Classes
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -14,13 +15,8 @@ from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger, raise_if, raise_log
 from darts.utils.utils import generate_index
 
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
 SupportedIndex = Union[pd.DatetimeIndex, pd.RangeIndex]
-EncoderOutputType = Optional[Union[Sequence[TimeSeries], List[TimeSeries]]]
+EncoderOutputType = Optional[Union[Sequence[TimeSeries], list[TimeSeries]]]
 logger = get_logger(__name__)
 
 
@@ -49,7 +45,7 @@ class CovariatesIndexGenerator(ABC):
         self,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[List[int]] = None,
+        lags_covariates: Optional[list[int]] = None,
     ):
         """:class:`CovariatesIndexGenerator` generates a time index for covariates at training and inference /
         prediction time with methods :func:`generate_train_idx()`, and :func:`generate_inference_idx()`.
@@ -115,7 +111,7 @@ class CovariatesIndexGenerator(ABC):
     @abstractmethod
     def generate_train_idx(
         self, target: TimeSeries, covariates: Optional[TimeSeries] = None
-    ) -> Tuple[SupportedIndex, pd.Timestamp]:
+    ) -> tuple[SupportedIndex, pd.Timestamp]:
         """
         Generates/extracts time index (or integer index) for covariates at model training time.
 
@@ -134,7 +130,7 @@ class CovariatesIndexGenerator(ABC):
     @abstractmethod
     def generate_inference_idx(
         self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
-    ) -> Tuple[SupportedIndex, pd.Timestamp]:
+    ) -> tuple[SupportedIndex, pd.Timestamp]:
         """
         Generates/extracts time index (or integer index) for covariates at model inference / prediction time.
 
@@ -155,7 +151,7 @@ class CovariatesIndexGenerator(ABC):
 
     def generate_train_inference_idx(
         self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
-    ) -> Tuple[SupportedIndex, pd.Timestamp]:
+    ) -> tuple[SupportedIndex, pd.Timestamp]:
         """
         Generates/extracts time index (or integer index) for covariates for training and inference / prediction.
 
@@ -200,7 +196,7 @@ class CovariatesIndexGenerator(ABC):
         self,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[List[int]] = None,
+        lags_covariates: Optional[list[int]] = None,
     ):
         # LocalForecastingModel, or model agnostic (only supported by future covariates)
         is_scenario_a = (
@@ -276,7 +272,7 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
 
     def generate_train_idx(
         self, target: TimeSeries, covariates: Optional[TimeSeries] = None
-    ) -> Tuple[SupportedIndex, pd.Timestamp]:
+    ) -> tuple[SupportedIndex, pd.Timestamp]:
         super().generate_train_idx(target, covariates)
 
         # the returned index depends on the following cases:
@@ -317,7 +313,7 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
 
     def generate_inference_idx(
         self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
-    ) -> Tuple[SupportedIndex, pd.Timestamp]:
+    ) -> tuple[SupportedIndex, pd.Timestamp]:
         super().generate_inference_idx(n, target, covariates)
 
         # for prediction (`n` is given) with past covariates the returned index depends on the following cases:
@@ -375,7 +371,7 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
 
     def generate_train_idx(
         self, target: TimeSeries, covariates: Optional[TimeSeries] = None
-    ) -> Tuple[SupportedIndex, pd.Timestamp]:
+    ) -> tuple[SupportedIndex, pd.Timestamp]:
         super().generate_train_idx(target, covariates)
 
         # the returned index depends on the following cases:
@@ -425,7 +421,7 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
 
     def generate_inference_idx(
         self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
-    ) -> Tuple[SupportedIndex, pd.Timestamp]:
+    ) -> tuple[SupportedIndex, pd.Timestamp]:
         super().generate_inference_idx(n, target, covariates)
 
         # for prediction (`n` is given) with future covariates the returned index depends on the following cases:
@@ -801,7 +797,7 @@ class SingleEncoder(Encoder, ABC):
 
     @property
     @abstractmethod
-    def accept_transformer(self) -> List[bool]:
+    def accept_transformer(self) -> list[bool]:
         """Whether the `SingleEncoder` sub class accepts to be transformed."""
         pass
 
@@ -845,7 +841,7 @@ class SequentialEncoderTransformer:
     inference dataset covariates. User-supplied covariates are not transformed."""
 
     def __init__(
-        self, transformer: FittableDataTransformer, transform_mask: List[bool]
+        self, transformer: FittableDataTransformer, transform_mask: list[bool]
     ):
         """
         Parameters
@@ -860,7 +856,7 @@ class SequentialEncoderTransformer:
         self.transform_mask: np.ndarray = np.array(transform_mask)
         self._fit_called: bool = False
 
-    def transform(self, covariates: List[TimeSeries]) -> List[TimeSeries]:
+    def transform(self, covariates: list[TimeSeries]) -> list[TimeSeries]:
         """This method applies transformation to the non-transformed encoded covariates output of
         `SequentialEncoder._encode_sequence()` after being merged with user-defined covariates. The transformer is
         fitted when `transform()` is called for the first time. This ensures proper transformation of train, validation
@@ -895,7 +891,7 @@ class SequentialEncoderTransformer:
             transformed = covariates
         return transformed
 
-    def _update_mask(self, covariates: List[TimeSeries]) -> None:
+    def _update_mask(self, covariates: list[TimeSeries]) -> None:
         """if user supplied additional covariates to model.fit() or model.predict(), `self.transform_mask` has to be
         updated as user-defined covariates should not be transformed. These covariates are always located in the
         first `n_diff = covariates[0].width - len(self.transform_mask)` components of each TimeSeries in in
