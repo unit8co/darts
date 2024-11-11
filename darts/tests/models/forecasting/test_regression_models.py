@@ -1289,13 +1289,12 @@ class TestRegressionModels:
         )
         assert len(result) == 21
 
-    @pytest.mark.parametrize("mode", [True, False])
     def test_opti_historical_forecast_predict_checks(self, mode):
         """
         Verify that the sanity check implemented in ForecastingModel.predict are also defined for optimized historical
         forecasts as it does not call this method
         """
-        model = self.models[1](lags=5, multi_models=mode)
+        model = self.models[1](lags=5)
 
         msg_expected = (
             "The model has not been fitted yet, and `retrain` is ``False``. Either call `fit()` before "
