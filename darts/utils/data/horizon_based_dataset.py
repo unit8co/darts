@@ -3,7 +3,8 @@ Horizon-Based Training Dataset
 ------------------------------
 """
 
-from typing import Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 
@@ -22,7 +23,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         output_chunk_length: int = 12,
-        lh: Tuple[int, int] = (1, 3),
+        lh: tuple[int, int] = (1, 3),
         lookback: int = 3,
         use_static_covariates: bool = True,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
@@ -125,7 +126,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],

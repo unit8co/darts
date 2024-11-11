@@ -4,7 +4,8 @@ Model selection utilities
 Utilities that help in model selection e.g. by splitting a dataset.
 """
 
-from typing import Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 from darts import TimeSeries
 
@@ -165,7 +166,7 @@ class SplitTimeSeriesSequence(Sequence):
         vertical_split_type: Optional[str] = SIMPLE,
         lazy: bool = False,
     ) -> Union[
-        Tuple[TimeSeries, TimeSeries], Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
+        tuple[TimeSeries, TimeSeries], tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
     ]:
         if not isinstance(data, Sequence):
             axis = 1
@@ -212,7 +213,7 @@ def train_test_split(
     vertical_split_type: Optional[str] = SIMPLE,
     lazy: bool = False,
 ) -> Union[
-    Tuple[TimeSeries, TimeSeries], Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
+    tuple[TimeSeries, TimeSeries], tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
 ]:
     """
     Splits the provided series into training and test series.

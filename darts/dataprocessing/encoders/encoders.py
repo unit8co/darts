@@ -157,7 +157,8 @@ TorchForecastingModel (this is only meant to illustrate many features at once).
 """
 
 import copy
-from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -244,7 +245,7 @@ class CyclicTemporalEncoder(SingleEncoder):
         )
 
     @property
-    def accept_transformer(self) -> List[bool]:
+    def accept_transformer(self) -> list[bool]:
         """`CyclicTemporalEncoder` should not be transformed. Returns two elements for sine and cosine waves."""
         return [False, False]
 
@@ -269,7 +270,7 @@ class PastCyclicEncoder(CyclicTemporalEncoder):
         attribute: str,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[List[int]] = None,
+        lags_covariates: Optional[list[int]] = None,
         tz: Optional[str] = None,
     ):
         """
@@ -318,7 +319,7 @@ class FutureCyclicEncoder(CyclicTemporalEncoder):
         attribute: str,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[List[int]] = None,
+        lags_covariates: Optional[list[int]] = None,
         tz: Optional[str] = None,
     ):
         """
@@ -404,7 +405,7 @@ class DatetimeAttributeEncoder(SingleEncoder):
         )
 
     @property
-    def accept_transformer(self) -> List[bool]:
+    def accept_transformer(self) -> list[bool]:
         """`DatetimeAttributeEncoder` accepts transformations"""
         return [True]
 
@@ -429,7 +430,7 @@ class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
         attribute: str,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[List[int]] = None,
+        lags_covariates: Optional[list[int]] = None,
         tz: Optional[str] = None,
     ):
         """
@@ -478,7 +479,7 @@ class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
         attribute: str,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[List[int]] = None,
+        lags_covariates: Optional[list[int]] = None,
         tz: Optional[str] = None,
     ):
         """
@@ -577,7 +578,7 @@ class IntegerIndexEncoder(SingleEncoder):
         ).astype(np.dtype(dtype))
 
     @property
-    def accept_transformer(self) -> List[bool]:
+    def accept_transformer(self) -> list[bool]:
         """`IntegerIndexEncoder` accepts transformations. Note that transforming 'relative' `IntegerIndexEncoder`
         will return the absolute position (in the transformed space)."""
         return [True]
@@ -606,7 +607,7 @@ class PastIntegerIndexEncoder(IntegerIndexEncoder):
         attribute: str,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[List[int]] = None,
+        lags_covariates: Optional[list[int]] = None,
         **kwargs,
     ):
         """
@@ -650,7 +651,7 @@ class FutureIntegerIndexEncoder(IntegerIndexEncoder):
         attribute: str,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[List[int]] = None,
+        lags_covariates: Optional[list[int]] = None,
         **kwargs,
     ):
         """
@@ -727,7 +728,7 @@ class CallableIndexEncoder(SingleEncoder):
         ).astype(np.dtype(dtype))
 
     @property
-    def accept_transformer(self) -> List[bool]:
+    def accept_transformer(self) -> list[bool]:
         """`CallableIndexEncoder` accepts transformations."""
         return [True]
 
@@ -754,7 +755,7 @@ class PastCallableIndexEncoder(CallableIndexEncoder):
         attribute: Callable,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[List[int]] = None,
+        lags_covariates: Optional[list[int]] = None,
         **kwargs,
     ):
         """
@@ -801,7 +802,7 @@ class FutureCallableIndexEncoder(CallableIndexEncoder):
         attribute: Callable,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        lags_covariates: Optional[List[int]] = None,
+        lags_covariates: Optional[list[int]] = None,
         **kwargs,
     ):
         """
@@ -846,11 +847,11 @@ class SequentialEncoder(Encoder):
 
     def __init__(
         self,
-        add_encoders: Dict,
+        add_encoders: dict,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        lags_past_covariates: Optional[List[int]] = None,
-        lags_future_covariates: Optional[List[int]] = None,
+        lags_past_covariates: Optional[list[int]] = None,
+        lags_future_covariates: Optional[list[int]] = None,
         takes_past_covariates: bool = False,
         takes_future_covariates: bool = False,
     ) -> None:
@@ -951,9 +952,9 @@ class SequentialEncoder(Encoder):
         self.lags_future_covariates = lags_future_covariates
 
         # encoders
-        self._past_encoders: List[SingleEncoder] = []
+        self._past_encoders: list[SingleEncoder] = []
         self._past_components: pd.Index = pd.Index([])
-        self._future_encoders: List[SingleEncoder] = []
+        self._future_encoders: list[SingleEncoder] = []
         self._future_components: pd.Index = pd.Index([])
 
         # transformer
@@ -971,7 +972,7 @@ class SequentialEncoder(Encoder):
         future_covariates: Optional[SupportedTimeSeries] = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> Tuple[
+    ) -> tuple[
         Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
     ]:
         """Returns encoded index for all past and/or future covariates for training.
@@ -1034,7 +1035,7 @@ class SequentialEncoder(Encoder):
         future_covariates: Optional[SupportedTimeSeries] = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> Tuple[
+    ) -> tuple[
         Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
     ]:
         """Returns encoded index for all past and/or future covariates for inference/prediction.
@@ -1086,7 +1087,7 @@ class SequentialEncoder(Encoder):
         future_covariates: Optional[SupportedTimeSeries] = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> Tuple[
+    ) -> tuple[
         Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
     ]:
         """Returns encoded index for all past and/or future covariates for training and inference/prediction.
@@ -1145,7 +1146,7 @@ class SequentialEncoder(Encoder):
         n: Optional[int] = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
+    ) -> tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
         """Launches the encode sequence for past covariates and future covariates for either training,
         inference/prediction or training and inference/prediction depending on `encoder_method`.
         """
@@ -1197,7 +1198,7 @@ class SequentialEncoder(Encoder):
         covariates_type: str,
         encoder_method: _EncoderMethod,
         n: Optional[int] = None,
-    ) -> List[TimeSeries]:
+    ) -> list[TimeSeries]:
         """Sequentially encodes the index of all input target/covariates TimeSeries with the corresponding
         `encoder_method`.
         """
@@ -1243,17 +1244,17 @@ class SequentialEncoder(Encoder):
         return encoded_sequence
 
     @property
-    def past_encoders(self) -> List[SingleEncoder]:
+    def past_encoders(self) -> list[SingleEncoder]:
         """Returns the past covariates encoders"""
         return self._past_encoders
 
     @property
-    def future_encoders(self) -> List[SingleEncoder]:
+    def future_encoders(self) -> list[SingleEncoder]:
         """Returns the future covariates encoders"""
         return self._future_encoders
 
     @property
-    def encoders(self) -> Tuple[List[SingleEncoder], List[SingleEncoder]]:
+    def encoders(self) -> tuple[list[SingleEncoder], list[SingleEncoder]]:
         """Returns a tuple of (past covariates encoders, future covariates encoders)"""
         return self.past_encoders, self.future_encoders
 
@@ -1272,7 +1273,7 @@ class SequentialEncoder(Encoder):
         return self._future_components
 
     @property
-    def components(self) -> Tuple[pd.Index, pd.Index]:
+    def components(self) -> tuple[pd.Index, pd.Index]:
         """Returns the covariates component names generated by `SequentialEncoder.past_encoders` and
         `SequentialEncoder.future_encoders`. A tuple of (past encoded components, future encoded components).
         Only available after calling `SequentialEncoder.encode_train()`
@@ -1280,7 +1281,7 @@ class SequentialEncoder(Encoder):
         return self.past_components, self.future_components
 
     @property
-    def encoding_n_components(self) -> Tuple[int, int]:
+    def encoding_n_components(self) -> tuple[int, int]:
         """Returns the number of components generated by `SequentialEncoder.past_encoders` and
         `SequentialEncoder.future_encoders`.
         """
@@ -1305,12 +1306,12 @@ class SequentialEncoder(Encoder):
 
     def transformers(
         self,
-    ) -> Tuple[SequentialEncoderTransformer, SequentialEncoderTransformer]:
+    ) -> tuple[SequentialEncoderTransformer, SequentialEncoderTransformer]:
         """Returns a tuple of (past transformer, future transformer)."""
         return self.past_transformer, self.future_transformer
 
     @property
-    def encoder_map(self) -> Dict:
+    def encoder_map(self) -> dict:
         """Mapping between encoder identifier string (from parameters at model creations) and the corresponding
         future or past covariates encoder"""
         mapper = {
@@ -1325,7 +1326,7 @@ class SequentialEncoder(Encoder):
         }
         return mapper
 
-    def _setup_encoders(self, params: Dict) -> None:
+    def _setup_encoders(self, params: dict) -> None:
         """Sets up/Initializes all past and future encoders and an optional transformer from `add_encoder` parameter
         used at model creation.
 
@@ -1364,7 +1365,7 @@ class SequentialEncoder(Encoder):
         ]
         self.encoding_available = True
 
-    def _setup_transformer(self, params: Dict) -> None:
+    def _setup_transformer(self, params: dict) -> None:
         """Sets up/Initializes an optional transformer from `add_encoder` parameter used at model creation.
 
         Parameters
@@ -1387,7 +1388,7 @@ class SequentialEncoder(Encoder):
                 copy.deepcopy(transformer), transform_future_mask
             )
 
-    def _process_input_encoders(self, params: Dict) -> Tuple[List, List]:
+    def _process_input_encoders(self, params: dict) -> tuple[list, list]:
         """Processes input and returns two lists of tuples `(encoder_id, attribute)` from relevant encoder
         parameters at model creation.
 
@@ -1495,8 +1496,8 @@ class SequentialEncoder(Encoder):
         return past_encoders, future_encoders
 
     def _process_input_transformer(
-        self, params: Dict
-    ) -> Tuple[Optional[FittableDataTransformer], List, List]:
+        self, params: dict
+    ) -> tuple[Optional[FittableDataTransformer], list, list]:
         """Processes input params used at model creation and returns tuple of one transformer object and two masks
         that specify which past / future encoders accept being transformed.
 
@@ -1534,7 +1535,7 @@ class SequentialEncoder(Encoder):
         return transformer, transform_past_mask, transform_future_mask
 
     @staticmethod
-    def _process_timezone(params: Dict) -> Optional[str]:
+    def _process_timezone(params: dict) -> Optional[str]:
         """Processes input params used at model creation for time zone specification, and returns the time zone.
 
         Parameters

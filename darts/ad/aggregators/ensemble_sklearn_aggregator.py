@@ -3,7 +3,7 @@ Ensemble scikit-learn aggregator
 --------------------------------
 """
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 from sklearn.ensemble import BaseEnsemble

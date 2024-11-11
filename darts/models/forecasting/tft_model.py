@@ -3,7 +3,8 @@ Temporal Fusion Transformer (TFT)
 -------
 """
 
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -37,7 +38,7 @@ from darts.utils.likelihood_models import Likelihood, QuantileRegression
 
 logger = get_logger(__name__)
 
-MixedCovariatesTrainTensorType = Tuple[
+MixedCovariatesTrainTensorType = tuple[
     torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
 ]
 
@@ -45,16 +46,16 @@ MixedCovariatesTrainTensorType = Tuple[
 class _TFTModule(PLMixedCovariatesModule):
     def __init__(
         self,
-        output_dim: Tuple[int, int],
-        variables_meta: Dict[str, Dict[str, List[str]]],
+        output_dim: tuple[int, int],
+        variables_meta: dict[str, dict[str, list[str]]],
         num_static_components: int,
-        hidden_size: Union[int, List[int]],
+        hidden_size: Union[int, list[int]],
         lstm_layers: int,
         num_attention_heads: int,
         full_attention: bool,
         feed_forward: str,
         hidden_continuous_size: int,
-        categorical_embedding_sizes: Dict[str, Tuple[int, int]],
+        categorical_embedding_sizes: dict[str, tuple[int, int]],
         dropout: float,
         add_relative_index: bool,
         norm_type: Union[str, nn.Module],
@@ -332,42 +333,42 @@ class _TFTModule(PLMixedCovariatesModule):
         self._decoder_sparse_weights = None
 
     @property
-    def reals(self) -> List[str]:
+    def reals(self) -> list[str]:
         """
         List of all continuous variables in model
         """
         return self.variables_meta["model_config"]["reals_input"]
 
     @property
-    def static_variables(self) -> List[str]:
+    def static_variables(self) -> list[str]:
         """
         List of all static variables in model
         """
         return self.variables_meta["model_config"]["static_input"]
 
     @property
-    def numeric_static_variables(self) -> List[str]:
+    def numeric_static_variables(self) -> list[str]:
         """
         List of numeric static variables in model
         """
         return self.variables_meta["model_config"]["static_input_numeric"]
 
     @property
-    def categorical_static_variables(self) -> List[str]:
+    def categorical_static_variables(self) -> list[str]:
         """
         List of categorical static variables in model
         """
         return self.variables_meta["model_config"]["static_input_categorical"]
 
     @property
-    def encoder_variables(self) -> List[str]:
+    def encoder_variables(self) -> list[str]:
         """
         List of all encoder variables in model (excluding static variables)
         """
         return self.variables_meta["model_config"]["time_varying_encoder_input"]
 
     @property
-    def decoder_variables(self) -> List[str]:
+    def decoder_variables(self) -> list[str]:
         """
         List of all decoder variables in model (excluding static variables)
         """
@@ -452,7 +453,7 @@ class _TFTModule(PLMixedCovariatesModule):
 
     @io_processor
     def forward(
-        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
+        self, x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
     ) -> torch.Tensor:
         """TFT model forward pass.
 
@@ -657,7 +658,7 @@ class TFTModel(MixedCovariatesTorchModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        hidden_size: Union[int, List[int]] = 16,
+        hidden_size: Union[int, list[int]] = 16,
         lstm_layers: int = 1,
         num_attention_heads: int = 4,
         full_attention: bool = False,
@@ -665,7 +666,7 @@ class TFTModel(MixedCovariatesTorchModel):
         dropout: float = 0.1,
         hidden_continuous_size: int = 8,
         categorical_embedding_sizes: Optional[
-            Dict[str, Union[int, Tuple[int, int]]]
+            dict[str, Union[int, tuple[int, int]]]
         ] = None,
         add_relative_index: bool = False,
         loss_fn: Optional[nn.Module] = None,
@@ -959,7 +960,7 @@ class TFTModel(MixedCovariatesTorchModel):
             else {}
         )
         self.add_relative_index = add_relative_index
-        self.output_dim: Optional[Tuple[int, int]] = None
+        self.output_dim: Optional[tuple[int, int]] = None
         self.norm_type = norm_type
         self._considers_static_covariates = use_static_covariates
 
