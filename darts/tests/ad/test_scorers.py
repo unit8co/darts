@@ -1,5 +1,5 @@
+from collections.abc import Sequence
 from itertools import product
-from typing import Sequence
 
 import numpy as np
 import pytest
@@ -1262,7 +1262,7 @@ class TestAnomalyDetectionScorer:
         with pytest.raises(ValueError):
             PyODScorer(model=KNN(), window=0)
 
-        # diff_fn paramter
+        # diff_fn parameter
         # must be None, 'diff' or 'abs_diff'
         with pytest.raises(ValueError):
             PyODScorer(model=KNN(), diff_fn="random")
@@ -1531,7 +1531,7 @@ class TestAnomalyDetectionScorer:
             np.array(deterministic_values).reshape(2, 2, -1)
         )
 
-        # compute the NLL values witn score_from_prediction for scorer with window=1 and 2
+        # compute the NLL values with score_from_prediction for scorer with window=1 and 2
         # t -> timestamp, c -> component and w -> window used in scorer
         value_t1_c1_w1 = NLLscorer_w1.score_from_prediction(
             series[0]["0"], distribution_series[0]["0"]
@@ -1570,7 +1570,7 @@ class TestAnomalyDetectionScorer:
         )
 
         # multivariate case
-        # compute the NLL values witn score_from_prediction for scorer with window=1 and window=2
+        # compute the NLL values with score_from_prediction for scorer with window=1 and window=2
         value_t1_2_c1_2_w1 = NLLscorer_w1.score_from_prediction(
             series, distribution_series
         )
@@ -1686,7 +1686,7 @@ class TestAnomalyDetectionScorer:
         assert score_T[-1] == score_F[-1]
 
     def test_fun_window_agg(self):
-        """Verify that the anomaly score aggregation works as intented"""
+        """Verify that the anomaly score aggregation works as intended"""
         # window = 2, alternating anomaly scores
         window = 2
         scorer = KMeansScorer(window=window)

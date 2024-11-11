@@ -3,8 +3,9 @@ Pipeline
 --------
 """
 
+from collections.abc import Iterator, Sequence
 from copy import deepcopy
-from typing import Iterator, Sequence, Union
+from typing import Union
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import (

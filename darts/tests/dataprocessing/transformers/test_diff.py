@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from copy import deepcopy
-from typing import Optional, Sequence
+from typing import Optional
 
 import numpy as np
 import pandas as pd

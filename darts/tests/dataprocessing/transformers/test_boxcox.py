@@ -94,9 +94,9 @@ class TestBoxCox:
         box_cox.fit(self.lin_series)
         lambda2 = deepcopy(box_cox._fitted_params)[0].tolist()
 
-        assert (
-            lambda1 != lambda2
-        ), "Lambdas should change when the transformer is retrained"
+        assert lambda1 != lambda2, (
+            "Lambdas should change when the transformer is retrained"
+        )
 
     def test_multivariate_stochastic_series(self):
         transformer = BoxCox()

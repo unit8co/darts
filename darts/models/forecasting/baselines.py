@@ -5,7 +5,8 @@ Baseline Models
 A collection of simple benchmark models for single uni- and multivariate series.
 """
 
-from typing import List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 
@@ -269,7 +270,7 @@ class NaiveMovingAverage(LocalForecastingModel):
 class NaiveEnsembleModel(EnsembleModel):
     def __init__(
         self,
-        forecasting_models: List[ForecastingModel],
+        forecasting_models: list[ForecastingModel],
         train_forecasting_models: bool = True,
         show_warnings: bool = True,
     ):

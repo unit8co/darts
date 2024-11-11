@@ -3,7 +3,8 @@ Shifted Training Dataset
 ------------------------
 """
 
-from typing import Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 
@@ -104,7 +105,7 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -198,7 +199,7 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -308,7 +309,7 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -427,7 +428,7 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -552,7 +553,7 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -701,7 +702,7 @@ class GenericShiftedDataset(TrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],

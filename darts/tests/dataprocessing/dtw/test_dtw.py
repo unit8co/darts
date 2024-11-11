@@ -63,9 +63,9 @@ class TestDynamicTimeWarping:
 
         exact_alignment = dtw.dtw(series1, series2, multi_grid_radius=-1)
 
-        assert (
-            exact_alignment.distance() == 0
-        ), "Minimum cost between two shifted series should be 0"
+        assert exact_alignment.distance() == 0, (
+            "Minimum cost between two shifted series should be 0"
+        )
         (
             np.testing.assert_array_equal(exact_alignment.path(), expected_path),
             "Incorrect path",

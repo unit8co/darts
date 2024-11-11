@@ -4,16 +4,13 @@ Anomaly models base classes
 
 import sys
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Literal, Optional, Union
 
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.ad.utils import (
@@ -130,10 +127,10 @@ class AnomalyModel(ABC):
         metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
         **kwargs,
     ) -> Union[
-        Dict[str, float],
-        Dict[str, Sequence[float]],
-        Sequence[Dict[str, float]],
-        Sequence[Dict[str, Sequence[float]]],
+        dict[str, float],
+        dict[str, Sequence[float]],
+        Sequence[dict[str, float]],
+        Sequence[dict[str, Sequence[float]]],
     ]:
         """Compute the accuracy of the anomaly scores computed by the model.
 
@@ -246,7 +243,7 @@ class AnomalyModel(ABC):
         self,
         series: TimeSeries,
         anomalies: TimeSeries = None,
-        predict_kwargs: Optional[Dict] = None,
+        predict_kwargs: Optional[dict] = None,
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
         metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,

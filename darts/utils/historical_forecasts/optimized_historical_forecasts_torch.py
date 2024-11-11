@@ -1,11 +1,6 @@
-from typing import Optional, Sequence, Union
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
 import inspect
+from collections.abc import Sequence
+from typing import Literal, Optional, Union
 
 import numpy as np
 import pandas as pd

@@ -8,16 +8,13 @@ by comparing how actuals deviate from the model's predictions (filtered series).
 """
 
 import sys
-from typing import Dict, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Literal, Optional, Union
 
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
@@ -158,10 +155,10 @@ class FilteringAnomalyModel(AnomalyModel):
         metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
         **filter_kwargs,
     ) -> Union[
-        Dict[str, float],
-        Dict[str, Sequence[float]],
-        Sequence[Dict[str, float]],
-        Sequence[Dict[str, Sequence[float]]],
+        dict[str, float],
+        dict[str, Sequence[float]],
+        Sequence[dict[str, float]],
+        Sequence[dict[str, Sequence[float]]],
     ]:
         """Compute a metric for the anomaly scores computed by the model.
 

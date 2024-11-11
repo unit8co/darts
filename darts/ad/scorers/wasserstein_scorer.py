@@ -11,7 +11,7 @@ References
 .. [1] https://en.wikipedia.org/wiki/Wasserstein_metric
 """
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 from scipy.stats import wasserstein_distance

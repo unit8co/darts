@@ -10,7 +10,8 @@ To enable LightGBM support in Darts, follow the detailed install instructions fo
 https://github.com/unit8co/darts/blob/master/INSTALL.md
 """
 
-from typing import List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import lightgbm as lgb
 import numpy as np
@@ -37,13 +38,13 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
         likelihood: Optional[str] = None,
-        quantiles: Optional[List[float]] = None,
+        quantiles: Optional[list[float]] = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
-        categorical_past_covariates: Optional[Union[str, List[str]]] = None,
-        categorical_future_covariates: Optional[Union[str, List[str]]] = None,
-        categorical_static_covariates: Optional[Union[str, List[str]]] = None,
+        categorical_past_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_future_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_static_covariates: Optional[Union[str, list[str]]] = None,
         **kwargs,
     ):
         """LGBM Model
@@ -339,7 +340,7 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         return True
 
     @property
-    def val_set_params(self) -> Tuple[Optional[str], Optional[str]]:
+    def val_set_params(self) -> tuple[Optional[str], Optional[str]]:
         return "eval_set", "eval_sample_weight"
 
     @property

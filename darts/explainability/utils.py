@@ -1,4 +1,5 @@
-from typing import List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -185,7 +186,7 @@ def process_horizons_and_targets(
     target_components: Optional[Union[str, Sequence[str]]] = None,
     fallback_target_components: Optional[Sequence[str]] = None,
     check_component_names: bool = False,
-) -> Tuple[Sequence[int], Sequence[str]]:
+) -> tuple[Sequence[int], Sequence[str]]:
     """Processes the input horizons and target component names.
 
     horizons
@@ -242,7 +243,7 @@ def get_component_names(
     past_covariates: Optional[Sequence[TimeSeries]] = None,
     future_covariates: Optional[Sequence[TimeSeries]] = None,
     idx: int = 0,
-) -> Tuple[List[str], Optional[List[str]], Optional[List[str]], Optional[List[str]]]:
+) -> tuple[list[str], Optional[list[str]], Optional[list[str]], Optional[list[str]]]:
     """Extract and return the components of target series, static covariate, past and future covariates series.
 
     Parameters
@@ -287,9 +288,9 @@ def _check_valid_input(
     series: Sequence[TimeSeries],
     past_covariates: Optional[Sequence[TimeSeries]],
     future_covariates: Optional[Sequence[TimeSeries]],
-    target_components: Optional[List[str]],
-    past_covariates_components: Optional[List[str]],
-    future_covariates_components: Optional[List[str]],
+    target_components: Optional[list[str]],
+    past_covariates_components: Optional[list[str]],
+    future_covariates_components: Optional[list[str]],
     check_component_names: bool = False,
     requires_input: bool = False,
     test_stationarity: bool = False,
