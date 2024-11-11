@@ -1289,7 +1289,7 @@ class TestRegressionModels:
         )
         assert len(result) == 21
 
-    def test_opti_historical_forecast_predict_checks(self, mode):
+    def test_opti_historical_forecast_predict_checks(self):
         """
         Verify that the sanity check implemented in ForecastingModel.predict are also defined for optimized historical
         forecasts as it does not call this method
