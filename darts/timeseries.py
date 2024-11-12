@@ -5672,6 +5672,8 @@ def intersect(series: Sequence[TimeSeries]):
     Sequence[TimeSeries]
         Intersected series
     """
+    if not series:
+        return []
 
     data_arrays = []
     has_datetime_index = series[0].has_datetime_index
