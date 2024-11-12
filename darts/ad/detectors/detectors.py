@@ -10,12 +10,9 @@ Detector Base Classes
 
 import sys
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Any, Literal, Optional, Union
 
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
@@ -165,7 +162,7 @@ class FittableDetector(Detector):
         Returns
         -------
         Union[TimeSeries, Sequence[TimeSeries]]
-            Binary prediciton (1 if considered as an anomaly, 0 if not)
+            Binary prediction (1 if considered as an anomaly, 0 if not)
         """
         self.fit(series)
         return self.detect(series, name="series")
@@ -187,7 +184,7 @@ class _BoundedDetectorMixin(ABC):
         upper_bound_name: str,
         lower_bound: Optional[Union[Sequence[float], float]] = None,
         upper_bound: Optional[Union[Sequence[float], float]] = None,
-    ) -> Tuple[List[Optional[float]], List[Optional[float]]]:
+    ) -> tuple[list[Optional[float]], list[Optional[float]]]:
         """
         Process the boundaries argument and perform some sanity checks
 
@@ -221,7 +218,7 @@ class _BoundedDetectorMixin(ABC):
                 logger=logger,
             )
 
-        def _prep_boundaries(boundaries) -> List[Optional[float]]:
+        def _prep_boundaries(boundaries) -> list[Optional[float]]:
             """Convert boundaries to List"""
             return (
                 boundaries.tolist()
@@ -275,7 +272,7 @@ class _BoundedDetectorMixin(ABC):
         return lower_bound, upper_bound
 
     @staticmethod
-    def _expand_threshold(series: TimeSeries, threshold: List[float]) -> List[float]:
+    def _expand_threshold(series: TimeSeries, threshold: list[float]) -> list[float]:
         return threshold * series[0].width if len(threshold) == 1 else threshold
 
     @property

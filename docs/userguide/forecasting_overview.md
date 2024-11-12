@@ -118,7 +118,7 @@ In turn, the advantage of having `predict()` providing forecasts for potentially
 
 These models are shown with a "✅" under the `Multiple-series training` column on the [model list](https://github.com/unit8co/darts#forecasting-models).
 
-You can also find out programatically, whether a model supports multiple series.
+You can also find out programmatically, whether a model supports multiple series.
 ```python
 from darts.models import RegressionModel
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel

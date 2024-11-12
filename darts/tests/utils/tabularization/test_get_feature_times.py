@@ -1,7 +1,7 @@
 import itertools
 import warnings
+from collections.abc import Sequence
 from itertools import product
-from typing import Sequence
 
 import pandas as pd
 import pytest

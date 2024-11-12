@@ -33,7 +33,7 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 import collections.abc
 import inspect
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 import torch
@@ -160,7 +160,7 @@ class Likelihood(ABC):
         return None
 
     @abstractmethod
-    def _distr_from_params(self, params: Tuple) -> torch.distributions.Distribution:
+    def _distr_from_params(self, params: tuple) -> torch.distributions.Distribution:
         """
         Returns a torch distribution built with the specified params
         """
@@ -169,7 +169,7 @@ class Likelihood(ABC):
     @abstractmethod
     def _params_from_output(
         self, model_output: torch.Tensor
-    ) -> Union[Tuple[torch.Tensor, ...], torch.Tensor]:
+    ) -> Union[tuple[torch.Tensor, ...], torch.Tensor]:
         """
         Returns the distribution parameters, obtained from the raw model outputs
         (e.g. applies softplus or sigmoids to get parameters in the expected domains).
@@ -201,15 +201,15 @@ class Likelihood(ABC):
             ))
 
     @abstractmethod
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         """
         Generates names for the parameters of the Likelihood.
         """
         pass
 
     def _likelihood_generate_components_names(
-        self, input_series: TimeSeries, parameter_names: List[str]
-    ) -> List[str]:
+        self, input_series: TimeSeries, parameter_names: list[str]
+    ) -> list[str]:
         return [
             f"{tgt_name}_{param_n}"
             for tgt_name in input_series.components
@@ -344,7 +344,7 @@ class GaussianLikelihood(Likelihood):
         sigma = self.softplus(model_output[:, :, :, 1])
         return mu, sigma
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         return self._likelihood_generate_components_names(input_series, ["mu", "sigma"])
 
     def simplified_name(self) -> str:
@@ -404,7 +404,7 @@ class PoissonLikelihood(Likelihood):
         lmbda = self.softplus(model_output.squeeze(dim=-1))
         return lmbda
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         return self._likelihood_generate_components_names(input_series, ["lambda"])
 
     def simplified_name(self) -> str:
@@ -463,7 +463,7 @@ class NegativeBinomialLikelihood(Likelihood):
         alpha = self.softplus(model_output[:, :, :, 1])
         return mu, alpha
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         return self._likelihood_generate_components_names(input_series, ["r", "p"])
 
     @property
@@ -518,7 +518,7 @@ class BernoulliLikelihood(Likelihood):
         p = self.sigmoid(model_output.squeeze(dim=-1))
         return p
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         return self._likelihood_generate_components_names(input_series, ["p"])
 
     def simplified_name(self) -> str:
@@ -575,7 +575,7 @@ class BetaLikelihood(Likelihood):
         beta = self.softplus(model_output[:, :, :, 1])
         return alpha, beta
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         return self._likelihood_generate_components_names(
             input_series, ["alpha", "beta"]
         )
@@ -639,7 +639,7 @@ class CauchyLikelihood(Likelihood):
         gamma[gamma < MIN_CAUCHY_GAMMA_SAMPLING] = MIN_CAUCHY_GAMMA_SAMPLING
         return xzero, gamma
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         return self._likelihood_generate_components_names(
             input_series, ["xzero", "gamma"]
         )
@@ -693,7 +693,7 @@ class ContinuousBernoulliLikelihood(Likelihood):
         lmbda = self.sigmoid(model_output.squeeze(dim=-1))
         return lmbda
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         return self._likelihood_generate_components_names(input_series, ["lambda"])
 
     def simplified_name(self) -> str:
@@ -728,7 +728,7 @@ class DirichletLikelihood(Likelihood):
     def _prior_params(self):
         return (self.prior_alphas,)
 
-    def _distr_from_params(self, params: Tuple):
+    def _distr_from_params(self, params: tuple):
         alphas = params[0]
         return _Dirichlet(alphas)
 
@@ -751,7 +751,7 @@ class DirichletLikelihood(Likelihood):
         )  # take softmax over components
         return alphas
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         # one alpha per component
         return self._likelihood_generate_components_names(input_series, ["alpha"])
 
@@ -786,7 +786,7 @@ class ExponentialLikelihood(Likelihood):
     def _prior_params(self):
         return (self.prior_lambda,)
 
-    def _distr_from_params(self, params: Tuple):
+    def _distr_from_params(self, params: tuple):
         lmbda = params[0]
         return _Exponential(lmbda)
 
@@ -803,7 +803,7 @@ class ExponentialLikelihood(Likelihood):
         lmbda = self.softplus(model_output.squeeze(dim=-1))
         return lmbda
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         return self._likelihood_generate_components_names(input_series, ["lambda"])
 
     def simplified_name(self) -> str:
@@ -841,7 +841,7 @@ class GammaLikelihood(Likelihood):
     def _prior_params(self):
         return self.prior_alpha, self.prior_beta
 
-    def _distr_from_params(self, params: Tuple):
+    def _distr_from_params(self, params: tuple):
         alpha, beta = params
         return _Gamma(alpha, beta)
 
@@ -859,7 +859,7 @@ class GammaLikelihood(Likelihood):
         beta = self.softplus(model_output[:, :, :, 1])
         return alpha, beta
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         return self._likelihood_generate_components_names(
             input_series, ["alpha", "beta"]
         )
@@ -895,7 +895,7 @@ class GeometricLikelihood(Likelihood):
     def _prior_params(self):
         return (self.prior_p,)
 
-    def _distr_from_params(self, params: Tuple):
+    def _distr_from_params(self, params: tuple):
         p = params[0]
         return _Geometric(p)
 
@@ -912,7 +912,7 @@ class GeometricLikelihood(Likelihood):
         p = self.sigmoid(model_output.squeeze(dim=-1))
         return p
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         return self._likelihood_generate_components_names(input_series, ["p"])
 
     def simplified_name(self) -> str:
@@ -949,7 +949,7 @@ class GumbelLikelihood(Likelihood):
     def _prior_params(self):
         return self.prior_mu, self.prior_beta
 
-    def _distr_from_params(self, params: Tuple):
+    def _distr_from_params(self, params: tuple):
         mu, beta = params
         return _Gumbel(mu, beta)
 
@@ -967,7 +967,7 @@ class GumbelLikelihood(Likelihood):
         beta = self.softplus(model_output[:, :, :, 1])
         return mu, beta
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         return self._likelihood_generate_components_names(input_series, ["mu", "beta"])
 
     def simplified_name(self) -> str:
@@ -1001,7 +1001,7 @@ class HalfNormalLikelihood(Likelihood):
     def _prior_params(self):
         return (self.prior_sigma,)
 
-    def _distr_from_params(self, params: Tuple):
+    def _distr_from_params(self, params: tuple):
         sigma = params[0]
         return _HalfNormal(sigma)
 
@@ -1018,7 +1018,7 @@ class HalfNormalLikelihood(Likelihood):
         sigma = self.softplus(model_output.squeeze(dim=-1))
         return sigma
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         return self._likelihood_generate_components_names(input_series, ["sigma"])
 
     def simplified_name(self) -> str:
@@ -1055,7 +1055,7 @@ class LaplaceLikelihood(Likelihood):
     def _prior_params(self):
         return self.prior_mu, self.prior_b
 
-    def _distr_from_params(self, params: Tuple):
+    def _distr_from_params(self, params: tuple):
         mu, b = params
         return _Laplace(mu, b)
 
@@ -1073,7 +1073,7 @@ class LaplaceLikelihood(Likelihood):
         b = self.softplus(model_output[:, :, :, 1])
         return mu, b
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         return self._likelihood_generate_components_names(input_series, ["mu", "b"])
 
     def simplified_name(self) -> str:
@@ -1128,7 +1128,7 @@ class LogNormalLikelihood(Likelihood):
         sigma = self.softplus(model_output[:, :, :, 1])
         return mu, sigma
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         return self._likelihood_generate_components_names(input_series, ["mu", "sigma"])
 
     def simplified_name(self) -> str:
@@ -1160,7 +1160,7 @@ class WeibullLikelihood(Likelihood):
     def _prior_params(self):
         return None
 
-    def _distr_from_params(self, params: Tuple):
+    def _distr_from_params(self, params: tuple):
         lmba, k = params
         return _Weibull(lmba, k)
 
@@ -1178,7 +1178,7 @@ class WeibullLikelihood(Likelihood):
         k = self.softplus(model_output[:, :, :, 1])
         return lmbda, k
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         return self._likelihood_generate_components_names(input_series, ["lambda", "k"])
 
     def simplified_name(self) -> str:
@@ -1186,7 +1186,7 @@ class WeibullLikelihood(Likelihood):
 
 
 class QuantileRegression(Likelihood):
-    def __init__(self, quantiles: Optional[List[float]] = None):
+    def __init__(self, quantiles: Optional[list[float]] = None):
         """
         The "likelihood" corresponding to quantile regression.
         It uses the Quantile Loss Metric for custom quantiles centered around q=0.5.
@@ -1348,7 +1348,7 @@ class QuantileRegression(Likelihood):
             losses = losses * sample_weight
         return losses.mean()
 
-    def _distr_from_params(self, params: Tuple) -> None:
+    def _distr_from_params(self, params: tuple) -> None:
         # This should not be called in this class (we are abusing Likelihood)
         return None
 
@@ -1356,7 +1356,7 @@ class QuantileRegression(Likelihood):
         # This should not be called in this class (we are abusing Likelihood)
         return None
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         """Each component have their own quantiles"""
         return likelihood_component_names(
             components=input_series.components,

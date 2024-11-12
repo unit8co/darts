@@ -3,7 +3,7 @@ Metrics
 -------
 
 For deterministic forecasts (point predictions with `num_samples == 1`), probabilistic forecasts (`num_samples > 1`),
-and quantile forecasts. For probablistic and quantile forecasts, use parameter `q` to define the quantile(s) to
+and quantile forecasts. For probabilistic and quantile forecasts, use parameter `q` to define the quantile(s) to
 compute the deterministic metrics on:
 
     - Aggregated over time:

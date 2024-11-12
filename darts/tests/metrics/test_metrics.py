@@ -43,7 +43,7 @@ def metric_cov(y_true, y_pred, **kwargs):
     y_pred = y_pred[:, 0]
     return (
         100.0
-        * sklearn.metrics.mean_squared_error(y_true, y_pred, squared=False)
+        * sklearn.metrics.root_mean_squared_error(y_true, y_pred)
         / np.mean(y_true)
     )
 
@@ -1400,7 +1400,7 @@ class TestMetrics:
             (metrics.merr, metric_residuals, {}, {}),
             (metrics.mae, sklearn.metrics.mean_absolute_error, {}, {}),
             (metrics.mse, sklearn.metrics.mean_squared_error, {}, {}),
-            (metrics.rmse, sklearn.metrics.mean_squared_error, {"squared": False}, {}),
+            (metrics.rmse, sklearn.metrics.root_mean_squared_error, {}, {}),
             (metrics.rmsle, metric_rmsle, {}, {}),
             (metrics.mape, sklearn_mape, {}, {}),
             (metrics.smape, metric_smape, {}, {}),
