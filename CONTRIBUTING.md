@@ -1,6 +1,6 @@
 # Darts Contribution Guidelines
 
-## Picking an Issue on Which to Work
+Picking an Issue on Which to Work
 
 The backlog of issues and ongoing work is tracked here: https://github.com/unit8co/darts/projects/1
 Anyone is welcome to pick an issue from the backlog, work on it and submit a pull request.
