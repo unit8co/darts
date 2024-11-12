@@ -203,7 +203,7 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 ),
                 logger,
             )
-        # Constraints on DataTransformer
+
         if not n.retrain:
             for val_ in n.data_transformers.values():
                 # converting to Pipeline
