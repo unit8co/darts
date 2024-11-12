@@ -1684,7 +1684,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             torch.save(self, f_out)
 
         # save the LightningModule checkpoint
-        path_ptl_ckpt = path.replace(".pt", "") + ".ckpt"
+        path_ptl_ckpt = path + ".ckpt"
         if self.trainer is not None:
             self.trainer.save_checkpoint(path_ptl_ckpt)
         # TODO: keep track of PyTorch Lightning to see if they implement model checkpoint saving
