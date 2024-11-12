@@ -1827,12 +1827,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 wrapped_model_class = parameters["model"].pop("model_class")
                 # Create a flat dictionary by adding a suffix to the arguments of the wrapped model in
                 # order to distinguish them from the other arguments of the Darts model
-                parameters.update(
-                    {
-                        f"{wrapped_model_class.__name__}.{k}": v
-                        for k, v in parameters.pop("model").items()
-                    }
-                )
+                parameters.update({
+                    f"{wrapped_model_class.__name__}.{k}": v
+                    for k, v in parameters.pop("model").items()
+                })
 
         # compute all hyperparameter combinations from selection
         params_cross_product = list(product(*parameters.values()))
