@@ -3,7 +3,7 @@ N-Linear
 ------
 """
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -109,7 +109,7 @@ class _NLinearModule(PLMixedCovariatesModule):
 
     @io_processor
     def forward(
-        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
+        self, x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
     ):
         """
         x_in
@@ -424,7 +424,7 @@ class NLinearModel(MixedCovariatesTorchModel):
             "normalize = True cannot be used with probabilistic NLinearModel",
         )
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of
         # (past_target, past_covariates, historic_future_covariates,
         #  future_covariates, static_covariates, future_target)

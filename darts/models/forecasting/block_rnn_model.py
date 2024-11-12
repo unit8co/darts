@@ -5,7 +5,7 @@ Block Recurrent Neural Networks
 
 import inspect
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Type, Union
+from typing import Optional, Union
 
 import torch
 import torch.nn as nn
@@ -28,7 +28,7 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
         num_layers: int,
         target_size: int,
         nr_params: int,
-        num_layers_out_fc: Optional[List] = None,
+        num_layers_out_fc: Optional[list] = None,
         dropout: float = 0.0,
         activation: str = "ReLU",
         **kwargs,
@@ -85,7 +85,7 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
 
     @io_processor
     @abstractmethod
-    def forward(self, x_in: Tuple) -> torch.Tensor:
+    def forward(self, x_in: tuple) -> torch.Tensor:
         """BlockRNN Module forward.
 
         Parameters
@@ -177,7 +177,7 @@ class _BlockRNNModule(CustomBlockRNNModule):
         self.fc = nn.Sequential(*feats)
 
     @io_processor
-    def forward(self, x_in: Tuple):
+    def forward(self, x_in: tuple):
         x, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
@@ -204,10 +204,10 @@ class BlockRNNModel(PastCovariatesTorchModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        model: Union[str, Type[CustomBlockRNNModule]] = "RNN",
+        model: Union[str, type[CustomBlockRNNModule]] = "RNN",
         hidden_dim: int = 25,
         n_rnn_layers: int = 1,
-        hidden_fc_sizes: Optional[List] = None,
+        hidden_fc_sizes: Optional[list] = None,
         dropout: float = 0.0,
         activation: str = "ReLU",
         **kwargs,
@@ -257,7 +257,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
         hidden_fc_sizes
             Sizes of hidden layers connecting the last hidden layer of the RNN module to the output, if any.
         dropout
-            Fraction of neurons afected by Dropout.
+            Fraction of neurons affected by Dropout.
         activation
             The name of a torch.nn activation function to be applied between the layers of the fully connected network.
             Default: "ReLU".
@@ -459,7 +459,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
     def supports_multivariate(self) -> bool:
         return True
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (
             train_sample[1].shape[1] if train_sample[1] is not None else 0

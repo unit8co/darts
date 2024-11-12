@@ -3,7 +3,7 @@ AND Aggregator
 --------------
 """
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from darts import TimeSeries
 from darts.ad.aggregators.aggregators import Aggregator

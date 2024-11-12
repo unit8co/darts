@@ -5,7 +5,8 @@ A `_ForecastingModelExplainer` takes a fitted forecasting model as input and gen
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 from darts import TimeSeries
 from darts.explainability.explainability_result import _ExplainabilityResult
@@ -177,7 +178,7 @@ class _ForecastingModelExplainer(ABC):
         self,
         horizons: Optional[Union[int, Sequence[int]]],
         target_components: Optional[Union[str, Sequence[str]]],
-    ) -> Tuple[Sequence[int], Sequence[str]]:
+    ) -> tuple[Sequence[int], Sequence[str]]:
         return process_horizons_and_targets(
             horizons=horizons,
             fallback_horizon=self.n,

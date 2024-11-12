@@ -1,7 +1,8 @@
 import itertools
 import warnings
+from collections.abc import Sequence
 from itertools import product
-from typing import Optional, Sequence
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -303,7 +304,7 @@ class TestCreateLaggedPredictionData:
                 time_idx = np.searchsorted(series_times, time)
                 X_row = []
                 for lag in lags:
-                    # Offet by particular lag value:
+                    # Offset by particular lag value:
                     idx_to_get = time_idx + lag
                     # Account for prepended values:
                     idx_to_get -= num_prepended

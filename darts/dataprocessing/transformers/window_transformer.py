@@ -3,7 +3,8 @@ Window Transformer
 ------------------
 """
 
-from typing import Any, List, Mapping, Optional, Union
+from collections.abc import Mapping
+from typing import Any, Optional, Union
 
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger
@@ -15,7 +16,7 @@ logger = get_logger(__name__)
 class WindowTransformer(BaseDataTransformer):
     def __init__(
         self,
-        transforms: Union[dict, List[dict]],
+        transforms: Union[dict, list[dict]],
         treat_na: Optional[Union[str, Union[int, float]]] = None,
         forecasting_safe: Optional[bool] = True,
         keep_non_transformed: Optional[bool] = False,

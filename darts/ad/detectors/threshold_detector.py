@@ -7,7 +7,8 @@ This detector compares time series values with user-given thresholds, and
 identifies time points as anomalous when values are beyond the thresholds.
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
+from typing import Union
 
 import numpy as np
 
