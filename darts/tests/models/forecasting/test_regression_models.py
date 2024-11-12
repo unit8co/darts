@@ -3249,6 +3249,63 @@ class TestRegressionModels:
         ) = self.lgbm_w_categorical_covariates._categorical_fit_param
         assert kwargs[cat_param_name] == [2, 3, 5]
 
+    def test_grid_search(self):
+        # Create grid over wrapped model parameters too
+        parameters = {
+            "model": {
+                "model_class": RandomForestRegressor,
+                "min_samples_split": [2, 3],
+            },
+            "lags": [1],
+        }
+        result = RegressionModel.gridsearch(
+            parameters=parameters, series=self.sine_multivariate1, forecast_horizon=1
+        )
+        assert isinstance(result[0], RegressionModel)
+        assert {
+            "lags",
+            "RandomForestRegressor.min_samples_split",
+        } == set(result[1])
+        assert isinstance(result[2], float)
+
+        # Use model as instances of RandomForestRegressor directly
+        parameters = {
+            "model": [
+                RandomForestRegressor(min_samples_split=2),
+                RandomForestRegressor(min_samples_split=3),
+            ],
+            "lags": [1],
+        }
+
+        result = RegressionModel.gridsearch(
+            parameters=parameters, series=self.sine_multivariate1, forecast_horizon=1
+        )
+
+        assert isinstance(result[0], RegressionModel)
+        assert {
+            "lags",
+            "model",
+        } == set(result[1])
+        assert isinstance(result[1]["model"], RandomForestRegressor)
+        assert isinstance(result[2], float)
+
+    def test_grid_search_invalid_wrapped_model_dict(self):
+        parameters = {
+            "model": {"fit_intercept": [True, False]},
+            "lags": [1, 2, 3],
+        }
+        with pytest.raises(
+            ValueError,
+            match="When the 'model' key is set as a dictionary, it must contain "
+            "the 'model_class' key, which represents the class of the model "
+            "to be wrapped.",
+        ):
+            RegressionModel.gridsearch(
+                parameters=parameters,
+                series=self.sine_multivariate1,
+                forecast_horizon=1,
+            )
+
     def helper_create_LinearModel(self, multi_models=True, extreme_lags=False):
         if not extreme_lags:
             lags, lags_pc, lags_fc = 3, 3, [-3, -2, -1, 0]
