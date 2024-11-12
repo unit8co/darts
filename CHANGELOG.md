@@ -12,6 +12,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 - Improvements to `ForecastingModel`: Improved `start` handling for historical forecasts, backtest, residuals, and gridsearch. If `start` is not within the trainable / forecastable points, uses the closest valid start point that is a round multiple of `stride` ahead of start. Raises a ValueError, if no valid start point exists. This guarantees that all historical forecasts are `n * stride` points away from start, and will simplify many downstream tasks. [#2560](https://github.com/unit8co/darts/issues/2560) by [Dennis Bader](https://github.com/dennisbader).
+- Improvement to `gridsearch()`, now supports optimization of models wrapped in `RegressionModel`. [#2594](https://github.com/unit8co/darts/pull/2594) by [Andrés Sandoval](https://github.com/andresliszt)
 
 **Fixed**
 
