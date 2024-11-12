@@ -6,7 +6,6 @@ A few popular time series datasets
 """
 
 from pathlib import Path
-from typing import List
 
 import numpy as np
 import pandas as pd
@@ -559,7 +558,7 @@ class ElectricityDataset(DatasetLoaderCSV):
             )
         )
 
-    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+    def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         Load the electricity dataset as a list of univariate series, one for each household.
         """
@@ -572,8 +571,8 @@ class ElectricityDataset(DatasetLoaderCSV):
 
             # filter column down to the period of recording
             srs = srs.replace(0.0, np.nan)
-            start_date = min(srs.fillna(method="ffill").dropna().index)
-            end_date = max(srs.fillna(method="bfill").dropna().index)
+            start_date = min(srs.ffill().dropna().index)
+            end_date = max(srs.bfill().dropna().index)
             active_range = (srs.index >= start_date) & (srs.index <= end_date)
             srs = srs[active_range].fillna(0.0)
 
@@ -658,7 +657,7 @@ class UberTLCDataset(DatasetLoaderCSV):
             )
         )
 
-    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+    def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         load the Uber TLC dataset as a list of univariate timeseries, one for each locationID.
         """
@@ -670,8 +669,8 @@ class UberTLCDataset(DatasetLoaderCSV):
             srs = series[label]
 
             # filter column down to the period of recording
-            start_date = min(srs.fillna(method="ffill").dropna().index)
-            end_date = max(srs.fillna(method="bfill").dropna().index)
+            start_date = min(srs.ffill().dropna().index)
+            end_date = max(srs.bfill().dropna().index)
             active_range = (srs.index >= start_date) & (srs.index <= end_date)
             srs = srs[active_range]
 
@@ -729,7 +728,7 @@ class ILINetDataset(DatasetLoaderCSV):
             )
         )
 
-    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+    def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         Load the ILINetDataset dataset as a list of univariate timeseries.
         """
@@ -766,7 +765,7 @@ class ExchangeRateDataset(DatasetLoaderCSV):
             )
         )
 
-    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+    def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         Load the ExchangeRateDataset dataset as a list of univariate timeseries, one for each country.
         """
@@ -805,7 +804,7 @@ class TrafficDataset(DatasetLoaderCSV):
             )
         )
 
-    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+    def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         Load the TrafficDataset dataset as a list of univariate timeseries, one for each ID.
         """
@@ -845,7 +844,7 @@ class WeatherDataset(DatasetLoaderCSV):
             )
         )
 
-    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+    def _to_multi_series(self, series: pd.DataFrame) -> list[TimeSeries]:
         """
         Load the WeatherDataset dataset as a list of univariate timeseries, one for weather indicator.
         """

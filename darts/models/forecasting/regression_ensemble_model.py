@@ -5,7 +5,8 @@ Regression ensemble model
 An ensemble model which uses a regression model to compute the ensemble forecast.
 """
 
-from typing import List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
@@ -21,7 +22,7 @@ logger = get_logger(__name__)
 class RegressionEnsembleModel(EnsembleModel):
     def __init__(
         self,
-        forecasting_models: List[ForecastingModel],
+        forecasting_models: list[ForecastingModel],
         regression_train_n_points: int,
         regression_model=None,
         regression_train_num_samples: int = 1,
@@ -155,7 +156,7 @@ class RegressionEnsembleModel(EnsembleModel):
         )
 
         # converted to List[int] if regression_train_n_points=-1 and ensemble is trained with multiple series
-        self.train_n_points: Union[int, List[int]] = regression_train_n_points
+        self.train_n_points: Union[int, list[int]] = regression_train_n_points
 
         raise_if(
             train_using_historical_forecasts and not self.is_global_ensemble,
@@ -167,8 +168,8 @@ class RegressionEnsembleModel(EnsembleModel):
         self.train_using_historical_forecasts = train_using_historical_forecasts
 
     def _split_multi_ts_sequence(
-        self, n: Union[int, List[int]], ts_sequence: Sequence[TimeSeries]
-    ) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
+        self, n: Union[int, list[int]], ts_sequence: Sequence[TimeSeries]
+    ) -> tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
         if isinstance(n, int):
             n = [n] * len(ts_sequence)
         left = [ts[:-n_] for ts, n_ in zip(ts_sequence, n)]
@@ -426,7 +427,7 @@ class RegressionEnsembleModel(EnsembleModel):
         # prepare the forecasting models for further predicting by fitting them with the entire data
         if self.train_forecasting_models:
             # Some models may need to be 'reset' to allow being retrained from scratch, especially torch-based models
-            self.forecasting_models: List[ForecastingModel] = [
+            self.forecasting_models: list[ForecastingModel] = [
                 model.untrained_model() for model in self.forecasting_models
             ]
             for model in self.forecasting_models:
@@ -470,7 +471,7 @@ class RegressionEnsembleModel(EnsembleModel):
     @property
     def extreme_lags(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         Optional[int],

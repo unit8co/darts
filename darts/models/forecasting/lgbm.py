@@ -10,7 +10,8 @@ To enable LightGBM support in Darts, follow the detailed install instructions fo
 https://github.com/unit8co/darts/blob/master/INSTALL.md
 """
 
-from typing import List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import lightgbm as lgb
 import numpy as np
@@ -37,13 +38,13 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
         likelihood: Optional[str] = None,
-        quantiles: Optional[List[float]] = None,
+        quantiles: Optional[list[float]] = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
-        categorical_past_covariates: Optional[Union[str, List[str]]] = None,
-        categorical_future_covariates: Optional[Union[str, List[str]]] = None,
-        categorical_static_covariates: Optional[Union[str, List[str]]] = None,
+        categorical_past_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_future_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_static_covariates: Optional[Union[str, list[str]]] = None,
         **kwargs,
     ):
         """LGBM Model
@@ -130,8 +131,9 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
             Control the randomness in the fitting procedure and for sampling.
             Default: ``None``.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model is
-            trained to predict at step 'output_chunk_length' in the future. Default: True.
+            If True, a separate model will be trained for each future lag to predict. If False, a single model
+            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
+            `output_chunk_length - n` for each step `n`). Default: True.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -188,7 +190,7 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         self._median_idx = None
         self._model_container = None
         self.quantiles = None
-        self.likelihood = likelihood
+        self._likelihood = likelihood
         self._rng = None
 
         # parse likelihood
@@ -294,7 +296,6 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
                     val_sample_weight=val_sample_weight,
                     **kwargs,
                 )
-
                 self._model_container[quantile] = self.model
             return self
 
@@ -339,7 +340,7 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         return True
 
     @property
-    def val_set_params(self) -> Tuple[Optional[str], Optional[str]]:
+    def val_set_params(self) -> tuple[Optional[str], Optional[str]]:
         return "eval_set", "eval_sample_weight"
 
     @property

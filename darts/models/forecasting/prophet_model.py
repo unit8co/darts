@@ -5,7 +5,8 @@ Facebook Prophet
 
 import logging
 import re
-from typing import Callable, List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -24,7 +25,7 @@ logger.level = logging.WARNING  # set to warning to suppress prophet logs
 class Prophet(FutureCovariatesLocalForecastingModel):
     def __init__(
         self,
-        add_seasonalities: Optional[Union[dict, List[dict]]] = None,
+        add_seasonalities: Optional[Union[dict, list[dict]]] = None,
         country_holidays: Optional[str] = None,
         suppress_stdout_stderror: bool = True,
         add_encoders: Optional[dict] = None,
@@ -111,7 +112,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 }
             ..
         cap
-            Parameter specifiying the maximum carrying capacity when predicting with logistic growth.
+            Parameter specifying the maximum carrying capacity when predicting with logistic growth.
             Mandatory when `growth = 'logistic'`, otherwise ignored.
             See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
             on logistic forecasts.
@@ -121,7 +122,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
             where each number indicates the carrying capacity at this index.
         floor
-            Parameter specifiying the minimum carrying capacity when predicting logistic growth.
+            Parameter specifying the minimum carrying capacity when predicting logistic growth.
             Optional when `growth = 'logistic'` (defaults to 0), otherwise ignored.
             See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
             on logistic forecasts.
@@ -314,7 +315,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
     def _check_seasonality_conditions(
         self, future_covariates: Optional[TimeSeries] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Checks if the conditions for custom conditional seasonalities are met. Each custom seasonality that has a
         `condition_name` other than None is checked. If the `condition_name` is not a column in the `future_covariates`
@@ -529,7 +530,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         ]
         raise_if(
             len(missing_kws) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has missing mandatory keywords or empty arguments: '
+            f"Seasonality `{add_seasonality_call['name']}` has missing mandatory keywords or empty arguments: "
             f"{missing_kws}.",
             logger,
         )
@@ -547,7 +548,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         ]
         raise_if(
             len(invalid_kws) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has invalid keywords: {invalid_kws}. Only the '
+            f"Seasonality `{add_seasonality_call['name']}` has invalid keywords: {invalid_kws}. Only the "
             f"following arguments are supported: {list(seasonality_default)}",
             logger,
         )
@@ -560,8 +561,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         ]
         raise_if(
             len(invalid_types) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has invalid value dtypes: {invalid_types} must be '
-            f'of type {[seasonality_properties[kw]["dtype"] for kw in invalid_types]}.',
+            f"Seasonality `{add_seasonality_call['name']}` has invalid value dtypes: {invalid_types} must be "
+            f"of type {[seasonality_properties[kw]['dtype'] for kw in invalid_types]}.",
             logger,
         )
 

@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.neighbors import KNeighborsRegressor
 
 import darts
 from darts import TimeSeries
@@ -209,6 +210,10 @@ class TestRegressionModels:
         tree_method="exact",
         **xgb_test_params,
     )
+    KNeighborsRegressorModel = partialclass(
+        RegressionModel,
+        model=KNeighborsRegressor(n_neighbors=1),
+    )
     # targets for poisson regression must be positive, so we exclude them for some tests
     models.extend([
         QuantileLinearRegressionModel,
@@ -370,8 +375,8 @@ class TestRegressionModels:
         - series is a univariate TimeSeries with daily frequency.
         - future_covariates are a TimeSeries with 2 components. The first component represents a "promotion"
             mechanism and has an impact on the target quantiy according to 'apply_promo_mechanism'. The second
-            component contains random data that should have no impact on the target quantity. Note that altough the
-            intention is to model the "promotion_mechnism" as a categorical variable, it is encoded as integers.
+            component contains random data that should have no impact on the target quantity. Note that although the
+            intention is to model the "promotion_mechanism" as a categorical variable, it is encoded as integers.
             This is required by LightGBM.
         - past_covariates are a TimeSeries with 2 components. It only contains dummy data and does not
             have any impact on the target series.
@@ -893,7 +898,7 @@ class TestRegressionModels:
         """
         Tests that `RandomForest` regression model reproduces same behaviour as
         `examples/15-static-covariates.ipynb` notebook; see this notebook for
-        futher details. Notebook is also hosted online at:
+        further details. Notebook is also hosted online at:
         https://unit8co.github.io/darts/examples/15-static-covariates.html
         """
 
@@ -1284,6 +1289,48 @@ class TestRegressionModels:
         )
         assert len(result) == 21
 
+    def test_opti_historical_forecast_predict_checks(self):
+        """
+        Verify that the sanity check implemented in ForecastingModel.predict are also defined for optimized historical
+        forecasts as it does not call this method
+        """
+        model = self.models[1](lags=5)
+
+        msg_expected = (
+            "The model has not been fitted yet, and `retrain` is ``False``. Either call `fit()` before "
+            "`historical_forecasts()`, or set `retrain` to something different than ``False``."
+        )
+        # untrained model, optimized
+        with pytest.raises(ValueError) as err:
+            model.historical_forecasts(
+                series=self.sine_univariate1,
+                start=0.9,
+                forecast_horizon=1,
+                retrain=False,
+                enable_optimization=True,
+                verbose=False,
+            )
+        assert str(err.value) == msg_expected
+
+        model.fit(
+            series=self.sine_univariate1,
+        )
+        # deterministic model, num_samples > 1, optimized
+        with pytest.raises(ValueError) as err:
+            model.historical_forecasts(
+                series=self.sine_univariate1,
+                start=0.9,
+                forecast_horizon=1,
+                retrain=False,
+                enable_optimization=True,
+                num_samples=10,
+                verbose=False,
+            )
+        assert (
+            str(err.value)
+            == "`num_samples > 1` is only supported for probabilistic models."
+        )
+
     @pytest.mark.parametrize(
         "config",
         [
@@ -1315,7 +1362,7 @@ class TestRegressionModels:
                 horizon=0, target_dim=1
             )
 
-    model_configs = [(XGBModel, dict({"tree_method": "exact"}, **xgb_test_params))]
+    model_configs = [(XGBModel, dict({"likelihood": "poisson"}, **xgb_test_params))]
     if lgbm_available:
         model_configs += [(LightGBMModel, lgbm_test_params)]
     if cb_available:
@@ -1341,7 +1388,15 @@ class TestRegressionModels:
         """Craft training data so that estimator_[i].predict(X) == i + 1"""
 
         def helper_check_overfitted_estimators(ts: TimeSeries, ocl: int):
-            m = XGBModel(lags=3, output_chunk_length=ocl, multi_models=True)
+            # since xgboost==2.1.0, the regular deterministic models have native multi output regression
+            # -> we use a quantile likelihood to activate Darts' MultiOutputRegressor
+            m = XGBModel(
+                lags=3,
+                output_chunk_length=ocl,
+                multi_models=True,
+                likelihood="quantile",
+                quantiles=[0.5],
+            )
             m.fit(ts)
 
             assert len(m.model.estimators_) == ocl * ts.width
@@ -1401,7 +1456,15 @@ class TestRegressionModels:
         # estimators_[0] labels : [1]
         # estimators_[1] labels : [2]
 
-        m = XGBModel(lags=3, output_chunk_length=ocl, multi_models=False)
+        # since xgboost==2.1.0, the regular deterministic models have native multi output regression
+        # -> we use a quantile likelihood to activate Darts' MultiOutputRegressor
+        m = XGBModel(
+            lags=3,
+            output_chunk_length=ocl,
+            multi_models=False,
+            likelihood="quantile",
+            quantiles=[0.5],
+        )
         m.fit(ts)
 
         # one estimator is reused for all the horizon of a given component
@@ -1575,6 +1638,7 @@ class TestRegressionModels:
                 (LinearRegressionModel, {}),
                 (RandomForest, {"bootstrap": False}),
                 (XGBModel, xgb_test_params),
+                (KNeighborsRegressorModel, {}),  # no weights support
             ]
             + (
                 [(CatBoostModel, dict({"allow_const_label": True}, **cb_test_params))]
@@ -1611,7 +1675,12 @@ class TestRegressionModels:
             preds_no_weight = [preds_no_weight]
 
         for pred, pred_no_weight in zip(preds, preds_no_weight):
-            with pytest.raises(AssertionError):
+            if model.supports_sample_weight:
+                with pytest.raises(AssertionError):
+                    np.testing.assert_array_almost_equal(
+                        pred.all_values(), pred_no_weight.all_values()
+                    )
+            else:
                 np.testing.assert_array_almost_equal(
                     pred.all_values(), pred_no_weight.all_values()
                 )
@@ -1623,6 +1692,7 @@ class TestRegressionModels:
                 (LinearRegressionModel, {}),
                 (RandomForest, {"bootstrap": False}),
                 (XGBModel, xgb_test_params),
+                (KNeighborsRegressorModel, {}),  # no weights support
             ]
             + (
                 [(CatBoostModel, dict({"allow_const_label": True}, **cb_test_params))]
@@ -1650,7 +1720,11 @@ class TestRegressionModels:
 
         preds = [preds] if single_series else preds
         for pred in preds:
-            np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
+            if model.supports_sample_weight:
+                np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
+            else:
+                with pytest.raises(AssertionError):
+                    np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
 
     @pytest.mark.parametrize(
         "config",
@@ -1658,6 +1732,7 @@ class TestRegressionModels:
             (LinearRegressionModel, {}),
             (RandomForest, {"bootstrap": False}),
             (XGBModel, xgb_test_params),
+            (KNeighborsRegressorModel, {}),  # no weights support
         ]
         + (
             [(CatBoostModel, dict({"allow_const_label": True}, **cb_test_params))]
@@ -1679,7 +1754,11 @@ class TestRegressionModels:
 
         pred = model.predict(n=3)
 
-        np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
+        if model.supports_sample_weight:
+            np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
+        else:
+            with pytest.raises(AssertionError):
+                np.testing.assert_array_almost_equal(pred.values()[:, 0], [1, 1, 1])
 
     def test_weights_multimodel_false_multi_horizon(self):
         model = LinearRegressionModel(lags=3, output_chunk_length=3, multi_models=False)
@@ -2592,6 +2671,44 @@ class TestRegressionModels:
         np.testing.assert_array_almost_equal(
             hist_fc_opt.values(copy=False), pred_last_hist_fc[-1].values(copy=False)
         )
+
+    @pytest.mark.parametrize("lpo", [True, False])
+    def test_historical_forecasts_no_target_lags_with_static_covs(self, lpo):
+        """Tests that historical forecasts work without target lags but with static covariates.
+        For last_points_only `True` and `False`."""
+        ocl = 7
+        series = tg.linear_timeseries(
+            length=28, start=pd.Timestamp("2000-01-01"), freq="d"
+        ).with_static_covariates(pd.Series([1.0]))
+
+        model = LinearRegressionModel(
+            lags=None,
+            lags_future_covariates=(3, 0),
+            output_chunk_length=ocl,
+            use_static_covariates=True,
+        )
+        model.fit(series, future_covariates=series)
+
+        preds1 = model.historical_forecasts(
+            series,
+            future_covariates=series,
+            retrain=False,
+            enable_optimization=True,
+            last_points_only=lpo,
+        )
+        preds2 = model.historical_forecasts(
+            series,
+            future_covariates=series,
+            retrain=False,
+            enable_optimization=False,
+            last_points_only=lpo,
+        )
+        if lpo:
+            preds1 = [preds1]
+            preds2 = [preds2]
+
+        for p1, p2 in zip(preds1, preds2):
+            np.testing.assert_array_almost_equal(p1.values(), p2.values())
 
     @pytest.mark.parametrize(
         "config",

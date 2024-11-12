@@ -4,7 +4,8 @@ Utils for time series generation
 """
 
 import math
-from typing import List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import holidays
 import numpy as np
@@ -541,7 +542,7 @@ def datetime_attribute_timeseries(
     until: Optional[Union[int, str, pd.Timestamp]] = None,
     add_length: int = 0,
     dtype=np.float64,
-    with_columns: Optional[Union[List[str], str]] = None,
+    with_columns: Optional[Union[list[str], str]] = None,
     tz: Optional[str] = None,
 ) -> TimeSeries:
     """
@@ -641,7 +642,7 @@ def datetime_attribute_timeseries(
     if attribute in ONE_INDEXED_FREQS:
         values -= 1
 
-    # leap years insert an additional day on the 29th of Feburary
+    # leap years insert an additional day on the 29th of February
     if attribute in {"dayofyear", "day_of_year"} and any(time_index.is_leap_year):
         num_values_dict[attribute] += 1
 
@@ -675,11 +676,19 @@ def datetime_attribute_timeseries(
     if one_hot:
         values_df = pd.get_dummies(values)
         # fill missing columns (in case not all values appear in time_index)
-        attribute_range = range(num_values_dict[attribute])
-        for i in attribute_range:
-            if i not in values_df.columns:
-                values_df[i] = 0
-        values_df = values_df[attribute_range]
+        attribute_range = np.arange(num_values_dict[attribute])
+        is_missing = np.isin(attribute_range, values_df.columns.values, invert=True)
+        # if there are attribute_range columns that are
+        # not in values_df.columns.values
+        if is_missing.any():
+            dict_0 = {i: False for i in attribute_range[is_missing]}
+            # Make a dataframe from the dictionary and concatenate it
+            # to the values values_df  in which the existing columns
+            values_df = pd.concat(
+                [values_df, pd.DataFrame(dict_0, index=values_df.index)], axis=1
+            ).sort_index(axis=1)
+        else:
+            values_df = values_df[attribute_range]
 
         if with_columns is None:
             with_columns = [
@@ -733,7 +742,7 @@ def datetime_attribute_timeseries(
 def _build_forecast_series(
     points_preds: Union[np.ndarray, Sequence[np.ndarray]],
     input_series: TimeSeries,
-    custom_columns: List[str] = None,
+    custom_columns: list[str] = None,
     with_static_covs: bool = True,
     with_hierarchy: bool = True,
     pred_start: Optional[Union[pd.Timestamp, int]] = None,
@@ -808,7 +817,7 @@ def _process_time_index(
     tz: Optional[str] = None,
     until: Optional[Union[int, str, pd.Timestamp]] = None,
     add_length: int = 0,
-) -> Tuple[pd.DatetimeIndex, pd.DatetimeIndex]:
+) -> tuple[pd.DatetimeIndex, pd.DatetimeIndex]:
     """
     Extracts the time index, and optionally adds some time steps after the end of the index, and/or converts the
     index to another time zone.

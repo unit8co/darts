@@ -4,7 +4,7 @@ Training Datasets Base Classes
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 from torch.utils.data import Dataset
@@ -14,7 +14,7 @@ from darts.logging import get_logger, raise_log
 from darts.utils.data.utils import CovariateType
 
 logger = get_logger(__name__)
-SampleIndexType = Tuple[
+SampleIndexType = tuple[
     int, int, int, int, Optional[int], Optional[int], Optional[int], Optional[int]
 ]
 
@@ -65,7 +65,7 @@ class TrainingDataset(ABC, Dataset):
         underlying the `TimeSeries`.
         """
 
-        self._index_memory: Dict = {}
+        self._index_memory: dict = {}
 
     @abstractmethod
     def __len__(self) -> int:
@@ -261,7 +261,7 @@ class PastCovariatesTrainingDataset(TrainingDataset, ABC):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -283,7 +283,7 @@ class FutureCovariatesTrainingDataset(TrainingDataset, ABC):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -305,7 +305,7 @@ class DualCovariatesTrainingDataset(TrainingDataset, ABC):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -329,7 +329,7 @@ class MixedCovariatesTrainingDataset(TrainingDataset, ABC):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -353,7 +353,7 @@ class SplitCovariatesTrainingDataset(TrainingDataset, ABC):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],

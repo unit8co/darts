@@ -6,7 +6,8 @@ A forecasting model using a linear regression of some of the target series' lags
 covariate series lags in order to obtain a forecast.
 """
 
-from typing import List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 from scipy.optimize import linprog
@@ -34,7 +35,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
         likelihood: Optional[str] = None,
-        quantiles: Optional[List[float]] = None,
+        quantiles: Optional[list[float]] = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
@@ -128,8 +129,9 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             no `likelihood` is set.
             Default: ``None``.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model is
-            trained to predict at step 'output_chunk_length' in the future. Default: True.
+            If True, a separate model will be trained for each future lag to predict. If False, a single model
+            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
+            `output_chunk_length - n` for each step `n`). Default: True.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -174,7 +176,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         self._median_idx = None
         self._model_container = None
         self.quantiles = None
-        self.likelihood = likelihood
+        self._likelihood = likelihood
         self._rng = None
 
         # parse likelihood
@@ -250,7 +252,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
 
                 self._model_container[quantile] = self.model
 
-            # replace the last trained QuantileRegressor with the dictionnary of Regressors.
+            # replace the last trained QuantileRegressor with the dictionary of Regressors.
             self.model = self._model_container
 
             return self

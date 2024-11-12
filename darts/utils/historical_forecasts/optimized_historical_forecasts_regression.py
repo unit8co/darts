@@ -1,9 +1,5 @@
-from typing import Optional, Sequence, Union
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from collections.abc import Sequence
+from typing import Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -74,6 +70,7 @@ def _optimized_historical_forecasts_last_points_only(
             start_format=start_format,
             forecast_horizon=forecast_horizon,
             overlap_end=overlap_end,
+            stride=stride,
             freq=freq,
             show_warnings=show_warnings,
         )
@@ -105,6 +102,7 @@ def _optimized_historical_forecasts_last_points_only(
             target_series=(
                 None
                 if model._get_lags("target") is None
+                and not model.uses_static_covariates
                 else series_[hist_fct_tgt_start:hist_fct_tgt_end]
             ),
             past_covariates=(
@@ -140,18 +138,23 @@ def _optimized_historical_forecasts_last_points_only(
         )
         # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
         # where k = output_chunk length if multi_models, 1 otherwise
-
-        # reshape into (forecasted indexes, n_components, n_samples), components are interleaved
-        forecast = forecast.reshape(X.shape[0], -1, num_samples)
+        # reshape into (forecasted indexes, output_chunk_length, n_components, n_samples)
+        forecast = np.moveaxis(
+            forecast.reshape(
+                X.shape[0],
+                num_samples,
+                model.output_chunk_length if model.multi_models else 1,
+                -1,
+            ),
+            1,
+            -1,
+        )
 
         # extract the last sub-model forecast for each component
         if model.multi_models:
-            forecast = forecast[
-                :,
-                (forecast_horizon - 1) * len(forecast_components) : (forecast_horizon)
-                * len(forecast_components),
-                :,
-            ]
+            forecast = forecast[:, forecast_horizon - 1]
+        else:
+            forecast = forecast[:, 0]
 
         forecasts_list.append(
             TimeSeries.from_times_and_values(
@@ -230,13 +233,13 @@ def _optimized_historical_forecasts_all_points(
             start_format=start_format,
             forecast_horizon=forecast_horizon,
             overlap_end=overlap_end,
+            stride=stride,
             freq=freq,
             show_warnings=show_warnings,
         )
 
         # Additional shift, to account for the model output_chunk_length
         shift_start = 0
-        # shift_end = 0
         if model.output_chunk_length > 1:
             # used to convert the shift into the appropriate unit
             unit = freq if series_.has_datetime_index else 1
@@ -260,6 +263,7 @@ def _optimized_historical_forecasts_all_points(
             target_series=(
                 None
                 if model._get_lags("target") is None
+                and not model.uses_static_covariates
                 else series_[hist_fct_tgt_start:hist_fct_tgt_end]
             ),
             past_covariates=(
@@ -281,6 +285,7 @@ def _optimized_historical_forecasts_all_points(
             check_inputs=True,
             use_moving_windows=True,
             concatenate=False,
+            show_warnings=False,
         )
 
         # stride must be applied post-hoc to avoid missing values
@@ -293,26 +298,27 @@ def _optimized_historical_forecasts_all_points(
             predict_likelihood_parameters=predict_likelihood_parameters,
             **kwargs,
         )
-
-        # reshape and stride the forecast into (forecastable_index, forecast_horizon, n_components, num_samples)
-        if model.multi_models:
-            # forecast has shape ((forecastable_index_length-1)*num_samples, output_chunk_length, n_component)
-            # and the components are interleaved
-            forecast = forecast.reshape(
+        # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
+        # where k = output_chunk length if multi_models, 1 otherwise
+        # reshape into (forecasted indexes, output_chunk_length, n_components, n_samples)
+        forecast = np.moveaxis(
+            forecast.reshape(
                 X.shape[0],
-                model.output_chunk_length,
-                len(forecast_components),
                 num_samples,
-            )
+                model.output_chunk_length if model.multi_models else 1,
+                -1,
+            ),
+            1,
+            -1,
+        )
+
+        if model.multi_models:
             forecast = forecast[::stride, :forecast_horizon]
         else:
-            # forecast has shape ((forecastable_index_length-1)*num_samples, 1, n_component)
-            # and the components are interleaved
-            forecast = forecast.reshape(X.shape[0], -1, num_samples)
-
-            # forecasts depend on lagged data only, output_chunk_length is reconstitued by applying a sliding window
+            # entire forecast horizon is given by multiple (previous) forecasts -> apply sliding window
             forecast = sliding_window_view(
-                forecast, (forecast_horizon, len(forecast_components), num_samples)
+                forecast[:, 0],
+                (forecast_horizon, len(forecast_components), num_samples),
             )
 
             # apply stride, remove the last windows, slice output_chunk_length to keep forecast_horizon values

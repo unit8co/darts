@@ -28,16 +28,13 @@ if their static covariates do not have the same size, the shorter ones are padde
 """
 
 from collections import OrderedDict
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from collections.abc import Sequence
+from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
+from sklearn.utils.validation import has_fit_parameter
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
@@ -55,13 +52,17 @@ from darts.utils.historical_forecasts import (
 )
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
-from darts.utils.utils import _check_quantiles
+from darts.utils.utils import (
+    _check_quantiles,
+    likelihood_component_names,
+    quantile_names,
+)
 
 logger = get_logger(__name__)
 
-LAGS_TYPE = Union[int, List[int], Dict[str, Union[int, List[int]]]]
+LAGS_TYPE = Union[int, list[int], dict[str, Union[int, list[int]]]]
 FUTURE_LAGS_TYPE = Union[
-    Tuple[int, int], List[int], Dict[str, Union[Tuple[int, int], List[int]]]
+    tuple[int, int], list[int], dict[str, Union[tuple[int, int], list[int]]]
 ]
 
 
@@ -160,8 +161,9 @@ class RegressionModel(GlobalForecastingModel):
             will be used per component in the multivariate series.
             If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model is
-            trained to predict at step 'output_chunk_length' in the future. Default: True.
+            If True, a separate model will be trained for each future lag to predict. If False, a single model
+            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
+            `output_chunk_length - n` for each step `n`). Default: True.
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
@@ -201,14 +203,14 @@ class RegressionModel(GlobalForecastingModel):
         super().__init__(add_encoders=add_encoders)
 
         self.model = model
-        self.lags: Dict[str, List[int]] = {}
-        self.component_lags: Dict[str, Dict[str, List[int]]] = {}
+        self.lags: dict[str, list[int]] = {}
+        self.component_lags: dict[str, dict[str, list[int]]] = {}
         self.input_dim = None
         self.multi_models = True if multi_models or output_chunk_length == 1 else False
         self._considers_static_covariates = use_static_covariates
-        self._static_covariates_shape: Optional[Tuple[int, int]] = None
-        self._lagged_feature_names: Optional[List[str]] = None
-        self._lagged_label_names: Optional[List[str]] = None
+        self._static_covariates_shape: Optional[tuple[int, int]] = None
+        self._lagged_feature_names: Optional[list[str]] = None
+        self._lagged_label_names: Optional[list[str]] = None
 
         # check and set output_chunk_length
         raise_if_not(
@@ -257,7 +259,7 @@ class RegressionModel(GlobalForecastingModel):
         lags_past_covariates: Optional[LAGS_TYPE],
         lags_future_covariates: Optional[FUTURE_LAGS_TYPE],
         output_chunk_shift: int,
-    ) -> Tuple[Dict[str, List[int]], Dict[str, Dict[str, List[int]]]]:
+    ) -> tuple[dict[str, list[int]], dict[str, dict[str, list[int]]]]:
         """
         Based on the type of the argument and the nature of the covariates, perform some sanity checks before
         converting the lags to a list of integer.
@@ -269,8 +271,8 @@ class RegressionModel(GlobalForecastingModel):
 
         If `output_chunk_shift > 0`, the `lags_future_covariates` are shifted into the future.
         """
-        processed_lags: Dict[str, List[int]] = dict()
-        processed_component_lags: Dict[str, Dict[str, List[int]]] = dict()
+        processed_lags: dict[str, list[int]] = dict()
+        processed_component_lags: dict[str, dict[str, list[int]]] = dict()
         for lags_values, lags_name, lags_abbrev in zip(
             [lags, lags_past_covariates, lags_future_covariates],
             ["lags", "lags_past_covariates", "lags_future_covariates"],
@@ -294,7 +296,7 @@ class RegressionModel(GlobalForecastingModel):
             supported_types = ""
             min_lags = None
             max_lags = None
-            tmp_components_lags: Dict[str, List[int]] = dict()
+            tmp_components_lags: dict[str, list[int]] = dict()
             for comp_name, comp_lags in lags_values.items():
                 if lags_name == "lags_future_covariates":
                     if isinstance(comp_lags, tuple):
@@ -363,7 +365,7 @@ class RegressionModel(GlobalForecastingModel):
                     raise_log(
                         ValueError(
                             f"`{lags_name}` - `{comp_name}`: must be either a {supported_types}. "
-                            f"Gived : {type(comp_lags)}."
+                            f"Given : {type(comp_lags)}."
                         ),
                         logger,
                     )
@@ -413,7 +415,7 @@ class RegressionModel(GlobalForecastingModel):
     @property
     def _model_encoder_settings(
         self,
-    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
+    ) -> tuple[int, int, bool, bool, Optional[list[int]], Optional[list[int]]]:
         target_lags = self.lags.get("target", [0])
         lags_past_covariates = self.lags.get("past", None)
         if lags_past_covariates is not None:
@@ -441,7 +443,7 @@ class RegressionModel(GlobalForecastingModel):
     @property
     def extreme_lags(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         Optional[int],
@@ -559,7 +561,7 @@ class RegressionModel(GlobalForecastingModel):
 
     def _add_val_set_to_kwargs(
         self,
-        kwargs: Dict,
+        kwargs: dict,
         val_series: Sequence[TimeSeries],
         val_past_covariates: Optional[Sequence[TimeSeries]],
         val_future_covariates: Optional[Sequence[TimeSeries]],
@@ -598,7 +600,7 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates: Sequence[TimeSeries],
         max_samples_per_ts: int,
         sample_weight: Optional[Union[TimeSeries, str]] = None,
-        last_static_covariates_shape: Optional[Tuple[int, int]] = None,
+        last_static_covariates_shape: Optional[tuple[int, int]] = None,
     ):
         (
             features,
@@ -701,8 +703,19 @@ class RegressionModel(GlobalForecastingModel):
                 val_sample_weight=val_sample_weight,
                 max_samples_per_ts=max_samples_per_ts,
             )
+
+        # only use `sample_weight` if model supports it
+        sample_weight_kwargs = dict()
+        if sample_weights is not None:
+            if self.supports_sample_weight:
+                sample_weight_kwargs = {"sample_weight": sample_weights}
+            else:
+                logger.warning(
+                    "`sample_weight` was ignored since underlying regression model's "
+                    "`fit()` method does not support it."
+                )
         self.model.fit(
-            training_samples, training_labels, sample_weight=sample_weights, **kwargs
+            training_samples, training_labels, **sample_weight_kwargs, **kwargs
         )
 
         # generate and store the lagged components names (for feature importance analysis)
@@ -831,30 +844,42 @@ class RegressionModel(GlobalForecastingModel):
         }
 
         # if multi-output regression
+        use_mor = False
         if not series[0].is_univariate or (
             self.output_chunk_length > 1
             and self.multi_models
             and not isinstance(self.model, MultiOutputRegressor)
         ):
-            val_set_name, val_weight_name = self.val_set_params
-            mor_kwargs = {
-                "eval_set_name": val_set_name,
-                "eval_weight_name": val_weight_name,
-                "n_jobs": n_jobs_multioutput_wrapper,
-            }
             if sample_weight is not None:
                 # we have 2D sample (and time) weights, only supported in Darts
-                self.model = MultiOutputRegressor(self.model, **mor_kwargs)
+                use_mor = True
             elif not (
                 callable(getattr(self.model, "_get_tags", None))
                 and isinstance(self.model._get_tags(), dict)
                 and self.model._get_tags().get("multioutput")
             ):
                 # model does not support multi-output regression natively
-                self.model = MultiOutputRegressor(self.model, **mor_kwargs)
-            elif self.model.__class__.__name__ == "CatBoostRegressor":
-                if self.model.get_params()["loss_function"] == "RMSEWithUncertainty":
-                    self.model = MultiOutputRegressor(self.model, **mor_kwargs)
+                use_mor = True
+            elif (
+                self.model.__class__.__name__ == "CatBoostRegressor"
+                and self.model.get_params()["loss_function"] == "RMSEWithUncertainty"
+            ):
+                use_mor = True
+            elif (
+                self.model.__class__.__name__ == "XGBRegressor"
+                and self.likelihood is not None
+            ):
+                # since xgboost==2.1.0, likelihoods do not support native multi output regression
+                use_mor = True
+
+        if use_mor:
+            val_set_name, val_weight_name = self.val_set_params
+            mor_kwargs = {
+                "eval_set_name": val_set_name,
+                "eval_weight_name": val_weight_name,
+                "n_jobs": n_jobs_multioutput_wrapper,
+            }
+            self.model = MultiOutputRegressor(self.model, **mor_kwargs)
 
         # warn if n_jobs_multioutput_wrapper was provided but not used
         if (
@@ -1114,10 +1139,18 @@ class RegressionModel(GlobalForecastingModel):
         # same for covariate matrices
         for cov_type, data in covariate_matrices.items():
             covariate_matrices[cov_type] = np.repeat(data, num_samples, axis=0)
+
+        # for concatenating target with predictions (or quantile parameters)
+        if predict_likelihood_parameters and self.likelihood is not None:
+            # with `multi_models=False`, the predictions are concatenated with the past target, even if `n<=ocl`
+            # to make things work, we just append the first predicted parameter (it will never be accessed)
+            sample_slice = slice(0, None, self.num_parameters)
+        else:
+            sample_slice = slice(None)
+
         # prediction
         predictions = []
         last_step_shift = 0
-
         # t_pred indicates the number of time steps after the first prediction
         for t_pred in range(0, n, step):
             # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
@@ -1128,7 +1161,9 @@ class RegressionModel(GlobalForecastingModel):
 
             # concatenate previous iteration forecasts
             if "target" in self.lags and predictions:
-                series_matrix = np.concatenate([series_matrix, predictions[-1]], axis=1)
+                series_matrix = np.concatenate(
+                    [series_matrix, predictions[-1][:, :, sample_slice]], axis=1
+                )
 
             # extract and concatenate lags from target and covariates series
             X = _create_lagged_data_autoregression(
@@ -1195,7 +1230,7 @@ class RegressionModel(GlobalForecastingModel):
         return prediction.reshape(k, self.pred_dim, -1)
 
     @property
-    def lagged_feature_names(self) -> Optional[List[str]]:
+    def lagged_feature_names(self) -> Optional[list[str]]:
         """The lagged feature names the model has been trained on.
 
         The naming convention for target, past and future covariates is: ``"{name}_{type}_lag{i}"``, where:
@@ -1213,7 +1248,7 @@ class RegressionModel(GlobalForecastingModel):
         return self._lagged_feature_names
 
     @property
-    def lagged_label_names(self) -> Optional[List[str]]:
+    def lagged_label_names(self) -> Optional[list[str]]:
         """The lagged label name for the model's estimators.
 
         The naming convention is: ``"{name}_target_hrz{i}"``, where:
@@ -1225,6 +1260,10 @@ class RegressionModel(GlobalForecastingModel):
 
     def __str__(self):
         return self.model.__str__()
+
+    @property
+    def likelihood(self) -> Optional[str]:
+        return getattr(self, "_likelihood", None)
 
     @property
     def supports_past_covariates(self) -> bool:
@@ -1244,7 +1283,16 @@ class RegressionModel(GlobalForecastingModel):
         return False
 
     @property
-    def val_set_params(self) -> Tuple[Optional[str], Optional[str]]:
+    def supports_sample_weight(self) -> bool:
+        """Whether the model supports a validation set during training."""
+        return (
+            self.model.supports_sample_weight
+            if isinstance(self.model, MultiOutputRegressor)
+            else has_fit_parameter(self.model, "sample_weight")
+        )
+
+    @property
+    def val_set_params(self) -> tuple[Optional[str], Optional[str]]:
         """Returns the parameter names for the validation set, and validation sample weights if it supports
         a validation set."""
         return None, None
@@ -1381,7 +1429,7 @@ class _LikelihoodMixin:
 
     def _likelihood_components_names(
         self, input_series: TimeSeries
-    ) -> Optional[List[str]]:
+    ) -> Optional[list[str]]:
         if self.likelihood == "quantile":
             return self._quantiles_generate_components_names(input_series)
         elif self.likelihood == "poisson":
@@ -1627,20 +1675,18 @@ class _LikelihoodMixin:
 
     def _quantiles_generate_components_names(
         self, input_series: TimeSeries
-    ) -> List[str]:
+    ) -> list[str]:
         return self._likelihood_generate_components_names(
             input_series,
-            [f"q{quantile:.2f}" for quantile in self._model_container.keys()],
+            quantile_names(q=self._model_container.keys()),
         )
 
     def _likelihood_generate_components_names(
-        self, input_series: TimeSeries, parameter_names: List[str]
-    ) -> List[str]:
-        return [
-            f"{tgt_name}_{param_n}"
-            for tgt_name in input_series.components
-            for param_n in parameter_names
-        ]
+        self, input_series: TimeSeries, parameter_names: list[str]
+    ) -> list[str]:
+        return likelihood_component_names(
+            components=input_series.components, parameter_names=parameter_names
+        )
 
 
 class _QuantileModelContainer(OrderedDict):
@@ -1652,17 +1698,17 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
     def __init__(
         self,
         lags: Union[int, list] = None,
-        lags_past_covariates: Union[int, List[int]] = None,
-        lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
+        lags_past_covariates: Union[int, list[int]] = None,
+        lags_future_covariates: Union[tuple[int, int], list[int]] = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
         model=None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
-        categorical_past_covariates: Optional[Union[str, List[str]]] = None,
-        categorical_future_covariates: Optional[Union[str, List[str]]] = None,
-        categorical_static_covariates: Optional[Union[str, List[str]]] = None,
+        categorical_past_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_future_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_static_covariates: Optional[Union[str, list[str]]] = None,
     ):
         """
         Extension of `RegressionModel` for regression models that support categorical covariates.
@@ -1815,7 +1861,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         )
 
     @property
-    def _categorical_fit_param(self) -> Tuple[str, Any]:
+    def _categorical_fit_param(self) -> tuple[str, Any]:
         """
         Returns the name, and default value of the categorical features parameter from model's `fit` method .
         Can be overridden in subclasses.
@@ -1891,7 +1937,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         series: Union[Sequence[TimeSeries], TimeSeries],
         past_covariates: Optional[Union[Sequence[TimeSeries], TimeSeries]] = None,
         future_covariates: Optional[Union[Sequence[TimeSeries], TimeSeries]] = None,
-    ) -> Tuple[List[int], List[str]]:
+    ) -> tuple[list[int], list[str]]:
         """
         Returns the indices and column names of the categorical features in the regression model.
 

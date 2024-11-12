@@ -16,7 +16,7 @@ We assume that you already know about covariates in Darts. If you're new to the 
     - [Training with validation set](#training-with-a-validation-dataset)
     - [Forecast / Prediction](#forecastprediction)
 
-3. Advanced functionnalities section provides some example of TFMs advanced features:
+3. Advanced functionalities section provides some example of TFMs advanced features:
     - [Model saving and loading](#saving-and-loading-model-states)
       - [Checkpoint saving / loading](#automatic-checkpointing)
       - [Manual saving / loading](#manual-saving--loading)
@@ -26,7 +26,7 @@ We assume that you already know about covariates in Darts. If you're new to the 
       - [Early Stopping](#example-with-early-stopping)
       - [Custom Callback](#example-of-custom-callback-to-store-losses)
 
-4. [Performance optimisation section](#performance-recommendations) lists tricks to speed up the computation during training.
+4. [Performance optimization section](#performance-recommendations) lists tricks to speed up the computation during training.
 
 ## Introduction
 In Darts, **Torch Forecasting Models (TFMs)** are broadly speaking "machine learning based" models, which denote PyTorch-based (deep learning) models.
@@ -484,9 +484,8 @@ A larger batch size tends to speed up the training because it reduces the number
 of backward passes per epoch and has the potential to better parallelize computation. However it also changes the training dynamics (e.g. you might need more epochs, and the convergence dynamics is affected). Furthermore larger batch sizes increase memory consumption. So here too some testing is required.
 
 ### Tune `num_loader_workers`
-All deep learning models in Darts have a parameter `num_loader_workers` in their `fit()` and `predict()` functions, which
-configures the `num_workers` parameter in the PyTorch `DataLoaders`. By default
-it is set to 0, which means that the main process will also take care of loading the data. Setting `num_workers > 0` will use additional workers to load the data. This typically incurs some overhead (notably increasing memory consumption), but in some cases it can also substantially improve performance.
+All deep learning models in Darts have a parameter `dataloader_kwargs` in their `fit()` and `predict()` functions, which configures the PyTorch DataLoaders. The `num_workers` parameter for PyTorch DataLoaders can be set using the `num_workers` key in the `dataloader_kwargs` dictionary.
+Setting `num_workers > 0` will use additional workers to load the data. This typically incurs some overhead (notably increasing memory consumption), but in some cases it can also substantially improve performance.
 The ideal value depends on many factors such as the batch size, whether you are using a GPU, the number of CPU cores available, and whether
 loading the data involved I/O operations (if the series are stored on disk).
 

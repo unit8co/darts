@@ -94,6 +94,23 @@ models_cls_kwargs_errs += [
     ),
 ]
 
+xgb_test_params = {
+    "n_estimators": 1,
+    "max_depth": 1,
+    "max_leaves": 1,
+}
+lgbm_test_params = {
+    "n_estimators": 1,
+    "max_depth": 1,
+    "num_leaves": 2,
+    "verbosity": -1,
+}
+cb_test_params = {
+    "iterations": 1,
+    "depth": 1,
+    "verbose": -1,
+}
+
 if TORCH_AVAILABLE:
     models_cls_kwargs_errs += [
         (
@@ -294,15 +311,17 @@ class TestProbabilisticModels:
     @pytest.mark.parametrize(
         "config",
         itertools.product(
-            [(LinearRegressionModel, False), (XGBModel, False)]
-            + ([(LightGBMModel, False)] if lgbm_available else [])
-            + ([(CatBoostModel, True)] if cb_available else []),
-            [1, 3],
+            [(LinearRegressionModel, False, {}), (XGBModel, False, xgb_test_params)]
+            + ([(LightGBMModel, False, lgbm_test_params)] if lgbm_available else [])
+            + ([(CatBoostModel, True, cb_test_params)] if cb_available else []),
+            [1, 3],  # n components
             [
                 "quantile",
                 "poisson",
                 "gaussian",
-            ],
+            ],  # likelihood
+            [True, False],  # multi models
+            [1, 2],  # horizon
         ),
     )
     def test_predict_likelihood_parameters_regression_models(self, config):
@@ -312,7 +331,13 @@ class TestProbabilisticModels:
 
         Note: values are not tested as it would be too time consuming
         """
-        (model_cls, supports_gaussian), n_comp, likelihood = config
+        (
+            (model_cls, supports_gaussian, model_kwargs),
+            n_comp,
+            likelihood,
+            multi_models,
+            horizon,
+        ) = config
 
         seed = 142857
         n_times, n_samples = 100, 1
@@ -340,10 +365,17 @@ class TestProbabilisticModels:
         else:
             assert False, f"unknown likelihood {likelihood}"
 
-        model = model_cls(lags=3, random_state=seed, **lkl["kwargs"])
+        model = model_cls(
+            lags=3,
+            output_chunk_length=2,
+            random_state=seed,
+            **lkl["kwargs"],
+            multi_models=multi_models,
+            **model_kwargs,
+        )
         model.fit(lkl["ts"])
         pred_lkl_params = model.predict(
-            n=1, num_samples=1, predict_likelihood_parameters=True
+            n=horizon, num_samples=1, predict_likelihood_parameters=True
         )
         if n_comp == 1:
             assert lkl["expected"].shape == pred_lkl_params.values()[0].shape, (
@@ -352,7 +384,7 @@ class TestProbabilisticModels:
             )
         else:
             assert (
-                1,
+                horizon,
                 len(lkl["expected"]) * n_comp,
                 1,
             ) == pred_lkl_params.all_values().shape, (
@@ -488,7 +520,7 @@ class TestProbabilisticModels:
                     n_samples,
                 ))
 
-                # Dirichlet must be handled sligthly differently since its multivariate
+                # Dirichlet must be handled slightly differently since its multivariate
                 if isinstance(lkl, DirichletLikelihood):
                     values = torch.swapaxes(values, 1, 3)
                     values = torch.squeeze(values, 3)
