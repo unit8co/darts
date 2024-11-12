@@ -9,7 +9,8 @@ Scorers Base Classes
 import copy
 import sys
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 if sys.version_info >= (3, 11):
     from typing import Self

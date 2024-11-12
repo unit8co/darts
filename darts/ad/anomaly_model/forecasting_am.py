@@ -9,16 +9,13 @@ scorer(s) to compute anomaly scores by comparing how actuals deviate from the mo
 # TODO:
 #     - put start default value to its minimal value (wait for the release of historical_forecast)
 import sys
-from typing import Dict, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Literal, Optional, Union
 
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 
 import pandas as pd
 
@@ -132,6 +129,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             `train_length`.
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
         model_fit_kwargs
             Parameters to be passed on to the forecast model `fit()` method.
 
@@ -212,6 +210,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             `train_length`.
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
         return_model_prediction
             Whether to return the forecasting model prediction along with the anomaly scores.
 
@@ -299,6 +298,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             `train_length`.
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
 
         Returns
         -------
@@ -343,10 +343,10 @@ class ForecastingAnomalyModel(AnomalyModel):
         enable_optimization: bool = True,
         metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
     ) -> Union[
-        Dict[str, float],
-        Dict[str, Sequence[float]],
-        Sequence[Dict[str, float]],
-        Sequence[Dict[str, Sequence[float]]],
+        dict[str, float],
+        dict[str, Sequence[float]],
+        Sequence[dict[str, float]],
+        Sequence[dict[str, Sequence[float]]],
     ]:
         """Compute the accuracy of the anomaly scores computed by the model.
 
@@ -394,6 +394,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             `train_length`.
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
         metric
             The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
@@ -499,6 +500,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             `train_length`.
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
+            Default: ``True``.
         anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not).
         names_of_scorers

@@ -540,8 +540,8 @@ class TestTimeSeriesWindowTransform:
     )
     def test_ts_windowtransf_hierarchy(self, transforms):
         """Checking that supported transforms behave as expected:
-        - implicitely applied to all components
-        - passing explicitely all components
+        - implicitly applied to all components
+        - passing explicitly all components
         """
         ts = helper_generate_ts_hierarchy(10)
 

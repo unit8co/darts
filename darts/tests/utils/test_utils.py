@@ -7,7 +7,15 @@ from darts import TimeSeries
 from darts.utils import _with_sanity_checks
 from darts.utils.missing_values import extract_subseries
 from darts.utils.ts_utils import retain_period_common_to_all
-from darts.utils.utils import freqs, generate_index, n_steps_between
+from darts.utils.utils import (
+    expand_arr,
+    freqs,
+    generate_index,
+    likelihood_component_names,
+    n_steps_between,
+    quantile_interval_names,
+    quantile_names,
+)
 
 
 class TestUtils:
@@ -421,6 +429,25 @@ class TestUtils:
     @pytest.mark.parametrize(
         "config",
         [
+            ("2000-01-01", None),
+            (None, "2000-01-03"),
+            ("2000-01-01", "2000-01-03"),
+        ],
+    )
+    def test_generate_index_with_string(self, config):
+        """Test that index generation with strings as start or end gives same results as with pandas TimeStamps."""
+        start, end = config
+        length = 3 if (start is None or end is None) else None
+        idx = generate_index(start=start, end=end, length=length)
+
+        start_ts = pd.Timestamp(start) if start is not None else start
+        end_ts = pd.Timestamp(end) if end is not None else end
+        idx_expected = generate_index(start=start_ts, end=end_ts, length=length)
+        assert idx.equals(idx_expected)
+
+    @pytest.mark.parametrize(
+        "config",
+        [
             # regular date offset frequencies
             # day
             ("2000-01-01", "2000-01-01", "D", 0),
@@ -539,3 +566,68 @@ class TestUtils:
         assert n_steps == expected_n_steps
         n_steps_reversed = n_steps_between(end=start, start=end, freq=freq)
         assert n_steps_reversed == -expected_n_steps
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (np.array([0, 1, 2]), (3, 1, 1)),
+            (np.array([[0], [1], [2]]), (3, 1, 1)),
+            (np.array([[[0]], [[1]], [[2]]]), (3, 1, 1)),
+            (np.array([[0, 1], [2, 3], [3, 4]]), (3, 2, 1)),
+            (np.array([[[0], [1]], [[1], [2]], [[3], [4]]]), (3, 2, 1)),
+            (
+                np.array([[[0, 1], [2, 3]], [[4, 5], [6, 7]], [[8, 9], [10, 11]]]),
+                (3, 2, 2),
+            ),
+        ],
+    )
+    def test_expand_arr(self, config):
+        """tests array expansion to 3D."""
+        arr, shape_expected = config
+
+        if len(arr.shape) == 1:
+            arr_expected = arr[:, None, None]
+        elif len(arr.shape) == 2:
+            arr_expected = arr[:, :, None]
+        else:
+            arr_expected = arr
+
+        arr = expand_arr(arr, ndim=3)
+        assert arr.shape == shape_expected
+        np.testing.assert_array_almost_equal(arr, arr_expected)
+
+    def test_likelihood_component_names(self):
+        names = likelihood_component_names(["a", "b"], ["1", "2", "3"])
+        assert names == ["a_1", "a_2", "a_3", "b_1", "b_2", "b_3"]
+
+        assert (
+            likelihood_component_names(pd.Index(["a", "b"]), ["1", "2", "3"]) == names
+        )
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (0.25, "a_q0.25"),
+            (0.2501, "a_q0.25"),
+            ([0.25], ["a_q0.25"]),
+            ([0.25, 0.75], ["a_q0.25", "a_q0.75"]),
+        ],
+    )
+    def test_quantile_names(self, config):
+        q, names_expected = config
+        names = quantile_names(q, "a")
+        assert names == names_expected
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            ((0.25, 0.5), "a_q0.25_q0.50"),
+            ((0.2501, 0.4999), "a_q0.25_q0.50"),
+            ([(0.25, 0.5)], ["a_q0.25_q0.50"]),
+            ([(0.25, 0.50), (0.6, 0.75)], ["a_q0.25_q0.50", "a_q0.60_q0.75"]),
+        ],
+    )
+    def test_quantile_interval_names(self, config):
+        q, names_expected = config
+        names = quantile_interval_names(q, "a")
+        assert names == names_expected

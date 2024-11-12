@@ -3,7 +3,8 @@ Differencing Transformer
 ------------------------
 """
 
-from typing import Any, Mapping, Sequence, Union
+from collections.abc import Mapping, Sequence
+from typing import Any, Union
 
 import numpy as np
 

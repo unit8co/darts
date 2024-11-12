@@ -4,7 +4,8 @@ Time Series Statistics
 """
 
 import math
-from typing import List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -134,7 +135,7 @@ def extract_trend_and_seasonality(
     model: Union[SeasonalityMode, ModelMode] = ModelMode.MULTIPLICATIVE,
     method: str = "naive",
     **kwargs,
-) -> Tuple[TimeSeries, TimeSeries]:
+) -> tuple[TimeSeries, TimeSeries]:
     """
     Extracts trend and seasonality from a TimeSeries instance using `statsmodels.tsa`.
 
@@ -597,7 +598,7 @@ def plot_acf(
     max_lag: int = 24,
     alpha: float = 0.05,
     bartlett_confint: bool = True,
-    fig_size: Tuple[int, int] = (10, 5),
+    fig_size: tuple[int, int] = (10, 5),
     axis: Optional[plt.axis] = None,
     default_formatting: bool = True,
 ) -> None:
@@ -695,7 +696,7 @@ def plot_pacf(
     max_lag: int = 24,
     method: str = "ywadjusted",
     alpha: float = 0.05,
-    fig_size: Tuple[int, int] = (10, 5),
+    fig_size: tuple[int, int] = (10, 5),
     axis: Optional[plt.axis] = None,
     default_formatting: bool = True,
 ) -> None:
@@ -797,7 +798,7 @@ def plot_ccf(
     max_lag: int = 24,
     alpha: float = 0.05,
     bartlett_confint: bool = True,
-    fig_size: Tuple[int, int] = (10, 5),
+    fig_size: tuple[int, int] = (10, 5),
     axis: Optional[plt.axis] = None,
     default_formatting: bool = True,
 ) -> None:
@@ -911,11 +912,11 @@ def plot_ccf(
 
 
 def plot_hist(
-    data: Union[TimeSeries, List[float], np.ndarray],
-    bins: Optional[Union[int, np.ndarray, List[float]]] = None,
+    data: Union[TimeSeries, list[float], np.ndarray],
+    bins: Optional[Union[int, np.ndarray, list[float]]] = None,
     density: bool = False,
     title: Optional[str] = None,
-    fig_size: Optional[Tuple[int, int]] = None,
+    fig_size: Optional[tuple[int, int]] = None,
     ax: Optional[plt.axis] = None,
 ) -> None:
     """This function plots the histogram of values in a TimeSeries instance or an array-like.

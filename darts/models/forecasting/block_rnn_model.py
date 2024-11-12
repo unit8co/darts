@@ -5,7 +5,7 @@ Block Recurrent Neural Networks
 
 import inspect
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Type, Union
+from typing import Optional, Union
 
 import torch
 import torch.nn as nn
@@ -28,8 +28,9 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
         num_layers: int,
         target_size: int,
         nr_params: int,
-        num_layers_out_fc: Optional[List] = None,
+        num_layers_out_fc: Optional[list] = None,
         dropout: float = 0.0,
+        activation: str = "ReLU",
         **kwargs,
     ):
         """This class allows to create custom block RNN modules that can later be used with Darts'
@@ -63,6 +64,8 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
             This network connects the last hidden layer of the PyTorch RNN module to the output.
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
+        activation
+            The name of the activation function to be applied between the layers of the fully connected network.
         **kwargs
             all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
             base class.
@@ -77,11 +80,12 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
         self.nr_params = nr_params
         self.num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
         self.dropout = dropout
+        self.activation = activation
         self.out_len = self.output_chunk_length
 
     @io_processor
     @abstractmethod
-    def forward(self, x_in: Tuple) -> torch.Tensor:
+    def forward(self, x_in: tuple) -> torch.Tensor:
         """BlockRNN Module forward.
 
         Parameters
@@ -105,6 +109,7 @@ class _BlockRNNModule(CustomBlockRNNModule):
     def __init__(
         self,
         name: str,
+        activation: Optional[str] = None,
         **kwargs,
     ):
         """PyTorch module implementing a block RNN to be used in `BlockRNNModel`.
@@ -116,6 +121,7 @@ class _BlockRNNModule(CustomBlockRNNModule):
 
         This module uses an RNN to encode the input sequence, and subsequently uses a fully connected
         network as the decoder which takes as input the last hidden state of the encoder RNN.
+        Optionally, a non-linear activation function can be applied between the layers of the fully connected network.
         The final output of the decoder is a sequence of length `output_chunk_length`. In this sense,
         the `_BlockRNNModule` produces 'blocks' of forecasts at a time (which is different
         from `_RNNModule` used by the `RNNModel`).
@@ -124,6 +130,9 @@ class _BlockRNNModule(CustomBlockRNNModule):
         ----------
         name
             The name of the specific PyTorch RNN module ("RNN", "GRU" or "LSTM").
+        activation
+            The name of the activation function to be applied between the layers of the fully connected network.
+            Options include "ReLU", "Sigmoid", "Tanh", or None for no activation. Default: None.
         **kwargs
             all parameters required for the :class:`darts.models.forecasting.CustomBlockRNNModule` base class.
 
@@ -155,15 +164,20 @@ class _BlockRNNModule(CustomBlockRNNModule):
         # to the output of desired length
         last = self.hidden_dim
         feats = []
-        for feature in self.num_layers_out_fc + [
-            self.out_len * self.target_size * self.nr_params
-        ]:
+        for index, feature in enumerate(
+            self.num_layers_out_fc + [self.out_len * self.target_size * self.nr_params]
+        ):
             feats.append(nn.Linear(last, feature))
+
+            # Add activation only between layers, but not on the final layer
+            if activation and index < len(self.num_layers_out_fc):
+                activation_function = getattr(nn, activation)()
+                feats.append(activation_function)
             last = feature
         self.fc = nn.Sequential(*feats)
 
     @io_processor
-    def forward(self, x_in: Tuple):
+    def forward(self, x_in: tuple):
         x, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
@@ -190,11 +204,12 @@ class BlockRNNModel(PastCovariatesTorchModel):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        model: Union[str, Type[CustomBlockRNNModule]] = "RNN",
+        model: Union[str, type[CustomBlockRNNModule]] = "RNN",
         hidden_dim: int = 25,
         n_rnn_layers: int = 1,
-        hidden_fc_sizes: Optional[List] = None,
+        hidden_fc_sizes: Optional[list] = None,
         dropout: float = 0.0,
+        activation: str = "ReLU",
         **kwargs,
     ):
         """Block Recurrent Neural Network Model (RNNs).
@@ -242,7 +257,10 @@ class BlockRNNModel(PastCovariatesTorchModel):
         hidden_fc_sizes
             Sizes of hidden layers connecting the last hidden layer of the RNN module to the output, if any.
         dropout
-            Fraction of neurons afected by Dropout.
+            Fraction of neurons affected by Dropout.
+        activation
+            The name of a torch.nn activation function to be applied between the layers of the fully connected network.
+            Default: "ReLU".
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -435,12 +453,13 @@ class BlockRNNModel(PastCovariatesTorchModel):
         self.hidden_dim = hidden_dim
         self.n_rnn_layers = n_rnn_layers
         self.dropout = dropout
+        self.activation = activation
 
     @property
     def supports_multivariate(self) -> bool:
         return True
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (
             train_sample[1].shape[1] if train_sample[1] is not None else 0
@@ -464,6 +483,15 @@ class BlockRNNModel(PastCovariatesTorchModel):
             num_layers=self.n_rnn_layers,
             num_layers_out_fc=hidden_fc_sizes,
             dropout=self.dropout,
+            activation=self.activation,
             **self.pl_module_params,
             **kwargs,
         )
+
+    def _check_ckpt_parameters(self, tfm_save):
+        # new parameters were added that will break loading weights
+        new_params = ["activation"]
+        for param in new_params:
+            if param not in tfm_save.model_params:
+                tfm_save.model_params[param] = "ReLU"
+        super()._check_ckpt_parameters(tfm_save)

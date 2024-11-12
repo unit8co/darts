@@ -1,9 +1,4 @@
-FROM ubuntu:latest
-
-# setup packages
-RUN apt-get update -y
-RUN apt-get install -y python3 python-is-python3 python3-pip default-jre
-RUN pip install --upgrade pip
+FROM python:3.10
 
 # install python requirements before copying the rest of the files
 # this way we can cache the requirements and not have to reinstall them

@@ -1,5 +1,6 @@
 import copy
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from typing import Optional
 
 import numpy as np
 import pandas as pd

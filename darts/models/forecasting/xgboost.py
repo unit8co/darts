@@ -7,8 +7,9 @@ Regression model based on XGBoost.
 This implementation comes with the ability to produce probabilistic forecasts.
 """
 
+from collections.abc import Sequence
 from functools import partial
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 import xgboost as xgb
@@ -58,7 +59,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
         likelihood: Optional[str] = None,
-        quantiles: Optional[List[float]] = None,
+        quantiles: Optional[list[float]] = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
@@ -351,7 +352,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         return True
 
     @property
-    def val_set_params(self) -> Tuple[Optional[str], Optional[str]]:
+    def val_set_params(self) -> tuple[Optional[str], Optional[str]]:
         return "eval_set", "sample_weight_eval_set"
 
     @property

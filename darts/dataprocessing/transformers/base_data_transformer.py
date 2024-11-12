@@ -5,8 +5,9 @@ Data Transformer Base Class
 
 import copy
 from abc import ABC, abstractmethod
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from functools import wraps
-from typing import Any, Generator, Iterable, List, Mapping, Optional, Sequence, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 
@@ -304,7 +305,7 @@ class BaseDataTransformer(ABC):
         *args,
         component_mask: Optional[np.array] = None,
         **kwargs,
-    ) -> Union[TimeSeries, List[TimeSeries]]:
+    ) -> Union[TimeSeries, list[TimeSeries]]:
         """Transforms a (sequence of) of series by calling the user-implemeneted `ts_transform` method.
 
         In case a ``Sequence[TimeSeries]`` is passed as input data, this function takes care of

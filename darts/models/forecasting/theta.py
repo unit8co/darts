@@ -4,7 +4,7 @@ Theta Method
 """
 
 import math
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
@@ -440,7 +440,7 @@ class FourTheta(LocalForecastingModel):
     @staticmethod
     def select_best_model(
         ts: TimeSeries,
-        thetas: Optional[List[int]] = None,
+        thetas: Optional[list[int]] = None,
         m: Optional[int] = None,
         normalization: bool = True,
         n_jobs: int = 1,

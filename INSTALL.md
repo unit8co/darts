@@ -73,30 +73,3 @@ jupyter lab --ip 0.0.0.0 --no-browser --allow-root
 ```
 
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
-
-
-## Tests
-
-The gradle setup works best when used in a python environment, but the only requirement is to have `pip` installed for Python 3+
-
-To run all tests at once just run
-```bash
-./gradlew test_all
-```
-
-alternatively you can run
-```bash
-./gradlew unitTest_all # to run only unittests
-./gradlew coverageTest # to run coverage
-./gradlew lint         # to run linter
-```
-
-To run the tests for specific flavours of the library, replace `_all` with `_core`, `_prophet`, `_pmdarima` or `_torch`.
-
-## Documentation
-
-To build documentation locally just run
-```bash
-./gradlew buildDocs
-```
-After that docs will be available in `./docs/build/html` directory. You can just open `./docs/build/html/index.html` using your favourite browser.

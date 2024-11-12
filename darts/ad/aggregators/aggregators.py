@@ -23,7 +23,8 @@ except ImportError:
     from typing_extensions import Literal
 
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 from darts import TimeSeries
 from darts.ad.utils import (

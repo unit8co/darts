@@ -1,4 +1,5 @@
 import itertools
+import logging
 import random
 from itertools import product
 
@@ -26,6 +27,7 @@ from darts.utils.timeseries_generation import gaussian_timeseries as gt
 from darts.utils.timeseries_generation import linear_timeseries as lt
 from darts.utils.timeseries_generation import random_walk_timeseries as rt
 from darts.utils.timeseries_generation import sine_timeseries as st
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -732,8 +734,7 @@ class TestBacktesting:
         assert round(abs(error[0] - expected[0]), 4) == 0
         assert round(abs(error[1] - expected[1]), 4) == 0
 
-    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
-    def test_backtest_regression(self):
+    def test_backtest_regression(self, caplog):
         np.random.seed(4)
 
         gaussian_series = gt(mean=2, length=50)
@@ -803,13 +804,26 @@ class TestBacktesting:
         assert score > 0.9
 
         # Using a too small start value
-        with pytest.raises(ValueError):
-            RandomForest(lags=12).backtest(series=target, start=0, forecast_horizon=3)
+        warning_expected = (
+            "`start` position `{0}` corresponding to time `{1}` is before the first "
+            "predictable/trainable historical forecasting point for series at index: 0. Using the first historical "
+            "forecasting point `2000-01-15 00:00:00` that lies a round-multiple of `stride=1` ahead of `start`. "
+            "To hide these warnings, set `show_warnings=False`."
+        )
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            _ = RandomForest(lags=12).backtest(
+                series=target, start=0, forecast_horizon=3
+            )
+            assert warning_expected.format(0, target.start_time()) in caplog.text
+        caplog.clear()
 
-        with pytest.raises(ValueError):
-            RandomForest(lags=12).backtest(
+        with caplog.at_level(logging.WARNING):
+            _ = RandomForest(lags=12).backtest(
                 series=target, start=0.01, forecast_horizon=3
             )
+            assert warning_expected.format(0.01, target.start_time()) in caplog.text
+        caplog.clear()
 
         # Using RandomForest's start default value
         score = RandomForest(lags=12, random_state=0).backtest(
@@ -938,7 +952,6 @@ class TestBacktesting:
 
         assert score == recalculated_score, "The metric scores should match"
 
-    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_random_search(self):
         np.random.seed(1)
 
@@ -957,7 +970,6 @@ class TestBacktesting:
         assert isinstance(result[2], float)
         assert min(param_range) <= result[1]["lags"] <= max(param_range)
 
-    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_n_random_samples_bad_arguments(self):
         dummy_series = get_dummy_series(ts_length=50)
 
@@ -980,7 +992,6 @@ class TestBacktesting:
                 params, dummy_series, forecast_horizon=1, n_random_samples=1.5
             )
 
-    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_n_random_samples(self):
         np.random.seed(1)
 
@@ -1121,15 +1132,15 @@ class TestBacktesting:
         else:
             sample_weight = "linear"
 
-        paramameters = {"lags": [3], "output_chunk_length": [1]}
+        parameters = {"lags": [3], "output_chunk_length": [1]}
         start_kwargs = {"start": -1, "start_format": "position"}
         gs_kwargs = {"val_series": ts} if use_val_series else {"forecast_horizon": 1}
         gs_non_weighted = LinearRegressionModel.gridsearch(
-            paramameters, series=ts[:-1], **start_kwargs, **gs_kwargs
+            parameters, series=ts[:-1], **start_kwargs, **gs_kwargs
         )[-1]
 
         gs_weighted = LinearRegressionModel.gridsearch(
-            paramameters,
+            parameters,
             series=ts[:-1],
             sample_weight=sample_weight,
             **start_kwargs,
@@ -1251,6 +1262,179 @@ class TestBacktesting:
         for bt_list in bts:
             for bt in bt_list:
                 np.testing.assert_array_almost_equal(bt, bt_expected)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [
+                [metrics.mae],  # mae does not support time_reduction
+                [metrics.mae, metrics.ae],  # ae supports time_reduction
+                [metrics.miw],  # quantile interval metric
+                [metrics.miw, metrics.iw],
+            ],
+            [True, False],  # last_points_only
+        ),
+    )
+    def test_metric_quantiles_lpo(self, config):
+        """Tests backtest with quantile and quantile interval metrics from expected probabilistic or quantile
+        historical forecasts."""
+        metric, lpo = config
+        is_interval_metric = metric[0].__name__ == "miw"
+
+        q = [0.05, 0.5, 0.60, 0.95]
+        q_interval = [(0.05, 0.50), (0.50, 0.60), (0.60, 0.95), (0.05, 0.60)]
+
+        y = lt(length=20)
+        y = y.stack(y + 1.0)
+        hfc = TimeSeries.from_times_and_values(
+            times=generate_index(start=y.start_time() + 10 * y.freq, length=10),
+            values=np.random.random((10, 1, 100)),
+        )
+        hfc = hfc.stack(hfc + 1.0)
+        y = [y, y]
+        if lpo:
+            hfc = [hfc, hfc]
+        else:
+            hfc = [[hfc, hfc], [hfc]]
+
+        metric_kwargs = [{"component_reduction": np.median}]
+        if not is_interval_metric:
+            metric_kwargs[0]["q"] = q
+        else:
+            metric_kwargs[0]["q_interval"] = q_interval
+        if len(metric) > 1:
+            # give metric specific kwargs
+            metric_kwargs2 = {
+                "component_reduction": np.median,
+                "time_reduction": np.mean,
+            }
+            if not is_interval_metric:
+                metric_kwargs2["q"] = q
+            else:
+                metric_kwargs2["q_interval"] = q_interval
+            metric_kwargs.append(metric_kwargs2)
+
+        model = NaiveDrift()
+
+        bts = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            reduction=None,
+            metric_kwargs=metric_kwargs,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        if lpo:
+            bts = [[bt] for bt in bts]
+        # `ae` with time and component reduction is equal to `mae` with component reduction
+        hfc_single = hfc[0][0] if not lpo else hfc[0]
+        q_kwargs = {"q": q} if not is_interval_metric else {"q_interval": q_interval}
+        bt_expected = metric[0](
+            y[0], hfc_single, component_reduction=np.median, **q_kwargs
+        )
+        shape_expected = (len(q),)
+        if len(metric) > 1:
+            bt_expected = np.concatenate([bt_expected[:, None]] * 2, axis=1)
+            shape_expected += (len(metric),)
+        for bt_list in bts:
+            for bt in bt_list:
+                assert bt.shape == shape_expected
+                np.testing.assert_array_almost_equal(bt, bt_expected)
+
+        bts = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            reduction=np.mean,
+            metric_kwargs=metric_kwargs,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        for bt in bts:
+            assert bt.shape == shape_expected
+            np.testing.assert_array_almost_equal(bt, bt_expected)
+
+        def time_reduced_metric(*args, **kwargs):
+            metric_f = metrics.iw if is_interval_metric else metrics.ae
+            return metric_f(*args, **kwargs, time_reduction=np.mean)
+
+        # check that single kwargs can be used for all metrics if params are supported
+        metric = [metric[0], time_reduced_metric]
+        bts = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            reduction=None,
+            metric_kwargs=metric_kwargs[0],
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        if lpo:
+            bts = [[bt] for bt in bts]
+        # `ae` / `miw` with time and component reduction is equal to `mae` / `miw` with component reduction
+        bt_expected = metric[0](
+            y[0], hfc_single, component_reduction=np.median, **q_kwargs
+        )
+        bt_expected = np.concatenate([bt_expected[:, None]] * 2, axis=1)
+        shape_expected = (len(q), len(metric))
+        for bt_list in bts:
+            for bt in bt_list:
+                assert bt.shape == shape_expected
+                np.testing.assert_array_almost_equal(bt, bt_expected)
+
+        bts = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            reduction=np.mean,
+            metric_kwargs=metric_kwargs[0],
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        for bt in bts:
+            assert bt.shape == shape_expected
+            np.testing.assert_array_almost_equal(bt, bt_expected)
+
+        # without component reduction
+        metric_kwargs = {"component_reduction": None}
+        if not is_interval_metric:
+            metric_kwargs["q"] = q
+        else:
+            metric_kwargs["q_interval"] = q_interval
+        bts = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            reduction=None,
+            metric_kwargs=metric_kwargs,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        if lpo:
+            bts = [[bt] for bt in bts]
+
+        # `ae` / `iw` with time and no component reduction is equal to `mae` / `miw` without component reduction
+        bt_expected = metric[0](y[0], hfc_single, **metric_kwargs)
+        bt_expected = np.concatenate([bt_expected[:, None]] * 2, axis=1)
+        shape_expected = (len(q) * y[0].width, len(metric))
+        for bt_list in bts:
+            for bt in bt_list:
+                assert bt.shape == shape_expected
+                np.testing.assert_array_almost_equal(bt, bt_expected)
+
+        bts = model.backtest(
+            series=y,
+            historical_forecasts=hfc,
+            metric=metric,
+            last_points_only=lpo,
+            reduction=np.mean,
+            metric_kwargs=metric_kwargs,
+        )
+        assert isinstance(bts, list) and len(bts) == 2
+        for bt in bts:
+            assert bt.shape == shape_expected
+            np.testing.assert_array_almost_equal(bt, bt_expected)
 
     @pytest.mark.parametrize(
         "config",
