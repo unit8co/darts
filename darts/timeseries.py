@@ -5629,6 +5629,37 @@ def concatenate(
     return TimeSeries.from_xarray(da_concat, fill_missing_dates=False)
 
 
+def intersect(series: Sequence[TimeSeries]):
+    """Returns the intersection with respect to the time index of multiple ``TimeSeries``.
+
+    Parameters
+    ----------
+    series : Sequence[TimeSeries]
+        sequence of ``TimeSeries`` to intersect
+
+    Returns
+    -------
+    Sequence[TimeSeries]
+        Intersected series
+    """
+
+    data_arrays = []
+    has_datetime_index = series[0].has_datetime_index
+    for ts in series:
+        if ts.has_datetime_index != has_datetime_index:
+            raise_log(
+                IndexError(
+                    "The time index type must be the same for all TimeSeries in the Sequence."
+                ),
+                logger,
+            )
+        data_arrays.append(ts.data_array(copy=False))
+
+    intersected_series = xr.align(*data_arrays, exclude=["component", "sample"])
+
+    return [TimeSeries.from_xarray(array) for array in intersected_series]
+
+
 def _finite_rows_boundaries(
     values: np.ndarray, how: str = "all"
 ) -> Tuple[Optional[int], Optional[int]]:
