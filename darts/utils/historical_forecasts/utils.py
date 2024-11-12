@@ -8,11 +8,14 @@ import pandas as pd
 from numpy.typing import ArrayLike
 
 from darts.dataprocessing.pipeline import Pipeline
-from darts.dataprocessing.transformers import BaseDataTransformer
+from darts.dataprocessing.transformers import (
+    BaseDataTransformer,
+    FittableDataTransformer,
+)
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils import n_steps_between
-from darts.utils.ts_utils import get_series_seq_type, series2seq
+from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -200,19 +203,34 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 ),
                 logger,
             )
-        # DataTransformer must already be fitted when no retraining is occuring
+        # Constraints on DataTransformer
         if not n.retrain:
             for val_ in n.data_transformers.values():
+                # converting to Pipeline
                 transf = (
                     val_
                     if isinstance(val_, Pipeline)
                     else Pipeline(transformers=[val_], copy=False)
                 )
+                # must already be fitted when no retraining is occuring
                 if transf.fittable and not transf._fit_called:
                     raise_log(
                         ValueError(
                             "All the fittable entries in `data_transformers` must already be fitted when "
                             "`retrain=False`."
+                        ),
+                        logger,
+                    )
+                # must be fitted globally or on a single series (as the inputs are passed one by one)
+                if not all(
+                    dt._global_fit or len(dt._fitted_params) == 1
+                    for dt in transf._transformers
+                    if isinstance(dt, FittableDataTransformer)
+                ):
+                    raise_log(
+                        ValueError(
+                            "All the fittable entries in `data_transfromers` must be either fitted globaly or one a "
+                            "single series."
                         ),
                         logger,
                     )
@@ -1100,14 +1118,15 @@ def _apply_data_transformers(
     If the Pipeline is fittable and `fit_transformers=True`, the series are sliced to correspond
     to the information available at model training time
     """
-    # also, `global_fit`` is implicetly not supported
+    # also, `global_fit`` is implicitly not supported
     if fit_transformers and any(
         isinstance(ts, list) for ts in [series, past_covariates, future_covariates]
     ):
+        # very complex to slice and align time indexes across series
         raise_log(
             ValueError(
-                "The data transformers can be fitted only on one series at a time (due to slicing constraints) "
-                "but a list of series was passed",
+                "Fitting the data transformers on multiple series is not supported, either provide trained "
+                "`data_transformers` or a single series (including for the covariates).",
                 logger,
             )
         )
@@ -1142,7 +1161,21 @@ def _apply_inverse_data_transformers(
     forecasts: Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]],
     data_transformers: dict[str, Pipeline],
 ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
+    """
+    Inverse transform the forecasts, the data_transformers should be either fitted globally or with a single series.
+    """
     if "series" in data_transformers and data_transformers["series"].invertible:
-        return data_transformers["series"].inverse_transform(forecasts)
+        forecasts_seq_type = get_series_seq_type(forecasts)
+        if forecasts_seq_type == SeriesType.SINGLE:
+            return data_transformers["series"].inverse_transform(forecasts)
+        elif forecasts_seq_type == SeriesType.SEQ:
+            return [
+                data_transformers["series"].inverse_transform(fc) for fc in forecasts
+            ]
+        else:
+            return [
+                [data_transformers["series"].inverse_transform(fc) for fc in fc_list]
+                for fc_list in forecasts
+            ]
     else:
         return forecasts
