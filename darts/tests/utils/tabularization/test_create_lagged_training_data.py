@@ -1,7 +1,8 @@
 import itertools
 import warnings
+from collections.abc import Sequence
 from itertools import product
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -116,9 +117,9 @@ class TestCreateLaggedTrainingData:
         Helper function called by `get_feature_times` that extracts all times within a
         `target_series` that can be used to create a feature and label. More specifically,
         we can create features and labels for times within `target_series` that have *both*:
-            1. At least `max_lag = -min(lags)` values preceeding them, since these preceeding
+            1. At least `max_lag = -min(lags)` values preceding them, since these preceding
             values are required to construct a feature vector for that time. Since the first `max_lag`
-            times do not fulfill this condition, they are exluded *if* values from `target_series` are
+            times do not fulfill this condition, they are excluded *if* values from `target_series` are
             to be added to `X`.
             2. At least `(output_chunk_length - 1)` values after them, because the all times from
             time `t` to time `t + output_chunk_length - 1` will be used as labels. Since the last
@@ -325,7 +326,7 @@ class TestCreateLaggedTrainingData:
                 time_idx = np.searchsorted(series_times, time)
                 X_row = []
                 for lag in lags:
-                    # Offet by particular lag value:
+                    # Offset by particular lag value:
                     idx_to_get = time_idx + lag
                     # Account for prepended values:
                     idx_to_get -= num_prepended
@@ -422,17 +423,17 @@ class TestCreateLaggedTrainingData:
 
     def helper_create_expected_lagged_data(
         self,
-        target: Optional[Union[TimeSeries, List[TimeSeries]]],
-        past: Optional[Union[TimeSeries, List[TimeSeries]]],
-        future: Optional[Union[TimeSeries, List[TimeSeries]]],
-        lags: Optional[Union[List[int], Dict[str, List[int]]]],
-        lags_past: Optional[Union[List[int], Dict[str, List[int]]]],
-        lags_future: Optional[Union[List[int], Dict[str, List[int]]]],
+        target: Optional[Union[TimeSeries, list[TimeSeries]]],
+        past: Optional[Union[TimeSeries, list[TimeSeries]]],
+        future: Optional[Union[TimeSeries, list[TimeSeries]]],
+        lags: Optional[Union[list[int], dict[str, list[int]]]],
+        lags_past: Optional[Union[list[int], dict[str, list[int]]]],
+        lags_future: Optional[Union[list[int], dict[str, list[int]]]],
         output_chunk_length: int,
         output_chunk_shift: int,
         multi_models: bool,
         max_samples_per_ts: Optional[int],
-    ) -> Tuple[np.ndarray, np.ndarray, Any]:
+    ) -> tuple[np.ndarray, np.ndarray, Any]:
         """Helper function to create the X and y arrays by building them block by block (one per covariates)."""
         feats_times = self.get_feature_times(
             target,
@@ -473,12 +474,12 @@ class TestCreateLaggedTrainingData:
         expected_y: np.ndarray,
         expected_times_x,
         expected_times_y,
-        target: Optional[Union[TimeSeries, List[TimeSeries]]],
-        past_cov: Optional[Union[TimeSeries, List[TimeSeries]]],
-        future_cov: Optional[Union[TimeSeries, List[TimeSeries]]],
-        lags: Optional[Union[List[int], Dict[str, List[int]]]],
-        lags_past: Optional[Union[List[int], Dict[str, List[int]]]],
-        lags_future: Optional[Union[List[int], Dict[str, List[int]]]],
+        target: Optional[Union[TimeSeries, list[TimeSeries]]],
+        past_cov: Optional[Union[TimeSeries, list[TimeSeries]]],
+        future_cov: Optional[Union[TimeSeries, list[TimeSeries]]],
+        lags: Optional[Union[list[int], dict[str, list[int]]]],
+        lags_past: Optional[Union[list[int], dict[str, list[int]]]],
+        lags_future: Optional[Union[list[int], dict[str, list[int]]]],
         output_chunk_length: int,
         output_chunk_shift: int,
         use_static_covariates: bool,
@@ -2252,7 +2253,9 @@ class TestCreateLaggedTrainingData:
                 None,
                 None,
                 False,
+                1,
                 ["no_static_target_lag-2", "no_static_target_lag-1"],
+                ["no_static_target_hrz0"],
             ),
             # target with static covariate (but don't use them in feature names)
             (
@@ -2263,11 +2266,18 @@ class TestCreateLaggedTrainingData:
                 None,
                 None,
                 False,
+                2,
                 [
                     "static_0_target_lag-4",
                     "static_1_target_lag-4",
                     "static_0_target_lag-1",
                     "static_1_target_lag-1",
+                ],
+                [
+                    "static_0_target_hrz0",
+                    "static_1_target_hrz0",
+                    "static_0_target_hrz1",
+                    "static_1_target_hrz1",
                 ],
             ),
             # target with static covariate (acting on global target components)
@@ -2279,12 +2289,17 @@ class TestCreateLaggedTrainingData:
                 None,
                 None,
                 True,
+                1,
                 [
                     "static_0_target_lag-4",
                     "static_1_target_lag-4",
                     "static_0_target_lag-1",
                     "static_1_target_lag-1",
                     "dummy_statcov_target_global_components",
+                ],
+                [
+                    "static_0_target_hrz0",
+                    "static_1_target_hrz0",
                 ],
             ),
             # target with static covariate (component specific)
@@ -2296,6 +2311,7 @@ class TestCreateLaggedTrainingData:
                 None,
                 None,
                 True,
+                1,
                 [
                     "static_0_target_lag-4",
                     "static_1_target_lag-4",
@@ -2303,6 +2319,10 @@ class TestCreateLaggedTrainingData:
                     "static_1_target_lag-1",
                     "dummy_statcov_target_static_0",
                     "dummy_statcov_target_static_1",
+                ],
+                [
+                    "static_0_target_hrz0",
+                    "static_1_target_hrz0",
                 ],
             ),
             # target with static covariate (component specific & multivariate)
@@ -2314,6 +2334,7 @@ class TestCreateLaggedTrainingData:
                 None,
                 None,
                 True,
+                1,
                 [
                     "static_0_target_lag-4",
                     "static_1_target_lag-4",
@@ -2323,6 +2344,10 @@ class TestCreateLaggedTrainingData:
                     "dummy_statcov_target_static_1",
                     "dummy1_statcov_target_static_0",
                     "dummy1_statcov_target_static_1",
+                ],
+                [
+                    "static_0_target_hrz0",
+                    "static_1_target_hrz0",
                 ],
             ),
             # target + past
@@ -2334,6 +2359,7 @@ class TestCreateLaggedTrainingData:
                 [-1],
                 None,
                 False,
+                1,
                 [
                     "no_static_target_lag-4",
                     "no_static_target_lag-3",
@@ -2341,6 +2367,7 @@ class TestCreateLaggedTrainingData:
                     "past_1_pastcov_lag-1",
                     "past_2_pastcov_lag-1",
                 ],
+                ["no_static_target_hrz0"],
             ),
             # target + future
             (
@@ -2351,6 +2378,7 @@ class TestCreateLaggedTrainingData:
                 None,
                 [3],
                 False,
+                1,
                 [
                     "no_static_target_lag-2",
                     "no_static_target_lag-1",
@@ -2359,6 +2387,7 @@ class TestCreateLaggedTrainingData:
                     "future_2_futcov_lag3",
                     "future_3_futcov_lag3",
                 ],
+                ["no_static_target_hrz0"],
             ),
             # past + future
             (
@@ -2369,6 +2398,7 @@ class TestCreateLaggedTrainingData:
                 [-1],
                 [2],
                 False,
+                1,
                 [
                     "past_0_pastcov_lag-1",
                     "past_1_pastcov_lag-1",
@@ -2378,6 +2408,7 @@ class TestCreateLaggedTrainingData:
                     "future_2_futcov_lag2",
                     "future_3_futcov_lag2",
                 ],
+                ["no_static_target_hrz0"],
             ),
             # target with static (not used) + past + future
             (
@@ -2388,6 +2419,7 @@ class TestCreateLaggedTrainingData:
                 [-1],
                 [2],
                 False,
+                1,
                 [
                     "static_0_target_lag-2",
                     "static_1_target_lag-2",
@@ -2401,6 +2433,10 @@ class TestCreateLaggedTrainingData:
                     "future_2_futcov_lag2",
                     "future_3_futcov_lag2",
                 ],
+                [
+                    "static_0_target_hrz0",
+                    "static_1_target_hrz0",
+                ],
             ),
             # multiple series with same components names, including past/future covariates
             (
@@ -2411,6 +2447,7 @@ class TestCreateLaggedTrainingData:
                 [-1],
                 [2],
                 False,
+                1,
                 [
                     "static_0_target_lag-3",
                     "static_1_target_lag-3",
@@ -2421,6 +2458,10 @@ class TestCreateLaggedTrainingData:
                     "future_1_futcov_lag2",
                     "future_2_futcov_lag2",
                     "future_3_futcov_lag2",
+                ],
+                [
+                    "static_0_target_hrz0",
+                    "static_1_target_hrz0",
                 ],
             ),
             # multiple series with different components will use the first series as reference
@@ -2435,6 +2476,7 @@ class TestCreateLaggedTrainingData:
                 [-1],
                 [2],
                 False,
+                1,
                 [
                     "static_0_target_lag-2",
                     "static_1_target_lag-2",
@@ -2447,6 +2489,10 @@ class TestCreateLaggedTrainingData:
                     "future_1_futcov_lag2",
                     "future_2_futcov_lag2",
                     "future_3_futcov_lag2",
+                ],
+                [
+                    "static_0_target_hrz0",
+                    "static_1_target_hrz0",
                 ],
             ),
         ],
@@ -2466,10 +2512,12 @@ class TestCreateLaggedTrainingData:
             lags_pc,
             lags_fc,
             use_static_cov,
+            ocl,
             expected_lagged_features,
+            expected_lagged_labels,
         ) = config
         # lags as list
-        created_lagged_features, _ = create_lagged_component_names(
+        created_lagged_features, created_lagged_labels = create_lagged_component_names(
             target_series=ts_tg,
             past_covariates=ts_pc,
             future_covariates=ts_fc,
@@ -2478,6 +2526,7 @@ class TestCreateLaggedTrainingData:
             lags_future_covariates=lags_fc,
             concatenate=False,
             use_static_covariates=use_static_cov,
+            output_chunk_length=ocl,
         )
 
         # converts lags to dictionary format
@@ -2490,18 +2539,23 @@ class TestCreateLaggedTrainingData:
             lags_fc,
         )
 
-        created_lagged_features_dict_lags, _ = create_lagged_component_names(
-            target_series=ts_tg,
-            past_covariates=ts_pc,
-            future_covariates=ts_fc,
-            lags=lags_as_dict["target"],
-            lags_past_covariates=lags_as_dict["past"],
-            lags_future_covariates=lags_as_dict["future"],
-            concatenate=False,
-            use_static_covariates=use_static_cov,
+        created_lagged_features_dict_lags, created_lagged_labels_dict_lags = (
+            create_lagged_component_names(
+                target_series=ts_tg,
+                past_covariates=ts_pc,
+                future_covariates=ts_fc,
+                lags=lags_as_dict["target"],
+                lags_past_covariates=lags_as_dict["past"],
+                lags_future_covariates=lags_as_dict["future"],
+                concatenate=False,
+                use_static_covariates=use_static_cov,
+                output_chunk_length=ocl,
+            )
         )
         assert expected_lagged_features == created_lagged_features
         assert expected_lagged_features == created_lagged_features_dict_lags
+        assert expected_lagged_labels == created_lagged_labels
+        assert expected_lagged_labels == created_lagged_labels_dict_lags
 
     @pytest.mark.parametrize(
         "config",
@@ -2557,7 +2611,7 @@ class TestCreateLaggedTrainingData:
                     "past_2_pastcov_lag-2",
                 ],
             ),
-            # no lags for target, future covariates lags are not in the compoments order
+            # no lags for target, future covariates lags are not in the components order
             (
                 target_with_static_cov,
                 None,

@@ -4,7 +4,7 @@ Transformer Model
 """
 
 import math
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 import torch
 import torch.nn as nn
@@ -296,7 +296,7 @@ class _TransformerModule(PLPastCovariatesModule):
         return src, tgt
 
     @io_processor
-    def forward(self, x_in: Tuple):
+    def forward(self, x_in: tuple):
         data, _ = x_in
         # Here we create 'src' and 'tgt', the inputs for the encoder and decoder
         # side of the Transformer architecture
@@ -602,7 +602,7 @@ class TransformerModel(PastCovariatesTorchModel):
     def supports_multivariate(self) -> bool:
         return True
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (
             train_sample[1].shape[1] if train_sample[1] is not None else 0

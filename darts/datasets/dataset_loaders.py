@@ -5,7 +5,7 @@ import zipfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, List, Optional, Union
+from typing import Callable, Optional, Union
 
 import pandas as pd
 import requests
@@ -203,7 +203,7 @@ class DatasetLoaderCSV(DatasetLoader):
 
     def _load_from_disk(
         self, path_to_file: Path, metadata: DatasetLoaderMetadata
-    ) -> Union[TimeSeries, List[TimeSeries]]:
+    ) -> Union[TimeSeries, list[TimeSeries]]:
         df = pd.read_csv(path_to_file)
         if metadata.header_time is not None:
             df = self._format_time_column(df)

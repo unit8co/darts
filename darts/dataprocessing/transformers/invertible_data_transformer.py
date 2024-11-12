@@ -4,7 +4,8 @@ Invertible Data Transformer Base Class
 """
 
 from abc import abstractmethod
-from typing import Any, List, Mapping, Optional, Sequence, Union
+from collections.abc import Mapping, Sequence
+from typing import Any, Optional, Union
 
 import numpy as np
 
@@ -257,7 +258,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         *args,
         component_mask: Optional[np.array] = None,
         **kwargs,
-    ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
+    ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
         """Inverse transforms a (sequence of) series by calling the user-implemented `ts_inverse_transform` method.
 
         In case a sequence or list of lists is passed as input data, this function takes care of parallelising the

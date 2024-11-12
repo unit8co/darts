@@ -21,14 +21,10 @@ import pickle
 import time
 from abc import ABC, ABCMeta, abstractmethod
 from collections import OrderedDict
+from collections.abc import Sequence
 from itertools import product
 from random import sample
-from typing import Any, BinaryIO, Callable, Dict, List, Optional, Sequence, Tuple, Union
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from typing import Any, BinaryIO, Callable, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -446,7 +442,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     @abstractmethod
     def extreme_lags(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         Optional[int],
@@ -548,7 +544,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self,
         points_preds: Union[np.ndarray, Sequence[np.ndarray]],
         input_series: Optional[TimeSeries] = None,
-        custom_components: Union[List[str], None] = None,
+        custom_components: Union[list[str], None] = None,
         with_static_covs: bool = True,
         with_hierarchy: bool = True,
         pred_start: Optional[Union[pd.Timestamp, int]] = None,
@@ -650,10 +646,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
-        fit_kwargs: Optional[Dict[str, Any]] = None,
-        predict_kwargs: Optional[Dict[str, Any]] = None,
+        fit_kwargs: Optional[dict[str, Any]] = None,
+        predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-    ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
+    ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
         """Compute the historical forecasts that would have been obtained by this model on
         (potentially multiple) `series`.
 
@@ -706,11 +702,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
               or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
             - the first trainable point (given `train_length`) otherwise
 
+            Note: If `start` is not within the trainable / forecastable points, uses the closest valid start point that
+              is a round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
             Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
-            shifted by `output_chunk_shift` points into the future.
-            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
+              shifted by `output_chunk_shift` points into the future.
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
-            (default behavior with ``None``) and start at the first trainable/predictable point.
+              (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
             Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
             `pd.RangeIndex`.
@@ -1018,6 +1015,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 historical_forecasts_time_index=historical_forecasts_time_index,
                 start=start,
                 start_format=start_format,
+                stride=stride,
                 show_warnings=show_warnings,
             )
 
@@ -1195,17 +1193,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         retrain: Union[bool, int, Callable[..., bool]] = True,
         overlap_end: bool = False,
         last_points_only: bool = False,
-        metric: Union[METRIC_TYPE, List[METRIC_TYPE]] = metrics.mape,
+        metric: Union[METRIC_TYPE, list[METRIC_TYPE]] = metrics.mape,
         reduction: Union[Callable[..., float], None] = np.mean,
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
-        metric_kwargs: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
-        fit_kwargs: Optional[Dict[str, Any]] = None,
-        predict_kwargs: Optional[Dict[str, Any]] = None,
+        metric_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
+        fit_kwargs: Optional[dict[str, Any]] = None,
+        predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-    ) -> Union[float, np.ndarray, List[float], List[np.ndarray]]:
+    ) -> Union[float, np.ndarray, list[float], list[np.ndarray]]:
         """Compute error values that the model would have produced when
         used on (potentially multiple) `series`.
 
@@ -1267,9 +1265,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
               or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
             - the first trainable point (given `train_length`) otherwise
 
-            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
+            Note: If `start` is not within the trainable / forecastable points, uses the closest valid start point that
+              is a round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
+            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
+              shifted by `output_chunk_shift` points into the future.
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
-            (default behavior with ``None``) and start at the first trainable/predictable point.
+              (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
             Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
             `pd.RangeIndex`.
@@ -1552,10 +1553,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         verbose=False,
         n_jobs: int = 1,
         n_random_samples: Optional[Union[int, float]] = None,
-        fit_kwargs: Optional[Dict[str, Any]] = None,
-        predict_kwargs: Optional[Dict[str, Any]] = None,
+        fit_kwargs: Optional[dict[str, Any]] = None,
+        predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, str]] = None,
-    ) -> Tuple["ForecastingModel", Dict[str, Any], float]:
+    ) -> tuple["ForecastingModel", dict[str, Any], float]:
         """
         Find the best hyper-parameters among a given set using a grid search.
 
@@ -1628,9 +1629,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
               or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
             - the first trainable point (given `train_length`) otherwise
 
-            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
+            Note: If `start` is not within the trainable / forecastable points, uses the closest valid start point that
+              is a round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
+            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
+              shifted by `output_chunk_shift` points into the future.
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
-            (default behavior with ``None``) and start at the first trainable/predictable point.
+              (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
             Only used in expanding window mode. Defines the `start` format. Only effective when `start` is an integer
             and `series` is indexed with a `pd.RangeIndex`.
@@ -1817,7 +1821,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             return float(error)
 
-        errors: List[float] = _parallel_apply(
+        errors: list[float] = _parallel_apply(
             iterator, _evaluate_combination, n_jobs, {}, {}
         )
 
@@ -1852,12 +1856,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
-        metric_kwargs: Optional[Dict[str, Any]] = None,
-        fit_kwargs: Optional[Dict[str, Any]] = None,
-        predict_kwargs: Optional[Dict[str, Any]] = None,
+        metric_kwargs: Optional[dict[str, Any]] = None,
+        fit_kwargs: Optional[dict[str, Any]] = None,
+        predict_kwargs: Optional[dict[str, Any]] = None,
         values_only: bool = False,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-    ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
+    ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
         """Compute the residuals produced by this model on a (or sequence of) `TimeSeries`.
 
         This function computes the difference (or one of Darts' "per time step" metrics) between the actual
@@ -1924,9 +1928,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
               or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
             - the first trainable point (given `train_length`) otherwise
 
-            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
+            Note: If `start` is not within the trainable / forecastable points, uses the closest valid start point that
+              is a round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
+            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
+              shifted by `output_chunk_shift` points into the future.
             Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
-            (default behavior with ``None``) and start at the first trainable/predictable point.
+              (default behavior with ``None``) and start at the first trainable/predictable point.
         start_format
             Defines the `start` format. Only effective when `start` is an integer and `series` is indexed with a
             `pd.RangeIndex`.
@@ -2165,7 +2172,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> Tuple[
+    ) -> tuple[
         Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
     ]:
         """Generates the covariate encodings that were used/generated for fitting the model and returns a tuple of
@@ -2206,7 +2213,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> Tuple[
+    ) -> tuple[
         Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
     ]:
         """Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future
@@ -2252,7 +2259,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> Tuple[
+    ) -> tuple[
         Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
     ]:
         """Generates covariate encodings for training and inference/prediction and returns a tuple of past, and future
@@ -2300,7 +2307,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         val_series: Optional[Sequence[TimeSeries]],
         val_past_covariates: Optional[Sequence[TimeSeries]],
         val_future_covariates: Optional[Sequence[TimeSeries]],
-    ) -> Tuple[
+    ) -> tuple[
         Optional[Sequence[TimeSeries]],
         Optional[Sequence[TimeSeries]],
         Optional[Sequence[TimeSeries]],
@@ -2389,13 +2396,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     @abstractmethod
     def _model_encoder_settings(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         bool,
         bool,
-        Optional[List[int]],
-        Optional[List[int]],
+        Optional[list[int]],
+        Optional[list[int]],
     ]:
         """Abstract property that returns model specific encoder settings that are used to initialize the encoders.
 
@@ -2649,13 +2656,13 @@ class LocalForecastingModel(ForecastingModel, ABC):
     @property
     def _model_encoder_settings(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         bool,
         bool,
-        Optional[List[int]],
-        Optional[List[int]],
+        Optional[list[int]],
+        Optional[list[int]],
     ]:
         return None, None, False, False, None, None
 
@@ -2667,7 +2674,7 @@ class LocalForecastingModel(ForecastingModel, ABC):
     @property
     def extreme_lags(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         Optional[int],
@@ -3115,13 +3122,13 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
     @property
     def _model_encoder_settings(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         bool,
         bool,
-        Optional[List[int]],
-        Optional[List[int]],
+        Optional[list[int]],
+        Optional[list[int]],
     ]:
         return None, None, False, True, None, None
 
@@ -3144,13 +3151,13 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
 
     @property
     def _supress_generate_predict_encoding(self) -> bool:
-        """Controls wether encodings should be generated in :func:`FutureCovariatesLocalForecastingModel.predict()``"""
+        """Controls whether encodings should be generated in :func:`FutureCovariatesLocalForecastingModel.predict()``"""
         return False
 
     @property
     def extreme_lags(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         Optional[int],
@@ -3285,7 +3292,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> Tuple[
+    ) -> tuple[
         Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
     ]:
         raise_if(

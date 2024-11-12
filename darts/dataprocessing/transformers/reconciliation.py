@@ -9,7 +9,8 @@ A ``hierarchy`` is a dict that maps each component to their parent(s) in the hie
 It can be added to a ``TimeSeries`` using e.g., the :meth:`TimeSeries.with_hierarchy` method.
 """
 
-from typing import Any, Mapping, Optional
+from collections.abc import Mapping
+from typing import Any, Optional
 
 import numpy as np
 

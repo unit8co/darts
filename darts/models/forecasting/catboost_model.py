@@ -7,7 +7,8 @@ CatBoost based regression model.
 This implementation comes with the ability to produce probabilistic forecasts.
 """
 
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 from catboost import CatBoostRegressor, Pool
@@ -23,13 +24,13 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
     def __init__(
         self,
         lags: Union[int, list] = None,
-        lags_past_covariates: Union[int, List[int]] = None,
-        lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
+        lags_past_covariates: Union[int, list[int]] = None,
+        lags_future_covariates: Union[tuple[int, int], list[int]] = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
         likelihood: str = None,
-        quantiles: List = None,
+        quantiles: list = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
@@ -332,7 +333,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
 
     def _likelihood_components_names(
         self, input_series: TimeSeries
-    ) -> Optional[List[str]]:
+    ) -> Optional[list[str]]:
         """Override of RegressionModel's method to support the gaussian/normal likelihood"""
         if self.likelihood == "quantile":
             return self._quantiles_generate_components_names(input_series)
@@ -347,7 +348,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
 
     def _add_val_set_to_kwargs(
         self,
-        kwargs: Dict,
+        kwargs: dict,
         val_series: Sequence[TimeSeries],
         val_past_covariates: Optional[Sequence[TimeSeries]],
         val_future_covariates: Optional[Sequence[TimeSeries]],
@@ -388,7 +389,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         return True
 
     @property
-    def val_set_params(self) -> Tuple[Optional[str], Optional[str]]:
+    def val_set_params(self) -> tuple[Optional[str], Optional[str]]:
         return "eval_set", "eval_sample_weight"
 
     @property

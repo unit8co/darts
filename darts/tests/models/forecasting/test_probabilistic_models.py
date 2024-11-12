@@ -534,7 +534,7 @@ class TestProbabilisticModels:
                     n_samples,
                 ))
 
-                # Dirichlet must be handled sligthly differently since its multivariate
+                # Dirichlet must be handled slightly differently since its multivariate
                 if isinstance(lkl, DirichletLikelihood):
                     values = torch.swapaxes(values, 1, 3)
                     values = torch.squeeze(values, 3)

@@ -1,5 +1,5 @@
+from collections.abc import Sequence
 from itertools import product
-from typing import Dict, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -173,13 +173,13 @@ class TestAnomalyDetectionModel:
 
         # if return_model_prediction set to true, output must be tuple
         assert isinstance(
-            anomaly_model.score(self.test, return_model_prediction=True), Tuple
+            anomaly_model.score(self.test, return_model_prediction=True), tuple
         )
 
         # if return_model_prediction set to false output must be
         # Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
         assert not isinstance(
-            anomaly_model.score(self.test, return_model_prediction=False), Tuple
+            anomaly_model.score(self.test, return_model_prediction=False), tuple
         )
 
     @pytest.mark.parametrize("anomaly_model_config", filtering_am)
@@ -475,7 +475,7 @@ class TestAnomalyDetectionModel:
         # Check if return type is float when input is a series
         assert isinstance(
             anomaly_model.eval_metric(self.anomalies, self.test),
-            Dict,
+            dict,
         )
 
         # Check if return type is Sequence when input is a Sequence of series
