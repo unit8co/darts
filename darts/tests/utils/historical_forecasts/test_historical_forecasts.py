@@ -123,7 +123,7 @@ if TORCH_AVAILABLE:
 
     NB_EPOCH = 1
 
-    models += []  # [NLinearModel, RNNModel]
+    models += [NLinearModel, RNNModel]
 
     models_torch_cls_kwargs = [
         (
@@ -2674,6 +2674,8 @@ class TestHistoricalforecast:
 
         series = ts_copy.pop("series")[:end_idx]
         if retrain:
+            # completly reset model for reproducibility of the predict()
+            model = model.untrained_model()
             model.fit(series=series, **ts_copy)
 
         # local model does not support the "series" argument in predict()

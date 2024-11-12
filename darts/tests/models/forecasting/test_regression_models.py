@@ -12,19 +12,12 @@ import pytest
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
-from sklearn.preprocessing import MaxAbsScaler
 
 import darts
 from darts import TimeSeries
 from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
     PastDatetimeAttributeEncoder,
-)
-from darts.dataprocessing.pipeline import Pipeline
-from darts.dataprocessing.transformers import (
-    FittableDataTransformer,
-    InvertibleDataTransformer,
-    Scaler,
 )
 from darts.logging import get_logger
 from darts.metrics import mae, rmse
@@ -2670,125 +2663,6 @@ class TestRegressionModels:
 
         for p1, p2 in zip(preds1, preds2):
             np.testing.assert_array_almost_equal(p1.values(), p2.values())
-
-    @pytest.mark.parametrize(
-        "params",
-        product(
-            [
-                (
-                    {
-                        "series": sine_univariate5 + 2,
-                        "past_covariates": sine_univariate1 + 3,
-                    },
-                    {"past_covariates": Scaler()},
-                    {"lags": 5, "lags_past_covariates": 3},
-                ),
-                (
-                    {
-                        "series": sine_univariate5 + 3,
-                        "past_covariates": sine_univariate1 + 2,
-                    },
-                    {"past_covariates": Scaler(scaler=MaxAbsScaler())},
-                    {"lags_past_covariates": 3},
-                ),
-                (
-                    {
-                        "series": sine_univariate5 + 2,
-                        "future_covariates": sine_univariate2 + 3,
-                    },
-                    {"future_covariates": Scaler()},
-                    {"lags": 5, "lags_future_covariates": [-1, 0]},
-                ),
-                (
-                    {
-                        "series": sine_univariate5 + 1,
-                        "past_covariates": sine_univariate1 + 2,
-                        "future_covariates": sine_univariate2 + 3,
-                    },
-                    {"series": Scaler(), "past_covariates": Scaler()},
-                    {
-                        "lags": 3,
-                        "lags_past_covariates": 2,
-                        "lags_future_covariates": [-1, 0],
-                    },
-                ),
-            ],
-            [True, False],
-        ),
-    )
-    def test_historical_forecasts_with_scaler(self, params):
-        """Apply manually the scaler on the target and covariates to compare with automatic scaling
-
-        Historical forecasts contains only one horizon to faciliate manual scaling
-        """
-        (ts, hf_scaler, lags), retrain = params
-        ocl = 6
-        model = self.models[1](**lags, output_chunk_length=ocl)
-        # pre-train on the entire unscaled target, overfitting/accuracy is not important
-        if not retrain:
-            model.fit(**ts)
-
-        hf_args = {
-            "start": -ocl,
-            "start_format": "position",
-            "forecast_horizon": ocl,
-            "stride": 1,
-            "retrain": retrain,
-            "overlap_end": False,
-            "last_points_only": False,
-            "verbose": False,
-            "enable_optimization": False,
-        }
-        # un-transformed series, scaler applied within the method
-        hf_auto = model.historical_forecasts(
-            **ts,
-            **hf_args,
-            data_transformers=hf_scaler,
-        )[0]
-
-        hf_auto_pipeline = model.historical_forecasts(
-            **ts,
-            **hf_args,
-            data_transformers={
-                key_: Pipeline([val_]) for key_, val_ in hf_scaler.items()
-            },
-        )[0]
-
-        # verify that the results are identical when using single Scaler or a Pipeline
-        assert hf_auto.time_index.equals(hf_auto_pipeline.time_index)
-        np.testing.assert_almost_equal(
-            hf_auto.values(),
-            hf_auto_pipeline.values(),
-        )
-
-        # manually scale the series
-        ts_scaled = deepcopy(ts)
-        for ts_name in hf_scaler:
-            if isinstance(hf_scaler[ts_name], FittableDataTransformer):
-                if ts_name == "series" or ts_name == "past_covariates":
-                    tmp_ts = ts_scaled[ts_name][:-ocl]
-                else:
-                    tmp_ts = ts_scaled[ts_name][: -ocl + max(0, model.extreme_lags[5])]
-                hf_scaler[ts_name].fit(tmp_ts)
-            # apply the scaler on the whole series
-            ts_scaled[ts_name] = hf_scaler[ts_name].transform(ts_scaled[ts_name])
-
-        # manually generate the last forecast horizon
-        series = ts_scaled.pop("series")[:-ocl]
-        if retrain:
-            model.fit(series=series, **ts_scaled)
-        hf_manual = model.predict(n=ocl, series=series, **ts_scaled)
-
-        # scale back the forecasts
-        if isinstance(hf_scaler.get("series"), InvertibleDataTransformer):
-            hf_manual = hf_scaler["series"].inverse_transform(hf_manual)
-
-        # verify that automatic and manual pre-scaling produce identical forecasts
-        assert hf_auto.time_index.equals(hf_manual.time_index)
-        np.testing.assert_almost_equal(
-            hf_auto.values(),
-            hf_manual.values(),
-        )
 
     @pytest.mark.parametrize(
         "config",
