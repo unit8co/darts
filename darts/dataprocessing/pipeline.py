@@ -94,6 +94,11 @@ class Pipeline:
             isinstance(t, FittableDataTransformer) for t in self._transformers
         )
 
+        self._global_fit = self._fittable and all(
+            isinstance(t, FittableDataTransformer) and t._global_fit
+            for t in self._transformers
+        )
+
         if verbose is not None:
             for transformer in self._transformers:
                 transformer.set_verbose(verbose)

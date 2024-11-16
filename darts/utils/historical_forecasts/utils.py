@@ -10,7 +10,6 @@ from numpy.typing import ArrayLike
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import (
     BaseDataTransformer,
-    FittableDataTransformer,
 )
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries
@@ -198,8 +197,15 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 logger,
             )
 
-    if isinstance(n.data_transformers, dict):
-        # checking the keys
+    if n.data_transformers is not None:
+        # check the type
+        if not isinstance(n.data_transformers, dict):
+            raise_log(
+                ValueError(
+                    "`data_transformers` should either `None` or a dictionary.", logger
+                )
+            )
+        # check the keys
         supported_keys = {"series", "past_covariates", "future_covariates"}
         incorrect_keys = set(n.data_transformers.keys()) - supported_keys
         if len(incorrect_keys) > 0:
@@ -211,35 +217,65 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 logger,
             )
 
-        if not n.retrain:
-            for val_ in n.data_transformers.values():
-                # converting to Pipeline
-                transf = (
-                    val_
-                    if isinstance(val_, Pipeline)
-                    else Pipeline(transformers=[val_], copy=False)
+        # convert to Pipelines
+        data_pipelines = _convert_data_transformers(
+            data_transformers=n.data_transformers, copy=False
+        )
+        # identify the global fit pipelines (all transformers are defined with global_fit=True)
+        global_fit_pipelines = [
+            transf_ for transf_ in data_pipelines.items() if transf_._global_fit
+        ]
+
+        if n.retrain:
+            # if more than one series is passed and the pipelines are retrained, they must all be global
+            if len(series) > 1 and len(global_fit_pipelines) != len(data_pipelines):
+                raise_log(
+                    ValueError(
+                        "When `retrain=True` and multiple series are provided, all the fittable "
+                        "`data_transformers` must be defined with `global_fit=True`."
+                    ),
+                    logger,
                 )
-                # must already be fitted when no retraining is occuring
-                if transf.fittable and not transf._fit_called:
+        else:
+            # must already be fitted without retraining
+            not_fitted_pipelines = [
+                name_
+                for name_, transf_ in data_pipelines.items()
+                if transf_.fittable and not transf_._fit_called
+            ]
+            if len(not_fitted_pipelines) > 0:
+                raise_log(
+                    ValueError(
+                        "All the fittable entries in `data_transformers` must already be fitted when "
+                        f"`retrain=False`, the following entries were not fitted: {', '.join(not_fitted_pipelines)}."
+                    ),
+                    logger,
+                )
+            # extract the number of fitted params in each pipeline (already fitted)
+            fitted_params_pipelines = [
+                max(len(t._fitted_params) for t in pipeline if t.fittable)
+                for pipeline in data_pipelines.values()
+            ]
+            # if multiple series are passed, their number should match the number of fitted params in the
+            # non-global_fit pipelines
+            if len(series) > 1:
+                # the number of series and fitted params should match to avoid unexpected behavior when
+                # multiple series are used
+                if len(series) != max(fitted_params_pipelines):
                     raise_log(
                         ValueError(
-                            "All the fittable entries in `data_transformers` must already be fitted when "
-                            "`retrain=False`."
+                            "When multiple series are provided, their number should match the number of fitted params "
+                            "in the `data_transformers` defined with `global_fit=False`."
                         ),
                         logger,
                     )
-                # must be fitted globally or on a single series (as the inputs are passed one by one)
-                if not all(
-                    dt._global_fit or len(dt._fitted_params) == 1
-                    for dt in transf._transformers
-                    if isinstance(dt, FittableDataTransformer)
-                ):
-                    raise_log(
-                        ValueError(
-                            "All the fittable entries in `data_transfromers` must be either fitted globaly or one a "
-                            "single series."
-                        ),
-                        logger,
+            else:
+                # at least one pipeline was fitted on several series with `global_fit=False` but only
+                # one series was passed
+                if max(fitted_params_pipelines) > 1:
+                    logger.warning(
+                        "At least one of the `data_transformers` was fitted with `global_fit=False` on several series "
+                        "but only one series was provided."
                     )
 
     if (
@@ -1127,7 +1163,8 @@ def _apply_data_transformers(
     """
     # also, `global_fit`` is implicitly not supported
     if fit_transformers and any(
-        isinstance(ts, list) for ts in [series, past_covariates, future_covariates]
+        not (isinstance(ts, TimeSeries) or ts is None)
+        for ts in [series, past_covariates, future_covariates]
     ):
         # very complex to slice and align time indexes across series
         raise_log(
@@ -1165,24 +1202,18 @@ def _apply_data_transformers(
 
 
 def _apply_inverse_data_transformers(
+    series: Union[TimeSeries, Sequence[TimeSeries]],
     forecasts: Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]],
     data_transformers: dict[str, Pipeline],
 ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
     """
-    Inverse transform the forecasts, the data_transformers should be either fitted globally or with a single series.
+    Apply the inverse transform to the forecasts when defined.
     """
     if "series" in data_transformers and data_transformers["series"].invertible:
-        forecasts_seq_type = get_series_seq_type(forecasts)
-        if forecasts_seq_type == SeriesType.SINGLE:
-            return data_transformers["series"].inverse_transform(forecasts)
-        elif forecasts_seq_type == SeriesType.SEQ:
-            return [
-                data_transformers["series"].inverse_transform(fc) for fc in forecasts
-            ]
-        else:
-            return [
-                [data_transformers["series"].inverse_transform(fc) for fc in fc_list]
-                for fc_list in forecasts
-            ]
+        called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
+        if called_with_single_series:
+            forecasts = [forecasts]
+        forecasts = data_transformers["series"].inverse_transform(forecasts)
+        return forecasts[0] if called_with_single_series else forecasts
     else:
         return forecasts
