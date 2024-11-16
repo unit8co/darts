@@ -304,6 +304,7 @@ class BaseDataTransformer(ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         *args,
         component_mask: Optional[np.array] = None,
+        idx_params: Optional[Union[int, Sequence[int]]] = None,
         **kwargs,
     ) -> Union[TimeSeries, list[TimeSeries]]:
         """Transforms a (sequence of) of series by calling the user-implemeneted `ts_transform` method.
@@ -328,6 +329,8 @@ class BaseDataTransformer(ABC):
             attribute was set to `True` when instantiating `BaseDataTransformer`, then the component mask
             will be automatically applied to each `TimeSeries` input. Otherwise, `component_mask` will be
             provided as an addition keyword argument to `ts_transform`. See 'Notes' for further details.
+        idx_params
+            Optionally, the index(es) of the parameters to use to transform the series.
         kwargs
             Additional keyword arguments for each :func:`ts_transform()` method call
 
@@ -363,7 +366,10 @@ class BaseDataTransformer(ABC):
             transformer_selector = [0]
         else:
             data = series
-            transformer_selector = range(len(series))
+            if idx_params:
+                transformer_selector = self._check_idx_params(idx_params)
+            else:
+                transformer_selector = range(len(series))
 
         input_iterator = _build_tqdm_iterator(
             zip(data, self._get_params(transformer_selector=transformer_selector)),
@@ -438,6 +444,23 @@ class BaseDataTransformer(ABC):
                     f"upon initialising {self.name}."
                 )
         return None
+
+    def _check_idx_params(self, idx_params: Union[int, Sequence[int]]) -> list[int]:
+        """Convert the `idx_params` to a Sequence[int] and run sanity checks.
+
+        Note: the validity of the entries in idx_params is checked in _get_params().
+        """
+        if isinstance(idx_params, int):
+            idx_params = [idx_params]
+        elif not isinstance(idx_params, Sequence):
+            raise_log(
+                ValueError(
+                    "`idx_params` must be either an int or a Sequence of int, "
+                    f"received {type(idx_params)}."
+                ),
+                logger,
+            )
+        return idx_params
 
     @staticmethod
     def apply_component_mask(
