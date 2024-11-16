@@ -9,16 +9,13 @@ scorer(s) to compute anomaly scores by comparing how actuals deviate from the mo
 # TODO:
 #     - put start default value to its minimal value (wait for the release of historical_forecast)
 import sys
-from typing import Dict, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Literal, Optional, Union
 
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
 
 import pandas as pd
 
@@ -343,10 +340,10 @@ class ForecastingAnomalyModel(AnomalyModel):
         enable_optimization: bool = True,
         metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
     ) -> Union[
-        Dict[str, float],
-        Dict[str, Sequence[float]],
-        Sequence[Dict[str, float]],
-        Sequence[Dict[str, Sequence[float]]],
+        dict[str, float],
+        dict[str, Sequence[float]],
+        Sequence[dict[str, float]],
+        Sequence[dict[str, Sequence[float]]],
     ]:
         """Compute the accuracy of the anomaly scores computed by the model.
 

@@ -1,7 +1,8 @@
 import itertools
 import warnings
+from collections.abc import Sequence
 from itertools import product
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -116,9 +117,9 @@ class TestCreateLaggedTrainingData:
         Helper function called by `get_feature_times` that extracts all times within a
         `target_series` that can be used to create a feature and label. More specifically,
         we can create features and labels for times within `target_series` that have *both*:
-            1. At least `max_lag = -min(lags)` values preceeding them, since these preceeding
+            1. At least `max_lag = -min(lags)` values preceding them, since these preceding
             values are required to construct a feature vector for that time. Since the first `max_lag`
-            times do not fulfill this condition, they are exluded *if* values from `target_series` are
+            times do not fulfill this condition, they are excluded *if* values from `target_series` are
             to be added to `X`.
             2. At least `(output_chunk_length - 1)` values after them, because the all times from
             time `t` to time `t + output_chunk_length - 1` will be used as labels. Since the last
@@ -325,7 +326,7 @@ class TestCreateLaggedTrainingData:
                 time_idx = np.searchsorted(series_times, time)
                 X_row = []
                 for lag in lags:
-                    # Offet by particular lag value:
+                    # Offset by particular lag value:
                     idx_to_get = time_idx + lag
                     # Account for prepended values:
                     idx_to_get -= num_prepended
@@ -422,17 +423,17 @@ class TestCreateLaggedTrainingData:
 
     def helper_create_expected_lagged_data(
         self,
-        target: Optional[Union[TimeSeries, List[TimeSeries]]],
-        past: Optional[Union[TimeSeries, List[TimeSeries]]],
-        future: Optional[Union[TimeSeries, List[TimeSeries]]],
-        lags: Optional[Union[List[int], Dict[str, List[int]]]],
-        lags_past: Optional[Union[List[int], Dict[str, List[int]]]],
-        lags_future: Optional[Union[List[int], Dict[str, List[int]]]],
+        target: Optional[Union[TimeSeries, list[TimeSeries]]],
+        past: Optional[Union[TimeSeries, list[TimeSeries]]],
+        future: Optional[Union[TimeSeries, list[TimeSeries]]],
+        lags: Optional[Union[list[int], dict[str, list[int]]]],
+        lags_past: Optional[Union[list[int], dict[str, list[int]]]],
+        lags_future: Optional[Union[list[int], dict[str, list[int]]]],
         output_chunk_length: int,
         output_chunk_shift: int,
         multi_models: bool,
         max_samples_per_ts: Optional[int],
-    ) -> Tuple[np.ndarray, np.ndarray, Any]:
+    ) -> tuple[np.ndarray, np.ndarray, Any]:
         """Helper function to create the X and y arrays by building them block by block (one per covariates)."""
         feats_times = self.get_feature_times(
             target,
@@ -473,12 +474,12 @@ class TestCreateLaggedTrainingData:
         expected_y: np.ndarray,
         expected_times_x,
         expected_times_y,
-        target: Optional[Union[TimeSeries, List[TimeSeries]]],
-        past_cov: Optional[Union[TimeSeries, List[TimeSeries]]],
-        future_cov: Optional[Union[TimeSeries, List[TimeSeries]]],
-        lags: Optional[Union[List[int], Dict[str, List[int]]]],
-        lags_past: Optional[Union[List[int], Dict[str, List[int]]]],
-        lags_future: Optional[Union[List[int], Dict[str, List[int]]]],
+        target: Optional[Union[TimeSeries, list[TimeSeries]]],
+        past_cov: Optional[Union[TimeSeries, list[TimeSeries]]],
+        future_cov: Optional[Union[TimeSeries, list[TimeSeries]]],
+        lags: Optional[Union[list[int], dict[str, list[int]]]],
+        lags_past: Optional[Union[list[int], dict[str, list[int]]]],
+        lags_future: Optional[Union[list[int], dict[str, list[int]]]],
         output_chunk_length: int,
         output_chunk_shift: int,
         use_static_covariates: bool,
@@ -2610,7 +2611,7 @@ class TestCreateLaggedTrainingData:
                     "past_2_pastcov_lag-2",
                 ],
             ),
-            # no lags for target, future covariates lags are not in the compoments order
+            # no lags for target, future covariates lags are not in the components order
             (
                 target_with_static_cov,
                 None,

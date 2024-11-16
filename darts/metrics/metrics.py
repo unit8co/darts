@@ -6,9 +6,10 @@ Some metrics to compare time series.
 """
 
 import inspect
+from collections.abc import Sequence
 from functools import wraps
 from inspect import signature
-from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -34,7 +35,7 @@ SMPL_AX = 2
 # the `actual_series` and `pred_series` parameters, and not having other ``Sequence`` as args (since these decorators
 # don't "unpack" parameters different from `actual_series` and `pred_series`). In those cases, the new metric must take
 # care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own (See mase() implementation).
-METRIC_OUTPUT_TYPE = Union[float, List[float], np.ndarray, List[np.ndarray]]
+METRIC_OUTPUT_TYPE = Union[float, list[float], np.ndarray, list[np.ndarray]]
 METRIC_TYPE = Callable[
     ...,
     METRIC_OUTPUT_TYPE,
@@ -288,14 +289,14 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                 raise_log(
                     ValueError(
                         "`q` must be of tuple of `(np.ndarray, Optional[pd.Index])` "
-                        "where the (quantile values, optioanl quantile component names). "
+                        "where the (quantile values, optional quantile component names). "
                         f"Received `q={q}`."
                     ),
                     logger=logger,
                 )
             q, q_comp_names = q
             if not pred_series.is_stochastic:
-                # quantile component names are required if the predictions are not stochastic (as for stocahstic
+                # quantile component names are required if the predictions are not stochastic (as for stochastic
                 # predictions, the quantiles can be retrieved from the sample dimension for each component)
                 if q_comp_names is None:
                     q_comp_names = pd.Index(
@@ -381,7 +382,7 @@ def _get_values(
     vals: np.ndarray,
     vals_components: pd.Index,
     actual_components: pd.Index,
-    q: Optional[Tuple[Sequence[float], Union[Optional[pd.Index]]]] = None,
+    q: Optional[tuple[Sequence[float], Union[Optional[pd.Index]]]] = None,
 ) -> np.ndarray:
     """
     Returns a deterministic or probabilistic numpy array from the values of a time series of shape
@@ -426,10 +427,10 @@ def _get_values_or_raise(
     series_a: TimeSeries,
     series_b: TimeSeries,
     intersect: bool,
-    q: Optional[Tuple[Sequence[float], Union[Optional[pd.Index]]]] = None,
+    q: Optional[tuple[Sequence[float], Union[Optional[pd.Index]]]] = None,
     remove_nan_union: bool = False,
     is_insample: bool = False,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Returns the processed numpy values of two time series. Processing can be customized with arguments
     `intersect, q, remove_nan_union`.
 
@@ -514,9 +515,9 @@ def _get_values_or_raise(
 
 def _get_quantile_intervals(
     vals: np.ndarray,
-    q: Tuple[Sequence[float], Any],
+    q: tuple[Sequence[float], Any],
     q_interval: np.ndarray = None,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Returns the lower and upper bound values from `vals` for all quantile intervals in `q_interval`.
 
     Parameters
@@ -612,7 +613,7 @@ def _get_error_scale(
     """Computes the error scale based on a naive seasonal forecasts on `insample` values with seasonality `m`."""
     if not isinstance(m, int):
         raise_log(
-            ValueError(f"Seasonality `m` must be of type `int`, recevied `m={m}`"),
+            ValueError(f"Seasonality `m` must be of type `int`, received `m={m}`"),
             logger=logger,
         )
 
@@ -647,7 +648,7 @@ def err(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -718,9 +719,9 @@ def err(
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
@@ -741,7 +742,7 @@ def merr(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -803,9 +804,9 @@ def merr(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
@@ -826,7 +827,7 @@ def ae(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -897,9 +898,9 @@ def ae(
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
@@ -920,7 +921,7 @@ def mae(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -982,9 +983,9 @@ def mae(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
@@ -1007,7 +1008,7 @@ def ase(
     m: int = 1,
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -1099,9 +1100,9 @@ def ase(
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
 
     References
@@ -1127,7 +1128,7 @@ def mase(
     m: int = 1,
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -1210,9 +1211,9 @@ def mase(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
 
     References
@@ -1239,7 +1240,7 @@ def se(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -1310,9 +1311,9 @@ def se(
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
@@ -1333,7 +1334,7 @@ def mse(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -1395,9 +1396,9 @@ def mse(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
@@ -1420,7 +1421,7 @@ def sse(
     m: int = 1,
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -1512,9 +1513,9 @@ def sse(
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
 
     References
@@ -1540,7 +1541,7 @@ def msse(
     m: int = 1,
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -1623,9 +1624,9 @@ def msse(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
 
     References
@@ -1652,7 +1653,7 @@ def rmse(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -1714,9 +1715,9 @@ def rmse(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.sqrt(
@@ -1738,7 +1739,7 @@ def rmsse(
     m: int = 1,
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -1821,9 +1822,9 @@ def rmsse(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
 
     References
@@ -1847,7 +1848,7 @@ def sle(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -1920,9 +1921,9 @@ def sle(
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
@@ -1944,7 +1945,7 @@ def rmsle(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -2008,9 +2009,9 @@ def rmsle(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.sqrt(
@@ -2033,7 +2034,7 @@ def ape(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -2112,9 +2113,9 @@ def ape(
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
@@ -2142,7 +2143,7 @@ def mape(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -2212,9 +2213,9 @@ def mape(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
@@ -2236,7 +2237,7 @@ def sape(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -2316,9 +2317,9 @@ def sape(
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
@@ -2346,7 +2347,7 @@ def smape(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -2419,9 +2420,9 @@ def smape(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
@@ -2443,7 +2444,7 @@ def ope(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -2511,9 +2512,9 @@ def ope(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
@@ -2545,7 +2546,7 @@ def arre(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -2621,9 +2622,9 @@ def arre(
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
@@ -2654,7 +2655,7 @@ def marre(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -2717,9 +2718,9 @@ def marre(
 
         - single multivariate series and at least `component_reduction=None`.
         - sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
@@ -2740,7 +2741,7 @@ def r2_score(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -2806,9 +2807,9 @@ def r2_score(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
 
     References
@@ -2835,7 +2836,7 @@ def coefficient_of_variation(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -2900,9 +2901,9 @@ def coefficient_of_variation(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
@@ -2991,9 +2992,9 @@ def dtw_metric(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
 
@@ -3012,7 +3013,7 @@ def qr(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = 0.5,
+    q: Union[float, list[float], tuple[np.ndarray, pd.Index]] = 0.5,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -3080,9 +3081,9 @@ def qr(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     if not pred_series.is_stochastic:
@@ -3122,7 +3123,7 @@ def ql(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = 0.5,
+    q: Union[float, list[float], tuple[np.ndarray, pd.Index]] = 0.5,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -3199,9 +3200,9 @@ def ql(
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     y_true, y_pred = _get_values_or_raise(
@@ -3224,7 +3225,7 @@ def mql(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q: Union[float, List[float], Tuple[np.ndarray, pd.Index]] = 0.5,
+    q: Union[float, list[float], tuple[np.ndarray, pd.Index]] = 0.5,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -3293,9 +3294,9 @@ def mql(
         - the input from the `float` return case above but with `len(q) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
@@ -3317,8 +3318,8 @@ def iw(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -3395,9 +3396,9 @@ def iw(
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     y_true, y_pred = _get_values_or_raise(
@@ -3419,8 +3420,8 @@ def miw(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -3488,9 +3489,9 @@ def miw(
         - the input from the `float` return case above but with `len(q_interval) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
@@ -3513,8 +3514,8 @@ def iws(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -3597,9 +3598,9 @@ def iws(
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
 
     References
@@ -3642,8 +3643,8 @@ def miws(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -3709,9 +3710,9 @@ def miws(
         - the input from the `float` return case above but with `len(q_interval) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
 
     References
@@ -3738,8 +3739,8 @@ def ic(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -3821,9 +3822,9 @@ def ic(
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     y_true, y_pred = _get_values_or_raise(
@@ -3845,8 +3846,8 @@ def mic(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -3912,9 +3913,9 @@ def mic(
         - the input from the `float` return case above but with `len(q_interval) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(
@@ -3937,9 +3938,9 @@ def incs_qr(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
+    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
     symmetric: bool = True,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     time_reduction: Optional[Callable[..., np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
@@ -4019,9 +4020,9 @@ def incs_qr(
         - single uni/multivariate series and at least `time_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and at least one of
           `component_reduction=None` or `time_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     y_true, y_pred = _get_values_or_raise(
@@ -4046,9 +4047,9 @@ def mincs_qr(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
-    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]] = None,
+    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]] = None,
     symmetric: bool = True,
-    q: Optional[Union[float, List[float], Tuple[np.ndarray, pd.Index]]] = None,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
@@ -4117,9 +4118,9 @@ def mincs_qr(
         - the input from the `float` return case above but with `len(q_interval) > 1`.
         - single multivariate series and at least `component_reduction=None`.
         - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
-    List[float]
+    list[float]
         Same as for type `float` but for a sequence of series.
-    List[np.ndarray]
+    list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
     return np.nanmean(

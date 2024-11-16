@@ -343,9 +343,9 @@ class TestGlobalForecastingModels:
         pred_list = model.predict(
             n=36, series=[self.ts_pass_train, self.ts_pass_train_1]
         )
-        assert (
-            len(pred_list) == 2
-        ), f"Model {model_cls} did not return a list of prediction"
+        assert len(pred_list) == 2, (
+            f"Model {model_cls} did not return a list of prediction"
+        )
         for pred in pred_list:
             mape_err = mape(self.ts_pass_val, pred)
             assert mape_err < err, (
@@ -665,9 +665,9 @@ class TestGlobalForecastingModels:
         pred2 = model.predict(
             n=36, series=multiple_ts, n_jobs=-1
         )  # assuming > 1 core available in the machine
-        assert (
-            pred1 == pred2
-        ), "Model {} produces different predictions with different number of jobs"
+        assert pred1 == pred2, (
+            "Model {} produces different predictions with different number of jobs"
+        )
 
     @patch(
         "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._init_trainer"

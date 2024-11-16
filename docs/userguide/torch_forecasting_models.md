@@ -16,7 +16,7 @@ We assume that you already know about covariates in Darts. If you're new to the 
     - [Training with validation set](#training-with-a-validation-dataset)
     - [Forecast / Prediction](#forecastprediction)
 
-3. Advanced functionnalities section provides some example of TFMs advanced features:
+3. Advanced functionalities section provides some example of TFMs advanced features:
     - [Model saving and loading](#saving-and-loading-model-states)
       - [Checkpoint saving / loading](#automatic-checkpointing)
       - [Manual saving / loading](#manual-saving--loading)
@@ -26,7 +26,7 @@ We assume that you already know about covariates in Darts. If you're new to the 
       - [Early Stopping](#example-with-early-stopping)
       - [Custom Callback](#example-of-custom-callback-to-store-losses)
 
-4. [Performance optimisation section](#performance-recommendations) lists tricks to speed up the computation during training.
+4. [Performance optimization section](#performance-recommendations) lists tricks to speed up the computation during training.
 
 ## Introduction
 In Darts, **Torch Forecasting Models (TFMs)** are broadly speaking "machine learning based" models, which denote PyTorch-based (deep learning) models.

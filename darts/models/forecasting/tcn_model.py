@@ -4,7 +4,8 @@ Temporal Convolutional Network
 """
 
 import math
-from typing import Optional, Sequence, Tuple
+from collections.abc import Sequence
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -98,8 +99,8 @@ class _ResidualBlock(nn.Module):
         )
         if weight_norm:
             self.conv1, self.conv2 = (
-                nn.utils.weight_norm(self.conv1),
-                nn.utils.weight_norm(self.conv2),
+                nn.utils.parametrizations.weight_norm(self.conv1),
+                nn.utils.parametrizations.weight_norm(self.conv2),
             )
 
         if input_dim != output_dim:
@@ -236,7 +237,7 @@ class _TCNModule(PLPastCovariatesModule):
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
     @io_processor
-    def forward(self, x_in: Tuple):
+    def forward(self, x_in: tuple):
         x, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
@@ -508,7 +509,7 @@ class TCNModel(PastCovariatesTorchModel):
     def supports_multivariate(self) -> bool:
         return True
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (
             train_sample[1].shape[1] if train_sample[1] is not None else 0

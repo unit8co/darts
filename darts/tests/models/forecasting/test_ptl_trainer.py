@@ -121,7 +121,7 @@ class TestPTLTrainer:
             )
             model.fit(self.series, epochs=1)
 
-        # flaot 16 not supported
+        # float 16 not supported
         with pytest.raises(ValueError):
             invalid_trainer_kwarg = {
                 "precision": "16-mixed",

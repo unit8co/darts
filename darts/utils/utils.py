@@ -3,20 +3,11 @@ Additional util functions
 -------------------------
 """
 
+from collections.abc import Iterator, Sequence
 from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
-from typing import (
-    Any,
-    Callable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Optional, TypeVar, Union
 
 import numpy as np
 import pandas as pd
@@ -82,7 +73,7 @@ freqs = {
 
 
 def likelihood_component_names(
-    components: Union[pd.Index, List[str]], parameter_names: List[str]
+    components: Union[pd.Index, list[str]], parameter_names: list[str]
 ):
     """Generates formatted likelihood parameter names for components and parameter names.
 
@@ -102,7 +93,7 @@ def likelihood_component_names(
     ]
 
 
-def quantile_names(q: Union[float, List[float]], component: Optional[str] = None):
+def quantile_names(q: Union[float, list[float]], component: Optional[str] = None):
     """Generates formatted quantile names, optionally added to a component name.
 
     Parameters
@@ -121,7 +112,7 @@ def quantile_names(q: Union[float, List[float]], component: Optional[str] = None
 
 
 def quantile_interval_names(
-    q_interval: Union[Tuple[float, float], Sequence[Tuple[float, float]]],
+    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]],
     component: Optional[str] = None,
 ):
     """Generates formatted quantile interval names, optionally added to a component name.
@@ -248,8 +239,8 @@ def _with_sanity_checks(
 
 
 def _parallel_apply(
-    iterator: Iterator[Tuple], fn: Callable, n_jobs: int, fn_args, fn_kwargs
-) -> List:
+    iterator: Iterator[tuple], fn: Callable, n_jobs: int, fn_args, fn_kwargs
+) -> list:
     """
     Utility function that parallelise the execution of a function over an Iterator
 

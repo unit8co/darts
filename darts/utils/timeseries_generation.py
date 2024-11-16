@@ -4,7 +4,8 @@ Utils for time series generation
 """
 
 import math
-from typing import List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import holidays
 import numpy as np
@@ -541,7 +542,7 @@ def datetime_attribute_timeseries(
     until: Optional[Union[int, str, pd.Timestamp]] = None,
     add_length: int = 0,
     dtype=np.float64,
-    with_columns: Optional[Union[List[str], str]] = None,
+    with_columns: Optional[Union[list[str], str]] = None,
     tz: Optional[str] = None,
 ) -> TimeSeries:
     """
@@ -641,7 +642,7 @@ def datetime_attribute_timeseries(
     if attribute in ONE_INDEXED_FREQS:
         values -= 1
 
-    # leap years insert an additional day on the 29th of Feburary
+    # leap years insert an additional day on the 29th of February
     if attribute in {"dayofyear", "day_of_year"} and any(time_index.is_leap_year):
         num_values_dict[attribute] += 1
 
@@ -741,7 +742,7 @@ def datetime_attribute_timeseries(
 def _build_forecast_series(
     points_preds: Union[np.ndarray, Sequence[np.ndarray]],
     input_series: TimeSeries,
-    custom_columns: List[str] = None,
+    custom_columns: list[str] = None,
     with_static_covs: bool = True,
     with_hierarchy: bool = True,
     pred_start: Optional[Union[pd.Timestamp, int]] = None,
@@ -819,7 +820,7 @@ def _process_time_index(
     tz: Optional[str] = None,
     until: Optional[Union[int, str, pd.Timestamp]] = None,
     add_length: int = 0,
-) -> Tuple[pd.DatetimeIndex, pd.DatetimeIndex]:
+) -> tuple[pd.DatetimeIndex, pd.DatetimeIndex]:
     """
     Extracts the time index, and optionally adds some time steps after the end of the index, and/or converts the
     index to another time zone.

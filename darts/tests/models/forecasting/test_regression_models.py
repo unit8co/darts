@@ -375,8 +375,8 @@ class TestRegressionModels:
         - series is a univariate TimeSeries with daily frequency.
         - future_covariates are a TimeSeries with 2 components. The first component represents a "promotion"
             mechanism and has an impact on the target quantiy according to 'apply_promo_mechanism'. The second
-            component contains random data that should have no impact on the target quantity. Note that altough the
-            intention is to model the "promotion_mechnism" as a categorical variable, it is encoded as integers.
+            component contains random data that should have no impact on the target quantity. Note that although the
+            intention is to model the "promotion_mechanism" as a categorical variable, it is encoded as integers.
             This is required by LightGBM.
         - past_covariates are a TimeSeries with 2 components. It only contains dummy data and does not
             have any impact on the target series.
@@ -898,7 +898,7 @@ class TestRegressionModels:
         """
         Tests that `RandomForest` regression model reproduces same behaviour as
         `examples/15-static-covariates.ipynb` notebook; see this notebook for
-        futher details. Notebook is also hosted online at:
+        further details. Notebook is also hosted online at:
         https://unit8co.github.io/darts/examples/15-static-covariates.html
         """
 
@@ -1286,6 +1286,48 @@ class TestRegressionModels:
             verbose=False,
         )
         assert len(result) == 21
+
+    def test_opti_historical_forecast_predict_checks(self):
+        """
+        Verify that the sanity check implemented in ForecastingModel.predict are also defined for optimized historical
+        forecasts as it does not call this method
+        """
+        model = self.models[1](lags=5)
+
+        msg_expected = (
+            "The model has not been fitted yet, and `retrain` is ``False``. Either call `fit()` before "
+            "`historical_forecasts()`, or set `retrain` to something different than ``False``."
+        )
+        # untrained model, optimized
+        with pytest.raises(ValueError) as err:
+            model.historical_forecasts(
+                series=self.sine_univariate1,
+                start=0.9,
+                forecast_horizon=1,
+                retrain=False,
+                enable_optimization=True,
+                verbose=False,
+            )
+        assert str(err.value) == msg_expected
+
+        model.fit(
+            series=self.sine_univariate1,
+        )
+        # deterministic model, num_samples > 1, optimized
+        with pytest.raises(ValueError) as err:
+            model.historical_forecasts(
+                series=self.sine_univariate1,
+                start=0.9,
+                forecast_horizon=1,
+                retrain=False,
+                enable_optimization=True,
+                num_samples=10,
+                verbose=False,
+            )
+        assert (
+            str(err.value)
+            == "`num_samples > 1` is only supported for probabilistic models."
+        )
 
     @pytest.mark.parametrize(
         "config",

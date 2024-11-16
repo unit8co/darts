@@ -3,7 +3,7 @@ Exponential Smoothing
 ---------------------
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
@@ -24,7 +24,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         seasonal: Optional[SeasonalityMode] = SeasonalityMode.ADDITIVE,
         seasonal_periods: Optional[int] = None,
         random_state: int = 0,
-        kwargs: Optional[Dict[str, Any]] = None,
+        kwargs: Optional[dict[str, Any]] = None,
         **fit_kwargs,
     ):
         """Exponential Smoothing

@@ -24,13 +24,9 @@ import re
 import shutil
 import sys
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from glob import glob
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -297,7 +293,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # class name will be set in fit_from_dataset()
         self._module_name: Optional[str] = ""
 
-        self.train_sample: Optional[Tuple] = None
+        self.train_sample: Optional[tuple] = None
         self.output_dim: Optional[int] = None
 
         self.n_epochs = n_epochs
@@ -355,7 +351,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         # setup trainer parameters from model creation parameters
-        self.trainer_params: Dict[str, Any] = {
+        self.trainer_params: dict[str, Any] = {
             "logger": model_logger,
             "max_epochs": n_epochs,
             "check_val_every_n_epoch": nr_epochs_val_period,
@@ -556,7 +552,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @abstractmethod
-    def _create_model(self, train_sample: Tuple[Tensor]) -> PLForecastingModule:
+    def _create_model(self, train_sample: tuple[Tensor]) -> PLForecastingModule:
         """
         This method has to be implemented by all children. It is in charge of instantiating the actual torch model,
         based on examples input/output tensors (i.e. implement a model with the right input/output sizes).
@@ -607,7 +603,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         pass
 
     @abstractmethod
-    def _verify_predict_sample(self, predict_sample: Tuple):
+    def _verify_predict_sample(self, predict_sample: tuple):
         """
         verify that the (first) sample contained in the inference dataset matches the model type and the
         data the model has been trained on.
@@ -658,7 +654,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
-        dataloader_kwargs: Optional[Dict[str, Any]] = None,
+        dataloader_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         val_sample_weight: Optional[
             Union[TimeSeries, Sequence[TimeSeries], str]
@@ -788,20 +784,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
-        dataloader_kwargs: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[
-        Tuple[
+        dataloader_kwargs: Optional[dict[str, Any]] = None,
+    ) -> tuple[
+        tuple[
             Sequence[TimeSeries],
             Optional[Sequence[TimeSeries]],
             Optional[Sequence[TimeSeries]],
         ],
-        Tuple[
+        tuple[
             TrainingDataset,
             Optional[TrainingDataset],
             Optional[pl.Trainer],
             Optional[bool],
             int,
-            Optional[Dict[str, Any]],
+            Optional[dict[str, Any]],
         ],
     ]:
         """This method acts on `TimeSeries` inputs. It performs sanity checks, and sets up / returns the datasets and
@@ -905,7 +901,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         trainer: Optional[pl.Trainer] = None,
         verbose: Optional[bool] = None,
         epochs: int = 0,
-        dataloader_kwargs: Optional[Dict[str, Any]] = None,
+        dataloader_kwargs: Optional[dict[str, Any]] = None,
     ) -> "TorchForecastingModel":
         """
         Train the model with a specific :class:`darts.utils.data.TrainingDataset` instance.
@@ -969,8 +965,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         trainer: Optional[pl.Trainer] = None,
         verbose: Optional[bool] = None,
         epochs: int = 0,
-        dataloader_kwargs: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[pl.Trainer, PLForecastingModule, DataLoader, Optional[DataLoader]]:
+        dataloader_kwargs: Optional[dict[str, Any]] = None,
+    ) -> tuple[pl.Trainer, PLForecastingModule, DataLoader, Optional[DataLoader]]:
         """This method acts on `TrainingDataset` inputs. It performs sanity checks, and sets up / returns the trainer,
         model, and dataset loaders required for training the model with `_train()`.
         """
@@ -1165,7 +1161,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
-        dataloader_kwargs: Optional[Dict[str, Any]] = None,
+        dataloader_kwargs: Optional[dict[str, Any]] = None,
         min_lr: float = 1e-08,
         max_lr: float = 1,
         num_training: int = 100,
@@ -1317,7 +1313,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         n_jobs: int = 1,
         roll_size: Optional[int] = None,
         num_samples: int = 1,
-        dataloader_kwargs: Optional[Dict[str, Any]] = None,
+        dataloader_kwargs: Optional[dict[str, Any]] = None,
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
@@ -1485,7 +1481,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         n_jobs: int = 1,
         roll_size: Optional[int] = None,
         num_samples: int = 1,
-        dataloader_kwargs: Optional[Dict[str, Any]] = None,
+        dataloader_kwargs: Optional[dict[str, Any]] = None,
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
     ) -> Sequence[TimeSeries]:
@@ -1629,7 +1625,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @staticmethod
-    def _batch_collate_fn(batch: List[Tuple]) -> Tuple:
+    def _batch_collate_fn(batch: list[tuple]) -> tuple:
         """
         Returns a batch Tuple from a list of samples
         """
@@ -2199,7 +2195,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _load_encoders(
         self, tfm_save: "TorchForecastingModel", load_encoders: bool
-    ) -> Tuple[SequentialEncoder, Dict]:
+    ) -> tuple[SequentialEncoder, dict]:
         """Return the encoders from a model save with several sanity checks."""
         if self.add_encoders is None:
             same_encoders = True
@@ -2240,7 +2236,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 logger,
             )
 
-            new_add_encoders: Dict = copy.deepcopy(tfm_save.add_encoders)
+            new_add_encoders: dict = copy.deepcopy(tfm_save.add_encoders)
             new_encoders: SequentialEncoder = copy.deepcopy(tfm_save.encoders)
         else:
             raise_if(
@@ -2251,7 +2247,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 logger,
             )
 
-            new_add_encoders: Dict = self.add_encoders
+            new_add_encoders: dict = self.add_encoders
             new_encoders: SequentialEncoder = self.initialize_encoders()
 
             # compare the dimensions of the new and ckpt encoders
@@ -2378,7 +2374,7 @@ Below we define the 5 torch model types:
 # TODO: there's a lot of repetition below... is there a cleaner way to do this in Python- Using eg generics or something
 
 
-def _basic_compare_sample(train_sample: Tuple, predict_sample: Tuple):
+def _basic_compare_sample(train_sample: tuple, predict_sample: tuple):
     """
     For all models relying on one type of covariates only (Past, Future, Dual), we can rely on the fact
     that training/inference datasets have target and covariates in first and second position to do the checks.
@@ -2420,7 +2416,7 @@ def _basic_compare_sample(train_sample: Tuple, predict_sample: Tuple):
         )
 
 
-def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
+def _mixed_compare_sample(train_sample: tuple, predict_sample: tuple):
     """
     For models relying on MixedCovariates.
 
@@ -2529,13 +2525,13 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
         _raise_if_wrong_type(inference_dataset, PastCovariatesInferenceDataset)
 
-    def _verify_predict_sample(self, predict_sample: Tuple):
+    def _verify_predict_sample(self, predict_sample: tuple):
         _basic_compare_sample(self.train_sample, predict_sample)
 
     @property
     def _model_encoder_settings(
         self,
-    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
+    ) -> tuple[int, int, bool, bool, Optional[list[int]], Optional[list[int]]]:
         input_chunk_length = self.input_chunk_length
         output_chunk_length = self.output_chunk_length
         takes_past_covariates = True
@@ -2552,7 +2548,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
     @property
     def extreme_lags(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         Optional[int],
@@ -2622,13 +2618,13 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
         _raise_if_wrong_type(inference_dataset, FutureCovariatesInferenceDataset)
 
-    def _verify_predict_sample(self, predict_sample: Tuple):
+    def _verify_predict_sample(self, predict_sample: tuple):
         _basic_compare_sample(self.train_sample, predict_sample)
 
     @property
     def _model_encoder_settings(
         self,
-    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
+    ) -> tuple[int, int, bool, bool, Optional[list[int]], Optional[list[int]]]:
         input_chunk_length = self.input_chunk_length
         output_chunk_length = self.output_chunk_length
         takes_past_covariates = False
@@ -2645,7 +2641,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
     @property
     def extreme_lags(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         Optional[int],
@@ -2716,13 +2712,13 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
         _raise_if_wrong_type(inference_dataset, DualCovariatesInferenceDataset)
 
-    def _verify_predict_sample(self, predict_sample: Tuple):
+    def _verify_predict_sample(self, predict_sample: tuple):
         _basic_compare_sample(self.train_sample, predict_sample)
 
     @property
     def _model_encoder_settings(
         self,
-    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
+    ) -> tuple[int, int, bool, bool, Optional[list[int]], Optional[list[int]]]:
         input_chunk_length = self.input_chunk_length
         output_chunk_length = self.output_chunk_length
         takes_past_covariates = False
@@ -2739,7 +2735,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
     @property
     def extreme_lags(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         Optional[int],
@@ -2810,13 +2806,13 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
         _raise_if_wrong_type(inference_dataset, MixedCovariatesInferenceDataset)
 
-    def _verify_predict_sample(self, predict_sample: Tuple):
+    def _verify_predict_sample(self, predict_sample: tuple):
         _mixed_compare_sample(self.train_sample, predict_sample)
 
     @property
     def _model_encoder_settings(
         self,
-    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
+    ) -> tuple[int, int, bool, bool, Optional[list[int]], Optional[list[int]]]:
         input_chunk_length = self.input_chunk_length
         output_chunk_length = self.output_chunk_length
         takes_past_covariates = True
@@ -2833,7 +2829,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
     @property
     def extreme_lags(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         Optional[int],
@@ -2904,14 +2900,14 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
         _raise_if_wrong_type(inference_dataset, SplitCovariatesInferenceDataset)
 
-    def _verify_predict_sample(self, predict_sample: Tuple):
+    def _verify_predict_sample(self, predict_sample: tuple):
         # TODO: we have to check both past and future covariates
         raise NotImplementedError()
 
     @property
     def _model_encoder_settings(
         self,
-    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
+    ) -> tuple[int, int, bool, bool, Optional[list[int]], Optional[list[int]]]:
         input_chunk_length = self.input_chunk_length
         output_chunk_length = self.output_chunk_length
         takes_past_covariates = True
@@ -2928,7 +2924,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
     @property
     def extreme_lags(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         Optional[int],

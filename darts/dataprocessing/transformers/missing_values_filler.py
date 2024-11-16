@@ -3,7 +3,8 @@ Missing Values Filler
 ---------------------
 """
 
-from typing import Any, Mapping, Union
+from collections.abc import Mapping
+from typing import Any, Union
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers.base_data_transformer import BaseDataTransformer

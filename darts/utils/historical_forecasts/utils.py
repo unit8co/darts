@@ -1,12 +1,7 @@
-from types import SimpleNamespace
-from typing import Any, Callable, Dict, Optional, Sequence, Set, Tuple, Union
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
 import inspect
+from collections.abc import Sequence
+from types import SimpleNamespace
+from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -22,8 +17,8 @@ logger = get_logger(__name__)
 TimeIndex = Union[
     pd.DatetimeIndex,
     pd.RangeIndex,
-    Tuple[int, int],
-    Tuple[pd.Timestamp, pd.Timestamp],
+    tuple[int, int],
+    tuple[pd.Timestamp, pd.Timestamp],
 ]
 
 
@@ -159,6 +154,13 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                     logger,
                 )
 
+    # duplication of ForecastingModel.predict() check for the optimized historical forecasts implementations
+    if not model.supports_probabilistic_prediction and n.num_samples > 1:
+        raise_log(
+            ValueError("`num_samples > 1` is only supported for probabilistic models."),
+            logger,
+        )
+
     # check direct likelihood parameter prediction before fitting a model
     if n.predict_likelihood_parameters:
         if not model.supports_likelihood_parameter_prediction:
@@ -214,11 +216,11 @@ def _historical_forecasts_general_checks(model, series, kwargs):
 
 def _historical_forecasts_sanitize_kwargs(
     model,
-    fit_kwargs: Optional[Dict[str, Any]],
-    predict_kwargs: Optional[Dict[str, Any]],
+    fit_kwargs: Optional[dict[str, Any]],
+    predict_kwargs: Optional[dict[str, Any]],
     retrain: bool,
     show_warnings: bool,
-) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+) -> tuple[dict[str, Any], dict[str, Any]]:
     """Convert kwargs to dictionary, check that their content is compatible with called methods."""
     hfc_args = set(inspect.signature(model.historical_forecasts).parameters)
     # replace `forecast_horizon` with `n`
@@ -250,10 +252,10 @@ def _historical_forecasts_sanitize_kwargs(
 
 
 def _historical_forecasts_check_kwargs(
-    hfc_args: Set[str],
+    hfc_args: set[str],
     name_kwargs: str,
-    dict_kwargs: Dict[str, Any],
-) -> Dict[str, Any]:
+    dict_kwargs: dict[str, Any],
+) -> dict[str, Any]:
     """
     Return the kwargs dict without the arguments unsupported by the model method.
 
@@ -432,8 +434,8 @@ def _get_historical_forecastable_time_index(
 ) -> Union[
     pd.DatetimeIndex,
     pd.RangeIndex,
-    Tuple[int, int],
-    Tuple[pd.Timestamp, pd.Timestamp],
+    tuple[int, int],
+    tuple[pd.Timestamp, pd.Timestamp],
     None,
 ]:
     """
@@ -474,7 +476,7 @@ def _get_historical_forecastable_time_index(
 
     Returns
     -------
-    Union[pd.DatetimeIndex, pd.RangeIndex, Tuple[int, int], Tuple[pd.Timestamp, pd.Timestamp], None]
+    Union[pd.DatetimeIndex, pd.RangeIndex, tuple[int, int], tuple[pd.Timestamp, pd.Timestamp], None]
         The longest time_index that can be used for historical forecasting, either as a range or a tuple.
 
     Examples
@@ -767,7 +769,7 @@ def _reconciliate_historical_time_indices(
     retrain: Union[bool, int, Callable[..., bool]],
     train_length: Optional[int],
     show_warnings: bool,
-) -> Tuple[TimeIndex, Optional[int]]:
+) -> tuple[TimeIndex, Optional[int]]:
     """Depending on the value of retrain, select which time indices will be used during the historical forecasts."""
     train_length_ = None
     if isinstance(retrain, Callable):
@@ -832,7 +834,7 @@ def _get_historical_forecast_boundaries(
     stride: int,
     freq: pd.DateOffset,
     show_warnings: bool = True,
-) -> Tuple[Any, ...]:
+) -> tuple[Any, ...]:
     """
     Based on the boundaries of the forecastable time index, generates the boundaries of each covariates using the lags.
 
@@ -1008,7 +1010,7 @@ def _process_historical_forecast_input(
 
 def _process_predict_start_points_bounds(
     series: Sequence[TimeSeries], bounds: ArrayLike, stride: int
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Processes the historical forecastable time index bounds (earliest, and latest possible prediction
     start points).
 

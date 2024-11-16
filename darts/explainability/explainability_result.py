@@ -15,7 +15,7 @@ Contains the explainability results obtained from :func:`_ForecastingModelExplai
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 import pandas as pd
 import shap
@@ -51,7 +51,7 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
 
     def __init__(
         self,
-        explained_components: Union[Dict[str, Any], List[Dict[str, Any]]],
+        explained_components: Union[dict[str, Any], list[dict[str, Any]]],
     ):
         if isinstance(explained_components, list):
             comps_available = explained_components[0].keys()
@@ -67,7 +67,7 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
         self.explained_components = explained_components
         self.available_components = comps_available
 
-    def get_explanation(self, component) -> Union[Any, List[Any]]:
+    def get_explanation(self, component) -> Union[Any, list[Any]]:
         """
         Returns one or several explanations for a given component.
 
@@ -80,7 +80,7 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
 
     def _query_explainability_result(
         self,
-        attr: Union[Dict[str, Any], List[Dict[str, Any]]],
+        attr: Union[dict[str, Any], list[dict[str, Any]]],
         component: str,
     ) -> Any:
         """
@@ -190,8 +190,8 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     def __init__(
         self,
         explained_forecasts: Union[
-            Dict[int, Dict[str, TimeSeries]],
-            List[Dict[int, Dict[str, TimeSeries]]],
+            dict[int, dict[str, TimeSeries]],
+            list[dict[int, dict[str, TimeSeries]]],
         ],
     ):
         self.explained_forecasts = explained_forecasts
@@ -231,7 +231,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
 
     def get_explanation(
         self, horizon: int, component: Optional[str] = None
-    ) -> Union[TimeSeries, List[TimeSeries]]:
+    ) -> Union[TimeSeries, list[TimeSeries]]:
         """
         Returns one or several `TimeSeries` representing the explanations
         for a given horizon and component.
@@ -250,7 +250,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
 
     def _query_explainability_result(
         self,
-        attr: Union[Dict[int, Dict[str, Any]], List[Dict[int, Dict[str, Any]]]],
+        attr: Union[dict[int, dict[str, Any]], list[dict[int, dict[str, Any]]]],
         horizon: int,
         component: Optional[str] = None,
     ) -> Any:
@@ -350,16 +350,16 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
     def __init__(
         self,
         explained_forecasts: Union[
-            Dict[int, Dict[str, TimeSeries]],
-            List[Dict[int, Dict[str, TimeSeries]]],
+            dict[int, dict[str, TimeSeries]],
+            list[dict[int, dict[str, TimeSeries]]],
         ],
         feature_values: Union[
-            Dict[int, Dict[str, TimeSeries]],
-            List[Dict[int, Dict[str, TimeSeries]]],
+            dict[int, dict[str, TimeSeries]],
+            list[dict[int, dict[str, TimeSeries]]],
         ],
         shap_explanation_object: Union[
-            Dict[int, Dict[str, shap.Explanation]],
-            List[Dict[int, Dict[str, shap.Explanation]]],
+            dict[int, dict[str, shap.Explanation]],
+            list[dict[int, dict[str, shap.Explanation]]],
         ],
     ):
         super().__init__(explained_forecasts)
@@ -368,7 +368,7 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
 
     def get_feature_values(
         self, horizon: int, component: Optional[str] = None
-    ) -> Union[TimeSeries, List[TimeSeries]]:
+    ) -> Union[TimeSeries, list[TimeSeries]]:
         """
         Returns one or several `TimeSeries` representing the feature values
         for a given horizon and component.
@@ -387,7 +387,7 @@ class ShapExplainabilityResult(HorizonBasedExplainabilityResult):
 
     def get_shap_explanation_object(
         self, horizon: int, component: Optional[str] = None
-    ) -> Union[shap.Explanation, List[shap.Explanation]]:
+    ) -> Union[shap.Explanation, list[shap.Explanation]]:
         """
         Returns the underlying `shap.Explanation` object for a given horizon and component.
 
@@ -434,8 +434,8 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
     def __init__(
         self,
         explanations: Union[
-            Dict[str, Any],
-            List[Dict[str, Any]],
+            dict[str, Any],
+            list[dict[str, Any]],
         ],
     ):
         super().__init__(explanations)
@@ -445,7 +445,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
             "static_covariates_importance",
         ]
 
-    def get_attention(self) -> Union[TimeSeries, List[TimeSeries]]:
+    def get_attention(self) -> Union[TimeSeries, list[TimeSeries]]:
         """
         Returns the time-dependent attention on the encoder and decoder for each `horizon` in (1,
         `output_chunk_length`). The time index ranges from the prediction series' start time - input_chunk_length and
@@ -458,7 +458,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
 
     def get_feature_importances(
         self,
-    ) -> Dict[str, Union[pd.DataFrame, List[pd.DataFrame]]]:
+    ) -> dict[str, Union[pd.DataFrame, list[pd.DataFrame]]]:
         """
         Returns the feature importances for the encoder, decoder and static covariates as pd.DataFrames.
         If multiple series were used in :func:`TFTExplainer.explain()
@@ -466,7 +466,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
         """
         return {comp: self.get_explanation(comp) for comp in self.feature_importances}
 
-    def get_encoder_importance(self) -> Union[pd.DataFrame, List[pd.DataFrame]]:
+    def get_encoder_importance(self) -> Union[pd.DataFrame, list[pd.DataFrame]]:
         """
         Returns the time-dependent encoder importances as a pd.DataFrames.
         If multiple series were used in :func:`TFTExplainer.explain()
@@ -474,7 +474,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
         """
         return self.get_explanation("encoder_importance")
 
-    def get_decoder_importance(self) -> Union[pd.DataFrame, List[pd.DataFrame]]:
+    def get_decoder_importance(self) -> Union[pd.DataFrame, list[pd.DataFrame]]:
         """
         Returns the time-dependent decoder importances as a pd.DataFrames.
         If multiple series were used in :func:`TFTExplainer.explain()
@@ -484,7 +484,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
 
     def get_static_covariates_importance(
         self,
-    ) -> Union[pd.DataFrame, List[pd.DataFrame]]:
+    ) -> Union[pd.DataFrame, list[pd.DataFrame]]:
         """
         Returns the numeric and categorical static covariates importances as a pd.DataFrames.
         If multiple series were used in :func:`TFTExplainer.explain()

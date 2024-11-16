@@ -1132,15 +1132,15 @@ class TestBacktesting:
         else:
             sample_weight = "linear"
 
-        paramameters = {"lags": [3], "output_chunk_length": [1]}
+        parameters = {"lags": [3], "output_chunk_length": [1]}
         start_kwargs = {"start": -1, "start_format": "position"}
         gs_kwargs = {"val_series": ts} if use_val_series else {"forecast_horizon": 1}
         gs_non_weighted = LinearRegressionModel.gridsearch(
-            paramameters, series=ts[:-1], **start_kwargs, **gs_kwargs
+            parameters, series=ts[:-1], **start_kwargs, **gs_kwargs
         )[-1]
 
         gs_weighted = LinearRegressionModel.gridsearch(
-            paramameters,
+            parameters,
             series=ts[:-1],
             sample_weight=sample_weight,
             **start_kwargs,
