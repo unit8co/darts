@@ -8,7 +8,8 @@ A collection of conformal prediction models for pre-trained global forecasting m
 import copy
 import os
 from abc import ABC, abstractmethod
-from typing import Any, BinaryIO, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Any, BinaryIO, Callable, Optional, Union
 
 try:
     from typing import Literal
@@ -56,7 +57,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
     def __init__(
         self,
         model: GlobalForecastingModel,
-        quantiles: List[float],
+        quantiles: list[float],
         symmetric: bool = True,
         cal_length: Optional[int] = None,
         num_samples: int = 500,
@@ -427,10 +428,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
-        fit_kwargs: Optional[Dict[str, Any]] = None,
-        predict_kwargs: Optional[Dict[str, Any]] = None,
+        fit_kwargs: Optional[dict[str, Any]] = None,
+        predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-    ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
+    ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
         """Generates calibrated historical forecasts by simulating predictions at various points in time throughout the
         history of the provided (potentially multiple) `series`. This process involves retrospectively applying the
         model to different time steps, as if the forecasts were made in real-time at those specific moments. This
@@ -545,14 +546,14 @@ class ConformalModel(GlobalForecastingModel, ABC):
         TimeSeries
             A single historical forecast for a single `series` and `last_points_only=True`: it contains only the
             predictions at step `forecast_horizon` from all historical forecasts.
-        List[TimeSeries]
+        list[TimeSeries]
             A list of historical forecasts for:
 
             - a sequence (list) of `series` and `last_points_only=True`: for each series, it contains only the
               predictions at step `forecast_horizon` from all historical forecasts.
             - a single `series` and `last_points_only=False`: for each historical forecast, it contains the entire
               horizon `forecast_horizon`.
-        List[List[TimeSeries]]
+        list[list[TimeSeries]]
             A list of lists of historical forecasts for a sequence of `series` and `last_points_only=False`. For each
             series, and historical forecast, it contains the entire horizon `forecast_horizon`. The outer list
             is over the series provided in the input sequence, and the inner lists contain the historical forecasts for
@@ -655,17 +656,17 @@ class ConformalModel(GlobalForecastingModel, ABC):
         retrain: Union[bool, int, Callable[..., bool]] = True,
         overlap_end: bool = False,
         last_points_only: bool = False,
-        metric: Union[METRIC_TYPE, List[METRIC_TYPE]] = metrics.mape,
+        metric: Union[METRIC_TYPE, list[METRIC_TYPE]] = metrics.mape,
         reduction: Union[Callable[..., float], None] = np.mean,
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
-        metric_kwargs: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
-        fit_kwargs: Optional[Dict[str, Any]] = None,
-        predict_kwargs: Optional[Dict[str, Any]] = None,
+        metric_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
+        fit_kwargs: Optional[dict[str, Any]] = None,
+        predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-    ) -> Union[float, np.ndarray, List[float], List[np.ndarray]]:
+    ) -> Union[float, np.ndarray, list[float], list[np.ndarray]]:
         """Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.
 
         If `historical_forecasts` are provided, the metric(s) (given by the `metric` function) is evaluated directly on
@@ -812,10 +813,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
               when `reduction=None`
             - multiple uni/multivariate series including `series_reduction` and at least one of
               `component_reduction=None` or `time_reduction=None` for "per time step metrics"
-        List[float]
+        list[float]
             Same as for type `float` but for a sequence of series. The returned metric list has length
             `len(series)` with the `float` metric for each input `series`.
-        List[np.ndarray]
+        list[np.ndarray]
             Same as for type `np.ndarray` but for a sequence of series. The returned metric list has length
             `len(series)` with the `np.ndarray` metrics for each input `series`.
         """
@@ -892,12 +893,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
-        metric_kwargs: Optional[Dict[str, Any]] = None,
-        fit_kwargs: Optional[Dict[str, Any]] = None,
-        predict_kwargs: Optional[Dict[str, Any]] = None,
+        metric_kwargs: Optional[dict[str, Any]] = None,
+        fit_kwargs: Optional[dict[str, Any]] = None,
+        predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         values_only: bool = False,
-    ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
+    ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
         """Compute the residuals that the model produced for historical forecasts on (potentially multiple) `series`.
 
         This function computes the difference (or one of Darts' "per time step" metrics) between the actual
@@ -1039,10 +1040,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
         TimeSeries
             Residual `TimeSeries` for a single `series` and `historical_forecasts` generated with
             `last_points_only=True`.
-        List[TimeSeries]
+        list[TimeSeries]
             A list of residual `TimeSeries` for a sequence (list) of `series` with `last_points_only=True`.
             The residual list has length `len(series)`.
-        List[List[TimeSeries]]
+        list[list[TimeSeries]]
             A list of lists of residual `TimeSeries` for a sequence of `series` with `last_points_only=False`.
             The outer residual list has length `len(series)`. The inner lists consist of the residuals from
             all possible series-specific historical forecasts.
@@ -1114,7 +1115,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
-    ) -> Union[TimeSeries, List[TimeSeries], List[List[TimeSeries]]]:
+    ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
         """Generate calibrated historical forecasts.
 
         In general the workflow of the models to produce one calibrated forecast/prediction per step in the horizon
@@ -1467,7 +1468,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
     @abstractmethod
     def _calibrate_interval(
         self, residuals: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Computes the lower and upper calibrated forecast intervals based on residuals.
 
         Parameters
@@ -1478,7 +1479,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         pass
 
     @abstractmethod
-    def _apply_interval(self, pred: np.ndarray, q_hat: Tuple[np.ndarray, np.ndarray]):
+    def _apply_interval(self, pred: np.ndarray, q_hat: tuple[np.ndarray, np.ndarray]):
         """Applies the calibrated interval to the predicted quantiles. Returns an array with `len(quantiles)`
         conformalized quantile predictions (lower quantiles, model forecast, upper quantiles) per component.
 
@@ -1488,12 +1489,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
     @property
     @abstractmethod
-    def _residuals_metric(self) -> Tuple[METRIC_TYPE, Optional[dict]]:
+    def _residuals_metric(self) -> tuple[METRIC_TYPE, Optional[dict]]:
         """Gives the "per time step" metric and optional metric kwargs used to compute residuals /
         non-conformity scores."""
         pass
 
-    def _cp_component_names(self, input_series) -> List[str]:
+    def _cp_component_names(self, input_series) -> list[str]:
         """Gives the component names for generated forecasts."""
         return likelihood_component_names(
             input_series.components, quantile_names(self.quantiles)
@@ -1515,7 +1516,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
     @property
     def extreme_lags(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         Optional[int],
@@ -1588,7 +1589,7 @@ class ConformalNaiveModel(ConformalModel):
     def __init__(
         self,
         model: GlobalForecastingModel,
-        quantiles: List[float],
+        quantiles: list[float],
         symmetric: bool = True,
         cal_length: Optional[int] = None,
         num_samples: int = 500,
@@ -1679,7 +1680,7 @@ class ConformalNaiveModel(ConformalModel):
 
     def _calibrate_interval(
         self, residuals: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         def q_hat_from_residuals(residuals_):
             # compute quantiles of shape (forecast horizon, n components, n quantile intervals)
             return np.quantile(
@@ -1702,7 +1703,7 @@ class ConformalNaiveModel(ConformalModel):
             n_comps = residuals.shape[1]
             return -q_hat[:, :n_comps, :], q_hat[:, n_comps:, ::-1]
 
-    def _apply_interval(self, pred: np.ndarray, q_hat: Tuple[np.ndarray, np.ndarray]):
+    def _apply_interval(self, pred: np.ndarray, q_hat: tuple[np.ndarray, np.ndarray]):
         # convert stochastic predictions to median
         if pred.shape[2] != 1:
             pred = np.expand_dims(np.quantile(pred, 0.5, axis=2), -1)
@@ -1712,7 +1713,7 @@ class ConformalNaiveModel(ConformalModel):
         return pred.reshape(len(pred), -1)
 
     @property
-    def _residuals_metric(self) -> Tuple[METRIC_TYPE, Optional[dict]]:
+    def _residuals_metric(self) -> tuple[METRIC_TYPE, Optional[dict]]:
         return (metrics.ae if self.symmetric else metrics.err), None
 
 
@@ -1720,7 +1721,7 @@ class ConformalQRModel(ConformalModel):
     def __init__(
         self,
         model: GlobalForecastingModel,
-        quantiles: List[float],
+        quantiles: list[float],
         symmetric: bool = True,
         cal_length: Optional[int] = None,
         num_samples: int = 500,
@@ -1822,7 +1823,7 @@ class ConformalQRModel(ConformalModel):
 
     def _calibrate_interval(
         self, residuals: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         n_comps = residuals.shape[1] // (
             len(self.interval_range) * (1 + int(not self.symmetric))
         )
@@ -1856,7 +1857,7 @@ class ConformalQRModel(ConformalModel):
             q_hat_hi = q_hat_from_residuals(residuals[:, half_idx:])
             return -q_hat_lo, q_hat_hi[:, :, ::-1]
 
-    def _apply_interval(self, pred: np.ndarray, q_hat: Tuple[np.ndarray, np.ndarray]):
+    def _apply_interval(self, pred: np.ndarray, q_hat: tuple[np.ndarray, np.ndarray]):
         # get quantile predictions with shape (n times, n components, n quantiles)
         pred = np.quantile(pred, self.quantiles, axis=2).transpose((1, 2, 0))
         # shape (forecast horizon, n components, n quantiles)
@@ -1872,7 +1873,7 @@ class ConformalQRModel(ConformalModel):
         return pred.reshape(len(pred), -1)
 
     @property
-    def _residuals_metric(self) -> Tuple[METRIC_TYPE, Optional[dict]]:
+    def _residuals_metric(self) -> tuple[METRIC_TYPE, Optional[dict]]:
         return metrics.incs_qr, {
             "q_interval": self.q_interval,
             "symmetric": self.symmetric,
