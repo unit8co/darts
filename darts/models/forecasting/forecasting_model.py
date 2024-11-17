@@ -1777,19 +1777,20 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         if "model" in parameters:
             valid_model_list = isinstance(parameters["model"], list)
-            valid_nested_params = parameters["model"].get(
-                "wrapped_model_class"
-            ) and all(
-                isinstance(params, (list, np.ndarray))
-                for p_name, params in parameters["model"].items()
-                if p_name != "wrapped_model_class"
+            valid_nested_params = (
+                not valid_model_list
+                and parameters["model"].get("wrapped_model_class")
+                and all(
+                    isinstance(params, (list, np.ndarray))
+                    for p_name, params in parameters["model"].items()
+                    if p_name != "wrapped_model_class"
+                )
             )
             if not (valid_model_list or valid_nested_params):
                 raise_log(
                     ValueError(
-                        "The 'model' entry in `parameters` must either be a list of instantiated models or "
-                        "a dictionary containing as keys hyperparameter names, and as values lists of values "
-                        "plus a 'wrapped_model_class': model_cls item.",
+                        "When the 'model' key is set as a dictionary, it must contain the 'wrapped_model_class' key, "
+                        "which represents the class of the model to be wrapped.",
                         logger,
                     )
                 )

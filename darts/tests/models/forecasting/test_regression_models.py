@@ -3253,7 +3253,7 @@ class TestRegressionModels:
         # Create grid over wrapped model parameters too
         parameters = {
             "model": {
-                "model_class": RandomForestRegressor,
+                "wrapped_model_class": RandomForestRegressor,
                 "min_samples_split": [2, 3],
             },
             "lags": [1],
@@ -3297,7 +3297,7 @@ class TestRegressionModels:
         with pytest.raises(
             ValueError,
             match="When the 'model' key is set as a dictionary, it must contain "
-            "the 'model_class' key, which represents the class of the model "
+            "the 'wrapped_model_class' key, which represents the class of the model "
             "to be wrapped.",
         ):
             RegressionModel.gridsearch(
