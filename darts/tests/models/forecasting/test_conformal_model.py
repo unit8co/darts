@@ -170,6 +170,43 @@ class TestConformalModel:
             ConformalNaiveModel(model=global_model, quantiles=[-0.1, 0.5, 1.1])
         assert str(exc.value) == "All provided quantiles must be between 0 and 1."
 
+        # `cal_length` must be `>=1` or `None`
+        with pytest.raises(ValueError) as exc:
+            ConformalNaiveModel(model=global_model, quantiles=q, cal_length=0)
+        assert str(exc.value) == "`cal_length` must be `>=1` or `None`."
+
+        # `cal_stride` must be `>=1`
+        with pytest.raises(ValueError) as exc:
+            ConformalNaiveModel(model=global_model, quantiles=q, cal_stride=0)
+        assert str(exc.value) == "`cal_stride` must be `>=1`."
+
+        # `num_samples` must be `>=1`
+        with pytest.raises(ValueError) as exc:
+            ConformalNaiveModel(model=global_model, quantiles=q, num_samples=0)
+        assert str(exc.value) == "`num_samples` must be `>=1`."
+
+    def test_model_hfc_stride_checks(self):
+        series = self.ts_pass_train
+        model = LinearRegressionModel(**regr_kwargs).fit(series)
+        cp_model = ConformalNaiveModel(model=model, quantiles=q, cal_stride=2)
+
+        expected_error_start = (
+            "The provided `stride` parameter must be a round-multiple of "
+            "`cal_stride=2` and `>=cal_stride`."
+        )
+        # `stride` must be >= `cal_stride`
+        with pytest.raises(ValueError) as exc:
+            cp_model.historical_forecasts(series=series, stride=1)
+        assert str(exc.value).startswith(expected_error_start)
+
+        # `stride` must be a round multiple of `cal_stride`
+        with pytest.raises(ValueError) as exc:
+            cp_model.historical_forecasts(series=series, stride=3)
+        assert str(exc.value).startswith(expected_error_start)
+
+        # valid stride
+        _ = cp_model.historical_forecasts(series=series, stride=4)
+
     def test_model_construction_cqr(self):
         model_det = train_model(self.ts_pass_train, model_type="regression")
         model_prob_q = train_model(
@@ -357,9 +394,9 @@ class TestConformalModel:
             n=self.horizon,
             series=[self.ts_pass_train, self.ts_pass_train_1],
         )
-        assert (
-            len(pred_list) == 2
-        ), f"Model {model_cls} did not return a list of prediction"
+        assert len(pred_list) == 2, (
+            f"Model {model_cls} did not return a list of prediction"
+        )
         for pred, pred_fc in zip(pred_list, pred_fc_list):
             assert pred.n_components == self.ts_pass_train.n_components * 3
             assert pred_fc.time_index.equals(pred.time_index)

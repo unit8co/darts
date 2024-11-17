@@ -32,9 +32,6 @@ def _historical_forecasts_general_checks(model, series, kwargs):
         The forecasting model.
     series
         Either series when called from ForecastingModel, or target_series if called from RegressionModel
-    signature_params
-        A dictionary of the signature parameters of the calling method, to get the default values
-        Typically would be signature(self.backtest).parameters
     kwargs
         Params specified by the caller of backtest(), they take precedence over the arguments' default values
     """
@@ -212,6 +209,33 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                     ),
                     logger=logger,
                 )
+
+
+def _conformal_historical_forecasts_general_checks(model, series, kwargs):
+    """
+    Performs checks for `ConformalModel.historical_forecasts()`.
+
+    Parameters
+    ----------
+    model
+        The forecasting model.
+    series
+        Either series when called from ForecastingModel, or target_series if called from RegressionModel
+    kwargs
+        Params specified by the caller of backtest(), they take precedence over the arguments' default values
+    """
+    # parse kwargs
+    n = SimpleNamespace(**kwargs)
+
+    # check stride
+    if n.stride < model.cal_stride or n.stride % model.cal_stride > 0:
+        raise_log(
+            ValueError(
+                f"The provided `stride` parameter must be a round-multiple of `cal_stride={model.cal_stride}` "
+                f"and `>=cal_stride`. Received `stride={n.stride}`"
+            ),
+            logger,
+        )
 
 
 def _historical_forecasts_sanitize_kwargs(

@@ -3300,7 +3300,7 @@ class TestHistoricalforecast:
             stride,
             ocs,
         ) = config
-        # TODO: adjust this test (the input length of `series_val`), once `stride_cal` has been properly implemented
+        # TODO: adjust this test (the input length of `series_val`), once `cal_stride` has been properly implemented
         q = [0.1, 0.5, 0.9]
         pred_lklp = {"num_samples": 1, "predict_likelihood_parameters": True}
         # compute minimum series length to generate n forecasts
@@ -3359,7 +3359,7 @@ class TestHistoricalforecast:
 
         # compute conformal historical forecasts (starting at first possible conformal forecast)
         model = ConformalNaiveModel(
-            forecasting_model, quantiles=q, cal_length=cal_length, stride_cal=stride > 1
+            forecasting_model, quantiles=q, cal_length=cal_length, cal_stride=stride
         )
         with caplog.at_level(logging.WARNING):
             hist_fct = model.historical_forecasts(
