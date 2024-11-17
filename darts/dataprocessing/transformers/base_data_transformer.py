@@ -363,7 +363,10 @@ class BaseDataTransformer(ABC):
         # Take note of original input for unmasking purposes:
         if isinstance(series, TimeSeries):
             data = [series]
-            transformer_selector = [0]
+            if idx_params:
+                transformer_selector = self._check_idx_params(idx_params)
+            else:
+                transformer_selector = [0]
         else:
             data = series
             if idx_params:

@@ -5,7 +5,7 @@ Pipeline
 
 from collections.abc import Iterator, Sequence
 from copy import deepcopy
-from typing import Union
+from typing import Optional, Union
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import (
@@ -158,7 +158,9 @@ class Pipeline:
         return data
 
     def transform(
-        self, data: Union[TimeSeries, Sequence[TimeSeries]]
+        self,
+        data: Union[TimeSeries, Sequence[TimeSeries]],
+        idx_params: Optional[Union[int, Sequence[int]]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         For each data transformer in pipeline transform data. Then transformed data is passed to next transformer.
@@ -174,11 +176,14 @@ class Pipeline:
             Transformed data.
         """
         for transformer in self._transformers:
-            data = transformer.transform(data)
+            data = transformer.transform(data, idx_params=idx_params)
         return data
 
     def inverse_transform(
-        self, data: Union[TimeSeries, Sequence[TimeSeries]], partial: bool = False
+        self,
+        data: Union[TimeSeries, Sequence[TimeSeries]],
+        partial: bool = False,
+        idx_params: Optional[Union[int, Sequence[int]]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         For each data transformer in the pipeline, inverse-transform data. Then inverse transformed data is passed to
@@ -207,12 +212,12 @@ class Pipeline:
             )
 
             for transformer in reversed(self._transformers):
-                data = transformer.inverse_transform(data)
+                data = transformer.inverse_transform(data, idx_params=idx_params)
             return data
         else:
             for transformer in reversed(self._transformers):
                 if isinstance(transformer, InvertibleDataTransformer):
-                    data = transformer.inverse_transform(data)
+                    data = transformer.inverse_transform(data, idx_params=idx_params)
             return data
 
     @property

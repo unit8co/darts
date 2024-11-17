@@ -911,8 +911,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             data_transformers=data_transformers, copy=True
         )
 
-        # data transformer must already be fitted and can be directly applied to all the series
+        using_prefitted_transformers = False
+        # data transformer already fitted and can be directly applied to all the series
         if data_transformers and not retrain:
+            using_prefitted_transformers = True
             series, past_covariates, future_covariates = _apply_data_transformers(
                 series=series,
                 past_covariates=past_covariates,
@@ -1097,6 +1099,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     train_series = train_series[-train_length_:]
 
                 # when `retrain=True`, data transformers are also retrained between iterations to avoid data-leakage
+                # using a single series
                 if data_transformers and retrain:
                     train_series, past_covariates_, future_covariates_ = (
                         _apply_data_transformers(
@@ -1187,11 +1190,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     **predict_kwargs,
                 )
 
-                # target transformer is either already fitted or fitted during the retraining
                 forecast = _apply_inverse_data_transformers(
                     series=train_series,
                     forecasts=forecast,
                     data_transformers=data_transformers,
+                    idx_transformer=idx if using_prefitted_transformers else None,
                 )
 
                 show_predict_warnings = False

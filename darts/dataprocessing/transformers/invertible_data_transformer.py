@@ -327,7 +327,10 @@ class InvertibleDataTransformer(BaseDataTransformer):
         called_with_sequence_series = False
         if isinstance(series, TimeSeries):
             data = [series]
-            transformer_selector = [0]
+            if idx_params:
+                transformer_selector = self._check_idx_params(idx_params)
+            else:
+                transformer_selector = [0]
             called_with_single_series = True
         elif isinstance(series[0], TimeSeries):  # Sequence[TimeSeries]
             data = series
@@ -346,7 +349,6 @@ class InvertibleDataTransformer(BaseDataTransformer):
             for idx, series_list in iterator_:
                 data.extend(series_list)
                 transformer_selector += [idx] * len(series_list)
-
         input_iterator = _build_tqdm_iterator(
             zip(data, self._get_params(transformer_selector=transformer_selector)),
             verbose=self._verbose,

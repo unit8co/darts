@@ -271,7 +271,8 @@ class FittableDataTransformer(BaseDataTransformer):
             transformer_selector = range(len(series))
 
         params_iterator = self._get_params(
-            transformer_selector=transformer_selector, calling_fit=True
+            transformer_selector=transformer_selector,
+            calling_fit=True,
         )
         fit_iterator = (
             zip(data, params_iterator)
