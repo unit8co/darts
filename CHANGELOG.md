@@ -32,6 +32,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - fixed failing docker deployment
   - removed `gradle` dependency in favor of native GitHub action plugins.
 - Updated ruff to v0.7.2 and target-version to python39, also fixed various typos [#2589](https://github.com/unit8co/darts/pull/2589) by [Greg DeVosNouri](https://github.com/gdevos010) and [Antoine Madrona](https://github.com/madtoinou).
+- Replaced the deprecated `torch.nn.utils.weight_norm` function with `torch.nn.utils.parametrizations.weight_norm` [#2593](https://github.com/unit8co/darts/pull/2593) by [Saeed Foroutan](https://github.com/SaeedForoutan).
 
 ## [0.31.0](https://github.com/unit8co/darts/tree/0.31.0) (2024-10-13)
 
@@ -41,7 +42,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Improvements to `metrics`:
   - Added support for computing metrics on one or multiple quantiles `q`, either from probabilistic or quantile forecasts. [#2530](https://github.com/unit8co/darts/pull/2530) by [Dennis Bader](https://github.com/dennisbader).
-  - Added quantile interval metrics `miw` (Mean Interval Width, time aggregated) and `iw` (Interval Width, per time step / non-aggregated) which compute the width of quantile intervals `q_intervals` (expected to be a tuple or sequence of tuples with (lower quantile, upper quantile). [#2530](https://github.com/unit8co/darts/pull/2530) by [Dennis Bader](https://github.com/dennisbader).
+  - Added quantile interval metrics `miw` (Mean Interval Width, time aggregated) and `iw` (Interval Width, per time step / non-aggregated) which compute the width of quantile intervals `q_intervals` (expected to be a tuple or sequence of tuples with (lower quantile, upper quantile)). [#2530](https://github.com/unit8co/darts/pull/2530) by [Dennis Bader](https://github.com/dennisbader).
 - Improvements to `backtest()` and `residuals()`:
   - Added support for computing backtest and residuals on one or multiple quantiles `q` in the `metric_kwargs`, either from probabilistic or quantile forecasts. [#2530](https://github.com/unit8co/darts/pull/2530) by [Dennis Bader](https://github.com/dennisbader).
   - Added support for parameters `enable_optimization` and `predict_likelihood_parameters`. [#2530](https://github.com/unit8co/darts/pull/2530) by [Dennis Bader](https://github.com/dennisbader).
