@@ -99,8 +99,8 @@ class _ResidualBlock(nn.Module):
         )
         if weight_norm:
             self.conv1, self.conv2 = (
-                nn.utils.weight_norm(self.conv1),
-                nn.utils.weight_norm(self.conv2),
+                nn.utils.parametrizations.weight_norm(self.conv1),
+                nn.utils.parametrizations.weight_norm(self.conv2),
             )
 
         if input_dim != output_dim:

@@ -1175,7 +1175,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             length=1,
                             freq=series_.freq,
                         ),
-                        values=np.array([np.NaN]),
+                        values=np.array([np.nan]),
                     )
 
                 forecast = model._predict_wrapper(
