@@ -230,7 +230,7 @@ class Pipeline:
                     idx_params=idx_params
                     if (
                         isinstance(transformer, FittableDataTransformer)
-                        and transformer._global_fit
+                        and not transformer._global_fit
                     )
                     else None,
                 )
@@ -243,7 +243,7 @@ class Pipeline:
                         idx_params=idx_params
                         if (
                             isinstance(transformer, FittableDataTransformer)
-                            and transformer._global_fit
+                            and not transformer._global_fit
                         )
                         else None,
                     )
