@@ -448,7 +448,7 @@ class BaseDataTransformer(ABC):
                 )
         return None
 
-    def _check_idx_params(self, idx_params: Union[int, Sequence[int]]) -> list[int]:
+    def _check_idx_params(self, idx_params: Union[int, Sequence[int]]) -> Sequence[int]:
         """Convert the `idx_params` to a Sequence[int] and run sanity checks.
 
         Note: the validity of the entries in idx_params is checked in _get_params().

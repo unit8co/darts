@@ -2715,7 +2715,7 @@ class TestHistoricalforecast:
         self, model_cls, series: dict, output_chunk_length: int
     ) -> dict:
         model_params = {}
-        if model_cls in [NLinearModel, RNNModel]:
+        if model_cls in [NLinearModel]:
             model_params["input_chunk_length"] = 5
             model_params["output_chunk_length"] = output_chunk_length
             model_params["n_epochs"] = 1
@@ -2724,13 +2724,13 @@ class TestHistoricalforecast:
                 **model_params,
                 **tfm_kwargs,
             }
-        elif model_cls in [CatBoostModel, LinearRegressionModel]:
+        elif model_cls in [LinearRegressionModel]:
             model_params["lags"] = 5
             model_params["output_chunk_length"] = output_chunk_length
             if "past_covariates" in series:
                 model_params["lags_past_covariates"] = 4
             if "future_covariates" in series:
-                model_params["lags_future_covariates"] = [-3, -2]  # [-1, 0, 2]
+                model_params["lags_future_covariates"] = [-3, -2]
 
         return model_params
 
@@ -2914,8 +2914,13 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize("params", product([True, False], [True, False]))
     def test_historical_forecasts_with_scaler_multiple_series(self, params):
-        """Verify that the scaling in historical forecasts behave as expected when multiple series are used."""
+        """Verify that the scaling in historical forecasts behave as expected when multiple series are used.
+
+        The difference in behavior is caused by the difference in number of parameters when a scaler is fitted on
+        a single series/multiple series with global_fit=True or with multplie series with global_fit=False.
+        """
         retrain, global_fit = params
+        # due to either of the argument, the scaler will have only one set of parameters
         unique_param_entry = retrain or global_fit
         ocl = 2
         hf_args = {

@@ -94,9 +94,10 @@ class Pipeline:
             isinstance(t, FittableDataTransformer) for t in self._transformers
         )
 
-        self._global_fit = self._fittable and all(
-            isinstance(t, FittableDataTransformer) and t._global_fit
+        self._global_fit = all(
+            t._global_fit
             for t in self._transformers
+            if isinstance(t, FittableDataTransformer)
         )
 
         if verbose is not None:
@@ -169,6 +170,8 @@ class Pipeline:
         ----------
         data
             (`Sequence` of) `TimeSeries` to be transformed.
+        idx_params
+            Optionally, the index(es) of the parameters to use to transform the series.
 
         Returns
         -------
@@ -176,7 +179,15 @@ class Pipeline:
             Transformed data.
         """
         for transformer in self._transformers:
-            data = transformer.transform(data, idx_params=idx_params)
+            data = transformer.transform(
+                data,
+                idx_params=idx_params
+                if (
+                    isinstance(transformer, FittableDataTransformer)
+                    and not transformer._global_fit
+                )
+                else None,
+            )
         return data
 
     def inverse_transform(
@@ -198,6 +209,8 @@ class Pipeline:
         partial
             If set to `True`, the inverse transformation is applied even if the pipeline is not fully invertible,
             calling `inverse_transform()` only on the `InvertibleDataTransformer`s
+        idx_params
+            Optionally, the index(es) of the parameters to use to transform the series.
 
         Returns
         -------
@@ -212,12 +225,28 @@ class Pipeline:
             )
 
             for transformer in reversed(self._transformers):
-                data = transformer.inverse_transform(data, idx_params=idx_params)
+                data = transformer.inverse_transform(
+                    data,
+                    idx_params=idx_params
+                    if (
+                        isinstance(transformer, FittableDataTransformer)
+                        and transformer._global_fit
+                    )
+                    else None,
+                )
             return data
         else:
             for transformer in reversed(self._transformers):
                 if isinstance(transformer, InvertibleDataTransformer):
-                    data = transformer.inverse_transform(data, idx_params=idx_params)
+                    data = transformer.inverse_transform(
+                        data,
+                        idx_params=idx_params
+                        if (
+                            isinstance(transformer, FittableDataTransformer)
+                            and transformer._global_fit
+                        )
+                        else None,
+                    )
             return data
 
     @property
