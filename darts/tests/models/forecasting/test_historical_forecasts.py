@@ -3157,15 +3157,6 @@ class TestHistoricalforecast:
                 .with_columns_renamed(series_val.columns, "test_col"),
             ]
 
-        # compute regular historical forecasts
-        hist_fct_all = forecasting_model.historical_forecasts(
-            series=series_val,
-            retrain=False,
-            start=start,
-            start_format=start_format,
-            last_points_only=last_points_only,
-            forecast_horizon=horizon,
-        )
         # compute conformal historical forecasts (skips some of the first forecasts to get minimum required cal set)
         model = ConformalNaiveModel(
             forecasting_model, quantiles=q, cal_length=cal_length
@@ -3179,34 +3170,17 @@ class TestHistoricalforecast:
             forecast_horizon=horizon,
             **pred_lklp,
         )
-        # using a calibration series should not skip any forecasts
-        hist_fct_cal = model.historical_forecasts(
-            series=series_val,
-            cal_series=series_val,
-            retrain=False,
-            start=start,
-            start_format=start_format,
-            last_points_only=last_points_only,
-            forecast_horizon=horizon,
-            **pred_lklp,
-        )
 
         if not isinstance(series_val, list):
             series_val = [series_val]
             hist_fct = [hist_fct]
-            hist_fct_all = [hist_fct_all]
-            hist_fct_cal = [hist_fct_cal]
 
         for idx, (
             series,
             hfc,
-            hfc_all,
-            hfc_cal,
-        ) in enumerate(zip(series_val, hist_fct, hist_fct_all, hist_fct_cal)):
+        ) in enumerate(zip(series_val, hist_fct)):
             if not isinstance(hfc, list):
                 hfc = [hfc]
-                hfc_all = [hfc_all]
-                hfc_cal = [hfc_cal]
 
             # multi series: second series is shifted by one time step (+/- idx);
             # start_format = "value" requires a shift
@@ -3252,30 +3226,6 @@ class TestHistoricalforecast:
             for hfc_ in hfc:
                 assert hfc_.columns.tolist() == cols_excpected
                 assert len(hfc_) == n_pred_points_expected
-
-            # with a calibration set, we can calibrate all possible historical forecasts from base forecasting model
-            assert len(hfc_cal) == len(hfc_all)
-            for hfc_all_, hfc_cal_ in zip(hfc_all, hfc_cal):
-                assert hfc_all_.start_time() == hfc_cal_.start_time()
-                assert len(hfc_all_) == len(hfc_cal_)
-                assert hfc_all_.freq == hfc_cal_.freq
-
-                # the center forecast must be equal to the forecasting model's forecast
-                np.testing.assert_array_almost_equal(
-                    hfc_all_.all_values(), hfc_cal_.all_values()[:, 1:2]
-                )
-
-                # check that with a calibration set, all prediction intervals have the same width
-                vals_cal_0 = hfc_cal[0].values()
-                vals_cal_i = hfc_cal_.values()
-                np.testing.assert_array_almost_equal(
-                    vals_cal_0[:, 0] - vals_cal_0[:, 1],
-                    vals_cal_i[:, 0] - vals_cal_i[:, 1],
-                )
-                np.testing.assert_array_almost_equal(
-                    vals_cal_0[:, 1] - vals_cal_0[:, 2],
-                    vals_cal_i[:, 1] - vals_cal_i[:, 2],
-                )
 
     @pytest.mark.parametrize(
         "config",
@@ -3382,16 +3332,3 @@ class TestHistoricalforecast:
             assert too_early_warn_exp in caplog.text
         caplog.clear()
         assert hist_fct_too_early == hist_fct
-
-        # using a calibration series should not skip any forecasts
-        hist_fct_cal = model.historical_forecasts(
-            start=start,
-            cal_series=series_val[:-horizon_ocs],
-            **hfc_params,
-            **pred_lklp,
-        )
-        assert len(hist_fct_all) == len(hist_fct_cal)
-        assert hist_fct_all[0].start_time() == hist_fct_cal[0].start_time()
-
-        # cal_series yields same calibration set on the last hist fc
-        assert hist_fct[-1] == hist_fct_cal[-1]

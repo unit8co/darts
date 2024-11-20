@@ -84,11 +84,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
         - Extract a calibration set: The number of calibration examples (forecast errors) from the most recent past to
           use for one conformal prediction can be defined at model creation with parameter `cal_length`. Requires a
           minimum of `cal_stride * (cal_length or 1)` calibration examples before the (first) conformal forecast.
-          To make your life simpler, we support two modes:
-            - Automatic extraction of the calibration set from the past of your input series (`series`,
-              `past_covariates`, ...). This is the default mode and our predict/forecasting/backtest/.... API is
-              identical to any other forecasting model
-            - Supply a fixed calibration set with parameters `cal_series`, `cal_past_covariates`, ... .
+          To make your life simpler, it applies automatic extraction of the calibration set from the past of your input
+          series (`series`, `past_covariates`, ...).
         - Generate historical forecasts on the calibration set (using the forecasting model) with a stride `cal_stride`.
         - Compute the errors/non-conformity scores (specific to each conformal model) on these historical forecasts
         - Compute the quantile values from the errors / non-conformity scores (using our desired quantiles set at model
@@ -230,9 +227,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]] = None,
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
@@ -257,10 +251,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
         - Extract a calibration set: The number of calibration examples (forecast errors) from the most recent past to
           use for one conformal prediction can be defined at model creation with parameter `cal_length`. Requires a
           minimum of `cal_stride * (cal_length or 1)` calibration examples before the (first) conformal forecast.
-          To make your life simpler, we support two modes:
-            - Automatic extraction of the calibration set from the past of your input series (`series`,
-              `past_covariates`, ...). This is the default mode.
-            - Supply a fixed calibration set with parameters `cal_series`, `cal_past_covariates`, ... .
+          To make your life simpler, it applies automatic extraction of the calibration set from the past of your input
+          series (`series`, `past_covariates`, ...).
         - Generate historical forecasts on the calibration set (using the forecasting model) with a stride `cal_stride`.
         - Compute the errors/non-conformity scores (specific to each conformal model) on these historical forecasts
         - Compute the quantile values from the errors / non-conformity scores (using our desired quantiles set at model
@@ -274,24 +266,15 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
         series
             A series or sequence of series, representing the history of the target series whose future is to be
-            predicted. If `cal_series` is `None`, will use the past of this series for calibration.
+            predicted. Will use the past of this series for calibration.
         past_covariates
             Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
-            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
-            use this series for calibration.
+            Their dimension must match that of the past covariates used for training. Will use this series for
+            calibration.
         future_covariates
             Optionally, a (sequence of) future-known covariate time series for every input time series in `series`.
-            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
-            use this series for calibration.
-        cal_series
-            Optionally, a (sequence of) target series for every input time series in `series` to use for calibration
-            instead of `series`.
-        cal_past_covariates
-            Optionally, a (sequence of) past covariates series for every input time series in `series` to use for
-            calibration instead of `past_covariates`.
-        cal_future_covariates
-            Optionally, a future covariates series for every input time series in `series` to use for calibration
-            instead of `future_covariates`.
+            Their dimension must match that of the past covariates used for training. Will use this series for
+            calibration.
         num_samples
             Number of times a prediction is sampled from the calibrated quantile predictions using linear
             interpolation in-between the quantiles. For larger values, the sample distribution approximates the
@@ -347,26 +330,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             show_warnings,
         )
 
-        # if a calibration set is given, use it. Otherwise, use past of input as calibration
-        if cal_series is None:
-            cal_series = series
-            cal_past_covariates = past_covariates
-            cal_future_covariates = future_covariates
-
-        cal_series = series2seq(cal_series)
-        if len(cal_series) != len(series):
-            raise_log(
-                ValueError(
-                    f"Mismatch between number of `cal_series` ({len(cal_series)}) "
-                    f"and number of `series` ({len(series)})."
-                ),
-                logger=logger,
-            )
-        cal_past_covariates = series2seq(cal_past_covariates)
-        cal_future_covariates = series2seq(cal_future_covariates)
-
-        # generate model forecast to calibrate
-        preds = self.model.predict(
+        # call predict to verify that all series have required input times
+        _ = self.model.predict(
             n=n,
             series=series,
             past_covariates=past_covariates,
@@ -376,14 +341,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
             predict_likelihood_parameters=False,
             show_warnings=show_warnings,
         )
-        # convert to multi series case with `last_points_only=False`
-        preds = [[pred] for pred in preds]
 
         # generate all possible forecasts for calibration
         cal_hfcs = self.model.historical_forecasts(
-            series=cal_series,
-            past_covariates=cal_past_covariates,
-            future_covariates=cal_future_covariates,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
             num_samples=self.num_samples,
             forecast_horizon=n,
             retrain=False,
@@ -395,10 +358,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
         )
         cal_preds = self._calibrate_forecasts(
             series=series,
-            forecasts=preds,
-            cal_series=cal_series,
-            cal_forecasts=cal_hfcs,
+            forecasts=cal_hfcs,
             num_samples=num_samples,
+            start="end",  # uses last hist fc (output of `predict()`)
+            start_format="position",
             forecast_horizon=n,
             stride=self.cal_stride,
             overlap_end=True,
@@ -422,9 +385,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         forecast_horizon: int = 1,
         num_samples: int = 1,
         train_length: Optional[int] = None,
@@ -458,8 +418,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         using a fixed-length `cal_length` (the start point can also be configured with `start` and `start_format`).
         The next forecast of length `forecast_horizon` is then calibrated on this calibration set. Subsequently, the
         end of the calibration set is moved forward by `stride` time steps, and the process is repeated.
-        You can also use a fixed calibration set to calibrate all forecasts equally by passing `cal_series`, and
-        optional `cal_past_covariates` and `cal_future_covariates`.
 
         By default, with `last_points_only=True`, this method returns a single time series (or a sequence of time
         series) composed of the last point from each calibrated historical forecast. This time series will thus have a
@@ -470,25 +428,16 @@ class ConformalModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         series
-            A (sequence of) target time series used to successively compute the historical forecasts. If `cal_series`
-            is `None`, will use the past of this series for calibration.
+            A (sequence of) target time series used to successively compute the historical forecasts. Will use the past
+            of this series for calibration.
         past_covariates
             Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
-            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
-            use this series for calibration.
+            Their dimension must match that of the past covariates used for training. Will use this series for
+            calibration.
         future_covariates
             Optionally, a (sequence of) future-known covariate time series for every input time series in `series`.
-            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
-            use this series for calibration.
-        cal_series
-            Optionally, a (sequence of) target series for every input time series in `series` to use as a fixed
-            calibration set instead of `series`.
-        cal_past_covariates
-            Optionally, a (sequence of) past covariates series for every input time series in `series` to use as a fixed
-            calibration set instead of `past_covariates`.
-        cal_future_covariates
-            Optionally, a future covariates series for every input time series in `series` to use as a fixed
-            calibration set instead of `future_covariates`.
+            Their dimension must match that of the past covariates used for training. Will use this series for
+            calibration.
         forecast_horizon
             The forecast horizon for the predictions.
         num_samples
@@ -575,19 +524,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
-        if cal_series is not None:
-            cal_series = series2seq(cal_series)
-            if len(cal_series) != len(series):
-                raise_log(
-                    ValueError(
-                        f"Mismatch between number of `cal_series` ({len(cal_series)}) "
-                        f"and number of `series` ({len(series)})."
-                    ),
-                    logger=logger,
-                )
-            cal_past_covariates = series2seq(cal_past_covariates)
-            cal_future_covariates = series2seq(cal_future_covariates)
-
         # generate all possible forecasts (overlap_end=True) to have enough residuals
         hfcs = self.model.historical_forecasts(
             series=series,
@@ -605,31 +541,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
         )
-        # optionally, generate calibration forecasts
-        if cal_series is None:
-            cal_hfcs = None
-        else:
-            cal_hfcs = self.model.historical_forecasts(
-                series=cal_series,
-                past_covariates=cal_past_covariates,
-                future_covariates=cal_future_covariates,
-                num_samples=self.num_samples,
-                forecast_horizon=forecast_horizon,
-                retrain=False,
-                overlap_end=True,
-                last_points_only=last_points_only,
-                verbose=verbose,
-                show_warnings=show_warnings,
-                predict_likelihood_parameters=False,
-                enable_optimization=enable_optimization,
-                fit_kwargs=fit_kwargs,
-                predict_kwargs=predict_kwargs,
-            )
         calibrated_forecasts = self._calibrate_forecasts(
             series=series,
             forecasts=hfcs,
-            cal_series=cal_series,
-            cal_forecasts=cal_hfcs,
             num_samples=num_samples,
             start=start,
             start_format=start_format,
@@ -652,9 +566,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         historical_forecasts: Optional[
             Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
         ] = None,
@@ -703,25 +614,16 @@ class ConformalModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         series
-            A (sequence of) target time series used to successively compute the historical forecasts. If `cal_series`
-            is `None`, will use the past of this series for calibration.
+            A (sequence of) target time series used to successively compute the historical forecasts. Will use the past
+            of this series for calibration.
         past_covariates
             Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
-            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
-            use this series for calibration.
+            Their dimension must match that of the past covariates used for training. Will use this series for
+            calibration.
         future_covariates
             Optionally, a (sequence of) future-known covariate time series for every input time series in `series`.
-            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
-            use this series for calibration.
-        cal_series
-            Optionally, a (sequence of) target series for every input time series in `series` to use as a fixed
-            calibration set instead of `series`.
-        cal_past_covariates
-            Optionally, a (sequence of) past covariates series for every input time series in `series` to use as a fixed
-            calibration set instead of `past_covariates`.
-        cal_future_covariates
-            Optionally, a future covariates series for every input time series in `series` to use as a fixed
-            calibration set instead of `future_covariates`.
+            Their dimension must match that of the past covariates used for training. Will use this series for
+            calibration.
         historical_forecasts
             Optionally, the (or a sequence of / a sequence of sequences of) historical forecasts time series to be
             evaluated. Corresponds to the output of :meth:`historical_forecasts()
@@ -831,32 +733,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Same as for type `np.ndarray` but for a sequence of series. The returned metric list has length
             `len(series)` with the `np.ndarray` metrics for each input `series`.
         """
-        historical_forecasts = historical_forecasts or self.historical_forecasts(
+        return super().backtest(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            cal_series=cal_series,
-            cal_past_covariates=cal_past_covariates,
-            cal_future_covariates=cal_future_covariates,
-            num_samples=num_samples,
-            train_length=train_length,
-            start=start,
-            start_format=start_format,
-            forecast_horizon=forecast_horizon,
-            stride=stride,
-            retrain=retrain,
-            last_points_only=last_points_only,
-            verbose=verbose,
-            show_warnings=show_warnings,
-            predict_likelihood_parameters=predict_likelihood_parameters,
-            enable_optimization=enable_optimization,
-            fit_kwargs=fit_kwargs,
-            predict_kwargs=predict_kwargs,
-            overlap_end=overlap_end,
-            sample_weight=sample_weight,
-        )
-        return super().backtest(
-            series=series,
             historical_forecasts=historical_forecasts,
             forecast_horizon=forecast_horizon,
             num_samples=num_samples,
@@ -884,9 +764,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        cal_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         historical_forecasts: Optional[
             Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
         ] = None,
@@ -945,25 +822,16 @@ class ConformalModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         series
-            A (sequence of) target time series used to successively compute the historical forecasts. If `cal_series`
-            is `None`, will use the past of this series for calibration.
+            A (sequence of) target time series used to successively compute the historical forecasts. Will use the past
+            of this series for calibration.
         past_covariates
             Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
-            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
-            use this series for calibration.
+            Their dimension must match that of the past covariates used for training. Will use this series for
+            calibration.
         future_covariates
             Optionally, a (sequence of) future-known covariate time series for every input time series in `series`.
-            Their dimension must match that of the past covariates used for training. If `cal_series` is `None`, will
-            use this series for calibration.
-        cal_series
-            Optionally, a (sequence of) target series for every input time series in `series` to use as a fixed
-            calibration set instead of `series`.
-        cal_past_covariates
-            Optionally, a (sequence of) past covariates series for every input time series in `series` to use as a fixed
-            calibration set instead of `past_covariates`.
-        cal_future_covariates
-            Optionally, a future covariates series for every input time series in `series` to use as a fixed
-            calibration set instead of `future_covariates`.
+            Their dimension must match that of the past covariates used for training. Will use this series for
+            calibration.
         historical_forecasts
             Optionally, the (or a sequence of / a sequence of sequences of) historical forecasts time series to be
             evaluated. Corresponds to the output of :meth:`historical_forecasts()
@@ -1059,32 +927,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
             The outer residual list has length `len(series)`. The inner lists consist of the residuals from
             all possible series-specific historical forecasts.
         """
-        historical_forecasts = historical_forecasts or self.historical_forecasts(
+        return super().residuals(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            cal_series=cal_series,
-            cal_past_covariates=cal_past_covariates,
-            cal_future_covariates=cal_future_covariates,
-            num_samples=num_samples,
-            train_length=train_length,
-            start=start,
-            start_format=start_format,
-            forecast_horizon=forecast_horizon,
-            stride=stride,
-            retrain=retrain,
-            last_points_only=last_points_only,
-            verbose=verbose,
-            show_warnings=show_warnings,
-            predict_likelihood_parameters=predict_likelihood_parameters,
-            enable_optimization=enable_optimization,
-            fit_kwargs=fit_kwargs,
-            predict_kwargs=predict_kwargs,
-            overlap_end=overlap_end,
-            sample_weight=sample_weight,
-        )
-        return super().residuals(
-            series=series,
             historical_forecasts=historical_forecasts,
             forecast_horizon=forecast_horizon,
             num_samples=num_samples,
@@ -1112,12 +958,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
         self,
         series: Sequence[TimeSeries],
         forecasts: Union[Sequence[Sequence[TimeSeries]], Sequence[TimeSeries]],
-        cal_series: Optional[Sequence[TimeSeries]] = None,
-        cal_forecasts: Optional[
-            Union[Sequence[Sequence[TimeSeries]], Sequence[TimeSeries]]
-        ] = None,
         num_samples: int = 1,
-        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start: Optional[Union[pd.Timestamp, float, int, str]] = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,
@@ -1132,15 +974,11 @@ class ConformalModel(GlobalForecastingModel, ABC):
         In general the workflow of the models to produce one calibrated forecast/prediction per step in the horizon
         is as follows:
 
-        - Generate historical forecasts for `series` and optional calibration set (`cal_series`) (using the forecasting
-          model)
+        - Generate historical forecasts for `series` (using the forecasting model)
         - Extract a calibration set: The forecasts from the most recent past to use as calibration
           for one conformal prediction. The number of examples to use can be defined at model creation with parameter
-          `cal_length`. We support two modes:
-            - Automatic extraction of the calibration set from the past of your input series (`series`,
-              `past_covariates`, ...). This is the default mode and our predict/forecasting/backtest/.... API is
-              identical to any other forecasting model
-            - Supply a fixed calibration set with parameters `cal_series`, `cal_past_covariates`, ... .
+          `cal_length`. It automatically extracts the calibration set from the past of your input series (`series`,
+          `past_covariates`, ...).
         - Compute the errors/non-conformity scores (specific to each conformal model) on these historical forecasts
         - Compute the quantile values from the errors / non-conformity scores (using our desired quantiles set at model
           creation with parameter `quantiles`).
@@ -1152,9 +990,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
         cal_length = self.cal_length
         metric, metric_kwargs = self._residuals_metric
         residuals = self.model.residuals(
-            series=series if cal_series is None else cal_series,
-            historical_forecasts=forecasts if cal_series is None else cal_forecasts,
-            overlap_end=overlap_end if cal_series is None else True,
+            series=series,
+            historical_forecasts=forecasts,
+            overlap_end=overlap_end,
             last_points_only=last_points_only,
             verbose=verbose,
             show_warnings=show_warnings,
@@ -1194,32 +1032,20 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 min_n_cal += forecast_horizon - 1
 
             # determine first forecast index for conformal prediction
-            if cal_series is None:
-                # we need at least one residual per point in the horizon prior to the first conformal forecast
-                first_idx_train = forecast_horizon + self.output_chunk_shift
-                # plus some additional examples based on `cal_length`
-                if cal_length is not None:
-                    first_idx_train += cal_length - 1
-                # check if later we need to drop some residuals without useful information (unknown residuals)
-                if overlap_end:
-                    delta_end = n_steps_between(
-                        end=last_hfc.end_time(),
-                        start=series_.end_time(),
-                        freq=series_.freq,
-                    )
-                else:
-                    delta_end = 0
-            else:
-                # calibration set is decoupled from `series` forecasts; we can start with the first forecast
-                first_idx_train = 0
-                # check if we need to drop some residuals without useful information
-                cal_series_ = cal_series[series_idx]
-                cal_last_hfc = cal_forecasts[series_idx][-1]
+            # we need at least one residual per point in the horizon prior to the first conformal forecast
+            first_idx_train = forecast_horizon + self.output_chunk_shift
+            # plus some additional examples based on `cal_length`
+            if cal_length is not None:
+                first_idx_train += cal_length - 1
+            # check if later we need to drop some residuals without useful information (unknown residuals)
+            if overlap_end:
                 delta_end = n_steps_between(
-                    end=cal_last_hfc.end_time(),
-                    start=cal_series_.end_time(),
-                    freq=cal_series_.freq,
+                    end=last_hfc.end_time(),
+                    start=series_.end_time(),
+                    freq=series_.freq,
                 )
+            else:
+                delta_end = 0
 
             # drop residuals without useful information
             last_res_idx = None
@@ -1231,7 +1057,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 # useful residual information only up until the forecast
                 # starting at the last time step in `series`
                 last_res_idx = -(delta_end - forecast_horizon + 1)
-            if last_res_idx is None and cal_series is None:
+            if last_res_idx is None:
                 # drop at least the one residuals/forecast from the end, since we can only use prior residuals
                 last_res_idx = -(self.output_chunk_shift + 1)
                 # with last points only, ignore the last `horizon` residuals to avoid look-ahead bias
@@ -1242,11 +1068,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 res = res[:last_res_idx]
 
             if first_idx_train >= len(s_hfcs) or len(res) < min_n_cal:
-                set_name = "" if cal_series is None else "cal_"
                 raise_log(
                     ValueError(
                         "Could not build the minimum required calibration input with the provided "
-                        f"`{set_name}series` and `{set_name}*_covariates` at series index: {series_idx}. "
+                        f"`series` and `*_covariates` at series index: {series_idx}. "
                         f"Expected to generate at least `{min_n_cal}` calibration forecasts with known residuals "
                         f"before the first conformal forecast, but could only generate `{len(res)}`."
                     ),
@@ -1254,7 +1079,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 )
             # adjust first index based on `start`
             first_idx_start = 0
-            if start is not None:
+            if start is not None and start == "end":
+                # start at the last forecast
+                first_idx_start = len(s_hfcs) - 1
+            elif start is not None:
                 # adjust forecastable index in case of output shift or `last_points_only=True`
                 adjust_idx = (
                     self.output_chunk_shift
@@ -1320,41 +1148,26 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 res = np.concatenate(res_, axis=2).T
 
             # get the last forecast index based on the residual examples
-            if cal_series is None:
-                last_fc_idx = res.shape[2] + (
-                    forecast_horizon + self.output_chunk_shift
-                )
-            else:
-                last_fc_idx = len(s_hfcs)
-
-            q_hat = None
-            # with a calibration set, the calibrated interval is constant across all forecasts
-            if cal_series is not None:
-                if cal_length is not None:
-                    res = res[:, :, -cal_length:]
-                q_hat = self._calibrate_interval(res)
+            last_fc_idx = res.shape[2] + (forecast_horizon + self.output_chunk_shift)
 
             def conformal_predict(idx_, pred_vals_):
-                if cal_series is None:
-                    # get the last residual index for calibration, `cal_end` is exclusive
-                    # to avoid look-ahead bias, use only residuals from before the historical forecast start point;
-                    # for `last_points_only=True`, the last residual historically available at the forecasting
-                    # point is `forecast_horizon + self.output_chunk_shift - 1` steps before. The same applies to
-                    # `last_points_only=False` thanks to the residual rearrangement
-                    cal_end = (
-                        first_fc_idx
-                        + idx_ * stride
-                        - (forecast_horizon + self.output_chunk_shift - 1)
-                    )
-                    # first residual index is shifted back by the horizon to get `cal_length` points for
-                    # the last point in the horizon
-                    cal_start = cal_end - cal_length if cal_length is not None else None
+                # get the last residual index for calibration, `cal_end` is exclusive
+                # to avoid look-ahead bias, use only residuals from before the historical forecast start point;
+                # for `last_points_only=True`, the last residual historically available at the forecasting
+                # point is `forecast_horizon + self.output_chunk_shift - 1` steps before. The same applies to
+                # `last_points_only=False` thanks to the residual rearrangement
+                cal_end = (
+                    first_fc_idx
+                    + idx_ * stride
+                    - (forecast_horizon + self.output_chunk_shift - 1)
+                )
+                # first residual index is shifted back by the horizon to get `cal_length` points for
+                # the last point in the horizon
+                cal_start = cal_end - cal_length if cal_length is not None else None
 
-                    cal_res = res[:, :, cal_start:cal_end]
-                    q_hat_ = self._calibrate_interval(cal_res)
-                else:
-                    # with a calibration set, use a constant q_hat
-                    q_hat_ = q_hat
+                cal_res = res[:, :, cal_start:cal_end]
+                q_hat_ = self._calibrate_interval(cal_res)
+
                 vals = self._apply_interval(pred_vals_, q_hat_)
                 if not predict_likelihood_parameters:
                     vals = sample_from_quantiles(
@@ -1658,11 +1471,8 @@ class ConformalNaiveModel(ConformalModel):
         - Extract a calibration set: The number of calibration examples (forecast errors) from the most recent past to
           use for one conformal prediction can be defined at model creation with parameter `cal_length`. Requires a
           minimum of `cal_stride * (cal_length or 1)` calibration examples before the (first) conformal forecast.
-          To make your life simpler, we support two modes:
-            - Automatic extraction of the calibration set from the past of your input series (`series`,
-              `past_covariates`, ...). This is the default mode and our predict/forecasting/backtest/.... API is
-              identical to any other forecasting model
-            - Supply a fixed calibration set with parameters `cal_series`, `cal_past_covariates`, ... .
+          To make your life simpler, it applies automatic extraction of the calibration set from the past of your input
+          series (`series`, `past_covariates`, ...).
         - Generate historical forecasts on the calibration set (using the forecasting model) with a stride `cal_stride`.
         - Compute the errors/non-conformity scores (as defined above) on these historical forecasts
         - Compute the quantile values from the errors / non-conformity scores (using our desired quantiles set at model
@@ -1791,11 +1601,8 @@ class ConformalQRModel(ConformalModel):
         - Extract a calibration set: The number of calibration examples (forecast errors) from the most recent past to
           use for one conformal prediction can be defined at model creation with parameter `cal_length`. Requires a
           minimum of `cal_stride * (cal_length or 1)` calibration examples before the (first) conformal forecast.
-          To make your life simpler, we support two modes:
-            - Automatic extraction of the calibration set from the past of your input series (`series`,
-              `past_covariates`, ...). This is the default mode and our predict/forecasting/backtest/.... API is
-              identical to any other forecasting model
-            - Supply a fixed calibration set with parameters `cal_series`, `cal_past_covariates`, ... .
+          To make your life simpler, it applies automatic extraction of the calibration set from the past of your input
+          series (`series`, `past_covariates`, ...).
         - Generate historical forecasts (quantile predictions) on the calibration set (using the forecasting model)
           with a stride `cal_stride`.
         - Compute the errors/non-conformity scores (as defined above) on these historical quantile predictions

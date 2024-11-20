@@ -328,12 +328,6 @@ class TestConformalModel:
         pred1 = model.predict(n=1, **pred_lklp)
         assert not pred1 == pred
 
-        # giving the same series as calibration set must give the same results
-        pred_cal = model.predict(
-            n=self.horizon, cal_series=self.ts_pass_train, **pred_lklp
-        )
-        np.testing.assert_array_almost_equal(pred.all_values(), pred_cal.all_values())
-
         # wrong dimension
         with pytest.raises(ValueError):
             model.predict(
@@ -371,19 +365,6 @@ class TestConformalModel:
             pred[fc_columns].all_values(), pred_fc.all_values()
         )
 
-        # using a calibration series also requires an input series
-        with pytest.raises(ValueError):
-            # when model is fit from >1 series, one must provide a series in argument
-            model.predict(n=1, cal_series=self.ts_pass_train, **pred_lklp)
-        # giving the same series as calibration set must give the same results
-        pred_cal = model.predict(
-            n=self.horizon,
-            series=self.ts_pass_train,
-            cal_series=self.ts_pass_train,
-            **pred_lklp,
-        )
-        np.testing.assert_array_almost_equal(pred.all_values(), pred_cal.all_values())
-
         # check prediction for several time series
         pred_list = model.predict(
             n=self.horizon,
@@ -405,66 +386,6 @@ class TestConformalModel:
                 pred_fc.all_values(),
                 pred[fc_columns].all_values(),
             )
-
-        # using a calibration series requires to have same number of series as target
-        with pytest.raises(ValueError) as exc:
-            # when model is fit from >1 series, one must provide a series in argument
-            model.predict(
-                n=1,
-                series=[self.ts_pass_train, self.ts_pass_val],
-                cal_series=self.ts_pass_train,
-                **pred_lklp,
-            )
-        assert (
-            str(exc.value)
-            == "Mismatch between number of `cal_series` (1) and number of `series` (2)."
-        )
-        # using a calibration series requires to have same number of series as target
-        with pytest.raises(ValueError) as exc:
-            # when model is fit from >1 series, one must provide a series in argument
-            model.predict(
-                n=1,
-                series=[self.ts_pass_train, self.ts_pass_val],
-                cal_series=[self.ts_pass_train] * 3,
-                **pred_lklp,
-            )
-        assert (
-            str(exc.value)
-            == "Mismatch between number of `cal_series` (3) and number of `series` (2)."
-        )
-
-        # giving the same series as calibration set must give the same results
-        pred_cal_list = model.predict(
-            n=self.horizon,
-            series=[self.ts_pass_train, self.ts_pass_train_1],
-            cal_series=[self.ts_pass_train, self.ts_pass_train_1],
-            **pred_lklp,
-        )
-        for pred, pred_cal in zip(pred_list, pred_cal_list):
-            np.testing.assert_array_almost_equal(
-                pred.all_values(), pred_cal.all_values()
-            )
-
-        # using copies of the same series as calibration set must give the same interval widths for
-        # each target series
-        pred_cal_list = model.predict(
-            n=self.horizon,
-            series=[self.ts_pass_train, self.ts_pass_train_1],
-            cal_series=[self.ts_pass_train, self.ts_pass_train],
-            **pred_lklp,
-        )
-
-        pred_0_vals = pred_cal_list[0].all_values()
-        pred_1_vals = pred_cal_list[1].all_values()
-
-        # lower range
-        np.testing.assert_array_almost_equal(
-            pred_0_vals[:, 1] - pred_0_vals[:, 0], pred_1_vals[:, 1] - pred_1_vals[:, 0]
-        )
-        # upper range
-        np.testing.assert_array_almost_equal(
-            pred_0_vals[:, 2] - pred_0_vals[:, 1], pred_1_vals[:, 2] - pred_1_vals[:, 1]
-        )
 
         # wrong dimension
         with pytest.raises(ValueError):
@@ -748,11 +669,6 @@ class TestConformalModel:
             pred[fc_columns].all_values(), pred_fc.all_values()
         )
 
-        pred_cal = model.predict(n=1, cal_series=self.ts_pass_train, **pred_lklp)
-        assert pred_fc.time_index.equals(pred_cal.time_index)
-        # the center forecasts must be equal to the forecasting model forecast
-        np.testing.assert_array_almost_equal(pred_cal.all_values(), pred.all_values())
-
     @pytest.mark.parametrize(
         "config",
         list(
@@ -820,9 +736,6 @@ class TestConformalModel:
         )
         pred_fc_list = model.model.predict(n, series=series, **pred_kwargs)
         pred_cal_list = model.predict(n, series=series, **pred_lklp)
-        pred_cal_list_with_cal = model.predict(
-            n, series=series, cal_series=series, **pred_lklp
-        )
 
         if issubclass(model_cls, ConformalNaiveModel):
             metric = ae if symmetric else err
@@ -847,10 +760,9 @@ class TestConformalModel:
             pred_fc_list = [pred_fc_list]
             pred_cal_list = [pred_cal_list]
             residuals_list = [residuals_list]
-            pred_cal_list_with_cal = [pred_cal_list_with_cal]
 
-        for pred_fc, pred_cal, pred_cal_with_cal, residuals in zip(
-            pred_fc_list, pred_cal_list, pred_cal_list_with_cal, residuals_list
+        for pred_fc, pred_cal, residuals in zip(
+            pred_fc_list, pred_cal_list, residuals_list
         ):
             residuals = np.concatenate(residuals[:-1], axis=2)
 
@@ -865,7 +777,6 @@ class TestConformalModel:
                 cal_length=cal_length,
             )
             self.helper_compare_preds(pred_cal, pred_vals_expected, model_type)
-            self.helper_compare_preds(pred_cal_with_cal, pred_vals_expected, model_type)
 
     @pytest.mark.parametrize(
         "config",
@@ -886,11 +797,9 @@ class TestConformalModel:
         - single and multiple series
         - with and without output shift
         - with and without training length
-        - with and without covariates in the forecast and calibration sets.
+        - with and without covariates
         """
         n, is_univar, is_single, ocs, cal_length, use_covs, quantiles = config
-        n_q = len(quantiles)
-        half_idx = n_q // 2
         if ocs and n > OUT_LEN:
             # auto-regression not allowed with ocs
             return
@@ -900,9 +809,6 @@ class TestConformalModel:
 
         # for covariates, we check that shorter & longer covariates in the calibration set give expected results
         covs_kwargs = {}
-        cal_covs_kwargs_overlap = {}
-        cal_covs_kwargs_short = {}
-        cal_covs_kwargs_exact = {}
         if use_covs:
             model_params["lags_past_covariates"] = regr_kwargs["lags"]
             past_covs = series
@@ -913,20 +819,6 @@ class TestConformalModel:
                 else:
                     past_covs = [pc.append_values(append_vals) for pc in past_covs]
             covs_kwargs["past_covariates"] = past_covs
-            # produces examples with all points in `overlap_end=True` (last example has no useful information)
-            cal_covs_kwargs_overlap["cal_past_covariates"] = past_covs
-            # produces one example less (drops the one with unuseful information)
-            cal_covs_kwargs_exact["cal_past_covariates"] = (
-                past_covs[: -(1 + ocs)]
-                if is_single
-                else [pc[: -(1 + ocs)] for pc in past_covs]
-            )
-            # produces another example less (drops the last one which contains useful information)
-            cal_covs_kwargs_short["cal_past_covariates"] = (
-                past_covs[: -(2 + ocs)]
-                if is_single
-                else [pc[: -(2 + ocs)] for pc in past_covs]
-            )
 
         # forecasts from forecasting model
         model_fc = train_model(series, model_params=model_params, **covs_kwargs)
@@ -954,7 +846,6 @@ class TestConformalModel:
         model = ConformalNaiveModel(
             model=model_fc, quantiles=quantiles, cal_length=cal_length
         )
-        # without calibration set
         hfc_conf_list = model.historical_forecasts(
             series=series,
             forecast_horizon=n,
@@ -964,27 +855,13 @@ class TestConformalModel:
             **covs_kwargs,
             **pred_lklp,
         )
-        # with calibration set and covariates that can generate all calibration forecasts in the overlap
-        hfc_conf_list_with_cal = model.historical_forecasts(
-            series=series,
-            forecast_horizon=n,
-            overlap_end=True,
-            last_points_only=False,
-            stride=1,
-            cal_series=series,
-            **covs_kwargs,
-            **cal_covs_kwargs_overlap,
-            **pred_lklp,
-        )
 
         if is_single:
             hfc_conf_list = [hfc_conf_list]
             residuals_list = [residuals_list]
-            hfc_conf_list_with_cal = [hfc_conf_list_with_cal]
             hfc_fc_list = [hfc_fc_list]
 
-        # validate computed conformal intervals that did not use a calibration set
-        # conformal models start later since they need past residuals as input
+        # validate computed conformal intervals; conformal models start later since they need past residuals as input
         first_fc_idx = len(hfc_fc_list[0]) - len(hfc_conf_list[0])
         for hfc_fc, hfc_conf, hfc_residuals in zip(
             hfc_fc_list, hfc_conf_list, residuals_list
@@ -1011,73 +888,6 @@ class TestConformalModel:
                     pred_cal.all_values(), pred_vals_expected
                 )
 
-        # validate computed conformal intervals that used a calibration set
-        for hfc_conf_with_cal, hfc_conf in zip(hfc_conf_list_with_cal, hfc_conf_list):
-            # last forecast with calibration set must be equal to the last without calibration set
-            # (since calibration set is the same series)
-            assert hfc_conf_with_cal[-1] == hfc_conf[-1]
-            hfc_0_vals = hfc_conf_with_cal[0].all_values()
-            for hfc_i in hfc_conf_with_cal[1:]:
-                hfc_i_vals = hfc_i.all_values()
-                for q_idx in range(n_q):
-                    np.testing.assert_array_almost_equal(
-                        hfc_0_vals[:, half_idx::n_q] - hfc_0_vals[:, q_idx::n_q],
-                        hfc_i_vals[:, half_idx::n_q] - hfc_i_vals[:, q_idx::n_q],
-                    )
-
-        if use_covs:
-            # `cal_covs_kwargs_exact` will not compute the last example in overlap_end (this one has anyways no
-            # useful information). Result is expected to be identical to the case when using `cal_covs_kwargs_overlap`
-            hfc_conf_list_with_cal_exact = model.historical_forecasts(
-                series=series,
-                forecast_horizon=n,
-                overlap_end=True,
-                last_points_only=False,
-                stride=1,
-                cal_series=series,
-                **covs_kwargs,
-                **cal_covs_kwargs_exact,
-                **pred_lklp,
-            )
-
-            # `cal_covs_kwargs_short` will compute example less that contains useful information
-            hfc_conf_list_with_cal_short = model.historical_forecasts(
-                series=series,
-                forecast_horizon=n,
-                overlap_end=True,
-                last_points_only=False,
-                stride=1,
-                cal_series=series,
-                **covs_kwargs,
-                **cal_covs_kwargs_short,
-                **pred_lklp,
-            )
-            if is_single:
-                hfc_conf_list_with_cal_exact = [hfc_conf_list_with_cal_exact]
-                hfc_conf_list_with_cal_short = [hfc_conf_list_with_cal_short]
-
-            # must match
-            assert len(hfc_conf_list_with_cal_exact) == len(
-                hfc_conf_list_with_cal_short
-            )
-            for hfc_cal_exact, hfc_cal in zip(
-                hfc_conf_list_with_cal_exact, hfc_conf_list_with_cal
-            ):
-                assert len(hfc_cal_exact) == len(hfc_cal)
-                for hfc_cal_exact_, hfc_cal_ in zip(hfc_cal_exact, hfc_cal):
-                    assert hfc_cal_exact_.time_index.equals(hfc_cal_.time_index)
-                    assert hfc_cal_exact_.columns.equals(hfc_cal_.columns)
-                    np.testing.assert_array_almost_equal(
-                        hfc_cal_exact_.all_values(), hfc_cal_.all_values()
-                    )
-
-            # second last forecast with shorter calibration set (that has one example less) must be equal to the
-            # second last without calibration set
-            for hfc_conf_with_cal, hfc_conf in zip(
-                hfc_conf_list_with_cal_short, hfc_conf_list
-            ):
-                assert hfc_conf_with_cal[-2] == hfc_conf[-2]
-
         # checking that last points only is equal to the last forecasted point
         hfc_lpo_list = model.historical_forecasts(
             series=series,
@@ -1088,26 +898,10 @@ class TestConformalModel:
             **covs_kwargs,
             **pred_lklp,
         )
-        hfc_lpo_list_with_cal = model.historical_forecasts(
-            series=series,
-            forecast_horizon=n,
-            overlap_end=True,
-            last_points_only=True,
-            stride=1,
-            cal_series=series,
-            **covs_kwargs,
-            **cal_covs_kwargs_overlap,
-            **pred_lklp,
-        )
         if is_single:
             hfc_lpo_list = [hfc_lpo_list]
-            hfc_lpo_list_with_cal = [hfc_lpo_list_with_cal]
 
         for hfc_lpo, hfc_conf in zip(hfc_lpo_list, hfc_conf_list):
-            hfc_conf_lpo = concatenate([hfc[-1:] for hfc in hfc_conf], axis=0)
-            assert hfc_lpo == hfc_conf_lpo
-
-        for hfc_lpo, hfc_conf in zip(hfc_lpo_list_with_cal, hfc_conf_list_with_cal):
             hfc_conf_lpo = concatenate([hfc[-1:] for hfc in hfc_conf], axis=0)
             assert hfc_lpo == hfc_conf_lpo
 
@@ -1316,10 +1110,8 @@ class TestConformalModel:
 
         model_params = {"output_chunk_shift": ocs}
         covs_kwargs = {}
-        cal_covs_kwargs = {}
         covs_kwargs_train = {}
         covs_kwargs_too_short = {}
-        cal_covs_kwargs_short = {}
         if use_covs:
             model_params["lags_past_covariates"] = regr_kwargs["lags"]
             covs_kwargs_train["past_covariates"] = series_train
@@ -1330,9 +1122,6 @@ class TestConformalModel:
                 past_covs = past_covs.append_values([1.0] * (n - OUT_LEN))
             covs_kwargs["past_covariates"] = past_covs
             covs_kwargs_too_short["past_covariates"] = past_covs[:-1]
-            # giving covs in calibration set requires one calibration example less
-            cal_covs_kwargs["cal_past_covariates"] = past_covs[: -(1 + ocs)]
-            cal_covs_kwargs_short["cal_past_covariates"] = past_covs[: -(2 + ocs)]
 
         model = ConformalNaiveModel(
             train_model(
@@ -1346,41 +1135,19 @@ class TestConformalModel:
         # prediction works with long enough input
         preds1 = model.predict(n=n, series=series, **covs_kwargs)
         assert not np.isnan(preds1.all_values()).any().any()
-        preds2 = model.predict(
-            n=n, series=series, **covs_kwargs, cal_series=series, **cal_covs_kwargs
-        )
-        assert not np.isnan(preds2.all_values()).any().any()
+
         # series too short: without covariates, make `series` shorter. Otherwise, use the shorter covariates
         series_ = series[:-1] if not use_covs else series
-
         with pytest.raises(ValueError) as exc:
             _ = model.predict(n=n, series=series_, **covs_kwargs_too_short)
         if not use_covs:
             assert str(exc.value).startswith(
-                "Could not build the minimum required calibration input with the provided `cal_series`"
+                "Could not build the minimum required calibration input with the provided `series`"
             )
         else:
             # if `past_covariates` are too short, then it raises error from the forecasting_model.predict()
             assert str(exc.value).startswith(
                 "The `past_covariates` at list/sequence index 0 are not long enough."
-            )
-
-        with pytest.raises(ValueError) as exc:
-            _ = model.predict(
-                n=n,
-                series=series,
-                cal_series=series_,
-                **covs_kwargs,
-                **cal_covs_kwargs_short,
-            )
-        if not use_covs or n > 1:
-            assert str(exc.value).startswith(
-                "Could not build the minimum required calibration input with the provided `cal_series`"
-            )
-        else:
-            # if `cal_past_covariates` are too short and `horizon=1`, then it raises error from the forecasting model
-            assert str(exc.value).startswith(
-                "Cannot build a single input for prediction with the provided model"
             )
 
     @pytest.mark.parametrize(
@@ -1419,25 +1186,10 @@ class TestConformalModel:
         series_train = [tg.linear_timeseries(length=icl + ocl + ocs)] * 2
         series = tg.linear_timeseries(length=min_len_val_series)
 
-        # define cal series to get the minimum required cal set
-        if overlap_end:
-            # with overlap_end `series` has the exact length to generate one forecast after the end of the input series
-            # Therefore, `series` has already the minimum length for one calibrated forecast
-            cal_series = series
-        else:
-            # without overlap_end, we use a shorter input, since the last forecast is within the input series
-            # (it generates more residuals with useful information than the minimum requirements)
-            cal_series = series[:-horizon_ocs]
-
-        series_with_cal = series[: -(horizon_ocs + add_cal_length)]
-
         model_params = {"output_chunk_shift": ocs}
         covs_kwargs_train = {}
         covs_kwargs = {}
-        covs_with_cal_kwargs = {}
-        cal_covs_kwargs = {}
         covs_kwargs_short = {}
-        cal_covs_kwargs_short = {}
         if use_covs:
             model_params["lags_past_covariates"] = regr_kwargs["lags"]
             covs_kwargs_train["past_covariates"] = series_train
@@ -1448,30 +1200,15 @@ class TestConformalModel:
             else:
                 past_covs = series
 
-            # calibration set is always generated internally with `overlap_end=True`
-            # make shorter to not compute residuals without useful information
-            cal_past_covs = cal_series[: -(1 + ocs)]
-
-            # last_points_only requires `horizon` residuals less
-            if last_points_only:
-                cal_past_covs = cal_past_covs[: (-(n - 1) or None)]
-
             # for auto-regression, we require longer past covariates
             if n > OUT_LEN:
                 past_covs = past_covs.append_values([1.0] * (n - OUT_LEN))
-                cal_past_covs = cal_past_covs.append_values([1.0] * (n - OUT_LEN))
 
             # covariates lengths to generate exactly one forecast
             covs_kwargs["past_covariates"] = past_covs
-            # giving a calibration set requires fewer forecasts
-            covs_with_cal_kwargs["past_covariates"] = past_covs[:-horizon_ocs]
-            cal_covs_kwargs["cal_past_covariates"] = cal_past_covs
 
             # use too short covariates to check that errors are raised
             covs_kwargs_short["past_covariates"] = covs_kwargs["past_covariates"][:-1]
-            cal_covs_kwargs_short["cal_past_covariates"] = cal_covs_kwargs[
-                "cal_past_covariates"
-            ][:-1]
 
         model = ConformalNaiveModel(
             train_model(
@@ -1494,26 +1231,15 @@ class TestConformalModel:
             **covs_kwargs,
             **hfc_kwargs,
         )
-        hfcs_cal = model.historical_forecasts(
-            series=series_with_cal,
-            cal_series=cal_series,
-            **covs_with_cal_kwargs,
-            **cal_covs_kwargs,
-            **hfc_kwargs,
-        )
         if last_points_only:
             hfcs = [hfcs]
-            hfcs_cal = [hfcs_cal]
 
-        assert len(hfcs) == len(hfcs_cal) == 1
-        for hfc, hfc_cal in zip(hfcs, hfcs_cal):
+        assert len(hfcs) == 1
+        for hfc in hfcs:
             assert not np.isnan(hfc.all_values()).any().any()
-            assert not np.isnan(hfc_cal.all_values()).any().any()
 
         # input too short: without covariates, make `series` shorter. Otherwise, use the shorter covariates
         series_ = series[:-1] if not use_covs else series
-        cal_series_ = cal_series[:-1] if not use_covs else cal_series
-
         with pytest.raises(ValueError) as exc:
             _ = model.historical_forecasts(
                 series=series_,
@@ -1523,25 +1249,6 @@ class TestConformalModel:
         assert str(exc.value).startswith(
             "Could not build the minimum required calibration input with the provided `series` and `*_covariates`"
         )
-
-        with pytest.raises(ValueError) as exc:
-            _ = model.historical_forecasts(
-                series=series_with_cal,
-                cal_series=cal_series_,
-                **covs_with_cal_kwargs,
-                **cal_covs_kwargs_short,
-                **hfc_kwargs,
-            )
-        if (not use_covs or n > 1 or (cal_length or 1) > 1) and not (
-            last_points_only and use_covs and cal_length is None
-        ):
-            assert str(exc.value).startswith(
-                "Could not build the minimum required calibration input with the provided `cal_series`"
-            )
-        else:
-            assert str(exc.value).startswith(
-                "Cannot build a single input for prediction with the provided model"
-            )
 
     @pytest.mark.parametrize("quantiles", [[0.1, 0.5, 0.9], [0.1, 0.3, 0.5, 0.7, 0.9]])
     def test_backtest_and_residuals(self, quantiles):
