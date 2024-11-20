@@ -342,18 +342,45 @@ class ConformalModel(GlobalForecastingModel, ABC):
             show_warnings=show_warnings,
         )
 
-        # generate all possible forecasts for calibration
+        # generate only the required forecasts for calibration (including the last forecast which is the output of
+        # `predict()`)
+        horizon_ocs = n + self.output_chunk_shift
+        if self.cal_length is not None:
+            # we only need `cal_length` forecasts with stride `cal_stride` before the `predict()` start point;
+            # the last valid calibration forecast must start at least `horizon_ocs` before `predict()` start
+            add_steps = (
+                (horizon_ocs // self.cal_stride)
+                + int(horizon_ocs % self.cal_stride > 0)
+                - 1
+            )
+            start = -self.cal_stride * (self.cal_length + add_steps)
+            start_format = "position"
+        elif self.cal_stride > 1:
+            # we need all forecasts with stride `cal_stride` before the `predict()` start point
+            max_len_series = max(len(series_) for series_ in series)
+            start = -self.cal_stride * (
+                (max_len_series // self.cal_stride)
+                + int(max_len_series % self.cal_stride > 0)
+            )
+            start_format = "position"
+        else:
+            # we need all possible forecasts with `cal_stride=1`
+            start, start_format = None, "value"
+
         cal_hfcs = self.model.historical_forecasts(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            num_samples=self.num_samples,
             forecast_horizon=n,
+            num_samples=self.num_samples,
+            start=start,
+            start_format=start_format,
+            stride=self.cal_stride,
             retrain=False,
             overlap_end=True,
             last_points_only=False,
             verbose=verbose,
-            show_warnings=show_warnings,
+            show_warnings=False,
             predict_likelihood_parameters=False,
         )
         cal_preds = self._calibrate_forecasts(
@@ -986,7 +1013,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
           forecasting model's predictions.
         """
         # TODO: add proper handling of `cal_stride` > 1
-        # cal_stride = stride if self.cal_stride else 1
+        cal_stride = self.cal_stride
         cal_length = self.cal_length
         metric, metric_kwargs = self._residuals_metric
         residuals = self.model.residuals(
@@ -1029,7 +1056,11 @@ class ConformalModel(GlobalForecastingModel, ABC):
             # `last_points_only=False` requires additional examples to use most recent information
             # from all steps in the horizon
             if not last_points_only:
-                min_n_cal += forecast_horizon - 1
+                min_n_cal += (
+                    (forecast_horizon // cal_stride)
+                    + int(forecast_horizon % cal_stride > 0)
+                    - 1
+                )
 
             # determine first forecast index for conformal prediction
             # we need at least one residual per point in the horizon prior to the first conformal forecast
@@ -1047,22 +1078,25 @@ class ConformalModel(GlobalForecastingModel, ABC):
             else:
                 delta_end = 0
 
-            # drop residuals without useful information
-            last_res_idx = None
+            # ignore residuals without useful information
             if last_points_only and delta_end > 0:
-                # useful residual information only up until the forecast
-                # ending at the last time step in `series`
-                last_res_idx = -delta_end
+                # useful residual information only up until the forecast ending at the last time step in `series`
+                ignore_n_residuals = delta_end
             elif not last_points_only and delta_end >= forecast_horizon:
-                # useful residual information only up until the forecast
-                # starting at the last time step in `series`
-                last_res_idx = -(delta_end - forecast_horizon + 1)
-            if last_res_idx is None:
-                # drop at least the one residuals/forecast from the end, since we can only use prior residuals
-                last_res_idx = -(self.output_chunk_shift + 1)
+                # useful residual information only up until the forecast starting at the last time step in `series`
+                ignore_n_residuals = delta_end - forecast_horizon + 1
+            else:
+                # ignore at least the one residuals/forecast from the end, since we can only use prior residuals
+                ignore_n_residuals = self.output_chunk_shift + 1
                 # with last points only, ignore the last `horizon` residuals to avoid look-ahead bias
                 if last_points_only:
-                    last_res_idx -= forecast_horizon - 1
+                    ignore_n_residuals += forecast_horizon - 1
+
+            # get the last index respecting `cal_stride`
+            last_res_idx = -(
+                (ignore_n_residuals // cal_stride)
+                + int(ignore_n_residuals % cal_stride > 0)
+            )
 
             if last_res_idx is not None:
                 res = res[:last_res_idx]
