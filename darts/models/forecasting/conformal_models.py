@@ -6,6 +6,7 @@ A collection of conformal prediction models for pre-trained global forecasting m
 """
 
 import copy
+import math
 import os
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
@@ -348,20 +349,13 @@ class ConformalModel(GlobalForecastingModel, ABC):
         if self.cal_length is not None:
             # we only need `cal_length` forecasts with stride `cal_stride` before the `predict()` start point;
             # the last valid calibration forecast must start at least `horizon_ocs` before `predict()` start
-            add_steps = (
-                (horizon_ocs // self.cal_stride)
-                + int(horizon_ocs % self.cal_stride > 0)
-                - 1
-            )
+            add_steps = math.ceil(horizon_ocs / self.cal_stride) - 1
             start = -self.cal_stride * (self.cal_length + add_steps)
             start_format = "position"
         elif self.cal_stride > 1:
             # we need all forecasts with stride `cal_stride` before the `predict()` start point
             max_len_series = max(len(series_) for series_ in series)
-            start = -self.cal_stride * (
-                (max_len_series // self.cal_stride)
-                + int(max_len_series % self.cal_stride > 0)
-            )
+            start = -self.cal_stride * math.ceil(max_len_series / self.cal_stride)
             start_format = "position"
         else:
             # we need all possible forecasts with `cal_stride=1`
@@ -1056,15 +1050,13 @@ class ConformalModel(GlobalForecastingModel, ABC):
             # `last_points_only=False` requires additional examples to use most recent information
             # from all steps in the horizon
             if not last_points_only:
-                min_n_cal += (
-                    (forecast_horizon // cal_stride)
-                    + int(forecast_horizon % cal_stride > 0)
-                    - 1
-                )
+                min_n_cal += math.ceil(forecast_horizon / cal_stride) - 1
 
             # determine first forecast index for conformal prediction
             # we need at least one residual per point in the horizon prior to the first conformal forecast
-            first_idx_train = forecast_horizon + self.output_chunk_shift
+            first_idx_train = math.ceil(
+                (forecast_horizon + self.output_chunk_shift) / cal_stride
+            )
             # plus some additional examples based on `cal_length`
             if cal_length is not None:
                 first_idx_train += cal_length - 1
@@ -1093,10 +1085,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     ignore_n_residuals += forecast_horizon - 1
 
             # get the last index respecting `cal_stride`
-            last_res_idx = -(
-                (ignore_n_residuals // cal_stride)
-                + int(ignore_n_residuals % cal_stride > 0)
-            )
+            last_res_idx = -math.ceil(ignore_n_residuals / cal_stride)
 
             if last_res_idx is not None:
                 res = res[:last_res_idx]
@@ -1111,6 +1100,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     ),
                     logger=logger,
                 )
+
             # adjust first index based on `start`
             first_idx_start = 0
             if start is not None and start == "end":
@@ -1177,12 +1167,18 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 # ```
                 res_ = []
                 for irr in range(forecast_horizon - 1, -1, -1):
-                    res_end_idx = -(forecast_horizon - (irr + 1))
-                    res_.append(res[irr : res_end_idx or None, abs(res_end_idx)])
+                    idx_fc_start = math.floor(irr / cal_stride)
+                    idx_fc_end = -(
+                        math.ceil(forecast_horizon / cal_stride) - (idx_fc_start + 1)
+                    )
+                    idx_horizon = forecast_horizon - (irr + 1)
+                    res_.append(res[idx_fc_start : idx_fc_end or None, idx_horizon])
                 res = np.concatenate(res_, axis=2).T
 
             # get the last forecast index based on the residual examples
-            last_fc_idx = res.shape[2] + (forecast_horizon + self.output_chunk_shift)
+            last_fc_idx = res.shape[2] + math.ceil(
+                (forecast_horizon + self.output_chunk_shift) / cal_stride
+            )
 
             def conformal_predict(idx_, pred_vals_):
                 # get the last residual index for calibration, `cal_end` is exclusive
@@ -1192,8 +1188,13 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 # `last_points_only=False` thanks to the residual rearrangement
                 cal_end = (
                     first_fc_idx
-                    + idx_ * stride
-                    - (forecast_horizon + self.output_chunk_shift - 1)
+                    + idx_ * math.ceil(stride / cal_stride)
+                    - (
+                        math.ceil(
+                            (forecast_horizon + self.output_chunk_shift) / cal_stride
+                        )
+                        - 1
+                    )
                 )
                 # first residual index is shifted back by the horizon to get `cal_length` points for
                 # the last point in the horizon
