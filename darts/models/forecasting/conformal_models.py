@@ -545,7 +545,24 @@ class ConformalModel(GlobalForecastingModel, ABC):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
-        # generate all possible forecasts (overlap_end=True) to have enough residuals
+        # TODO: Implement start for hfc
+        # # generate only the required forecasts (if `start` is given, we have to start earlier to satisfy the
+        # # calibration set requirements)
+        # horizon_ocs = n + self.output_chunk_shift
+        # if self.cal_length is not None:
+        #     # we only need `cal_length` forecasts with stride `cal_stride` before the `predict()` start point;
+        #     # the last valid calibration forecast must start at least `horizon_ocs` before `predict()` start
+        #     add_steps = math.ceil(horizon_ocs / self.cal_stride) - 1
+        #     start = -self.cal_stride * (self.cal_length + add_steps)
+        #     start_format = "position"
+        # elif self.cal_stride > 1:
+        #     # we need all forecasts with stride `cal_stride` before the `predict()` start point
+        #     max_len_series = max(len(series_) for series_ in series)
+        #     start = -self.cal_stride * math.ceil(max_len_series / self.cal_stride)
+        #     start_format = "position"
+        # else:
+        #     # we need all possible forecasts with `cal_stride=1`
+        #     start, start_format = None, "value"
         hfcs = self.model.historical_forecasts(
             series=series,
             past_covariates=past_covariates,
