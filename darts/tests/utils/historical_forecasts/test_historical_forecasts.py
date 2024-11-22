@@ -2649,7 +2649,7 @@ class TestHistoricalforecast:
         retrain: bool,
         end_idx: int,
         ocl: int,
-        idx_transformer: Optional[int] = None,
+        idx_series: Optional[int] = None,
     ):
         ts_copy = deepcopy(ts)
         hf_scaler_copy = deepcopy(hf_scaler)
@@ -2665,7 +2665,7 @@ class TestHistoricalforecast:
                     hf_scaler_copy[ts_name].fit(tmp_ts)
             # apply the scaler on the whole series
             ts_copy[ts_name] = hf_scaler_copy[ts_name].transform(
-                ts_copy[ts_name], idx_params=idx_transformer
+                ts_copy[ts_name], idx_series=idx_series
             )
 
         series = ts_copy.pop("series")[:end_idx]
@@ -2683,7 +2683,7 @@ class TestHistoricalforecast:
         # scale back the forecasts
         if isinstance(hf_scaler_copy.get("series"), InvertibleDataTransformer):
             return hf_scaler_copy["series"].inverse_transform(
-                pred, idx_params=idx_transformer
+                pred, idx_series=idx_series
             )
         else:
             return pred
@@ -2978,7 +2978,7 @@ class TestHistoricalforecast:
             retrain,
             -ocl,
             ocl,
-            idx_transformer=None if unique_param_entry else 0,
+            idx_series=None if unique_param_entry else 0,
         )
         manual_hf_1 = self.helper_manual_scaling_prediction(
             model,
@@ -2987,7 +2987,7 @@ class TestHistoricalforecast:
             retrain,
             -ocl,
             ocl,
-            idx_transformer=None if unique_param_entry else 1,
+            idx_series=None if unique_param_entry else 1,
         )
         manual_hf_2 = self.helper_manual_scaling_prediction(
             model,
@@ -2996,7 +2996,7 @@ class TestHistoricalforecast:
             retrain,
             -ocl,
             ocl,
-            idx_transformer=None if unique_param_entry else 2,
+            idx_series=None if unique_param_entry else 2,
         )
         self.helper_compare_hf(hf, [[manual_hf_0], [manual_hf_1], [manual_hf_2]])
 
@@ -3022,7 +3022,7 @@ class TestHistoricalforecast:
             series=series[2],
             data_transformers={"series": get_scaler(fit=True)},
         )
-        # note that the idx_transformer is not specified, only the first transformer is used (instead of the 3rd)
+        # note that the idx_series is not specified, only the first transformer is used (instead of the 3rd)
         manual_hf_2 = self.helper_manual_scaling_prediction(
             model,
             {"series": series[2]},

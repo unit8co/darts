@@ -149,7 +149,7 @@ class TestPipeline:
 
     def test_transform_prefitted(self):
         """Check that when multiple series are passed to fit transformers with global_fit=False,
-        transform behave as expected when idx_params is specified.
+        transform behave as expected when idx_series is specified.
 
         Note: the transformers are fitted independently to make the expected results more intuitive
         """
@@ -185,7 +185,7 @@ class TestPipeline:
         )
         # explicitely use the first params of each transformer
         np.testing.assert_array_almost_equal(
-            transformed[0].values(), p.transform(data[0], idx_params=[0]).values()
+            transformed[0].values(), p.transform(data[0], idx_series=[0]).values()
         )
         # implicitely use the first params of each transformer
         # ts + (data[0][0] + 1) + (data[0][0] + 5) = 10 + 1 + 5 = 16
@@ -194,7 +194,7 @@ class TestPipeline:
         )
         # explicitely use the second params of each transformer
         np.testing.assert_array_almost_equal(
-            transformed[1].values(), p.transform(data[1], idx_params=[1]).values()
+            transformed[1].values(), p.transform(data[1], idx_series=[1]).values()
         )
 
         # multiple series, mixture of local and global transformers
@@ -217,7 +217,7 @@ class TestPipeline:
         )
         # explicitely use the first params of first transformer, the second is global
         np.testing.assert_array_almost_equal(
-            transformed[0].values(), p.transform(data[0], idx_params=[0]).values()
+            transformed[0].values(), p.transform(data[0], idx_series=[0]).values()
         )
         # implicitely use the first params of first transformer, the second is global
         # ts + (data[0][0] + 1) + (sum(data[;, 0]) + 90) = 10 + 1 + 100
@@ -226,7 +226,7 @@ class TestPipeline:
         )
         # explicitely use the second params of first transformer, the second is global
         np.testing.assert_array_almost_equal(
-            transformed[1].values(), p.transform(data[1], idx_params=[1]).values()
+            transformed[1].values(), p.transform(data[1], idx_series=[1]).values()
         )
 
     def test_inverse_raise_exception(self):
@@ -322,7 +322,7 @@ class TestPipeline:
 
     def test_inverse_transform_prefitted(self):
         """Check that when multiple series are passed to fit transformers with global_fit=False,
-        inverse_transform behave as expected when idx_params is specified.
+        inverse_transform behave as expected when idx_series is specified.
 
         Note: the transformers are fitted independently to make the expected results more intuitive
         """
@@ -351,7 +351,7 @@ class TestPipeline:
         # explicitely use the first params of each transformer
         np.testing.assert_array_almost_equal(
             data[0].values(),
-            p.inverse_transform(transformed[0], idx_params=[0]).values(),
+            p.inverse_transform(transformed[0], idx_series=[0]).values(),
         )
 
         # 10 + 11 + 15
@@ -365,12 +365,12 @@ class TestPipeline:
         )
         np.testing.assert_array_almost_equal(
             np.array([[30, 30]]).T,
-            p.inverse_transform(transformed[1], idx_params=0).values(),
+            p.inverse_transform(transformed[1], idx_series=0).values(),
         )
         # explicitely use the second params of each transformer
         # inverse_transform[0][0] = lambda x: x - 11, inverse_transform[1][0] = lamdda x: x - 15
         np.testing.assert_array_almost_equal(
-            data[1].values(), p.inverse_transform(transformed[1], idx_params=1).values()
+            data[1].values(), p.inverse_transform(transformed[1], idx_series=1).values()
         )
 
         # multiple series, mixture of local and global transformers
@@ -387,7 +387,7 @@ class TestPipeline:
         # explicitely use the first params of each transformer
         np.testing.assert_array_almost_equal(
             data[0].values(),
-            p.inverse_transform(transformed[0], idx_params=[0]).values(),
+            p.inverse_transform(transformed[0], idx_series=[0]).values(),
         )
         # 10 + 11 + 100
         np.testing.assert_array_almost_equal(
@@ -403,7 +403,7 @@ class TestPipeline:
         # inverse_transform[0][1] = lambda x: x - 11, inverse_transform = lamdda x: x - 100
         np.testing.assert_array_almost_equal(
             data[1].values(),
-            p.inverse_transform(transformed[1], idx_params=[1]).values(),
+            p.inverse_transform(transformed[1], idx_series=[1]).values(),
         )
 
     def test_getitem(self):

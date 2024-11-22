@@ -1214,12 +1214,12 @@ def _apply_inverse_data_transformers(
     series: Union[TimeSeries, Sequence[TimeSeries]],
     forecasts: Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]],
     data_transformers: dict[str, Pipeline],
-    idx_transformer: Optional[int] = None,
+    idx_series: Optional[int] = None,
 ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
     """
     Apply the inverse transform to the forecasts when defined.
 
-    `idx_transformer` is used to retrieve the appropriate transformer when the data transformer was
+    `idx_series` is used to retrieve the appropriate transformer when the data transformer was
     fitted with several series and global_fit=False.
     """
     if "series" in data_transformers and data_transformers["series"].invertible:
@@ -1227,7 +1227,7 @@ def _apply_inverse_data_transformers(
         if called_with_single_series:
             forecasts = [forecasts]
         forecasts = data_transformers["series"].inverse_transform(
-            forecasts, idx_params=idx_transformer
+            forecasts, idx_series=idx_series
         )
         return forecasts[0] if called_with_single_series else forecasts
     else:

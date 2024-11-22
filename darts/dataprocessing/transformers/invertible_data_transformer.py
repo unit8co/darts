@@ -257,7 +257,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         series: Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]],
         *args,
         component_mask: Optional[np.array] = None,
-        idx_params: Optional[Union[int, Sequence[int]]] = None,
+        idx_series: Optional[Union[int, Sequence[int]]] = None,
         **kwargs,
     ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
         """Inverse transforms a (sequence of) series by calling the user-implemented `ts_inverse_transform` method.
@@ -286,8 +286,8 @@ class InvertibleDataTransformer(BaseDataTransformer):
         component_mask : Optional[np.ndarray] = None
             Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies
             which components of the underlying `series` the inverse transform should consider.
-        idx_params
-            Optionally, the index(es) of the parameters to use to inverse-transform the series.
+        idx_series
+            Optionally, the index(es) of the series to transform (to get the appropriate fixed/fitted parameters)
         kwargs
             Additional keyword arguments for the :func:`ts_inverse_transform()` method
 
@@ -327,23 +327,23 @@ class InvertibleDataTransformer(BaseDataTransformer):
         called_with_sequence_series = False
         if isinstance(series, TimeSeries):
             data = [series]
-            if idx_params:
-                transformer_selector = self._check_idx_params(idx_params)
+            if idx_series:
+                transformer_selector = self._check_idx_series(idx_series)
             else:
                 transformer_selector = [0]
             called_with_single_series = True
         elif isinstance(series[0], TimeSeries):  # Sequence[TimeSeries]
             data = series
-            if idx_params:
-                transformer_selector = self._check_idx_params(idx_params)
+            if idx_series:
+                transformer_selector = self._check_idx_series(idx_series)
             else:
                 transformer_selector = range(len(series))
             called_with_sequence_series = True
         else:  # Sequence[Sequence[TimeSeries]]
             data = []
             transformer_selector = []
-            if idx_params:
-                iterator_ = zip(self._check_idx_params(idx_params), series)
+            if idx_series:
+                iterator_ = zip(self._check_idx_series(idx_series), series)
             else:
                 iterator_ = enumerate(series)
             for idx, series_list in iterator_:

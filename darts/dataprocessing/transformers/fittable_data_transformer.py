@@ -294,6 +294,22 @@ class FittableDataTransformer(BaseDataTransformer):
         )
         return self
 
+    def transform(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        *args,
+        component_mask: Optional[np.array] = None,
+        idx_series: Optional[Union[int, Sequence[int]]] = None,
+        **kwargs,
+    ) -> Union[TimeSeries, list[TimeSeries]]:
+        return super().transform(
+            series=series,
+            *args,
+            component_mask=component_mask,
+            idx_series=idx_series if not self._global_fit else None,
+            **kwargs,
+        )
+
     def fit_transform(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],

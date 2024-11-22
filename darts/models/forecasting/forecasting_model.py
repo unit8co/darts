@@ -1194,7 +1194,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     series=train_series,
                     forecasts=forecast,
                     data_transformers=data_transformers,
-                    idx_transformer=idx if using_prefitted_transformers else None,
+                    idx_series=idx if using_prefitted_transformers else None,
                 )
 
                 show_predict_warnings = False

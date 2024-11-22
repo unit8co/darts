@@ -161,7 +161,7 @@ class Pipeline:
     def transform(
         self,
         data: Union[TimeSeries, Sequence[TimeSeries]],
-        idx_params: Optional[Union[int, Sequence[int]]] = None,
+        idx_series: Optional[Union[int, Sequence[int]]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         For each data transformer in pipeline transform data. Then transformed data is passed to next transformer.
@@ -170,8 +170,8 @@ class Pipeline:
         ----------
         data
             (`Sequence` of) `TimeSeries` to be transformed.
-        idx_params
-            Optionally, the index(es) of the parameters to use to transform the series.
+        idx_series
+            Optionally, the index(es) of the series to transform (to get the appropriate fixed/fitted parameters)
 
         Returns
         -------
@@ -179,22 +179,14 @@ class Pipeline:
             Transformed data.
         """
         for transformer in self._transformers:
-            data = transformer.transform(
-                data,
-                idx_params=idx_params
-                if (
-                    isinstance(transformer, FittableDataTransformer)
-                    and not transformer._global_fit
-                )
-                else None,
-            )
+            data = transformer.transform(data, idx_series=idx_series)
         return data
 
     def inverse_transform(
         self,
         data: Union[TimeSeries, Sequence[TimeSeries]],
         partial: bool = False,
-        idx_params: Optional[Union[int, Sequence[int]]] = None,
+        idx_series: Optional[Union[int, Sequence[int]]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         For each data transformer in the pipeline, inverse-transform data. Then inverse transformed data is passed to
@@ -209,8 +201,8 @@ class Pipeline:
         partial
             If set to `True`, the inverse transformation is applied even if the pipeline is not fully invertible,
             calling `inverse_transform()` only on the `InvertibleDataTransformer`s
-        idx_params
-            Optionally, the index(es) of the parameters to use to transform the series.
+        idx_series
+            Optionally, the index(es) of the series to transform (to get the appropriate fixed/fitted parameters)
 
         Returns
         -------
@@ -225,27 +217,14 @@ class Pipeline:
             )
 
             for transformer in reversed(self._transformers):
-                data = transformer.inverse_transform(
-                    data,
-                    idx_params=idx_params
-                    if (
-                        isinstance(transformer, FittableDataTransformer)
-                        and not transformer._global_fit
-                    )
-                    else None,
-                )
+                data = transformer.inverse_transform(data, idx_series=idx_series)
             return data
         else:
             for transformer in reversed(self._transformers):
                 if isinstance(transformer, InvertibleDataTransformer):
                     data = transformer.inverse_transform(
                         data,
-                        idx_params=idx_params
-                        if (
-                            isinstance(transformer, FittableDataTransformer)
-                            and not transformer._global_fit
-                        )
-                        else None,
+                        idx_series=idx_series,
                     )
             return data
 
