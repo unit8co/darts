@@ -22,7 +22,9 @@ TimeIndex = Union[
 ]
 
 
-def _historical_forecasts_general_checks(model, series, kwargs):
+def _historical_forecasts_general_checks(
+    model, series, kwargs, is_conformal: bool = False
+):
     """
     Performs checks common to ForecastingModel and RegressionModel backtest() methods
 
@@ -52,6 +54,18 @@ def _historical_forecasts_general_checks(model, series, kwargs):
             logger,
         )
 
+    # check stride for ConformalModel
+    if is_conformal and (
+        n.stride < model.cal_stride or n.stride % model.cal_stride > 0
+    ):
+        raise_log(
+            ValueError(
+                f"The provided `stride` parameter must be a round-multiple of `cal_stride={model.cal_stride}` "
+                f"and `>=cal_stride`. Received `stride={n.stride}`"
+            ),
+            logger,
+        )
+
     series = series2seq(series)
 
     if n.start is not None:
@@ -77,13 +91,23 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 ),
                 logger,
             )
-        if isinstance(n.start, float) and not 0.0 <= n.start <= 1.0:
-            raise_log(
-                ValueError("if `start` is a float, must be between 0.0 and 1.0."),
-                logger,
-            )
+        if isinstance(n.start, float):
+            if is_conformal:
+                raise_log(
+                    ValueError(
+                        "`start` of type float is not supported for `ConformalModel`."
+                    ),
+                    logger,
+                )
+            if not 0.0 <= n.start <= 1.0:
+                raise_log(
+                    ValueError("if `start` is a float, must be between 0.0 and 1.0."),
+                    logger,
+                )
 
+        series_freq = None
         for idx, series_ in enumerate(series):
+            start_is_value = False
             # check specifically for int and Timestamp as error by `get_timestamp_at_point` is too generic
             if isinstance(n.start, pd.Timestamp):
                 if not series_._has_datetime_index:
@@ -101,6 +125,7 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                         ),
                         logger,
                     )
+                start_is_value = True
             elif isinstance(n.start, (int, np.int64)):
                 if n.start_format == "position" or series_.has_datetime_index:
                     if n.start >= len(series_):
@@ -111,13 +136,32 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                             ),
                             logger,
                         )
-                elif n.start > series_.time_index[-1]:  # format "value" and range index
+                else:
+                    if (
+                        n.start > series_.time_index[-1]
+                    ):  # format "value" and range index
+                        raise_log(
+                            ValueError(
+                                f"`start` time `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
+                                f"for series at index: {idx}."
+                            ),
+                            logger,
+                        )
+                    start_is_value = True
+
+            # `ConformalModel` with `start_format='value'` requires all series to have the same frequency
+            if is_conformal and start_is_value:
+                if series_freq is None:
+                    series_freq = series_.freq
+
+                if series_freq != series_.freq:
                     raise_log(
                         ValueError(
-                            f"`start` time `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
-                            f"for series at index: {idx}."
+                            f"Found mismatching `series` time index frequencies `{series_freq}` and `{series_.freq}`. "
+                            f"`start_format='value'` with `ConformalModel` is only supported if all series in "
+                            f"`series` have the same frequency."
                         ),
-                        logger,
+                        logger=logger,
                     )
 
             # find valid start position relative to the series start time, otherwise raise an error
@@ -209,33 +253,6 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                     ),
                     logger=logger,
                 )
-
-
-def _conformal_historical_forecasts_general_checks(model, series, kwargs):
-    """
-    Performs checks for `ConformalModel.historical_forecasts()`.
-
-    Parameters
-    ----------
-    model
-        The forecasting model.
-    series
-        Either series when called from ForecastingModel, or target_series if called from RegressionModel
-    kwargs
-        Params specified by the caller of backtest(), they take precedence over the arguments' default values
-    """
-    # parse kwargs
-    n = SimpleNamespace(**kwargs)
-
-    # check stride
-    if n.stride < model.cal_stride or n.stride % model.cal_stride > 0:
-        raise_log(
-            ValueError(
-                f"The provided `stride` parameter must be a round-multiple of `cal_stride={model.cal_stride}` "
-                f"and `>=cal_stride`. Received `stride={n.stride}`"
-            ),
-            logger,
-        )
 
 
 def _historical_forecasts_sanitize_kwargs(
@@ -428,8 +445,12 @@ def _check_start(
         if isinstance(start, float):
             # fraction of series
             start = series.get_index_at_point(start)
-        else:
+        elif start >= 0:
+            # start >= 0 is relative to the start
             start = series.start_time() + start * series.freq
+        else:
+            # start < 0 is relative to the end
+            start = series.end_time() + (start + 1) * series.freq
     else:
         start_format_msg = "time "
     ref_msg = "" if not is_historical_forecast else "historical forecastable "

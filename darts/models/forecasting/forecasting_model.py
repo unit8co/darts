@@ -607,7 +607,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         # parse args and kwargs
         series = args[0]
-        _historical_forecasts_general_checks(self, series, kwargs)
+        is_conformal = kwargs.get("is_conformal", False)
+        _historical_forecasts_general_checks(
+            self, series, kwargs, is_conformal=is_conformal
+        )
 
     def _get_last_prediction_time(
         self,

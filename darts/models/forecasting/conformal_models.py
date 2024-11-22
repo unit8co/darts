@@ -28,7 +28,6 @@ from darts.models.utils import TORCH_AVAILABLE
 from darts.utils import _build_tqdm_iterator, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _adjust_historical_forecasts_time_index,
-    _conformal_historical_forecasts_general_checks,
 )
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.ts_utils import (
@@ -52,6 +51,65 @@ else:
     TorchForecastingModel = None
 
 logger = get_logger(__name__)
+
+
+def _get_calibration_hfc_start(
+    series: Sequence[TimeSeries],
+    horizon: int,
+    output_chunk_shift: int,
+    cal_length: Optional[int],
+    cal_stride: int,
+    start: Optional[Union[pd.Timestamp, int, Literal["end"]]],
+    start_format: Literal["position", "value"],
+) -> tuple[Optional[Union[int, pd.Timestamp]], Literal["position", "value"]]:
+    """Find the calibration start point (CSP) (for historical forecasts on calibration set).
+
+    - If `start=None`, the CSP is also `None` (all possible hfcs).
+    - If `start="end"` (when calling `predict()`), returns the CSP as a positional index relative to the end of the
+      series (<0).
+    - Otherwise (when calling `historical_forecasts()`), the CSP is the start value (`start_format="value"`) or start
+      position (`start_format="position"`) adjusted by the positions computed for the case above.
+
+    If this function is called from `historical_forecasts`, the sanity checks guarantee the following:
+
+    - `start` cannot be a `float`
+    - when `start_format='value'`, all `series` have the same frequency
+    """
+    if start is None:
+        return start, start_format
+
+    horizon_ocs = horizon + output_chunk_shift
+    if cal_length is not None:
+        # we only need `cal_length` forecasts with stride `cal_stride` before the `predict()` start point;
+        # the last valid calibration forecast must start at least `horizon_ocs` before `predict()` start
+        add_steps = math.ceil(horizon_ocs / cal_stride) - 1
+        start_idx_rel = -cal_stride * (cal_length + add_steps)
+        cal_start_format = "position"
+    elif cal_stride > 1:
+        # we need all forecasts with stride `cal_stride` before the `predict()` start point
+        max_len_series = max(len(series_) for series_ in series)
+        start_idx_rel = -cal_stride * math.ceil(max_len_series / cal_stride)
+        cal_start_format = "position"
+    else:
+        # we need all possible forecasts with `cal_stride=1`
+        start_idx_rel, cal_start_format = None, "value"
+
+    if start == "end":
+        # `predict()` is relative to the end
+        return start_idx_rel, cal_start_format
+
+    # `historical_forecasts()` is relative to `start`
+    start_is_position = isinstance(start, (int, np.int64)) and (
+        start_format == "position" or series[0]._has_datetime_index
+    )
+    cal_start_format = start_format
+    if start_idx_rel is None:
+        cal_start = start_idx_rel
+    elif start_is_position:
+        cal_start = start + start_idx_rel
+    else:
+        cal_start = start + start_idx_rel * series[0].freq
+    return cal_start, cal_start_format
 
 
 class ConformalModel(GlobalForecastingModel, ABC):
@@ -345,21 +403,15 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
         # generate only the required forecasts for calibration (including the last forecast which is the output of
         # `predict()`)
-        horizon_ocs = n + self.output_chunk_shift
-        if self.cal_length is not None:
-            # we only need `cal_length` forecasts with stride `cal_stride` before the `predict()` start point;
-            # the last valid calibration forecast must start at least `horizon_ocs` before `predict()` start
-            add_steps = math.ceil(horizon_ocs / self.cal_stride) - 1
-            start = -self.cal_stride * (self.cal_length + add_steps)
-            start_format = "position"
-        elif self.cal_stride > 1:
-            # we need all forecasts with stride `cal_stride` before the `predict()` start point
-            max_len_series = max(len(series_) for series_ in series)
-            start = -self.cal_stride * math.ceil(max_len_series / self.cal_stride)
-            start_format = "position"
-        else:
-            # we need all possible forecasts with `cal_stride=1`
-            start, start_format = None, "value"
+        cal_start, cal_start_format = _get_calibration_hfc_start(
+            series=series,
+            horizon=n,
+            output_chunk_shift=self.output_chunk_shift,
+            cal_length=self.cal_length,
+            cal_stride=self.cal_stride,
+            start="end",
+            start_format="position",
+        )
 
         cal_hfcs = self.model.historical_forecasts(
             series=series,
@@ -367,8 +419,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             future_covariates=future_covariates,
             forecast_horizon=n,
             num_samples=self.num_samples,
-            start=start,
-            start_format=start_format,
+            start=cal_start,
+            start_format=cal_start_format,
             stride=self.cal_stride,
             retrain=False,
             overlap_end=True,
@@ -397,10 +449,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         else:
             return [cp[0] for cp in cal_preds]
 
-    @_with_sanity_checks(
-        "_historical_forecasts_sanity_checks",
-        "_conformal_historical_forecasts_sanity_checks",
-    )
+    @_with_sanity_checks("_historical_forecasts_sanity_checks")
     def historical_forecasts(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -409,7 +458,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         forecast_horizon: int = 1,
         num_samples: int = 1,
         train_length: Optional[int] = None,
-        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start: Optional[Union[pd.Timestamp, int]] = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
@@ -469,8 +518,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Currently ignored by conformal models.
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
-            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
-            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            ``int``, ``pandas.Timestamp``, and ``None``.
             If an ``int``, it is either the index position of the first prediction point for `series` with a
             `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
             the index position with `start_format="position"`.
@@ -545,35 +593,31 @@ class ConformalModel(GlobalForecastingModel, ABC):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
-        # TODO: Implement start for hfc
-        # # generate only the required forecasts (if `start` is given, we have to start earlier to satisfy the
-        # # calibration set requirements)
-        # horizon_ocs = n + self.output_chunk_shift
-        # if self.cal_length is not None:
-        #     # we only need `cal_length` forecasts with stride `cal_stride` before the `predict()` start point;
-        #     # the last valid calibration forecast must start at least `horizon_ocs` before `predict()` start
-        #     add_steps = math.ceil(horizon_ocs / self.cal_stride) - 1
-        #     start = -self.cal_stride * (self.cal_length + add_steps)
-        #     start_format = "position"
-        # elif self.cal_stride > 1:
-        #     # we need all forecasts with stride `cal_stride` before the `predict()` start point
-        #     max_len_series = max(len(series_) for series_ in series)
-        #     start = -self.cal_stride * math.ceil(max_len_series / self.cal_stride)
-        #     start_format = "position"
-        # else:
-        #     # we need all possible forecasts with `cal_stride=1`
-        #     start, start_format = None, "value"
+        # generate only the required forecasts (if `start` is given, we have to start earlier to satisfy the
+        # calibration set requirements)
+        cal_start, cal_start_format = _get_calibration_hfc_start(
+            series=series,
+            horizon=forecast_horizon,
+            output_chunk_shift=self.output_chunk_shift,
+            cal_length=self.cal_length,
+            cal_stride=self.cal_stride,
+            start=start,
+            start_format=start_format,
+        )
         hfcs = self.model.historical_forecasts(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            num_samples=self.num_samples,
             forecast_horizon=forecast_horizon,
+            num_samples=self.num_samples,
+            start=cal_start,
+            start_format=cal_start_format,
+            stride=self.cal_stride,
             retrain=False,
             overlap_end=overlap_end,
             last_points_only=last_points_only,
             verbose=verbose,
-            show_warnings=show_warnings,
+            show_warnings=False,
             predict_likelihood_parameters=False,
             enable_optimization=enable_optimization,
             fit_kwargs=fit_kwargs,
@@ -610,7 +654,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         forecast_horizon: int = 1,
         num_samples: int = 1,
         train_length: Optional[int] = None,
-        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start: Optional[Union[pd.Timestamp, int]] = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
@@ -679,8 +723,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Currently ignored by conformal models.
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
-            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
-            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            ``int``, ``pandas.Timestamp``, and ``None``.
             If an ``int``, it is either the index position of the first prediction point for `series` with a
             `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
             the index position with `start_format="position"`.
@@ -808,7 +851,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         forecast_horizon: int = 1,
         num_samples: int = 1,
         train_length: Optional[int] = None,
-        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start: Optional[Union[pd.Timestamp, int]] = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
@@ -887,8 +930,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Currently ignored by conformal models.
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
-            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
-            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            ``int``, ``pandas.Timestamp``, and ``None``.
             If an ``int``, it is either the index position of the first prediction point for `series` with a
             `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
             the index position with `start_format="position"`.
@@ -997,7 +1039,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         series: Sequence[TimeSeries],
         forecasts: Union[Sequence[Sequence[TimeSeries]], Sequence[TimeSeries]],
         num_samples: int = 1,
-        start: Optional[Union[pd.Timestamp, float, int, str]] = None,
+        start: Optional[Union[pd.Timestamp, int, str]] = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,
@@ -1133,7 +1175,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     s_hfcs[first_idx_train].start_time() - adjust_idx,
                     s_hfcs[-1].start_time() - adjust_idx,
                 )
-                # TODO: add proper start handling with `cal_stride>1`
                 # adjust forecastable index based on start, assuming hfcs were generated with `stride=1`
                 first_idx_start, _ = _adjust_historical_forecasts_time_index(
                     series=series_,
@@ -1150,6 +1191,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     s_hfcs[0].start_time(),
                     freq=series_.freq,
                 )
+                # TODO: add proper start handling with `cal_stride>1`
+                # adjust by stride
+                first_idx_start = math.ceil(first_idx_start / cal_stride)
 
             # get final first index
             first_fc_idx = max([first_idx_train, first_idx_start])
@@ -1197,6 +1241,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 (forecast_horizon + self.output_chunk_shift) / cal_stride
             )
 
+            # forecasts are stridden, so stride must be relative
+            rel_stride = math.ceil(stride / cal_stride)
+
             def conformal_predict(idx_, pred_vals_):
                 # get the last residual index for calibration, `cal_end` is exclusive
                 # to avoid look-ahead bias, use only residuals from before the historical forecast start point;
@@ -1205,7 +1252,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 # `last_points_only=False` thanks to the residual rearrangement
                 cal_end = (
                     first_fc_idx
-                    + idx_ * math.ceil(stride / cal_stride)
+                    + idx_ * rel_stride
                     - (
                         math.ceil(
                             (forecast_horizon + self.output_chunk_shift) / cal_stride
@@ -1231,10 +1278,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
             # for each forecast, compute calibrated quantile intervals based on past residuals
             if last_points_only:
                 inner_iterator = enumerate(
-                    s_hfcs.all_values(copy=False)[first_fc_idx:last_fc_idx:stride]
+                    s_hfcs.all_values(copy=False)[first_fc_idx:last_fc_idx:rel_stride]
                 )
             else:
-                inner_iterator = enumerate(s_hfcs[first_fc_idx:last_fc_idx:stride])
+                inner_iterator = enumerate(s_hfcs[first_fc_idx:last_fc_idx:rel_stride])
             comp_names_out = (
                 self._cp_component_names(series_)
                 if predict_likelihood_parameters
@@ -1245,7 +1292,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 inner_iterator = _build_tqdm_iterator(
                     inner_iterator,
                     verbose,
-                    total=(last_fc_idx - 1 - first_fc_idx) // stride + 1,
+                    total=(last_fc_idx - 1 - first_fc_idx) // rel_stride + 1,
                     desc="conformal forecasts",
                 )
 
@@ -1376,26 +1423,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             input_series.components, quantile_names(self.quantiles)
         )
 
-    def _conformal_historical_forecasts_sanity_checks(
-        self, *args: Any, **kwargs: Any
-    ) -> None:
-        """Sanity checks for the historical_forecasts function
-
-        Parameters
-        ----------
-        args
-            The args parameter(s) provided to the historical_forecasts function.
-        kwargs
-            The kwargs parameter(s) provided to the historical_forecasts function.
-
-        Raises
-        ------
-        ValueError
-            when a check on the parameter does not pass.
-        """
-        # parse args and kwargs
-        series = args[0]
-        _conformal_historical_forecasts_general_checks(self, series, kwargs)
+    def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
+        super()._historical_forecasts_sanity_checks(*args, **kwargs, is_conformal=True)
 
     @property
     def output_chunk_length(self) -> Optional[int]:
