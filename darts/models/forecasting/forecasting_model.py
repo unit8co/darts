@@ -1485,13 +1485,24 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 kwargs["insample"] = series_gen
 
             errors.append(metric_f(series_gen, forecasts_list, **kwargs))
-        errors = np.array(errors)
+        try:
+            # multiple series can result in different number of forecasts; try if we can run it efficiently
+            errors = np.array(errors)
+            is_arr = True
+        except ValueError:
+            # otherwise, compute array later
+            is_arr = False
 
         # get errors for each input `series`
         backtest_list = []
         for i in range(len(cum_len) - 1):
             # errors_series with shape `(n metrics, n series specific historical forecasts, *)`
-            errors_series = errors[:, cum_len[i] : cum_len[i + 1]]
+            if is_arr:
+                errors_series = errors[:, cum_len[i] : cum_len[i + 1]]
+            else:
+                errors_series = np.array([
+                    errors_[cum_len[i] : cum_len[i + 1]] for errors_ in errors
+                ])
 
             if reduction is not None:
                 # shape `(n metrics, n forecasts, *)` -> `(n metrics, *)`
