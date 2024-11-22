@@ -21,6 +21,7 @@ darts_logs/
 docs_env
 .DS_Store
 .gradle
+.venv
 
 # used by CI to build with latest versions of dependencies
 requirements-latest.txt
