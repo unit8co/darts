@@ -47,7 +47,6 @@ def _optimized_historical_forecasts_last_points_only(
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
-
         freq = series_.freq
         forecast_components = (
             model._likelihood_components_names(series_)
@@ -211,7 +210,6 @@ def _optimized_historical_forecasts_all_points(
         future_covariates_ = (
             future_covariates[idx] if future_covariates is not None else None
         )
-
         freq = series_.freq
         forecast_components = (
             model._likelihood_components_names(series_)
@@ -362,5 +360,6 @@ def _optimized_historical_forecasts_all_points(
                     hierarchy=series_.hierarchy,
                 )
             )
+
         forecasts_list.append(forecasts_)
     return forecasts_list

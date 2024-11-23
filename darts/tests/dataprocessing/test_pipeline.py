@@ -179,20 +179,20 @@ class TestPipeline:
         np.testing.assert_array_almost_equal(
             transformed[1].values(), np.array([[36, 36]]).T
         )
-        # implicitely use the first params of each transformer
+        # implicitly use the first params of each transformer
         np.testing.assert_array_almost_equal(
             transformed[0].values(), p.transform(data[0]).values()
         )
-        # explicitely use the first params of each transformer
+        # explicitly use the first params of each transformer
         np.testing.assert_array_almost_equal(
             transformed[0].values(), p.transform(data[0], series_idx=[0]).values()
         )
-        # implicitely use the first params of each transformer
+        # implicitly use the first params of each transformer
         # ts + (data[0][0] + 1) + (data[0][0] + 5) = 10 + 1 + 5 = 16
         np.testing.assert_array_almost_equal(
             np.array([[16, 16]]).T, p.transform(data[1]).values()
         )
-        # explicitely use the second params of each transformer
+        # explicitly use the second params of each transformer
         np.testing.assert_array_almost_equal(
             transformed[1].values(), p.transform(data[1], series_idx=[1]).values()
         )
@@ -211,23 +211,26 @@ class TestPipeline:
         np.testing.assert_array_almost_equal(
             transformed[1].values(), np.array([[121, 121]]).T
         )
-        # implicitely use the first params of first transformer, the second is global
+        # implicitly use the first params of first transformer, the second is global
         np.testing.assert_array_almost_equal(
             transformed[0].values(), p.transform(data[0]).values()
         )
-        # explicitely use the first params of first transformer, the second is global
+        # explicitly use the first params of first transformer, the second is global
         np.testing.assert_array_almost_equal(
             transformed[0].values(), p.transform(data[0], series_idx=[0]).values()
         )
-        # implicitely use the first params of first transformer, the second is global
+        # implicitly use the first params of first transformer, the second is global
         # ts + (data[0][0] + 1) + (sum(data[;, 0]) + 90) = 10 + 1 + 100
         np.testing.assert_array_almost_equal(
             np.array([[111, 111]]).T, p.transform(data[1]).values()
         )
-        # explicitely use the second params of first transformer, the second is global
+        # explicitly use the second params of first transformer, the second is global
         np.testing.assert_array_almost_equal(
             transformed[1].values(), p.transform(data[1], series_idx=[1]).values()
         )
+
+        # reversing input, and explicitly selecting reversed indexes
+        assert transformed[::-1] == p.transform(data[::-1], series_idx=[1, 0])
 
     def test_inverse_raise_exception(self):
         # given
@@ -344,11 +347,11 @@ class TestPipeline:
         ])
         transformed = p.transform(data)
 
-        # implicitely use the first params of each transformer
+        # implicitly use the first params of each transformer
         np.testing.assert_array_almost_equal(
             data[0].values(), p.inverse_transform(transformed[0]).values()
         )
-        # explicitely use the first params of each transformer
+        # explicitly use the first params of each transformer
         np.testing.assert_array_almost_equal(
             data[0].values(),
             p.inverse_transform(transformed[0], series_idx=[0]).values(),
@@ -358,8 +361,8 @@ class TestPipeline:
         np.testing.assert_array_almost_equal(
             np.array([[36, 36]]).T, transformed[1].values()
         )
-        # implicitely use the first params of each transformer
-        # inverse_transform[0][0] = lambda x: x - 1, inverse_transform[1][0] = lamdda x: x - 5
+        # implicitly use the first params of each transformer
+        # inverse_transform[0][0] = lambda x: x - 1, inverse_transform[1][0] = lambda x: x - 5
         np.testing.assert_array_almost_equal(
             np.array([[30, 30]]).T, p.inverse_transform(transformed[1]).values()
         )
@@ -367,8 +370,8 @@ class TestPipeline:
             np.array([[30, 30]]).T,
             p.inverse_transform(transformed[1], series_idx=0).values(),
         )
-        # explicitely use the second params of each transformer
-        # inverse_transform[0][0] = lambda x: x - 11, inverse_transform[1][0] = lamdda x: x - 15
+        # explicitly use the second params of each transformer
+        # inverse_transform[0][0] = lambda x: x - 11, inverse_transform[1][0] = lambda x: x - 15
         np.testing.assert_array_almost_equal(
             data[1].values(), p.inverse_transform(transformed[1], series_idx=1).values()
         )
@@ -380,11 +383,11 @@ class TestPipeline:
         ])
         transformed = p.transform(data)
 
-        # implicitely use the first params of each transformer
+        # implicitly use the first params of each transformer
         np.testing.assert_array_almost_equal(
             data[0].values(), p.inverse_transform(transformed[0]).values()
         )
-        # explicitely use the first params of each transformer
+        # explicitly use the first params of each transformer
         np.testing.assert_array_almost_equal(
             data[0].values(),
             p.inverse_transform(transformed[0], series_idx=[0]).values(),
@@ -394,17 +397,20 @@ class TestPipeline:
             np.array([[121, 121]]).T, transformed[1].values()
         )
 
-        # implicitely use the first params of each transformer
-        # inverse_transform[0][0] = lambda x: x - 1, inverse_transform = lamdda x: x - 100
+        # implicitly use the first params of each transformer
+        # inverse_transform[0][0] = lambda x: x - 1, inverse_transform = lambda x: x - 100
         np.testing.assert_array_almost_equal(
             np.array([[20, 20]]).T, p.inverse_transform(transformed[1]).values()
         )
-        # explicitely use the second params of each transformer
-        # inverse_transform[0][1] = lambda x: x - 11, inverse_transform = lamdda x: x - 100
+        # explicitly use the second params of each transformer
+        # inverse_transform[0][1] = lambda x: x - 11, inverse_transform = lambda x: x - 100
         np.testing.assert_array_almost_equal(
             data[1].values(),
             p.inverse_transform(transformed[1], series_idx=[1]).values(),
         )
+
+        # reversing input, and explicitly selecting reversed indexes
+        assert transformed[::-1] == p.transform(data[::-1], series_idx=[1, 0])
 
     def test_getitem(self):
         # given

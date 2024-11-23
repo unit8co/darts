@@ -7,9 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts.dataprocessing.transformers import (
-    Scaler,
-)
+from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
 from darts.metrics import mape
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs

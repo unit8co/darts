@@ -1404,7 +1404,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             The fitted transformer is used to transform the input during both training and prediction.
             If the transformation is invertible, the forecasts will be inverse-transformed.
-            Note: the data transformers are applied only when `historical_forecasts` is not provided
+            Only effective when `historical_forecasts=None`.
         metric_kwargs
             Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'component_reduction'`
             for reducing the component wise metrics, seasonality `'m'` for scaled metrics, etc. Will pass arguments to
@@ -1767,13 +1767,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If a float, `n_random_samples` is the ratio of parameter combinations selected from the full grid and must
             be between `0` and `1`. Defaults to `None`, for which random selection will be ignored.
         data_transformers
-            Optionally, a dictionary of BaseDataTransformer or Pipeline to apply on the corresponding series
+            Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
             (possibles keys; "series", "past_covariates", "future_covariates").
-            For fittable BaseDataTransformer/Pipeline;
+            For fittable transformer / pipeline:
+
             - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
             - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
+
             The fitted transformer is used to transform the input during both training and prediction.
-            If the transformation is invertible, the forecasts will be transformed back.
+            If the transformation is invertible, the forecasts will be inverse-transformed.
         fit_kwargs
             Additional arguments passed to the model `fit()` method.
         predict_kwargs
@@ -1901,13 +1903,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     series.time_index, model.fitted_values
                 )
                 if data_transformers and "series" in data_transformers:
-                    fitted_values, _, _ = _apply_data_transformers(
-                        series=fitted_values,
-                        past_covariates=None,
-                        future_covariates=None,
+                    fitted_values = _apply_inverse_data_transformers(
+                        series=series_,
+                        forecasts=fitted_values,
                         data_transformers=data_transformers,
-                        max_future_cov_lag=model.extreme_lags[5],
-                        fit_transformers=False,
+                        series_idx=None,
                     )
                 error = metric(series, fitted_values)
             elif val_series is None:  # expanding window mode
@@ -2149,7 +2149,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             The fitted transformer is used to transform the input during both training and prediction.
             If the transformation is invertible, the forecasts will be inverse-transformed.
-            Note: the data transformers are applied only during the backtest when `historical_forecasts` is provided
+            Only effective when `historical_forecasts=None`.
         metric_kwargs
             Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'m'` for scaled
             metrics, etc. Will pass arguments only if they are present in the corresponding metric signature. Ignores

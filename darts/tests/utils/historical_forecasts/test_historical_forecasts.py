@@ -2895,8 +2895,8 @@ class TestHistoricalforecast:
                 retrain=False,
             )
         assert str(err.value).startswith(
-            "When multiple series are provided, their number should match the number of fitted params in the "
-            "`data_transformers` defined with `global_fit=False`."
+            "When multiple series are provided, their number should match the number of "
+            "`TimeSeries` used to fit the data transformers `n=3`"
         )
 
         # retrain=True, multiple series and unfitted data transformers with global_fit=True

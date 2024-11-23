@@ -274,8 +274,9 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 ) != max(fitted_params_pipelines):
                     raise_log(
                         ValueError(
-                            "When multiple series are provided, their number should match the number of fitted params "
-                            "in the `data_transformers` defined with `global_fit=False`."
+                            f"When multiple series are provided, their number should match the number of "
+                            f"`TimeSeries` used to fit the data transformers `n={max(fitted_params_pipelines)}` "
+                            f"(only relevant for fittable transformers that use `global_fit=False`)."
                         ),
                         logger,
                     )
@@ -284,8 +285,8 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 # one series was passed
                 if max(fitted_params_pipelines) > 1:
                     logger.warning(
-                        "At least one of the `data_transformers` was fitted with `global_fit=False` on several series "
-                        "but only one series was provided."
+                        "Provided only a single series, but at least one of the `data_transformers` "
+                        "that use `global_fit=False` was fitted on multiple `TimeSeries`."
                     )
 
     if (
