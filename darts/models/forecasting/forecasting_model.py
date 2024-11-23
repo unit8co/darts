@@ -768,8 +768,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Default: ``True``.
         data_transformers
             Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
-            (possibles keys; "series", "past_covariates", "future_covariates").
-            For fittable transformer / pipeline:
+            (possibles keys; "series", "past_covariates", "future_covariates"). If provided, all input series must be
+            in the un-transformed space. For fittable transformer / pipeline:
 
             - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
             - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
@@ -1396,8 +1396,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Default: ``True``.
         data_transformers
             Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
-            (possibles keys; "series", "past_covariates", "future_covariates").
-            For fittable transformer / pipeline:
+            (possibles keys; "series", "past_covariates", "future_covariates"). If provided, all input series must be
+            in the un-transformed space. For fittable transformer / pipeline:
 
             - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
             - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
@@ -1768,8 +1768,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             be between `0` and `1`. Defaults to `None`, for which random selection will be ignored.
         data_transformers
             Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
-            (possibles keys; "series", "past_covariates", "future_covariates").
-            For fittable transformer / pipeline:
+            (possibles keys; "series", "past_covariates", "future_covariates"). If provided, all input series must be
+            in the un-transformed space. For fittable transformer / pipeline:
 
             - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
             - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
@@ -2141,8 +2141,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Default: ``True``.
         data_transformers
             Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
-            (possibles keys; "series", "past_covariates", "future_covariates").
-            For fittable transformer / pipeline:
+            (possibles keys; "series", "past_covariates", "future_covariates"). If provided, all input series must be
+            in the un-transformed space. For fittable transformer / pipeline:
 
             - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
             - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
