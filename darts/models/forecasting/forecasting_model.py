@@ -32,9 +32,7 @@ import pandas as pd
 from darts import metrics
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.pipeline import Pipeline
-from darts.dataprocessing.transformers import (
-    BaseDataTransformer,
-)
+from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.metrics.metrics import METRIC_TYPE
 from darts.timeseries import TimeSeries
@@ -749,7 +747,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             to the corresponding retrain function argument.
             Note: some models do require being retrained every time and do not support anything other
             than `retrain=True`.
-            Note: also controls the retraining of the `data_transformers`
+            Note: also controls the retraining of the `data_transformers`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not.
         last_points_only
@@ -771,11 +769,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         data_transformers
             Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
             (possibles keys; "series", "past_covariates", "future_covariates").
-            For fittable transformer / pipeline;
+            For fittable transformer / pipeline:
+
             - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
             - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
+
             The fitted transformer is used to transform the input during both training and prediction.
-            If the transformation is invertible, the forecasts will be transformed back.
+            If the transformation is invertible, the forecasts will be inverse-transformed.
         fit_kwargs
             Additional arguments passed to the model `fit()` method.
         predict_kwargs
@@ -987,7 +987,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         for idx, series_ in enumerate(outer_iterator):
             past_covariates_ = past_covariates[idx] if past_covariates else None
             future_covariates_ = future_covariates[idx] if future_covariates else None
-
             if isinstance(sample_weight, str):
                 sample_weight_ = sample_weight
             else:
@@ -1194,7 +1193,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     series=train_series,
                     forecasts=forecast,
                     data_transformers=data_transformers,
-                    idx_series=idx if using_prefitted_transformers else None,
+                    series_idx=idx if using_prefitted_transformers else None,
                 )
 
                 show_predict_warnings = False
@@ -1368,7 +1367,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             to the corresponding retrain function argument.
             Note: some models do require being retrained every time and do not support anything other
             than `retrain=True`.
-            Note: also controls the retraining of the `data_transformers`
+            Note: also controls the retraining of the `data_transformers`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not.
         last_points_only
@@ -1398,11 +1397,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         data_transformers
             Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
             (possibles keys; "series", "past_covariates", "future_covariates").
-            For fittable transformer / pipeline;
+            For fittable transformer / pipeline:
+
             - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
             - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
+
             The fitted transformer is used to transform the input during both training and prediction.
-            If the transformation is invertible, the forecasts will be transformed back.
+            If the transformation is invertible, the forecasts will be inverse-transformed.
             Note: the data transformers are applied only when `historical_forecasts` is not provided
         metric_kwargs
             Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'component_reduction'`
@@ -2107,7 +2108,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             to the corresponding retrain function argument.
             Note: some models do require being retrained every time and do not support anything other
             than `retrain=True`.
-            Note: also controls the retraining of the `data_transformers`
+            Note: also controls the retraining of the `data_transformers`.
         last_points_only
             Whether to use the whole historical forecasts or only the last point of each forecast to compute the error.
         metric
@@ -2130,11 +2131,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         data_transformers
             Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
             (possibles keys; "series", "past_covariates", "future_covariates").
-            For fittable transformer / pipeline;
+            For fittable transformer / pipeline:
+
             - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
             - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
+
             The fitted transformer is used to transform the input during both training and prediction.
-            If the transformation is invertible, the forecasts will be transformed back.
+            If the transformation is invertible, the forecasts will be inverse-transformed.
             Note: the data transformers are applied only during the backtest when `historical_forecasts` is provided
         metric_kwargs
             Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'m'` for scaled

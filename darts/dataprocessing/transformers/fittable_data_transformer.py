@@ -271,8 +271,7 @@ class FittableDataTransformer(BaseDataTransformer):
             transformer_selector = range(len(series))
 
         params_iterator = self._get_params(
-            transformer_selector=transformer_selector,
-            calling_fit=True,
+            transformer_selector=transformer_selector, calling_fit=True
         )
         fit_iterator = (
             zip(data, params_iterator)
@@ -299,14 +298,14 @@ class FittableDataTransformer(BaseDataTransformer):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         *args,
         component_mask: Optional[np.array] = None,
-        idx_series: Optional[Union[int, Sequence[int]]] = None,
+        series_idx: Optional[Union[int, Sequence[int]]] = None,
         **kwargs,
     ) -> Union[TimeSeries, list[TimeSeries]]:
         return super().transform(
             series=series,
             *args,
             component_mask=component_mask,
-            idx_series=idx_series if not self._global_fit else None,
+            series_idx=series_idx if not self._global_fit else None,
             **kwargs,
         )
 

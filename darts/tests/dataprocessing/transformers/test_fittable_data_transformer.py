@@ -182,11 +182,11 @@ class TestLocalFittableDataTransformer:
 
         # If the index of another set of parameters is provided, the output changes accordingly:
         # 3 * 1 + 10 = 13
-        assert mock.transform(test_input_1, idx_series=1) == constant_timeseries(
+        assert mock.transform(test_input_1, series_idx=1) == constant_timeseries(
             value=13, length=10
         )
         # 3 * 2 + 10 = 16
-        assert mock.transform(test_input_2, idx_series=1) == constant_timeseries(
+        assert mock.transform(test_input_2, series_idx=1) == constant_timeseries(
             value=16, length=11
         )
 
@@ -214,19 +214,19 @@ class TestLocalFittableDataTransformer:
         assert mock.transform(test_input_2) == constant_timeseries(value=14, length=11)
 
         # If the index of another set of parameters is provided, the output changes accordingly:
-        assert mock.transform(test_input_1, idx_series=0) == constant_timeseries(
+        assert mock.transform(test_input_1, series_idx=0) == constant_timeseries(
             value=12, length=10
         )
         # 3 * 1 + 11 = 14
-        assert mock.transform(test_input_1, idx_series=1) == constant_timeseries(
+        assert mock.transform(test_input_1, series_idx=1) == constant_timeseries(
             value=14, length=10
         )
         # 2 * 2 + 10 = 14
-        assert mock.transform(test_input_2, idx_series=0) == constant_timeseries(
+        assert mock.transform(test_input_2, series_idx=0) == constant_timeseries(
             value=14, length=11
         )
         # 3 * 2 + 11 = 17
-        assert mock.transform(test_input_2, idx_series=1) == constant_timeseries(
+        assert mock.transform(test_input_2, series_idx=1) == constant_timeseries(
             value=17, length=11
         )
 

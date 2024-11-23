@@ -304,7 +304,7 @@ class BaseDataTransformer(ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         *args,
         component_mask: Optional[np.array] = None,
-        idx_series: Optional[Union[int, Sequence[int]]] = None,
+        series_idx: Optional[Union[int, Sequence[int]]] = None,
         **kwargs,
     ) -> Union[TimeSeries, list[TimeSeries]]:
         """Transforms a (sequence of) of series by calling the user-implemeneted `ts_transform` method.
@@ -329,8 +329,9 @@ class BaseDataTransformer(ABC):
             attribute was set to `True` when instantiating `BaseDataTransformer`, then the component mask
             will be automatically applied to each `TimeSeries` input. Otherwise, `component_mask` will be
             provided as an addition keyword argument to `ts_transform`. See 'Notes' for further details.
-        idx_series
-            Optionally, the index(es) of the series to transform (to get the appropriate fixed parameters)
+        series_idx
+            Optionally, the index(es) of each series corresponding to their positions within the series used to fit
+            the transformer (to retrieve the appropriate transformer parameters).
         kwargs
             Additional keyword arguments for each :func:`ts_transform()` method call
 
@@ -363,14 +364,14 @@ class BaseDataTransformer(ABC):
         # Take note of original input for unmasking purposes:
         if isinstance(series, TimeSeries):
             data = [series]
-            if idx_series:
-                transformer_selector = self._check_idx_series(idx_series)
+            if series_idx:
+                transformer_selector = self._process_series_idx(series_idx)
             else:
                 transformer_selector = [0]
         else:
             data = series
-            if idx_series:
-                transformer_selector = self._check_idx_series(idx_series)
+            if series_idx:
+                transformer_selector = self._process_series_idx(series_idx)
             else:
                 transformer_selector = range(len(series))
 
@@ -448,22 +449,13 @@ class BaseDataTransformer(ABC):
                 )
         return None
 
-    def _check_idx_series(self, idx_series: Union[int, Sequence[int]]) -> Sequence[int]:
-        """Convert the `idx_series` to a Sequence[int] and run sanity checks.
+    @staticmethod
+    def _process_series_idx(series_idx: Union[int, Sequence[int]]) -> Sequence[int]:
+        """Convert the `series_idx` to a Sequence[int].
 
-        Note: the validity of the entries in idx_series is checked in _get_params().
+        Note: the validity of the entries in series_idx is checked in _get_params().
         """
-        if isinstance(idx_series, int):
-            idx_series = [idx_series]
-        elif not isinstance(idx_series, Sequence):
-            raise_log(
-                ValueError(
-                    "`idx_series` must be either an int or a Sequence of int, "
-                    f"received {type(idx_series)}."
-                ),
-                logger,
-            )
-        return idx_series
+        return [series_idx] if isinstance(series_idx, int) else series_idx
 
     @staticmethod
     def apply_component_mask(
