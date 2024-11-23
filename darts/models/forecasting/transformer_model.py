@@ -480,7 +480,7 @@ class TransformerModel(PastCovariatesTorchModel):
                 }
             ..
         random_state
-            Control the randomness of the weights initialization. Check this
+            Control the randomness of the weight's initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
             Default: ``None``.
         pl_trainer_kwargs
