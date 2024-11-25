@@ -233,13 +233,10 @@ def _historical_forecasts_general_checks(model, series, kwargs):
 
         if n.retrain:
             # if more than one series is passed and the pipelines are retrained, they cannot be global
-            if len(series) > 1 and len(global_fit_pipelines) > 0:
-                raise_log(
-                    ValueError(
-                        "When `retrain=True` and multiple series are provided, all the fittable "
-                        "`data_transformers` must be defined with `global_fit=False`."
-                    ),
-                    logger,
+            if n.show_warnings and len(series) > 1 and len(global_fit_pipelines) > 0:
+                logger.warning(
+                    "When `retrain=True` and multiple series are provided, the fittable `data_transformers` "
+                    "are trained on each series independently (`global_fit=True` will be ignored)."
                 )
         else:
             # must already be fitted without retraining
@@ -283,7 +280,7 @@ def _historical_forecasts_general_checks(model, series, kwargs):
             else:
                 # at least one pipeline was fitted on several series with `global_fit=False` but only
                 # one series was passed
-                if max(fitted_params_pipelines) > 1:
+                if n.show_warnings and max(fitted_params_pipelines) > 1:
                     logger.warning(
                         "Provided only a single series, but at least one of the `data_transformers` "
                         "that use `global_fit=False` was fitted on multiple `TimeSeries`."

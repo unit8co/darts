@@ -2860,8 +2860,9 @@ class TestHistoricalforecast:
         else:
             self.helper_compare_hf(hf_auto, [manual_hf_0, manual_hf_1])
 
-    def test_historical_forecasts_with_scaler_errors(self):
-        """Check that the appropriate exception is raised when providing incorrect parameters."""
+    def test_historical_forecasts_with_scaler_errors(self, caplog):
+        """Check that the appropriate exception is raised when providing incorrect parameters or the expected
+        warning is display in the corner cases."""
         ocl = 2
         hf_args = {
             "start": -ocl - 1,
@@ -2874,7 +2875,7 @@ class TestHistoricalforecast:
 
         # retrain=False and unfitted data transformers
         with pytest.raises(ValueError) as err:
-            _ = model.historical_forecasts(
+            model.historical_forecasts(
                 **hf_args,
                 series=self.sine_univariate1,
                 data_transformers={"series": Scaler()},
@@ -2886,7 +2887,7 @@ class TestHistoricalforecast:
 
         # retrain=False, multiple series not matching the fitted data transformers dimensions
         with pytest.raises(ValueError) as err:
-            _ = model.historical_forecasts(
+            model.historical_forecasts(
                 **hf_args,
                 series=[self.sine_univariate1] * 2,
                 data_transformers={
@@ -2900,17 +2901,37 @@ class TestHistoricalforecast:
         )
 
         # retrain=True, multiple series and unfitted data transformers with global_fit=True
-        with pytest.raises(ValueError) as err:
-            _ = model.historical_forecasts(
+        expected_warning = (
+            "When `retrain=True` and multiple series are provided, the fittable `data_transformers` "
+            "are trained on each series independently (`global_fit=True` will be ignored)."
+        )
+        with caplog.at_level(logging.WARNING):
+            model.historical_forecasts(
                 **hf_args,
                 series=[self.sine_univariate1, self.sine_univariate2],
                 data_transformers={"series": Scaler(global_fit=True)},
                 retrain=True,
             )
-        assert str(err.value).startswith(
-            "When `retrain=True` and multiple series are provided, all the fittable `data_transformers` "
-            "must be defined with `global_fit=False"
+            assert expected_warning in caplog.text
+
+        # data transformer (global_fit=False) prefitted on several series but only series is forecasted
+        expected_warning = (
+            "Provided only a single series, but at least one of the `data_transformers` "
+            "that use `global_fit=False` was fitted on multiple `TimeSeries`."
         )
+        with caplog.at_level(logging.WARNING):
+            model.historical_forecasts(
+                **hf_args,
+                series=[self.sine_univariate2],
+                data_transformers={
+                    "series": Scaler(global_fit=False).fit([
+                        self.sine_univariate1,
+                        self.sine_univariate2,
+                    ])
+                },
+                retrain=False,
+            )
+            assert expected_warning in caplog.text
 
     @pytest.mark.parametrize("params", product([True, False], [True, False]))
     def test_historical_forecasts_with_scaler_multiple_series(self, params):
@@ -2941,29 +2962,6 @@ class TestHistoricalforecast:
                 return Scaler(global_fit=global_fit).fit(series)
             else:
                 return Scaler(global_fit=global_fit)
-
-        # global fit is not supported with retrain and multiple series
-        if retrain and global_fit:
-            expected_msg = (
-                "When `retrain=True` and multiple series are provided, all the fittable `data_transformers` must "
-                "be defined with `global_fit=False`."
-            )
-            with pytest.raises(ValueError) as err:
-                _ = model.historical_forecasts(
-                    **hf_args,
-                    series=series,
-                    data_transformers={"series": get_scaler(fit=True)},
-                )
-            assert str(err.value) == expected_msg
-
-            with pytest.raises(ValueError) as err:
-                _ = model.historical_forecasts(
-                    **hf_args,
-                    series=series,
-                    data_transformers={"series": get_scaler(fit=False)},
-                )
-            assert str(err.value) == expected_msg
-            return
 
         # using all the series used to fit the scaler
         hf = model.historical_forecasts(
@@ -3033,6 +3031,7 @@ class TestHistoricalforecast:
         )
         self.helper_compare_hf(hf, [manual_hf_2])
 
+        # data_transformers are not pre-fitted
         if retrain:
             hf = model.historical_forecasts(
                 **hf_args,
