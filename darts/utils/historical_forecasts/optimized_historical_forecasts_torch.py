@@ -37,6 +37,8 @@ def _optimized_historical_forecasts(
     Optimized historical forecasts for TorchForecastingModels
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
+
+    The data_transformers are applied in historical_forecasts (input and predictions)
     """
     bounds = []
     for idx, series_ in enumerate(series):
