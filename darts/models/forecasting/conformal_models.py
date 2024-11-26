@@ -21,6 +21,8 @@ import numpy as np
 import pandas as pd
 
 from darts import TimeSeries, metrics
+from darts.dataprocessing.pipeline import Pipeline
+from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_log
 from darts.metrics.metrics import METRIC_TYPE
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
@@ -468,6 +470,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
+        data_transformers: Optional[
+            dict[str, Union[BaseDataTransformer, Pipeline]]
+        ] = None,
         fit_kwargs: Optional[dict[str, Any]] = None,
         predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
@@ -563,6 +568,17 @@ class ConformalModel(GlobalForecastingModel, ABC):
         enable_optimization
             Whether to use the optimized version of `historical_forecasts` when supported and available.
             Default: ``True``.
+        data_transformers
+            Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
+            (possibles keys; "series", "past_covariates", "future_covariates"). If provided, all input series must be
+            in the un-transformed space. For fittable transformer / pipeline:
+
+            - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step
+              (currently ignored by conformal models).
+            - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
+
+            The fitted transformer is used to transform the input during both training and prediction.
+            If the transformation is invertible, the forecasts will be inverse-transformed.
         fit_kwargs
             Currently ignored by conformal models.
         predict_kwargs
@@ -620,6 +636,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             show_warnings=False,
             predict_likelihood_parameters=False,
             enable_optimization=enable_optimization,
+            data_transformers=data_transformers,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
         )
@@ -666,6 +683,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
+        data_transformers: Optional[
+            dict[str, Union[BaseDataTransformer, Pipeline]]
+        ] = None,
         metric_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
         fit_kwargs: Optional[dict[str, Any]] = None,
         predict_kwargs: Optional[dict[str, Any]] = None,
@@ -778,6 +798,18 @@ class ConformalModel(GlobalForecastingModel, ABC):
         enable_optimization
             Whether to use the optimized version of `historical_forecasts` when supported and available.
             Default: ``True``.
+        data_transformers
+            Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
+            (possibles keys; "series", "past_covariates", "future_covariates"). If provided, all input series must be
+            in the un-transformed space. For fittable transformer / pipeline:
+
+            - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step
+              (currently ignored by conformal models).
+            - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
+
+            The fitted transformer is used to transform the input during both training and prediction.
+            If the transformation is invertible, the forecasts will be inverse-transformed.
+            Only effective when `historical_forecasts=None`.
         metric_kwargs
             Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'component_reduction'`
             for reducing the component wise metrics, seasonality `'m'` for scaled metrics, etc. Will pass arguments to
@@ -834,6 +866,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             show_warnings=show_warnings,
             predict_likelihood_parameters=predict_likelihood_parameters,
             enable_optimization=enable_optimization,
+            data_transformers=data_transformers,
             metric_kwargs=metric_kwargs,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
@@ -862,6 +895,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
+        data_transformers: Optional[
+            dict[str, Union[BaseDataTransformer, Pipeline]]
+        ] = None,
         metric_kwargs: Optional[dict[str, Any]] = None,
         fit_kwargs: Optional[dict[str, Any]] = None,
         predict_kwargs: Optional[dict[str, Any]] = None,
@@ -980,6 +1016,18 @@ class ConformalModel(GlobalForecastingModel, ABC):
         enable_optimization
             Whether to use the optimized version of `historical_forecasts` when supported and available.
             Default: ``True``.
+        data_transformers
+            Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
+            (possibles keys; "series", "past_covariates", "future_covariates"). If provided, all input series must be
+            in the un-transformed space. For fittable transformer / pipeline:
+
+            - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step
+              (currently ignored by conformal models).
+            - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
+
+            The fitted transformer is used to transform the input during both training and prediction.
+            If the transformation is invertible, the forecasts will be inverse-transformed.
+            Only effective when `historical_forecasts=None`.
         metric_kwargs
             Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'m'` for scaled
             metrics, etc. Will pass arguments only if they are present in the corresponding metric signature. Ignores
@@ -1026,6 +1074,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             show_warnings=show_warnings,
             predict_likelihood_parameters=predict_likelihood_parameters,
             enable_optimization=enable_optimization,
+            data_transformers=data_transformers,
             metric_kwargs=metric_kwargs,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,

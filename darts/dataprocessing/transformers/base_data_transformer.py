@@ -304,6 +304,7 @@ class BaseDataTransformer(ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         *args,
         component_mask: Optional[np.array] = None,
+        series_idx: Optional[Union[int, Sequence[int]]] = None,
         **kwargs,
     ) -> Union[TimeSeries, list[TimeSeries]]:
         """Transforms a (sequence of) of series by calling the user-implemeneted `ts_transform` method.
@@ -328,6 +329,9 @@ class BaseDataTransformer(ABC):
             attribute was set to `True` when instantiating `BaseDataTransformer`, then the component mask
             will be automatically applied to each `TimeSeries` input. Otherwise, `component_mask` will be
             provided as an addition keyword argument to `ts_transform`. See 'Notes' for further details.
+        series_idx
+            Optionally, the index(es) of each series corresponding to their positions within the series used to fit
+            the transformer (to retrieve the appropriate transformer parameters).
         kwargs
             Additional keyword arguments for each :func:`ts_transform()` method call
 
@@ -360,10 +364,16 @@ class BaseDataTransformer(ABC):
         # Take note of original input for unmasking purposes:
         if isinstance(series, TimeSeries):
             data = [series]
-            transformer_selector = [0]
+            if series_idx:
+                transformer_selector = self._process_series_idx(series_idx)
+            else:
+                transformer_selector = [0]
         else:
             data = series
-            transformer_selector = range(len(series))
+            if series_idx:
+                transformer_selector = self._process_series_idx(series_idx)
+            else:
+                transformer_selector = range(len(series))
 
         input_iterator = _build_tqdm_iterator(
             zip(data, self._get_params(transformer_selector=transformer_selector)),
@@ -438,6 +448,14 @@ class BaseDataTransformer(ABC):
                     f"upon initialising {self.name}."
                 )
         return None
+
+    @staticmethod
+    def _process_series_idx(series_idx: Union[int, Sequence[int]]) -> Sequence[int]:
+        """Convert the `series_idx` to a Sequence[int].
+
+        Note: the validity of the entries in series_idx is checked in _get_params().
+        """
+        return [series_idx] if isinstance(series_idx, int) else series_idx
 
     @staticmethod
     def apply_component_mask(
