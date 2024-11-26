@@ -1102,12 +1102,13 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
             # determine first forecast index for conformal prediction
             # we need at least one residual per point in the horizon prior to the first conformal forecast
-            first_idx_train = math.ceil(
-                (forecast_horizon + self.output_chunk_shift) / cal_stride
-            )
+            horizon_ocs = forecast_horizon + self.output_chunk_shift
+            first_idx_train = math.ceil(horizon_ocs / cal_stride)
+
             # plus some additional examples based on `cal_length`
             if cal_length is not None:
                 first_idx_train += cal_length - 1
+
             # check if later we need to drop some residuals without useful information (unknown residuals)
             if overlap_end:
                 delta_end = n_steps_between(
@@ -1126,7 +1127,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 # useful residual information only up until the forecast starting at the last time step in `series`
                 ignore_n_residuals = delta_end - forecast_horizon + 1
             else:
-                # ignore at least the one residuals/forecast from the end, since we can only use prior residuals
+                # ignore at least one forecast residuals from the end, since we can only use prior residuals
                 ignore_n_residuals = self.output_chunk_shift + 1
                 # with last points only, ignore the last `horizon` residuals to avoid look-ahead bias
                 if last_points_only:
@@ -1134,9 +1135,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
             # get the last index respecting `cal_stride`
             last_res_idx = -math.ceil(ignore_n_residuals / cal_stride)
-
-            if last_res_idx is not None:
-                res = res[:last_res_idx]
+            # get only useful residuals
+            res = res[:last_res_idx]
 
             if first_idx_train >= len(s_hfcs) or len(res) < min_n_cal:
                 raise_log(
@@ -1151,32 +1151,40 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
             # adjust first index based on `start`
             first_idx_start = 0
-            if start is not None and start == "end":
-                # start at the last forecast
+            if start == "end":
+                # called from `predict()`; start at the last forecast
                 first_idx_start = len(s_hfcs) - 1
             elif start is not None:
-                # adjust forecastable index in case of output shift or `last_points_only=True`
+                # called from `historical_forecasts()`: use user-defined start
+                # the conformal forecastable index ranges from the start of the first valid historical
+                # forecast until the start of the last historical forecast
+                historical_forecasts_time_index = (
+                    s_hfcs[first_idx_train].start_time(),
+                    s_hfcs[-1].start_time(),
+                )
+                # adjust forecast start points in case of output shift or `last_points_only=True`
                 adjust_idx = (
                     self.output_chunk_shift
                     + int(last_points_only) * (forecast_horizon - 1)
                 ) * series_.freq
-                historical_forecastable_index = (
-                    s_hfcs[first_idx_train].start_time() - adjust_idx,
-                    s_hfcs[-1].start_time() - adjust_idx,
+                historical_forecasts_time_index = (
+                    historical_forecasts_time_index[0] - adjust_idx,
+                    historical_forecasts_time_index[1] - adjust_idx,
                 )
-                # adjust forecastable index based on start, assuming hfcs were generated with `stride=1`
-                first_idx_start, _ = _adjust_historical_forecasts_time_index(
+
+                # adjust forecastable times based on user start, assuming hfcs were generated with `stride=1`
+                first_start_time, _ = _adjust_historical_forecasts_time_index(
                     series=series_,
                     series_idx=series_idx,
                     start=start,
                     start_format=start_format,
                     stride=stride,
-                    historical_forecasts_time_index=historical_forecastable_index,
+                    historical_forecasts_time_index=historical_forecasts_time_index,
                     show_warnings=show_warnings,
                 )
                 # find position relative to start
                 first_idx_start = n_steps_between(
-                    first_idx_start + adjust_idx,
+                    first_start_time + adjust_idx,
                     s_hfcs[0].start_time(),
                     freq=series_.freq,
                 )
@@ -1185,77 +1193,56 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
             # get final first index
             first_fc_idx = max([first_idx_train, first_idx_start])
-            # bring into shape (forecasting steps, n components, n samples * n examples)
+            # bring `res` from shape (forecasting steps, n components, n past residuals) into
+            # shape (forecasting steps, n components, n past residuals)
             if last_points_only:
-                # -> (1, n components, n samples * n examples)
-                res = res.T
+                # -> (1, n components, n samples * n past residuals)
+                res = res.transpose(2, 1, 0)
             else:
-                res = np.array(res)
-                # -> (forecast horizon, n components, n samples * n examples)
                 # rearrange the residuals to avoid look-ahead bias and to have the same number of examples per
                 # point in the horizon. We want the most recent residuals in the past for each step in the horizon.
-                # Meaning that to conformalize any forecast at some time `t` with `horizon=n`:
-                #   - for `horizon=1` of that forecast calibrate with residuals from all 1-step forecasts up until
-                #     forecast time `t-1`
-                #   - for `horizon=n` of that forecast calibrate with residuals from all n-step forecasts up until
-                #     forecast time `t-n`
-                # The rearranged residuals will look as follows, where `res_ti_cj_hk` is the
-                # residuals at time `ti` for component `cj` at forecasted step/horizon `hk`.
-                # ```
-                # [  # forecast horizon
-                #     [  # components
-                #         [res_t0_c0_h1, ...]  # residuals at different times
-                #         [..., res_tn_cn_h1],
-                #     ],
-                #     ...,
-                #     [
-                #         [res_t0_c0_hn, ...],
-                #         [..., res_tn_cn_hn],
-                #     ],
-                # ]
-                # ```
+                res = np.array(res)
+
+                # go through each step in the horizon, use all useful information from the end (most recent values),
+                # and skip information at beginning (most distant past);
+                # -> (forecast horizon, n components, n past residuals)
                 res_ = []
-                for irr in range(forecast_horizon - 1, -1, -1):
-                    idx_fc_start = math.floor(irr / cal_stride)
+                for idx_horizon in range(forecast_horizon):
+                    n = idx_horizon + 1
+                    # ignore residuals at beginning
+                    idx_fc_start = math.floor((forecast_horizon - n) / cal_stride)
+                    # keep as many residuals as possible from end
                     idx_fc_end = -(
                         math.ceil(forecast_horizon / cal_stride) - (idx_fc_start + 1)
                     )
-                    idx_horizon = forecast_horizon - (irr + 1)
                     res_.append(res[idx_fc_start : idx_fc_end or None, idx_horizon])
                 res = np.concatenate(res_, axis=2).T
 
-            # get the last forecast index based on the residual examples
-            last_fc_idx = res.shape[2] + math.ceil(
-                (forecast_horizon + self.output_chunk_shift) / cal_stride
-            )
+            # get the last conformal forecast index (exclusive) based on the residual examples
+            last_fc_idx = res.shape[2] + math.ceil(horizon_ocs / cal_stride)
 
             # forecasts are stridden, so stride must be relative
             rel_stride = math.ceil(stride / cal_stride)
 
             def conformal_predict(idx_, pred_vals_):
                 # get the last residual index for calibration, `cal_end` is exclusive
-                # to avoid look-ahead bias, use only residuals from before the historical forecast start point;
+                # to avoid look-ahead bias, use only residuals from before the conformal forecast start point;
                 # for `last_points_only=True`, the last residual historically available at the forecasting
-                # point is `forecast_horizon + self.output_chunk_shift - 1` steps before. The same applies to
-                # `last_points_only=False` thanks to the residual rearrangement
+                # point is `horizon_ocs - 1` steps before. The same applies to `last_points_only=False` thanks to
+                # the residual rearrangement
                 cal_end = (
                     first_fc_idx
                     + idx_ * rel_stride
-                    - (
-                        math.ceil(
-                            (forecast_horizon + self.output_chunk_shift) / cal_stride
-                        )
-                        - 1
-                    )
+                    - (math.ceil(horizon_ocs / cal_stride) - 1)
                 )
-                # first residual index is shifted back by the horizon to get `cal_length` points for
-                # the last point in the horizon
+                # optionally, use only `cal_length` residuals
                 cal_start = cal_end - cal_length if cal_length is not None else None
 
-                cal_res = res[:, :, cal_start:cal_end]
-                q_hat_ = self._calibrate_interval(cal_res)
-
+                # calibrate and apply interval to the forecasts
+                q_hat_ = self._calibrate_interval(res[:, :, cal_start:cal_end])
                 vals = self._apply_interval(pred_vals_, q_hat_)
+
+                # optionally, generate samples from the intervals
                 if not predict_likelihood_parameters:
                     vals = sample_from_quantiles(
                         vals, self.quantiles, num_samples=num_samples
@@ -1270,13 +1257,14 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 )
             else:
                 inner_iterator = enumerate(s_hfcs[first_fc_idx:last_fc_idx:rel_stride])
+
             comp_names_out = (
                 self._cp_component_names(series_)
                 if predict_likelihood_parameters
                 else None
             )
             if len(series) == 1:
-                # Only use progress bar if there's no outer loop
+                # only use progress bar if there's no outer loop
                 inner_iterator = _build_tqdm_iterator(
                     inner_iterator,
                     verbose,
