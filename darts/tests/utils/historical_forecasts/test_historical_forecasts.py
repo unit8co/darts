@@ -1,5 +1,6 @@
 import itertools
 import logging
+import math
 from copy import deepcopy
 from itertools import product
 from typing import Optional
@@ -3663,44 +3664,46 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [False, True],  # last points only
-                [None, 2],  # cal length
-                ["value", "position"],  # start format
-                [1, 2],  # stride
-                [0, 1],  # output chunk shift
-            )
+        itertools.product(
+            [False, True],  # last points only
+            [None, 2],  # cal length
+            ["value", "position"],  # start format
+            [2, 4],  # stride
+            [1, 2],  # cal stride
+            [0, 1],  # output chunk shift
         ),
     )
-    def test_conformal_historical_forecast_start(self, caplog, config):
+    def test_conformal_historical_forecast_start_stride(self, caplog, config):
         """Tests naive conformal model with `start` being the first forecastable index is identical to a start
-        before forecastable index (including stride).
+        before forecastable index (including stride, cal stride).
         """
         (
             last_points_only,
             cal_length,
             start_format,
             stride,
+            cal_stride,
             ocs,
         ) = config
-        # TODO: adjust this test (the input length of `series_val`), once `cal_stride` has been properly implemented
         q = [0.1, 0.5, 0.9]
         pred_lklp = {"num_samples": 1, "predict_likelihood_parameters": True}
         # compute minimum series length to generate n forecasts
         icl = 3
         ocl = 5
         horizon = 2
-        horizon_ocs = horizon + ocs
-        add_cal_length = cal_length - 1 if cal_length is not None else 0
-        min_len_val_series = icl + 2 * horizon_ocs + add_cal_length
+
+        # the position of the first conformal forecast start point without look-ahead bias; assuming min cal_length=1
+        horizon_ocs = math.ceil((horizon + ocs) / cal_stride) * cal_stride
+        # adjust by the number of calibration examples
+        add_cal_length = cal_stride * (cal_length - 1) if cal_length is not None else 0
+        # the minimum series length is the sum of the above, plus the length of one forecast (horizon + ocs)
+        min_len_val_series = icl + horizon_ocs + add_cal_length + horizon + ocs
         n_forecasts = 3
         # to get `n_forecasts` with `stride`, we need more points
         n_forecasts_stride = stride * n_forecasts - int(1 % stride > 0)
         # get train and val series of that length
-        series_train, series_val = (
-            self.ts_pass_train[:10],
-            self.ts_pass_val[: min_len_val_series + n_forecasts_stride - 1],
+        series = tg.linear_timeseries(
+            length=min_len_val_series + n_forecasts_stride - 1
         )
 
         # first train the ForecastingModel
@@ -3709,23 +3712,25 @@ class TestHistoricalforecast:
             output_chunk_length=ocl,
             output_chunk_shift=ocs,
         )
-        forecasting_model.fit(series_train)
+        forecasting_model.fit(series)
 
         # optionally compute the start as a positional index
         start_position = icl + horizon_ocs + add_cal_length
         if start_format == "value":
-            start = series_val.time_index[start_position]
-            start_too_early = series_val.time_index[start_position - stride]
+            start = series.time_index[start_position]
+            start_too_early = series.time_index[start_position - 1]
+            start_too_early_stride = series.time_index[start_position - stride]
         else:
             start = start_position
-            start_too_early = start_position - stride
-        start_first_fc = series_val.time_index[start_position] + series_val.freq * (
-            horizon_ocs - 1 if last_points_only else ocs
+            start_too_early = start_position - 1
+            start_too_early_stride = start_position - stride
+        start_first_fc = series.time_index[start_position] + series.freq * (
+            horizon + ocs - 1 if last_points_only else ocs
         )
         too_early_warn_exp = "is before the first predictable/trainable historical"
 
         hfc_params = {
-            "series": series_val,
+            "series": series,
             "retrain": False,
             "start_format": start_format,
             "stride": stride,
@@ -3737,13 +3742,13 @@ class TestHistoricalforecast:
         assert len(hist_fct_all) == n_forecasts
         assert hist_fct_all[0].start_time() == start_first_fc
         assert (
-            hist_fct_all[1].start_time() - stride * series_val.freq
+            hist_fct_all[1].start_time() - stride * series.freq
             == hist_fct_all[0].start_time()
         )
 
         # compute conformal historical forecasts (starting at first possible conformal forecast)
         model = ConformalNaiveModel(
-            forecasting_model, quantiles=q, cal_length=cal_length, cal_stride=stride
+            forecasting_model, quantiles=q, cal_length=cal_length, cal_stride=cal_stride
         )
         with caplog.at_level(logging.WARNING):
             hist_fct = model.historical_forecasts(
@@ -3754,15 +3759,19 @@ class TestHistoricalforecast:
         assert len(hist_fct) == len(hist_fct_all)
         assert hist_fct_all[0].start_time() == hist_fct[0].start_time()
         assert (
-            hist_fct[1].start_time() - stride * series_val.freq
-            == hist_fct[0].start_time()
+            hist_fct[1].start_time() - stride * series.freq == hist_fct[0].start_time()
         )
 
-        # start one earlier raises warning but still starts at same time
+        # start one earlier gives warning
         with caplog.at_level(logging.WARNING):
-            hist_fct_too_early = model.historical_forecasts(
+            _ = model.historical_forecasts(
                 start=start_too_early, **hfc_params, **pred_lklp
             )
             assert too_early_warn_exp in caplog.text
         caplog.clear()
+
+        # starting stride before first valid start, gives identical results
+        hist_fct_too_early = model.historical_forecasts(
+            start=start_too_early_stride, **hfc_params, **pred_lklp
+        )
         assert hist_fct_too_early == hist_fct

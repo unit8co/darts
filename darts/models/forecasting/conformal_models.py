@@ -55,65 +55,6 @@ else:
 logger = get_logger(__name__)
 
 
-def _get_calibration_hfc_start(
-    series: Sequence[TimeSeries],
-    horizon: int,
-    output_chunk_shift: int,
-    cal_length: Optional[int],
-    cal_stride: int,
-    start: Optional[Union[pd.Timestamp, int, Literal["end"]]],
-    start_format: Literal["position", "value"],
-) -> tuple[Optional[Union[int, pd.Timestamp]], Literal["position", "value"]]:
-    """Find the calibration start point (CSP) (for historical forecasts on calibration set).
-
-    - If `start=None`, the CSP is also `None` (all possible hfcs).
-    - If `start="end"` (when calling `predict()`), returns the CSP as a positional index relative to the end of the
-      series (<0).
-    - Otherwise (when calling `historical_forecasts()`), the CSP is the start value (`start_format="value"`) or start
-      position (`start_format="position"`) adjusted by the positions computed for the case above.
-
-    If this function is called from `historical_forecasts`, the sanity checks guarantee the following:
-
-    - `start` cannot be a `float`
-    - when `start_format='value'`, all `series` have the same frequency
-    """
-    if start is None:
-        return start, start_format
-
-    horizon_ocs = horizon + output_chunk_shift
-    if cal_length is not None:
-        # we only need `cal_length` forecasts with stride `cal_stride` before the `predict()` start point;
-        # the last valid calibration forecast must start at least `horizon_ocs` before `predict()` start
-        add_steps = math.ceil(horizon_ocs / cal_stride) - 1
-        start_idx_rel = -cal_stride * (cal_length + add_steps)
-        cal_start_format = "position"
-    elif cal_stride > 1:
-        # we need all forecasts with stride `cal_stride` before the `predict()` start point
-        max_len_series = max(len(series_) for series_ in series)
-        start_idx_rel = -cal_stride * math.ceil(max_len_series / cal_stride)
-        cal_start_format = "position"
-    else:
-        # we need all possible forecasts with `cal_stride=1`
-        start_idx_rel, cal_start_format = None, "value"
-
-    if start == "end":
-        # `predict()` is relative to the end
-        return start_idx_rel, cal_start_format
-
-    # `historical_forecasts()` is relative to `start`
-    start_is_position = isinstance(start, (int, np.int64)) and (
-        start_format == "position" or series[0]._has_datetime_index
-    )
-    cal_start_format = start_format
-    if start_idx_rel is None:
-        cal_start = start_idx_rel
-    elif start_is_position:
-        cal_start = start + start_idx_rel
-    else:
-        cal_start = start + start_idx_rel * series[0].freq
-    return cal_start, cal_start_format
-
-
 class ConformalModel(GlobalForecastingModel, ABC):
     @random_method
     def __init__(
@@ -1114,7 +1055,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         - Compute the conformal prediction: Add the calibrated intervals to (or adjust the existing intervals of) the
           forecasting model's predictions.
         """
-        # TODO: add proper handling of `cal_stride` > 1
         cal_stride = self.cal_stride
         cal_length = self.cal_length
         metric, metric_kwargs = self._residuals_metric
@@ -1240,7 +1180,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     s_hfcs[0].start_time(),
                     freq=series_.freq,
                 )
-                # TODO: add proper start handling with `cal_stride>1`
                 # adjust by stride
                 first_idx_start = math.ceil(first_idx_start / cal_stride)
 
@@ -1846,3 +1785,66 @@ class ConformalQRModel(ConformalModel):
             "q_interval": self.q_interval,
             "symmetric": self.symmetric,
         }
+
+
+def _get_calibration_hfc_start(
+    series: Sequence[TimeSeries],
+    horizon: int,
+    output_chunk_shift: int,
+    cal_length: Optional[int],
+    cal_stride: int,
+    start: Optional[Union[pd.Timestamp, int, Literal["end"]]],
+    start_format: Literal["position", "value"],
+) -> tuple[Optional[Union[int, pd.Timestamp]], Literal["position", "value"]]:
+    """Find the calibration start point (CSP) (for historical forecasts on calibration set).
+
+    - If `start=None`, the CSP is also `None` (all possible hfcs).
+    - If `start="end"` (when calling `predict()`), returns the CSP as a positional index relative to the end of the
+      series (<0).
+    - Otherwise (when calling `historical_forecasts()`), the CSP is the start value (`start_format="value"`) or start
+      position (`start_format="position"`) adjusted by the positions computed for the case above.
+
+    If this function is called from `historical_forecasts`, the sanity checks guarantee the following:
+
+    - `start` cannot be a `float`
+    - when `start_format='value'`, all `series` have the same frequency
+    """
+    if start is None:
+        return start, start_format
+
+    horizon_ocs = horizon + output_chunk_shift
+    if cal_length is not None:
+        # we only need `cal_length` forecasts with stride `cal_stride` before the `predict()` start point;
+        # the last valid calibration forecast must start at least `horizon_ocs` before `predict()` start
+        add_steps = math.ceil(horizon_ocs / cal_stride) - 1
+        start_idx_rel = -cal_stride * (cal_length + add_steps)
+        cal_start_format = "position"
+    elif cal_stride > 1:
+        # we need all forecasts with stride `cal_stride` before the `predict()` start point
+        max_len_series = max(len(series_) for series_ in series)
+        start_idx_rel = -cal_stride * math.ceil(max_len_series / cal_stride)
+        cal_start_format = "position"
+    else:
+        # we need all possible forecasts with `cal_stride=1`
+        start_idx_rel, cal_start_format = None, "value"
+
+    if start == "end":
+        # `predict()` is relative to the end
+        return start_idx_rel, cal_start_format
+
+    # `historical_forecasts()` is relative to `start`
+    start_is_position = isinstance(start, (int, np.int64)) and (
+        start_format == "position" or series[0]._has_datetime_index
+    )
+    cal_start_format = start_format
+    if start_idx_rel is None:
+        cal_start = start_idx_rel
+    elif start_is_position:
+        cal_start = start + start_idx_rel
+        # if start switches sign, it would be relative to the end;
+        # correct it to be positive (relative to beginning)
+        if cal_start < 0 < start:
+            cal_start += math.ceil(abs(cal_start) / cal_stride) * cal_stride
+    else:
+        cal_start = start + start_idx_rel * series[0].freq
+    return cal_start, cal_start_format
