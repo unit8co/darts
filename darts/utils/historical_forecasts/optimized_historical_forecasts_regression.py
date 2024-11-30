@@ -154,6 +154,25 @@ def _optimized_historical_forecasts_last_points_only(
             -1,
         )
 
+        # iteratively extend the historical forecasts
+        if forecast_horizon > model.output_chunk_length:
+            forecast = _optimized_hf_autoregression(
+                model=model,
+                X=X,
+                forecast=forecast,
+                series=series_,
+                past_covariates=past_covariates_,
+                future_covariates=future_covariates_,
+                forecast_horizon=forecast_horizon,
+                num_samples=num_samples,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                tgt_hf_idx=(hist_fct_tgt_start, hist_fct_tgt_end),
+                pc_hf_idx=(hist_fct_pc_start, hist_fct_pc_end),
+                fc_hf_idx=(hist_fct_fc_start, hist_fct_fc_end),
+                unit=unit,
+                **kwargs,
+            )
+
         # extract the last sub-model forecast for each component
         if model.multi_models:
             forecast = forecast[:, forecast_horizon - 1]
@@ -316,6 +335,25 @@ def _optimized_historical_forecasts_all_points(
             -1,
         )
 
+        # iteratively extend the historical forecasts
+        if forecast_horizon > model.output_chunk_length:
+            forecast = _optimized_hf_autoregression(
+                model=model,
+                X=X,
+                forecast=forecast,
+                series=series_,
+                past_covariates=past_covariates_,
+                future_covariates=future_covariates_,
+                forecast_horizon=forecast_horizon,
+                num_samples=num_samples,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                tgt_hf_idx=(hist_fct_tgt_start, hist_fct_tgt_end),
+                pc_hf_idx=(hist_fct_pc_start, hist_fct_pc_end),
+                fc_hf_idx=(hist_fct_fc_start, hist_fct_fc_end),
+                unit=unit,
+                **kwargs,
+            )
+
         if model.multi_models:
             forecast = forecast[::stride, :forecast_horizon]
         else:
@@ -363,3 +401,108 @@ def _optimized_historical_forecasts_all_points(
 
         forecasts_list.append(forecasts_)
     return forecasts_list
+
+
+def _optimized_hf_autoregression(
+    model,
+    X: np.array,
+    forecast: TimeSeries,
+    series: TimeSeries,
+    past_covariates: Optional[TimeSeries],
+    future_covariates: Optional[TimeSeries],
+    forecast_horizon: int,
+    num_samples: int,
+    predict_likelihood_parameters: bool,
+    tgt_hf_idx: tuple,
+    pc_hf_idx: tuple,
+    fc_hf_idx: tuple,
+    unit: Union[int, pd.DateOffset],
+    **kwargs,
+):
+    """perform autoregression on all the horizon in parallel.
+
+    the parent function is responsible for extracting the relevant timestamps (last_point_only)
+    """
+    forecast_ = forecast
+    hist_fct_tgt_start, hist_fct_tgt_end = tgt_hf_idx
+    while forecast.shape[0] < forecast_horizon:
+        # must generate samples instead of distribution parameters
+        # TODO: maybe remove this logic, would create inconsistant capabilities between opti and non-opti
+        if predict_likelihood_parameters:
+            forecast_autoreg = model._predict_and_sample(
+                x=X,
+                num_samples=1,
+                predict_likelihood_parameters=False,
+                **kwargs,
+            )
+        else:
+            forecast_autoreg = forecast_
+
+        # TODO: check if tgt_start comes after tgt_end after the shift?
+        # prepare the series for concatenation of the forecasts
+        autoreg_series_ = series[
+            hist_fct_tgt_start + model.output_chunk_length : hist_fct_tgt_end
+        ].all_values()
+        if series.is_deterministic and num_samples > 1:
+            # repeat the samples dimension to match forecasts
+            autoreg_series_ = np.repeat(autoreg_series_, num_samples, axis=0)
+
+        # extend the target series with the forecasts
+        autoreg_series_ = autoreg_series_.append_values(forecast_autoreg)
+
+        # shift the boundaries of the covariates
+        hist_fct_tgt_start += model.output_chunk_length * unit
+        hist_fct_tgt_end += model.output_chunk_length * unit
+        hist_fct_pc_start = pc_hf_idx[0] + model.output_chunk_length * unit
+        hist_fct_pc_end = pc_hf_idx[1] + model.output_chunk_length * unit
+        hist_fct_fc_start = fc_hf_idx[0] + model.output_chunk_length * unit
+        hist_fct_fc_end = fc_hf_idx[1] + model.output_chunk_length * unit
+
+        autoreg_X_, _ = create_lagged_prediction_data(
+            target_series=(
+                None
+                if model._get_lags("target") is None
+                and not model.uses_static_covariates
+                else autoreg_series_
+            ),
+            past_covariates=(
+                None
+                if past_covariates is None
+                else past_covariates[hist_fct_pc_start:hist_fct_pc_end]
+            ),
+            future_covariates=(
+                None
+                if future_covariates is None
+                else future_covariates[hist_fct_fc_start:hist_fct_fc_end]
+            ),
+            lags=model._get_lags("target"),
+            lags_past_covariates=model._get_lags("past"),
+            lags_future_covariates=model._get_lags("future"),
+            uses_static_covariates=model.uses_static_covariates,
+            last_static_covariates_shape=model._static_covariates_shape,
+            max_samples_per_ts=None,
+            check_inputs=True,
+            use_moving_windows=True,
+            concatenate=False,
+        )
+
+        # TODO: modularize this code snippet
+        forecast_ = model._predict_and_sample(
+            x=autoreg_X_,
+            num_samples=num_samples,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            **kwargs,
+        )
+        forecast_ = np.moveaxis(
+            forecast_.reshape(
+                X.shape[0],
+                num_samples,
+                model.output_chunk_length if model.multi_models else 1,
+                -1,
+            ),
+            1,
+            -1,
+        )
+        # extend the forecast values
+        forecast = np.concatenate([forecast, forecast_], axis=0)
+    return forecast

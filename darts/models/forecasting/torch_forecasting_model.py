@@ -2142,10 +2142,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         return _check_optimizable_historical_forecasts_global_models(
             model=self,
-            forecast_horizon=forecast_horizon,
             retrain=retrain,
             show_warnings=show_warnings,
-            allow_autoregression=True,
         )
 
     def _optimized_historical_forecasts(
@@ -2176,7 +2174,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
                 forecast_horizon=forecast_horizon,
-                allow_autoregression=True,
             )
         )
         forecasts_list = _optimized_historical_forecasts(

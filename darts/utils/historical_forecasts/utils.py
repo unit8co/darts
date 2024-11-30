@@ -1019,35 +1019,20 @@ def _get_historical_forecast_boundaries(
 
 def _check_optimizable_historical_forecasts_global_models(
     model,
-    forecast_horizon: int,
     retrain: Union[bool, int, Callable[..., bool]],
     show_warnings: bool,
-    allow_autoregression: bool,
 ) -> bool:
     """
-    Historical forecast can be optimized only if `retrain=False`. If `allow_autoregression=False`, historical forecasts
-    can be optimized only if `forecast_horizon <= model.output_chunk_length` (no auto-regression required).
+    Historical forecast can be optimized only if `retrain=False`.
     """
-
-    retrain_off = (retrain is False) or (retrain == 0)
-    is_autoregressive = forecast_horizon > model.output_chunk_length
-    if retrain_off and (
-        not is_autoregressive or (is_autoregressive and allow_autoregression)
-    ):
+    if (retrain is False) or (retrain == 0):
         return True
 
     if show_warnings:
-        if not retrain_off:
-            logger.warning(
-                "`enable_optimization=True` is ignored because `retrain` is not `False` or `0`. "
-                "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
-            )
-        if is_autoregressive:
-            logger.warning(
-                "`enable_optimization=True` is ignored because `forecast_horizon > model.output_chunk_length`. "
-                "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
-            )
-
+        logger.warning(
+            "`enable_optimization=True` is ignored because `retrain` is not `False` or `0`. "
+            "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
+        )
     return False
 
 
@@ -1057,7 +1042,6 @@ def _process_historical_forecast_input(
     past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     forecast_horizon: int = 1,
-    allow_autoregression: bool = False,
 ) -> Union[
     Sequence[TimeSeries],
     Optional[Sequence[TimeSeries]],
@@ -1070,14 +1054,6 @@ def _process_historical_forecast_input(
             logger,
         )
 
-    if not allow_autoregression and forecast_horizon > model.output_chunk_length:
-        raise_log(
-            ValueError(
-                "`forecast_horizon > model.output_chunk_length` requires auto-regression which is not "
-                "supported in this optimized routine."
-            ),
-            logger,
-        )
     series_seq_type = get_series_seq_type(series)
     series = series2seq(series)
     past_covariates = series2seq(past_covariates)

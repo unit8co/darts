@@ -1309,10 +1309,8 @@ class RegressionModel(GlobalForecastingModel):
         """
         return _check_optimizable_historical_forecasts_global_models(
             model=self,
-            forecast_horizon=forecast_horizon,
             retrain=retrain,
             show_warnings=show_warnings,
-            allow_autoregression=False,
         )
 
     def _optimized_historical_forecasts(
@@ -1337,8 +1335,6 @@ class RegressionModel(GlobalForecastingModel):
         With this, we can avoid having to recreate the tabular input data and call `model.predict()` for each
         forecastable index and series.
         Additionally, there is a dedicated subroutines for `last_points_only=True` and `last_points_only=False`.
-
-        TODO: support forecast_horizon > output_chunk_length (auto-regression)
         """
         series, past_covariates, future_covariates, series_seq_type = (
             _process_historical_forecast_input(
@@ -1347,7 +1343,6 @@ class RegressionModel(GlobalForecastingModel):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
                 forecast_horizon=forecast_horizon,
-                allow_autoregression=False,
             )
         )
 
