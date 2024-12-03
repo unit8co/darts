@@ -5659,6 +5659,33 @@ def concatenate(
     return TimeSeries.from_xarray(da_concat, fill_missing_dates=False)
 
 
+def slice_intersect(series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
+    """Returns a list of ``TimeSeries``, where all `series` have been intersected along the time index.
+
+    Parameters
+    ----------
+    series : Sequence[TimeSeries]
+        sequence of ``TimeSeries`` to intersect
+
+    Returns
+    -------
+    Sequence[TimeSeries]
+        Intersected series.
+    """
+    if not series:
+        return []
+
+    intersected_series = []
+    for i, ts_i in enumerate(series):
+        intersected_ts = ts_i
+        for j, ts_j in enumerate(series):
+            if i != j:
+                intersected_ts = intersected_ts.slice_intersect(ts_j)
+        intersected_series.append(intersected_ts)
+
+    return intersected_series
+
+
 def _finite_rows_boundaries(
     values: np.ndarray, how: str = "all"
 ) -> tuple[Optional[int], Optional[int]]:
