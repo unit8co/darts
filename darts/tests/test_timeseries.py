@@ -10,7 +10,7 @@ import xarray as xr
 from scipy.stats import kurtosis, skew
 
 from darts import TimeSeries, concatenate
-from darts.timeseries import intersect
+from darts.timeseries import slice_intersect
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
 from darts.utils.utils import expand_arr, freqs, generate_index
 
@@ -604,24 +604,10 @@ class TestTimeSeries:
             s_int_idx = series.slice_intersect_times(other, copy=False)
             assert s_int.time_index.equals(s_int_idx)
 
-        def check_intersect_sequence(series, other, start_, end_, freq_):
-            intersected_series = intersect([series, other])
-            s_int = intersected_series[0]
-            o_int = intersected_series[1]
-
-            assert intersected_series == [
+            assert slice_intersect([series, other]) == [
                 series.slice_intersect(other),
                 other.slice_intersect(series),
             ]
-
-            if start_ is None:  # empty slice
-                assert len(s_int) == 0
-                assert len(o_int) == 0
-                return
-
-            assert s_int.start_time() == o_int.start_time() == start_
-            assert s_int.end_time() == o_int.end_time() == end_
-            assert s_int.freq == o_int.freq == freq_
 
         # slice with exact range
         startA = start
@@ -629,15 +615,13 @@ class TestTimeSeries:
         idxA = generate_index(startA, endA, freq=freq_other)
         seriesA = TimeSeries.from_series(pd.Series(range(len(idxA)), index=idxA))
         check_intersect(seriesA, startA, endA, freq_expected)
-        check_intersect_sequence(series, seriesA, start, end, freq_expected)
 
         # entire slice within the range
-        startA = start + freq
-        endA = startA + 6 * freq_other
-        idxA = generate_index(startA, endA, freq=freq_other)
-        seriesA = TimeSeries.from_series(pd.Series(range(len(idxA)), index=idxA))
-        check_intersect(seriesA, startA, endA, freq_expected)
-        check_intersect_sequence(series, seriesA, startA, endA, freq_expected)
+        startB = start + freq
+        endB = startB + 6 * freq_other
+        idxB = generate_index(startB, endB, freq=freq_other)
+        seriesB = TimeSeries.from_series(pd.Series(range(len(idxB)), index=idxB))
+        check_intersect(seriesB, startB, endB, freq_expected)
 
         # start outside of range
         startC = start - 4 * freq
@@ -645,15 +629,13 @@ class TestTimeSeries:
         idxC = generate_index(startC, endC, freq=freq_other)
         seriesC = TimeSeries.from_series(pd.Series(range(len(idxC)), index=idxC))
         check_intersect(seriesC, start, endC, freq_expected)
-        check_intersect_sequence(series, seriesC, start, endC, freq_expected)
 
         # end outside of range
-        startC = start + 4 * freq
-        endC = end + 4 * freq_other
-        idxC = generate_index(startC, endC, freq=freq_other)
-        seriesC = TimeSeries.from_series(pd.Series(range(len(idxC)), index=idxC))
-        check_intersect(seriesC, startC, end, freq_expected)
-        check_intersect_sequence(series, seriesC, startC, end, freq_expected)
+        startD = start + 4 * freq
+        endD = end + 4 * freq_other
+        idxD = generate_index(startD, endD, freq=freq_other)
+        seriesD = TimeSeries.from_series(pd.Series(range(len(idxD)), index=idxD))
+        check_intersect(seriesD, startD, end, freq_expected)
 
         # small intersect
         startE = start + (n_steps - 1) * freq
@@ -661,19 +643,42 @@ class TestTimeSeries:
         idxE = generate_index(startE, endE, freq=freq_other)
         seriesE = TimeSeries.from_series(pd.Series(range(len(idxE)), index=idxE))
         check_intersect(seriesE, startE, end, freq_expected)
-        check_intersect_sequence(series, seriesE, startE, end, freq_expected)
 
         # No intersect
-        startG = end + 3 * freq
-        endG = startG + 6 * freq_other
-        idxG = generate_index(startG, endG, freq=freq_other)
-        seriesG = TimeSeries.from_series(pd.Series(range(len(idxG)), index=idxG))
+        startF = end + 3 * freq
+        endF = startF + 6 * freq_other
+        idxF = generate_index(startF, endF, freq=freq_other)
+        seriesF = TimeSeries.from_series(pd.Series(range(len(idxF)), index=idxF))
         # for empty slices, we expect the original freq
-        check_intersect(seriesG, None, None, freq)
-        check_intersect_sequence(series, seriesG, None, None, freq)
+        check_intersect(seriesF, None, None, freq)
 
-        # Empty sequence
-        assert intersect([]) == []
+        # sequence with zero or one element
+        assert slice_intersect([]) == []
+        assert slice_intersect([series]) == [series]
+
+        # sequence with more than 2 elements
+        intersected_series = slice_intersect([series, seriesA, seriesE])
+        s1_int = intersected_series[0]
+        s2_int = intersected_series[1]
+        s3_int = intersected_series[2]
+
+        assert (
+            s1_int.start_time() == s2_int.start_time() == s3_int.start_time() == startE
+        )
+        assert s1_int.end_time() == s2_int.end_time() == s3_int.end_time() == endA
+
+        # check treatment different time index types
+        if series.has_datetime_index:
+            seriesF = TimeSeries.from_series(
+                pd.Series(range(len(idxF)), index=pd.to_numeric(idxF))
+            )
+        else:
+            seriesF = TimeSeries.from_series(
+                pd.Series(range(len(idxF)), index=pd.to_datetime(idxF))
+            )
+
+        with pytest.raises(IndexError):
+            slice_intersect([series, seriesF])
 
     @staticmethod
     def helper_test_shift(test_case, test_series: TimeSeries):

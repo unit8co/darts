@@ -5659,8 +5659,8 @@ def concatenate(
     return TimeSeries.from_xarray(da_concat, fill_missing_dates=False)
 
 
-def intersect(series: Sequence[TimeSeries]):
-    """Returns the intersection with respect to the time index of multiple ``TimeSeries``.
+def slice_intersect(series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
+    """Returns a list of ``TimeSeries``, where all `series` have been intersected along the time index.
 
     Parameters
     ----------
@@ -5670,26 +5670,20 @@ def intersect(series: Sequence[TimeSeries]):
     Returns
     -------
     Sequence[TimeSeries]
-        Intersected series
+        Intersected series.
     """
     if not series:
         return []
 
-    data_arrays = []
-    has_datetime_index = series[0].has_datetime_index
-    for ts in series:
-        if ts.has_datetime_index != has_datetime_index:
-            raise_log(
-                IndexError(
-                    "The time index type must be the same for all TimeSeries in the Sequence."
-                ),
-                logger,
-            )
-        data_arrays.append(ts.data_array(copy=False))
+    intersected_series = []
+    for i, ts_i in enumerate(series):
+        intersected_ts = ts_i
+        for j, ts_j in enumerate(series):
+            if i != j:
+                intersected_ts = intersected_ts.slice_intersect(ts_j)
+        intersected_series.append(intersected_ts)
 
-    intersected_series = xr.align(*data_arrays, exclude=["component", "sample"])
-
-    return [TimeSeries.from_xarray(array) for array in intersected_series]
+    return intersected_series
 
 
 def _finite_rows_boundaries(
