@@ -1800,6 +1800,7 @@ def _get_calibration_hfc_start(
     if start is None:
         return start, start_format
 
+    cal_start_format: Literal["position", "value"]
     horizon_ocs = horizon + output_chunk_shift
     if cal_length is not None:
         # we only need `cal_length` forecasts with stride `cal_stride` before the `predict()` start point;
@@ -1831,7 +1832,7 @@ def _get_calibration_hfc_start(
         cal_start = start + start_idx_rel
         # if start switches sign, it would be relative to the end;
         # correct it to be positive (relative to beginning)
-        if cal_start < 0 < start:
+        if cal_start < 0 <= start:
             cal_start += math.ceil(abs(cal_start) / cal_stride) * cal_stride
     else:
         cal_start = start + start_idx_rel * series[0].freq

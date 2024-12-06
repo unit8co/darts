@@ -16,9 +16,11 @@ from darts.models import (
     NaiveSeasonal,
     NLinearModel,
 )
+from darts.models.forecasting.conformal_models import _get_calibration_hfc_start
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
+from darts.utils.timeseries_generation import linear_timeseries
 from darts.utils.utils import (
     likelihood_component_names,
     quantile_interval_names,
@@ -1356,3 +1358,108 @@ class TestConformalModel:
                 vals_q,
                 model_type="regression_prob",
             )
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # (cal_length, cal_stride, (start_expected, start_format_expected))
+            (None, 1, (None, "value")),
+            (None, 2, (-4, "position")),
+            (None, 3, (-6, "position")),
+            (None, 4, (-4, "position")),
+            (1, 1, (-3, "position")),
+            (1, 2, (-4, "position")),
+            (1, 3, (-3, "position")),
+            (1, 4, (-4, "position")),
+        ],
+    )
+    def test_calibration_hfc_start_predict(self, config):
+        """Test calibration historical forecast start point when calling `predict()` ("end" position)."""
+        cal_length, cal_stride, start_expected = config
+        series = linear_timeseries(length=4)
+        horizon = 2
+        output_chunk_shift = 1
+        assert (
+            _get_calibration_hfc_start(
+                series=[series],
+                horizon=horizon,
+                output_chunk_shift=output_chunk_shift,
+                cal_length=cal_length,
+                cal_stride=cal_stride,
+                start="end",
+                start_format="position",
+            )
+            == start_expected
+        )
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # (cal_length, cal_stride, start, start_expected)
+            (None, 1, None, None),
+            (None, 1, 1, None),
+            (1, 1, -1, -4),
+            (1, 1, 0, 0),
+            (1, 2, 0, 0),
+            (1, 3, 0, 0),
+            (1, 1, 1, 0),
+            (1, 2, 1, 1),
+            (1, 3, 1, 1),
+            (1, 1, -1, -4),
+            (1, 2, -1, -5),
+            (1, 3, -1, -4),
+        ],
+    )
+    def test_calibration_hfc_start_position_hist_fc(self, config):
+        """Test calibration historical forecast start point when calling `historical_forecasts()`
+        with start format "position"."""
+        cal_length, cal_stride, start, start_expected = config
+        series = linear_timeseries(length=4)
+        horizon = 2
+        output_chunk_shift = 1
+        assert _get_calibration_hfc_start(
+            series=[series],
+            horizon=horizon,
+            output_chunk_shift=output_chunk_shift,
+            cal_length=cal_length,
+            cal_stride=cal_stride,
+            start=start,
+            start_format="position",
+        ) == (start_expected, "position")
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # (cal_length, cal_stride, start, start_expected)
+            (None, 1, None, None),
+            (None, 1, "2020-01-11", None),
+            (1, 1, "2020-01-09", "2020-01-06"),  # start before series start
+            (1, 1, "2020-01-10", "2020-01-07"),
+            (1, 2, "2020-01-10", "2020-01-06"),
+            (1, 3, "2020-01-10", "2020-01-07"),
+            (2, 1, "2020-01-09", "2020-01-05"),
+            (2, 1, "2020-01-10", "2020-01-06"),
+            (2, 2, "2020-01-10", "2020-01-04"),
+            (2, 3, "2020-01-10", "2020-01-04"),
+        ],
+    )
+    def test_calibration_hfc_start_value_hist_fc(self, config):
+        """Test calibration historical forecast start point when calling `historical_forecasts()`
+        with start format "value"."""
+        cal_length, cal_stride, start, start_expected = config
+        if start is not None:
+            start = pd.Timestamp(start)
+        if start_expected is not None:
+            start_expected = pd.Timestamp(start_expected)
+        series = linear_timeseries(length=4, start=pd.Timestamp("2020-01-10"), freq="d")
+        horizon = 2
+        output_chunk_shift = 1
+        assert _get_calibration_hfc_start(
+            series=[series],
+            horizon=horizon,
+            output_chunk_shift=output_chunk_shift,
+            cal_length=cal_length,
+            cal_stride=cal_stride,
+            start=start,
+            start_format="value",
+        ) == (start_expected, "value")
