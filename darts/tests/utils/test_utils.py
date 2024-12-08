@@ -1,3 +1,5 @@
+import itertools
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -15,6 +17,7 @@ from darts.utils.utils import (
     n_steps_between,
     quantile_interval_names,
     quantile_names,
+    sample_from_quantiles,
 )
 
 
@@ -631,3 +634,94 @@ class TestUtils:
         q, names_expected = config
         names = quantile_interval_names(q, "a")
         assert names == names_expected
+
+    @pytest.mark.parametrize("ndim", [2, 3])
+    def test_generate_samples_shape(self, ndim):
+        """Checks that the output shape of generated samples from quantiles and quantile predictions
+        is as expected."""
+        n_time_steps = 10
+        n_columns = 5
+        n_quantiles = 20
+        num_samples = 50
+
+        q = np.linspace(0, 1, n_quantiles)
+        q_pred = np.random.rand(n_time_steps, n_columns, n_quantiles)
+        if ndim == 2:
+            q_pred = q_pred.reshape((n_time_steps, n_columns * n_quantiles))
+        y_pred = sample_from_quantiles(q_pred, q, num_samples)
+        assert y_pred.shape == (n_time_steps, n_columns, num_samples)
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [1, 2],  # n times
+            [2, 3],  # ndim
+            [1, 2],  # n components
+        ),
+    )
+    def test_generate_samples_output(self, config):
+        """Tests sample generation from quantiles and quantile predictions for:
+
+        - single/multiple time steps
+        - from 2 or 3 dimensions
+        - uni/multivariate
+        """
+        np.random.seed(42)
+        n_times, ndim, n_comps = config
+        num_samples = 100000
+
+        q = np.array([0.2, 0.5, 0.75])
+        q_pred = np.array([[[1.0, 2.0, 3.0]]])
+        if n_times == 2:
+            q_pred = np.concatenate([q_pred, np.array([[[5.0, 7.0, 9.0]]])], axis=0)
+        if n_comps == 2:
+            q_pred = np.concatenate([q_pred, q_pred + 1.0], axis=1)
+        if ndim == 2:
+            q_pred = q_pred.reshape((len(q_pred), -1))
+        y_pred = sample_from_quantiles(q_pred, q, num_samples)
+
+        q_pred = q_pred.reshape((q_pred.shape[0], n_comps, len(q)))
+        for i in range(n_comps):
+            # edges must be identical to min/max predicted quantiles
+            assert y_pred[:, i].min() == q_pred[:, i].min()
+            assert y_pred[:, i].max() == q_pred[:, i].max()
+
+            # check that sampled quantiles values equal to the predicted quantiles
+            assert np.quantile(y_pred[:, i], q[0], axis=1) == pytest.approx(
+                q_pred[:, i, 0], abs=0.02
+            )
+            assert np.quantile(y_pred[:, i], q[1], axis=1) == pytest.approx(
+                q_pred[:, i, 1], abs=0.02
+            )
+            assert np.quantile(y_pred[:, i], q[2], axis=1) == pytest.approx(
+                q_pred[:, i, 2], abs=0.02
+            )
+
+            # for each component and quantile, check that the expected ratio of sampled values is approximately
+            # equal to the quantile
+            assert (y_pred[:, i] == q_pred[:, i, 0:1]).mean(axis=1) == pytest.approx(
+                0.2, abs=0.02
+            )
+            assert (
+                (q_pred[:, i, 0:1] < y_pred[:, i]) & (y_pred[:, i] <= q_pred[:, i, 1:2])
+            ).mean(axis=1) == pytest.approx(0.3, abs=0.02)
+            assert (
+                (q_pred[:, i, 1:2] < y_pred[:, i]) & (y_pred[:, i] < q_pred[:, i, 2:3])
+            ).mean(axis=1) == pytest.approx(0.25, abs=0.02)
+            assert (y_pred[:, i] == q_pred[:, i, 2:3]).mean(axis=1) == pytest.approx(
+                0.25, abs=0.02
+            )
+
+            # between the quantiles, the values must be linearly interpolated
+            # check that number of unique values is approximately equal to the difference between two adjacent quantiles
+            mask1 = (q_pred[:, i, 0:1] < y_pred[:, i]) & (
+                y_pred[:, i] < q_pred[:, i, 1:2]
+            )
+            share_unique1 = len(np.unique(y_pred[:, i][mask1])) / num_samples
+            assert share_unique1 == pytest.approx(n_times * (q[1] - q[0]), abs=0.05)
+
+            mask2 = (q_pred[:, i, 1:2] < y_pred[:, i]) & (
+                y_pred[:, i] < q_pred[:, i, 2:3]
+            )
+            share_unique2 = len(np.unique(y_pred[:, i][mask2])) / num_samples
+            assert share_unique2 == pytest.approx(n_times * (q[2] - q[1]), abs=0.05)

@@ -50,4 +50,7 @@ PyTorch (Lightning)-based Models (`GlobalForecastingModel <https://unit8co.githu
 Ensemble Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
     - :class:`~darts.models.forecasting.baselines.NaiveEnsembleModel`
     - :class:`~darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel`
+Conformal Models  (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
+    - :class:`~darts.models.forecasting.conformal_models.ConformalNaiveModel`
+    - :class:`~darts.models.forecasting.conformal_models.ConformalQRModel`
 """
