@@ -3,7 +3,7 @@ N-HiTS
 ------
 """
 
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 import torch
@@ -216,8 +216,8 @@ class _Stack(nn.Module):
         num_layers: int,
         layer_width: int,
         nr_params: int,
-        pooling_kernel_sizes: Tuple[int],
-        n_freq_downsample: Tuple[int],
+        pooling_kernel_sizes: tuple[int],
+        n_freq_downsample: tuple[int],
         batch_norm: bool,
         dropout: float,
         activation: str,
@@ -327,9 +327,9 @@ class _NHiTSModule(PLPastCovariatesModule):
         num_stacks: int,
         num_blocks: int,
         num_layers: int,
-        layer_widths: List[int],
-        pooling_kernel_sizes: Tuple[Tuple[int]],
-        n_freq_downsample: Tuple[Tuple[int]],
+        layer_widths: list[int],
+        pooling_kernel_sizes: tuple[tuple[int]],
+        n_freq_downsample: tuple[tuple[int]],
         batch_norm: bool,
         dropout: float,
         activation: str,
@@ -422,7 +422,7 @@ class _NHiTSModule(PLPastCovariatesModule):
         self.stacks_list[-1].blocks[-1].backcast_linear_layer.requires_grad_(False)
 
     @io_processor
-    def forward(self, x_in: Tuple):
+    def forward(self, x_in: tuple):
         x, _ = x_in
 
         # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
@@ -470,9 +470,9 @@ class NHiTSModel(PastCovariatesTorchModel):
         num_stacks: int = 3,
         num_blocks: int = 1,
         num_layers: int = 2,
-        layer_widths: Union[int, List[int]] = 512,
-        pooling_kernel_sizes: Optional[Tuple[Tuple[int]]] = None,
-        n_freq_downsample: Optional[Tuple[Tuple[int]]] = None,
+        layer_widths: Union[int, list[int]] = 512,
+        pooling_kernel_sizes: Optional[tuple[tuple[int]]] = None,
+        n_freq_downsample: Optional[tuple[tuple[int]]] = None,
         dropout: float = 0.1,
         activation: str = "ReLU",
         MaxPool1d: bool = True,
@@ -807,7 +807,7 @@ class NHiTSModel(PastCovariatesTorchModel):
 
         return pooling_kernel_sizes, n_freq_downsample
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (
             train_sample[1].shape[1] if train_sample[1] is not None else 0

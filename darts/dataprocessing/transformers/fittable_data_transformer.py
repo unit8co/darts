@@ -4,7 +4,8 @@ Fittable Data Transformer Base Class
 """
 
 from abc import abstractmethod
-from typing import Any, Generator, Iterable, List, Mapping, Optional, Sequence, Union
+from collections.abc import Generator, Iterable, Mapping, Sequence
+from typing import Any, Optional, Union
 
 import numpy as np
 
@@ -292,13 +293,29 @@ class FittableDataTransformer(BaseDataTransformer):
         )
         return self
 
+    def transform(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        *args,
+        component_mask: Optional[np.array] = None,
+        series_idx: Optional[Union[int, Sequence[int]]] = None,
+        **kwargs,
+    ) -> Union[TimeSeries, list[TimeSeries]]:
+        return super().transform(
+            series=series,
+            *args,
+            component_mask=component_mask,
+            series_idx=series_idx if not self._global_fit else None,
+            **kwargs,
+        )
+
     def fit_transform(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
         *args,
         component_mask: Optional[np.array] = None,
         **kwargs,
-    ) -> Union[TimeSeries, List[TimeSeries]]:
+    ) -> Union[TimeSeries, list[TimeSeries]]:
         """Fit the transformer to the (sequence of) series and return the transformed input.
 
         Parameters

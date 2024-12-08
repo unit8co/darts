@@ -8,7 +8,8 @@ This is similar to a threshold-based detector, but the thresholds are
 computed as distances from the IQR of historical data when the detector is fitted.
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
+from typing import Union
 
 import numpy as np
 

@@ -21,7 +21,7 @@ References
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 from scipy.special import inv_boxcox
@@ -121,10 +121,10 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
     def __init__(
         self,
         use_box_cox: Optional[bool] = None,
-        box_cox_bounds: Tuple = (0, 1),
+        box_cox_bounds: tuple = (0, 1),
         use_trend: Optional[bool] = None,
         use_damped_trend: Optional[bool] = None,
-        seasonal_periods: Optional[Union[str, List]] = "freq",
+        seasonal_periods: Optional[Union[str, list]] = "freq",
         use_arma_errors: Optional[bool] = True,
         show_warnings: bool = False,
         n_jobs: Optional[int] = None,
@@ -260,7 +260,7 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
     @property
     def min_train_series_length(self) -> int:
         if (
-            isinstance(self.seasonal_periods, List)
+            isinstance(self.seasonal_periods, list)
             and len(self.seasonal_periods) > 0
             and max(self.seasonal_periods) > 1
         ):

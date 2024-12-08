@@ -12,7 +12,8 @@ Common functions used throughout the Anomaly Detection module.
 #     - add an option to visualize: "by window", "unique", "together"
 #     - create a normalize option in plot function (norm every anomaly score btw 1 and 0) -> to be seen on the same plot
 
-from typing import Callable, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Callable, Optional, Union
 
 try:
     from typing import Literal
@@ -823,7 +824,7 @@ def _plot_series(series, ax_id, linewidth, label_name, **kwargs):
     series
         The series to plot.
     ax_id
-        The axis the series will be ploted on.
+        The axis the series will be plotted on.
     linewidth
         Thickness of the line.
     label_name

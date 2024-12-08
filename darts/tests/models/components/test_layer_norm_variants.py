@@ -37,7 +37,7 @@ class TestLayerNormVariants:
             rin = RINorm(input_dim=7, affine=affine)
             x_norm = rin(x)
 
-            # expand dims to simulate probablistic forecasting
+            # expand dims to simulate probabilistic forecasting
             x_denorm = rin.inverse(x_norm.view(x_norm.shape + (1,))).squeeze(-1)
             assert torch.all(torch.isclose(x, x_denorm)).item()
 

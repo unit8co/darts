@@ -1,9 +1,5 @@
-from typing import Optional, Sequence, Union
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from collections.abc import Sequence
+from typing import Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -13,7 +9,9 @@ from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import create_lagged_prediction_data
-from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
+from darts.utils.historical_forecasts.utils import (
+    _get_historical_forecast_boundaries,
+)
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -39,6 +37,8 @@ def _optimized_historical_forecasts_last_points_only(
     Optimized historical forecasts for RegressionModel with last_points_only = True
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
+
+    The data_transformers are applied in historical_forecasts (input and predictions)
     """
     forecasts_list = []
     iterator = _build_tqdm_iterator(series, verbose)
@@ -74,6 +74,7 @@ def _optimized_historical_forecasts_last_points_only(
             start_format=start_format,
             forecast_horizon=forecast_horizon,
             overlap_end=overlap_end,
+            stride=stride,
             freq=freq,
             show_warnings=show_warnings,
         )
@@ -236,6 +237,7 @@ def _optimized_historical_forecasts_all_points(
             start_format=start_format,
             forecast_horizon=forecast_horizon,
             overlap_end=overlap_end,
+            stride=stride,
             freq=freq,
             show_warnings=show_warnings,
         )

@@ -3,7 +3,8 @@ Mapper and InvertibleMapper
 ---------------------------
 """
 
-from typing import Any, Callable, Mapping, Union
+from collections.abc import Mapping
+from typing import Any, Callable, Union
 
 import numpy as np
 import pandas as pd

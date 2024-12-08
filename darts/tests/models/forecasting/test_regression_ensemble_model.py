@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -454,9 +454,9 @@ class TestRegressionEnsembleModels:
         prediction = model_instance.predict(n=n, past_covariates=past_covariates)
         current_rmse = rmse(test_series, prediction)
 
-        assert (
-            current_rmse <= min_rmse
-        ), f"Model was not able to denoise data. A rmse score of {current_rmse} was recorded."
+        assert current_rmse <= min_rmse, (
+            f"Model was not able to denoise data. A rmse score of {current_rmse} was recorded."
+        )
 
     def denoising_input(self):
         np.random.seed(self.RANDOM_SEED)
@@ -936,10 +936,10 @@ class TestRegressionEnsembleModels:
 
     @staticmethod
     def get_probabilistic_global_model(
-        lags: Union[int, List[int]],
+        lags: Union[int, list[int]],
         output_chunk_length: int = 1,
         likelihood: str = "quantile",
-        quantiles: Union[None, List[float]] = [0.05, 0.5, 0.95],
+        quantiles: Union[None, list[float]] = [0.05, 0.5, 0.95],
         random_state: int = 42,
     ) -> LinearRegressionModel:
         return LinearRegressionModel(
@@ -951,6 +951,6 @@ class TestRegressionEnsembleModels:
 
     @staticmethod
     def get_deterministic_global_model(
-        lags: Union[int, List[int]], random_state: int = 13
+        lags: Union[int, list[int]], random_state: int = 13
     ) -> LinearRegressionModel:
         return LinearRegressionModel(lags=lags, random_state=random_state)
