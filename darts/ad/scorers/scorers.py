@@ -176,6 +176,7 @@ class AnomalyScorer(ABC):
         anomalies: TimeSeries = None,
         title: str = None,
         metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
+        multivariate_plot: bool = False,
     ):
         """Plot the results of the scorer.
 
@@ -230,6 +231,7 @@ class AnomalyScorer(ABC):
             names_of_scorers=scorer_name,
             title=title,
             metric=metric,
+            multivariate_plot=multivariate_plot,
         )
 
     @property
@@ -580,6 +582,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         scorer_name: str = None,
         title: str = None,
         metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
+        multivariate_plot: bool = False,
     ):
         """Plot the results of the scorer.
 
@@ -633,6 +636,7 @@ class FittableAnomalyScorer(AnomalyScorer):
             names_of_scorers=scorer_name,
             title=title,
             metric=metric,
+            multivariate_plot=multivariate_plot,
         )
 
     @property
