@@ -1,5 +1,6 @@
 import copy
 import itertools
+import math
 import os
 
 import numpy as np
@@ -19,6 +20,7 @@ from darts.models import (
 from darts.models.forecasting.conformal_models import _get_calibration_hfc_start
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.utils import n_steps_between
 from darts.utils import timeseries_generation as tg
 from darts.utils.timeseries_generation import linear_timeseries
 from darts.utils.utils import (
@@ -907,6 +909,159 @@ class TestConformalModel:
             hfc_conf_lpo = concatenate([hfc[-1:] for hfc in hfc_conf], axis=0)
             assert hfc_lpo == hfc_conf_lpo
 
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [1, 3, 5],  # horizon
+            [0, 1],  # output chunk shift
+            [None, 1],  # cal length,
+            [1, 2],  # cal stride
+            [False, True],  # use start
+        ),
+    )
+    def test_stridden_conformal_model(self, config):
+        """Checks correctness of naive conformal model historical forecasts for:
+        - different horizons (smaller, equal and larger the OCL)
+        - uni and multivariate series
+        - single and multiple series
+        - with and without output shift
+        - with and without training length
+        - with and without covariates
+        """
+        is_univar, is_single = True, False
+        n, ocs, cal_length, cal_stride, use_start = config
+        if ocs and n > OUT_LEN:
+            # auto-regression not allowed with ocs
+            return
+
+        series = self.helper_prepare_series(is_univar, is_single)
+        # shift second series ahead to cover the non overlapping multi series case
+        series = [series[0], series[1].shift(120)]
+        model_params = {"output_chunk_shift": ocs}
+
+        # forecasts from forecasting model
+        model_fc = train_model(series, model_params=model_params)
+        hfc_fc_list = model_fc.historical_forecasts(
+            series,
+            retrain=False,
+            forecast_horizon=n,
+            overlap_end=True,
+            last_points_only=False,
+            stride=cal_stride,
+        )
+        # residuals to compute the conformal intervals
+        residuals_list = model_fc.residuals(
+            series,
+            historical_forecasts=hfc_fc_list,
+            overlap_end=True,
+            last_points_only=False,
+            values_only=True,
+            metric=ae,  # absolute error
+        )
+
+        # conformal forecasts
+        model = ConformalNaiveModel(
+            model=model_fc,
+            quantiles=q,
+            cal_length=cal_length,
+            cal_stride=cal_stride,
+        )
+        # the expected positional index of the first conformal forecast
+        # index = (skip n + ocs points (relative to cal_stride) to avoid look-ahead bias) + (number of cal examples)
+        first_fc_idx = math.ceil((n + ocs) / cal_stride) + (
+            cal_length - 1 if cal_length else 0
+        )
+        first_start = n_steps_between(
+            hfc_fc_list[0][first_fc_idx].start_time() - ocs * series[0].freq,
+            series[0].start_time(),
+            freq=series[0].freq,
+        )
+
+        hfc_conf_list = model.historical_forecasts(
+            series=series,
+            forecast_horizon=n,
+            overlap_end=True,
+            last_points_only=False,
+            start=first_start if use_start else None,
+            start_format="position" if use_start else "value",
+            stride=cal_stride,
+            **pred_lklp,
+        )
+
+        # also, skip some residuals from output chunk shift
+        ignore_ocs = math.ceil(ocs / cal_stride) if ocs >= cal_stride else 0
+        for hfc_fc, hfc_conf, hfc_residuals in zip(
+            hfc_fc_list, hfc_conf_list, residuals_list
+        ):
+            for idx, (pred_fc, pred_cal) in enumerate(
+                zip(hfc_fc[first_fc_idx:], hfc_conf)
+            ):
+                residuals = np.concatenate(
+                    hfc_residuals[: first_fc_idx - ignore_ocs + idx], axis=2
+                )
+                pred_vals = pred_fc.all_values()
+                pred_vals_expected = self.helper_compute_pred_cal(
+                    residuals,
+                    pred_vals,
+                    n,
+                    q,
+                    cal_length=cal_length,
+                    model_type="regression",
+                    symmetric=True,
+                    cal_stride=cal_stride,
+                )
+                assert pred_fc.time_index.equals(pred_cal.time_index)
+                np.testing.assert_array_almost_equal(
+                    pred_cal.all_values(), pred_vals_expected
+                )
+
+        # check that with a round-multiple of `cal_stride` we get identical forecasts
+        assert model.historical_forecasts(
+            series=series,
+            forecast_horizon=n,
+            overlap_end=True,
+            last_points_only=False,
+            start=first_start if use_start else None,
+            start_format="position" if use_start else "value",
+            stride=2 * cal_stride,
+            **pred_lklp,
+        ) == [hfc[::2] for hfc in hfc_conf_list]
+
+        # checking that last points only is equal to the last forecasted point
+        hfc_lpo_list = model.historical_forecasts(
+            series=series,
+            forecast_horizon=n,
+            overlap_end=True,
+            last_points_only=True,
+            stride=cal_stride,
+            **pred_lklp,
+        )
+        for hfc_lpo, hfc_conf in zip(hfc_lpo_list, hfc_conf_list):
+            hfc_conf_lpo = concatenate(
+                [hfc[-1::cal_stride] for hfc in hfc_conf], axis=0
+            )
+            assert hfc_lpo == hfc_conf_lpo
+
+        # checking that predict gives the same results as last historical forecast
+        preds = model.predict(
+            series=series,
+            n=n,
+            **pred_lklp,
+        )
+        hfcs_conf_end = model.historical_forecasts(
+            series=series,
+            forecast_horizon=n,
+            overlap_end=True,
+            last_points_only=False,
+            start=-cal_stride,
+            start_format="position",
+            stride=cal_stride,
+            **pred_lklp,
+        )
+        hfcs_conf_end = [hfc[-1] for hfc in hfcs_conf_end]
+        for pred, last_hfc in zip(preds, hfcs_conf_end):
+            assert pred == last_hfc
+
     def test_probabilistic_historical_forecast(self):
         """Checks correctness of naive conformal historical forecast from probabilistic fc model compared to
         deterministic one,
@@ -952,7 +1107,8 @@ class TestConformalModel:
             series = [series, series + 5]
         return series
 
-    def helper_compare_preds(self, cp_pred, pred_expected, model_type, tol_rel=0.1):
+    @staticmethod
+    def helper_compare_preds(cp_pred, pred_expected, model_type, tol_rel=0.1):
         if isinstance(cp_pred, TimeSeries):
             cp_pred = cp_pred.all_values(copy=False)
         if model_type == "regression":
@@ -965,7 +1121,14 @@ class TestConformalModel:
 
     @staticmethod
     def helper_compute_pred_cal(
-        residuals, pred_vals, n, quantiles, model_type, symmetric, cal_length=None
+        residuals,
+        pred_vals,
+        horizon,
+        quantiles,
+        model_type,
+        symmetric,
+        cal_length=None,
+        cal_stride=1,
     ):
         """Generates expected prediction results for naive conformal model from:
 
@@ -999,13 +1162,15 @@ class TestConformalModel:
             q_hats = []
             # compute the quantile `alpha` of all past residuals (absolute "per time step" errors between historical
             # forecasts and the target series)
-            for idx in range(n):
-                res_end = residuals.shape[2] - idx
-                if cal_length:
-                    res_start = res_end - cal_length
-                else:
-                    res_start = n - (idx + 1)
-                res_n = residuals[idx][:, res_start:res_end]
+            for idx_horizon in range(horizon):
+                n = idx_horizon + 1
+                # ignore residuals at beginning
+                idx_fc_start = math.floor((horizon - n) / cal_stride)
+                # keep as many residuals as possible from end
+                idx_fc_end = -(math.ceil(horizon / cal_stride) - (idx_fc_start + 1))
+                res_n = residuals[idx_horizon, :, idx_fc_start : idx_fc_end or None]
+                if cal_length is not None:
+                    res_n = res_n[:, -cal_length:]
                 if is_naive and symmetric:
                     # identical correction for upper and lower bounds
                     # metric is `ae()`
