@@ -88,6 +88,7 @@ try:
     from darts.models.forecasting.sf_auto_arima import StatsForecastAutoARIMA
     from darts.models.forecasting.sf_auto_ces import StatsForecastAutoCES
     from darts.models.forecasting.sf_auto_ets import StatsForecastAutoETS
+    from darts.models.forecasting.sf_auto_tbats import StatsForecastAutoTBATS
     from darts.models.forecasting.sf_auto_theta import StatsForecastAutoTheta
 
 except ImportError:
@@ -102,6 +103,7 @@ except ImportError:
     StatsForecastAutoCES = NotImportedModule(module_name="StatsForecast", warn=False)
     StatsForecastAutoETS = NotImportedModule(module_name="StatsForecast", warn=False)
     StatsForecastAutoTheta = NotImportedModule(module_name="StatsForecast", warn=False)
+    StatsForecastAutoTBATS = NotImportedModule(module_name="StatsForecast", warn=False)
 
 try:
     from darts.models.forecasting.xgboost import XGBModel
@@ -159,6 +161,7 @@ __all__ = [
     "StatsForecastAutoCES",
     "StatsForecastAutoETS",
     "StatsForecastAutoTheta",
+    "StatsForecastAutoTBATS",
     "XGBModel",
     "GaussianProcessFilter",
     "KalmanFilter",
