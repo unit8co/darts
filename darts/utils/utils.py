@@ -283,10 +283,7 @@ def _is_method(func: Callable[..., Any]) -> bool:
         true if `func` is a method, false otherwise.
     """
     spec = signature(func)
-    if len(spec.parameters) > 0:
-        if list(spec.parameters.keys())[0] == "self":
-            return True
-    return False
+    return len(spec.parameters) > 0 and list(spec.parameters.keys())[0] == "self"
 
 
 def _check_quantiles(quantiles):

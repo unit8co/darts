@@ -675,7 +675,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         There are two main modes for this method:
 
         - Re-training Mode (Default, `retrain=True`): The model is re-trained at each step of the simulation, and
-          generates a forecast using the updated model.
+          generates a forecast using the updated model. In case of multiple series, the model is re-trained on each
+          series independently (global training is not yet supported).
         - Pre-trained Mode (`retrain=False`): The forecasts are generated at each step of the simulation without
           re-training. It is only supported for pre-trained global forecasting models. This mode is significantly
           faster as it skips the re-training step.
@@ -1520,7 +1521,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # remember input series type
         series_seq_type = get_series_seq_type(series)
-        # validate historical forecasts and covert to multiple series with multiple forecasts case
+        # validate historical forecasts and convert to multiple series with multiple forecasts case
         series, historical_forecasts = _process_historical_forecast_for_backtest(
             series=series,
             historical_forecasts=historical_forecasts,
@@ -2205,7 +2206,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # remember input series type
         series_seq_type = get_series_seq_type(series)
-        # validate historical forecasts and covert to multiple series with multiple forecasts case
+        # validate historical forecasts and convert to multiple series with multiple forecasts case
         series, historical_forecasts = _process_historical_forecast_for_backtest(
             series=series,
             historical_forecasts=historical_forecasts,

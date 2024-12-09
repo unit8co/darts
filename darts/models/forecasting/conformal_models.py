@@ -152,12 +152,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
             )
         ]
         self.interval_range = np.array([
-            q_high - q_low
-            for q_high, q_low in zip(
-                self.quantiles[self.idx_median + 1 :][::-1],
-                self.quantiles[: self.idx_median],
-            )
+            q_high - q_low for q_low, q_high in self.q_interval
         ])
+
         if symmetric:
             # symmetric considers both tails together
             self.interval_range_sym = copy.deepcopy(self.interval_range)
@@ -238,7 +235,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         end of the `series`.
 
         It is important that the input series for prediction correspond to a calibration set - a set different to the
-        series that the underlying forecasting `model` was trained one.
+        series that the underlying forecasting `model` was trained on.
 
         Since it is a probabilistic model, you can generate forecasts in two ways:
 
@@ -1121,10 +1118,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
             # ignore residuals without useful information
             if last_points_only and delta_end > 0:
-                # useful residual information only up until the forecast ending at the last time step in `series`
+                # useful residual information only up until the forecast *ending* at the last time step in `series`
                 ignore_n_residuals = delta_end
             elif not last_points_only and delta_end >= forecast_horizon:
-                # useful residual information only up until the forecast starting at the last time step in `series`
+                # useful residual information only up until the forecast *starting* at the last time step in `series`
                 ignore_n_residuals = delta_end - forecast_horizon + 1
             else:
                 # ignore at least one forecast residuals from the end, since we can only use prior residuals

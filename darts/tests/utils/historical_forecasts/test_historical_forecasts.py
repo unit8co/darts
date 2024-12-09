@@ -3332,39 +3332,26 @@ class TestHistoricalforecast:
         min_len_val_series = icl + horizon_ocs + int(not overlap_end) * horizon_ocs
         n_forecasts = 3
         # get train and val series of that length
-        series_train, series_val = (
-            self.ts_pass_train[:10],
-            self.ts_pass_val[: min_len_val_series + n_forecasts - 1],
-        )
+        series = self.ts_pass_val[: min_len_val_series + n_forecasts - 1]
         if use_int_idx:
-            series_train = TimeSeries.from_values(
-                series_train.all_values(), columns=series_train.columns
-            )
-            series_val = TimeSeries.from_times_and_values(
-                values=series_val.all_values(),
-                times=pd.RangeIndex(
-                    start=series_train.end_time() + series_train.freq,
-                    stop=series_train.end_time()
-                    + (len(series_val) + 1) * series_train.freq,
-                    step=series_train.freq,
-                ),
-                columns=series_train.columns,
+            series = TimeSeries.from_values(
+                values=series.all_values(),
+                columns=series.columns,
             )
         # check that too short input raises error
-        series_val_too_short = series_val[:-n_forecasts]
+        series_too_short = series[:-n_forecasts]
 
         # optionally, generate covariates
         if use_covs:
             pc = tg.gaussian_timeseries(
-                start=series_train.start_time(),
-                end=series_val.end_time() + max(0, horizon - ocl) * series_train.freq,
-                freq=series_train.freq,
+                start=series.start_time(),
+                end=series.end_time() + max(0, horizon - ocl) * series.freq,
+                freq=series.freq,
             )
             fc = tg.gaussian_timeseries(
-                start=series_train.start_time(),
-                end=series_val.end_time()
-                + (max(ocl, horizon) + ocs) * series_train.freq,
-                freq=series_train.freq,
+                start=series.start_time(),
+                end=series.end_time() + (max(ocl, horizon) + ocs) * series.freq,
+                freq=series.freq,
             )
         else:
             pc, fc = None, None
@@ -3378,15 +3365,13 @@ class TestHistoricalforecast:
         forecasting_model = LinearRegressionModel(
             lags=icl, output_chunk_length=ocl, output_chunk_shift=ocs, **model_kwargs
         )
-        forecasting_model.fit(series_train, past_covariates=pc, future_covariates=fc)
+        forecasting_model.fit(series, past_covariates=pc, future_covariates=fc)
 
         # add an offset and rename columns in second series to make sure that conformal hist fc works as expected
         if use_multi_series:
-            series_val = [
-                series_val,
-                (series_val + 10)
-                .shift(1)
-                .with_columns_renamed(series_val.columns, "test_col"),
+            series = [
+                series,
+                (series + 10).shift(1).with_columns_renamed(series.columns, "test_col"),
             ]
             pc = [pc, pc.shift(1)] if pc is not None else None
             fc = [fc, fc.shift(1)] if fc is not None else None
@@ -3394,65 +3379,57 @@ class TestHistoricalforecast:
         # conformal model
         model = ConformalNaiveModel(forecasting_model, quantiles=q)
 
+        hfc_kwargs = dict(
+            {
+                "retrain": False,
+                "last_points_only": last_points_only,
+                "overlap_end": overlap_end,
+                "stride": stride,
+                "forecast_horizon": horizon,
+            },
+            **pred_lklp,
+        )
         # cannot perform auto regression with output chunk shift
         if ocs and horizon > ocl:
             with pytest.raises(ValueError) as exc:
                 _ = model.historical_forecasts(
-                    series=series_val_too_short,
+                    series=series,
                     past_covariates=pc,
                     future_covariates=fc,
-                    retrain=False,
-                    last_points_only=last_points_only,
-                    overlap_end=overlap_end,
-                    stride=stride,
-                    forecast_horizon=horizon,
-                    **pred_lklp,
+                    **hfc_kwargs,
                 )
             assert str(exc.value).startswith("Cannot perform auto-regression")
             return
 
         # compute conformal historical forecasts
         hist_fct = model.historical_forecasts(
-            series=series_val,
-            past_covariates=pc,
-            future_covariates=fc,
-            retrain=False,
-            last_points_only=last_points_only,
-            overlap_end=overlap_end,
-            stride=stride,
-            forecast_horizon=horizon,
-            **pred_lklp,
+            series=series, past_covariates=pc, future_covariates=fc, **hfc_kwargs
         )
         # raises error with too short target series
         with pytest.raises(ValueError) as exc:
             _ = model.historical_forecasts(
-                series=series_val_too_short,
+                series=series_too_short,
                 past_covariates=pc,
                 future_covariates=fc,
-                retrain=False,
-                last_points_only=last_points_only,
-                overlap_end=overlap_end,
-                stride=stride,
-                forecast_horizon=horizon,
-                **pred_lklp,
+                **hfc_kwargs,
             )
         assert str(exc.value).startswith(
             "Could not build the minimum required calibration input with the provided `series`"
         )
 
-        if not isinstance(series_val, list):
-            series_val = [series_val]
+        if not isinstance(series, list):
+            series = [series]
             hist_fct = [hist_fct]
 
         for (
-            series,
+            series_,
             hfc,
-        ) in zip(series_val, hist_fct):
+        ) in zip(series, hist_fct):
             if not isinstance(hfc, list):
                 hfc = [hfc]
 
             n_preds_with_overlap = (
-                len(series)
+                len(series_)
                 - icl  # input for first prediction
                 - horizon_ocs  # skip first forecasts to avoid look-ahead bias
                 + 1  # minimum one forecast
@@ -3462,27 +3439,29 @@ class TestHistoricalforecast:
                 # where each forecast contains the predictions over the entire horizon
                 n_pred_series_expected = n_preds_with_overlap
                 n_pred_points_expected = horizon
-                first_ts_expected = series.time_index[icl] + series.freq * (
+                first_ts_expected = series_.time_index[icl] + series_.freq * (
                     horizon_ocs + ocs
                 )
-                last_ts_expected = series.end_time() + series.freq * horizon_ocs
+                last_ts_expected = series_.end_time() + series_.freq * horizon_ocs
                 # no overlapping means less predictions
                 if not overlap_end:
                     n_pred_series_expected -= horizon_ocs
-                    last_ts_expected -= series.freq * horizon_ocs
             else:
                 # last points only = True gives one contiguous time series per input series
                 # with only predictions from the last point in the horizon
                 n_pred_series_expected = 1
                 n_pred_points_expected = n_preds_with_overlap
-                first_ts_expected = series.time_index[icl] + series.freq * (
+                first_ts_expected = series_.time_index[icl] + series_.freq * (
                     horizon_ocs + ocs + horizon - 1
                 )
-                last_ts_expected = series.end_time() + series.freq * horizon_ocs
+                last_ts_expected = series_.end_time() + series_.freq * horizon_ocs
                 # no overlapping means less predictions
                 if not overlap_end:
                     n_pred_points_expected -= horizon_ocs
-                    last_ts_expected -= series.freq * horizon_ocs
+
+            # no overlapping means less predictions
+            if not overlap_end:
+                last_ts_expected -= series_.freq * horizon_ocs
 
             # adapt based on stride
             if stride > 1:
@@ -3498,7 +3477,7 @@ class TestHistoricalforecast:
                 last_ts_expected = hfc[-1].end_time()
 
             cols_excpected = likelihood_component_names(
-                series.columns, quantile_names(q)
+                series_.columns, quantile_names(q)
             )
             # check length match between optimized and default hist fc
             assert len(hfc) == n_pred_series_expected
@@ -3546,24 +3525,12 @@ class TestHistoricalforecast:
         min_len_val_series = icl + 2 * horizon_ocs + add_cal_length + add_start
         n_forecasts = 3
         # get train and val series of that length
-        series_train, series_val = (
-            self.ts_pass_train[:10],
-            self.ts_pass_val[: min_len_val_series + n_forecasts - 1],
-        )
+        series = self.ts_pass_val[: min_len_val_series + n_forecasts - 1]
 
         if use_int_idx:
-            series_train = TimeSeries.from_values(
-                series_train.all_values(), columns=series_train.columns
-            )
-            series_val = TimeSeries.from_times_and_values(
-                values=series_val.all_values(),
-                times=pd.RangeIndex(
-                    start=series_train.end_time() + series_train.freq,
-                    stop=series_train.end_time()
-                    + (len(series_val) + 1) * series_train.freq,
-                    step=series_train.freq,
-                ),
-                columns=series_train.columns,
+            series = TimeSeries.from_values(
+                values=series.all_values(),
+                columns=series.columns,
             )
 
         # first train the ForecastingModel
@@ -3572,24 +3539,22 @@ class TestHistoricalforecast:
             output_chunk_length=ocl,
             output_chunk_shift=ocs,
         )
-        forecasting_model.fit(series_train)
+        forecasting_model.fit(series)
 
         # optionally compute the start as a positional index
         start_position = icl + horizon_ocs + add_cal_length + add_start
         start = None
         if use_start:
             if start_format == "value":
-                start = series_val.time_index[start_position]
+                start = series.time_index[start_position]
             else:
                 start = start_position
 
         # add an offset and rename columns in second series to make sure that conformal hist fc works as expected
         if use_multi_series:
-            series_val = [
-                series_val,
-                (series_val + 10)
-                .shift(1)
-                .with_columns_renamed(series_val.columns, "test_col"),
+            series = [
+                series,
+                (series + 10).shift(1).with_columns_renamed(series.columns, "test_col"),
             ]
 
         # compute conformal historical forecasts (skips some of the first forecasts to get minimum required cal set)
@@ -3597,23 +3562,24 @@ class TestHistoricalforecast:
             forecasting_model, quantiles=q, cal_length=cal_length
         )
         hist_fct = model.historical_forecasts(
-            series=series_val,
+            series=series,
             retrain=False,
             start=start,
             start_format=start_format,
             last_points_only=last_points_only,
             forecast_horizon=horizon,
+            overlap_end=False,
             **pred_lklp,
         )
 
-        if not isinstance(series_val, list):
-            series_val = [series_val]
+        if not isinstance(series, list):
+            series = [series]
             hist_fct = [hist_fct]
 
         for idx, (
-            series,
+            series_,
             hfc,
-        ) in enumerate(zip(series_val, hist_fct)):
+        ) in enumerate(zip(series, hist_fct)):
             if not isinstance(hfc, list):
                 hfc = [hfc]
 
@@ -3622,7 +3588,7 @@ class TestHistoricalforecast:
             add_start_series_2 = idx * int(use_start) * int(start_format == "value")
 
             n_preds_without_overlap = (
-                len(series)
+                len(series_)
                 - icl  # input for first prediction
                 - horizon_ocs  # skip first forecasts to avoid look-ahead bias
                 - horizon_ocs  # cannot compute with `overlap_end=False`
@@ -3635,22 +3601,22 @@ class TestHistoricalforecast:
                 n_pred_series_expected = n_preds_without_overlap
                 n_pred_points_expected = horizon
                 # seconds series is shifted by one time step (- idx)
-                first_ts_expected = series.time_index[
+                first_ts_expected = series_.time_index[
                     start_position - add_start_series_2 + ocs
                 ]
-                last_ts_expected = series.end_time()
+                last_ts_expected = series_.end_time()
             else:
                 n_pred_series_expected = 1
                 n_pred_points_expected = n_preds_without_overlap
                 # seconds series is shifted by one time step (- idx)
                 first_ts_expected = (
-                    series.time_index[start_position - add_start_series_2]
-                    + (horizon_ocs - 1) * series.freq
+                    series_.time_index[start_position - add_start_series_2]
+                    + (horizon_ocs - 1) * series_.freq
                 )
-                last_ts_expected = series.end_time()
+                last_ts_expected = series_.end_time()
 
             cols_excpected = likelihood_component_names(
-                series.columns, quantile_names(q)
+                series_.columns, quantile_names(q)
             )
             # check historical forecasts dimensions
             assert len(hfc) == n_pred_series_expected

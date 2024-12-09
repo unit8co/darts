@@ -314,7 +314,9 @@ class TestConformalModel:
             **kwargs,
         )
         pred = model.predict(n=self.horizon, **pred_lklp)
-        assert pred.n_components == self.ts_pass_train.n_components * 3
+        assert pred.n_components == self.ts_pass_train.n_components * len(
+            kwargs["quantiles"]
+        )
         assert not np.isnan(pred.all_values()).any().any()
 
         pred_fc = model.model.predict(n=self.horizon)
@@ -329,8 +331,8 @@ class TestConformalModel:
         assert pred.static_covariates is None
 
         # using a different `n`, gives different results, since we can generate more residuals for the horizon
-        pred1 = model.predict(n=1, **pred_lklp)
-        assert not pred1 == pred
+        pred1 = model.predict(n=self.horizon - 1, **pred_lklp)
+        assert not pred1 == pred[: len(pred1)]
 
         # wrong dimension
         with pytest.raises(ValueError):
@@ -356,7 +358,9 @@ class TestConformalModel:
             model.predict(n=1)
 
         pred = model.predict(n=self.horizon, series=self.ts_pass_train, **pred_lklp)
-        assert pred.n_components == self.ts_pass_train.n_components * 3
+        assert pred.n_components == self.ts_pass_train.n_components * len(
+            kwargs["quantiles"]
+        )
         assert not np.isnan(pred.all_values()).any().any()
 
         # the center forecasts must be equal to the forecasting model forecast
@@ -383,7 +387,9 @@ class TestConformalModel:
             f"Model {model_cls} did not return a list of prediction"
         )
         for pred, pred_fc in zip(pred_list, pred_fc_list):
-            assert pred.n_components == self.ts_pass_train.n_components * 3
+            assert pred.n_components == self.ts_pass_train.n_components * len(
+                kwargs["quantiles"]
+            )
             assert pred_fc.time_index.equals(pred.time_index)
             assert not np.isnan(pred.all_values()).any().any()
             np.testing.assert_array_almost_equal(
@@ -527,7 +533,7 @@ class TestConformalModel:
             with pytest.raises(ValueError):
                 covs = cov_kwargs_train[cov_name]
                 covs = {cov_name: covs.stack(covs)}
-                _ = model.predict(n=OUT_LEN + 1, **covs, **pred_lklp)
+                _ = model.predict(n=OUT_LEN, **covs, **pred_lklp)
             # with past covariates from train we can predict up until output_chunk_length
             pred1 = model.predict(n=OUT_LEN, **pred_lklp)
             pred2 = model.predict(n=OUT_LEN, series=self.ts_pass_train, **pred_lklp)
@@ -551,7 +557,7 @@ class TestConformalModel:
             with pytest.raises(ValueError):
                 covs = cov_kwargs_notrain[cov_name]
                 covs = {cov_name: covs.stack(covs)}
-                _ = model.predict(n=OUT_LEN + 1, **covs, **pred_lklp)
+                _ = model.predict(n=OUT_LEN, **covs, **pred_lklp)
             pred1 = model.predict(n=OUT_LEN, **cov_kwargs_notrain, **pred_lklp)
             pred2 = model.predict(
                 n=OUT_LEN, series=self.ts_pass_train, **cov_kwargs_notrain, **pred_lklp
@@ -1506,7 +1512,7 @@ class TestConformalModel:
         model = ConformalNaiveModel(model=train_model(series), quantiles=quantiles)
         # direct quantile predictions
         pred_quantiles = model.predict(n=3, series=series, **pred_lklp)
-        # smapled predictions
+        # sampled predictions
         pred_samples = model.predict(n=3, series=series, num_samples=500)
         for pred_q, pred_s in zip(pred_quantiles, pred_samples):
             assert pred_q.n_samples == 1
