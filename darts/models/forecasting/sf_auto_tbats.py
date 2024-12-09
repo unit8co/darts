@@ -19,9 +19,9 @@ class StatsForecastAutoTBATS(LocalForecastingModel):
         """Auto-TBATS based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
 
-        Automatically selects the best TBATS model from all feasible combinations of the parameters use_boxcox,
-        use_trend, use_damped_trend, and use_arma_errors. Selection is made using the AIC.
-        Default value for use_arma_errors is True since this enables the evaluation of models with
+        Automatically selects the best TBATS model from all feasible combinations of the parameters `use_boxcox`,
+        `use_trend`, `use_damped_trend`, and `use_arma_errors`. Selection is made using the AIC.
+        Default value for `use_arma_errors` is True since this enables the evaluation of models with
         and without ARMA errors.
         <https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=f3de25596ab60ef0e886366826bf58a02b35a44f>
         <https://doi.org/10.4225/03/589299681de3d>
