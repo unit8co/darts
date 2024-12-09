@@ -16,6 +16,7 @@ from darts.models import (
     LightGBMModel,
     LinearRegressionModel,
     NotImportedModule,
+    StatsForecastAutoTBATS,
     XGBModel,
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
@@ -88,6 +89,18 @@ models_cls_kwargs_errs += [
             "use_box_cox": True,
             "use_arma_errors": False,
             "random_state": 42,
+        },
+        0.04,
+        0.04,
+    ),
+    (
+        StatsForecastAutoTBATS,
+        {
+            "season_length": 1,
+            "use_trend": False,
+            "use_damped_trend": False,
+            "use_boxcox": True,
+            "use_arma_errors": False,
         },
         0.04,
         0.04,
