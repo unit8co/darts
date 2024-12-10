@@ -186,8 +186,8 @@ class TestConformalModel:
 
         # `num_samples` must be `>=1`
         with pytest.raises(ValueError) as exc:
-            ConformalNaiveModel(model=global_model, quantiles=q, num_samples=0)
-        assert str(exc.value) == "`num_samples` must be `>=1`."
+            ConformalNaiveModel(model=global_model, quantiles=q, cal_num_samples=0)
+        assert str(exc.value) == "`cal_num_samples` must be `>=1`."
 
     def test_model_hfc_stride_checks(self):
         series = self.ts_pass_train

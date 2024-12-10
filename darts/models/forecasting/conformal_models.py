@@ -64,13 +64,13 @@ class ConformalModel(GlobalForecastingModel, ABC):
         symmetric: bool = True,
         cal_length: Optional[int] = None,
         cal_stride: int = 1,
-        num_samples: int = 500,
+        cal_num_samples: int = 500,
         random_state: Optional[int] = None,
     ):
         """Base Conformal Prediction Model.
 
-        Base class for any probabilistic conformal model. A conformal model calibrates the predictions from any
-        pre-trained global forecasting model. It does not have to be trained, and can generated calibrated forecasts
+        Base class for any conformal prediction model. A conformal model calibrates the predictions from any
+        pre-trained global forecasting model. It does not have to be trained, and can generate calibrated forecasts
         directly using the underlying trained forecasting model. Since it is a probabilistic model, you can generate
         forecasts in two ways (when calling `predict()`, `historical_forecasts()`, ...):
 
@@ -83,11 +83,11 @@ class ConformalModel(GlobalForecastingModel, ABC):
         fitted before. In general the workflow of the models to produce one calibrated forecast/prediction is as
         follows:
 
-        - Extract a calibration set: The number of calibration examples (forecast errors) from the most recent past to
-          use for one conformal prediction can be defined at model creation with parameter `cal_length`. Requires a
-          minimum of `cal_stride * (cal_length or 1)` calibration examples before the (first) conformal forecast.
-          To make your life simpler, it applies automatic extraction of the calibration set from the past of your input
-          series (`series`, `past_covariates`, ...).
+        - Extract a calibration set: The calibration set for each conformal forecast is automatically extracted from
+          the past of your input series relative to the forecast start point. The number of calibration examples
+          (forecast errors / non-conformity scores) to use for per conformal forecast can be defined at model creation
+          with parameter `cal_length`. Note that when using `cal_stride>1`, a longer history is required since
+          the calibration examples are generated with stridden historical forecasts.
         - Generate historical forecasts on the calibration set (using the forecasting model) with a stride `cal_stride`.
         - Compute the errors/non-conformity scores (specific to each conformal model) on these historical forecasts
         - Compute the quantile values from the errors / non-conformity scores (using our desired quantiles set at model
@@ -104,7 +104,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         model
-            A pre-trained global forecasting model.
+            A pre-trained global forecasting model. See the list of models
+            `here <https://unit8co.github.io/darts/#forecasting-models>`_.
         quantiles
             A list of quantiles centered around the median `q=0.5` to use. For example quantiles
             [0.1, 0.2, 0.5, 0.8 0.9] correspond to two intervals with (0.9 - 0.1) = 80%, and (0.8 - 0.2) 60% coverage
@@ -113,14 +114,17 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Whether to use symmetric non-conformity scores. If `False`, uses asymmetric scores (individual scores
             for lower- and upper quantile interval bounds).
         cal_length
-            The number of past forecast residuals/errors to consider as calibration input for each conformal forecast.
-            If `None`, considers all past residuals.
+            The number of past forecast errors / non-conformity scores to use as calibration for each conformal
+            forecast (and each step in the horizon). If `None`, considers all scores.
         cal_stride
-            Whether to apply the same historical forecast `stride` to the non-conformity scores of the calibration set.
-        num_samples
-            Number of times a prediction is sampled from the underlying `model` if it is probabilistic. Uses `1` for
-            deterministic models. This is different to the `num_samples` produced by the conformal model which can be
-            set in downstream forecasting tasks.
+            The stride to apply when computing the historical forecasts and non-conformity scores on the calibration
+            set. The actual conformal forecasts can have a different stride given with parameter `stride` in downstream
+            tasks (e.g. historical forecasts, backtest, ...)
+        cal_num_samples
+            The number of samples to generate for each calibration forecast (if `model` is a probabilistic forecasting
+            model). The non-conformity scores are computed on the quantile values of these forecasts (using quantiles
+            `quantiles`). Uses `1` for deterministic models. The actual conformal forecasts can have a different number
+            of samples given with parameter `num_samples` in downstream tasks (e.g. predict, historical forecasts, ...).
         random_state
             Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
         """
@@ -135,10 +139,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
             raise_log(
                 ValueError("`cal_length` must be `>=1` or `None`."), logger=logger
             )
-        if cal_stride is not None and cal_stride < 1:
+        if cal_stride < 1:
             raise_log(ValueError("`cal_stride` must be `>=1`."), logger=logger)
-        if num_samples is not None and num_samples < 1:
-            raise_log(ValueError("`num_samples` must be `>=1`."), logger=logger)
+        if cal_num_samples < 1:
+            raise_log(ValueError("`cal_num_samples` must be `>=1`."), logger=logger)
 
         super().__init__(add_encoders=None)
 
@@ -167,7 +171,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
         self.model = model
         self.cal_length = cal_length
         self.cal_stride = cal_stride
-        self.num_samples = num_samples if model.supports_probabilistic_prediction else 1
+        self.cal_num_samples = (
+            cal_num_samples if model.supports_probabilistic_prediction else 1
+        )
         self._likelihood = "quantile"
         self._fit_called = True
 
@@ -247,11 +253,11 @@ class ConformalModel(GlobalForecastingModel, ABC):
         Under the hood, the simplified workflow to produce one calibrated forecast/prediction for every step in the
         horizon `n` is as follows (note: `cal_length` and `cal_stride` can be set at model creation):
 
-        - Extract a calibration set: The number of calibration examples (forecast errors) from the most recent past to
-          use for one conformal prediction can be defined at model creation with parameter `cal_length`. Requires a
-          minimum of `cal_stride * (cal_length or 1)` calibration examples before the (first) conformal forecast.
-          To make your life simpler, it applies automatic extraction of the calibration set from the past of your input
-          series (`series`, `past_covariates`, ...).
+        - Extract a calibration set: The calibration set for each conformal forecast is automatically extracted from
+          the past of your input series relative to the forecast start point. The number of calibration examples
+          (forecast errors / non-conformity scores) to use for per conformal forecast can be defined at model creation
+          with parameter `cal_length`. Note that when using `cal_stride>1`, a longer history is required since
+          the calibration examples are generated with stridden historical forecasts.
         - Generate historical forecasts on the calibration set (using the forecasting model) with a stride `cal_stride`.
         - Compute the errors/non-conformity scores (specific to each conformal model) on these historical forecasts
         - Compute the quantile values from the errors / non-conformity scores (using our desired quantiles set at model
@@ -335,7 +341,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            num_samples=self.num_samples,
+            num_samples=self.cal_num_samples,
             verbose=verbose,
             predict_likelihood_parameters=False,
             show_warnings=show_warnings,
@@ -358,7 +364,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             forecast_horizon=n,
-            num_samples=self.num_samples,
+            num_samples=self.cal_num_samples,
             start=cal_start,
             start_format=cal_start_format,
             stride=self.cal_stride,
@@ -563,7 +569,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,
-            num_samples=self.num_samples,
+            num_samples=self.cal_num_samples,
             start=cal_start,
             start_format=cal_start_format,
             stride=self.cal_stride,
@@ -1492,7 +1498,7 @@ class ConformalNaiveModel(ConformalModel):
         symmetric: bool = True,
         cal_length: Optional[int] = None,
         cal_stride: int = 1,
-        num_samples: int = 500,
+        cal_num_samples: int = 500,
         random_state: Optional[int] = None,
     ):
         """Naive Conformal Prediction Model.
@@ -1522,11 +1528,11 @@ class ConformalNaiveModel(ConformalModel):
         fitted before. In general the workflow of the models to produce one calibrated forecast/prediction is as
         follows:
 
-        - Extract a calibration set: The number of calibration examples (forecast errors) from the most recent past to
-          use for one conformal prediction can be defined at model creation with parameter `cal_length`. Requires a
-          minimum of `cal_stride * (cal_length or 1)` calibration examples before the (first) conformal forecast.
-          To make your life simpler, it applies automatic extraction of the calibration set from the past of your input
-          series (`series`, `past_covariates`, ...).
+        - Extract a calibration set: The calibration set for each conformal forecast is automatically extracted from
+          the past of your input series relative to the forecast start point. The number of calibration examples
+          (forecast errors / non-conformity scores) to use for per conformal forecast can be defined at model creation
+          with parameter `cal_length`. Note that when using `cal_stride>1`, a longer history is required since
+          the calibration examples are generated with stridden historical forecasts.
         - Generate historical forecasts on the calibration set (using the forecasting model) with a stride `cal_stride`.
         - Compute the errors/non-conformity scores (as defined above) on these historical forecasts
         - Compute the quantile values from the errors / non-conformity scores (using our desired quantiles set at model
@@ -1542,7 +1548,8 @@ class ConformalNaiveModel(ConformalModel):
         Parameters
         ----------
         model
-            A pre-trained global forecasting model.
+            A pre-trained global forecasting model. See the list of models
+            `here <https://unit8co.github.io/darts/#forecasting-models>`_.
         quantiles
             A list of quantiles centered around the median `q=0.5` to use. For example quantiles
             [0.1, 0.2, 0.5, 0.8 0.9] correspond to two intervals with (0.9 - 0.1) = 80%, and (0.8 - 0.2) 60% coverage
@@ -1552,14 +1559,17 @@ class ConformalNaiveModel(ConformalModel):
             :func:`~darts.metrics.metrics.ae`) to compute the non-conformity scores. If `False`, uses metric `-err()`
             (see :func:`~darts.metrics.metrics.err`) for the lower, and `err()` for the upper quantile interval bound.
         cal_length
-            The number of past forecast residuals/errors to consider as calibration input for each conformal forecast.
-            If `None`, considers all past residuals.
+            The number of past forecast errors / non-conformity scores to use as calibration for each conformal
+            forecast (and each step in the horizon). If `None`, considers all scores.
         cal_stride
-            Whether to apply the same historical forecast `stride` to the non-conformity scores of the calibration set.
-        num_samples
-            Number of times a prediction is sampled from the underlying `model` if it is probabilistic. Uses `1` for
-            deterministic models. This is different to the `num_samples` produced by the conformal model which can be
-            set in downstream forecasting tasks.
+            The stride to apply when computing the historical forecasts and non-conformity scores on the calibration
+            set. The actual conformal forecasts can have a different stride given with parameter `stride` in downstream
+            tasks (e.g. historical forecasts, backtest, ...)
+        cal_num_samples
+            The number of samples to generate for each calibration forecast (if `model` is a probabilistic forecasting
+            model). The non-conformity scores are computed on the quantile values of these forecasts (using quantiles
+            `quantiles`). Uses `1` for deterministic models. The actual conformal forecasts can have a different number
+            of samples given with parameter `num_samples` in downstream tasks (e.g. predict, historical forecasts, ...).
         random_state
             Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
         """
@@ -1568,7 +1578,7 @@ class ConformalNaiveModel(ConformalModel):
             quantiles=quantiles,
             symmetric=symmetric,
             cal_length=cal_length,
-            num_samples=num_samples,
+            cal_num_samples=cal_num_samples,
             random_state=random_state,
             cal_stride=cal_stride,
         )
@@ -1620,7 +1630,7 @@ class ConformalQRModel(ConformalModel):
         symmetric: bool = True,
         cal_length: Optional[int] = None,
         cal_stride: int = 1,
-        num_samples: int = 500,
+        cal_num_samples: int = 500,
         random_state: Optional[int] = None,
     ):
         """Conformalized Quantile Regression Model.
@@ -1652,11 +1662,11 @@ class ConformalQRModel(ConformalModel):
         fitted before. In general the workflow of the models to produce one calibrated forecast/prediction is as
         follows:
 
-        - Extract a calibration set: The number of calibration examples (forecast errors) from the most recent past to
-          use for one conformal prediction can be defined at model creation with parameter `cal_length`. Requires a
-          minimum of `cal_stride * (cal_length or 1)` calibration examples before the (first) conformal forecast.
-          To make your life simpler, it applies automatic extraction of the calibration set from the past of your input
-          series (`series`, `past_covariates`, ...).
+        - Extract a calibration set: The calibration set for each conformal forecast is automatically extracted from
+          the past of your input series relative to the forecast start point. The number of calibration examples
+          (forecast errors / non-conformity scores) to use for per conformal forecast can be defined at model creation
+          with parameter `cal_length`. Note that when using `cal_stride>1`, a longer history is required since
+          the calibration examples are generated with stridden historical forecasts.
         - Generate historical forecasts (quantile predictions) on the calibration set (using the forecasting model)
           with a stride `cal_stride`.
         - Compute the errors/non-conformity scores (as defined above) on these historical quantile predictions
@@ -1673,7 +1683,8 @@ class ConformalQRModel(ConformalModel):
         Parameters
         ----------
         model
-            A pre-trained probabilistic global forecasting model using a `likelihood`.
+            A pre-trained global forecasting model. See the list of models
+            `here <https://unit8co.github.io/darts/#forecasting-models>`_.
         quantiles
             A list of quantiles centered around the median `q=0.5` to use. For example quantiles
             [0.1, 0.2, 0.5, 0.8 0.9] correspond to two intervals with (0.9 - 0.1) = 80%, and (0.8 - 0.2) 60% coverage
@@ -1684,14 +1695,17 @@ class ConformalQRModel(ConformalModel):
             scores. If `False`, uses asymmetric metric `incs_qr(..., symmetric=False)` with individual scores for the
             lower- and upper quantile interval bounds.
         cal_length
-            The number of past forecast residuals/errors to consider as calibration input for each conformal forecast.
-            If `None`, considers all past residuals.
+            The number of past forecast errors / non-conformity scores to use as calibration for each conformal
+            forecast (and each step in the horizon). If `None`, considers all scores.
         cal_stride
-            Whether to apply the same historical forecast `stride` to the non-conformity scores of the calibration set.
-        num_samples
-            Number of times a prediction is sampled from the underlying `model` if it is probabilistic. Uses `1` for
-            deterministic models. This is different to the `num_samples` produced by the conformal model which can be
-            set in downstream forecasting tasks.
+            The stride to apply when computing the historical forecasts and non-conformity scores on the calibration
+            set. The actual conformal forecasts can have a different stride given with parameter `stride` in downstream
+            tasks (e.g. historical forecasts, backtest, ...)
+        cal_num_samples
+            The number of samples to generate for each calibration forecast (if `model` is a probabilistic forecasting
+            model). The non-conformity scores are computed on the quantile values of these forecasts (using quantiles
+            `quantiles`). Uses `1` for deterministic models. The actual conformal forecasts can have a different number
+            of samples given with parameter `num_samples` in downstream tasks (e.g. predict, historical forecasts, ...).
         random_state
             Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
         """
@@ -1708,7 +1722,7 @@ class ConformalQRModel(ConformalModel):
             quantiles=quantiles,
             symmetric=symmetric,
             cal_length=cal_length,
-            num_samples=num_samples,
+            cal_num_samples=cal_num_samples,
             random_state=random_state,
             cal_stride=cal_stride,
         )
