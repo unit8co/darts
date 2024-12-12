@@ -5675,15 +5675,17 @@ def slice_intersect(series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
     if not series:
         return []
 
-    intersected_series = []
-    for i, ts_i in enumerate(series):
-        intersected_ts = ts_i
-        for j, ts_j in enumerate(series):
-            if i != j:
-                intersected_ts = intersected_ts.slice_intersect(ts_j)
-        intersected_series.append(intersected_ts)
+    int_series = []
+    int_ts = series[0]
+    for ts in series[1:]:
+        int_ts = int_ts.slice_intersect(ts)
+    int_series.append(int_ts)
 
-    return intersected_series
+    for ts in series[1:]:
+        ts = ts.slice_intersect(int_series[-1])
+        int_series.append(ts)
+
+    return int_series
 
 
 def _finite_rows_boundaries(
