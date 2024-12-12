@@ -26,7 +26,7 @@ class StatsForecastAutoTheta(LocalForecastingModel):
         It is probabilistic, whereas :class:`FourTheta` is not.
 
         We refer to the `statsforecast AutoTheta documentation
-        <https://nixtla.github.io/statsforecast/src/core/models.html#autotheta>`_
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotheta>`_
         for the exhaustive documentation of the arguments.
 
         Parameters
