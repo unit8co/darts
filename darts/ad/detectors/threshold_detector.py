@@ -80,8 +80,8 @@ class ThresholdDetector(Detector, _BoundedDetectorMixin):
 
         def _detect_fn(x, lo, hi):
             # x of shape (time,) for 1 component
-            return (x < (np.NINF if lo is None else lo)) | (
-                x > (np.Inf if hi is None else hi)
+            return (x < (-np.inf if lo is None else lo)) | (
+                x > (np.inf if hi is None else hi)
             )
 
         detected = np.zeros_like(np_series, dtype=int)

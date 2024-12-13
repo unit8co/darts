@@ -32,7 +32,7 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
         It is probabilistic, whereas :class:`AutoARIMA` is not.
 
         We refer to the `statsforecast AutoARIMA documentation
-        <https://nixtla.github.io/statsforecast/src/core/models.html#autoarima>`_
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoarima>`_
         for the exhaustive documentation of the arguments.
 
         Parameters
