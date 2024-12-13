@@ -6,6 +6,7 @@ docs/source/examples
 docs/source/userguide/
 docs/source/quickstart/
 docs/source/README.rst
+docs/source/release_notes/
 docs/source/generated_api
 darts.egg-info/
 build/
@@ -16,9 +17,11 @@ runs/
 htmlcov
 coverage.xml
 .darts
+darts_logs/
 docs_env
 .DS_Store
 .gradle
+.venv
 
 # used by CI to build with latest versions of dependencies
 requirements-latest.txt

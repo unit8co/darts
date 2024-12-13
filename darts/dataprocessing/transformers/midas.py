@@ -2,7 +2,9 @@
 Mixed-data sampling (MIDAS) Transformer
 ---------------------------------------
 """
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
+
+from collections.abc import Mapping, Sequence
+from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -14,7 +16,7 @@ from darts.dataprocessing.transformers import (
 )
 from darts.logging import get_logger, raise_log
 from darts.timeseries import _finite_rows_boundaries
-from darts.utils.timeseries_generation import generate_index
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -53,14 +55,14 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             Whether to remove the NaNs from the start and the end of the transformed series.
         drop_static_covariates
             If set to `True`, the statics covariates of the input series won't be transferred to the output.
-            This migth be useful for multivariate series with component-specific static covariates.
+            This might be useful for multivariate series with component-specific static covariates.
         name
             A specific name for the scaler
         n_jobs
             The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
-            passed as input to a method, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+            passed as input to a method, parallelizing operations regarding different ``TimeSeries``. Defaults to `1`
             (sequential). Setting the parameter to `-1` means using all the available processors.
-            Note: for a small amount of data, the parallelisation overhead could end up increasing the total
+            Note: for a small amount of data, the parallelization overhead could end up increasing the total
             required amount of time.
         verbose
             Optionally, whether to print operations progress
@@ -114,7 +116,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         params: Mapping[str, Any],
         *args,
         **kwargs,
-    ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+    ) -> Union[dict[str, Any], list[dict[str, Any]]]:
         """MIDAS needs the high frequency period name in order to easily reverse_transform
         TimeSeries, the parallelization is handled by `transform` and/or `inverse_transform`
         (see InvertibleDataTransformer.__init__() docstring).
@@ -140,13 +142,11 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                     ),
                     logger=logger,
                 )
-            fitted_params.append(
-                {
-                    "high_freq": high_freq,
-                    "start": ts.start_time(),
-                    "end": ts.end_time(),
-                }
-            )
+            fitted_params.append({
+                "high_freq": high_freq,
+                "start": ts.start_time(),
+                "end": ts.end_time(),
+            })
         return fitted_params[0] if is_single_series else fitted_params
 
     @staticmethod

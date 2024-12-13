@@ -1,10 +1,11 @@
-from typing import List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.utils.statistics import stationarity_tests
-from darts.utils.utils import series2seq
+from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -185,7 +186,7 @@ def process_horizons_and_targets(
     target_components: Optional[Union[str, Sequence[str]]] = None,
     fallback_target_components: Optional[Sequence[str]] = None,
     check_component_names: bool = False,
-) -> Tuple[Sequence[int], Sequence[str]]:
+) -> tuple[Sequence[int], Sequence[str]]:
     """Processes the input horizons and target component names.
 
     horizons
@@ -242,7 +243,7 @@ def get_component_names(
     past_covariates: Optional[Sequence[TimeSeries]] = None,
     future_covariates: Optional[Sequence[TimeSeries]] = None,
     idx: int = 0,
-) -> Tuple[List[str], Optional[List[str]], Optional[List[str]], Optional[List[str]]]:
+) -> tuple[list[str], Optional[list[str]], Optional[list[str]], Optional[list[str]]]:
     """Extract and return the components of target series, static covariate, past and future covariates series.
 
     Parameters
@@ -287,9 +288,9 @@ def _check_valid_input(
     series: Sequence[TimeSeries],
     past_covariates: Optional[Sequence[TimeSeries]],
     future_covariates: Optional[Sequence[TimeSeries]],
-    target_components: Optional[List[str]],
-    past_covariates_components: Optional[List[str]],
-    future_covariates_components: Optional[List[str]],
+    target_components: Optional[list[str]],
+    past_covariates_components: Optional[list[str]],
+    future_covariates_components: Optional[list[str]],
     check_component_names: bool = False,
     requires_input: bool = False,
     test_stationarity: bool = False,
@@ -342,18 +343,20 @@ def _check_valid_input(
     # for explained features.
     for idx in range(len(series)):
         raise_if_not(
-            all(
-                [
-                    series[idx].columns.to_list() == target_components,
+            all([
+                series[idx].columns.to_list() == target_components,
+                (
                     past_covariates[idx].columns.to_list() == past_covariates_components
                     if past_covariates is not None
-                    else True,
+                    else True
+                ),
+                (
                     future_covariates[idx].columns.to_list()
                     == future_covariates_components
                     if future_covariates is not None
-                    else True,
-                ]
-            ),
+                    else True
+                ),
+            ]),
             "Columns names must be identical between TimeSeries list components (multi-TimeSeries).",
         )
 

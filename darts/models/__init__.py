@@ -7,6 +7,14 @@ from darts.logging import get_logger
 
 logger = get_logger(__name__)
 
+from darts.models.utils import NotImportedModule
+
+try:
+    # `lightgbm` needs to be imported first to avoid segmentation fault
+    from darts.models.forecasting.lgbm import LightGBMModel
+except ModuleNotFoundError:
+    LightGBMModel = NotImportedModule(module_name="LightGBM", warn=False)
+
 # Forecasting
 from darts.models.forecasting.arima import ARIMA
 from darts.models.forecasting.auto_arima import AutoARIMA
@@ -26,11 +34,15 @@ from darts.models.forecasting.regression_model import RegressionModel
 from darts.models.forecasting.tbats_model import BATS, TBATS
 from darts.models.forecasting.theta import FourTheta, Theta
 from darts.models.forecasting.varima import VARIMA
-from darts.models.utils import NotImportedModule
 
 try:
     from darts.models.forecasting.block_rnn_model import BlockRNNModel
     from darts.models.forecasting.dlinear import DLinearModel
+    from darts.models.forecasting.global_baseline_models import (
+        GlobalNaiveAggregate,
+        GlobalNaiveDrift,
+        GlobalNaiveSeasonal,
+    )
     from darts.models.forecasting.nbeats import NBEATSModel
     from darts.models.forecasting.nhits import NHiTSModel
     from darts.models.forecasting.nlinear import NLinearModel
@@ -39,17 +51,27 @@ try:
     from darts.models.forecasting.tft_model import TFTModel
     from darts.models.forecasting.tide_model import TiDEModel
     from darts.models.forecasting.transformer_model import TransformerModel
+    from darts.models.forecasting.tsmixer_model import TSMixerModel
 except ModuleNotFoundError:
     logger.warning(
         "Support for Torch based models not available. "
         'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
         'or "u8darts-torch" or "u8darts-all" (with conda).'
     )
-
-try:
-    from darts.models.forecasting.lgbm import LightGBMModel
-except ModuleNotFoundError:
-    LightGBMModel = NotImportedModule(module_name="LightGBM", warn=False)
+    BlockRNNModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    DLinearModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    GlobalNaiveAggregate = NotImportedModule(module_name="(Py)Torch", warn=False)
+    GlobalNaiveDrift = NotImportedModule(module_name="(Py)Torch", warn=False)
+    GlobalNaiveSeasonal = NotImportedModule(module_name="(Py)Torch", warn=False)
+    NBEATSModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    NHiTSModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    NLinearModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    RNNModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    TCNModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    TFTModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    TiDEModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    TransformerModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+    TSMixerModel = NotImportedModule(module_name="(Py)Torch", warn=False)
 
 try:
     from darts.models.forecasting.prophet_model import Prophet
@@ -95,3 +117,52 @@ from darts.models.forecasting.baselines import NaiveEnsembleModel
 
 # Ensembling
 from darts.models.forecasting.ensemble_model import EnsembleModel
+
+__all__ = [
+    "LightGBMModel",
+    "ARIMA",
+    "AutoARIMA",
+    "NaiveDrift",
+    "NaiveMean",
+    "NaiveMovingAverage",
+    "NaiveSeasonal",
+    "ExponentialSmoothing",
+    "FFT",
+    "KalmanForecaster",
+    "LinearRegressionModel",
+    "RandomForest",
+    "RegressionEnsembleModel",
+    "RegressionModel",
+    "BATS",
+    "TBATS",
+    "FourTheta",
+    "Theta",
+    "VARIMA",
+    "BlockRNNModel",
+    "DLinearModel",
+    "GlobalNaiveDrift",
+    "GlobalNaiveDrift",
+    "GlobalNaiveSeasonal",
+    "NBEATSModel",
+    "NHiTSModel",
+    "NLinearModel",
+    "RNNModel",
+    "TCNModel",
+    "TFTModel",
+    "TiDEModel",
+    "TransformerModel",
+    "TSMixerModel",
+    "Prophet",
+    "CatBoostModel",
+    "Croston",
+    "StatsForecastAutoARIMA",
+    "StatsForecastAutoCES",
+    "StatsForecastAutoETS",
+    "StatsForecastAutoTheta",
+    "XGBModel",
+    "GaussianProcessFilter",
+    "KalmanFilter",
+    "MovingAverageFilter",
+    "NaiveEnsembleModel",
+    "EnsembleModel",
+]

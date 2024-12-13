@@ -15,7 +15,7 @@ by calling the `fit()` function, and finally they are used to obtain one or seve
 from darts.models import NaiveSeasonal
 
 naive_model = NaiveSeasonal(K=1)            # init
-naive_model.fit(train)                      # fit  
+naive_model.fit(train)                      # fit
 naive_forecast = naive_model.predict(n=36)  # predict
 ```
 
@@ -111,14 +111,14 @@ These models are shown with a "✅" under the `Multivariate` column on the [mode
 ## Handling multiple series
 
 Some models support being fit on multiple time series. To do this, it is enough to simply provide a Python `Sequence` of `TimeSeries` (for instance a list of `TimeSeries`) to `fit()`. When a model is fit this way, the `predict()` function will expect the argument `series` to be set, containing
-one or several `TimeSeries` (i.e., a single or a `Sequence` of `TimeSeries`) that need to be forecasted. 
+one or several `TimeSeries` (i.e., a single or a `Sequence` of `TimeSeries`) that need to be forecasted.
 The advantage of training on multiple series is that a single model can be exposed to more patterns occurring across all series in the training dataset. That can often be beneficial, especially for larger models with more capacity.
 
 In turn, the advantage of having `predict()` providing forecasts for potentially several series at once is that the computation can often be batched and vectorized across the multiple series, which is computationally faster than calling `predict()` multiple times on isolated series.
 
 These models are shown with a "✅" under the `Multiple-series training` column on the [model list](https://github.com/unit8co/darts#forecasting-models).
 
-You can also find out programatically, whether a model supports multiple series.
+You can also find out programmatically, whether a model supports multiple series.
 ```python
 from darts.models import RegressionModel
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
@@ -178,9 +178,9 @@ pred.plot(label='forecast')
 ![Exponential Smoothing](./images/probabilistic/example_ets.png)
 
 ### Probabilistic neural networks
-All neural networks (torch-based models) in Darts have a rich support to estimate different kinds of probability distributions. 
-When creating the model, it is possible to provide one of the *likelihood models* available in [darts.utils.likelihood_models](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html), which determine the distribution that will be estimated by the model. 
-In such cases, the model will output the parameters of the distribution, and it will be trained by minimising the negative log-likelihood of the training samples. 
+All neural networks (torch-based models) in Darts have a rich support to estimate different kinds of probability distributions.
+When creating the model, it is possible to provide one of the *likelihood models* available in [darts.utils.likelihood_models](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html), which determine the distribution that will be estimated by the model.
+In such cases, the model will output the parameters of the distribution, and it will be trained by minimising the negative log-likelihood of the training samples.
 Most of the likelihood models also support prior values for the distribution's parameters, in which case the training loss is regularized by a Kullback-Leibler divergence term pushing the resulting distribution in the direction of the distribution specified by the prior parameters.
 The strength of this regularization term can also be specified when creating the likelihood model object.
 
@@ -201,7 +201,7 @@ train = scaler.fit_transform(train)
 val = scaler.transform(val)
 series = scaler.transform(series)
 
-model = TCNModel(input_chunk_length=30, 
+model = TCNModel(input_chunk_length=30,
                  output_chunk_length=12,
                  likelihood=LaplaceLikelihood(prior_b=0.1))
 model.fit(train, epochs=400)
@@ -232,7 +232,7 @@ train = scaler.fit_transform(train)
 val = scaler.transform(val)
 series = scaler.transform(series)
 
-model = TCNModel(input_chunk_length=30, 
+model = TCNModel(input_chunk_length=30,
                  output_chunk_length=12,
                  likelihood=QuantileRegression(quantiles=[0.01, 0.05, 0.2, 0.5, 0.8, 0.95, 0.99]))
 model.fit(train, epochs=400)
@@ -291,8 +291,8 @@ from darts.models import LinearRegressionModel
 series = AirPassengersDataset().load()
 train, val = series[:-36], series[-36:]
 
-model = LinearRegressionModel(lags=30, 
-                              likelihood="quantile", 
+model = LinearRegressionModel(lags=30,
+                              likelihood="quantile",
                               quantiles=[0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95])
 model.fit(train)
 pred = model.predict(n=36, num_samples=500)

@@ -3,7 +3,8 @@ Temporal Fusion Transformer (TFT)
 -------
 """
 
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -37,7 +38,7 @@ from darts.utils.likelihood_models import Likelihood, QuantileRegression
 
 logger = get_logger(__name__)
 
-MixedCovariatesTrainTensorType = Tuple[
+MixedCovariatesTrainTensorType = tuple[
     torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
 ]
 
@@ -45,22 +46,21 @@ MixedCovariatesTrainTensorType = Tuple[
 class _TFTModule(PLMixedCovariatesModule):
     def __init__(
         self,
-        output_dim: Tuple[int, int],
-        variables_meta: Dict[str, Dict[str, List[str]]],
+        output_dim: tuple[int, int],
+        variables_meta: dict[str, dict[str, list[str]]],
         num_static_components: int,
-        hidden_size: Union[int, List[int]],
+        hidden_size: Union[int, list[int]],
         lstm_layers: int,
         num_attention_heads: int,
         full_attention: bool,
         feed_forward: str,
         hidden_continuous_size: int,
-        categorical_embedding_sizes: Dict[str, Tuple[int, int]],
+        categorical_embedding_sizes: dict[str, tuple[int, int]],
         dropout: float,
         add_relative_index: bool,
         norm_type: Union[str, nn.Module],
         **kwargs,
     ):
-
         """PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`_
         The implementation is built upon `pytorch-forecasting's TemporalFusionTransformer
         <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_.
@@ -108,7 +108,8 @@ class _TFTModule(PLMixedCovariatesModule):
         norm_type: str | nn.Module
             The type of LayerNorm variant to use.
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
         """
 
         super().__init__(**kwargs)
@@ -158,9 +159,11 @@ class _TFTModule(PLMixedCovariatesModule):
         # continuous variable processing
         self.prescalers_linear = {
             name: nn.Linear(
-                1
-                if name not in self.numeric_static_variables
-                else self.num_static_components,
+                (
+                    1
+                    if name not in self.numeric_static_variables
+                    else self.num_static_components
+                ),
                 self.hidden_continuous_size,
             )
             for name in self.reals
@@ -171,12 +174,9 @@ class _TFTModule(PLMixedCovariatesModule):
             name: self.input_embeddings.output_size[name]
             for name in self.categorical_static_variables
         }
-        static_input_sizes.update(
-            {
-                name: self.hidden_continuous_size
-                for name in self.numeric_static_variables
-            }
-        )
+        static_input_sizes.update({
+            name: self.hidden_continuous_size for name in self.numeric_static_variables
+        })
 
         self.static_covariates_vsn = _VariableSelectionNetwork(
             input_sizes=static_input_sizes,
@@ -333,42 +333,42 @@ class _TFTModule(PLMixedCovariatesModule):
         self._decoder_sparse_weights = None
 
     @property
-    def reals(self) -> List[str]:
+    def reals(self) -> list[str]:
         """
         List of all continuous variables in model
         """
         return self.variables_meta["model_config"]["reals_input"]
 
     @property
-    def static_variables(self) -> List[str]:
+    def static_variables(self) -> list[str]:
         """
         List of all static variables in model
         """
         return self.variables_meta["model_config"]["static_input"]
 
     @property
-    def numeric_static_variables(self) -> List[str]:
+    def numeric_static_variables(self) -> list[str]:
         """
         List of numeric static variables in model
         """
         return self.variables_meta["model_config"]["static_input_numeric"]
 
     @property
-    def categorical_static_variables(self) -> List[str]:
+    def categorical_static_variables(self) -> list[str]:
         """
         List of categorical static variables in model
         """
         return self.variables_meta["model_config"]["static_input_categorical"]
 
     @property
-    def encoder_variables(self) -> List[str]:
+    def encoder_variables(self) -> list[str]:
         """
         List of all encoder variables in model (excluding static variables)
         """
         return self.variables_meta["model_config"]["time_varying_encoder_input"]
 
     @property
-    def decoder_variables(self) -> List[str]:
+    def decoder_variables(self) -> list[str]:
         """
         List of all decoder variables in model (excluding static variables)
         """
@@ -453,7 +453,7 @@ class _TFTModule(PLMixedCovariatesModule):
 
     @io_processor
     def forward(
-        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
+        self, x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
     ) -> torch.Tensor:
         """TFT model forward pass.
 
@@ -541,13 +541,11 @@ class _TFTModule(PLMixedCovariatesModule):
             else:
                 static_embedding = {}
             # add numerical static covariates
-            static_embedding.update(
-                {
-                    name: x_static[:, :, idx]
-                    for idx, name in enumerate(self.static_variables)
-                    if name in self.numeric_static_variables
-                }
-            )
+            static_embedding.update({
+                name: x_static[:, :, idx]
+                for idx, name in enumerate(self.static_variables)
+                if name in self.numeric_static_variables
+            })
             static_embedding, static_covariate_var = self.static_covariates_vsn(
                 static_embedding
             )
@@ -659,7 +657,8 @@ class TFTModel(MixedCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
-        hidden_size: Union[int, List[int]] = 16,
+        output_chunk_shift: int = 0,
+        hidden_size: Union[int, list[int]] = 16,
         lstm_layers: int = 1,
         num_attention_heads: int = 4,
         full_attention: bool = False,
@@ -667,7 +666,7 @@ class TFTModel(MixedCovariatesTorchModel):
         dropout: float = 0.1,
         hidden_continuous_size: int = 8,
         categorical_embedding_sizes: Optional[
-            Dict[str, Union[int, Tuple[int, int]]]
+            dict[str, Union[int, tuple[int, int]]]
         ] = None,
         add_relative_index: bool = False,
         loss_fn: Optional[nn.Module] = None,
@@ -705,11 +704,17 @@ class TFTModel(MixedCovariatesTorchModel):
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
             as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
-            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
             Also called: Decoder length
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         hidden_size
             Hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT
             architecture.
@@ -955,7 +960,7 @@ class TFTModel(MixedCovariatesTorchModel):
             else {}
         )
         self.add_relative_index = add_relative_index
-        self.output_dim: Optional[Tuple[int, int]] = None
+        self.output_dim: Optional[tuple[int, int]] = None
         self.norm_type = norm_type
         self._considers_static_covariates = use_static_covariates
 
@@ -1078,9 +1083,9 @@ class TFTModel(MixedCovariatesTorchModel):
                     if (
                         self.static_covariates is None
                     ):  # when training with fit_from_dataset
-                        static_cols = pd.Index(
-                            [i for i in range(static_covariates.shape[1])]
-                        )
+                        static_cols = pd.Index([
+                            i for i in range(static_covariates.shape[1])
+                        ])
                     else:
                         static_cols = self.static_covariates.columns
                     numeric_mask = ~static_cols.isin(self.categorical_embedding_sizes)
@@ -1155,9 +1160,9 @@ class TFTModel(MixedCovariatesTorchModel):
         target: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> MixedCovariatesSequentialDataset:
-
         raise_if(
             future_covariates is None and not self.add_relative_index,
             "TFTModel requires future covariates. The model applies multi-head attention queries on future "
@@ -1173,8 +1178,10 @@ class TFTModel(MixedCovariatesTorchModel):
             future_covariates=future_covariates,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
+            sample_weight=sample_weight,
         )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):

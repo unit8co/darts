@@ -3,7 +3,8 @@ Window Transformer
 ------------------
 """
 
-from typing import Any, List, Mapping, Optional, Union
+from collections.abc import Mapping
+from typing import Any, Optional, Union
 
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger
@@ -15,11 +16,12 @@ logger = get_logger(__name__)
 class WindowTransformer(BaseDataTransformer):
     def __init__(
         self,
-        transforms: Union[dict, List[dict]],
+        transforms: Union[dict, list[dict]],
         treat_na: Optional[Union[str, Union[int, float]]] = None,
         forecasting_safe: Optional[bool] = True,
         keep_non_transformed: Optional[bool] = False,
         include_current: Optional[bool] = True,
+        keep_names: Optional[bool] = False,
         name: str = "WindowTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
@@ -123,10 +125,14 @@ class WindowTransformer(BaseDataTransformer):
 
         keep_non_transformed
             ``False`` to return the transformed components only, ``True`` to return all original components along
-            the transformed ones. Default is ``False``.
+            the transformed ones. Default is ``False``. If the series has a hierarchy, must be set to ``False``.
 
         include_current
             ``True`` to include the current time step in the window, ``False`` to exclude it. Default is ``True``.
+
+        keep_names
+            Whether the transformed components should keep the original component names or. Must be set to ``False``
+            if `keep_non_transformed = True` or the number of transformation is greater than 1.
 
         name
             A specific name for the transformer.
@@ -147,6 +153,7 @@ class WindowTransformer(BaseDataTransformer):
         self.treat_na = treat_na
         self.forecasting_safe = forecasting_safe
         self.include_current = include_current
+        self.keep_names = keep_names
         super().__init__(name, n_jobs, verbose)
 
     @staticmethod

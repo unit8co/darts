@@ -22,7 +22,8 @@ We also show how to use the `TFTExplainer` in the example notebook of the `TFTMo
 <https://unit8co.github.io/darts/examples/13-TFT-examples.html#Explainability>`_.
 """
 
-from typing import Dict, List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Literal, Optional, Union
 
 import matplotlib.axes
 import matplotlib.pyplot as plt
@@ -35,13 +36,7 @@ from darts.explainability import TFTExplainabilityResult
 from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.logging import get_logger, raise_log
 from darts.models import TFTModel
-from darts.utils.timeseries_generation import generate_index
-
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -225,16 +220,14 @@ class TFTExplainer(_ForecastingModelExplainer):
                 times=times,
                 columns=[f"horizon {str(i)}" for i in horizons],
             )
-            results.append(
-                {
-                    "attention": attention,
-                    "encoder_importance": encoder_importance.iloc[idx : idx + 1],
-                    "decoder_importance": decoder_importance.iloc[idx : idx + 1],
-                    "static_covariates_importance": static_covariates_importance.iloc[
-                        idx : idx + 1
-                    ],
-                }
-            )
+            results.append({
+                "attention": attention,
+                "encoder_importance": encoder_importance.iloc[idx : idx + 1],
+                "decoder_importance": decoder_importance.iloc[idx : idx + 1],
+                "static_covariates_importance": static_covariates_importance.iloc[
+                    idx : idx + 1
+                ],
+            })
         return TFTExplainabilityResult(
             explanations=results[0] if len(results) == 1 else results
         )
@@ -473,7 +466,7 @@ class TFTExplainer(_ForecastingModelExplainer):
     def _get_importance(
         self,
         weight: Tensor,
-        names: List[str],
+        names: list[str],
         n_decimals=3,
     ) -> pd.DataFrame:
         """Returns the encoder or decoder variable of the TFT model.
@@ -515,7 +508,7 @@ class TFTExplainer(_ForecastingModelExplainer):
         return importance.transpose().sort_values(0, ascending=True).transpose()
 
     @property
-    def _name_mapping(self) -> Dict[str, str]:
+    def _name_mapping(self) -> dict[str, str]:
         """Returns the feature name mapping of the TFT model.
 
         Returns

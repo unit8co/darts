@@ -5,7 +5,8 @@ Facebook Prophet
 
 import logging
 import re
-from typing import Callable, List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -24,7 +25,7 @@ logger.level = logging.WARNING  # set to warning to suppress prophet logs
 class Prophet(FutureCovariatesLocalForecastingModel):
     def __init__(
         self,
-        add_seasonalities: Optional[Union[dict, List[dict]]] = None,
+        add_seasonalities: Optional[Union[dict, list[dict]]] = None,
         country_holidays: Optional[str] = None,
         suppress_stdout_stderror: bool = True,
         add_encoders: Optional[dict] = None,
@@ -111,7 +112,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 }
             ..
         cap
-            Parameter specifiying the maximum carrying capacity when predicting with logistic growth.
+            Parameter specifying the maximum carrying capacity when predicting with logistic growth.
             Mandatory when `growth = 'logistic'`, otherwise ignored.
             See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
             on logistic forecasts.
@@ -121,7 +122,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
             where each number indicates the carrying capacity at this index.
         floor
-            Parameter specifiying the minimum carrying capacity when predicting logistic growth.
+            Parameter specifying the minimum carrying capacity when predicting logistic growth.
             Optional when `growth = 'logistic'` (defaults to 0), otherwise ignored.
             See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
             on logistic forecasts.
@@ -204,7 +205,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 self._floor = 0
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
         series = self.training_series
@@ -264,7 +264,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
     ) -> TimeSeries:
-
         _ = self._check_seasonality_conditions(future_covariates=future_covariates)
 
         super()._predict(n, future_covariates, num_samples)
@@ -316,7 +315,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
     def _check_seasonality_conditions(
         self, future_covariates: Optional[TimeSeries] = None
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Checks if the conditions for custom conditional seasonalities are met. Each custom seasonality that has a
         `condition_name` other than None is checked. If the `condition_name` is not a column in the `future_covariates`
@@ -350,9 +349,11 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             condition_name = attributes["condition_name"]
             if condition_name is not None:
                 if condition_name not in future_covariates_columns:
-                    invalid_conditional_seasonalities.append(
-                        (seasonality_name, condition_name, "column missing")
-                    )
+                    invalid_conditional_seasonalities.append((
+                        seasonality_name,
+                        condition_name,
+                        "column missing",
+                    ))
                     continue
                 if (
                     not future_covariates[condition_name]
@@ -360,9 +361,11 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     .isin([True, False])
                     .all()
                 ):
-                    invalid_conditional_seasonalities.append(
-                        (seasonality_name, condition_name, "invalid values")
-                    )
+                    invalid_conditional_seasonalities.append((
+                        seasonality_name,
+                        condition_name,
+                        "invalid values",
+                    ))
                     continue
                 conditional_seasonality_covariates.append(condition_name)
 
@@ -386,7 +389,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         return False
 
     @property
-    def _is_probabilistic(self) -> bool:
+    def supports_probabilistic_prediction(self) -> bool:
         return True
 
     def _stochastic_samples(self, predict_df, n_samples) -> np.ndarray:
@@ -527,7 +530,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         ]
         raise_if(
             len(missing_kws) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has missing mandatory keywords or empty arguments: '
+            f"Seasonality `{add_seasonality_call['name']}` has missing mandatory keywords or empty arguments: "
             f"{missing_kws}.",
             logger,
         )
@@ -545,7 +548,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         ]
         raise_if(
             len(invalid_kws) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has invalid keywords: {invalid_kws}. Only the '
+            f"Seasonality `{add_seasonality_call['name']}` has invalid keywords: {invalid_kws}. Only the "
             f"following arguments are supported: {list(seasonality_default)}",
             logger,
         )
@@ -558,8 +561,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         ]
         raise_if(
             len(invalid_types) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has invalid value dtypes: {invalid_types} must be '
-            f'of type {[seasonality_properties[kw]["dtype"] for kw in invalid_types]}.',
+            f"Seasonality `{add_seasonality_call['name']}` has invalid value dtypes: {invalid_types} must be "
+            f"of type {[seasonality_properties[kw]['dtype'] for kw in invalid_types]}.",
             logger,
         )
 
@@ -595,19 +598,30 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         seconds_per_day = 86400
         days = 0
-        if freq in ["A", "BA", "Y", "BY", "RE"] or freq.startswith(
-            ("A", "BA", "Y", "BY", "RE")
-        ):  # year
+        if freq in ["A", "BA", "Y", "BY", "RE"] or freq.startswith((
+            "A",
+            "BA",
+            "Y",
+            "BY",
+            "RE",
+        )):  # year
             days = 365.25
-        elif freq in ["Q", "BQ", "REQ"] or freq.startswith(
-            ("Q", "BQ", "REQ")
-        ):  # quarter
+        elif freq in ["Q", "BQ", "REQ"] or freq.startswith((
+            "Q",
+            "BQ",
+            "REQ",
+        )):  # quarter
             days = 3 * 30.4375
-        elif freq in ["M", "BM", "CBM", "SM"] or freq.startswith(
-            ("M", "BM", "BS", "CBM", "SM")
-        ):  # month
+        elif freq in [
+            "M",
+            "BM",
+            "CBM",
+            "SM",
+            "LWOM",
+            "WOM",
+        ] or freq.startswith(("M", "BME", "BS", "CBM", "SM", "LWOM", "WOM")):  # month
             days = 30.4375
-        elif freq in ["W"]:  # week
+        elif freq == "W" or freq.startswith("W-"):  # week
             days = 7.0
         elif freq in ["B", "C"]:  # business day
             days = 1 * 7 / 5
@@ -626,7 +640,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 days = 1 / (seconds_per_day * 10**3)
             elif freq_lower in ["u", "us"]:  # microsecond
                 days = 1 / (seconds_per_day * 10**6)
-            elif freq_lower in ["n"]:  # nanosecond
+            elif freq_lower in ["n", "ns"]:  # nanosecond
                 days = 1 / (seconds_per_day * 10**9)
 
         if not days:

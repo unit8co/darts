@@ -2,10 +2,11 @@
 Baseline Models
 ---------------
 
-A collection of simple benchmark models for univariate series.
+A collection of simple benchmark models for single uni- and multivariate series.
 """
 
-from typing import List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 
@@ -193,7 +194,7 @@ class NaiveMovingAverage(LocalForecastingModel):
     def __init__(self, input_chunk_length: int = 1):
         """Naive Moving Average Model
 
-        This model forecasts using an auto-regressive moving average (ARMA).
+        This model forecasts using an autoregressive moving average (ARMA).
 
         Parameters
         ----------
@@ -269,7 +270,7 @@ class NaiveMovingAverage(LocalForecastingModel):
 class NaiveEnsembleModel(EnsembleModel):
     def __init__(
         self,
-        forecasting_models: List[ForecastingModel],
+        forecasting_models: list[ForecastingModel],
         train_forecasting_models: bool = True,
         show_warnings: bool = True,
     ):
@@ -326,6 +327,7 @@ class NaiveEnsembleModel(EnsembleModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
         super().fit(
             series=series,
@@ -336,14 +338,16 @@ class NaiveEnsembleModel(EnsembleModel):
             for model in self.forecasting_models:
                 model._fit_wrapper(
                     series=series,
-                    past_covariates=past_covariates
-                    if model.supports_past_covariates
-                    else None,
-                    future_covariates=future_covariates
-                    if model.supports_future_covariates
+                    past_covariates=(
+                        past_covariates if model.supports_past_covariates else None
+                    ),
+                    future_covariates=(
+                        future_covariates if model.supports_future_covariates else None
+                    ),
+                    sample_weight=sample_weight
+                    if model.supports_sample_weight
                     else None,
                 )
-
         return self
 
     def ensemble(
@@ -364,9 +368,11 @@ class NaiveEnsembleModel(EnsembleModel):
 
         if isinstance(predictions, Sequence):
             return [
-                self._target_average(p, ts)
-                if not predict_likelihood_parameters
-                else self._params_average(p, ts)
+                (
+                    self._target_average(p, ts)
+                    if not predict_likelihood_parameters
+                    else self._params_average(p, ts)
+                )
                 for p, ts in zip(predictions, series)
             ]
         else:
@@ -381,9 +387,11 @@ class NaiveEnsembleModel(EnsembleModel):
         n_forecasting_models = len(self.forecasting_models)
         n_components = series.n_components
         prediction_values = prediction.all_values(copy=False)
-        target_values = np.zeros(
-            (prediction.n_timesteps, n_components, prediction.n_samples)
-        )
+        target_values = np.zeros((
+            prediction.n_timesteps,
+            n_components,
+            prediction.n_samples,
+        ))
         for idx_target in range(n_components):
             target_values[:, idx_target] = prediction_values[
                 :,
@@ -415,9 +423,10 @@ class NaiveEnsembleModel(EnsembleModel):
         n_components = series.n_components
         # aggregate across predictions [model1_param0, model1_param1, ..., modeln_param0, modeln_param1]
         prediction_values = prediction.values(copy=False)
-        params_values = np.zeros(
-            (prediction.n_timesteps, likelihood_n_params * n_components)
-        )
+        params_values = np.zeros((
+            prediction.n_timesteps,
+            likelihood_n_params * n_components,
+        ))
         for idx_param in range(likelihood_n_params * n_components):
             params_values[:, idx_param] = prediction_values[
                 :,

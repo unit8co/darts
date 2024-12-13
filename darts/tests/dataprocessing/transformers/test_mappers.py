@@ -49,7 +49,6 @@ class TestMappers:
     )
 
     def test_mapper(self):
-
         test_cases = [
             (self.zeroes, self.tens),
             ([self.zeroes, self.tens], [self.tens, self.twenties]),
@@ -68,7 +67,6 @@ class TestMappers:
             assert back == data
 
     def test_mapper_with_timestamp(self):
-
         test_cases = [
             (self.lin_series, self.zeroes),
             ([self.lin_series, self.lin_series], [self.zeroes, self.zeroes]),
@@ -88,7 +86,6 @@ class TestMappers:
             assert transformed == expected_output
 
     def test_invertible_mapper_with_timestamp(self):
-
         test_cases = [(self.lin_series), ([self.lin_series, self.lin_series])]
 
         for data in test_cases:

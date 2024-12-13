@@ -2,6 +2,7 @@
 PyTorch Loss Functions
 ----------------------
 """
+
 # Inspiration: https://github.com/ElementAI/N-BEATS/blob/master/common/torch/losses.py
 
 import numpy as np
@@ -16,7 +17,7 @@ def _divide_no_nan(a, b):
     result = a / b
     result[result != result] = 0.0
     result[result == np.inf] = 0.0
-    result[result == np.NINF] = 0.0
+    result[result == -np.inf] = 0.0
     return result
 
 

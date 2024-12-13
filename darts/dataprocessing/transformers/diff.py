@@ -3,15 +3,19 @@ Differencing Transformer
 ------------------------
 """
 
-from typing import Any, Mapping, Sequence, Union
+from collections.abc import Mapping, Sequence
+from typing import Any, Union
 
 import numpy as np
 
+from darts.dataprocessing.transformers.fittable_data_transformer import (
+    FittableDataTransformer,
+)
+from darts.dataprocessing.transformers.invertible_data_transformer import (
+    InvertibleDataTransformer,
+)
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.timeseries import TimeSeries
-
-from .fittable_data_transformer import FittableDataTransformer
-from .invertible_data_transformer import InvertibleDataTransformer
 
 logger = get_logger(__name__)
 

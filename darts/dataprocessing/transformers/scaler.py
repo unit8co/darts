@@ -3,17 +3,21 @@ Scaler
 ------
 """
 
+from collections.abc import Mapping, Sequence
 from copy import deepcopy
-from typing import Any, Mapping, Sequence, Union
+from typing import Any, Union
 
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
+from darts.dataprocessing.transformers.fittable_data_transformer import (
+    FittableDataTransformer,
+)
+from darts.dataprocessing.transformers.invertible_data_transformer import (
+    InvertibleDataTransformer,
+)
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries
-
-from .fittable_data_transformer import FittableDataTransformer
-from .invertible_data_transformer import InvertibleDataTransformer
 
 logger = get_logger(__name__)
 
@@ -114,7 +118,6 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
     def ts_transform(
         series: TimeSeries, params: Mapping[str, Any], **kwargs
     ) -> TimeSeries:
-
         transformer = params["fitted"]
 
         tr_out = transformer.transform(Scaler.stack_samples(series))
@@ -139,7 +142,7 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         params: Mapping[str, Any],
         *args,
-        **kwargs
+        **kwargs,
     ) -> Any:
         transformer = deepcopy(params["fixed"]["transformer"])
         # If `global_fit` is `True`, then `series` will be ` Sequence[TimeSeries]`;

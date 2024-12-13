@@ -1,13 +1,12 @@
 import array
 from abc import ABC, abstractmethod
 from itertools import repeat
-from typing import Tuple
 
 import numpy as np
 
-from .window import CRWindow, Window
+from darts.dataprocessing.dtw.window import CRWindow, Window
 
-Elem = Tuple[int, int]
+Elem = tuple[int, int]
 
 
 class CostMatrix(ABC):

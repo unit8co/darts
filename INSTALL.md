@@ -5,7 +5,7 @@ Below, we detail how to install Darts using either `conda` or `pip`.
 ## From PyPI
 Install Darts with all models except the ones from optional dependencies (Prophet, LightGBM, CatBoost, see more on that [here](#enabling-optional-dependencies)): `pip install darts`.
 
-If this fails on your platform, please follow the official installation 
+If this fails on your platform, please follow the official installation
 guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
 
 As some dependencies are relatively big or involve non-Python dependencies,
@@ -37,8 +37,8 @@ As some models have relatively heavy dependencies, we provide four conda-forge p
 ## Other Information
 
 ### Enabling Optional Dependencies
-As of version 0.25.0, the default `darts` package does not install Prophet, CatBoost, and LightGBM dependencies anymore, because their 
-build processes were too often causing issues. We continue supporting the model wrappers `Prophet`, `CatBoostModel`, and `LightGBMModel` in Darts though. If you want to use any of them, you will need to manually install the corresponding packages (or install a Darts flavor as described above).  
+As of version 0.25.0, the default `darts` package does not install Prophet, CatBoost, and LightGBM dependencies anymore, because their
+build processes were too often causing issues. We continue supporting the model wrappers `Prophet`, `CatBoostModel`, and `LightGBMModel` in Darts though. If you want to use any of them, you will need to manually install the corresponding packages (or install a Darts flavor as described above).
 
 #### Prophet
 Install the `prophet` package (version 1.1.1 or more recent) using the [Prophet install guide](https://facebook.github.io/prophet/docs/installation.html#python)
@@ -73,30 +73,3 @@ jupyter lab --ip 0.0.0.0 --no-browser --allow-root
 ```
 
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
-
-
-## Tests
-
-The gradle setup works best when used in a python environment, but the only requirement is to have `pip` installed for Python 3+
-
-To run all tests at once just run
-```bash
-./gradlew test_all
-```
-
-alternatively you can run
-```bash
-./gradlew unitTest_all # to run only unittests
-./gradlew coverageTest # to run coverage
-./gradlew lint         # to run linter
-```
-
-To run the tests for specific flavours of the library, replace `_all` with `_core`, `_prophet`, `_pmdarima` or `_torch`.
-
-## Documentation
-
-To build documentation locally just run
-```bash
-./gradlew buildDocs
-```
-After that docs will be available in `./docs/build/html` directory. You can just open `./docs/build/html/index.html` using your favourite browser.

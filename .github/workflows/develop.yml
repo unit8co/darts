@@ -9,129 +9,130 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: "1. Clone repository"
-        uses: actions/checkout@v2
+      - name: "Clone repository"
+        uses: actions/checkout@v4
 
-      - name: "2. Set up Python 3.9"
-        uses: actions/setup-python@v1
+      - name: "Set up Python 3.10"
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.10'
 
-        # downloading gradle multiple times in parallel can yield to connection errors
-      - name: "3. Cache gradle distribution"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/wrapper/dists
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
-
-      - name: "3.1 Cache gradle packages"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/caches
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
-
-      - name: "4. Lint"
+      - name: "Install Dev Dependencies"
         run: |
-          ./gradlew lint
+          python -m pip install --upgrade pip
+          pip install -r requirements/dev.txt
+
+      - name: "Lint"
+        run: |
+          pre-commit run --all-files
+
 
   tests:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
-        python-version: ['3.9']
+        os: [macos-13, ubuntu-latest]
+        python-version: ['3.10']
         flavour: ['all']
 
     steps:
-      - name: "1. Clone repository"
-        uses: actions/checkout@v2
+      - name: "Clone repository"
+        uses: actions/checkout@v4
 
-      - name: "2. Set up Python ${{ matrix.python-version }}"
-        uses: actions/setup-python@v1
+      - name: "Set up Python ${{ matrix.python-version }}"
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-        # downloading gradle multiple times in parallel can yield to connection errors
-      - name: "3. Cache gradle distribution"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/wrapper/dists
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
-
-      - name: "3.1 Cache gradle packages"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/caches
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
-
-      - name: "4. Setup pip"
+      # use `uv` to retrieve the latest dependency versions
+      - name: "Compile Dependency Versions"
         run: |
-          ./gradlew installPipLatest
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          if [ "${{ matrix.os }}" == "macos-13" ]; then
+            source $HOME/.local/bin/env
+          fi
+          uv pip compile requirements/dev-all.txt > requirements-latest.txt
 
-      - name: "5. Install libomp (for LightGBM)"
+      - name: "Cache python environment"
+        uses: actions/cache@v4
+        id: pythonenv-cache
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt', 'requirements-latest.txt') }}
+
+      - name: "Setup Pip"
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: "Install Dependencies"
+        run: |
+          # install latest dependencies (potentially updating cached dependencies)
+          pip install -U -r requirements/dev-all.txt
+
+      - name: "Install libomp (for LightGBM)"
         run: |
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
-      - name: "6. Attach cache for pip"
-        uses: actions/cache@v1
-        id: cache
-        with:
-          path: ~/.cache/pip
-          key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-latest.txt') }}
-
-      - name: "7. Tests"
+      - name: "Run tests"
         run: |
-          ./gradlew "test_${{matrix.flavour}}"
+          pytest --durations=50 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
 
-      - name: "8. Codecov upload"
+      - name: "Codecov upload"
         if: ${{ matrix.flavour == 'all' }}
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true
-          files: ./coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   docs:
     runs-on: ubuntu-latest
     steps:
-      - name: "1. Clone repository"
-        uses: actions/checkout@v2
+      - name: "Clone repository"
+        uses: actions/checkout@v4
 
-      - name: "2. Set up Python 3.9"
-        uses: actions/setup-python@v1
+      - name: "Set up Python 3.10"
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.10'
 
-      - name: "3. Install pandoc"
+      # use `uv` to retrieve the latest dependency versions
+      - name: "Compile Dependency Versions"
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv pip compile requirements/dev-all.txt > requirements-latest.txt
+
+      # only restore cache but do not upload
+      - name: "Restore cached python environment"
+        uses: actions/cache/restore@v4
+        id: pythonenv-cache
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt', 'requirements-latest.txt') }}
+
+      - name: "Install pandoc"
         run: |
           sudo apt-get install -y pandoc
 
-        # downloading gradle multiple times in parallel can yield to connection errors
-      - name: "4. Cache gradle distribution"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/wrapper/dists
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
-
-      - name: "4.1 Cache gradle packages"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/caches
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
-
-      - name: "5. Setup pip"
+      - name: "Setup Pip"
         run: |
-          ./gradlew setupPip
+          python -m pip install --upgrade pip
 
-      - name: "6. Attach cache for pip"
-        uses: actions/cache@v1
-        id: cache
-        with:
-          path: ~/.cache/pip
-          key: tests-${{ runner.os }}-3.9-pip-${{ hashFiles('requirements/core.txt', 'requirements/release.txt') }}
-
-      - name: "7. Build docs"
+      - name: "Install Dependencies"
         run: |
-          ./gradlew buildDocs
+          # install latest dependencies (potentially updating cached dependencies)
+          pip install -U -r requirements/dev-all.txt
+
+      - name: "Install libomp (for LightGBM)"
+        run: |
+          ./.github/scripts/libomp-${{ runner.os }}.sh
+
+      - name: "Install Locally"
+        run: |
+          pip install .
+
+      - name: "Build docs"
+        run: |
+          make --directory ./docs build-all-docs
 
   check-examples:
     runs-on: ubuntu-latest
@@ -139,27 +140,46 @@ jobs:
       matrix:
         example-name: [03-FFT-examples.ipynb, 04-RNN-examples.ipynb, 00-quickstart.ipynb, 02-data-processing.ipynb, 01-multi-time-series-and-covariates.ipynb]
     steps:
-      - name: "1. Clone repository"
-        uses: actions/checkout@v2
+      - name: "Clone repository"
+        uses: actions/checkout@v4
 
-      - name: "2. Set up Python 3.9"
-        uses: actions/setup-python@v1
+      - name: "Set up Python 3.10"
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.10'
 
-        # downloading gradle multiple times in parallel can yield to connection errors
-      - name: "3. Cache gradle distribution"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/wrapper/dists
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
-
-      - name: "3.1 Cache gradle packages"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/caches
-          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
-
-      - name: "4. Run examples ${{matrix.example-name}}"
+      # use `uv` to retrieve the latest dependency versions
+      - name: "Compile Dependency Versions"
         run: |
-          ./gradlew checkExample -PexampleName=${{matrix.example-name}}
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv pip compile requirements/dev-all.txt > requirements-latest.txt
+
+      # only restore cache but do not upload
+      - name: "Restore cached python environment"
+        uses: actions/cache/restore@v4
+        id: pythonenv-cache
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt', 'requirements-latest.txt') }}
+
+      - name: "Setup Pip"
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: "Install Dependencies"
+        run: |
+          # install latest dependencies (potentially updating cached dependencies)
+          pip install -U -r requirements/dev-all.txt
+
+      - name: "Install libomp (for LightGBM)"
+        run: |
+          ./.github/scripts/libomp-${{ runner.os }}.sh
+
+      - name: "Install Locally"
+        run: |
+          pip install .
+
+      - name: "Run example ${{matrix.example-name}}"
+        working-directory: ./examples
+        run: |
+          papermill ${{matrix.example-name}} ${{matrix.example-name}}

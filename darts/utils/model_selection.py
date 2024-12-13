@@ -4,7 +4,8 @@ Model selection utilities
 Utilities that help in model selection e.g. by splitting a dataset.
 """
 
-from typing import Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 from darts import TimeSeries
 
@@ -27,7 +28,6 @@ class SplitTimeSeriesSequence(Sequence):
         horizon: Optional[int] = None,
         vertical_split_type: Optional[str] = SIMPLE,
     ):
-
         if type not in ["train", "test"]:
             raise AttributeError(
                 "Value for type parameter should be either `train` or `test`"
@@ -74,7 +74,6 @@ class SplitTimeSeriesSequence(Sequence):
         return self._horizontal_split_index
 
     def _get_vertical_split_indices(self, ts_length):
-
         if self.vertical_split_type == SIMPLE:
             if 0 < self.test_size < 1:
                 test_size = int(ts_length * self.test_size)
@@ -167,9 +166,8 @@ class SplitTimeSeriesSequence(Sequence):
         vertical_split_type: Optional[str] = SIMPLE,
         lazy: bool = False,
     ) -> Union[
-        Tuple[TimeSeries, TimeSeries], Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
+        tuple[TimeSeries, TimeSeries], tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
     ]:
-
         if not isinstance(data, Sequence):
             axis = 1
             data = [data]  # convert to sequence for unified processing later
@@ -215,7 +213,7 @@ def train_test_split(
     vertical_split_type: Optional[str] = SIMPLE,
     lazy: bool = False,
 ) -> Union[
-    Tuple[TimeSeries, TimeSeries], Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
+    tuple[TimeSeries, TimeSeries], tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
 ]:
     """
     Splits the provided series into training and test series.

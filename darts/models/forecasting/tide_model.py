@@ -3,7 +3,7 @@ Time-series Dense Encoder (TiDE)
 ------
 """
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -14,8 +14,9 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.utils.torch import MonteCarloDropout
 
-MixedCovariatesTrainTensorType = Tuple[
+MixedCovariatesTrainTensorType = tuple[
     torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
 ]
 
@@ -40,7 +41,7 @@ class _ResidualBlock(nn.Module):
             nn.Linear(input_dim, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, output_dim),
-            nn.Dropout(dropout),
+            MonteCarloDropout(dropout),
         )
 
         # linear skip connection from input to output of self.dense
@@ -53,7 +54,6 @@ class _ResidualBlock(nn.Module):
             self.layer_norm = None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-
         # residual connection
         x = self.dense(x) + self.skip(x)
 
@@ -81,6 +81,8 @@ class _TideModule(PLMixedCovariatesModule):
         temporal_width_future: int,
         use_layer_norm: bool,
         dropout: float,
+        temporal_hidden_size_past: Optional[int] = None,
+        temporal_hidden_size_future: Optional[int] = None,
         **kwargs,
     ):
         """Pytorch module implementing the TiDE architecture.
@@ -111,12 +113,17 @@ class _TideModule(PLMixedCovariatesModule):
             The width of the past covariate embedding space.
         temporal_width_future
             The width of the future covariate embedding space.
+        temporal_hidden_size_past
+            The width of the hidden layers in the past covariate projection Residual Block.
+        temporal_hidden_size_future
+            The width of the hidden layers in the future covariate projection Residual Block.
         use_layer_norm
             Whether to use layer normalization in the Residual Blocks.
         dropout
             Dropout probability
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
 
         Inputs
         ------
@@ -147,6 +154,8 @@ class _TideModule(PLMixedCovariatesModule):
         self.dropout = dropout
         self.temporal_width_past = temporal_width_past
         self.temporal_width_future = temporal_width_future
+        self.temporal_hidden_size_past = temporal_hidden_size_past or hidden_size
+        self.temporal_hidden_size_future = temporal_hidden_size_future or hidden_size
 
         # past covariates handling: either feature projection, raw features, or no features
         self.past_cov_projection = None
@@ -155,7 +164,7 @@ class _TideModule(PLMixedCovariatesModule):
             self.past_cov_projection = _ResidualBlock(
                 input_dim=self.past_cov_dim,
                 output_dim=temporal_width_past,
-                hidden_size=hidden_size,
+                hidden_size=temporal_hidden_size_past,
                 use_layer_norm=use_layer_norm,
                 dropout=dropout,
             )
@@ -173,7 +182,7 @@ class _TideModule(PLMixedCovariatesModule):
             self.future_cov_projection = _ResidualBlock(
                 input_dim=future_cov_dim,
                 output_dim=temporal_width_future,
-                hidden_size=hidden_size,
+                hidden_size=temporal_hidden_size_future,
                 use_layer_norm=use_layer_norm,
                 dropout=dropout,
             )
@@ -258,7 +267,7 @@ class _TideModule(PLMixedCovariatesModule):
 
     @io_processor
     def forward(
-        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
+        self, x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
     ) -> torch.Tensor:
         """TiDE model forward pass.
         Parameters
@@ -337,9 +346,11 @@ class _TideModule(PLMixedCovariatesModule):
         # stack and temporally decode with future covariate last output steps
         temporal_decoder_input = [
             decoded,
-            x_dynamic_future_covariates[:, -self.output_chunk_length :, :]
-            if self.future_cov_dim > 0
-            else None,
+            (
+                x_dynamic_future_covariates[:, -self.output_chunk_length :, :]
+                if self.future_cov_dim > 0
+                else None
+            ),
         ]
         temporal_decoder_input = [t for t in temporal_decoder_input if t is not None]
 
@@ -365,12 +376,15 @@ class TiDEModel(MixedCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         num_encoder_layers: int = 1,
         num_decoder_layers: int = 1,
         decoder_output_dim: int = 16,
         hidden_size: int = 128,
         temporal_width_past: int = 4,
         temporal_width_future: int = 4,
+        temporal_hidden_size_past: int = None,
+        temporal_hidden_size_future: int = None,
         temporal_decoder_hidden: int = 32,
         use_layer_norm: bool = False,
         dropout: float = 0.1,
@@ -401,10 +415,16 @@ class TiDEModel(MixedCovariatesTorchModel):
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
             as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
-            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         num_encoder_layers
             The number of residual blocks in the encoder.
         num_decoder_layers
@@ -414,11 +434,19 @@ class TiDEModel(MixedCovariatesTorchModel):
         hidden_size
             The width of the layers in the residual blocks of the encoder and decoder.
         temporal_width_past
-            The width of the layers in the past covariate projection residual block. If `0`,
+            The width of the output layer in the past covariate projection residual block. If `0`,
             will bypass feature projection and use the raw feature data.
         temporal_width_future
-            The width of the layers in the future covariate projection residual block. If `0`,
+            The width of the output layer in the future covariate projection residual block. If `0`,
             will bypass feature projection and use the raw feature data.
+        temporal_hidden_size_past
+            The width of the hidden layer in the past covariate projection residual block. If not specified,
+            defaults to `hidden_size`, which is the width of the hidden layer in the encoder and decoder.
+            This is likely to be too large in many cases, so it is recommended to set this parameter explicitly.
+        temporal_hidden_size_future
+            The width of the hidden layer in the future covariate projection residual block. If not specified,
+            defaults to `hidden_size`, which is the width of the hidden layer in the encoder and decoder.
+            This is likely to be too large in many cases, so it is recommended to set this parameter explicitly.
         temporal_decoder_hidden
             The width of the layers in the temporal decoder.
         use_layer_norm
@@ -616,6 +644,8 @@ class TiDEModel(MixedCovariatesTorchModel):
         self.hidden_size = hidden_size
         self.temporal_width_past = temporal_width_past
         self.temporal_width_future = temporal_width_future
+        self.temporal_hidden_size_past = temporal_hidden_size_past or hidden_size
+        self.temporal_hidden_size_future = temporal_hidden_size_future or hidden_size
         self.temporal_decoder_hidden = temporal_decoder_hidden
 
         self._considers_static_covariates = use_static_covariates
@@ -683,6 +713,8 @@ class TiDEModel(MixedCovariatesTorchModel):
             hidden_size=self.hidden_size,
             temporal_width_past=self.temporal_width_past,
             temporal_width_future=self.temporal_width_future,
+            temporal_hidden_size_past=self.temporal_hidden_size_past,
+            temporal_hidden_size_future=self.temporal_hidden_size_future,
             temporal_decoder_hidden=self.temporal_decoder_hidden,
             use_layer_norm=self.use_layer_norm,
             dropout=self.dropout,
@@ -696,3 +728,11 @@ class TiDEModel(MixedCovariatesTorchModel):
     @property
     def supports_multivariate(self) -> bool:
         return True
+
+    def _check_ckpt_parameters(self, tfm_save):
+        # new parameters were added that will break loading weights
+        new_params = ["temporal_hidden_size_past", "temporal_hidden_size_future"]
+        for param in new_params:
+            if param not in tfm_save.model_params:
+                tfm_save.model_params[param] = None
+        super()._check_ckpt_parameters(tfm_save)

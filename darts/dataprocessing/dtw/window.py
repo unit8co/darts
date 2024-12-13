@@ -6,7 +6,6 @@ DTW Windows
 import array
 from abc import ABC, abstractmethod
 from math import atan, tan
-from typing import Tuple
 
 import numpy as np
 
@@ -36,7 +35,7 @@ class Window(ABC):
         pass
 
     @abstractmethod
-    def column_index(self, elem: Tuple[int, int]) -> int:
+    def column_index(self, elem: tuple[int, int]) -> int:
         """Gives the number of active grid cells before row element j, in column i.
 
         Parameters
@@ -101,7 +100,7 @@ class NoWindow(Window):
     def __len__(self):
         return self.n * self.m + 1  # include (0,0) element
 
-    def column_index(self, elem: Tuple[int, int]):
+    def column_index(self, elem: tuple[int, int]):
         return elem[1] - 1
 
     def column_length(self, column: int) -> int:
@@ -215,7 +214,7 @@ class CRWindow(Window):
         self.column_ranges[start_idx] = start
         self.column_ranges[end_idx] = end
 
-    def add(self, elem: Tuple[int, int]):
+    def add(self, elem: tuple[int, int]):
         """Marks a grid cell as active.
 
         Parameters
@@ -230,7 +229,7 @@ class CRWindow(Window):
         start, end = self.column_ranges[column]
         return gtz(end - start)
 
-    def column_index(self, elem: Tuple[int, int]) -> int:
+    def column_index(self, elem: tuple[int, int]) -> int:
         i, j = elem
 
         start, end = self.column_ranges[i]
@@ -239,7 +238,7 @@ class CRWindow(Window):
         else:
             return j - start
 
-    def __contains__(self, elem: Tuple[int, int]) -> bool:
+    def __contains__(self, elem: tuple[int, int]) -> bool:
         i, j = elem
         start, end = self.column_ranges[i]
         return start <= j < end

@@ -6,7 +6,6 @@ from darts.utils.missing_values import fill_missing_values, missing_values_ratio
 
 
 class TestMissingValues:
-
     time = pd.date_range("20130101", "20130130")
     lin = [float(i) for i in range(len(time))]
     cub = [float(i - 4) ** 2 for i in range(len(time))]

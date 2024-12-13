@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Union
 
 import numpy as np
 import xarray as xr
@@ -71,7 +71,7 @@ def plot(
             interpolation="none",
             origin="lower",
             extent=[0, self.n, 0, self.m],
-            **args_cost
+            **args_cost,
         )
 
     show_path = True
@@ -102,7 +102,7 @@ def plot_alignment(
     new_plot: bool = False,
     series1_y_offset: float = 0,
     series2_y_offset: float = 0,
-    components: Union[Tuple[Union[str, int], Union[str, int]]] = (0, 0),
+    components: Union[tuple[Union[str, int], Union[str, int]]] = (0, 0),
     args_line: dict = {},
     args_series1: dict = {},
     args_series2: dict = {},

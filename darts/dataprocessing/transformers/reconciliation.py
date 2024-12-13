@@ -9,8 +9,8 @@ A ``hierarchy`` is a dict that maps each component to their parent(s) in the hie
 It can be added to a ``TimeSeries`` using e.g., the :meth:`TimeSeries.with_hierarchy` method.
 """
 
-
-from typing import Any, Mapping, Optional
+from collections.abc import Mapping
+from typing import Any, Optional
 
 import numpy as np
 
@@ -18,8 +18,10 @@ from darts.dataprocessing.transformers import (
     BaseDataTransformer,
     FittableDataTransformer,
 )
+from darts.logging import get_logger, raise_if_not
 from darts.timeseries import TimeSeries
-from darts.utils.utils import raise_if_not
+
+logger = get_logger(__name__)
 
 
 def _get_summation_matrix(series: TimeSeries):
@@ -38,6 +40,7 @@ def _get_summation_matrix(series: TimeSeries):
     raise_if_not(
         series.has_hierarchy,
         "The provided series must have a hierarchy defined for reconciliation to be performed.",
+        logger=logger,
     )
     hierarchy = series.hierarchy
     components_seq = list(series.components)
@@ -46,8 +49,8 @@ def _get_summation_matrix(series: TimeSeries):
     n = len(components_seq)
     S = np.zeros((n, m))
 
-    components_indexes = {c: i for i, c in enumerate(components_seq)}
-    leaves_indexes = {l: i for i, l in enumerate(leaves_seq)}
+    components_indexes = {comp: i for i, comp in enumerate(components_seq)}
+    leaves_indexes = {leaf: i for i, leaf in enumerate(leaves_seq)}
 
     def increment(cur_node, leaf_idx):
         """
@@ -85,7 +88,7 @@ class BottomUpReconciliator(BaseDataTransformer):
     def get_projection_matrix(series):
         leaves_seq = list(series.bottom_level_components)
         n, m = series.n_components, len(leaves_seq)
-        leaves_indexes = {l: i for i, l in enumerate(leaves_seq)}
+        leaves_indexes = {leaf: i for i, leaf in enumerate(leaves_seq)}
         G = np.zeros((m, n))
         for i, c in enumerate(series.components):
             if c in leaves_indexes:

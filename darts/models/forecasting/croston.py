@@ -3,25 +3,22 @@ Croston method
 --------------
 """
 
-from typing import Optional
-
 from statsforecast.models import TSB as CrostonTSB
 from statsforecast.models import CrostonClassic, CrostonOptimized, CrostonSBA
 
 from darts.logging import raise_if, raise_if_not
 from darts.models.forecasting.forecasting_model import (
-    FutureCovariatesLocalForecastingModel,
+    LocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
 
 
-class Croston(FutureCovariatesLocalForecastingModel):
+class Croston(LocalForecastingModel):
     def __init__(
         self,
         version: str = "classic",
         alpha_d: float = None,
         alpha_p: float = None,
-        add_encoders: Optional[dict] = None,
     ):
         """An implementation of the `Croston method
         <https://otexts.com/fpp3/counts.html>`_ for intermittent
@@ -46,30 +43,6 @@ class Croston(FutureCovariatesLocalForecastingModel):
             For the "tsb" version, the alpha smoothing parameter to apply on demand.
         alpha_p
             For the "tsb" version, the alpha smoothing parameter to apply on probability.
-        add_encoders
-            A large number of future covariates can be automatically generated with `add_encoders`.
-            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
-            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
-            transform the generated covariates. This happens all under one hood and only needs to be specified at
-            model creation.
-            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
-            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
-
-            .. highlight:: python
-            .. code-block:: python
-
-                def encode_year(idx):
-                    return (idx.year - 1950) / 50
-
-                add_encoders={
-                    'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
-                    'position': {'future': ['relative']},
-                    'custom': {'future': [encode_year]},
-                    'transformer': Scaler(),
-                    'tz': 'CET'
-                }
-            ..
 
         References
         ----------
@@ -96,7 +69,7 @@ class Croston(FutureCovariatesLocalForecastingModel):
                [461.7666],
                [461.7666]])
         """
-        super().__init__(add_encoders=add_encoders)
+        super().__init__(add_encoders=None)
         raise_if_not(
             version.lower() in ["classic", "optimized", "sba", "tsb"],
             'The provided "version" parameter must be set to "classic", "optimized", "sba" or "tsb".',
@@ -123,33 +96,30 @@ class Croston(FutureCovariatesLocalForecastingModel):
     def supports_multivariate(self) -> bool:
         return False
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super()._fit(series, future_covariates)
+    def fit(self, series: TimeSeries):
+        super().fit(series)
         self._assert_univariate(series)
         series = self.training_series
 
         self.model.fit(
             y=series.values(copy=False).flatten(),
-            X=future_covariates.values(copy=False).flatten()
-            if future_covariates is not None
-            else None,
+            # X can be used to passe future covariates only when conformal prediction is used
+            X=None,
         )
 
         return self
 
-    def _predict(
+    def predict(
         self,
         n: int,
-        future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
         verbose: bool = False,
     ):
-        super()._predict(n, future_covariates, num_samples)
+        super().predict(n, num_samples)
         values = self.model.predict(
             h=n,
-            X=future_covariates.values(copy=False).flatten()
-            if future_covariates is not None
-            else None,
+            # X can be used to passe future covariates only when conformal prediction is used
+            X=None,
         )["mean"]
         return self._build_forecast_series(values)
 
@@ -160,7 +130,3 @@ class Croston(FutureCovariatesLocalForecastingModel):
     @property
     def _supports_range_index(self) -> bool:
         return True
-
-    @property
-    def _is_probabilistic(self) -> bool:
-        return False

@@ -8,7 +8,8 @@ import pytest
 from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME, STATIC_COV_TAG
-from darts.utils.timeseries_generation import generate_index, linear_timeseries
+from darts.utils.timeseries_generation import linear_timeseries
+from darts.utils.utils import generate_index
 
 
 def setup_test_case():
@@ -102,6 +103,37 @@ class TestTimeSeriesStaticCovariate:
         self.helper_test_cov_transfer(
             ts, TimeSeries.from_json(ts_json, static_covariates=ts.static_covariates)
         )
+
+    @pytest.mark.parametrize("index_type", ["int", "dt", "str"])
+    def test_from_group_dataframe(self, index_type):
+        """Tests correct extract of TimeSeries groups from a long DataFrame with unsorted (time/integer) index"""
+        group = ["a", "a", "a", "b", "b", "b"]
+        values = np.arange(len(group))
+
+        if index_type == "int":
+            index_expected = pd.RangeIndex(3)
+            time = [2, 1, 0, 0, 1, 2]
+        else:
+            index_expected = pd.date_range("2024-01-01", periods=3)
+            time = index_expected[::-1].append(index_expected)
+            if index_type == "str":
+                time = time.astype(str)
+
+        # create a df with unsorted time
+        df = pd.DataFrame({
+            "group": group,
+            "time": time,
+            "x": values,
+        })
+        ts = TimeSeries.from_group_dataframe(df, group_cols="group", time_col="time")
+
+        # check the time index
+        assert ts[0].time_index.equals(index_expected)
+        assert ts[1].time_index.equals(index_expected)
+
+        # check the values
+        assert (ts[0].values().flatten() == [values[2], values[1], values[0]]).all()
+        assert (ts[1].values().flatten() == [values[3], values[4], values[5]]).all()
 
     def test_timeseries_from_longitudinal_df(self):
         # univariate static covs: only group by "st1", keep static covs "st1"
@@ -213,6 +245,16 @@ class TestTimeSeriesStaticCovariate:
         assert len(ts_groups7) == self.n_groups * 2
         for ts in ts_groups7:
             assert ts.static_covariates is None
+
+        ts_groups7_parallel = TimeSeries.from_group_dataframe(
+            df=self.df_long_multi,
+            group_cols=["st1", "st2"],
+            time_col="times",
+            value_cols=value_cols,
+            drop_group_cols=["st1", "st2"],
+            n_jobs=-1,
+        )
+        assert ts_groups7_parallel == ts_groups7
 
     def test_from_group_dataframe_invalid_drop_cols(self):
         # drop col is not part of `group_cols`
@@ -516,11 +558,11 @@ class TestTimeSeriesStaticCovariate:
             values=np.random.random((10, 2))
         ).with_static_covariates(static_covs)
         assert ts.static_covariates.dtypes["num"] == ts.dtype == "float64"
-        assert ts.static_covariates.dtypes["cat"] == object
+        assert isinstance(ts.static_covariates.dtypes["cat"], object)
 
         ts = ts.astype(np.float32)
         assert ts.static_covariates.dtypes["num"] == ts.dtype == "float32"
-        assert ts.static_covariates.dtypes["cat"] == object
+        assert isinstance(ts.static_covariates.dtypes["cat"], object)
 
     def test_get_item(self):
         # multi component static covariates
@@ -636,9 +678,9 @@ class TestTimeSeriesStaticCovariate:
         static_covs = pd.Series([0, 1], index=["st1", "st2"]).astype(int)
         ts = ts.with_static_covariates(static_covs)
 
-        assert ts.static_covariates.dtypes[0] == "float64"
+        assert ts.static_covariates.dtypes.iloc[0] == "float64"
         ts = ts.astype("float32")
-        assert ts.static_covariates.dtypes[0] == "float32"
+        assert ts.static_covariates.dtypes.iloc[0] == "float32"
 
         ts_stoch = ts.from_times_and_values(
             times=ts.time_index,

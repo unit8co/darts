@@ -16,7 +16,7 @@ We assume that you already know about covariates in Darts. If you're new to the 
     - [Training with validation set](#training-with-a-validation-dataset)
     - [Forecast / Prediction](#forecastprediction)
 
-3. Advanced functionnalities section provides some example of TFMs advanced features:
+3. Advanced functionalities section provides some example of TFMs advanced features:
     - [Model saving and loading](#saving-and-loading-model-states)
       - [Checkpoint saving / loading](#automatic-checkpointing)
       - [Manual saving / loading](#manual-saving--loading)
@@ -26,7 +26,7 @@ We assume that you already know about covariates in Darts. If you're new to the 
       - [Early Stopping](#example-with-early-stopping)
       - [Custom Callback](#example-of-custom-callback-to-store-losses)
 
-4. [Performance optimisation section](#performance-recommendations) lists tricks to speed up the computation during training.
+4. [Performance optimization section](#performance-recommendations) lists tricks to speed up the computation during training.
 
 ## Introduction
 In Darts, **Torch Forecasting Models (TFMs)** are broadly speaking "machine learning based" models, which denote PyTorch-based (deep learning) models.
@@ -116,6 +116,7 @@ Each Torch Forecasting Model inherits from one `{X}CovariatesModel` (covariate c
 | `NLinearModel`     |        |          |        |         |    ✅    |
 | `DLinearModel`     |        |          |        |         |    ✅    |
 | `TiDEModel`        |        |          |        |         |    ✅    |
+| `TSMixerModel`     |        |          |        |         |    ✅    |
 
 **Table 2: Darts' Torch Forecasting Model covariate support**
 
@@ -326,7 +327,7 @@ loaded_model.to_cpu()
 To re-train or fine-tune a model using a different optimizer and/or learning rate scheduler, you can load the weights from the automatic checkpoints into a new model:
 
 ```python
-# model with identical architecture but different optimizer (default: torch.optim.Adam) 
+# model with identical architecture but different optimizer (default: torch.optim.Adam)
 model_finetune = SomeTorchForecastingModel(...,  # use identical parameters & values as in original model
                                            optimizer_cls=torch.optim.SGD,
                                            optimizer_kwargs={"lr": 0.001})
@@ -365,8 +366,8 @@ The code is triggered once the process execution reaches the corresponding hooks
 Some useful predefined PyTorch Lightning callbacks can be found [here](https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html#built-in-callbacks).
 
 #### Example with Early Stopping
-Early stopping is an efficient way to avoid overfitting and reduce training time. 
-It will exit the training process once the validation loss has not significantly improved over some epochs.   
+Early stopping is an efficient way to avoid overfitting and reduce training time.
+It will exit the training process once the validation loss has not significantly improved over some epochs.
 
 You can use Early Stopping with any `TorchForecastingModel`, leveraging PyTorch Lightning's [EarlyStopping](https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.EarlyStopping.html#lightning.pytorch.callbacks.EarlyStopping) callback:
 ```python
@@ -483,9 +484,8 @@ A larger batch size tends to speed up the training because it reduces the number
 of backward passes per epoch and has the potential to better parallelize computation. However it also changes the training dynamics (e.g. you might need more epochs, and the convergence dynamics is affected). Furthermore larger batch sizes increase memory consumption. So here too some testing is required.
 
 ### Tune `num_loader_workers`
-All deep learning models in Darts have a parameter `num_loader_workers` in their `fit()` and `predict()` functions, which
-configures the `num_workers` parameter in the PyTorch `DataLoaders`. By default
-it is set to 0, which means that the main process will also take care of loading the data. Setting `num_workers > 0` will use additional workers to load the data. This typically incurs some overhead (notably increasing memory consumption), but in some cases it can also substantially improve performance.
+All deep learning models in Darts have a parameter `dataloader_kwargs` in their `fit()` and `predict()` functions, which configures the PyTorch DataLoaders. The `num_workers` parameter for PyTorch DataLoaders can be set using the `num_workers` key in the `dataloader_kwargs` dictionary.
+Setting `num_workers > 0` will use additional workers to load the data. This typically incurs some overhead (notably increasing memory consumption), but in some cases it can also substantially improve performance.
 The ideal value depends on many factors such as the batch size, whether you are using a GPU, the number of CPU cores available, and whether
 loading the data involved I/O operations (if the series are stored on disk).
 
@@ -567,5 +567,3 @@ We train two models; `NBEATSModel` and `TFTModel`, with default parameters and `
 | `TFTModel`    | Energy  | 32    | yes  | 1024       | 0           | 41s            |
 | `TFTModel`    | Energy  | 32    | yes  | 1024       | 2           | 31s            |
 | `TFTModel`    | Energy  | 32    | yes  | 1024       | 4           | 31s            |
-
-

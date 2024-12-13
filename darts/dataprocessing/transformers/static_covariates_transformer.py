@@ -2,24 +2,24 @@
 Static Covariates Transformer
 ------
 """
-from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from collections import OrderedDict
+from collections.abc import Sequence
+from typing import Any, Literal, Optional
 
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
 from sklearn.preprocessing import MinMaxScaler, OrdinalEncoder
 
+from darts.dataprocessing.transformers.fittable_data_transformer import (
+    FittableDataTransformer,
+)
+from darts.dataprocessing.transformers.invertible_data_transformer import (
+    InvertibleDataTransformer,
+)
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries
-
-from .fittable_data_transformer import FittableDataTransformer
-from .invertible_data_transformer import InvertibleDataTransformer
 
 logger = get_logger(__name__)
 
@@ -29,8 +29,8 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         self,
         transformer_num=None,
         transformer_cat=None,
-        cols_num: Optional[List[str]] = None,
-        cols_cat: Optional[List[str]] = None,
+        cols_num: Optional[list[str]] = None,
+        cols_cat: Optional[list[str]] = None,
         name="StaticCovariatesTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
@@ -149,7 +149,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
 
     @staticmethod
     def ts_fit(
-        series: Sequence[TimeSeries], params: Dict[str, Dict[str, Any]], *args, **kwargs
+        series: Sequence[TimeSeries], params: dict[str, dict[str, Any]], *args, **kwargs
     ):
         """
         Collates static covariates of all provided `TimeSeries` and fits the following parameters:
@@ -256,9 +256,9 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         """
         Returns a boolean array indicating which components of the UNTRANSFORMED
         `stat_covs` are numerical and a boolean array indicating which components
-        of the UNTRANSFORMED `stat_covs` are categoical.
+        of the UNTRANSFORMED `stat_covs` are categorical.
 
-        It's important to recognise that these masks only apply to the UNTRANSFORMED
+        It's important to recognize that these masks only apply to the UNTRANSFORMED
         static covariates since some transformations can generate multiple new components
         from a single component (e.g. one-hot encoding).
         """
@@ -290,9 +290,9 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
             ).shape[-1]
             # transformer generates same number of features -> make a 1-1 column map
             if n_cat_out == sum(mask_cat):
-                col_map_cat = inv_col_map_cat = OrderedDict(
-                    {col: [col] for col in cols_cat}
-                )
+                col_map_cat = inv_col_map_cat = OrderedDict({
+                    col: [col] for col in cols_cat
+                })
             # transformer generates more features (i.e. OneHotEncoder) -> create a 1-many column map
             else:
                 col_map_cat = OrderedDict()
@@ -317,15 +317,15 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
     def _create_inv_component_masks(
         mask_num: np.ndarray,
         mask_cat: np.ndarray,
-        cat_mapping: Dict[str, str],
+        cat_mapping: dict[str, str],
         cols_cat: Sequence[str],
     ):
         """
         Returns a boolean array indicating which components of the TRANSFORMED
         `stat_covs` are numerical and a boolean array indicating which components
-        of the TRANSFORMED `stat_covs` are categoical.
+        of the TRANSFORMED `stat_covs` are categorical.
 
-        It's important to recognise that these masks only apply to the UNTRANSFORMED
+        It's important to recognize that these masks only apply to the UNTRANSFORMED
         static covariates since some transformations can generate multiple new components
         from a single component (e.g. one-hot encoding).
         """
@@ -356,7 +356,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
 
     @staticmethod
     def ts_transform(
-        series: TimeSeries, params: Dict[str, Any], *args, **kwargs
+        series: TimeSeries, params: dict[str, Any], *args, **kwargs
     ) -> TimeSeries:
         return StaticCovariatesTransformer._transform_static_covs(
             series, params["fitted"], method="transform"
@@ -364,7 +364,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
 
     @staticmethod
     def ts_inverse_transform(
-        series: TimeSeries, params: Dict[str, Any], *args, **kwargs
+        series: TimeSeries, params: dict[str, Any], *args, **kwargs
     ) -> TimeSeries:
         return StaticCovariatesTransformer._transform_static_covs(
             series, params["fitted"], method="inverse_transform"
@@ -373,7 +373,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
     @staticmethod
     def _transform_static_covs(
         series: TimeSeries,
-        fitted_params: Dict[str, Any],
+        fitted_params: dict[str, Any],
         method: Literal["transform", "inverse_transform"],
     ):
         """
@@ -422,7 +422,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
     @staticmethod
     def _extract_static_covs(
         series: TimeSeries, mask_num: np.ndarray, mask_cat: np.ndarray
-    ) -> Tuple[np.array, np.array]:
+    ) -> tuple[np.array, np.array]:
         """
         Extracts all static covariates from a `TimeSeries`, and then extracts the numerical
         and categorical components to transform from these static covariates.
@@ -437,7 +437,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         vals_cat: np.ndarray,
         mask_num: np.ndarray,
         mask_cat: np.ndarray,
-        col_map_cat: Dict[str, str],
+        col_map_cat: dict[str, str],
     ) -> pd.DataFrame:
         """
         Adds transformed static covariates back to original `TimeSeries`. The categorical component

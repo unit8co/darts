@@ -3,7 +3,7 @@ D-Linear
 --------
 """
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -15,7 +15,7 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 
-MixedCovariatesTrainTensorType = Tuple[
+MixedCovariatesTrainTensorType = tuple[
     torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
 ]
 
@@ -100,7 +100,8 @@ class _DLinearModule(PLMixedCovariatesModule):
         const_init
             Whether to initialize the weights to 1/in_len
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
 
         Inputs
         ------
@@ -155,7 +156,7 @@ class _DLinearModule(PLMixedCovariatesModule):
 
     @io_processor
     def forward(
-        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
+        self, x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
     ):
         """
         x_in
@@ -232,6 +233,7 @@ class DLinearModel(MixedCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         shared_weights: bool = False,
         kernel_size: int = 25,
         const_init: bool = True,
@@ -253,10 +255,16 @@ class DLinearModel(MixedCovariatesTorchModel):
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
             as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
-            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         shared_weights
             Whether to use shared weights for all components of multivariate series.
 

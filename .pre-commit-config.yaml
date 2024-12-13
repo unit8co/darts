@@ -1,23 +1,32 @@
+default_language_version:
+  python: python3
+
+ci:
+  autofix_prs: true
+  autoupdate_commit_msg: "[pre-commit.ci] pre-commit suggestions"
+  autoupdate_schedule: quarterly
+  # submodules: true
+
 repos:
-  - repo: https://github.com/psf/black
-    rev: 22.3.0
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
     hooks:
-      - id: black-jupyter
-        language_version: python3
+      - id: end-of-file-fixer
+        exclude_types: [csv]
+      - id: trailing-whitespace
+      - id: check-json
+      - id: check-yaml
+        exclude: "conda_recipe/darts/meta.yaml"
+      - id: check-toml
+      - id: detect-private-key
 
-  - repo: https://github.com/PyCQA/flake8
-    rev: 4.0.1
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.2
     hooks:
-    -   id: flake8
-        language_version: python3
-
-  - repo: https://github.com/pycqa/isort
-    rev: 5.11.5
-    hooks:
-      -  id: isort
-
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v2.31.0
-    hooks:
-    -   id: pyupgrade
-        args: ['--py37-plus']
+      # try to fix what is possible
+      - id: ruff
+        args: ["--fix"]
+      # perform formatting updates
+      - id: ruff-format
+      # validate if all is fine with preview mode
+      - id: ruff

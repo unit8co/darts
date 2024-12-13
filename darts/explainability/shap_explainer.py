@@ -24,8 +24,9 @@ each of the (lagged) series.
    layout.
 """
 
+from collections.abc import Sequence
 from enum import Enum
-from typing import Dict, NewType, Optional, Sequence, Union
+from typing import NewType, Optional, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -162,7 +163,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             test_stationarity=True,
         )
 
-        if model._is_probabilistic:
+        if model.supports_probabilistic_prediction:
             logger.warning(
                 "The model is probabilistic, but num_samples=1 will be used for explainability."
             )
@@ -311,7 +312,6 @@ class ShapExplainer(_ForecastingModelExplainer):
         feature_values_list = []
         shap_explanation_object_list = []
         for idx, foreground_ts in enumerate(foreground_series):
-
             foreground_past_cov_ts = None
             foreground_future_cov_ts = None
 
@@ -375,7 +375,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         num_samples: Optional[int] = None,
         plot_type: Optional[str] = "dot",
         **kwargs,
-    ) -> Dict[int, Dict[str, shap.Explanation]]:
+    ) -> dict[int, dict[str, shap.Explanation]]:
         """
         Display a shap plot summary for each horizon and each component dimension of the target.
         This method reuses the initial background data as foreground (potentially sampled) to give a general importance
@@ -399,7 +399,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         Returns
         -------
         shaps_
-            A nested dictionary {horizon : {component : shap.Explaination}} containing the raw Explanations for all
+            A nested dictionary {horizon : {component : shap.Explanation}} containing the raw Explanations for all
             the horizons and components.
         """
 
@@ -573,7 +573,6 @@ class _RegressionShapExplainers:
         background_num_samples: Optional[int] = None,
         **kwargs,
     ):
-
         self.model = model
         self.target_dim = self.model.input_dim["target"]
         self.is_multioutputregressor = isinstance(
@@ -623,8 +622,7 @@ class _RegressionShapExplainers:
         foreground_X: pd.DataFrame,
         horizons: Optional[Sequence[int]] = None,
         target_components: Optional[Sequence[str]] = None,
-    ) -> Dict[int, Dict[str, shap.Explanation]]:
-
+    ) -> dict[int, dict[str, shap.Explanation]]:
         """
         Return a dictionary of dictionaries of shap.Explanation instances:
         - the first dimension corresponds to the n forecasts ahead we want to explain (Horizon).
@@ -646,7 +644,6 @@ class _RegressionShapExplainers:
         # native multiOutput estimators
         shap_explanations = {}
         if self.is_multioutputregressor:
-
             for h in horizons:
                 tmp_n = {}
                 for t_idx, t in enumerate(self.target_components):
@@ -662,7 +659,7 @@ class _RegressionShapExplainers:
             shap_explanation_tmp = self.explainers(foreground_X)
             for h in horizons:
                 tmp_n = {}
-                for t_idx, t in enumerate(target_components):
+                for t_idx, t in enumerate(self.target_components):
                     if t not in target_components:
                         continue
                     if not self.single_output:
@@ -693,7 +690,6 @@ class _RegressionShapExplainers:
         shap_method: Optional[ShapMethod] = None,
         **kwargs,
     ):
-
         model_name = type(model_sklearn).__name__
 
         # no shap methods - we need to take the default one
@@ -760,14 +756,14 @@ class _RegressionShapExplainers:
         X, indexes = create_lagged_prediction_data(
             target_series=target_series if lags_list else None,
             past_covariates=past_covariates if lags_past_covariates_list else None,
-            future_covariates=future_covariates
-            if lags_future_covariates_list
-            else None,
+            future_covariates=(
+                future_covariates if lags_future_covariates_list else None
+            ),
             lags=lags_list,
             lags_past_covariates=lags_past_covariates_list if past_covariates else None,
-            lags_future_covariates=lags_future_covariates_list
-            if future_covariates
-            else None,
+            lags_future_covariates=(
+                lags_future_covariates_list if future_covariates else None
+            ),
             uses_static_covariates=self.model.uses_static_covariates,
             last_static_covariates_shape=self.model._static_covariates_shape,
         )

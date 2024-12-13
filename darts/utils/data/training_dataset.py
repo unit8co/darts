@@ -4,18 +4,19 @@ Training Datasets Base Classes
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 from torch.utils.data import Dataset
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if_not
-
-from .utils import CovariateType
+from darts.logging import get_logger, raise_log
+from darts.utils.data.utils import CovariateType
 
 logger = get_logger(__name__)
-SampleIndexType = Tuple[int, int, int, int, int, int]
+SampleIndexType = tuple[
+    int, int, int, int, Optional[int], Optional[int], Optional[int], Optional[int]
+]
 
 
 class TrainingDataset(ABC, Dataset):
@@ -64,7 +65,7 @@ class TrainingDataset(ABC, Dataset):
         underlying the `TimeSeries`.
         """
 
-        self._index_memory: Dict = {}
+        self._index_memory: dict = {}
 
     @abstractmethod
     def __len__(self) -> int:
@@ -82,8 +83,9 @@ class TrainingDataset(ABC, Dataset):
         input_chunk_length: int,
         output_chunk_length: int,
         end_of_output_idx: int,
-        covariate_series: TimeSeries,
+        covariate_series: Optional[TimeSeries] = None,
         covariate_type: CovariateType = CovariateType.NONE,
+        sample_weight_series: Optional[TimeSeries] = None,
     ) -> SampleIndexType:
         """Returns the (start, end) indices for past target, future target and covariates (sub sets) of the current
         sample `i` from `target_idx`.
@@ -111,12 +113,15 @@ class TrainingDataset(ABC, Dataset):
             the index where the output chunk of the current sample ends in `target_series`.
         covariate_series
             current covariate TimeSeries.
-        covariate_type:
+        covariate_type
             the type of covariate to extract. Instance of `CovariateType`: One of (`CovariateType.PAST`,
             `CovariateType.FUTURE`, `CovariateType.NONE`).
+        sample_weight_series
+            current sample weight TimeSeries.
         """
 
         covariate_start, covariate_end = None, None
+        sample_weight_start, sample_weight_end = None, None
 
         # the first time target_idx is observed
         if target_idx not in self._index_memory:
@@ -136,7 +141,7 @@ class TrainingDataset(ABC, Dataset):
             )
 
             if covariate_type is not CovariateType.NONE:
-                # not CovariateType.Future -> both CovariateType.PAST and CovariateType.HISTORIC_FUTURE
+                # not CovariateType.FUTURE -> both CovariateType.PAST and CovariateType.HISTORIC_FUTURE
                 start = (
                     future_start
                     if covariate_type is CovariateType.FUTURE
@@ -146,21 +151,52 @@ class TrainingDataset(ABC, Dataset):
 
                 # we need to be careful with getting ranges and indexes:
                 # to get entire range, full_range = ts[:len(ts)]; to get last index: last_idx = ts[len(ts) - 1]
+                # extract actual index value (respects datetime- and integer-based indexes; also from non-zero
+                # start)
+                target_time_index = target_series._time_index
+                covariate_time_index = covariate_series._time_index
+                start_time = target_time_index[start]
+                end_time = target_time_index[end - 1]
 
-                # extract actual index value (respects datetime- and integer-based indexes; also from non-zero start)
-                start_time = target_series.time_index[start]
-                end_time = target_series.time_index[end - 1]
-
-                raise_if_not(
-                    start_time in covariate_series.time_index
-                    and end_time in covariate_series.time_index,
-                    f"Missing covariates; could not find {covariate_type.value} covariates in index value range: "
-                    f"{start_time} - {end_time}.",
-                )
+                if (
+                    start_time not in covariate_time_index
+                    or end_time not in covariate_time_index
+                ):
+                    raise_log(
+                        ValueError(
+                            f"Missing covariates; could not find {covariate_type.value} covariates in index "
+                            f"value range: {start_time} - {end_time}."
+                        ),
+                        logger=logger,
+                    )
 
                 # extract the index position (index) from index value
-                covariate_start = covariate_series.time_index.get_loc(start_time)
-                covariate_end = covariate_series.time_index.get_loc(end_time) + 1
+                covariate_start = covariate_time_index.get_loc(start_time)
+                covariate_end = covariate_time_index.get_loc(end_time) + 1
+
+            # sample weight
+            if sample_weight_series is not None:
+                # extract the index position (index) from index value
+                target_time_index = target_series._time_index
+                sample_weight_time_index = sample_weight_series._time_index
+
+                start_time = target_time_index[future_start]
+                end_time = target_time_index[future_end - 1]
+
+                if (
+                    start_time not in sample_weight_time_index
+                    or end_time not in sample_weight_time_index
+                ):
+                    raise_log(
+                        ValueError(
+                            f"Missing sample weights; could not find sample weights in index "
+                            f"value range: {start_time} - {end_time}."
+                        ),
+                        logger=logger,
+                    )
+
+                sample_weight_start = sample_weight_time_index.get_loc(start_time)
+                sample_weight_end = sample_weight_time_index.get_loc(end_time) + 1
 
             # store position of initial sample and all relevant sub set indices
             self._index_memory[target_idx] = {
@@ -168,6 +204,7 @@ class TrainingDataset(ABC, Dataset):
                 "past_target": (past_start, past_end),
                 "future_target": (future_start, future_end),
                 "covariate": (covariate_start, covariate_end),
+                "sample_weight": (sample_weight_start, sample_weight_end),
             }
         else:
             # load position of initial sample and its sub set indices
@@ -175,6 +212,9 @@ class TrainingDataset(ABC, Dataset):
             past_start, past_end = self._index_memory[target_idx]["past_target"]
             future_start, future_end = self._index_memory[target_idx]["future_target"]
             covariate_start, covariate_end = self._index_memory[target_idx]["covariate"]
+            sample_weight_start, sample_weight_end = self._index_memory[target_idx][
+                "sample_weight"
+            ]
 
             # evaluate how much the new sample needs to be shifted, and shift all indexes
             idx_shift = end_of_output_idx - end_of_output_idx_last
@@ -188,6 +228,14 @@ class TrainingDataset(ABC, Dataset):
             covariate_end = (
                 covariate_end + idx_shift if covariate_end is not None else None
             )
+            sample_weight_start = (
+                sample_weight_start + idx_shift
+                if sample_weight_start is not None
+                else None
+            )
+            sample_weight_end = (
+                sample_weight_end + idx_shift if sample_weight_end is not None else None
+            )
 
         return (
             past_start,
@@ -196,6 +244,8 @@ class TrainingDataset(ABC, Dataset):
             future_end,
             covariate_start,
             covariate_end,
+            sample_weight_start,
+            sample_weight_end,
         )
 
 
@@ -211,7 +261,13 @@ class PastCovariatesTrainingDataset(TrainingDataset, ABC):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    ) -> tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        np.ndarray,
+    ]:
         pass
 
 
@@ -227,7 +283,13 @@ class FutureCovariatesTrainingDataset(TrainingDataset, ABC):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    ) -> tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        np.ndarray,
+    ]:
         pass
 
 
@@ -243,8 +305,9 @@ class DualCovariatesTrainingDataset(TrainingDataset, ABC):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
+        Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -266,8 +329,9 @@ class MixedCovariatesTrainingDataset(TrainingDataset, ABC):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
+        Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -289,8 +353,9 @@ class SplitCovariatesTrainingDataset(TrainingDataset, ABC):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
+        Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],

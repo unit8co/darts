@@ -3,7 +3,7 @@ N-HiTS
 ------
 """
 
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 import torch
@@ -216,8 +216,8 @@ class _Stack(nn.Module):
         num_layers: int,
         layer_width: int,
         nr_params: int,
-        pooling_kernel_sizes: Tuple[int],
-        n_freq_downsample: Tuple[int],
+        pooling_kernel_sizes: tuple[int],
+        n_freq_downsample: tuple[int],
         batch_norm: bool,
         dropout: float,
         activation: str,
@@ -327,9 +327,9 @@ class _NHiTSModule(PLPastCovariatesModule):
         num_stacks: int,
         num_blocks: int,
         num_layers: int,
-        layer_widths: List[int],
-        pooling_kernel_sizes: Tuple[Tuple[int]],
-        n_freq_downsample: Tuple[Tuple[int]],
+        layer_widths: list[int],
+        pooling_kernel_sizes: tuple[tuple[int]],
+        n_freq_downsample: tuple[tuple[int]],
         batch_norm: bool,
         dropout: float,
         activation: str,
@@ -370,7 +370,8 @@ class _NHiTSModule(PLPastCovariatesModule):
         MaxPool1d
             Use MaxPool1d pooling. False uses AvgPool1d
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
 
         Inputs
         ------
@@ -421,7 +422,7 @@ class _NHiTSModule(PLPastCovariatesModule):
         self.stacks_list[-1].blocks[-1].backcast_linear_layer.requires_grad_(False)
 
     @io_processor
-    def forward(self, x_in: Tuple):
+    def forward(self, x_in: tuple):
         x, _ = x_in
 
         # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
@@ -465,12 +466,13 @@ class NHiTSModel(PastCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         num_stacks: int = 3,
         num_blocks: int = 1,
         num_layers: int = 2,
-        layer_widths: Union[int, List[int]] = 512,
-        pooling_kernel_sizes: Optional[Tuple[Tuple[int]]] = None,
-        n_freq_downsample: Optional[Tuple[Tuple[int]]] = None,
+        layer_widths: Union[int, list[int]] = 512,
+        pooling_kernel_sizes: Optional[tuple[tuple[int]]] = None,
+        n_freq_downsample: Optional[tuple[tuple[int]]] = None,
         dropout: float = 0.1,
         activation: str = "ReLU",
         MaxPool1d: bool = True,
@@ -506,10 +508,16 @@ class NHiTSModel(PastCovariatesTorchModel):
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
             as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
-            using either a one-shot- or auto-regressive forecast. Setting `n <= output_chunk_length` prevents
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         num_stacks
             The number of stacks that make up the whole model.
         num_blocks
@@ -799,7 +807,7 @@ class NHiTSModel(PastCovariatesTorchModel):
 
         return pooling_kernel_sizes, n_freq_downsample
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (
             train_sample[1].shape[1] if train_sample[1] is not None else 0
