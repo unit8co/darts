@@ -3326,9 +3326,9 @@ def iw(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """Interval Width (IL).
+    """Interval Width (IW).
 
-    IL gives the length / width of predicted quantile intervals.
+    IL gives the width / length of predicted quantile intervals.
 
     For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
     it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step
@@ -3427,9 +3427,9 @@ def miw(
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """Mean Interval Width (MIL).
+    """Mean Interval Width (MIW).
 
-    MIL gives the time-aggregated length / width of predicted quantile intervals.
+    MIW gives the time-aggregated width / length of predicted quantile intervals.
 
     For the true series :math:`y` and predicted stochastic or quantile series :math:`\\hat{y}` of length :math:`T`,
     it is computed per component/column, quantile interval :math:`(q_l,q_h)`, and time step

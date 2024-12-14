@@ -3502,8 +3502,7 @@ class TestHistoricalforecast:
         ),
     )
     def test_conformal_historical_start_cal_length(self, config):
-        """Tests naive conformal model with start, train length, calibration set, and center forecasts against
-        the forecasting model's forecast."""
+        """Tests naive conformal model historical forecasts without `cal_stride`."""
         (
             last_points_only,
             cal_length,

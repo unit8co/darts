@@ -86,7 +86,7 @@ class TestConformalModel:
     Tests all general model behavior for Naive Conformal Model with symmetric non-conformity score.
     Additionally, checks correctness of predictions for:
     - ConformalNaiveModel with symmetric & asymmetric non-conformity scores
-    - ConformaQRlModel with symmetric & asymmetric non-conformity scores
+    - ConformalQRModel with symmetric & asymmetric non-conformity scores
     """
 
     np.random.seed(42)
@@ -155,7 +155,8 @@ class TestConformalModel:
 
         # pre-trained local model should work
         global_model.fit(series)
-        _ = ConformalNaiveModel(model=global_model, quantiles=q)
+        model = ConformalNaiveModel(model=global_model, quantiles=q)
+        assert model.likelihood == "quantile"
 
         # non-centered quantiles
         with pytest.raises(ValueError) as exc:
@@ -226,12 +227,25 @@ class TestConformalModel:
         with pytest.raises(ValueError) as exc:
             ConformalQRModel(model=model_det, quantiles=q)
         assert str(exc.value).startswith(
-            "`model` must must support probabilistic forecasting."
+            "`model` must support probabilistic forecasting."
         )
         # probabilistic model works
         _ = ConformalQRModel(model=model_prob_q, quantiles=q)
         # works also with different likelihood
         _ = ConformalQRModel(model=model_prob_poisson, quantiles=q)
+
+    def test_unsupported_properties(self):
+        """Tests only here for coverage, maybe at some point we support these properties."""
+        model = ConformalNaiveModel(train_model(self.ts_pass_train), quantiles=q)
+        unsupported_properties = [
+            "_model_encoder_settings",
+            "extreme_lags",
+            "min_train_series_length",
+            "min_train_samples",
+        ]
+        for prop in unsupported_properties:
+            with pytest.raises(NotImplementedError):
+                getattr(model, prop)
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_save_model_parameters(self, config):
@@ -303,6 +317,16 @@ class TestConformalModel:
         for p in pkl_files:
             loaded_model = model_cls.load(p)
             assert model_prediction == loaded_model.predict(5, **pred_kwargs)
+
+    def test_fit(self):
+        model = ConformalNaiveModel(train_model(self.ts_pass_train), quantiles=q)
+        assert model.model._fit_called
+
+        # check kwargs will be passed to `model.model.fit()`
+        assert model.supports_sample_weight
+        model.model._fit_called = False
+        model.fit(self.ts_pass_train, sample_weight="linear")
+        assert model.model._fit_called
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_single_ts(self, config):
@@ -589,9 +613,11 @@ class TestConformalModel:
             train_model(ts, model_type=model_type, quantiles=kwargs["quantiles"]),
             **kwargs,
         )
+        assert model.considers_static_covariates
+        assert model.supports_static_covariates
         assert model.uses_static_covariates
         pred = model.predict(OUT_LEN)
-        assert pred.static_covariates is None
+        assert pred.static_covariates.equals(ts.static_covariates)
 
     @pytest.mark.parametrize(
         "config",
@@ -681,20 +707,18 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [1, 3, 5],  # horizon
-                [True, False],  # univariate series
-                [True, False],  # single series
-                [q, [0.2, 0.3, 0.5, 0.7, 0.8]],
-                [
-                    (ConformalNaiveModel, "regression"),
-                    (ConformalNaiveModel, "regression_prob"),
-                    (ConformalQRModel, "regression_qr"),
-                ],  # model type
-                [True, False],  # symmetric non-conformity score
-                [None, 1],  # train length
-            )
+        itertools.product(
+            [1, 3, 5],  # horizon
+            [True, False],  # univariate series
+            [True, False],  # single series
+            [q, [0.2, 0.3, 0.5, 0.7, 0.8]],
+            [
+                (ConformalNaiveModel, "regression"),
+                (ConformalNaiveModel, "regression_prob"),
+                (ConformalQRModel, "regression_qr"),
+            ],  # model type
+            [True, False],  # symmetric non-conformity score
+            [None, 1],  # train length
         ),
     )
     def test_conformal_model_predict_accuracy(self, config):

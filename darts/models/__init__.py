@@ -20,10 +20,16 @@ from darts.models.forecasting.arima import ARIMA
 from darts.models.forecasting.auto_arima import AutoARIMA
 from darts.models.forecasting.baselines import (
     NaiveDrift,
+    NaiveEnsembleModel,
     NaiveMean,
     NaiveMovingAverage,
     NaiveSeasonal,
 )
+from darts.models.forecasting.conformal_models import (
+    ConformalNaiveModel,
+    ConformalQRModel,
+)
+from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
 from darts.models.forecasting.kalman_forecaster import KalmanForecaster
@@ -108,19 +114,10 @@ try:
 except ImportError:
     XGBModel = NotImportedModule(module_name="XGBoost")
 
-# Conformal Prediction
 # Filtering
 from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
 from darts.models.filtering.kalman_filter import KalmanFilter
 from darts.models.filtering.moving_average_filter import MovingAverageFilter
-
-# Ensembling
-from darts.models.forecasting.baselines import NaiveEnsembleModel
-from darts.models.forecasting.conformal_models import (
-    ConformalNaiveModel,
-    ConformalQRModel,
-)
-from darts.models.forecasting.ensemble_model import EnsembleModel
 
 __all__ = [
     "LightGBMModel",
