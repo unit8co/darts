@@ -102,10 +102,12 @@ class TestHistoricalForecastsUtils:
             (True, 0.9, "position"),
             (True, 0, "position"),
             (True, 0, "value"),
+            (True, -1, "position"),
             (False, pd.Timestamp("2000-01-01"), "value"),
             (False, 0.9, "value"),
             (False, 0.9, "position"),
             (False, 0, "position"),
+            (False, -1, "position"),
         ],
     )
     def test_historical_forecasts_check_start_invalid(self, config):

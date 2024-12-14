@@ -1005,33 +1005,31 @@ class TestRegressionModels:
         model, mode = config
         train_y, test_y = self.sine_univariate1.split_before(0.7)
         # testing past covariates
+        model_instance = model(lags=4, lags_past_covariates=None, multi_models=mode)
         with pytest.raises(ValueError):
             # testing lags_past_covariates None but past_covariates during training
-            model_instance = model(lags=4, lags_past_covariates=None, multi_models=mode)
             model_instance.fit(
                 series=self.sine_univariate1,
                 past_covariates=self.sine_multivariate1,
             )
 
+        model_instance = model(lags=4, lags_past_covariates=3, multi_models=mode)
         with pytest.raises(ValueError):
             # testing lags_past_covariates but no past_covariates during fit
-            model_instance = model(lags=4, lags_past_covariates=3, multi_models=mode)
             model_instance.fit(series=self.sine_univariate1)
 
         # testing future_covariates
+        model_instance = model(lags=4, lags_future_covariates=None, multi_models=mode)
         with pytest.raises(ValueError):
             # testing lags_future_covariates None but future_covariates during training
-            model_instance = model(
-                lags=4, lags_future_covariates=None, multi_models=mode
-            )
             model_instance.fit(
                 series=self.sine_univariate1,
                 future_covariates=self.sine_multivariate1,
             )
 
+        model_instance = model(lags=4, lags_future_covariates=(0, 3), multi_models=mode)
         with pytest.raises(ValueError):
             # testing lags_covariate but no covariate during fit
-            model_instance = model(lags=4, lags_future_covariates=3, multi_models=mode)
             model_instance.fit(series=self.sine_univariate1)
 
         # testing input_dim
