@@ -15,6 +15,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Added `data_transformers` argument to `historical_forecasts`, `backtest`, `residuals`, and `gridsearch` that allow to automatically apply `DataTransformer` and/or `Pipeline` to the input series without data-leakage (fit on historic window of input series, transform the input series, and inverse transform the forecasts). [#2529](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou) and [Jan Fidor](https://github.com/JanFidor)
 - Added `series_idx` argument to `DataTransformer` that allows users to use only a subset of the transformers when `global_fit=False` and severals series are used. [#2529](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou)
 - Updated the Documentation URL of `Statsforecast` models. [#2610](https://github.com/unit8co/darts/pull/2610) by [He Weilin](https://github.com/cnhwl).
+- New model: `StatsForecastAutoTBATS`. This model offers the [AutoTBATS](https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotbats) model from Nixtla's `statsforecasts` library. [#2611](https://github.com/unit8co/darts/pull/2611) by [He Weilin](https://github.com/cnhwl).
 
 **Fixed**
 
@@ -29,6 +30,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For developers of the library:
 
 **Improved**
+
 - Improvements to CI/CD: [#2584](https://github.com/unit8co/darts/pull/2584) by [Dennis Bader](https://github.com/dennisbader).
   - updated all workflows with most recent action versions
   - improved caching across `master` branch and its children
@@ -83,6 +85,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Fixed the comment of `scorers_are_univariate` in class `AnomalyModel`. [#2452](https://github.com/unit8co/darts/pull/2542) by [He Weilin](https://github.com/cnhwl).
 
 **Dependencies**
+
 - Bumped release requirements versions for jupyterlab and dependencies: [#2515](https://github.com/unit8co/darts/pull/2515) by [Dennis Bader](https://github.com/dennisbader).
   - Bumped `ipython` from 8.10.0 to 8.18.1
   - Bumped `ipykernel` from 5.3.4 to 6.29.5
