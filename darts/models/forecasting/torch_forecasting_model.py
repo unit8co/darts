@@ -644,10 +644,80 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 logger=logger,
             )
 
-    @abstractmethod
-    def to_onnx(self, path: Optional[str] = None, **kwargs):
-        """In charge of generating a dummy input sample and exporting the model to ONNX."""
-        pass
+    def to_onnx(
+        self,
+        path: Optional[str] = None,
+        input_sample: Optional[tuple] = None,
+        randomize_input_sample: bool = False,
+        **kwargs,
+    ):
+        """Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning's
+        :func:`torch.onnx.export` method ()`official documentation <https://lightning.ai/docs/pytorch/
+        stable/common/lightning_module.html#to-onnx>`_).
+
+        Note: onnx library (optionnal dependency) must be installed in order to call this method
+
+        Example for exporting a :class:`DLinearModel`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import DLinearModel
+                from darts import TimeSeries
+                import numpy as np
+
+                train_ts = TimeSeries.from_values(np.arange(0,100))
+                model = DLinearModel(input_chunk_length=4, output_chunk_length=1)
+                model.fit(train_ts, epochs=1)
+                model.to_onnx("my_model.onnx")
+            ..
+
+        Parameters
+        ----------
+        path
+            Path under which to save the model at its current state. If no path is specified, the model
+            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.onnx"``.
+        input_sample
+            Tuple of Tensor corresponding to the inputs of the model forward pass.
+        randomize_input_sample
+            Wether to randomize the values in the `input_sample` to avoid leaking data.
+        **kwargs
+            Additional kwargs for PyTorch's :func:`torch.onnx.export` method, such as ``verbose`` prints a
+            description of the model being exported to stdout.
+            For more information, read the `official documentation <https://pytorch.org/docs/master/
+            onnx.html#torch.onnx.export>`_.
+        """
+        if not self._fit_called:
+            raise_log(
+                ValueError("`fit()` needs to be called before `to_onnx()`."), logger
+            )
+
+        if not self.train_sample and not input_sample:
+            raise_log(
+                ValueError(
+                    "Either the `input_sample` argument or the `train_sample` attribute must be provided."
+                ),
+                logger,
+            )
+
+        if path is None:
+            path = self._default_save_path() + ".onnx"
+
+        if not input_sample:
+            mock_batch = tuple(
+                torch.rand((1,) + shape, dtype=self.model.dtype) if shape else None
+                for shape in self.model.train_sample_shape[:-1]
+            )
+            input_sample = self.model._process_input_batch(mock_batch)
+        elif randomize_input_sample:
+            input_sample = tuple(
+                torch.rand(tensor.shape, dtype=self.model.dtype)
+                if tensor is not None
+                else None
+                for tensor in input_sample
+            )
+        # TODO: define input names, depending on the class of the model
+        self.model.to_onnx(file_path=path, input_sample=(input_sample,), **kwargs)
 
     @random_method
     def fit(
@@ -2545,67 +2615,6 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             "support only past_covariates.",
         )
 
-    def to_onnx(self, path: Optional[str] = None, **kwargs):
-        """Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning's
-        :func:`torch.onnx.export` method ()`official documentation <https://lightning.ai/docs/pytorch/
-        stable/common/lightning_module.html#to-onnx>`_).
-
-        Note: onnx library (optionnal dependency) must be installed in order to call this method
-
-        Example for exporting a :class:`TCNModel`:
-
-            .. highlight:: python
-            .. code-block:: python
-
-                from darts.models import TCNModel
-                from darts import TimeSeries
-                import numpy as np
-
-                train_ts = TimeSeries.from_values(np.arange(0,100))
-                model = TCNModel(input_chunk_length=4, output_chunk_length=1)
-                model.fit(train_ts, epochs=1)
-                model.to_onnx("my_model.onnx")
-            ..
-
-        Parameters
-        ----------
-        path
-            Path under which to save the model at its current state. Please avoid path starting with "last-" or
-            "best-" to avoid collision with Pytorch-Ligthning checkpoints. If no path is specified, the model
-            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pt"``.
-        **kwargs
-            Additional kwargs for PyTorch's :func:`torch.onnx.export` method, such as ``verbose`` prints a
-            description of the model being exported to stdout.
-            For more information, read the `official documentation <https://pytorch.org/docs/master/
-            onnx.html#torch.onnx.export>`_.
-        """
-        raise_if_not(
-            self._fit_called, "`fit()` needs to be called before `to_onnx()`.", logger
-        )
-
-        if path is None:
-            # default path
-            path = self._default_save_path() + ".onnx"
-
-        # mimic preprocessing performed by PLPastCovariatesModule._get_batch_prediction()
-        (
-            past_target,
-            past_covariates,
-            future_past_covariates,
-            static_covariates,
-        ) = (
-            torch.Tensor(x).unsqueeze(0) if x is not None else None
-            for x in self.train_sample
-        )
-
-        input_past = torch.cat(
-            [tensor for tensor in [past_target, past_covariates] if tensor is not None],
-            dim=2,
-        )
-
-        input_sample = [input_past.double(), static_covariates.double()]
-        self.model.to_onnx(file_path=path, input_sample=input_sample, **kwargs)
-
     @property
     def _model_encoder_settings(
         self,
@@ -2705,9 +2714,6 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             "Some past_covariates have been provided to a PastCovariates model. These models "
             "support only future_covariates.",
         )
-
-    def to_onnx(self, path: Optional[str] = None, **kwargs):
-        raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
 
     @property
     def _model_encoder_settings(
@@ -2810,11 +2816,6 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             "support only future_covariates.",
         )
 
-    def to_onnx(self, path: Optional[str] = None, **kwargs):
-        raise NotImplementedError(
-            "TBD: The only DualCovariatesModel is an RNN with a specific implementation."
-        )
-
     @property
     def _model_encoder_settings(
         self,
@@ -2913,77 +2914,6 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         # both covariates are supported; do nothing
         pass
 
-    def to_onnx(self, path: Optional[str] = None, **kwargs):
-        """Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning's
-        :func:`torch.onnx.export` method ()`official documentation <https://lightning.ai/docs/pytorch/
-        stable/common/lightning_module.html#to-onnx>`_).
-
-        Note: onnx library (optionnal dependency) must be installed in order to call this method
-
-        Example for exporting a :class:`DLinearModel`:
-
-            .. highlight:: python
-            .. code-block:: python
-
-                from darts.models import DLinearModel
-                from darts import TimeSeries
-                import numpy as np
-
-                train_ts = TimeSeries.from_values(np.arange(0,100))
-                model = DLinearModel(input_chunk_length=4, output_chunk_length=1)
-                model.fit(train_ts, epochs=1)
-                model.to_onnx("my_model.onnx")
-            ..
-
-        Parameters
-        ----------
-        path
-            Path under which to save the model at its current state. Please avoid path starting with "last-" or
-            "best-" to avoid collision with Pytorch-Ligthning checkpoints. If no path is specified, the model
-            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pt"``.
-        **kwargs
-            Additional kwargs for PyTorch's :func:`torch.onnx.export` method, such as ``verbose`` prints a
-            description of the model being exported to stdout.
-            For more information, read the `official documentation <https://pytorch.org/docs/master/
-            onnx.html#torch.onnx.export>`_.
-        """
-        raise_if_not(
-            self._fit_called, "`fit()` needs to be called before `to_onnx()`.", logger
-        )
-
-        if path is None:
-            # default path
-            path = self._default_save_path() + ".onnx"
-
-        # mimic preprocessing performed by PLPastCovariatesModule._get_batch_prediction()
-        (
-            past_target,
-            past_covariates,
-            historic_future_covariates,
-            future_covariates,
-            future_past_covariates,
-            static_covariates,
-        ) = (
-            torch.Tensor(x).unsqueeze(0) if x is not None else None
-            for x in self.train_sample
-        )
-
-        input_past = torch.cat(
-            [
-                tensor
-                for tensor in [past_target, past_covariates, historic_future_covariates]
-                if tensor is not None
-            ],
-            dim=2,
-        )
-
-        input_sample = [
-            input_past.double(),
-            future_covariates.double() if future_covariates is not None else None,
-            static_covariates.double(),
-        ]
-        self.model.to_onnx(file_path=path, input_sample=input_sample, **kwargs)
-
     @property
     def _model_encoder_settings(
         self,
@@ -3078,9 +3008,6 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_predict_sample(self, predict_sample: tuple):
         # TODO: we have to check both past and future covariates
         raise NotImplementedError()
-
-    def to_onnx(self, path: Optional[str] = None, **kwargs):
-        raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
 
     @property
     def _model_encoder_settings(

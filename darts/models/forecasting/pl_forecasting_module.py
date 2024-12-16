@@ -93,6 +93,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         When subclassing this class, please make sure to add the following methods with the given signatures:
             - :func:`PLForecastingModule.__init__()`
             - :func:`PLForecastingModule.forward()`
+            - :func:`PLForecastingModule._process_input_batch()`
             - :func:`PLForecastingModule._produce_train_output()`
             - :func:`PLForecastingModule._get_batch_prediction()`
 
@@ -632,9 +633,28 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
         input_batch
             ``(past_target, past_covariates, static_covariates)``
         """
+        return self(self._process_input_batch(input_batch))
+
+    def _process_input_batch(
+        self, input_batch: tuple
+    ) -> tuple[torch.Tensor, Optional[torch.Tensor]]:
+        """
+        Converts output of PastCovariatesDataset (training dataset) into an input/past- and
+        output/future chunk.
+
+        Parameters
+        ----------
+        input_batch
+            ``(past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates)``.
+
+        Returns
+        -------
+        tuple
+            ``(x_past, x_static)`` the input/past and output/future chunks.
+        """
         past_target, past_covariates, static_covariates = input_batch
         # Currently all our PastCovariates models require past target and covariates concatenated
-        inpt = (
+        return (
             (
                 torch.cat([past_target, past_covariates], dim=2)
                 if past_covariates is not None
@@ -642,7 +662,6 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
             ),
             static_covariates,
         )
-        return self(inpt)
 
     def _get_batch_prediction(
         self, n: int, input_batch: tuple, roll_size: int
@@ -674,12 +693,9 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
             past_covariates.shape[dim_component] if past_covariates is not None else 0
         )
 
-        input_past = torch.cat(
-            [ds for ds in [past_target, past_covariates] if ds is not None],
-            dim=dim_component,
-        )
+        input_past, input_static = self._process_input_batch(input_batch)
 
-        out = self._produce_predict_output(x=(input_past, static_covariates))[
+        out = self._produce_predict_output(x=(input_past, input_static))[
             :, self.first_prediction_index :, :
         ]
 
