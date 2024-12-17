@@ -378,12 +378,6 @@ def prepare_onnx_inputs(
     ) -> tuple[Optional[np.ndarray]]:
     """Helper function to slice and concatenate the input features"""
     past_feats, future_feats, static_feats = None, None, None
-    if forecast_start_position > 0:
-        raise_log(
-            ValueError("`forecast_start_position` must be <= 0"),
-            logger=logger
-        )
-
     # convert and concatenate the historic features (target, past and future covariates)
     past_feats = series.values()[-model.input_chunk_length:]
     if past_covariates:
@@ -410,8 +404,6 @@ def prepare_onnx_inputs(
             future_feats = np.expand_dims(future_covariates.values()[
                 len(series):len(series)+model.output_chunk_length
                 ], axis=0)
-    else:
-        future_feats = None
 
     # convert static covariates
     if series.has_static_covariates:
@@ -438,7 +430,7 @@ ort_inputs = {
 ort_outs = ort_session.run(None, ort_inputs)
 ```
 
-Note that the forecasts might be slightly different due to rounding errors.
+Note that the forecasts might be slightly different due to rounding errors. Also, due to its specificities, `RNNModel` requires different pre-processing of the series to obtain the input arrays (notably because of `training_length`).
 
 ### Callbacks
 
