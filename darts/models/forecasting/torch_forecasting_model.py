@@ -2621,13 +2621,6 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_predict_sample(self, predict_sample: tuple):
         _basic_compare_sample(self.train_sample, predict_sample)
 
-    def _verify_past_future_covariates(self, past_covariates, future_covariates):
-        raise_if_not(
-            future_covariates is None,
-            "Some future_covariates have been provided to a PastCovariates model. These models "
-            "support only past_covariates.",
-        )
-
     @property
     def _model_encoder_settings(
         self,
@@ -2720,13 +2713,6 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _verify_predict_sample(self, predict_sample: tuple):
         _basic_compare_sample(self.train_sample, predict_sample)
-
-    def _verify_past_future_covariates(self, past_covariates, future_covariates):
-        raise_if_not(
-            past_covariates is None,
-            "Some past_covariates have been provided to a PastCovariates model. These models "
-            "support only future_covariates.",
-        )
 
     @property
     def _model_encoder_settings(
@@ -2822,13 +2808,6 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_predict_sample(self, predict_sample: tuple):
         _basic_compare_sample(self.train_sample, predict_sample)
 
-    def _verify_past_future_covariates(self, past_covariates, future_covariates):
-        raise_if_not(
-            past_covariates is None,
-            "Some past_covariates have been provided to a DualCovariates Torch model. These models "
-            "support only future_covariates.",
-        )
-
     @property
     def _model_encoder_settings(
         self,
@@ -2922,10 +2901,6 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _verify_predict_sample(self, predict_sample: tuple):
         _mixed_compare_sample(self.train_sample, predict_sample)
-
-    def _verify_past_future_covariates(self, past_covariates, future_covariates):
-        # both covariates are supported; do nothing
-        pass
 
     @property
     def _model_encoder_settings(
