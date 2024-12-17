@@ -704,6 +704,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             path = self._default_save_path() + ".onnx"
 
         if not input_sample:
+            # last dimension in train_sample_shape is the expected target
             mock_batch = tuple(
                 torch.rand((1,) + shape, dtype=self.model.dtype) if shape else None
                 for shape in self.model.train_sample_shape[:-1]
@@ -716,8 +717,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 else None
                 for tensor in input_sample
             )
-        # TODO: define input names, depending on the class of the model
-        self.model.to_onnx(file_path=path, input_sample=(input_sample,), **kwargs)
+
+        # torch models necessarily use historic target values as features in current implementation
+        input_names = ["x_past"]
+        if self._uses_future_covariates:
+            input_names.append("x_future")
+        if self._uses_static_covariates:
+            input_names.append("x_static")
+
+        self.model.to_onnx(
+            file_path=path,
+            input_sample=(input_sample,),
+            input_names=input_names,
+            **kwargs,
+        )
 
     @random_method
     def fit(

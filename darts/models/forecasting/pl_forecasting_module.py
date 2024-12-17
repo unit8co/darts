@@ -652,7 +652,20 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
         tuple
             ``(x_past, x_static)`` the input/past and output/future chunks.
         """
-        past_target, past_covariates, static_covariates = input_batch
+        # because of future past covariates, the batch shape is different during training and prediction
+        if len(input_batch) == 3:
+            (
+                past_target,
+                past_covariates,
+                static_covariates,
+            ) = input_batch
+        else:
+            (
+                past_target,
+                past_covariates,
+                future_past_covariates,
+                static_covariates,
+            ) = input_batch
         # Currently all our PastCovariates models require past target and covariates concatenated
         return (
             (
@@ -812,7 +825,6 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             future_covariates,
             static_covariates,
         ) = input_batch
-        dim_variable = 2
 
         x_past = torch.cat(
             [
@@ -824,7 +836,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
                 ]
                 if tensor is not None
             ],
-            dim=dim_variable,
+            dim=2,
         )
         return x_past, future_covariates, static_covariates
 
