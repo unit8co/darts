@@ -22,6 +22,7 @@ We assume that you already know about covariates in Darts. If you're new to the 
       - [Manual saving / loading](#manual-saving--loading)
       - [Train & save on GPU, load on CPU](#trainingsaving-on-gpu-and-loading-on-cpu)
       - [Load pre-trained model for fine-tuning](#re-training-or-fine-tuning-a-pre-trained-model)
+      - [Exporting model to ONNX format for inference](#exporting-model-to-ONNX-format-for-inference)
     - [Callbacks](#callbacks)
       - [Early Stopping](#example-with-early-stopping)
       - [Custom Callback](#example-of-custom-callback-to-store-losses)
@@ -349,6 +350,95 @@ model_finetune = SomeTorchForecastingModel(...,  # use identical parameters & va
 # load the weights from a manual save
 model_finetune.load_weights("/your/path/to/save/model.pt")
 ```
+
+#### Exporting model to ONNX format for inference
+
+It is also possible to export the model weights to the ONNX format to run inference in a lightweight environment. This example assumes that the model is trained using a future covariates that extends far enough into the future. Note that the user must align and slice the series manually and it will not be possible to forecast `n > output_chunk_length` without implementing the auto-regression logic
+
+```python
+model = SomeTorchForecastingModel(...)
+model.fit(...)
+
+# make sure to have onnx installed
+onnx_filename = "example_onnx.onnx"
+model.to_onnx(onnx_filename, export_params=True)
+```
+
+Now, to load the model and predict steps after the end of the series:
+
+```python
+import onnx
+import onnxruntime as ort
+
+def prepare_onnx_inputs(
+    model,
+    series: TimeSeries,
+    past_covariates : Optional[TimeSeries] = None,
+    future_covariates : Optional[TimeSeries] = None,
+    ) -> tuple[Optional[np.ndarray]]:
+    """Helper function to slice and concatenate the input features"""
+    past_feats, future_feats, static_feats = None, None, None
+    if forecast_start_position > 0:
+        raise_log(
+            ValueError("`forecast_start_position` must be <= 0"),
+            logger=logger
+        )
+
+    # convert and concatenate the historic features (target, past and future covariates)
+    past_feats = series.values()[-model.input_chunk_length:]
+    if past_covariates:
+        past_feats = np.concatenate(
+            [
+                past_feats,
+                past_covariates.values()[-model.input_chunk_length:]
+            ],
+            axis=1
+        )
+    if future_covariates:
+        past_feats = np.concatenate(
+            [
+                past_feats,
+                future_covariates.values()[-model.input_chunk_length:]
+            ],
+            axis=1
+        )
+    past_feats = np.expand_dims(past_feats, axis=0)
+
+    # convert the future covariates
+    if model._uses_future_covariates:
+        if future_covariates:
+            future_feats = np.expand_dims(future_covariates.values()[
+                len(series):len(series)+model.output_chunk_length
+                ], axis=0)
+    else:
+        future_feats = None
+
+    # convert static covariates
+    if series.has_static_covariates:
+        static_feats = np.expand_dims(series.static_covariates_values(), axis=0)
+
+    return past_feats, future_feats, static_feats
+
+onnx_model = onnx.load(onnx_filename)
+onnx.checker.check_model(onnx_model)
+ort_session = ort.InferenceSession(onnx_filename)
+
+# use helper function to extract the features from the series
+past_feats, future_feats, static_feats = prepare_input_feats(
+    model=model,
+    series=series,
+    past_covariates = None,
+    future_covariates = ts_future,
+)
+
+# extract only the features expected by the model
+ort_inputs = {
+    k:v for k, v in zip(['x_past', 'x_future', 'x_static'], [past_feats, future_feats, static_feats]) if k in [inp.name for inp in list(ort_session.get_inputs())]
+    }
+ort_outs = ort_session.run(None, ort_inputs)
+```
+
+Note that the forecasts might be slightly different due to rounding errors.
 
 ### Callbacks
 
