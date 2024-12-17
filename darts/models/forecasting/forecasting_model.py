@@ -31,12 +31,17 @@ import pandas as pd
 
 from darts import metrics
 from darts.dataprocessing.encoders import SequentialEncoder
+from darts.dataprocessing.pipeline import Pipeline
+from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.metrics.metrics import METRIC_TYPE
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _adjust_historical_forecasts_time_index,
+    _apply_data_transformers,
+    _apply_inverse_data_transformers,
+    _convert_data_transformers,
     _get_historical_forecast_predict_index,
     _get_historical_forecast_train_index,
     _historical_forecasts_general_checks,
@@ -646,6 +651,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
+        data_transformers: Optional[
+            dict[str, Union[BaseDataTransformer, Pipeline]]
+        ] = None,
         fit_kwargs: Optional[dict[str, Any]] = None,
         predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
@@ -739,6 +747,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             to the corresponding retrain function argument.
             Note: some models do require being retrained every time and do not support anything other
             than `retrain=True`.
+            Note: also controls the retraining of the `data_transformers`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not.
         last_points_only
@@ -757,6 +766,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
             Default: ``True``.
+        data_transformers
+            Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
+            (possibles keys; "series", "past_covariates", "future_covariates"). If provided, all input series must be
+            in the un-transformed space. For fittable transformer / pipeline:
+
+            - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
+            - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
+
+            The fitted transformer is used to transform the input during both training and prediction.
+            If the transformation is invertible, the forecasts will be inverse-transformed.
         fit_kwargs
             Additional arguments passed to the model `fit()` method.
         predict_kwargs
@@ -888,6 +907,23 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger,
             )
 
+        data_transformers = _convert_data_transformers(
+            data_transformers=data_transformers, copy=True
+        )
+
+        using_prefitted_transformers = False
+        # data transformer already fitted and can be directly applied to all the series
+        if data_transformers and not retrain:
+            using_prefitted_transformers = True
+            series, past_covariates, future_covariates = _apply_data_transformers(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                data_transformers=data_transformers,
+                max_future_cov_lag=model.extreme_lags[5],
+                fit_transformers=False,
+            )
+
         # remove unsupported arguments, raise exception if interference with historical forecasts logic
         fit_kwargs, predict_kwargs = _historical_forecasts_sanitize_kwargs(
             model=model,
@@ -906,7 +942,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 show_warnings=show_warnings,
             )
         ):
-            return model._optimized_historical_forecasts(
+            forecasts = model._optimized_historical_forecasts(
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
@@ -921,6 +957,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 show_warnings=show_warnings,
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 **predict_kwargs,
+            )
+
+            return _apply_inverse_data_transformers(
+                series=series, forecasts=forecasts, data_transformers=data_transformers
             )
 
         sequence_type_in = get_series_seq_type(series)
@@ -1057,6 +1097,20 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if train_length_ and len(train_series) > train_length_:
                     train_series = train_series[-train_length_:]
 
+                # when `retrain=True`, data transformers are also retrained between iterations to avoid data-leakage
+                # using a single series
+                if data_transformers and retrain:
+                    train_series, past_covariates_, future_covariates_ = (
+                        _apply_data_transformers(
+                            series=train_series,
+                            past_covariates=past_covariates_,
+                            future_covariates=future_covariates_,
+                            data_transformers=data_transformers,
+                            max_future_cov_lag=model.extreme_lags[5],
+                            fit_transformers=True,
+                        )
+                    )
+
                 # testing `retrain` to exclude `False` and `0`
                 if (
                     retrain
@@ -1120,7 +1174,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             length=1,
                             freq=series_.freq,
                         ),
-                        values=np.array([np.NaN]),
+                        values=np.array([np.nan]),
                     )
 
                 forecast = model._predict_wrapper(
@@ -1134,6 +1188,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     show_warnings=show_predict_warnings,
                     **predict_kwargs,
                 )
+
+                forecast = _apply_inverse_data_transformers(
+                    series=train_series,
+                    forecasts=forecast,
+                    data_transformers=data_transformers,
+                    series_idx=idx if using_prefitted_transformers else None,
+                )
+
                 show_predict_warnings = False
 
                 if forecast_components is None:
@@ -1199,6 +1261,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
+        data_transformers: Optional[
+            dict[str, Union[BaseDataTransformer, Pipeline]]
+        ] = None,
         metric_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
         fit_kwargs: Optional[dict[str, Any]] = None,
         predict_kwargs: Optional[dict[str, Any]] = None,
@@ -1302,6 +1367,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             to the corresponding retrain function argument.
             Note: some models do require being retrained every time and do not support anything other
             than `retrain=True`.
+            Note: also controls the retraining of the `data_transformers`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not.
         last_points_only
@@ -1328,6 +1394,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
             Default: ``True``.
+        data_transformers
+            Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
+            (possibles keys; "series", "past_covariates", "future_covariates"). If provided, all input series must be
+            in the un-transformed space. For fittable transformer / pipeline:
+
+            - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
+            - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
+
+            The fitted transformer is used to transform the input during both training and prediction.
+            If the transformation is invertible, the forecasts will be inverse-transformed.
+            Only effective when `historical_forecasts=None`.
         metric_kwargs
             Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'component_reduction'`
             for reducing the component wise metrics, seasonality `'m'` for scaled metrics, etc. Will pass arguments to
@@ -1409,6 +1486,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             show_warnings=show_warnings,
             predict_likelihood_parameters=predict_likelihood_parameters,
             enable_optimization=enable_optimization,
+            data_transformers=data_transformers,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
             sample_weight=sample_weight,
@@ -1504,13 +1582,24 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 kwargs["insample"] = series_gen
 
             errors.append(metric_f(series_gen, forecasts_list, **kwargs))
-        errors = np.array(errors)
+        try:
+            # multiple series can result in different number of forecasts; try if we can run it efficiently
+            errors = np.array(errors)
+            is_arr = True
+        except ValueError:
+            # otherwise, compute array later
+            is_arr = False
 
         # get errors for each input `series`
         backtest_list = []
         for i in range(len(cum_len) - 1):
             # errors_series with shape `(n metrics, n series specific historical forecasts, *)`
-            errors_series = errors[:, cum_len[i] : cum_len[i + 1]]
+            if is_arr:
+                errors_series = errors[:, cum_len[i] : cum_len[i + 1]]
+            else:
+                errors_series = np.array([
+                    errors_[cum_len[i] : cum_len[i + 1]] for errors_ in errors
+                ])
 
             if reduction is not None:
                 # shape `(n metrics, n forecasts, *)` -> `(n metrics, *)`
@@ -1553,6 +1642,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         verbose=False,
         n_jobs: int = 1,
         n_random_samples: Optional[Union[int, float]] = None,
+        data_transformers: Optional[
+            dict[str, Union[BaseDataTransformer, Pipeline]]
+        ] = None,
         fit_kwargs: Optional[dict[str, Any]] = None,
         predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, str]] = None,
@@ -1674,6 +1766,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             must be between `0` and the total number of parameter combinations.
             If a float, `n_random_samples` is the ratio of parameter combinations selected from the full grid and must
             be between `0` and `1`. Defaults to `None`, for which random selection will be ignored.
+        data_transformers
+            Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
+            (possibles keys; "series", "past_covariates", "future_covariates"). If provided, all input series must be
+            in the un-transformed space. For fittable transformer / pipeline:
+
+            - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
+            - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
+
+            The fitted transformer is used to transform the input during both training and prediction.
+            If the transformation is invertible, the forecasts will be inverse-transformed.
         fit_kwargs
             Additional arguments passed to the model `fit()` method.
         predict_kwargs
@@ -1739,6 +1841,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger,
             )
 
+        data_transformers = _convert_data_transformers(
+            data_transformers=data_transformers, copy=True
+        )
+
         if fit_kwargs is None:
             fit_kwargs = dict()
         if predict_kwargs is None:
@@ -1770,16 +1876,39 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
+                if data_transformers:
+                    series_, past_covariates_, future_covariates_ = (
+                        _apply_data_transformers(
+                            series=series,
+                            past_covariates=past_covariates,
+                            future_covariates=future_covariates,
+                            data_transformers=data_transformers,
+                            max_future_cov_lag=model.extreme_lags[5],
+                            fit_transformers=True,
+                        )
+                    )
+                else:
+                    series_ = series
+                    past_covariates_ = past_covariates
+                    future_covariates_ = future_covariates
+
                 model._fit_wrapper(
-                    series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
+                    series=series_,
+                    past_covariates=past_covariates_,
+                    future_covariates=future_covariates_,
                     sample_weight=sample_weight,
                     **fit_kwargs,
                 )
                 fitted_values = TimeSeries.from_times_and_values(
                     series.time_index, model.fitted_values
                 )
+                if data_transformers and "series" in data_transformers:
+                    fitted_values = _apply_inverse_data_transformers(
+                        series=series_,
+                        forecasts=fitted_values,
+                        data_transformers=data_transformers,
+                        series_idx=None,
+                    )
                 error = metric(series, fitted_values)
             elif val_series is None:  # expanding window mode
                 error = model.backtest(
@@ -1796,26 +1925,48 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     last_points_only=last_points_only,
                     verbose=verbose,
                     show_warnings=show_warnings,
+                    data_transformers=data_transformers,
                     fit_kwargs=fit_kwargs,
                     predict_kwargs=predict_kwargs,
                     sample_weight=sample_weight,
                 )
             else:  # split mode
+                if data_transformers:
+                    series_, past_covariates_, future_covariates_ = (
+                        _apply_data_transformers(
+                            series=series,
+                            past_covariates=past_covariates,
+                            future_covariates=future_covariates,
+                            data_transformers=data_transformers,
+                            max_future_cov_lag=model.extreme_lags[5],
+                            fit_transformers=True,
+                        )
+                    )
+                else:
+                    series_ = series
+                    past_covariates_ = past_covariates
+                    future_covariates_ = future_covariates
+
                 model._fit_wrapper(
-                    series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
+                    series=series_,
+                    past_covariates=past_covariates_,
+                    future_covariates=future_covariates_,
                     sample_weight=sample_weight,
                     **fit_kwargs,
                 )
                 pred = model._predict_wrapper(
                     n=len(val_series),
-                    series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
+                    series=series_,
+                    past_covariates=past_covariates_,
+                    future_covariates=future_covariates_,
                     num_samples=1,
                     verbose=verbose,
                     **predict_kwargs,
+                )
+                pred = _apply_inverse_data_transformers(
+                    series=series_,
+                    forecasts=pred,
+                    data_transformers=data_transformers,
                 )
                 error = metric(val_series, pred)
 
@@ -1856,6 +2007,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         enable_optimization: bool = True,
+        data_transformers: Optional[
+            dict[str, Union[BaseDataTransformer, Pipeline]]
+        ] = None,
         metric_kwargs: Optional[dict[str, Any]] = None,
         fit_kwargs: Optional[dict[str, Any]] = None,
         predict_kwargs: Optional[dict[str, Any]] = None,
@@ -1965,6 +2119,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             to the corresponding retrain function argument.
             Note: some models do require being retrained every time and do not support anything other
             than `retrain=True`.
+            Note: also controls the retraining of the `data_transformers`.
         last_points_only
             Whether to use the whole historical forecasts or only the last point of each forecast to compute the error.
         metric
@@ -1984,6 +2139,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
             Default: ``True``.
+        data_transformers
+            Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
+            (possibles keys; "series", "past_covariates", "future_covariates"). If provided, all input series must be
+            in the un-transformed space. For fittable transformer / pipeline:
+
+            - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
+            - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
+
+            The fitted transformer is used to transform the input during both training and prediction.
+            If the transformation is invertible, the forecasts will be inverse-transformed.
+            Only effective when `historical_forecasts=None`.
         metric_kwargs
             Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'m'` for scaled
             metrics, etc. Will pass arguments only if they are present in the corresponding metric signature. Ignores
@@ -2041,6 +2207,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             show_warnings=show_warnings,
             predict_likelihood_parameters=predict_likelihood_parameters,
             enable_optimization=enable_optimization,
+            data_transformers=data_transformers,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
             overlap_end=False,
@@ -2053,6 +2220,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             last_points_only=last_points_only,
             metric=metric,
             reduction=None,
+            data_transformers=data_transformers,
             metric_kwargs=metric_kwargs,
         )
 
@@ -2632,6 +2800,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
+        data_transformers: Optional[dict[str, BaseDataTransformer]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         logger.warning(
             "`optimized historical forecasts is not available for this model, use `historical_forecasts` instead."

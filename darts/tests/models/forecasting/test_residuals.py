@@ -150,7 +150,8 @@ class TestResiduals:
     @pytest.mark.parametrize(
         "config",
         itertools.product(
-            [True, False],
+            [True, False],  # is univariate
+            [True, False],  # same lengths
             [
                 (metrics.err, ((0.0, 0.0), (-1.0, -2.0))),
                 (metrics.ape, ((0.0, 0.0), (100.0, 100.0))),
@@ -159,10 +160,12 @@ class TestResiduals:
     )
     def test_output_multi_series_hfc_lpo_true(self, config):
         """Tests residuals based on historical forecasts generated on multiple `series` with last_points_only=True"""
-        is_univariate, (metric, score_exp) = config
+        is_univariate, same_lengths, (metric, score_exp) = config
         n_ts = 10
         y = ct(value=1.0, length=n_ts)
         hfc = ct(value=2.0, length=n_ts)
+        if not same_lengths:
+            y = y.append_values([1.0])
         if not is_univariate:
             y = y.stack(y + 1.0)
             hfc = hfc.stack(hfc + 2.0)
@@ -173,8 +176,9 @@ class TestResiduals:
         # expected residuals values of shape (n time steps, n components, n samples=1) per forecast
         scores_exp = []
         for i in range(len(hfc)):
+            num_fcs = len(hfc[i])
             scores_exp.append(
-                np.array([score_exp[i][:n_comps]] * 10).reshape(n_ts, -1, 1)
+                np.array([score_exp[i][:n_comps]] * num_fcs).reshape(num_fcs, -1, 1)
             )
 
         model = NaiveDrift()
@@ -208,7 +212,8 @@ class TestResiduals:
     @pytest.mark.parametrize(
         "config",
         itertools.product(
-            [True, False],
+            [True, False],  # is univariate
+            [True, False],  # same lengths
             [
                 (metrics.err, ((0.0, 0.0), (-1.0, -2.0))),
                 (metrics.ape, ((0.0, 0.0), (100.0, 100.0))),
@@ -219,10 +224,12 @@ class TestResiduals:
         """Tests residuals based on historical forecasts generated on multiple `series` with
         last_points_only=False.
         """
-        is_univariate, (metric, score_exp) = config
+        is_univariate, same_lengths, (metric, score_exp) = config
         n_ts = 10
         y = ct(value=1.0, length=n_ts)
         hfc = ct(value=2.0, length=n_ts)
+        if not same_lengths:
+            y = y.append_values([1.0])
         if not is_univariate:
             y = y.stack(y + 1.0)
             hfc = hfc.stack(hfc + 2.0)
@@ -233,8 +240,9 @@ class TestResiduals:
         # expected residuals values of shape (n time steps, n components, n samples=1) per forecast
         scores_exp = []
         for i in range(len(hfc)):
+            num_fcs = len(hfc[i][0])
             scores_exp.append(
-                np.array([score_exp[i][:n_comps]] * 10).reshape(n_ts, -1, 1)
+                np.array([score_exp[i][:n_comps]] * num_fcs).reshape(num_fcs, -1, 1)
             )
 
         model = NaiveDrift()

@@ -1,15 +1,22 @@
-import copy
 import itertools
 import logging
+from copy import deepcopy
 from itertools import product
+from typing import Optional
 
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.preprocessing import MaxAbsScaler
 
 import darts
 from darts import TimeSeries, concatenate
-from darts.dataprocessing.transformers import Scaler
+from darts.dataprocessing.pipeline import Pipeline
+from darts.dataprocessing.transformers import (
+    FittableDataTransformer,
+    InvertibleDataTransformer,
+    Scaler,
+)
 from darts.datasets import AirPassengersDataset
 from darts.models import (
     ARIMA,
@@ -21,9 +28,13 @@ from darts.models import (
     NaiveSeasonal,
     NotImportedModule,
 )
+from darts.models.forecasting.forecasting_model import (
+    LocalForecastingModel,
+)
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import n_steps_between
 from darts.utils import timeseries_generation as tg
+from darts.utils.ts_utils import SeriesType, get_series_seq_type
 
 if TORCH_AVAILABLE:
     import torch
@@ -44,6 +55,7 @@ if TORCH_AVAILABLE:
     )
     from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 
+models = [LinearRegressionModel, NaiveDrift]
 models_reg_no_cov_cls_kwargs = [(LinearRegressionModel, {"lags": 8}, {}, (8, 1))]
 if not isinstance(CatBoostModel, NotImportedModule):
     models_reg_no_cov_cls_kwargs.append((
@@ -111,6 +123,8 @@ if TORCH_AVAILABLE:
     OUT_LEN = 12
 
     NB_EPOCH = 1
+
+    models += [NLinearModel]
 
     models_torch_cls_kwargs = [
         (
@@ -380,6 +394,11 @@ class TestHistoricalforecast:
 
     # slightly longer to not affect the last predictable timestamp
     ts_covs = tg.gaussian_timeseries(length=30, start=start_ts)
+
+    #
+    sine_univariate1 = tg.sine_timeseries(length=50) * 2 + 1.5
+    sine_univariate2 = tg.sine_timeseries(length=50, value_phase=1.5705) * 5 + 1.5
+    sine_univariate3 = tg.sine_timeseries(length=50, value_phase=0.1963125) * -9 + 1.5
 
     @staticmethod
     def create_model(ocl, use_ll=True, model_type="regression", n_epochs=1, **kwargs):
@@ -1064,7 +1083,7 @@ class TestHistoricalforecast:
             start_format_msg = "time "
 
         if use_torch_model:
-            kwargs = copy.deepcopy(tfm_kwargs)
+            kwargs = deepcopy(tfm_kwargs)
             kwargs["pl_trainer_kwargs"]["fast_dev_run"] = True
             # use ocl=2 to have same `min_train_length` as the regression model
             model = BlockRNNModel(
@@ -1239,16 +1258,8 @@ class TestHistoricalforecast:
                         stride=stride,
                         forecast_horizon=forecast_horizon,
                     )
-                    # pack the output to generalize the tests
-                    if last_points_only:
-                        hist_fct = [hist_fct]
-                        opti_hist_fct = [opti_hist_fct]
 
-                    for fct, opti_fct in zip(hist_fct, opti_hist_fct):
-                        assert (fct.time_index == opti_fct.time_index).all()
-                        np.testing.assert_array_almost_equal(
-                            fct.all_values(), opti_fct.all_values()
-                        )
+                    self.helper_compare_hf(hist_fct, opti_hist_fct)
 
     @pytest.mark.parametrize(
         "config",
@@ -2629,6 +2640,429 @@ class TestHistoricalforecast:
             assert np.abs(mean_opt - mean_no_opt).max() < 0.1
             if mean_opt_q is not None:
                 assert np.abs(mean_opt - mean_opt_q.values()).max() < 0.1
+
+    def helper_manual_scaling_prediction(
+        self,
+        model,
+        ts: dict[str, TimeSeries],
+        hf_scaler: dict[str, Scaler],
+        retrain: bool,
+        end_idx: int,
+        ocl: int,
+        series_idx: Optional[int] = None,
+    ):
+        ts_copy = deepcopy(ts)
+        hf_scaler_copy = deepcopy(hf_scaler)
+        for ts_name in hf_scaler_copy:
+            # train the fittable scaler without leaking data
+            if isinstance(hf_scaler_copy[ts_name], FittableDataTransformer):
+                if ts_name == "series" or ts_name == "past_covariates":
+                    tmp_ts = ts_copy[ts_name][:end_idx]
+                else:
+                    # for future covariates, the scaler may access future information
+                    tmp_ts = ts_copy[ts_name][: end_idx + max(0, model.extreme_lags[5])]
+                if retrain:
+                    hf_scaler_copy[ts_name].fit(tmp_ts)
+            # apply the scaler on the whole series
+            ts_copy[ts_name] = hf_scaler_copy[ts_name].transform(
+                ts_copy[ts_name], series_idx=series_idx
+            )
+
+        series = ts_copy.pop("series")[:end_idx]
+        if retrain:
+            # completly reset model for reproducibility of the predict()
+            model = model.untrained_model()
+            model.fit(series=series, **ts_copy)
+
+        # local model does not support the "series" argument in predict()
+        if isinstance(model, LocalForecastingModel):
+            pred = model.predict(n=ocl, **ts_copy)
+        else:
+            pred = model.predict(n=ocl, series=series, **ts_copy)
+
+        # scale back the forecasts
+        if isinstance(hf_scaler_copy.get("series"), InvertibleDataTransformer):
+            return hf_scaler_copy["series"].inverse_transform(
+                pred, series_idx=series_idx
+            )
+        else:
+            return pred
+
+    def helper_compare_hf(self, ts_A, ts_B):
+        """Helper method to compare all the entries between two historical forecasts"""
+        type_ts_a = get_series_seq_type(ts_A)
+        type_ts_b = get_series_seq_type(ts_B)
+
+        assert type_ts_a == type_ts_b
+        assert len(ts_A) == len(ts_B)
+
+        if type_ts_a == SeriesType.SINGLE:
+            ts_A = [[ts_A]]
+            ts_B = [[ts_B]]
+        elif type_ts_a == SeriesType.SEQ:
+            ts_A = [ts_A]
+            ts_B = [ts_B]
+
+        for ts_a, ts_b in zip(ts_A, ts_B):
+            for ts_a_, ts_b_ in zip(ts_a, ts_b):
+                assert ts_a_.time_index.equals(ts_b_.time_index)
+                np.testing.assert_almost_equal(
+                    ts_a_.all_values(),
+                    ts_b_.all_values(),
+                )
+
+    def helper_get_model_params(
+        self, model_cls, series: dict, output_chunk_length: int
+    ) -> dict:
+        model_params = {}
+        if TORCH_AVAILABLE and issubclass(model_cls, NLinearModel):
+            model_params["input_chunk_length"] = 5
+            model_params["output_chunk_length"] = output_chunk_length
+            model_params["n_epochs"] = 1
+            model_params["random_state"] = 123
+            model_params = {
+                **model_params,
+                **tfm_kwargs,
+            }
+        elif issubclass(model_cls, LinearRegressionModel):
+            model_params["lags"] = 5
+            model_params["output_chunk_length"] = output_chunk_length
+            if "past_covariates" in series:
+                model_params["lags_past_covariates"] = 4
+            if "future_covariates" in series:
+                model_params["lags_future_covariates"] = [-3, -2]
+
+        return model_params
+
+    @pytest.mark.parametrize(
+        "params",
+        product(
+            [
+                (
+                    {
+                        "series": sine_univariate1 - 11,
+                    },
+                    {"series": Scaler(scaler=MaxAbsScaler())},
+                ),
+                (
+                    {
+                        "series": sine_univariate3 + 2,
+                        "past_covariates": sine_univariate1 * 3 + 3,
+                    },
+                    {"past_covariates": Scaler()},
+                ),
+                (
+                    {
+                        "series": sine_univariate3 + 5,
+                        "future_covariates": sine_univariate1 * (-4) + 3,
+                    },
+                    {"future_covariates": Scaler(scaler=MaxAbsScaler())},
+                ),
+                (
+                    {
+                        "series": sine_univariate3 * 2 + 7,
+                        "past_covariates": sine_univariate1 + 2,
+                        "future_covariates": sine_univariate2 + 3,
+                    },
+                    {"series": Scaler(), "past_covariates": Scaler()},
+                ),
+            ],
+            [True, False],  # retrain
+            [True, False],  # last point only
+            models,
+        ),
+    )
+    def test_historical_forecasts_with_scaler(self, params):
+        """Apply manually the scaler on the target and covariates to compare with automatic scaling for both
+        optimized and un-optimized historical forecasts
+        """
+
+        (ts, hf_scaler), retrain, last_points_only, model_cls = params
+        ocl = 6
+        model_params = self.helper_get_model_params(model_cls, ts, ocl)
+        model = model_cls(**model_params)
+
+        # local models do not support historical forecast with retrain=False
+        if isinstance(model, LocalForecastingModel) and not retrain:
+            return
+        # skip test when model does not support the covariate
+        if ("past_covariates" in ts and not model.supports_past_covariates) or (
+            "future_covariates" in ts and not model.supports_future_covariates
+        ):
+            return
+
+        # pre-train on the entire unscaled target, overfitting/accuracy is not important
+        if not retrain:
+            model.fit(**ts)
+            for ts_name in hf_scaler.keys():
+                hf_scaler[ts_name].fit(ts[ts_name])
+
+        hf_args = {
+            "start": -ocl - 1,  # in order to get 2 forecasts since stride=1
+            "start_format": "position",
+            "forecast_horizon": ocl,
+            "stride": 1,
+            "retrain": retrain,
+            "overlap_end": False,
+            "last_points_only": last_points_only,
+            "verbose": False,
+            "enable_optimization": False,
+        }
+        # un-transformed series, scaler applied within the method
+        hf_auto = model.historical_forecasts(
+            **ts,
+            **hf_args,
+            data_transformers=hf_scaler,
+        )
+
+        hf_auto_pipeline = model.historical_forecasts(
+            **ts,
+            **hf_args,
+            data_transformers={
+                key_: Pipeline([val_]) for key_, val_ in hf_scaler.items()
+            },
+        )
+
+        # verify that the results are identical when using single Scaler or a Pipeline
+        assert len(hf_auto) == len(hf_auto_pipeline) == 2
+        self.helper_compare_hf(hf_auto, hf_auto_pipeline)
+
+        # optimized historical forecast since horizon_length <= ocl and retrain=False
+        if not retrain:
+            opti_hf_args = {**hf_args, **{"enable_optimization": True}}
+            assert opti_hf_args["enable_optimization"]
+
+            opti_hf_auto = model.historical_forecasts(
+                **ts,
+                **opti_hf_args,
+                data_transformers=hf_scaler,
+            )
+            assert len(opti_hf_auto) == len(hf_auto) == 2
+            self.helper_compare_hf(hf_auto, opti_hf_auto)
+
+        # for 2nd to last historical forecast
+        manual_hf_0 = self.helper_manual_scaling_prediction(
+            model, ts, hf_scaler, retrain, -ocl - 1, ocl
+        )
+        # for last historical forecast
+        manual_hf_1 = self.helper_manual_scaling_prediction(
+            model, ts, hf_scaler, retrain, -ocl, ocl
+        )
+
+        # verify that automatic and manual pre-scaling produce identical forecasts
+        if last_points_only:
+            tmp_ts = TimeSeries.from_times_and_values(
+                times=manual_hf_1.time_index[-2:],
+                values=np.array([manual_hf_0.values()[-1], manual_hf_1.values()[-1]]),
+                columns=manual_hf_0.components,
+            )
+            self.helper_compare_hf(tmp_ts, hf_auto)
+        else:
+            self.helper_compare_hf(hf_auto, [manual_hf_0, manual_hf_1])
+
+    def test_historical_forecasts_with_scaler_errors(self, caplog):
+        """Check that the appropriate exception is raised when providing incorrect parameters or the expected
+        warning is display in the corner cases."""
+        ocl = 2
+        hf_args = {
+            "start": -ocl - 1,
+            "start_format": "position",
+            "forecast_horizon": ocl,
+            "verbose": False,
+        }
+        model = LinearRegressionModel(lags=5, output_chunk_length=ocl)
+        model.fit(self.sine_univariate1)
+
+        # retrain=False and unfitted data transformers
+        with pytest.raises(ValueError) as err:
+            model.historical_forecasts(
+                **hf_args,
+                series=self.sine_univariate1,
+                data_transformers={"series": Scaler()},
+                retrain=False,
+            )
+        assert str(err.value).startswith(
+            "All the fittable entries in `data_transformers` must already be fitted when `retrain=False`, the "
+        )
+
+        # retrain=False, multiple series not matching the fitted data transformers dimensions
+        with pytest.raises(ValueError) as err:
+            model.historical_forecasts(
+                **hf_args,
+                series=[self.sine_univariate1] * 2,
+                data_transformers={
+                    "series": Scaler(global_fit=False).fit([self.sine_univariate1] * 3)
+                },
+                retrain=False,
+            )
+        assert str(err.value).startswith(
+            "When multiple series are provided, their number should match the number of "
+            "`TimeSeries` used to fit the data transformers `n=3`"
+        )
+
+        # retrain=True, multiple series and unfitted data transformers with global_fit=True
+        expected_warning = (
+            "When `retrain=True` and multiple series are provided, the fittable `data_transformers` "
+            "are trained on each series independently (`global_fit=True` will be ignored)."
+        )
+        with caplog.at_level(logging.WARNING):
+            model.historical_forecasts(
+                **hf_args,
+                series=[self.sine_univariate1, self.sine_univariate2],
+                data_transformers={"series": Scaler(global_fit=True)},
+                retrain=True,
+            )
+            assert expected_warning in caplog.text
+
+        # data transformer (global_fit=False) prefitted on several series but only series is forecasted
+        expected_warning = (
+            "Provided only a single series, but at least one of the `data_transformers` "
+            "that use `global_fit=False` was fitted on multiple `TimeSeries`."
+        )
+        with caplog.at_level(logging.WARNING):
+            model.historical_forecasts(
+                **hf_args,
+                series=[self.sine_univariate2],
+                data_transformers={
+                    "series": Scaler(global_fit=False).fit([
+                        self.sine_univariate1,
+                        self.sine_univariate2,
+                    ])
+                },
+                retrain=False,
+            )
+            assert expected_warning in caplog.text
+
+    @pytest.mark.parametrize("params", product([True, False], [True, False]))
+    def test_historical_forecasts_with_scaler_multiple_series(self, params):
+        """Verify that the scaling in historical forecasts behave as expected when multiple series are used.
+
+        The difference in behavior is caused by the difference in number of parameters when a scaler is fitted on
+        a single series/multiple series with global_fit=True or with multplie series with global_fit=False.
+        """
+        retrain, global_fit = params
+        # due to either of the argument, the scaler will have only one set of parameters
+        unique_param_entry = retrain or global_fit
+        ocl = 2
+        hf_args = {
+            "start": -ocl,
+            "start_format": "position",
+            "forecast_horizon": ocl,
+            "last_points_only": False,
+            "retrain": retrain,
+            "verbose": False,
+        }
+        series = [self.sine_univariate1, self.sine_univariate2, self.sine_univariate3]
+
+        model = LinearRegressionModel(lags=5, output_chunk_length=ocl)
+        model.fit(series)
+
+        def get_scaler(fit: bool):
+            if fit:
+                return Scaler(global_fit=global_fit).fit(series)
+            else:
+                return Scaler(global_fit=global_fit)
+
+        # using all the series used to fit the scaler
+        hf = model.historical_forecasts(
+            **hf_args,
+            series=series,
+            data_transformers={"series": get_scaler(fit=True)},
+        )
+        manual_hf_0 = self.helper_manual_scaling_prediction(
+            model,
+            {"series": series[0]},
+            {"series": get_scaler(fit=True)},
+            retrain,
+            -ocl,
+            ocl,
+            series_idx=None if unique_param_entry else 0,
+        )
+        manual_hf_1 = self.helper_manual_scaling_prediction(
+            model,
+            {"series": series[1]},
+            {"series": get_scaler(fit=True)},
+            retrain,
+            -ocl,
+            ocl,
+            series_idx=None if unique_param_entry else 1,
+        )
+        manual_hf_2 = self.helper_manual_scaling_prediction(
+            model,
+            {"series": series[2]},
+            {"series": get_scaler(fit=True)},
+            retrain,
+            -ocl,
+            ocl,
+            series_idx=None if unique_param_entry else 2,
+        )
+        self.helper_compare_hf(hf, [[manual_hf_0], [manual_hf_1], [manual_hf_2]])
+
+        # scaler fit on 3 series, historical forecast only over the first one
+        hf = model.historical_forecasts(
+            **hf_args,
+            series=series[0],
+            data_transformers={"series": get_scaler(fit=True)},
+        )
+        manual_hf_0 = self.helper_manual_scaling_prediction(
+            model,
+            {"series": series[0]},
+            {"series": get_scaler(fit=True)},
+            retrain,
+            -ocl,
+            ocl,
+        )
+        self.helper_compare_hf(hf, [manual_hf_0])
+
+        # scaler fit on 3 series, historical forecast only over the last one, causing a mismatch
+        hf = model.historical_forecasts(
+            **hf_args,
+            series=series[2],
+            data_transformers={"series": get_scaler(fit=True)},
+        )
+        # note that the series_idx is not specified, only the first transformer is used (instead of the 3rd)
+        manual_hf_2 = self.helper_manual_scaling_prediction(
+            model,
+            {"series": series[2]},
+            {"series": get_scaler(fit=True)},
+            retrain,
+            -ocl,
+            ocl,
+        )
+        self.helper_compare_hf(hf, [manual_hf_2])
+
+        # data_transformers are not pre-fitted
+        if retrain:
+            hf = model.historical_forecasts(
+                **hf_args,
+                series=series,
+                data_transformers={"series": get_scaler(fit=False)},
+            )
+            manual_hf_0 = self.helper_manual_scaling_prediction(
+                model,
+                {"series": series[0]},
+                {"series": get_scaler(fit=False)},
+                retrain,
+                -ocl,
+                ocl,
+            )
+            manual_hf_1 = self.helper_manual_scaling_prediction(
+                model,
+                {"series": series[1]},
+                {"series": get_scaler(fit=False)},
+                retrain,
+                -ocl,
+                ocl,
+            )
+            manual_hf_2 = self.helper_manual_scaling_prediction(
+                model,
+                {"series": series[2]},
+                {"series": get_scaler(fit=False)},
+                retrain,
+                -ocl,
+                ocl,
+            )
+            self.helper_compare_hf(hf, [[manual_hf_0], [manual_hf_1], [manual_hf_2]])
 
     @pytest.mark.parametrize(
         "model_type,enable_optimization",

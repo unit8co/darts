@@ -12,9 +12,13 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 - Improvements to `ForecastingModel`: Improved `start` handling for historical forecasts, backtest, residuals, and gridsearch. If `start` is not within the trainable / forecastable points, uses the closest valid start point that is a round multiple of `stride` ahead of start. Raises a ValueError, if no valid start point exists. This guarantees that all historical forecasts are `n * stride` points away from start, and will simplify many downstream tasks. [#2560](https://github.com/unit8co/darts/issues/2560) by [Dennis Bader](https://github.com/dennisbader).
+- Added `data_transformers` argument to `historical_forecasts`, `backtest`, `residuals`, and `gridsearch` that allow to automatically apply `DataTransformer` and/or `Pipeline` to the input series without data-leakage (fit on historic window of input series, transform the input series, and inverse transform the forecasts). [#2529](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou) and [Jan Fidor](https://github.com/JanFidor)
+- Added `series_idx` argument to `DataTransformer` that allows users to use only a subset of the transformers when `global_fit=False` and severals series are used. [#2529](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou)
+- Updated the Documentation URL of `Statsforecast` models. [#2610](https://github.com/unit8co/darts/pull/2610) by [He Weilin](https://github.com/cnhwl).
 
 **Fixed**
 
+- Fixed a bug which raised an error when computing residuals (or backtest with "per time step" metrics) on multiple series with corresponding historical forecasts of different lengths. [#2604](https://github.com/unit8co/darts/pull/2604) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when using `darts.utils.data.tabularization.create_lagged_component_names()` with target `lags=None`, that did not return any lagged target label component names. [#2576](https://github.com/unit8co/darts/pull/2576) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when using `num_samples > 1` with a deterministic regression model and the optimized `historical_forecasts()` method, an exception was not raised. [#2576](https://github.com/unit8co/darts/pull/2588) by [Antoine Madrona](https://github.com/madtoinou).
 
@@ -31,6 +35,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - fixed failing docker deployment
   - removed `gradle` dependency in favor of native GitHub action plugins.
 - Updated ruff to v0.7.2 and target-version to python39, also fixed various typos [#2589](https://github.com/unit8co/darts/pull/2589) by [Greg DeVosNouri](https://github.com/gdevos010) and [Antoine Madrona](https://github.com/madtoinou).
+- Replaced the deprecated `torch.nn.utils.weight_norm` function with `torch.nn.utils.parametrizations.weight_norm` [#2593](https://github.com/unit8co/darts/pull/2593) by [Saeed Foroutan](https://github.com/SaeedForoutan).
 
 ## [0.31.0](https://github.com/unit8co/darts/tree/0.31.0) (2024-10-13)
 
@@ -40,7 +45,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Improvements to `metrics`:
   - Added support for computing metrics on one or multiple quantiles `q`, either from probabilistic or quantile forecasts. [#2530](https://github.com/unit8co/darts/pull/2530) by [Dennis Bader](https://github.com/dennisbader).
-  - Added quantile interval metrics `miw` (Mean Interval Width, time aggregated) and `iw` (Interval Width, per time step / non-aggregated) which compute the width of quantile intervals `q_intervals` (expected to be a tuple or sequence of tuples with (lower quantile, upper quantile). [#2530](https://github.com/unit8co/darts/pull/2530) by [Dennis Bader](https://github.com/dennisbader).
+  - Added quantile interval metrics `miw` (Mean Interval Width, time aggregated) and `iw` (Interval Width, per time step / non-aggregated) which compute the width of quantile intervals `q_intervals` (expected to be a tuple or sequence of tuples with (lower quantile, upper quantile)). [#2530](https://github.com/unit8co/darts/pull/2530) by [Dennis Bader](https://github.com/dennisbader).
 - Improvements to `backtest()` and `residuals()`:
   - Added support for computing backtest and residuals on one or multiple quantiles `q` in the `metric_kwargs`, either from probabilistic or quantile forecasts. [#2530](https://github.com/unit8co/darts/pull/2530) by [Dennis Bader](https://github.com/dennisbader).
   - Added support for parameters `enable_optimization` and `predict_likelihood_parameters`. [#2530](https://github.com/unit8co/darts/pull/2530) by [Dennis Bader](https://github.com/dennisbader).
