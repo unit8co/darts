@@ -38,6 +38,7 @@ def create_lagged_data(
     is_training: bool = True,
     concatenate: bool = True,
     sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
+    stride: int = 1,
     show_warnings: bool = True,
 ) -> tuple[
     ArrayOrArraySequence,
@@ -220,6 +221,8 @@ def create_lagged_data(
         `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
         computed globally based on the length of the longest series in `series`. Then for each series, the weights
         are extracted from the end of the global weights. This gives a common time weighting across all series.
+    stride
+        The number of time steps between consecutive entries.
     show_warnings
         Whether to show warnings.
 
@@ -357,6 +360,7 @@ def create_lagged_data(
                 multi_models=multi_models,
                 check_inputs=check_inputs,
                 is_training=is_training,
+                stride=stride,
                 show_warnings=show_warnings,
             )
         else:
@@ -374,6 +378,7 @@ def create_lagged_data(
                 multi_models=multi_models,
                 check_inputs=check_inputs,
                 is_training=is_training,
+                stride=stride,
                 show_warnings=show_warnings,
             )
         X_i, last_static_covariates_shape = add_static_covariates_to_lagged_data(
@@ -418,6 +423,7 @@ def create_lagged_training_data(
     check_inputs: bool = True,
     use_moving_windows: bool = True,
     concatenate: bool = True,
+    stride: int = 1,
     sample_weight: Optional[Union[TimeSeries, str]] = None,
 ) -> tuple[
     ArrayOrArraySequence,
@@ -497,6 +503,8 @@ def create_lagged_training_data(
         when `Sequence[TimeSeries]` are provided, then `X` and `y` will be arrays created by concatenating all
         feature/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
+    stride
+        The number of time steps between consecutive entries.
     sample_weight
         Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
         per label (each step in `output_chunk_length`), and per component.
@@ -559,6 +567,7 @@ def create_lagged_training_data(
         use_moving_windows=use_moving_windows,
         is_training=True,
         concatenate=concatenate,
+        stride=stride,
         sample_weight=sample_weight,
     )
 
@@ -576,6 +585,7 @@ def create_lagged_prediction_data(
     check_inputs: bool = True,
     use_moving_windows: bool = True,
     concatenate: bool = True,
+    stride: int = 1,
     show_warnings: bool = True,
 ) -> tuple[ArrayOrArraySequence, Sequence[pd.Index]]:
     """
@@ -641,6 +651,8 @@ def create_lagged_prediction_data(
         `Sequence[TimeSeries]` are provided, then `X` will be an array created by concatenating all feature
         arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
+    stride
+        The number of time steps between consecutive entries.
     show_warnings
         Whether to show warnings.
 
@@ -683,6 +695,7 @@ def create_lagged_prediction_data(
         use_moving_windows=use_moving_windows,
         is_training=False,
         concatenate=concatenate,
+        stride=stride,
         show_warnings=show_warnings,
     )
     return X, times
@@ -971,6 +984,7 @@ def _create_lagged_data_by_moving_window(
     multi_models: bool,
     check_inputs: bool,
     is_training: bool,
+    stride: int,
     show_warnings: bool = True,
 ) -> tuple[np.ndarray, Optional[np.ndarray], pd.Index, Optional[np.ndarray]]:
     """
@@ -1007,6 +1021,11 @@ def _create_lagged_data_by_moving_window(
         if all(series_and_lags_not_specified):
             raise_log(
                 ValueError("Must specify at least one series-lags pair."), logger=logger
+            )
+        if not isinstance(stride, int) and stride < 1:
+            raise_log(
+                ValueError("`stride` must be a positive integer greater than 1."),
+                logger=logger,
             )
     sample_weight_vals = _extract_sample_weight(sample_weight, target_series)
 
@@ -1091,7 +1110,7 @@ def _create_lagged_data_by_moving_window(
                 first_window_start_idx : first_window_end_idx + num_samples - 1, :, :
             ]
             windows = strided_moving_window(
-                x=vals, window_len=window_len, stride=1, axis=0, check_inputs=False
+                x=vals, window_len=window_len, stride=stride, axis=0, check_inputs=False
             )
 
             # Within each window, the `-1` indexed value (i.e. the value at the very end of
@@ -1135,7 +1154,7 @@ def _create_lagged_data_by_moving_window(
             windows = strided_moving_window(
                 x=vals,
                 window_len=output_chunk_length,
-                stride=1,
+                stride=stride,
                 axis=0,
                 check_inputs=False,
             )
@@ -1207,6 +1226,7 @@ def _create_lagged_data_by_intersecting_times(
     multi_models: bool,
     check_inputs: bool,
     is_training: bool,
+    stride: int,
     show_warnings: bool = True,
 ) -> tuple[
     np.ndarray,
@@ -1242,6 +1262,11 @@ def _create_lagged_data_by_intersecting_times(
         if all(series_and_lags_not_specified):
             raise_log(
                 ValueError("Must specify at least one series-lags pair."), logger=logger
+            )
+        if not isinstance(stride, int) and stride < 1:
+            raise_log(
+                ValueError("`stride` must be a positive integer greater than 1."),
+                logger=logger,
             )
     sample_weight_vals = _extract_sample_weight(sample_weight, target_series)
     shared_times = get_shared_times(*feature_times, sort=True)
@@ -1293,6 +1318,9 @@ def _create_lagged_data_by_intersecting_times(
             )
         if series_and_lags_specified:
             idx_to_get = shared_time_idx + np.array(lags_i, dtype=int)
+            # apply the stride to the indexes
+            if stride > 1:
+                idx_to_get = idx_to_get[::stride]
             # Before reshaping: lagged_vals.shape = (n_observations, num_lags, n_components, n_samples)
             lagged_vals = series_i.all_values(copy=False)[idx_to_get, :, :]
             # After reshaping: lagged_vals.shape = (n_observations, num_lags*n_components, n_samples)
@@ -1317,6 +1345,10 @@ def _create_lagged_data_by_intersecting_times(
             idx_to_get = (
                 label_shared_time_idx + output_chunk_length + output_chunk_shift - 1
             )
+
+        # apply the stride to the indexes
+        if stride > 1:
+            idx_to_get = idx_to_get[::stride]
 
         # extract target labels and sample weights
         y_and_weights = []
