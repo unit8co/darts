@@ -1045,6 +1045,9 @@ def _create_lagged_data_by_moving_window(
         )
     else:
         times = pd.date_range(start=time_bounds[0], end=time_bounds[1], freq=freq)
+
+    if stride > 1:
+        times = times[::stride]
     num_samples = len(times)
     if num_samples > max_samples_per_ts:
         times = times[-max_samples_per_ts:]
@@ -1103,11 +1106,15 @@ def _create_lagged_data_by_moving_window(
             first_window_start_idx = start_time_idx - max_lag_i
             first_window_end_idx = first_window_start_idx + window_len
             # Other windows are formed by sequentially shifting first window forward
-            # by 1 index position each time; to create `(num_samples - 1)` more windows
+            # by stride position each time; to create `(num_samples - 1)` more windows
             # in addition to the first window, need to take `(num_samples - 1)` values
             # after `first_window_end_idx`:
             vals = series_i.all_values(copy=False)[
-                first_window_start_idx : first_window_end_idx + num_samples - 1, :, :
+                first_window_start_idx : first_window_end_idx
+                + num_samples * stride
+                - 1,
+                :,
+                :,
             ]
             windows = strided_moving_window(
                 x=vals, window_len=window_len, stride=stride, axis=0, check_inputs=False
@@ -1147,7 +1154,9 @@ def _create_lagged_data_by_moving_window(
             # To create `(num_samples - 1)` other windows in addition to first window,
             # must take `(num_samples - 1)` values ahead of `first_window_end_idx`
             vals = vals[
-                first_window_start_idx : first_window_end_idx + num_samples - 1,
+                first_window_start_idx : first_window_end_idx
+                + num_samples * stride
+                - 1,
                 :,
                 :,
             ]
@@ -1277,6 +1286,8 @@ def _create_lagged_data_by_intersecting_times(
             ),
             logger=logger,
         )
+    if stride > 1:
+        shared_times = shared_times[::stride]
     if len(shared_times) > max_samples_per_ts:
         shared_times = shared_times[-max_samples_per_ts:]
     X = []
@@ -1318,9 +1329,6 @@ def _create_lagged_data_by_intersecting_times(
             )
         if series_and_lags_specified:
             idx_to_get = shared_time_idx + np.array(lags_i, dtype=int)
-            # apply the stride to the indexes
-            if stride > 1:
-                idx_to_get = idx_to_get[::stride]
             # Before reshaping: lagged_vals.shape = (n_observations, num_lags, n_components, n_samples)
             lagged_vals = series_i.all_values(copy=False)[idx_to_get, :, :]
             # After reshaping: lagged_vals.shape = (n_observations, num_lags*n_components, n_samples)
@@ -1345,10 +1353,6 @@ def _create_lagged_data_by_intersecting_times(
             idx_to_get = (
                 label_shared_time_idx + output_chunk_length + output_chunk_shift - 1
             )
-
-        # apply the stride to the indexes
-        if stride > 1:
-            idx_to_get = idx_to_get[::stride]
 
         # extract target labels and sample weights
         y_and_weights = []
