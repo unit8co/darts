@@ -14,9 +14,8 @@ from darts.dataprocessing.transformers import (
 )
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries
-from darts.utils import n_steps_between
 from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
-from darts.utils.utils import generate_index
+from darts.utils.utils import generate_index, n_steps_between
 
 logger = get_logger(__name__)
 
@@ -28,7 +27,9 @@ TimeIndex = Union[
 ]
 
 
-def _historical_forecasts_general_checks(model, series, kwargs):
+def _historical_forecasts_general_checks(
+    model, series, kwargs, is_conformal: bool = False
+):
     """
     Performs checks common to ForecastingModel and RegressionModel backtest() methods
 
@@ -38,9 +39,6 @@ def _historical_forecasts_general_checks(model, series, kwargs):
         The forecasting model.
     series
         Either series when called from ForecastingModel, or target_series if called from RegressionModel
-    signature_params
-        A dictionary of the signature parameters of the calling method, to get the default values
-        Typically would be signature(self.backtest).parameters
     kwargs
         Params specified by the caller of backtest(), they take precedence over the arguments' default values
     """
@@ -58,6 +56,18 @@ def _historical_forecasts_general_checks(model, series, kwargs):
     if not n.stride > 0:
         raise_log(
             ValueError("The provided stride parameter must be a positive integer."),
+            logger,
+        )
+
+    # check stride for ConformalModel
+    if is_conformal and (
+        n.stride < model.cal_stride or n.stride % model.cal_stride > 0
+    ):
+        raise_log(
+            ValueError(
+                f"The provided `stride` parameter must be a round-multiple of `cal_stride={model.cal_stride}` "
+                f"and `>=cal_stride`. Received `stride={n.stride}`"
+            ),
             logger,
         )
 
@@ -86,13 +96,23 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 ),
                 logger,
             )
-        if isinstance(n.start, float) and not 0.0 <= n.start <= 1.0:
-            raise_log(
-                ValueError("if `start` is a float, must be between 0.0 and 1.0."),
-                logger,
-            )
+        if isinstance(n.start, float):
+            if is_conformal:
+                raise_log(
+                    ValueError(
+                        "`start` of type float is not supported for `ConformalModel`."
+                    ),
+                    logger,
+                )
+            if not 0.0 <= n.start <= 1.0:
+                raise_log(
+                    ValueError("if `start` is a float, must be between 0.0 and 1.0."),
+                    logger,
+                )
 
+        series_freq = None
         for idx, series_ in enumerate(series):
+            start_is_value = False
             # check specifically for int and Timestamp as error by `get_timestamp_at_point` is too generic
             if isinstance(n.start, pd.Timestamp):
                 if not series_._has_datetime_index:
@@ -110,6 +130,7 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                         ),
                         logger,
                     )
+                start_is_value = True
             elif isinstance(n.start, (int, np.int64)):
                 if n.start_format == "position" or series_.has_datetime_index:
                     if n.start >= len(series_):
@@ -120,13 +141,32 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                             ),
                             logger,
                         )
-                elif n.start > series_.time_index[-1]:  # format "value" and range index
+                else:
+                    if (
+                        n.start > series_.time_index[-1]
+                    ):  # format "value" and range index
+                        raise_log(
+                            ValueError(
+                                f"`start` time `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
+                                f"for series at index: {idx}."
+                            ),
+                            logger,
+                        )
+                    start_is_value = True
+
+            # `ConformalModel` with `start_format='value'` requires all series to have the same frequency
+            if is_conformal and start_is_value:
+                if series_freq is None:
+                    series_freq = series_.freq
+
+                if series_freq != series_.freq:
                     raise_log(
                         ValueError(
-                            f"`start` time `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
-                            f"for series at index: {idx}."
+                            f"Found mismatching `series` time index frequencies `{series_freq}` and `{series_.freq}`. "
+                            f"`start_format='value'` with `ConformalModel` is only supported if all series in "
+                            f"`series` have the same frequency."
                         ),
-                        logger,
+                        logger=logger,
                     )
 
             # find valid start position relative to the series start time, otherwise raise an error
@@ -498,8 +538,12 @@ def _check_start(
         if isinstance(start, float):
             # fraction of series
             start = series.get_index_at_point(start)
-        else:
+        elif start >= 0:
+            # start >= 0 is relative to the start
             start = series.start_time() + start * series.freq
+        else:
+            # start < 0 is relative to the end
+            start = series.end_time() + (start + 1) * series.freq
     else:
         start_format_msg = "time "
     ref_msg = "" if not is_historical_forecast else "historical forecastable "
@@ -570,7 +614,7 @@ def _get_historical_forecastable_time_index(
 
     Returns
     -------
-    Union[pd.DatetimeIndex, pd.RangeIndex, Tuple[int, int], Tuple[pd.Timestamp, pd.Timestamp], None]
+    Union[pd.DatetimeIndex, pd.RangeIndex, tuple[int, int], tuple[pd.Timestamp, pd.Timestamp], None]
         The longest time_index that can be used for historical forecasting, either as a range or a tuple.
 
     Examples
@@ -1230,3 +1274,93 @@ def _apply_inverse_data_transformers(
         return forecasts[0] if called_with_single_series else forecasts
     else:
         return forecasts
+
+
+def _process_historical_forecast_for_backtest(
+    series: Union[TimeSeries, Sequence[TimeSeries]],
+    historical_forecasts: Union[
+        TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]
+    ],
+    last_points_only: bool,
+):
+    """Checks that the `historical_forecasts` have the correct format based on the input `series` and
+    `last_points_only`. If all checks have passed, it converts `series` and `historical_forecasts` format into a
+    multiple series case with `last_points_only=False`.
+    """
+    # remember input series type
+    series_seq_type = get_series_seq_type(series)
+    series = series2seq(series)
+
+    # check that `historical_forecasts` have correct type
+    expected_seq_type = None
+    forecast_seq_type = get_series_seq_type(historical_forecasts)
+    if last_points_only and not series_seq_type == forecast_seq_type:
+        # lpo=True -> fc sequence type must be the same
+        expected_seq_type = series_seq_type
+    elif not last_points_only and forecast_seq_type != series_seq_type + 1:
+        # lpo=False -> fc sequence type must be one order higher
+        expected_seq_type = series_seq_type + 1
+
+    if expected_seq_type is not None:
+        raise_log(
+            ValueError(
+                f"Expected `historical_forecasts` of type {expected_seq_type} "
+                f"with `last_points_only={last_points_only}` and `series` of type "
+                f"{series_seq_type}. However, received `historical_forecasts` of type "
+                f"{forecast_seq_type}. Make sure to pass the same `last_points_only` "
+                f"value that was used to generate the historical forecasts."
+            ),
+            logger=logger,
+        )
+
+    # we must wrap each fc in a list if `last_points_only=True`
+    nested = last_points_only and forecast_seq_type == SeriesType.SEQ
+    historical_forecasts = series2seq(
+        historical_forecasts, seq_type_out=SeriesType.SEQ_SEQ, nested=nested
+    )
+
+    # check that the number of series-specific forecasts corresponds to the
+    # number of series in `series`
+    if len(series) != len(historical_forecasts):
+        error_msg = (
+            f"Mismatch between the number of series-specific `historical_forecasts` "
+            f"(n={len(historical_forecasts)}) and the number of  `TimeSeries` in `series` "
+            f"(n={len(series)}). For `last_points_only={last_points_only}`, expected "
+        )
+        expected_seq_type = series_seq_type if last_points_only else series_seq_type + 1
+        if expected_seq_type == SeriesType.SINGLE:
+            error_msg += f"a single `historical_forecasts` of type {expected_seq_type}."
+        else:
+            error_msg += f"`historical_forecasts` of type {expected_seq_type} with length n={len(series)}."
+        raise_log(
+            ValueError(error_msg),
+            logger=logger,
+        )
+    return series, historical_forecasts
+
+
+def _extend_series_for_overlap_end(
+    series: Sequence[TimeSeries],
+    historical_forecasts: Sequence[Sequence[TimeSeries]],
+):
+    """Extends each target `series` to the end of the last historical forecast for that series.
+    Fills the values all missing dates with `np.nan`.
+
+    Assumes the input meets the multiple `series` case with `last_points_only=False` (e.g. the output of
+    `darts.utils.historical_forecasts.utils_process_historical_forecast_for_backtest()`).
+    """
+    series_extended = []
+    append_vals = [np.nan] * series[0].n_components
+    for series_, hfcs_ in zip(series, historical_forecasts):
+        # find number of missing target time steps based on the last forecast
+        missing_steps = n_steps_between(
+            hfcs_[-1].end_time(), series[0].end_time(), freq=series[0].freq
+        )
+        # extend the target if it is too short
+        if missing_steps > 0:
+            series_extended.append(
+                series_.append_values(np.array([append_vals] * missing_steps))
+            )
+        else:
+            series_extended.append(series_)
+    return series_extended
