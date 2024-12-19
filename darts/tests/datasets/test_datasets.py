@@ -1706,6 +1706,54 @@ class TestDataset:
             "2000-01-02 00:00:00 - 2000-01-04 00:00:00."
         )
 
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # (dataset class, whether contains future, future batch index)
+            (PastCovariatesSequentialDataset, None),
+            (FutureCovariatesSequentialDataset, 1),
+            (DualCovariatesSequentialDataset, 2),
+            (MixedCovariatesSequentialDataset, 3),
+            (SplitCovariatesSequentialDataset, 2),
+        ],
+    )
+    def test_sequential_training_dataset_stride(self, config):
+        ds_cls, future_idx = config
+        icl = 4
+        ocl = 2
+        nb_samples = 12
+        target = self.target1[: icl + ocl + nb_samples - 1]
+
+        ds_covs = {}
+        ds_init_params = set(inspect.signature(ds_cls.__init__).parameters)
+        for cov_type in ["covariates", "past_covariates", "future_covariates"]:
+            if cov_type in ds_init_params:
+                ds_covs[cov_type] = self.cov1
+
+        ds_reg = ds_cls(
+            target_series=target,
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            stride=1,
+            **ds_covs,
+        )
+
+        ds_stride = ds_cls(
+            target_series=target,
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            stride=3,
+            **ds_covs,
+        )
+        assert len(ds_stride) * 3 == len(ds_reg) == nb_samples
+        # regular dataset with stride=1, every 3rd values should be identical to the dataset with stride=3
+        for idx, batch_str in enumerate(ds_stride):
+            for entry_s, entry_r in zip(batch_str, ds_reg[idx * 3]):
+                if entry_s is not None and entry_r is not None:
+                    np.testing.assert_almost_equal(entry_s, entry_r)
+                else:
+                    assert entry_s == entry_r
+
     def test_get_matching_index(self):
         from darts.utils.data.utils import _get_matching_index
 
