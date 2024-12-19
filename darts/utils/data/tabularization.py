@@ -1155,8 +1155,7 @@ def _create_lagged_data_by_moving_window(
             # must take `(num_samples - 1)` values ahead of `first_window_end_idx`
             vals = vals[
                 first_window_start_idx : first_window_end_idx
-                + num_samples * stride
-                - 1,
+                + (num_samples - 1) * stride,
                 :,
                 :,
             ]
