@@ -21,6 +21,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug which raised an error when computing residuals (or backtest with "per time step" metrics) on multiple series with corresponding historical forecasts of different lengths. [#2604](https://github.com/unit8co/darts/pull/2604) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when using `darts.utils.data.tabularization.create_lagged_component_names()` with target `lags=None`, that did not return any lagged target label component names. [#2576](https://github.com/unit8co/darts/pull/2576) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when using `num_samples > 1` with a deterministic regression model and the optimized `historical_forecasts()` method, an exception was not raised. [#2576](https://github.com/unit8co/darts/pull/2588) by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed a bug when performing optimized historical forecasts with `RegressionModel` and `last_points_only=False`, where the forecast index generation could result in out-of-bound dates. [#2623](https://github.com/unit8co/darts/pull/2623) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 
