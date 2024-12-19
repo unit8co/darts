@@ -1111,8 +1111,7 @@ def _create_lagged_data_by_moving_window(
             # after `first_window_end_idx`:
             vals = series_i.all_values(copy=False)[
                 first_window_start_idx : first_window_end_idx
-                + num_samples * stride
-                - 1,
+                + (num_samples - 1) * stride,
                 :,
                 :,
             ]
