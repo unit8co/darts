@@ -13,7 +13,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - 🚀🚀 Introducing Conformal Prediction to Darts: Add calibrated prediction intervals to any pre-trained global forecasting model with our first two conformal prediction models : [#2552](https://github.com/unit8co/darts/pull/2552) by [Dennis Bader](https://github.com/dennisbader).
   - `ConformalNaiveModel`: It uses past point forecast errors to produce calibrated forecast intervals with a specified coverage probability.
-  - `ConformalQRModel`: It combines quantile regression (or any probabilistic model) with conformal prediction techniques. It adjusts quantile estimates (using non-conformity scores `metrics.incs_qr()`) to generate calibrated prediction intervals with a specified coverage probability.
+  - `ConformalQRModel`: It combines quantile regression (or any probabilistic model) with conformal prediction techniques. It adjusts quantile estimates to generate calibrated prediction intervals with a specified coverage probability.
   - Both models offer the following support:
     - use any pre-trained global forecasting model as the base forecaster
     - uni and multivariate forecasts
