@@ -84,10 +84,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
         follows:
 
         - Extract a calibration set: The calibration set for each conformal forecast is automatically extracted from
-          the past of your input series relative to the forecast start point. The number of calibration examples
-          (forecast errors / non-conformity scores) to consider can be defined at model creation
-          with parameter `cal_length`. Note that when using `cal_stride>1`, a longer history is required since
-          the calibration examples are generated with stridden historical forecasts.
+          the most recent past of your input series relative to the forecast start point. The number of calibration
+          examples (forecast errors / non-conformity scores) to consider can be defined at model creation with
+          parameter `cal_length`. Note that when using `cal_stride>1`, a longer history is required since the
+          calibration examples are generated with stridden historical forecasts.
         - Generate historical forecasts on the calibration set (using the forecasting model) with a stride `cal_stride`.
         - Compute the errors/non-conformity scores (specific to each conformal model) on these historical forecasts
         - Compute the quantile values from the errors / non-conformity scores (using our desired quantiles set at model
@@ -191,7 +191,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
         Notes
         -----
-        Conformal Models do not required calling `fit()`, since they use pre-trained global forecasting models.
+        Conformal Models do not require calling `fit()`, since they use pre-trained global forecasting models.
         You can call `predict()` directly. Also, make sure that the input series used in `predict()` corresponds to
         a calibration set, and not the same as used during training with `fit()`.
 
@@ -257,8 +257,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
         horizon `n` is as follows (note: `cal_length` and `cal_stride` can be set at model creation):
 
         - Extract a calibration set: The calibration set for each conformal forecast is automatically extracted from
-          the past of your input series relative to the forecast start point. The number of calibration examples
-          (forecast errors / non-conformity scores) to consider can be defined at model creation
+          the most recent past of your input series relative to the forecast start point. The number of calibration
+          examples (forecast errors / non-conformity scores) to consider can be defined at model creation
           with parameter `cal_length`. Note that when using `cal_stride>1`, a longer history is required since
           the calibration examples are generated with stridden historical forecasts.
         - Generate historical forecasts on the calibration set (using the forecasting model) with a stride `cal_stride`.
@@ -274,7 +274,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
         series
             A series or sequence of series, representing the history of the target series whose future is to be
-            predicted. Will use the past of this series for calibration.
+            predicted. Will use the past of this series for calibration. The series should not have any overlap with
+            the series used to train the forecasting model.
         past_covariates
             Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
             Their dimension must match that of the past covariates used for training. Will use this series for
@@ -457,7 +458,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
         ----------
         series
             A (sequence of) target time series used to successively compute the historical forecasts. Will use the past
-            of this series for calibration.
+            of this series for calibration. The series should not have any overlap with the series used to train the
+            forecasting model.
         past_covariates
             Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
             Their dimension must match that of the past covariates used for training. Will use this series for
@@ -670,7 +672,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
         ----------
         series
             A (sequence of) target time series used to successively compute the historical forecasts. Will use the past
-            of this series for calibration.
+            of this series for calibration. The series should not have any overlap with the series used to train the
+            forecasting model.
         past_covariates
             Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
             Their dimension must match that of the past covariates used for training. Will use this series for
@@ -893,7 +896,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
         ----------
         series
             A (sequence of) target time series used to successively compute the historical forecasts. Will use the past
-            of this series for calibration.
+            of this series for calibration. The series should not have any overlap with the series used to train the
+            forecasting model.
         past_covariates
             Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
             Their dimension must match that of the past covariates used for training. Will use this series for
@@ -1059,8 +1063,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
         - Generate historical forecasts for `series` with stride `cal_stride` (using the forecasting model)
         - Extract a calibration set: The forecasts from the most recent past to use as calibration for one conformal
           prediction. The number of examples to use can be defined at model creation with parameter `cal_length`. It
-          automatically extracts the calibration set from the past of your input series (`series`, `past_covariates`,
-          ...).
+          automatically extracts the calibration set from the most recent past of your input series (`series`,
+          `past_covariates`, ...).
         - Compute the errors/non-conformity scores (specific to each conformal model) on these historical forecasts
         - Compute the quantile values from the errors / non-conformity scores (using our desired quantiles set at model
           creation with parameter `quantiles`).
@@ -1535,8 +1539,8 @@ class ConformalNaiveModel(ConformalModel):
         follows:
 
         - Extract a calibration set: The calibration set for each conformal forecast is automatically extracted from
-          the past of your input series relative to the forecast start point. The number of calibration examples
-          (forecast errors / non-conformity scores) to consider can be defined at model creation
+          the most recent past of your input series relative to the forecast start point. The number of calibration
+          examples (forecast errors / non-conformity scores) to consider can be defined at model creation
           with parameter `cal_length`. Note that when using `cal_stride>1`, a longer history is required since
           the calibration examples are generated with stridden historical forecasts.
         - Generate historical forecasts on the calibration set (using the forecasting model) with a stride `cal_stride`.
@@ -1670,10 +1674,10 @@ class ConformalQRModel(ConformalModel):
         follows:
 
         - Extract a calibration set: The calibration set for each conformal forecast is automatically extracted from
-          the past of your input series relative to the forecast start point. The number of calibration examples
-          (forecast errors / non-conformity scores) to consider can be defined at model creation
-          with parameter `cal_length`. Note that when using `cal_stride>1`, a longer history is required since
-          the calibration examples are generated with stridden historical forecasts.
+          the most recent past of your input series relative to the forecast start point. The number of calibration
+          examples (forecast errors / non-conformity scores) to consider can be defined at model creation with
+          parameter `cal_length`. Note that when using `cal_stride>1`, a longer history is required since the
+          calibration examples are generated with stridden historical forecasts.
         - Generate historical forecasts (quantile predictions) on the calibration set (using the forecasting model)
           with a stride `cal_stride`.
         - Compute the errors/non-conformity scores (as defined above) on these historical quantile predictions
