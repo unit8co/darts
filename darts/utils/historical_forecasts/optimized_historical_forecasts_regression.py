@@ -41,7 +41,9 @@ def _optimized_historical_forecasts_last_points_only(
     The data_transformers are applied in historical_forecasts (input and predictions)
     """
     forecasts_list = []
-    iterator = _build_tqdm_iterator(series, verbose)
+    iterator = _build_tqdm_iterator(
+        series, verbose, total=len(series), desc="historical forecasts"
+    )
     for idx, series_ in enumerate(iterator):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
         future_covariates_ = (
@@ -204,7 +206,9 @@ def _optimized_historical_forecasts_all_points(
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
     forecasts_list = []
-    iterator = _build_tqdm_iterator(series, verbose)
+    iterator = _build_tqdm_iterator(
+        series, verbose, total=len(series), desc="historical forecasts"
+    )
     for idx, series_ in enumerate(iterator):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
         future_covariates_ = (
