@@ -2092,6 +2092,44 @@ class TestCreateLaggedTrainingData:
                 )
             assert "`output_chunk_length` must be a positive `int`." == str(err.value)
 
+    def test_lagged_training_data_invalid_stride_error(self):
+        """
+        Tests that `create_lagged_training_data` throws correct error
+        when `stride` is set to a non-`int` value (e.g. a
+        `float`) or a non-positive value (e.g. `0`).
+        """
+        target = linear_timeseries(start=1, length=20, freq=1)
+        lags = [-1]
+        ocl = 2
+        # Check error thrown by 'moving windows' method and by 'time intersection' method:
+        for use_moving_windows in (False, True):
+            with pytest.raises(ValueError) as err:
+                create_lagged_training_data(
+                    target_series=target,
+                    output_chunk_length=ocl,
+                    lags=lags,
+                    uses_static_covariates=False,
+                    use_moving_windows=use_moving_windows,
+                    output_chunk_shift=0,
+                    stride=-1,
+                )
+            assert "`stride` must be a positive integer greater than 0." == str(
+                err.value
+            )
+            with pytest.raises(ValueError) as err:
+                create_lagged_training_data(
+                    target_series=target,
+                    output_chunk_length=ocl,
+                    lags=lags,
+                    uses_static_covariates=False,
+                    use_moving_windows=use_moving_windows,
+                    output_chunk_shift=0,
+                    stride=1.1,
+                )
+            assert "`stride` must be a positive integer greater than 0." == str(
+                err.value
+            )
+
     def test_lagged_training_data_no_lags_specified_error(self):
         """
         Tests that `create_lagged_training_data` throws correct error

@@ -1022,9 +1022,9 @@ def _create_lagged_data_by_moving_window(
             raise_log(
                 ValueError("Must specify at least one series-lags pair."), logger=logger
             )
-        if not isinstance(stride, int) and stride < 1:
+        if not (isinstance(stride, int) and stride > 0):
             raise_log(
-                ValueError("`stride` must be a positive integer greater than 1."),
+                ValueError("`stride` must be a positive integer greater than 0."),
                 logger=logger,
             )
     sample_weight_vals = _extract_sample_weight(sample_weight, target_series)
@@ -1270,9 +1270,9 @@ def _create_lagged_data_by_intersecting_times(
             raise_log(
                 ValueError("Must specify at least one series-lags pair."), logger=logger
             )
-        if not isinstance(stride, int) and stride < 1:
+        if not (isinstance(stride, int) and stride > 0):
             raise_log(
-                ValueError("`stride` must be a positive integer greater than 1."),
+                ValueError("`stride` must be a positive integer greater than 0."),
                 logger=logger,
             )
     sample_weight_vals = _extract_sample_weight(sample_weight, target_series)
