@@ -308,40 +308,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
             If `series` is given and is a sequence of several time series, this function returns
             a sequence where each element contains the corresponding `n` points forecasts.
         """
-        if series is None:
-            # then there must be a single TS, and that was saved in super().fit as self.training_series
-            if self.model.training_series is None:
-                raise_log(
-                    ValueError(
-                        "Input `series` must be provided. This is the result either from fitting on multiple series, "
-                        "or from not having fit the model yet."
-                    ),
-                    logger,
-                )
-            series = self.model.training_series
-
-        called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
-
-        # guarantee that all inputs are either list of TimeSeries or None
-        series = series2seq(series)
-        if past_covariates is None and self.model.past_covariate_series is not None:
-            past_covariates = [self.model.past_covariate_series] * len(series)
-        if future_covariates is None and self.model.future_covariate_series is not None:
-            future_covariates = [self.model.future_covariate_series] * len(series)
-        past_covariates = series2seq(past_covariates)
-        future_covariates = series2seq(future_covariates)
-
-        super().predict(
-            n,
-            series,
-            past_covariates,
-            future_covariates,
-            num_samples,
-            verbose,
-            predict_likelihood_parameters,
-            show_warnings,
-        )
-
         # call predict to verify that all series have required input times
         _ = self.model.predict(
             n=n,
@@ -354,6 +320,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
             show_warnings=show_warnings,
             **kwargs,
         )
+
+        series = series or self.model.training_series
+        called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
+        series = series2seq(series)
 
         # generate only the required forecasts for calibration (including the last forecast which is the output of
         # `predict()`)

@@ -166,7 +166,7 @@ series.plot()
 * **Multivariate Support:** `TimeSeries` can be multivariate - i.e., contain multiple time-varying
   dimensions/columns instead of a single scalar value. Many models can consume and produce multivariate series.
 
-* **Multiple series training (global models):** All machine learning based models (incl. all neural networks)
+* **Multiple Series Training (Global Models):** All machine learning based models (incl. all neural networks)
   support being trained on multiple (potentially multivariate) series. This can scale to large datasets too.
 
 * **Probabilistic Support:** `TimeSeries` objects can (optionally) represent stochastic
@@ -177,10 +177,10 @@ series.plot()
 * **Conformal Prediction Support:** Our conformal prediction models allow to generate probabilistic forecasts with
   calibrated quantile intervals for any pre-trained global forecasting model.
 
-* **Past and Future Covariates support:** Many models in Darts support past-observed and/or future-known
+* **Past and Future Covariates Support:** Many models in Darts support past-observed and/or future-known
   covariate (external data) time series as inputs for producing forecasts.
 
-* **Static Covariates support:** In addition to time-dependent data, `TimeSeries` can also contain
+* **Static Covariates Support:** In addition to time-dependent data, `TimeSeries` can also contain
   static data for each dimension, which can be exploited by some models.
 
 * **Hierarchical Reconciliation:** Darts offers transformers to perform reconciliation.
@@ -189,7 +189,7 @@ series.plot()
 * **Regression Models:** It is possible to plug-in any scikit-learn compatible model
   to obtain forecasts as functions of lagged values of the target series and covariates.
 
-* **Training with sample weights:** All global models support being trained with sample weights. They can be
+* **Training with Sample Weights:** All global models support being trained with sample weights. They can be
   applied to each observation, forecasted time step and target column.
 
 * **Forecast Start Shifting:** All global models support training and prediction on a shifted output window.
@@ -198,7 +198,7 @@ series.plot()
 
 * **Explainability:** Darts has the ability to *explain* some forecasting models using Shap values.
 
-* **Data processing:** Tools to easily apply (and revert) common transformations on
+* **Data Processing:** Tools to easily apply (and revert) common transformations on
   time series data (scaling, filling missing values, differencing, boxcox, ...)
 
 * **Metrics:** A variety of metrics for evaluating time series' goodness of fit;

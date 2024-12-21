@@ -1344,7 +1344,7 @@ class TestConformalModel:
         else:
             # if `past_covariates` are too short, then it raises error from the forecasting_model.predict()
             assert str(exc.value).startswith(
-                "The `past_covariates` at list/sequence index 0 are not long enough."
+                "The `past_covariates` are not long enough."
             )
 
     @pytest.mark.parametrize(
@@ -1658,3 +1658,42 @@ class TestConformalModel:
             start=start,
             start_format="value",
         ) == (start_expected, "value")
+
+    def test_encoders(self):
+        """Tests support of covariates encoders."""
+        n = OUT_LEN + 1
+        min_length = IN_LEN + n
+
+        # create non-overlapping train and val series
+        series = tg.linear_timeseries(length=min_length)
+        val_series = tg.linear_timeseries(
+            start=series.end_time() + series.freq, length=min_length
+        )
+
+        model = train_model(
+            series,
+            model_params={
+                "lags_future_covariates": (IN_LEN, OUT_LEN),
+                "add_encoders": {"datetime_attribute": {"future": ["hour"]}},
+            },
+        )
+
+        cp_model = ConformalNaiveModel(model, quantiles=q)
+        assert (
+            cp_model.model.encoders is not None
+            and cp_model.model.encoders.encoding_available
+        )
+        assert model.uses_future_covariates
+
+        # predict: encoders using stored train series must work
+        _ = cp_model.predict(n=n)
+        # predict: encoding of new series without train overlap must work
+        _ = cp_model.predict(n=n, series=val_series)
+
+        # check the same for hfc
+        _ = cp_model.historical_forecasts(
+            forecast_horizon=n, series=series, overlap_end=True
+        )
+        _ = cp_model.historical_forecasts(
+            forecast_horizon=n, series=val_series, overlap_end=True
+        )
