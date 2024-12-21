@@ -7,7 +7,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 [Full Changelog](https://github.com/unit8co/darts/compare/0.31.0...master)
 
-- Fix the bug in [#2579 ](https://github.com/unit8co/darts/issues/2579) which will cause error when setting val_sample_weight when using CatBoost and XGBoost model
+- Fix the bug in [#2579 ](https://github.com/unit8co/darts/issues/2579)  that causes an error when `val_sample_weight` is set in the CatBoost and XGBoost models.
 
 ### For users of the library:
 
