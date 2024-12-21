@@ -218,6 +218,13 @@
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
+  <a class="reference internal" href="23-Conformal-Prediction-examples.html">
+   Conformal Prediction Models
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
   <a class="reference internal" href="03-FFT-examples.html">
    Fast Fourier Transform Forecasting Model (FFT)
   </a>
@@ -662,12 +669,11 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span>
+<span></span><span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">concatenate</span><span class="p">,</span> <span class="n">TimeSeries</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">concatenate</span>
 <span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">MinTReconciliator</span>
 <span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AustralianTourismDataset</span>
 <span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mae</span>
@@ -826,12 +832,12 @@ div.rendered_html tbody tr:hover {
 
 <span class="c1"># Fill in grouping by (region, reason)</span>
 <span class="k">for</span> <span class="n">region</span><span class="p">,</span> <span class="n">reason</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="n">reasons</span><span class="p">):</span>
-    <span class="n">hierarchy</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">reason</span><span class="o">.</span><span class="n">lower</span><span class="p">())]</span> <span class="o">=</span> <span class="p">[</span><span class="n">reason</span><span class="p">,</span> <span class="n">region</span><span class="p">]</span>
+    <span class="n">hierarchy</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">region</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">reason</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">reason</span><span class="p">,</span> <span class="n">region</span><span class="p">]</span>
 
 <span class="c1"># Fill in grouping by (region, reason, &lt;city&gt;)</span>
 <span class="k">for</span> <span class="n">region</span><span class="p">,</span> <span class="n">reason</span><span class="p">,</span> <span class="n">city</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="n">reasons</span><span class="p">,</span> <span class="n">city_labels</span><span class="p">):</span>
-    <span class="n">hierarchy</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">reason</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">city</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">reason</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+    <span class="n">hierarchy</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">region</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">reason</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">city</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">region</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">reason</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="p">]</span>
 </pre></div>
 </div>
@@ -930,12 +936,12 @@ NSW - bus - city -&gt; [&#39;NSW - bus&#39;]
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># we pre-generate some of the components&#39; names</span>
 <span class="n">regions_reasons_comps</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-    <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()),</span> <span class="n">product</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="n">reasons</span><span class="p">))</span>
+    <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">product</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="n">reasons</span><span class="p">))</span>
 <span class="p">)</span>
 
 <span class="n">regions_reasons_city_comps</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
     <span class="nb">map</span><span class="p">(</span>
-        <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
+        <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="n">product</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="n">reasons</span><span class="p">,</span> <span class="n">city_labels</span><span class="p">),</span>
     <span class="p">)</span>
 <span class="p">)</span>
@@ -943,12 +949,7 @@ NSW - bus - city -&gt; [&#39;NSW - bus&#39;]
 
 <span class="k">def</span> <span class="nf">measure_mae</span><span class="p">(</span><span class="n">pred</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">print_mae_on_subset</span><span class="p">(</span><span class="n">subset</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span>
-            <span class="s2">&quot;mean MAE on </span><span class="si">{}</span><span class="s2">: </span><span class="si">{:.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="n">name</span><span class="p">,</span>
-                <span class="n">mae</span><span class="p">(</span><span class="n">pred</span><span class="p">[</span><span class="n">subset</span><span class="p">],</span> <span class="n">val</span><span class="p">[</span><span class="n">subset</span><span class="p">]),</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;mean MAE on </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">mae</span><span class="p">(</span><span class="n">pred</span><span class="p">[</span><span class="n">subset</span><span class="p">],</span><span class="w"> </span><span class="n">val</span><span class="p">[</span><span class="n">subset</span><span class="p">])</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="n">print_mae_on_subset</span><span class="p">([</span><span class="s2">&quot;Total&quot;</span><span class="p">],</span> <span class="s2">&quot;total&quot;</span><span class="p">)</span>
     <span class="n">print_mae_on_subset</span><span class="p">(</span><span class="n">reasons</span><span class="p">,</span> <span class="s2">&quot;reasons&quot;</span><span class="p">)</span>

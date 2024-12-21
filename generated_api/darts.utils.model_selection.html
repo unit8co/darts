@@ -577,6 +577,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
+       Conformal Models
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.croston.html">
        Croston method
       </a>
@@ -890,12 +895,12 @@ set is the following:</p>
 <li><p><strong>test_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – size of the test set. If the value is between 0 and 1, parameter is treated as a split proportion. Otherwise,
 it is treated as an absolute number of samples from each timeseries that will be in the test set.
 [default = 0.25]</p></li>
-<li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Axis to split the dataset on. When 0 (default), it is split on samples. Otherwise, if <cite>axis = 1</cite>,
+<li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Axis to split the dataset on. When 0 (default), it is split on samples. Otherwise, if <cite>axis = 1</cite>,
 timeseries are split along the time axis. Note that for single timeseries the default option is 1
 (0 makes no sense). [default: 0 for sequence of timeseries, 1 for timeseries]</p></li>
-<li><p><strong>input_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – size of the input. Only valid with <code class="docutils literal notranslate"><span class="pre">vertical_split_type</span> <span class="pre">==</span> <span class="pre">'model-aware'</span></code>. [default: None]</p></li>
-<li><p><strong>horizon</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – forecast horizon. Only valid with <code class="docutils literal notranslate"><span class="pre">vertical_split_type</span> <span class="pre">==</span> <span class="pre">'model-aware'</span></code>. [default: None]</p></li>
-<li><p><strong>vertical_split_type</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – can be either <code class="docutils literal notranslate"><span class="pre">'simple'</span></code>, where the exact number from test size will be deducted from timeseries for test set
+<li><p><strong>input_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – size of the input. Only valid with <code class="docutils literal notranslate"><span class="pre">vertical_split_type</span> <span class="pre">==</span> <span class="pre">'model-aware'</span></code>. [default: None]</p></li>
+<li><p><strong>horizon</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – forecast horizon. Only valid with <code class="docutils literal notranslate"><span class="pre">vertical_split_type</span> <span class="pre">==</span> <span class="pre">'model-aware'</span></code>. [default: None]</p></li>
+<li><p><strong>vertical_split_type</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – can be either <code class="docutils literal notranslate"><span class="pre">'simple'</span></code>, where the exact number from test size will be deducted from timeseries for test set
 and remaining will go to training set; or <code class="docutils literal notranslate"><span class="pre">'model-aware'</span></code>, where you have to provide <cite>input_size</cite> and
 <cite>horizon</cite> as well. Note, that the second option is more efficient timestep-wise, since training and test sets
 will partially overlap. [default: <code class="docutils literal notranslate"><span class="pre">'simple'</span></code>]</p></li>

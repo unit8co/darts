@@ -577,6 +577,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
+       Conformal Models
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.croston.html">
        Croston method
       </a>
@@ -876,7 +881,7 @@ if the model was trained with future-known covariates.</p></li>
 <li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon: The number of time steps to predict after the end of the target series.</p></li>
 <li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the number of time steps between two consecutive predictions. Can only be used together
 with <cite>bounds</cite>.</p></li>
-<li><p><strong>bounds</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Optionally, an array of shape <cite>(n series, 2)</cite>, with the left and right prediction start point boundaries
+<li><p><strong>bounds</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an array of shape <cite>(n series, 2)</cite>, with the left and right prediction start point boundaries
 per series. The boundaries must represent the positional index of the series (0, len(series)).
 If provided, <cite>stride</cite> must be <cite>&gt;=1</cite>.</p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model takes as input.</p></li>
@@ -902,11 +907,11 @@ if the model was trained with future-known covariates.</p></li>
 <li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon: The number of time steps to predict after the end of the target series.</p></li>
 <li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the number of time steps between two consecutive predictions. Can only be used together
 with <cite>bounds</cite>.</p></li>
-<li><p><strong>bounds</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Optionally, an array of shape <cite>(n series, 2)</cite>, with the left and right prediction start point boundaries
+<li><p><strong>bounds</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an array of shape <cite>(n series, 2)</cite>, with the left and right prediction start point boundaries
 per series. The boundaries must represent the positional index of the series (0, len(series)).
 If provided, <cite>stride</cite> must be <cite>&gt;=1</cite>.</p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model takes as input.</p></li>
-<li><p><strong>output_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the target series the model emits in output. If <cite>None</cite>, will use the same value
+<li><p><strong>output_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the length of the target series the model emits in output. If <cite>None</cite>, will use the same value
 as <cite>n</cite>.</p></li>
 <li><p><strong>output_chunk_shift</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the number of steps to shift the start of the output chunk into the future.</p></li>
 <li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from input series.</p></li>
@@ -934,7 +939,7 @@ were used during training, the same type of cavariates must be supplied at predi
 <li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon: The number of time steps to predict after the end of the target series.</p></li>
 <li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the number of time steps between two consecutive predictions. Can only be used together
 with <cite>bounds</cite>.</p></li>
-<li><p><strong>bounds</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Optionally, an array of shape <cite>(n series, 2)</cite>, with the left and right prediction start point boundaries
+<li><p><strong>bounds</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an array of shape <cite>(n series, 2)</cite>, with the left and right prediction start point boundaries
 per series. The boundaries must represent the positional index of the series (0, len(series)).
 If provided, <cite>stride</cite> must be <cite>&gt;=1</cite>.</p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model takes as input.</p></li>
@@ -994,7 +999,7 @@ if the model was trained with future-known covariates.</p></li>
 <li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon: The number of time steps to predict after the end of the target series.</p></li>
 <li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the number of time steps between two consecutive predictions. Can only be used together
 with <cite>bounds</cite>.</p></li>
-<li><p><strong>bounds</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Optionally, an array of shape <cite>(n series, 2)</cite>, with the left and right prediction start point boundaries
+<li><p><strong>bounds</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an array of shape <cite>(n series, 2)</cite>, with the left and right prediction start point boundaries
 per series. The boundaries must represent the positional index of the series (0, len(series)).
 If provided, <cite>stride</cite> must be <cite>&gt;=1</cite>.</p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model takes as input.</p></li>
@@ -1023,7 +1028,7 @@ if the model was trained with past-observed covariates.</p></li>
 <li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon: The number of time steps to predict after the end of the target series.</p></li>
 <li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the number of time steps between two consecutive predictions. Can only be used together
 with <cite>bounds</cite>.</p></li>
-<li><p><strong>bounds</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Optionally, an array of shape <cite>(n series, 2)</cite>, with the left and right prediction start point boundaries
+<li><p><strong>bounds</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an array of shape <cite>(n series, 2)</cite>, with the left and right prediction start point boundaries
 per series. The boundaries must represent the positional index of the series (0, len(series)).
 If provided, <cite>stride</cite> must be <cite>&gt;=1</cite>.</p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model takes as input.</p></li>
@@ -1053,7 +1058,7 @@ if the model was trained with future-known covariates.</p></li>
 <li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon: The number of time steps to predict after the end of the target series.</p></li>
 <li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the number of time steps between two consecutive predictions. Can only be used together
 with <cite>bounds</cite>.</p></li>
-<li><p><strong>bounds</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Optionally, an array of shape <cite>(n series, 2)</cite>, with the left and right prediction start point boundaries
+<li><p><strong>bounds</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an array of shape <cite>(n series, 2)</cite>, with the left and right prediction start point boundaries
 per series. The boundaries must represent the positional index of the series (0, len(series)).
 If provided, <cite>stride</cite> must be <cite>&gt;=1</cite>.</p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model takes as input.</p></li>

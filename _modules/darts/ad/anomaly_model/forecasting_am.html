@@ -184,16 +184,13 @@
 <span class="c1"># TODO:</span>
 <span class="c1">#     - put start default value to its minimal value (wait for the release of historical_forecast)</span>
 <span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">):</span>
     <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Self</span>
 <span class="k">else</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Self</span>
-<span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
-<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
 
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
@@ -298,10 +295,9 @@
 <span class="sd">            If set to &#39;value&#39;, `start` corresponds to the index value/label of the first predicted point. Will raise</span>
 <span class="sd">            an error if the value is not in `series`&#39; index. Default: `&#39;value&#39;`</span>
 <span class="sd">        num_samples</span>
-<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for</span>
-<span class="sd">            deterministic models.</span>
+<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.</span>
 <span class="sd">        verbose</span>
-<span class="sd">            Whether to print progress.</span>
+<span class="sd">            Whether to print the progress.</span>
 <span class="sd">        show_warnings</span>
 <span class="sd">            Whether to show warnings related to historical forecasts optimization, or parameters `start` and</span>
 <span class="sd">            `train_length`.</span>
@@ -379,10 +375,9 @@
 <span class="sd">            If set to &#39;value&#39;, `start` corresponds to the index value/label of the first predicted point. Will raise</span>
 <span class="sd">            an error if the value is not in `series`&#39; index. Default: `&#39;value&#39;`</span>
 <span class="sd">        num_samples</span>
-<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for</span>
-<span class="sd">            deterministic models.</span>
+<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.</span>
 <span class="sd">        verbose</span>
-<span class="sd">            Whether to print progress.</span>
+<span class="sd">            Whether to print the progress.</span>
 <span class="sd">        show_warnings</span>
 <span class="sd">            Whether to show warnings related to historical forecasts optimization, or parameters `start` and</span>
 <span class="sd">            `train_length`.</span>
@@ -467,10 +462,9 @@
 <span class="sd">            If set to &#39;value&#39;, `start` corresponds to the index value/label of the first predicted point. Will raise</span>
 <span class="sd">            an error if the value is not in `series`&#39; index. Default: `&#39;value&#39;`</span>
 <span class="sd">        num_samples</span>
-<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for</span>
-<span class="sd">            deterministic models.</span>
+<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.</span>
 <span class="sd">        verbose</span>
-<span class="sd">            Whether to print progress.</span>
+<span class="sd">            Whether to print the progress.</span>
 <span class="sd">        show_warnings</span>
 <span class="sd">            Whether to show warnings related to historical forecasts optimization, or parameters `start` and</span>
 <span class="sd">            `train_length`.</span>
@@ -521,10 +515,10 @@
         <span class="n">enable_optimization</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">metric</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span>
-        <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
-        <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]],</span>
-        <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
-        <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]],</span>
+        <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+        <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]],</span>
+        <span class="n">Sequence</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
+        <span class="n">Sequence</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]],</span>
     <span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the accuracy of the anomaly scores computed by the model.</span>
 
@@ -563,10 +557,9 @@
 <span class="sd">            If set to &#39;value&#39;, `start` corresponds to the index value/label of the first predicted point. Will raise</span>
 <span class="sd">            an error if the value is not in `series`&#39; index. Default: `&#39;value&#39;`</span>
 <span class="sd">        num_samples</span>
-<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for</span>
-<span class="sd">            deterministic models.</span>
+<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.</span>
 <span class="sd">        verbose</span>
-<span class="sd">            Whether to print progress.</span>
+<span class="sd">            Whether to print the progress.</span>
 <span class="sd">        show_warnings</span>
 <span class="sd">            Whether to show warnings related to historical forecasts optimization, or parameters `start` and</span>
 <span class="sd">            `train_length`.</span>
@@ -669,10 +662,9 @@
 <span class="sd">            If set to &#39;value&#39;, `start` corresponds to the index value/label of the first predicted point. Will raise</span>
 <span class="sd">            an error if the value is not in `series`&#39; index. Default: `&#39;value&#39;`</span>
 <span class="sd">        num_samples</span>
-<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for</span>
-<span class="sd">            deterministic models.</span>
+<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.</span>
 <span class="sd">        verbose</span>
-<span class="sd">            Whether to print progress.</span>
+<span class="sd">            Whether to print the progress.</span>
 <span class="sd">        show_warnings</span>
 <span class="sd">            Whether to show warnings related to historical forecasts optimization, or parameters `start` and</span>
 <span class="sd">            `train_length`.</span>

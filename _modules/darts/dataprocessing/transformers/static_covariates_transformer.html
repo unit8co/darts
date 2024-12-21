@@ -179,12 +179,8 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span>
-
-<span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
-<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -208,8 +204,8 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">transformer_num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">transformer_cat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">cols_num</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">cols_cat</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">cols_num</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">cols_cat</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">&quot;StaticCovariatesTransformer&quot;</span><span class="p">,</span>
         <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -328,7 +324,7 @@
 
 <div class="viewcode-block" id="StaticCovariatesTransformer.ts_fit"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.static_covariates_transformer.html#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_fit">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">ts_fit</span><span class="p">(</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Collates static covariates of all provided `TimeSeries` and fits the following parameters:</span>
@@ -435,9 +431,9 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a boolean array indicating which components of the UNTRANSFORMED</span>
 <span class="sd">        `stat_covs` are numerical and a boolean array indicating which components</span>
-<span class="sd">        of the UNTRANSFORMED `stat_covs` are categoical.</span>
+<span class="sd">        of the UNTRANSFORMED `stat_covs` are categorical.</span>
 
-<span class="sd">        It&#39;s important to recognise that these masks only apply to the UNTRANSFORMED</span>
+<span class="sd">        It&#39;s important to recognize that these masks only apply to the UNTRANSFORMED</span>
 <span class="sd">        static covariates since some transformations can generate multiple new components</span>
 <span class="sd">        from a single component (e.g. one-hot encoding).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -496,15 +492,15 @@
     <span class="k">def</span> <span class="nf">_create_inv_component_masks</span><span class="p">(</span>
         <span class="n">mask_num</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
         <span class="n">mask_cat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">cat_mapping</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+        <span class="n">cat_mapping</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
         <span class="n">cols_cat</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a boolean array indicating which components of the TRANSFORMED</span>
 <span class="sd">        `stat_covs` are numerical and a boolean array indicating which components</span>
-<span class="sd">        of the TRANSFORMED `stat_covs` are categoical.</span>
+<span class="sd">        of the TRANSFORMED `stat_covs` are categorical.</span>
 
-<span class="sd">        It&#39;s important to recognise that these masks only apply to the UNTRANSFORMED</span>
+<span class="sd">        It&#39;s important to recognize that these masks only apply to the UNTRANSFORMED</span>
 <span class="sd">        static covariates since some transformations can generate multiple new components</span>
 <span class="sd">        from a single component (e.g. one-hot encoding).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -535,7 +531,7 @@
 
 <div class="viewcode-block" id="StaticCovariatesTransformer.ts_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.static_covariates_transformer.html#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_transform">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">StaticCovariatesTransformer</span><span class="o">.</span><span class="n">_transform_static_covs</span><span class="p">(</span>
             <span class="n">series</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fitted&quot;</span><span class="p">],</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;transform&quot;</span>
@@ -543,7 +539,7 @@
 
 <div class="viewcode-block" id="StaticCovariatesTransformer.ts_inverse_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.static_covariates_transformer.html#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_inverse_transform">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">ts_inverse_transform</span><span class="p">(</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">StaticCovariatesTransformer</span><span class="o">.</span><span class="n">_transform_static_covs</span><span class="p">(</span>
             <span class="n">series</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fitted&quot;</span><span class="p">],</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;inverse_transform&quot;</span>
@@ -552,7 +548,7 @@
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_transform_static_covs</span><span class="p">(</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">fitted_params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">fitted_params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
         <span class="n">method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;transform&quot;</span><span class="p">,</span> <span class="s2">&quot;inverse_transform&quot;</span><span class="p">],</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -601,7 +597,7 @@
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_extract_static_covs</span><span class="p">(</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">mask_num</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">mask_cat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extracts all static covariates from a `TimeSeries`, and then extracts the numerical</span>
 <span class="sd">        and categorical components to transform from these static covariates.</span>
@@ -616,7 +612,7 @@
         <span class="n">vals_cat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
         <span class="n">mask_num</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
         <span class="n">mask_cat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">col_map_cat</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+        <span class="n">col_map_cat</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Adds transformed static covariates back to original `TimeSeries`. The categorical component</span>

@@ -218,6 +218,13 @@
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
+  <a class="reference internal" href="23-Conformal-Prediction-examples.html">
+   Conformal Prediction Models
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
   <a class="reference internal" href="03-FFT-examples.html">
    Fast Fourier Transform Forecasting Model (FFT)
   </a>
@@ -639,19 +646,19 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span></span><span class="kn">import</span> <span class="nn">warnings</span>
 
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">import</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="k">as</span> <span class="nn">tg</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">EnergyDataset</span>
 <span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TCNModel</span>
 <span class="kn">from</span> <span class="nn">darts.utils.callbacks</span> <span class="kn">import</span> <span class="n">TFMProgressBar</span>
-<span class="kn">import</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="k">as</span> <span class="nn">tg</span>
 <span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">GaussianLikelihood</span><span class="p">,</span> <span class="n">QuantileRegression</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">EnergyDataset</span>
 <span class="kn">from</span> <span class="nn">darts.utils.missing_values</span> <span class="kn">import</span> <span class="n">fill_missing_values</span>
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
 <span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">concatenate</span>
-<span class="kn">import</span> <span class="nn">warnings</span>
 
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
 <span class="kn">import</span> <span class="nn">logging</span>

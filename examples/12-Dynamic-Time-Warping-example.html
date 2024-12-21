@@ -218,6 +218,13 @@
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
+  <a class="reference internal" href="23-Conformal-Prediction-examples.html">
+   Conformal Prediction Models
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
   <a class="reference internal" href="03-FFT-examples.html">
    Fast Fourier Transform Forecasting Model (FFT)
   </a>
@@ -717,17 +724,16 @@ div.rendered_html tbody tr:hover {
 <span class="o">%</span><span class="k">autoreload</span> 2
 <span class="o">%</span><span class="k">matplotlib</span> inline
 
-<span class="kn">from</span> <span class="nn">darts.dataprocessing</span> <span class="kn">import</span> <span class="n">dtw</span>
-<span class="kn">from</span> <span class="nn">darts.utils</span> <span class="kn">import</span> <span class="n">timeseries_generation</span> <span class="k">as</span> <span class="n">tg</span>
-<span class="kn">from</span> <span class="nn">darts.utils.missing_values</span> <span class="kn">import</span> <span class="n">fill_missing_values</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">SunspotsDataset</span>
-<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">dtw_metric</span><span class="p">,</span> <span class="n">mae</span><span class="p">,</span> <span class="n">mape</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">MovingAverageFilter</span>
-<span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">argrelextrema</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">argrelextrema</span>
+
+<span class="kn">from</span> <span class="nn">darts.dataprocessing</span> <span class="kn">import</span> <span class="n">dtw</span>
+<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">SunspotsDataset</span>
+<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">dtw_metric</span><span class="p">,</span> <span class="n">mae</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">MovingAverageFilter</span>
+<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 </pre></div>
 </div>
 </div>

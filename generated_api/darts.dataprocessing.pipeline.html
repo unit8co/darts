@@ -577,6 +577,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
+       Conformal Models
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.croston.html">
        Croston method
       </a>
@@ -872,14 +877,14 @@
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>transformers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer" title="darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDataTransformer</span></code></a>]) – Sequence of data transformers.</p></li>
 <li><p><strong>copy</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If set makes a (deep) copy of each data transformer before adding them to the pipeline</p></li>
-<li><p><strong>n_jobs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
+<li><p><strong>n_jobs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input to a method, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.
 Note: for a small amount of data, the parallelisation overhead could end up increasing the total
 required amount of time.
 Note: this parameter will overwrite the value set in each single transformer. Leave this parameter set to
 <cite>None</cite> for keeping the original transformers’ configurations.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Whether to print progress of the operations.
+<li><p><strong>verbose</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Whether to print progress of the operations.
 Note: this parameter will overwrite the value set in each single transformer. Leave this parameter set
 to <cite>None</cite> for keeping the transformers configurations.</p></li>
 </ul>
@@ -908,6 +913,21 @@ to <cite>None</cite> for keeping the transformers configurations.</p></li>
 <span class="go">Dimensions without coordinates: sample</span>
 </pre></div>
 </div>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.pipeline.Pipeline.fittable" title="darts.dataprocessing.pipeline.Pipeline.fittable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fittable</span></code></a></p></td>
+<td><p>Returns whether the pipeline is fittable or not.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.pipeline.Pipeline.invertible" title="darts.dataprocessing.pipeline.Pipeline.invertible"><code class="xref py py-obj docutils literal notranslate"><span class="pre">invertible</span></code></a></p></td>
+<td><p>Returns whether the pipeline is invertible or not.</p></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="autosummary longtable table autosummary">
 <colgroup>
@@ -921,13 +941,10 @@ to <cite>None</cite> for keeping the transformers configurations.</p></li>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.pipeline.Pipeline.fit_transform" title="darts.dataprocessing.pipeline.Pipeline.fit_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_transform</span></code></a>(data)</p></td>
 <td><p>For each data transformer in the pipeline, first fit the data if transformer is fittable then transform data using fitted transformer.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.pipeline.Pipeline.inverse_transform" title="darts.dataprocessing.pipeline.Pipeline.inverse_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inverse_transform</span></code></a>(data[, partial])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.pipeline.Pipeline.inverse_transform" title="darts.dataprocessing.pipeline.Pipeline.inverse_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inverse_transform</span></code></a>(data[, partial, series_idx])</p></td>
 <td><p>For each data transformer in the pipeline, inverse-transform data.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.pipeline.Pipeline.invertible" title="darts.dataprocessing.pipeline.Pipeline.invertible"><code class="xref py py-obj docutils literal notranslate"><span class="pre">invertible</span></code></a>()</p></td>
-<td><p>Returns whether the pipeline is invertible or not.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.pipeline.Pipeline.transform" title="darts.dataprocessing.pipeline.Pipeline.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(data)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.pipeline.Pipeline.transform" title="darts.dataprocessing.pipeline.Pipeline.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(data[, series_idx])</p></td>
 <td><p>For each data transformer in pipeline transform data.</p></td>
 </tr>
 </tbody>
@@ -961,9 +978,24 @@ using fitted transformer. The transformed data is then passed to next transforme
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.dataprocessing.pipeline.Pipeline.fittable">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fittable</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.dataprocessing.pipeline.Pipeline.fittable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the pipeline is fittable or not.
+A pipeline is fittable if at least one of the transformers in the pipeline is fittable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><cite>True</cite> if the pipeline is fittable, <cite>False</cite> otherwise</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.pipeline.Pipeline.inverse_transform">
-<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/pipeline.html#Pipeline.inverse_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.pipeline.Pipeline.inverse_transform" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/pipeline.html#Pipeline.inverse_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.pipeline.Pipeline.inverse_transform" title="Permalink to this definition">¶</a></dt>
 <dd><p>For each data transformer in the pipeline, inverse-transform data. Then inverse transformed data is passed to
 the next transformer. Transformers are traversed in reverse order. Raises value error if not all of the
 transformers are invertible and <code class="docutils literal notranslate"><span class="pre">partial</span></code> is set to <cite>False</cite>. Set <code class="docutils literal notranslate"><span class="pre">partial</span></code> to True for inverting only the
@@ -974,6 +1006,8 @@ InvertibleDataTransformer in the pipeline.</p>
 <li><p><strong>data</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (Sequence of) TimeSeries to be inverse transformed.</p></li>
 <li><p><strong>partial</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If set to <cite>True</cite>, the inverse transformation is applied even if the pipeline is not fully invertible,
 calling <cite>inverse_transform()</cite> only on the <a href="#id1"><span class="problematic" id="id2">`</span></a>InvertibleDataTransformer`s</p></li>
+<li><p><strong>series_idx</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the index(es) of each series corresponding to their positions within the series used to fit
+the transformer (to retrieve the appropriate transformer parameters).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -985,9 +1019,9 @@ calling <cite>inverse_transform()</cite> only on the <a href="#id1"><span class=
 </dl>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.pipeline.Pipeline.invertible">
-<span class="sig-name descname"><span class="pre">invertible</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/pipeline.html#Pipeline.invertible"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.pipeline.Pipeline.invertible" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">invertible</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.dataprocessing.pipeline.Pipeline.invertible" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns whether the pipeline is invertible or not.
 A pipeline is invertible if all transformers in the pipeline are themselves invertible.</p>
 <dl class="field-list simple">
@@ -1002,11 +1036,15 @@ A pipeline is invertible if all transformers in the pipeline are themselves inve
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.pipeline.Pipeline.transform">
-<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/pipeline.html#Pipeline.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.pipeline.Pipeline.transform" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/pipeline.html#Pipeline.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.pipeline.Pipeline.transform" title="Permalink to this definition">¶</a></dt>
 <dd><p>For each data transformer in pipeline transform data. Then transformed data is passed to next transformer.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>data</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (<cite>Sequence</cite> of) <cite>TimeSeries</cite> to be transformed.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (<cite>Sequence</cite> of) <cite>TimeSeries</cite> to be transformed.</p></li>
+<li><p><strong>series_idx</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the index(es) of each series corresponding to their positions within the series used to fit
+the transformer (to retrieve the appropriate transformer parameters).</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Transformed data.</p>

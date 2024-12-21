@@ -577,6 +577,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
+       Conformal Models
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.croston.html">
        Croston method
       </a>
@@ -982,14 +987,14 @@ DatetimeIndex. If an integer is passed, the index will be a pandas RangeIndex in
 either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
-<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DateOffset</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
 a DateOffset alias is expected; see
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
 By default, “D” (daily) is used.
 If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
 The freq is optional for generating an integer index (if not specified, 1 is used).</p></li>
-<li><p><strong>name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, an index name.</p></li>
+<li><p><strong>name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an index name.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1006,8 +1011,8 @@ The freq is optional for generating an integer index (if not specified, 1 is use
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>components</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – A sequence of component names to add to the beginning of the returned names.</p></li>
-<li><p><strong>parameter_names</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – A sequence of likelihood parameter names to add to the end of the returned names.</p></li>
+<li><p><strong>components</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – A sequence of component names to add to the beginning of the returned names.</p></li>
+<li><p><strong>parameter_names</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – A sequence of likelihood parameter names to add to the end of the returned names.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1060,8 +1065,8 @@ Works for both integers and time stamps.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>q_interval</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]]) – A tuple or multiple tuples with the (lower bound, upper bound) of the quantile intervals.</p></li>
-<li><p><strong>component</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, a component name to add to the beginning of the quantile names.</p></li>
+<li><p><strong>q_interval</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]]) – A tuple or multiple tuples with the (lower bound, upper bound) of the quantile intervals.</p></li>
+<li><p><strong>component</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a component name to add to the beginning of the quantile names.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1074,8 +1079,45 @@ Works for both integers and time stamps.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>q</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]) – A float or list of floats with the quantiles to generate the names for.</p></li>
-<li><p><strong>component</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, a component name to add to the beginning of the quantile names.</p></li>
+<li><p><strong>q</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]) – A float or list of floats with the quantiles to generate the names for.</p></li>
+<li><p><strong>component</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a component name to add to the beginning of the quantile names.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.utils.random_method">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.utils.</span></span><span class="sig-name descname"><span class="pre">random_method</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decorated</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/utils.html#random_method"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.utils.random_method" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decorator usable on any method within a class that will provide a random context.</p>
+<p>The decorator will store a <cite>_random_instance</cite> property on the object in order to persist successive calls to the
+RNG.</p>
+<p>This is the equivalent to <cite>darts.utils.torch.random_method</cite> but for non-torch models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>decorated</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[…, ~T]) – A method to be run in an isolated torch random context.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[…, ~T]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.utils.sample_from_quantiles">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.utils.</span></span><span class="sig-name descname"><span class="pre">sample_from_quantiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantiles</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/utils.html#sample_from_quantiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.utils.sample_from_quantiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates <cite>num_samples</cite> samples from quantile predictions using linear interpolation. The generated samples
+should have quantile values close to the quantile predictions. For the lowest and highest quantiles, the lowest
+and highest quantile predictions are repeated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – A numpy array of quantile predictions/values. Either an array with two dimensions
+(n times, n components * n quantiles), or with three dimensions (n times, n components, n quantiles).
+In the two-dimensional case, the order is first by ascending column, then by ascending quantile value
+<cite>(comp_0_q_0, comp_0_q_1, … comp_n_q_m)</cite></p></li>
+<li><p><strong>quantiles</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – A numpy array of quantiles.</p></li>
+<li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of samples to generate.</p></li>
 </ul>
 </dd>
 </dl>

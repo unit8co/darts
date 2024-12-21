@@ -577,6 +577,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
+       Conformal Models
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.croston.html">
        Croston method
       </a>
@@ -1183,7 +1188,7 @@ Implement this to override the items displayed in the progress bar.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]]</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Dictionary with the items to be displayed in the progress bar.</p>
@@ -1282,7 +1287,7 @@ Implement this to override the items displayed in the progress bar.</p>
 <dd><p>Called when loading a checkpoint, implement to reload callback state given callback’s <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>state_dict</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – the callback state returned by <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dd class="field-odd"><p><strong>state_dict</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – the callback state returned by <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
@@ -1376,7 +1381,7 @@ Implement this to override the items displayed in the progress bar.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>trainer</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code>) – the current <code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code> instance.</p></li>
 <li><p><strong>pl_module</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">LightningModule</span></code>) – the current <code class="xref py py-class docutils literal notranslate"><span class="pre">LightningModule</span></code> instance.</p></li>
-<li><p><strong>checkpoint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – the full checkpoint dictionary that got loaded by the Trainer.</p></li>
+<li><p><strong>checkpoint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – the full checkpoint dictionary that got loaded by the Trainer.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1482,7 +1487,7 @@ Implement this to override the items displayed in the progress bar.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>trainer</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code>) – the current <code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code> instance.</p></li>
 <li><p><strong>pl_module</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">LightningModule</span></code>) – the current <code class="xref py py-class docutils literal notranslate"><span class="pre">LightningModule</span></code> instance.</p></li>
-<li><p><strong>checkpoint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – the checkpoint dictionary that will be saved.</p></li>
+<li><p><strong>checkpoint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – the checkpoint dictionary that will be saved.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1803,7 +1808,7 @@ loss returned from <code class="docutils literal notranslate"><span class="pre">
 <dd><p>Called when saving a checkpoint, implement to generate callback’s <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>A dictionary containing callback state.</p>

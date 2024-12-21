@@ -28,7 +28,7 @@ Content of this guide
    * `Forecast / Prediction <#forecastprediction>`_
 
 #. 
-   Advanced functionnalities section provides some example of TFMs advanced features:
+   Advanced functionalities section provides some example of TFMs advanced features:
 
 
    * `Model saving and loading <#saving-and-loading-model-states>`_
@@ -44,7 +44,7 @@ Content of this guide
      * `Custom Callback <#example-of-custom-callback-to-store-losses>`_
 
 #. 
-   `Performance optimisation section <#performance-recommendations>`_ lists tricks to speed up the computation during training.
+   `Performance optimization section <#performance-recommendations>`_ lists tricks to speed up the computation during training.
 
 Introduction
 ------------

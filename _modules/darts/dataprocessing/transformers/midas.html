@@ -178,7 +178,8 @@
 <span class="sd">---------------------------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -229,14 +230,14 @@
 <span class="sd">            Whether to remove the NaNs from the start and the end of the transformed series.</span>
 <span class="sd">        drop_static_covariates</span>
 <span class="sd">            If set to `True`, the statics covariates of the input series won&#39;t be transferred to the output.</span>
-<span class="sd">            This migth be useful for multivariate series with component-specific static covariates.</span>
+<span class="sd">            This might be useful for multivariate series with component-specific static covariates.</span>
 <span class="sd">        name</span>
 <span class="sd">            A specific name for the scaler</span>
 <span class="sd">        n_jobs</span>
 <span class="sd">            The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is</span>
-<span class="sd">            passed as input to a method, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
+<span class="sd">            passed as input to a method, parallelizing operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">            (sequential). Setting the parameter to `-1` means using all the available processors.</span>
-<span class="sd">            Note: for a small amount of data, the parallelisation overhead could end up increasing the total</span>
+<span class="sd">            Note: for a small amount of data, the parallelization overhead could end up increasing the total</span>
 <span class="sd">            required amount of time.</span>
 <span class="sd">        verbose</span>
 <span class="sd">            Optionally, whether to print operations progress</span>
@@ -290,7 +291,7 @@
         <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
         <span class="o">*</span><span class="n">args</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;MIDAS needs the high frequency period name in order to easily reverse_transform</span>
 <span class="sd">        TimeSeries, the parallelization is handled by `transform` and/or `inverse_transform`</span>
 <span class="sd">        (see InvertibleDataTransformer.__init__() docstring).</span>

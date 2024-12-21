@@ -180,7 +180,8 @@
 <span class="sd">A collection of simple benchmark models for single uni- and multivariate series.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
@@ -444,7 +445,7 @@
 <div class="viewcode-block" id="NaiveEnsembleModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel">[docs]</a><span class="k">class</span> <span class="nc">NaiveEnsembleModel</span><span class="p">(</span><span class="n">EnsembleModel</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">forecasting_models</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ForecastingModel</span><span class="p">],</span>
+        <span class="n">forecasting_models</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ForecastingModel</span><span class="p">],</span>
         <span class="n">train_forecasting_models</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>

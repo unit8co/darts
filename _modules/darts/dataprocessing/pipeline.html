@@ -178,8 +178,9 @@
 <span class="sd">--------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="p">(</span>
@@ -264,6 +265,16 @@
             <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">InvertibleDataTransformer</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transformers</span>
         <span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fittable</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">FittableDataTransformer</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transformers</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_global_fit</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span>
+            <span class="n">t</span><span class="o">.</span><span class="n">_global_fit</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transformers</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">FittableDataTransformer</span><span class="p">)</span>
+        <span class="p">)</span>
+
         <span class="k">if</span> <span class="n">verbose</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">transformer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transformers</span><span class="p">:</span>
                 <span class="n">transformer</span><span class="o">.</span><span class="n">set_verbose</span><span class="p">(</span><span class="n">verbose</span><span class="p">)</span>
@@ -323,7 +334,9 @@
         <span class="k">return</span> <span class="n">data</span></div>
 
 <div class="viewcode-block" id="Pipeline.transform"><a class="viewcode-back" href="../../../generated_api/darts.dataprocessing.pipeline.html#darts.dataprocessing.pipeline.Pipeline.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">series_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        For each data transformer in pipeline transform data. Then transformed data is passed to next transformer.</span>
@@ -332,6 +345,9 @@
 <span class="sd">        ----------</span>
 <span class="sd">        data</span>
 <span class="sd">            (`Sequence` of) `TimeSeries` to be transformed.</span>
+<span class="sd">        series_idx</span>
+<span class="sd">            Optionally, the index(es) of each series corresponding to their positions within the series used to fit</span>
+<span class="sd">            the transformer (to retrieve the appropriate transformer parameters).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -339,11 +355,14 @@
 <span class="sd">            Transformed data.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">transformer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transformers</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">series_idx</span><span class="o">=</span><span class="n">series_idx</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">data</span></div>
 
 <div class="viewcode-block" id="Pipeline.inverse_transform"><a class="viewcode-back" href="../../../generated_api/darts.dataprocessing.pipeline.html#darts.dataprocessing.pipeline.Pipeline.inverse_transform">[docs]</a>    <span class="k">def</span> <span class="nf">inverse_transform</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span> <span class="n">partial</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">partial</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">series_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        For each data transformer in the pipeline, inverse-transform data. Then inverse transformed data is passed to</span>
@@ -358,6 +377,9 @@
 <span class="sd">        partial</span>
 <span class="sd">            If set to `True`, the inverse transformation is applied even if the pipeline is not fully invertible,</span>
 <span class="sd">            calling `inverse_transform()` only on the `InvertibleDataTransformer`s</span>
+<span class="sd">        series_idx</span>
+<span class="sd">            Optionally, the index(es) of each series corresponding to their positions within the series used to fit</span>
+<span class="sd">            the transformer (to retrieve the appropriate transformer parameters).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -372,15 +394,19 @@
             <span class="p">)</span>
 
             <span class="k">for</span> <span class="n">transformer</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_transformers</span><span class="p">):</span>
-                <span class="n">data</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">series_idx</span><span class="o">=</span><span class="n">series_idx</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">data</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">transformer</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_transformers</span><span class="p">):</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">transformer</span><span class="p">,</span> <span class="n">InvertibleDataTransformer</span><span class="p">):</span>
-                    <span class="n">data</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span>
+                        <span class="n">data</span><span class="p">,</span>
+                        <span class="n">series_idx</span><span class="o">=</span><span class="n">series_idx</span><span class="p">,</span>
+                    <span class="p">)</span>
             <span class="k">return</span> <span class="n">data</span></div>
 
-<div class="viewcode-block" id="Pipeline.invertible"><a class="viewcode-back" href="../../../generated_api/darts.dataprocessing.pipeline.html#darts.dataprocessing.pipeline.Pipeline.invertible">[docs]</a>    <span class="k">def</span> <span class="nf">invertible</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">invertible</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns whether the pipeline is invertible or not.</span>
 <span class="sd">        A pipeline is invertible if all transformers in the pipeline are themselves invertible.</span>
@@ -390,7 +416,35 @@
 <span class="sd">        bool</span>
 <span class="sd">            `True` if the pipeline is invertible, `False` otherwise</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_invertible</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_invertible</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">fittable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns whether the pipeline is fittable or not.</span>
+<span class="sd">        A pipeline is fittable if at least one of the transformers in the pipeline is fittable.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            `True` if the pipeline is fittable, `False` otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fittable</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_fit_called</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns whether all the transformers in the pipeline were fitted (when applicable).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            `True` if all the fittable transformers are fitted, `False` otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span>
+            <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">FittableDataTransformer</span><span class="p">))</span> <span class="ow">or</span> <span class="n">t</span><span class="o">.</span><span class="n">_fit_called</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transformers</span>
+        <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">slice</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;Pipeline&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>

@@ -252,7 +252,7 @@
 <hr class="docutils" />
 <a class="reference external image-reference" href="https://badge.fury.io/py/darts"><img alt="PyPI version" src="https://badge.fury.io/py/u8darts.svg" /></a>
 <a class="reference external image-reference" href="https://anaconda.org/conda-forge/u8darts-all"><img alt="Conda Version" src="https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg" /></a>
-<a class="reference external image-reference" href="https://img.shields.io/badge/python-3.8+-blue.svg"><img alt="Supported versions" src="https://img.shields.io/badge/python-3.8+-blue.svg" /></a>
+<a class="reference external image-reference" href="https://img.shields.io/badge/python-3.9+-blue.svg"><img alt="Supported versions" src="https://img.shields.io/badge/python-3.9+-blue.svg" /></a>
 <a class="reference external image-reference" href="https://hub.docker.com/r/unit8/darts"><img alt="Docker Image Version (latest by date)" src="https://img.shields.io/docker/v/unit8/darts?label=docker&amp;sort=date" /></a>
 <a class="reference external image-reference" href="https://img.shields.io/github/release-date/unit8co/darts"><img alt="GitHub Release Date" src="https://img.shields.io/github/release-date/unit8co/darts" /></a>
 <a class="reference external image-reference" href="https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master" /></a>
@@ -303,7 +303,7 @@ fledged anomaly detection models.</p>
 </section>
 <section id="quick-install">
 <h2>Quick Install<a class="headerlink" href="#quick-install" title="Permalink to this heading">¶</a></h2>
-<p>We recommend to first setup a clean Python environment for your project with Python 3.8+ using your favorite tool
+<p>We recommend to first setup a clean Python environment for your project with Python 3.9+ using your favorite tool
 (<span class="raw-html-m2r"><a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a></span>,
 <a class="reference external" href="https://docs.python.org/3/library/venv.html">venv</a>, <a class="reference external" href="https://virtualenv.pypa.io/en/latest/">virtualenv</a> with
 or without <a class="reference external" href="https://virtualenvwrapper.readthedocs.io/en/latest/">virtualenvwrapper</a>).</p>
@@ -397,27 +397,29 @@ a fully fledged anomaly detection model that compares predictions with actuals.
 The <code class="docutils literal notranslate"><span class="pre">PyODScorer</span></code> makes it trivial to use PyOD detectors on time series.</p></li>
 <li><p><strong>Multivariate Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can be multivariate - i.e., contain multiple time-varying
 dimensions/columns instead of a single scalar value. Many models can consume and produce multivariate series.</p></li>
-<li><p><strong>Multiple series training (global models):</strong> All machine learning based models (incl. all neural networks)
+<li><p><strong>Multiple Series Training (Global Models):</strong> All machine learning based models (incl. all neural networks)
 support being trained on multiple (potentially multivariate) series. This can scale to large datasets too.</p></li>
 <li><p><strong>Probabilistic Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can (optionally) represent stochastic
 time series; this can for instance be used to get confidence intervals, and many models support different
 flavours of probabilistic forecasting (such as estimating parametric distributions or quantiles).
 Some anomaly detection scorers are also able to exploit these predictive distributions.</p></li>
-<li><p><strong>Past and Future Covariates support:</strong> Many models in Darts support past-observed and/or future-known
+<li><p><strong>Conformal Prediction Support:</strong> Our conformal prediction models allow to generate probabilistic forecasts with
+calibrated quantile intervals for any pre-trained global forecasting model.</p></li>
+<li><p><strong>Past and Future Covariates Support:</strong> Many models in Darts support past-observed and/or future-known
 covariate (external data) time series as inputs for producing forecasts.</p></li>
-<li><p><strong>Static Covariates support:</strong> In addition to time-dependent data, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can also contain
+<li><p><strong>Static Covariates Support:</strong> In addition to time-dependent data, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can also contain
 static data for each dimension, which can be exploited by some models.</p></li>
 <li><p><strong>Hierarchical Reconciliation:</strong> Darts offers transformers to perform reconciliation.
 These can make the forecasts add up in a way that respects the underlying hierarchy.</p></li>
 <li><p><strong>Regression Models:</strong> It is possible to plug-in any scikit-learn compatible model
 to obtain forecasts as functions of lagged values of the target series and covariates.</p></li>
-<li><p><strong>Training with sample weights:</strong> All global models support being trained with sample weights. They can be
+<li><p><strong>Training with Sample Weights:</strong> All global models support being trained with sample weights. They can be
 applied to each observation, forecasted time step and target column.</p></li>
 <li><p><strong>Forecast Start Shifting:</strong> All global models support training and prediction on a shifted output window.
 This is useful for example for Day-Ahead Market forecasts, or when the covariates (or target series) are reported
 with a delay.</p></li>
 <li><p><strong>Explainability:</strong> Darts has the ability to <em>explain</em> some forecasting models using Shap values.</p></li>
-<li><p><strong>Data processing:</strong> Tools to easily apply (and revert) common transformations on
+<li><p><strong>Data Processing:</strong> Tools to easily apply (and revert) common transformations on
 time series data (scaling, filling missing values, differencing, boxcox, …)</p></li>
 <li><p><strong>Metrics:</strong> A variety of metrics for evaluating time series’ goodness of fit;
 from R2-scores to Mean Absolute Scaled Error.</p></li>
@@ -771,6 +773,27 @@ on bringing more models and features.</p>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel">RegressionEnsembleModel</a></p></td>
 <td></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅ ✅ ✅</p></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Conformal Models</strong><span class="raw-html-m2r"><br/></span>(<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>): Model support is dependent on the forecasting model used</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalNaiveModel">ConformalNaiveModel</a></p></td>
+<td><p><a class="reference external" href="https://arxiv.org/pdf/1905.03222">Conformalized Prediction</a></p></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅ ✅ ✅</p></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalQRModel">ConformalQRModel</a></p></td>
+<td><p><a class="reference external" href="https://arxiv.org/pdf/1905.03222">Conformalized Quantile Regression</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>

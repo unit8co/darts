@@ -577,6 +577,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
+       Conformal Models
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.croston.html">
        Croston method
       </a>
@@ -872,21 +877,21 @@ starting values <cite>start_values</cite>.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>coef</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – The autoregressive coefficients used for calculating the next time step.
 series[t] = coef[-1] * series[t-1] + coef[-2] * series[t-2] + … + coef[0] * series[t-len(coef)]</p></li>
-<li><p><strong>start_values</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]) – The starting values used for calculating the first few values for which no lags exist yet.
+<li><p><strong>start_values</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The starting values used for calculating the first few values for which no lags exist yet.
 series[0] = coef[-1] * starting_values[-1] + coef[-2] * starting_values[-2] + … + coef[0] * starting_values[0]</p></li>
 <li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
 DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
 either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
-<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
 a DateOffset alias is expected; see
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
 By default, “D” (daily) is used.
 If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
 The freq is optional for generating an integer index (if not specified, 1 is used).</p></li>
-<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
+<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -911,7 +916,7 @@ DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeI
 either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
-<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
 a DateOffset alias is expected; see
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
@@ -919,7 +924,7 @@ By default, “D” (daily) is used.
 If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
 The freq is optional for generating an integer index (if not specified, 1 is used).</p>
 </p></li>
-<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
+<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
 <li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
 </ul>
 </dd>
@@ -956,7 +961,7 @@ and int for range indexed series, should match or exceed forecasting window.</p>
 <li><p><strong>add_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Extend the time_index by add_length, should match or exceed forecasting window.
 Set only one of until and add_length.</p></li>
 <li><p><strong>dtype</strong> – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
-<li><p><strong>with_columns</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>Optionally, specify the output component names.
+<li><p><strong>with_columns</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>Optionally, specify the output component names.
 * If <cite>one_hot</cite> and <cite>cyclic</cite> are <code class="docutils literal notranslate"><span class="pre">False</span></code>, must be a string
 * If <cite>cyclic</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, must be a list of two strings. The first string for the sine, the second for the</p>
 <blockquote>
@@ -970,7 +975,7 @@ Set only one of until and add_length.</p></li>
 </li>
 </ul>
 </p></li>
-<li><p><strong>tz</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, a time zone to convert the time index to before computing the attributes.</p></li>
+<li><p><strong>tz</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a time zone to convert the time index to before computing the attributes.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1003,7 +1008,7 @@ DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeI
 either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
-<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
 a DateOffset alias is expected; see
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
@@ -1011,7 +1016,7 @@ By default, “D” (daily) is used.
 If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
 The freq is optional for generating an integer index (if not specified, 1 is used).</p>
 </p></li>
-<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
+<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
 <li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
 </ul>
 </dd>
@@ -1035,15 +1040,15 @@ The freq is optional for generating an integer index (if not specified, 1 is use
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>time_index</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>]) – Either a <cite>pd.DatetimeIndex</cite> or a <cite>TimeSeries</cite> for which to generate the holidays.</p></li>
 <li><p><strong>country_code</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The country ISO code.</p></li>
-<li><p><strong>prov</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The province.</p></li>
-<li><p><strong>state</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The state.</p></li>
+<li><p><strong>prov</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The province.</p></li>
+<li><p><strong>state</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The state.</p></li>
 <li><p><strong>until</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Extend the time_index up until timestamp for datetime indexed series
 and int for range indexed series, should match or exceed forecasting window.</p></li>
 <li><p><strong>add_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Extend the time_index by add_length, should match or exceed forecasting window.
 Set only one of until and add_length.</p></li>
-<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries.</p></li>
+<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the value column for the returned TimeSeries.</p></li>
 <li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series.</p></li>
-<li><p><strong>tz</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, a time zone to convert the time index to before generating the holidays.</p></li>
+<li><p><strong>tz</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a time zone to convert the time index to before generating the holidays.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1072,7 +1077,7 @@ DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeI
 either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
-<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
 a DateOffset alias is expected; see
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
@@ -1080,7 +1085,7 @@ By default, “D” (daily) is used.
 If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
 The freq is optional for generating an integer index (if not specified, 1 is used).</p>
 </p></li>
-<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
+<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
 <li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
 </ul>
 </dd>
@@ -1108,7 +1113,7 @@ DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeI
 either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
-<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
 a DateOffset alias is expected; see
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
@@ -1116,7 +1121,7 @@ By default, “D” (daily) is used.
 If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
 The freq is optional for generating an integer index (if not specified, 1 is used).</p>
 </p></li>
-<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
+<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
 <li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
 </ul>
 </dd>
@@ -1146,7 +1151,7 @@ DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeI
 either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
-<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
 a DateOffset alias is expected; see
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
@@ -1154,7 +1159,7 @@ By default, “D” (daily) is used.
 If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
 The freq is optional for generating an integer index (if not specified, 1 is used).</p>
 </p></li>
-<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
+<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
 <li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
 </ul>
 </dd>

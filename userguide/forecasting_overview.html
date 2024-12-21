@@ -386,7 +386,7 @@ one or several <code class="docutils literal notranslate"><span class="pre">Time
 The advantage of training on multiple series is that a single model can be exposed to more patterns occurring across all series in the training dataset. That can often be beneficial, especially for larger models with more capacity.</p>
 <p>In turn, the advantage of having <code class="docutils literal notranslate"><span class="pre">predict()</span></code> providing forecasts for potentially several series at once is that the computation can often be batched and vectorized across the multiple series, which is computationally faster than calling <code class="docutils literal notranslate"><span class="pre">predict()</span></code> multiple times on isolated series.</p>
 <p>These models are shown with a “✅” under the <code class="docutils literal notranslate"><span class="pre">Multiple-series</span> <span class="pre">training</span></code> column on the <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">model list</a>.</p>
-<p>You can also find out programatically, whether a model supports multiple series.</p>
+<p>You can also find out programmatically, whether a model supports multiple series.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="n">GlobalForecastingModel</span>
 

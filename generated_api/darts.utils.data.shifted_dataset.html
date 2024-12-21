@@ -577,6 +577,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
+       Conformal Models
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.croston.html">
        Croston method
       </a>
@@ -893,7 +898,7 @@ covariates in the sequence must have a time span large enough to contain all the
 The joint slicing of the target and covariates is relying on the time axes of both series.</p></li>
 <li><p><strong>length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted past and future series.</p></li>
 <li><p><strong>shift</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps by which to shift the output chunks relative to the start of the input chunks.</p></li>
-<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – This is an upper bound on the number of tuples that can be produced per time series.
+<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – This is an upper bound on the number of tuples that can be produced per time series.
 It can be used in order to have an upper bound on the total size of the dataset and
 ensure proper sampling. If <cite>None</cite>, it will read all of the individual time series in advance (at dataset
 creation) to know their sizes, which might be expensive on big datasets.
@@ -943,7 +948,7 @@ covariates in the sequence must have a time span large enough to contain all the
 The joint slicing of the target and covariates is relying on the time axes of both series.</p></li>
 <li><p><strong>length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted past and future series.</p></li>
 <li><p><strong>shift</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps by which to shift the output chunks relative to the start of the input chunks.</p></li>
-<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – This is an upper bound on the number of tuples that can be produced per time series.
+<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – This is an upper bound on the number of tuples that can be produced per time series.
 It can be used in order to have an upper bound on the total size of the dataset and
 ensure proper sampling. If <cite>None</cite>, it will read all of the individual time series in advance (at dataset
 creation) to know their sizes, which might be expensive on big datasets.
@@ -984,7 +989,7 @@ The future chunks start <cite>shift</cite> after the past chunks’ start.</p>
 <li><p><strong>shift</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps by which to shift the output chunks relative to the start of the input chunks.</p></li>
 <li><p><strong>shift_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to shift the covariates forward the same way as the target.
 FutureCovariatesModel’s require this set to True, while PastCovariatesModel’s require this set to False.</p></li>
-<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – This is an upper bound on the number of (input, output, input_covariates) tuples that can be produced
+<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – This is an upper bound on the number of (input, output, input_covariates) tuples that can be produced
 per time series. It can be used in order to have an upper bound on the total size of the dataset and
 ensure proper sampling. If <cite>None</cite>, it will read all of the individual time series in advance (at dataset
 creation) to know their sizes, which might be expensive on big datasets.
@@ -1036,7 +1041,7 @@ The joint slicing of the target and covariates is relying on the time axes of bo
 the same constraints as <cite>past_covariates</cite>.</p></li>
 <li><p><strong>length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted past and future series.</p></li>
 <li><p><strong>shift</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps by which to shift the output chunks relative to the start of the input chunks.</p></li>
-<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – This is an upper bound on the number of tuples that can be produced per time series.
+<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – This is an upper bound on the number of tuples that can be produced per time series.
 It can be used in order to have an upper bound on the total size of the dataset and
 ensure proper sampling. If <cite>None</cite>, it will read all of the individual time series in advance (at dataset
 creation) to know their sizes, which might be expensive on big datasets.
@@ -1084,7 +1089,7 @@ covariates in the sequence must have a time span large enough to contain all the
 The joint slicing of the target and covariates is relying on the time axes of both series.</p></li>
 <li><p><strong>length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted past and future series.</p></li>
 <li><p><strong>shift</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps by which to shift the output chunks relative to the start of the input chunks.</p></li>
-<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – This is an upper bound on the number of tuples that can be produced per time series.
+<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – This is an upper bound on the number of tuples that can be produced per time series.
 It can be used in order to have an upper bound on the total size of the dataset and
 ensure proper sampling. If <cite>None</cite>, it will read all of the individual time series in advance (at dataset
 creation) to know their sizes, which might be expensive on big datasets.
@@ -1135,7 +1140,7 @@ The joint slicing of the target and covariates is relying on the time axes of bo
 the same constraints as <cite>past_covariates</cite>.</p></li>
 <li><p><strong>length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted past and future series.</p></li>
 <li><p><strong>shift</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps by which to shift the output chunks relative to the start of the input chunks.</p></li>
-<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – This is an upper bound on the number of tuples that can be produced per time series.
+<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – This is an upper bound on the number of tuples that can be produced per time series.
 It can be used in order to have an upper bound on the total size of the dataset and
 ensure proper sampling. If <cite>None</cite>, it will read all of the individual time series in advance (at dataset
 creation) to know their sizes, which might be expensive on big datasets.

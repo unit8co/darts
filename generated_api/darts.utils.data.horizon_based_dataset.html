@@ -577,6 +577,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
+       Conformal Models
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.croston.html">
        Croston method
       </a>
@@ -894,7 +899,7 @@ the provided sequence must have the same length as that of <cite>target_series</
 covariates in the sequence must have a time span large enough to contain all the required slices.
 The joint slicing of the target and covariates is relying on the time axes of both series.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the “output” series emitted by the model</p></li>
-<li><p><strong>lh</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – A <cite>(min_lh, max_lh)</cite> interval for the forecast point, starting from the end of the series.
+<li><p><strong>lh</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – A <cite>(min_lh, max_lh)</cite> interval for the forecast point, starting from the end of the series.
 For example, <cite>(1, 3)</cite> will select forecast points uniformly between <cite>1*H</cite> and <cite>3*H</cite> points
 before the end of the series. It is required that <cite>min_lh &gt;= 1</cite>.</p></li>
 <li><p><strong>lookback</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – A integer interval for the length of the input in the emitted input and output splits, expressed as a

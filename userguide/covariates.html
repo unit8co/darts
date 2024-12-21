@@ -580,6 +580,11 @@ Static attributes are powerful when working with multiple <code class="docutils 
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 </tr>
+<tr class="row-odd"><td><p>Conformal Prediction Models (g)</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+</tr>
 </tbody>
 </table>
 <p><strong>Table 1: Darts’ forecasting models and their covariate support</strong></p>
@@ -590,6 +595,7 @@ Static attributes are powerful when working with multiple <code class="docutils 
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel">RNNModel</a> including <code class="docutils literal notranslate"><span class="pre">LSTM</span></code> and <code class="docutils literal notranslate"><span class="pre">GRU</span></code>; equivalent to DeepAR in its probabilistic version</p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel">BlockRNNModel</a> including <code class="docutils literal notranslate"><span class="pre">LSTM</span></code> and <code class="docutils literal notranslate"><span class="pre">GRU</span></code></p></li>
 <li><p>Ensemble Model including <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel">RegressionEnsembleModel</a>, and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel">NaiveEnsembleModel</a>. The covariate support is given by the covariate support of the ensembled forecasting models.</p></li>
+<li><p>Conformal Prediction Model including <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalNaiveModel">ConformalNaiveModel</a>, and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalQRModel">ConformalQRModel</a>. The covariate support is given by the covariate support of the underlying forecasting model.</p></li>
 </ol>
 </section>
 </section>

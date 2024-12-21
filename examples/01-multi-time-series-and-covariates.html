@@ -218,6 +218,13 @@
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
+  <a class="reference internal" href="23-Conformal-Prediction-examples.html">
+   Conformal Prediction Models
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
   <a class="reference internal" href="03-FFT-examples.html">
    Fast Fourier Transform Forecasting Model (FFT)
   </a>
@@ -734,32 +741,27 @@ div.rendered_html tbody tr:hover {
 
 <span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
 
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">concatenate</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">ElectricityDataset</span><span class="p">,</span> <span class="n">MonthlyMilkDataset</span>
+<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mae</span><span class="p">,</span> <span class="n">mape</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">VARIMA</span><span class="p">,</span>
+    <span class="n">BlockRNNModel</span><span class="p">,</span>
+    <span class="n">NBEATSModel</span><span class="p">,</span>
+    <span class="n">RNNModel</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.utils.callbacks</span> <span class="kn">import</span> <span class="n">TFMProgressBar</span>
 <span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">gaussian_timeseries</span><span class="p">,</span>
-    <span class="n">linear_timeseries</span><span class="p">,</span>
+    <span class="n">datetime_attribute_timeseries</span><span class="p">,</span>
     <span class="n">sine_timeseries</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">RNNModel</span><span class="p">,</span>
-    <span class="n">TCNModel</span><span class="p">,</span>
-    <span class="n">TransformerModel</span><span class="p">,</span>
-    <span class="n">NBEATSModel</span><span class="p">,</span>
-    <span class="n">BlockRNNModel</span><span class="p">,</span>
-    <span class="n">VARIMA</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mape</span><span class="p">,</span> <span class="n">smape</span><span class="p">,</span> <span class="n">mae</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
-<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">MonthlyMilkDataset</span><span class="p">,</span> <span class="n">ElectricityDataset</span>
-
-<span class="kn">import</span> <span class="nn">logging</span>
 
 <span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
 
@@ -895,7 +897,7 @@ are used it requires these covariates to be known for long enough in advance.</p
     <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
     <span class="n">n_epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
     <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">()</span>
+    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">(),</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -937,7 +939,7 @@ but all of this is done transparently behind the scenes.</p>
 <span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAPE = </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">pred</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MAPE = </span><span class="si">{</span><span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span><span class="w"> </span><span class="n">pred</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -992,7 +994,7 @@ forecasting models.</p>
     <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
     <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
     <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">()</span>
+    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">(),</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -1038,7 +1040,7 @@ NBEATSModel(generic_architecture=True, num_stacks=30, num_blocks=1, num_layers=4
 <span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAPE = </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">pred</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MAPE = </span><span class="si">{</span><span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span><span class="w"> </span><span class="n">pred</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1154,14 +1156,17 @@ MAPE = 7.58%
 
 <span class="c1"># scale them between 0 and 1:</span>
 <span class="n">scaler_covariates</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
-<span class="n">air_train_covariates</span><span class="p">,</span> <span class="n">milk_train_covariates</span> <span class="o">=</span> <span class="n">scaler_covariates</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span>
-    <span class="p">[</span><span class="n">air_train_covariates</span><span class="p">,</span> <span class="n">milk_train_covariates</span><span class="p">]</span>
-<span class="p">)</span>
-<span class="n">air_val_covariates</span><span class="p">,</span> <span class="n">milk_val_covariates</span> <span class="o">=</span> <span class="n">scaler_covariates</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span>
-    <span class="p">[</span><span class="n">air_val_covariates</span><span class="p">,</span> <span class="n">milk_val_covariates</span><span class="p">]</span>
-<span class="p">)</span>
+<span class="n">air_train_covariates</span><span class="p">,</span> <span class="n">milk_train_covariates</span> <span class="o">=</span> <span class="n">scaler_covariates</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">([</span>
+    <span class="n">air_train_covariates</span><span class="p">,</span>
+    <span class="n">milk_train_covariates</span><span class="p">,</span>
+<span class="p">])</span>
+<span class="n">air_val_covariates</span><span class="p">,</span> <span class="n">milk_val_covariates</span> <span class="o">=</span> <span class="n">scaler_covariates</span><span class="o">.</span><span class="n">transform</span><span class="p">([</span>
+    <span class="n">air_val_covariates</span><span class="p">,</span>
+    <span class="n">milk_val_covariates</span><span class="p">,</span>
+<span class="p">])</span>
 
-<span class="c1"># concatenate for the full scaled series; we can feed this to model.fit()/predict() as Darts will extract the required covariates for you</span>
+<span class="c1"># concatenate for the full scaled series; we can feed this to model.fit()/predict() as Darts will extract the required</span>
+<span class="c1"># covariates for you</span>
 <span class="n">air_covariates</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">([</span><span class="n">air_train_covariates</span><span class="p">,</span> <span class="n">air_val_covariates</span><span class="p">])</span>
 <span class="n">milk_covariates</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">([</span><span class="n">milk_train_covariates</span><span class="p">,</span> <span class="n">milk_val_covariates</span><span class="p">])</span>
 
@@ -1222,7 +1227,7 @@ Text(0.5, 1.0, &#39;Milk production covariates (year and month)&#39;)
     <span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
     <span class="n">save_checkpoints</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># store model states: latest and best performing of validation set</span>
     <span class="n">force_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">()</span>
+    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">(),</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -1287,7 +1292,7 @@ BlockRNNModel(model=LSTM, hidden_dim=25, n_rnn_layers=1, hidden_fc_sizes=None, d
     <span class="n">model_name</span><span class="o">=</span><span class="n">model_name</span><span class="p">,</span>
     <span class="n">save_checkpoints</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># store model states: latest and best performing of validation set</span>
     <span class="n">force_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">()</span>
+    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">(),</span>
 <span class="p">)</span>
 
 <span class="n">model_futcov</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
@@ -1419,9 +1424,7 @@ RNNModel(model=LSTM, hidden_dim=20, n_rnn_layers=1, dropout=0.0, training_length
 <span class="p">)</span>
 <span class="n">backtest_pastcov</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">(</span><span class="n">backtest_pastcov</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;MAPE (BlockRNNModel with past covariates) = </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-        <span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">backtest_pastcov</span><span class="p">)</span>
-    <span class="p">)</span>
+    <span class="sa">f</span><span class="s2">&quot;MAPE (BlockRNNModel with past covariates) = </span><span class="si">{</span><span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span><span class="w"> </span><span class="n">backtest_pastcov</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%&quot;</span>
 <span class="p">)</span>
 
 <span class="n">backtest_futcov</span> <span class="o">=</span> <span class="n">model_futcov</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
@@ -1436,9 +1439,7 @@ RNNModel(model=LSTM, hidden_dim=20, n_rnn_layers=1, dropout=0.0, training_length
 <span class="p">)</span>
 <span class="n">backtest_futcov</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">(</span><span class="n">backtest_futcov</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;MAPE (RNNModel with future covariates) = </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-        <span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">backtest_futcov</span><span class="p">)</span>
-    <span class="p">)</span>
+    <span class="sa">f</span><span class="s2">&quot;MAPE (RNNModel with future covariates) = </span><span class="si">{</span><span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span><span class="w"> </span><span class="n">backtest_futcov</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%&quot;</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -1592,16 +1593,16 @@ have a sufficient span, otherwise Darts will complain.</p>
     <span class="n">n_rnn_layers</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
     <span class="n">training_length</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span>
     <span class="n">n_epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
-    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">()</span>
+    <span class="o">**</span><span class="n">generate_torch_kwargs</span><span class="p">(),</span>
 <span class="p">)</span>
 
 <span class="c1"># training and prediction with the VARIMA model</span>
 <span class="n">forecast_VARIMA</span> <span class="o">=</span> <span class="n">fit_and_pred</span><span class="p">(</span><span class="n">model_VARIMA</span><span class="p">,</span> <span class="n">training_scaled</span><span class="p">,</span> <span class="n">validation_scaled</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAE (VARIMA) = </span><span class="si">{:.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mae</span><span class="p">(</span><span class="n">validation_scaled</span><span class="p">,</span> <span class="n">forecast_VARIMA</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MAE (VARIMA) = </span><span class="si">{</span><span class="n">mae</span><span class="p">(</span><span class="n">validation_scaled</span><span class="p">,</span><span class="w"> </span><span class="n">forecast_VARIMA</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <span class="c1"># training and prediction with the RNN model</span>
 <span class="n">forecast_RNN</span> <span class="o">=</span> <span class="n">fit_and_pred</span><span class="p">(</span><span class="n">model_GRU</span><span class="p">,</span> <span class="n">training_scaled</span><span class="p">,</span> <span class="n">validation_scaled</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAE (RNN) = </span><span class="si">{:.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mae</span><span class="p">(</span><span class="n">validation_scaled</span><span class="p">,</span> <span class="n">forecast_RNN</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MAE (RNN) = </span><span class="si">{</span><span class="n">mae</span><span class="p">(</span><span class="n">validation_scaled</span><span class="p">,</span><span class="w"> </span><span class="n">forecast_RNN</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>

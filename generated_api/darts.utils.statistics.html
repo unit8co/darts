@@ -577,6 +577,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
+       Conformal Models
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.croston.html">
        Croston method
       </a>
@@ -872,7 +877,7 @@ from the Auto-correlation Function (ACF).</p>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The time series to check for seasonality.</p></li>
-<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The seasonality period to check.</p></li>
+<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The seasonality period to check.</p></li>
 <li><p><strong>max_lag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximal lag allowed in the ACF.</p></li>
 <li><p><strong>alpha</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The desired confidence level (default 5%).</p></li>
 </ul>
@@ -974,7 +979,7 @@ interval. Uses <code class="xref py py-func docutils literal notranslate"><span 
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries whose ACF should be plotted.</p></li>
-<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, a time lag to highlight on the plot.</p></li>
+<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a time lag to highlight on the plot.</p></li>
 <li><p><strong>max_lag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximal lag order to consider.</p></li>
 <li><p><strong>alpha</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The confidence interval to display.</p></li>
 <li><p><strong>bartlett_confint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – The boolean value indicating whether the confidence interval should be
@@ -982,8 +987,8 @@ calculated using Bartlett’s formula. If set to <cite>True</cite>, the confiden
 can be used in the model identification stage for fitting ARIMA models.
 If set to <cite>False</cite>, the confidence interval can be used to test for randomness
 (i.e. there is no time dependence in the data) of the data.</p></li>
-<li><p><strong>fig_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The size of the figure to be displayed.</p></li>
-<li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]) – Optionally, an axis object to plot the ACF on.</p></li>
+<li><p><strong>fig_size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The size of the figure to be displayed.</p></li>
+<li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an axis object to plot the ACF on.</p></li>
 <li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the darts default scheme.</p></li>
 </ul>
 </dd>
@@ -1014,13 +1019,13 @@ If <cite>ts_other</cite> is identical <cite>ts</cite>, it corresponds to <cite>p
 <li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries whose CCF with <cite>ts_other</cite> should be plotted.</p></li>
 <li><p><strong>ts_other</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries which to compare against <cite>ts</cite> in the CCF. E.g. check the cross correlation of different
 covariate lags with the target.</p></li>
-<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, a time lag to highlight on the plot.</p></li>
+<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a time lag to highlight on the plot.</p></li>
 <li><p><strong>max_lag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximal lag order to consider.</p></li>
 <li><p><strong>alpha</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The confidence interval to display.</p></li>
 <li><p><strong>bartlett_confint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – The boolean value indicating whether the confidence interval should be
 calculated using Bartlett’s formula.</p></li>
-<li><p><strong>fig_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The size of the figure to be displayed.</p></li>
-<li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]) – Optionally, an axis object to plot the CCF on.</p></li>
+<li><p><strong>fig_size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The size of the figure to be displayed.</p></li>
+<li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an axis object to plot the CCF on.</p></li>
 <li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the darts default scheme.</p></li>
 </ul>
 </dd>
@@ -1049,13 +1054,13 @@ All stochastic samples will be displayed with the corresponding component.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – TimeSeries instance or an array-like from which to plot the histogram.</p></li>
-<li><p><strong>bins</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, either an integer value for the number of bins to be displayed
+<li><p><strong>data</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – TimeSeries instance or an array-like from which to plot the histogram.</p></li>
+<li><p><strong>bins</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, either an integer value for the number of bins to be displayed
 or an array-like of floats determining the position of bins.</p></li>
 <li><p><strong>density</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – bool, if <cite>density</cite> is set to <cite>True</cite>, the bin counts will be converted to probability density</p></li>
-<li><p><strong>title</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The title of the figure to be displayed</p></li>
-<li><p><strong>fig_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]) – The size of the figure to be displayed.</p></li>
-<li><p><strong>ax</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]) – Optionally, an axis object to plot the histogram on.</p></li>
+<li><p><strong>title</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The title of the figure to be displayed</p></li>
+<li><p><strong>fig_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The size of the figure to be displayed.</p></li>
+<li><p><strong>ax</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an axis object to plot the histogram on.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1073,7 +1078,7 @@ significance interval. Uses <code class="xref py py-func docutils literal notran
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries whose ACF should be plotted.</p></li>
-<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, a time lag to highlight on the plot.</p></li>
+<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a time lag to highlight on the plot.</p></li>
 <li><p><strong>max_lag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximal lag order to consider.</p></li>
 <li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – <p>The method to be used for the PACF calculation.
 - | “yw” or “ywadjusted” : Yule-Walker with sample-size adjustment in</p>
@@ -1096,8 +1101,8 @@ correction.</p></li>
 </ul>
 </p></li>
 <li><p><strong>alpha</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The confidence interval to display.</p></li>
-<li><p><strong>fig_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The size of the figure to be displayed.</p></li>
-<li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]) – Optionally, an axis object to plot the ACF on.</p></li>
+<li><p><strong>fig_size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The size of the figure to be displayed.</p></li>
+<li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an axis object to plot the ACF on.</p></li>
 <li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the darts default scheme.</p></li>
 </ul>
 </dd>
@@ -1173,7 +1178,7 @@ Defaults <code class="docutils literal notranslate"><span class="pre">ModelMode.
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries to adjust.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The seasonality period to use.</p></li>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The seasonality period to use.</p></li>
 <li><p><strong>model</strong> (<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeasonalityMode</span></code></a>) – The type of decomposition to use.
 Must be a <cite>from darts import SeasonalityMode</cite> Enum member.
 Either SeasonalityMode.MULTIPLICATIVE or SeasonalityMode.ADDITIVE.
@@ -1240,13 +1245,13 @@ using <code class="xref py py-func docutils literal notranslate"><span class="pr
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The time series to test.</p></li>
-<li><p><strong>maxlag</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Maximum lag which is included in test, default value of 12*(nobs/100)^{1/4} is used when None.</p></li>
+<li><p><strong>maxlag</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Maximum lag which is included in test, default value of 12*(nobs/100)^{1/4} is used when None.</p></li>
 <li><p><strong>regression</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Constant and trend order to include in regression.
 “c” : constant only (default).
 “ct” : constant and trend.
 “ctt” : constant, and linear and quadratic trend.
 “n” : no constant, no trend.</p></li>
-<li><p><strong>autolag</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Method to use when automatically determining the lag length among the values 0, 1, …, maxlag.
+<li><p><strong>autolag</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Method to use when automatically determining the lag length among the values 0, 1, …, maxlag.
 If “AIC” (default) or “BIC”, then the number of lags is chosen to minimize the corresponding
 information criterion. “t-stat” based choice of maxlag. Starts with maxlag and drops a lag
 until the t-statistic on the last lag length is significant using a 5%-sized test.

@@ -180,8 +180,9 @@
 
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
@@ -478,8 +479,9 @@
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="o">*</span><span class="n">args</span><span class="p">,</span>
         <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">series_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Transforms a (sequence of) of series by calling the user-implemeneted `ts_transform` method.</span>
 
 <span class="sd">        In case a ``Sequence[TimeSeries]`` is passed as input data, this function takes care of</span>
@@ -502,6 +504,9 @@
 <span class="sd">            attribute was set to `True` when instantiating `BaseDataTransformer`, then the component mask</span>
 <span class="sd">            will be automatically applied to each `TimeSeries` input. Otherwise, `component_mask` will be</span>
 <span class="sd">            provided as an addition keyword argument to `ts_transform`. See &#39;Notes&#39; for further details.</span>
+<span class="sd">        series_idx</span>
+<span class="sd">            Optionally, the index(es) of each series corresponding to their positions within the series used to fit</span>
+<span class="sd">            the transformer (to retrieve the appropriate transformer parameters).</span>
 <span class="sd">        kwargs</span>
 <span class="sd">            Additional keyword arguments for each :func:`ts_transform()` method call</span>
 
@@ -534,10 +539,16 @@
         <span class="c1"># Take note of original input for unmasking purposes:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
             <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
-            <span class="n">transformer_selector</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">series_idx</span><span class="p">:</span>
+                <span class="n">transformer_selector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_series_idx</span><span class="p">(</span><span class="n">series_idx</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">transformer_selector</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">series</span>
-            <span class="n">transformer_selector</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">series_idx</span><span class="p">:</span>
+                <span class="n">transformer_selector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_series_idx</span><span class="p">(</span><span class="n">series_idx</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">transformer_selector</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
 
         <span class="n">input_iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span>
             <span class="nb">zip</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_params</span><span class="p">(</span><span class="n">transformer_selector</span><span class="o">=</span><span class="n">transformer_selector</span><span class="p">)),</span>
@@ -612,6 +623,14 @@
                     <span class="sa">f</span><span class="s2">&quot;upon initialising </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.&quot;</span>
                 <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_process_series_idx</span><span class="p">(</span><span class="n">series_idx</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the `series_idx` to a Sequence[int].</span>
+
+<span class="sd">        Note: the validity of the entries in series_idx is checked in _get_params().</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">series_idx</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series_idx</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">series_idx</span>
 
 <div class="viewcode-block" id="BaseDataTransformer.apply_component_mask"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.apply_component_mask">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">apply_component_mask</span><span class="p">(</span>

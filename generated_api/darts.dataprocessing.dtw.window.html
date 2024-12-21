@@ -577,6 +577,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
+       Conformal Models
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.croston.html">
        Croston method
       </a>
@@ -902,7 +907,7 @@ Supports efficient iterative construction and updates.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n</strong> (<em>int</em>) – The width of the window, must be equal to the length of series1</p></li>
 <li><p><strong>m</strong> (<em>int</em>) – The height of the window, must be equal to the length of series2</p></li>
-<li><p><strong>ranges</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – The ranges of active cells within a column [[start_column0, end_column0], …]
+<li><p><strong>ranges</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The ranges of active cells within a column [[start_column0, end_column0], …]
 with shape (n, 2) and where start &gt;= 0 and end &lt;= m.</p></li>
 </ul>
 </dd>
@@ -940,7 +945,7 @@ with shape (n, 2) and where start &gt;= 0 and end &lt;= m.</p></li>
 <dd><p>Marks a grid cell as active.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Tuple of grid cell index (column, row)</p>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Tuple of grid cell index (column, row)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -968,7 +973,7 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <dd><p>Gives the number of active grid cells before row element j, in column i.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – (i,j) index, where i indexes columns and j rows</p>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – (i,j) index, where i indexes columns and j rows</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The number of active grid cells before row element j, in column i,
@@ -1140,7 +1145,7 @@ If (i,j) is not an active grid cell returns -1</p>
 <dd><p>Marks a grid cell as active.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Tuple of grid cell index (column, row)</p>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Tuple of grid cell index (column, row)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1168,7 +1173,7 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <dd><p>Gives the number of active grid cells before row element j, in column i.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – (i,j) index, where i indexes columns and j rows</p>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – (i,j) index, where i indexes columns and j rows</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The number of active grid cells before row element j, in column i,
@@ -1280,7 +1285,7 @@ meaning every possible alignment between series1 and series2 is considered.</p>
 <dd><p>Gives the number of active grid cells before row element j, in column i.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – (i,j) index, where i indexes columns and j rows</p>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – (i,j) index, where i indexes columns and j rows</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The number of active grid cells before row element j, in column i,
@@ -1420,7 +1425,7 @@ If both time-series have the same time axis, window_size corresponds to the maxi
 <dd><p>Marks a grid cell as active.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Tuple of grid cell index (column, row)</p>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Tuple of grid cell index (column, row)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1448,7 +1453,7 @@ Note (1, m+1), not (0,m) corresponds to an entire column.</p>
 <dd><p>Gives the number of active grid cells before row element j, in column i.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – (i,j) index, where i indexes columns and j rows</p>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – (i,j) index, where i indexes columns and j rows</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The number of active grid cells before row element j, in column i,
@@ -1558,7 +1563,7 @@ If (i,j) is not an active grid cell returns -1</p>
 <dd><p>Gives the number of active grid cells before row element j, in column i.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – (i,j) index, where i indexes columns and j rows</p>
+<dd class="field-odd"><p><strong>elem</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – (i,j) index, where i indexes columns and j rows</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The number of active grid cells before row element j, in column i,

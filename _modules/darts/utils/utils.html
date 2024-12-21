@@ -178,15 +178,17 @@
 <span class="sd">-------------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
 <span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">getcallargs</span><span class="p">,</span> <span class="n">signature</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
 <span class="kn">from</span> <span class="nn">pandas._libs.tslibs.offsets</span> <span class="kn">import</span> <span class="n">BusinessMixin</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="kn">import</span> <span class="n">check_random_state</span>
 <span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
 <span class="kn">from</span> <span class="nn">tqdm.notebook</span> <span class="kn">import</span> <span class="n">tqdm</span> <span class="k">as</span> <span class="n">tqdm_notebook</span>
 
@@ -198,6 +200,9 @@
     <span class="n">get_ipython</span> <span class="o">=</span> <span class="kc">None</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">MAX_TORCH_SEED_VALUE</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">31</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c1"># to accommodate 32-bit architectures</span>
+<span class="n">MAX_NUMPY_SEED_VALUE</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">31</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
 
 
 <span class="c1"># Enums</span>
@@ -218,7 +223,7 @@
     <span class="n">NONE</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
-<span class="c1"># TODO: remove this once bumping min python version from 3.8 to 3.9 (pandas v2.2.0 not available for p38)</span>
+<span class="c1"># TODO: remove this at some point when we set a lower cap on pandas v2.2.0</span>
 <span class="n">pd_above_v22</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">__version__</span> <span class="o">&gt;=</span> <span class="s2">&quot;2.2&quot;</span>
 <span class="n">freqs</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;YE&quot;</span><span class="p">:</span> <span class="s2">&quot;YE&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span>
@@ -243,7 +248,7 @@
 
 
 <div class="viewcode-block" id="likelihood_component_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.likelihood_component_names">[docs]</a><span class="k">def</span> <span class="nf">likelihood_component_names</span><span class="p">(</span>
-    <span class="n">components</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">parameter_names</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">components</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">parameter_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates formatted likelihood parameter names for components and parameter names.</span>
 
@@ -263,7 +268,7 @@
     <span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="quantile_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.quantile_names">[docs]</a><span class="k">def</span> <span class="nf">quantile_names</span><span class="p">(</span><span class="n">q</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]],</span> <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="quantile_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.quantile_names">[docs]</a><span class="k">def</span> <span class="nf">quantile_names</span><span class="p">(</span><span class="n">q</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]],</span> <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates formatted quantile names, optionally added to a component name.</span>
 
 <span class="sd">    Parameters</span>
@@ -282,7 +287,7 @@
 
 
 <div class="viewcode-block" id="quantile_interval_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.quantile_interval_names">[docs]</a><span class="k">def</span> <span class="nf">quantile_interval_names</span><span class="p">(</span>
-    <span class="n">q_interval</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span>
+    <span class="n">q_interval</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span>
     <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates formatted quantile interval names, optionally added to a component name.</span>
@@ -409,8 +414,8 @@
 
 
 <span class="k">def</span> <span class="nf">_parallel_apply</span><span class="p">(</span>
-    <span class="n">iterator</span><span class="p">:</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">],</span> <span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">fn_args</span><span class="p">,</span> <span class="n">fn_kwargs</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
+    <span class="n">iterator</span><span class="p">:</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">],</span> <span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">fn_args</span><span class="p">,</span> <span class="n">fn_kwargs</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Utility function that parallelise the execution of a function over an Iterator</span>
 
@@ -437,6 +442,23 @@
         <span class="n">delayed</span><span class="p">(</span><span class="n">fn</span><span class="p">)(</span><span class="o">*</span><span class="n">sample</span><span class="p">,</span> <span class="o">*</span><span class="n">fn_args</span><span class="p">,</span> <span class="o">**</span><span class="n">fn_kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">iterator</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">returned_data</span>
+
+
+<span class="k">def</span> <span class="nf">_is_method</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the specified function is a method.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    func</span>
+<span class="sd">        the function to inspect.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        true if `func` is a method, false otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">list</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;self&quot;</span>
 
 
 <span class="k">def</span> <span class="nf">_check_quantiles</span><span class="p">(</span><span class="n">quantiles</span><span class="p">):</span>
@@ -761,6 +783,117 @@
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ndim</span><span class="p">:</span>
         <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">shape</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ndim</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">shape</span><span class="p">))))</span>
     <span class="k">return</span> <span class="n">arr</span></div>
+
+
+<div class="viewcode-block" id="sample_from_quantiles"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.sample_from_quantiles">[docs]</a><span class="k">def</span> <span class="nf">sample_from_quantiles</span><span class="p">(</span>
+    <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">quantiles</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates `num_samples` samples from quantile predictions using linear interpolation. The generated samples</span>
+<span class="sd">    should have quantile values close to the quantile predictions. For the lowest and highest quantiles, the lowest</span>
+<span class="sd">    and highest quantile predictions are repeated.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vals</span>
+<span class="sd">        A numpy array of quantile predictions/values. Either an array with two dimensions</span>
+<span class="sd">        (n times, n components * n quantiles), or with three dimensions (n times, n components, n quantiles).</span>
+<span class="sd">        In the two-dimensional case, the order is first by ascending column, then by ascending quantile value</span>
+<span class="sd">        `(comp_0_q_0, comp_0_q_1, ... comp_n_q_m)`</span>
+<span class="sd">    quantiles</span>
+<span class="sd">        A numpy array of quantiles.</span>
+<span class="sd">    num_samples</span>
+<span class="sd">        The number of samples to generate.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="mi">2</span> <span class="o">&lt;=</span> <span class="n">vals</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;`vals` must have either two dimensions with `(n times, n components * n quantiles)` or three &quot;</span>
+                <span class="s2">&quot;dimensions with shape `(n times, n components, n quantiles)`&quot;</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="n">n_time_steps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
+    <span class="n">n_quantiles</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">vals</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">%</span> <span class="n">n_quantiles</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;`vals` with two dimension must have shape `(n times, n components * n quantiles)`.&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">n_time_steps</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_quantiles</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">vals</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> <span class="n">vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">!=</span> <span class="n">n_quantiles</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;`vals` with three dimension must have shape `(n times, n components, n quantiles)`.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="n">n_columns</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c1"># Generate uniform random samples</span>
+    <span class="n">random_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="n">n_time_steps</span><span class="p">,</span> <span class="n">n_columns</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">))</span>
+    <span class="c1"># Find the indices of the quantiles just below and above the random samples</span>
+    <span class="n">lower_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">quantiles</span><span class="p">,</span> <span class="n">random_samples</span><span class="p">,</span> <span class="n">side</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+    <span class="n">upper_indices</span> <span class="o">=</span> <span class="n">lower_indices</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="c1"># Handle edge cases</span>
+    <span class="n">lower_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">lower_indices</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">n_quantiles</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">upper_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">upper_indices</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">n_quantiles</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Gather the corresponding quantile values and vals values</span>
+    <span class="n">q_lower</span> <span class="o">=</span> <span class="n">quantiles</span><span class="p">[</span><span class="n">lower_indices</span><span class="p">]</span>
+    <span class="n">q_upper</span> <span class="o">=</span> <span class="n">quantiles</span><span class="p">[</span><span class="n">upper_indices</span><span class="p">]</span>
+    <span class="n">z_lower</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">take_along_axis</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">lower_indices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">z_upper</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">take_along_axis</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">upper_indices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">y</span> <span class="o">=</span> <span class="n">z_lower</span>
+    <span class="c1"># Linear interpolation</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">q_lower</span> <span class="o">!=</span> <span class="n">q_upper</span>
+    <span class="n">y</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">z_lower</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">z_upper</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">-</span> <span class="n">z_lower</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="n">random_samples</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">-</span> <span class="n">q_lower</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">q_upper</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">-</span> <span class="n">q_lower</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">y</span></div>
+
+
+<div class="viewcode-block" id="random_method"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.random_method">[docs]</a><span class="k">def</span> <span class="nf">random_method</span><span class="p">(</span><span class="n">decorated</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">T</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Decorator usable on any method within a class that will provide a random context.</span>
+
+<span class="sd">    The decorator will store a `_random_instance` property on the object in order to persist successive calls to the</span>
+<span class="sd">    RNG.</span>
+
+<span class="sd">    This is the equivalent to `darts.utils.torch.random_method` but for non-torch models.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    decorated</span>
+<span class="sd">        A method to be run in an isolated torch random context.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># check that @random_method has been applied to a method.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_is_method</span><span class="p">(</span><span class="n">decorated</span><span class="p">):</span>
+        <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;@random_method can only be used on methods.&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
+
+    <span class="nd">@wraps</span><span class="p">(</span><span class="n">decorated</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">decorator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s2">&quot;random_state&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="c1"># get random state for first time from model constructor</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_random_instance</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_random_instance&quot;</span><span class="p">):</span>
+            <span class="c1"># get random state for first time from other method</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_random_instance</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="n">MAX_NUMPY_SEED_VALUE</span><span class="p">)</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
+
+        <span class="c1"># handle the randomness</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_random_instance</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">decorated</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># update the random state after the function call</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_random_instance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">return</span> <span class="n">decorator</span></div>
 </pre></div>
 
               </div>

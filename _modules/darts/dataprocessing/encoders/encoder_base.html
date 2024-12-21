@@ -179,7 +179,8 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -189,13 +190,8 @@
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">generate_index</span>
 
-<span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
-<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
-
 <span class="n">SupportedIndex</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">]</span>
-<span class="n">EncoderOutputType</span> <span class="o">=</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span>
+<span class="n">EncoderOutputType</span> <span class="o">=</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span>
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
@@ -224,7 +220,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">lags_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">lags_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;:class:`CovariatesIndexGenerator` generates a time index for covariates at training and inference /</span>
 <span class="sd">        prediction time with methods :func:`generate_train_idx()`, and :func:`generate_inference_idx()`.</span>
@@ -290,7 +286,7 @@
 <div class="viewcode-block" id="CovariatesIndexGenerator.generate_train_idx"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator.generate_train_idx">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">generate_train_idx</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Generates/extracts time index (or integer index) for covariates at model training time.</span>
 
@@ -309,7 +305,7 @@
 <div class="viewcode-block" id="CovariatesIndexGenerator.generate_inference_idx"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator.generate_inference_idx">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">generate_inference_idx</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Generates/extracts time index (or integer index) for covariates at model inference / prediction time.</span>
 
@@ -330,7 +326,7 @@
 
 <div class="viewcode-block" id="CovariatesIndexGenerator.generate_train_inference_idx"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator.generate_train_inference_idx">[docs]</a>    <span class="k">def</span> <span class="nf">generate_train_inference_idx</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Generates/extracts time index (or integer index) for covariates for training and inference / prediction.</span>
 
@@ -375,7 +371,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">lags_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">lags_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="c1"># LocalForecastingModel, or model agnostic (only supported by future covariates)</span>
         <span class="n">is_scenario_a</span> <span class="o">=</span> <span class="p">(</span>
@@ -451,7 +447,7 @@
 
 <div class="viewcode-block" id="PastCovariatesIndexGenerator.generate_train_idx"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.PastCovariatesIndexGenerator.generate_train_idx">[docs]</a>    <span class="k">def</span> <span class="nf">generate_train_idx</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">generate_train_idx</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">covariates</span><span class="p">)</span>
 
         <span class="c1"># the returned index depends on the following cases:</span>
@@ -492,7 +488,7 @@
 
 <div class="viewcode-block" id="PastCovariatesIndexGenerator.generate_inference_idx"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.PastCovariatesIndexGenerator.generate_inference_idx">[docs]</a>    <span class="k">def</span> <span class="nf">generate_inference_idx</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">generate_inference_idx</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">covariates</span><span class="p">)</span>
 
         <span class="c1"># for prediction (`n` is given) with past covariates the returned index depends on the following cases:</span>
@@ -550,7 +546,7 @@
 
 <div class="viewcode-block" id="FutureCovariatesIndexGenerator.generate_train_idx"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.FutureCovariatesIndexGenerator.generate_train_idx">[docs]</a>    <span class="k">def</span> <span class="nf">generate_train_idx</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">generate_train_idx</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">covariates</span><span class="p">)</span>
 
         <span class="c1"># the returned index depends on the following cases:</span>
@@ -600,7 +596,7 @@
 
 <div class="viewcode-block" id="FutureCovariatesIndexGenerator.generate_inference_idx"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.FutureCovariatesIndexGenerator.generate_inference_idx">[docs]</a>    <span class="k">def</span> <span class="nf">generate_inference_idx</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">generate_inference_idx</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">covariates</span><span class="p">)</span>
 
         <span class="c1"># for prediction (`n` is given) with future covariates the returned index depends on the following cases:</span>
@@ -976,7 +972,7 @@
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the `SingleEncoder` sub class accepts to be transformed.&quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
@@ -1020,7 +1016,7 @@
 <span class="sd">    inference dataset covariates. User-supplied covariates are not transformed.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">transformer</span><span class="p">:</span> <span class="n">FittableDataTransformer</span><span class="p">,</span> <span class="n">transform_mask</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">transformer</span><span class="p">:</span> <span class="n">FittableDataTransformer</span><span class="p">,</span> <span class="n">transform_mask</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
@@ -1035,7 +1031,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">transform_mask</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">transform_mask</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
-<div class="viewcode-block" id="SequentialEncoderTransformer.transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SequentialEncoderTransformer.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">covariates</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
+<div class="viewcode-block" id="SequentialEncoderTransformer.transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoder_base.html#darts.dataprocessing.encoders.encoder_base.SequentialEncoderTransformer.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">covariates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;This method applies transformation to the non-transformed encoded covariates output of</span>
 <span class="sd">        `SequentialEncoder._encode_sequence()` after being merged with user-defined covariates. The transformer is</span>
 <span class="sd">        fitted when `transform()` is called for the first time. This ensures proper transformation of train, validation</span>
@@ -1070,7 +1066,7 @@
             <span class="n">transformed</span> <span class="o">=</span> <span class="n">covariates</span>
         <span class="k">return</span> <span class="n">transformed</span></div>
 
-    <span class="k">def</span> <span class="nf">_update_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">covariates</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_update_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">covariates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;if user supplied additional covariates to model.fit() or model.predict(), `self.transform_mask` has to be</span>
 <span class="sd">        updated as user-defined covariates should not be transformed. These covariates are always located in the</span>
 <span class="sd">        first `n_diff = covariates[0].width - len(self.transform_mask)` components of each TimeSeries in in</span>

@@ -218,6 +218,13 @@
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
+  <a class="reference internal" href="23-Conformal-Prediction-examples.html">
+   Conformal Prediction Models
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
   <a class="reference internal" href="03-FFT-examples.html">
    Fast Fourier Transform Forecasting Model (FFT)
   </a>
@@ -685,25 +692,25 @@ weeks), while keeping a small overall model size.</p>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="o">%</span><span class="k">matplotlib</span> inline
 
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">optuna</span>
+<span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">optuna.integration</span> <span class="kn">import</span> <span class="n">PyTorchLightningPruningCallback</span>
 <span class="kn">from</span> <span class="nn">optuna.visualization</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">plot_optimization_history</span><span class="p">,</span>
     <span class="n">plot_contour</span><span class="p">,</span>
+    <span class="n">plot_optimization_history</span><span class="p">,</span>
     <span class="n">plot_param_importances</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">import</span> <span class="nn">random</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">from</span> <span class="nn">tqdm.notebook</span> <span class="kn">import</span> <span class="n">tqdm</span>
-<span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks</span> <span class="kn">import</span> <span class="n">Callback</span><span class="p">,</span> <span class="n">EarlyStopping</span>
+<span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks</span> <span class="kn">import</span> <span class="n">EarlyStopping</span>
 <span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">MaxAbsScaler</span>
+<span class="kn">from</span> <span class="nn">tqdm.notebook</span> <span class="kn">import</span> <span class="n">tqdm</span>
 
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">ElectricityDataset</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TCNModel</span><span class="p">,</span> <span class="n">LinearRegressionModel</span>
 <span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">ElectricityDataset</span>
 <span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">smape</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">LinearRegressionModel</span><span class="p">,</span> <span class="n">TCNModel</span>
 <span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">GaussianLikelihood</span>
 </pre></div>
 </div>
@@ -780,7 +787,7 @@ create these longer validation sets dynamically); it will be mainly useful for e
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">250</span><span class="p">,</span> <span class="mi">350</span><span class="p">]:</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-    <span class="n">train</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">train</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -850,7 +857,7 @@ create these longer validation sets dynamically); it will be mainly useful for e
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="k">def</span> <span class="nf">eval_model</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">train_set</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">val_set</span><span class="o">=</span><span class="n">val</span><span class="p">):</span>
     <span class="n">smapes</span> <span class="o">=</span> <span class="n">smape</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">val_set</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> sMAPE: </span><span class="si">{:.2f}</span><span class="s2"> +- </span><span class="si">{:.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">smapes</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">smapes</span><span class="p">)))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> sMAPE: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">smapes</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> +- </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">smapes</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">250</span><span class="p">,</span> <span class="mi">350</span><span class="p">]:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
@@ -941,7 +948,6 @@ linear regression sMAPE: 16.01 +- 20.59
     <span class="n">likelihood</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">callbacks</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-
     <span class="c1"># reproducibility</span>
     <span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 
@@ -997,9 +1003,9 @@ linear regression sMAPE: 16.01 +- 20.59
 
     <span class="c1"># when validating during training, we can use a slightly longer validation</span>
     <span class="c1"># set which also contains the first input_chunk_length time steps</span>
-    <span class="n">model_val_set</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span>
-        <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="o">-</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">val_len</span><span class="p">)</span> <span class="o">+</span> <span class="n">in_len</span><span class="p">)</span> <span class="p">:</span> <span class="o">-</span><span class="n">val_len</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">all_series_fp32</span><span class="p">]</span>
-    <span class="p">)</span>
+    <span class="n">model_val_set</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">([</span>
+        <span class="n">s</span><span class="p">[</span><span class="o">-</span><span class="p">((</span><span class="mi">2</span> <span class="o">*</span> <span class="n">val_len</span><span class="p">)</span> <span class="o">+</span> <span class="n">in_len</span><span class="p">)</span> <span class="p">:</span> <span class="o">-</span><span class="n">val_len</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">all_series_fp32</span>
+    <span class="p">])</span>
 
     <span class="c1"># train the model</span>
     <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>

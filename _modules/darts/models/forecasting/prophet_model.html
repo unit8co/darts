@@ -180,7 +180,8 @@
 
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">re</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -199,7 +200,7 @@
 <div class="viewcode-block" id="Prophet"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet">[docs]</a><span class="k">class</span> <span class="nc">Prophet</span><span class="p">(</span><span class="n">FutureCovariatesLocalForecastingModel</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">add_seasonalities</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">add_seasonalities</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">country_holidays</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">suppress_stdout_stderror</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -286,7 +287,7 @@
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
 <span class="sd">        cap</span>
-<span class="sd">            Parameter specifiying the maximum carrying capacity when predicting with logistic growth.</span>
+<span class="sd">            Parameter specifying the maximum carrying capacity when predicting with logistic growth.</span>
 <span class="sd">            Mandatory when `growth = &#39;logistic&#39;`, otherwise ignored.</span>
 <span class="sd">            See &lt;https://facebook.github.io/prophet/docs/saturating_forecasts.html&gt; for more information</span>
 <span class="sd">            on logistic forecasts.</span>
@@ -296,7 +297,7 @@
 <span class="sd">            - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,</span>
 <span class="sd">            where each number indicates the carrying capacity at this index.</span>
 <span class="sd">        floor</span>
-<span class="sd">            Parameter specifiying the minimum carrying capacity when predicting logistic growth.</span>
+<span class="sd">            Parameter specifying the minimum carrying capacity when predicting logistic growth.</span>
 <span class="sd">            Optional when `growth = &#39;logistic&#39;` (defaults to 0), otherwise ignored.</span>
 <span class="sd">            See &lt;https://facebook.github.io/prophet/docs/saturating_forecasts.html&gt; for more information</span>
 <span class="sd">            on logistic forecasts.</span>
@@ -489,7 +490,7 @@
 
     <span class="k">def</span> <span class="nf">_check_seasonality_conditions</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Checks if the conditions for custom conditional seasonalities are met. Each custom seasonality that has a</span>
 <span class="sd">        `condition_name` other than None is checked. If the `condition_name` is not a column in the `future_covariates`</span>
@@ -704,7 +705,7 @@
         <span class="p">]</span>
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">missing_kws</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s1">&#39;Seasonality `</span><span class="si">{</span><span class="n">add_seasonality_call</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">` has missing mandatory keywords or empty arguments: &#39;</span>
+            <span class="sa">f</span><span class="s2">&quot;Seasonality `</span><span class="si">{</span><span class="n">add_seasonality_call</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">` has missing mandatory keywords or empty arguments: &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">missing_kws</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
@@ -722,7 +723,7 @@
         <span class="p">]</span>
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">invalid_kws</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s1">&#39;Seasonality `</span><span class="si">{</span><span class="n">add_seasonality_call</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">` has invalid keywords: </span><span class="si">{</span><span class="n">invalid_kws</span><span class="si">}</span><span class="s1">. Only the &#39;</span>
+            <span class="sa">f</span><span class="s2">&quot;Seasonality `</span><span class="si">{</span><span class="n">add_seasonality_call</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">` has invalid keywords: </span><span class="si">{</span><span class="n">invalid_kws</span><span class="si">}</span><span class="s2">. Only the &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;following arguments are supported: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">seasonality_default</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
@@ -735,8 +736,8 @@
         <span class="p">]</span>
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">invalid_types</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s1">&#39;Seasonality `</span><span class="si">{</span><span class="n">add_seasonality_call</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">` has invalid value dtypes: </span><span class="si">{</span><span class="n">invalid_types</span><span class="si">}</span><span class="s1"> must be &#39;</span>
-            <span class="sa">f</span><span class="s1">&#39;of type </span><span class="si">{</span><span class="p">[</span><span class="n">seasonality_properties</span><span class="p">[</span><span class="n">kw</span><span class="p">][</span><span class="s2">&quot;dtype&quot;</span><span class="p">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">kw</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">invalid_types</span><span class="p">]</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Seasonality `</span><span class="si">{</span><span class="n">add_seasonality_call</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">` has invalid value dtypes: </span><span class="si">{</span><span class="n">invalid_types</span><span class="si">}</span><span class="s2"> must be &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;of type </span><span class="si">{</span><span class="p">[</span><span class="n">seasonality_properties</span><span class="p">[</span><span class="n">kw</span><span class="p">][</span><span class="s1">&#39;dtype&#39;</span><span class="p">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">kw</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">invalid_types</span><span class="p">]</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
 

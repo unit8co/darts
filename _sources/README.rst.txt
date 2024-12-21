@@ -24,8 +24,8 @@ Time Series Made Easy in Python
    :alt: Conda Version
 
 
-.. image:: https://img.shields.io/badge/python-3.8+-blue.svg
-   :target: https://img.shields.io/badge/python-3.8+-blue.svg
+.. image:: https://img.shields.io/badge/python-3.9+-blue.svg
+   :target: https://img.shields.io/badge/python-3.9+-blue.svg
    :alt: Supported versions
 
 
@@ -113,7 +113,7 @@ Articles on Selected Topics
 Quick Install
 -------------
 
-We recommend to first setup a clean Python environment for your project with Python 3.8+ using your favorite tool
+We recommend to first setup a clean Python environment for your project with Python 3.9+ using your favorite tool
 (\ :raw-html-m2r:`<a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a>`\ ,
 `venv <https://docs.python.org/3/library/venv.html>`_\ , `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ with
 or without `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_\ ).
@@ -251,7 +251,7 @@ Features
   dimensions/columns instead of a single scalar value. Many models can consume and produce multivariate series.
 
 * 
-  **Multiple series training (global models):** All machine learning based models (incl. all neural networks)
+  **Multiple Series Training (Global Models):** All machine learning based models (incl. all neural networks)
   support being trained on multiple (potentially multivariate) series. This can scale to large datasets too.
 
 * 
@@ -261,11 +261,15 @@ Features
   Some anomaly detection scorers are also able to exploit these predictive distributions.
 
 * 
-  **Past and Future Covariates support:** Many models in Darts support past-observed and/or future-known
+  **Conformal Prediction Support:** Our conformal prediction models allow to generate probabilistic forecasts with
+  calibrated quantile intervals for any pre-trained global forecasting model.
+
+* 
+  **Past and Future Covariates Support:** Many models in Darts support past-observed and/or future-known
   covariate (external data) time series as inputs for producing forecasts.
 
 * 
-  **Static Covariates support:** In addition to time-dependent data, ``TimeSeries`` can also contain
+  **Static Covariates Support:** In addition to time-dependent data, ``TimeSeries`` can also contain
   static data for each dimension, which can be exploited by some models.
 
 * 
@@ -277,7 +281,7 @@ Features
   to obtain forecasts as functions of lagged values of the target series and covariates.
 
 * 
-  **Training with sample weights:** All global models support being trained with sample weights. They can be
+  **Training with Sample Weights:** All global models support being trained with sample weights. They can be
   applied to each observation, forecasted time step and target column.
 
 * 
@@ -289,7 +293,7 @@ Features
   **Explainability:** Darts has the ability to *explain* some forecasting models using Shap values.
 
 * 
-  **Data processing:** Tools to easily apply (and revert) common transformations on
+  **Data Processing:** Tools to easily apply (and revert) common transformations on
   time series data (scaling, filling missing values, differencing, boxcox, ...)
 
 * 
@@ -599,6 +603,24 @@ on bringing more models and features.
      - ✅
    * - `RegressionEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel>`_
      - 
+     - ✅ ✅
+     - ✅ ✅ ✅
+     - ✅ ✅
+     - ✅
+   * - **Conformal Models**\ :raw-html-m2r:`<br/>`\ (\ `GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_\ ): Model support is dependent on the forecasting model used
+     - 
+     - 
+     - 
+     - 
+     - 
+   * - `ConformalNaiveModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalNaiveModel>`_
+     - `Conformalized Prediction <https://arxiv.org/pdf/1905.03222>`_
+     - ✅ ✅
+     - ✅ ✅ ✅
+     - ✅ ✅
+     - ✅
+   * - `ConformalQRModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalQRModel>`_
+     - `Conformalized Quantile Regression <https://arxiv.org/pdf/1905.03222>`_
      - ✅ ✅
      - ✅ ✅ ✅
      - ✅ ✅

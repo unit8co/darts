@@ -179,7 +179,8 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
@@ -431,8 +432,9 @@
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
         <span class="o">*</span><span class="n">args</span><span class="p">,</span>
         <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">series_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Inverse transforms a (sequence of) series by calling the user-implemented `ts_inverse_transform` method.</span>
 
 <span class="sd">        In case a sequence or list of lists is passed as input data, this function takes care of parallelising the</span>
@@ -459,6 +461,9 @@
 <span class="sd">        component_mask : Optional[np.ndarray] = None</span>
 <span class="sd">            Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies</span>
 <span class="sd">            which components of the underlying `series` the inverse transform should consider.</span>
+<span class="sd">        series_idx</span>
+<span class="sd">            Optionally, the index(es) of each series corresponding to their positions within the series used to fit</span>
+<span class="sd">            the transformer (to retrieve the appropriate transformer parameters).</span>
 <span class="sd">        kwargs</span>
 <span class="sd">            Additional keyword arguments for the :func:`ts_inverse_transform()` method</span>
 
@@ -498,16 +503,26 @@
         <span class="n">called_with_sequence_series</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
             <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
-            <span class="n">transformer_selector</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">series_idx</span><span class="p">:</span>
+                <span class="n">transformer_selector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_series_idx</span><span class="p">(</span><span class="n">series_idx</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">transformer_selector</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">called_with_single_series</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">TimeSeries</span><span class="p">):</span>  <span class="c1"># Sequence[TimeSeries]</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">series</span>
-            <span class="n">transformer_selector</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">series_idx</span><span class="p">:</span>
+                <span class="n">transformer_selector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_series_idx</span><span class="p">(</span><span class="n">series_idx</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">transformer_selector</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
             <span class="n">called_with_sequence_series</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># Sequence[Sequence[TimeSeries]]</span>
             <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">transformer_selector</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">series_list</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">series_idx</span><span class="p">:</span>
+                <span class="n">iterator_</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_process_series_idx</span><span class="p">(</span><span class="n">series_idx</span><span class="p">),</span> <span class="n">series</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">iterator_</span> <span class="o">=</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">series_list</span> <span class="ow">in</span> <span class="n">iterator_</span><span class="p">:</span>
                 <span class="n">data</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">series_list</span><span class="p">)</span>
                 <span class="n">transformer_selector</span> <span class="o">+=</span> <span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series_list</span><span class="p">)</span>
 

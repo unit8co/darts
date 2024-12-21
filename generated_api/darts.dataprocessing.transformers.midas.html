@@ -577,6 +577,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
+       Conformal Models
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.croston.html">
        Croston method
       </a>
@@ -883,12 +888,12 @@ able to retrieve the original time index.</p>
 frequency <a class="reference internal" href="#r4834e81d1aa9-2" id="id2">[2]</a>. Passed on to the <cite>rule</cite> parameter of pandas.DataFrame.resample().</p></li>
 <li><p><strong>strip</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to remove the NaNs from the start and the end of the transformed series.</p></li>
 <li><p><strong>drop_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If set to <cite>True</cite>, the statics covariates of the input series won’t be transferred to the output.
-This migth be useful for multivariate series with component-specific static covariates.</p></li>
+This might be useful for multivariate series with component-specific static covariates.</p></li>
 <li><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – A specific name for the scaler</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
-passed as input to a method, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
+passed as input to a method, parallelizing operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.
-Note: for a small amount of data, the parallelisation overhead could end up increasing the total
+Note: for a small amount of data, the parallelization overhead could end up increasing the total
 required amount of time.</p></li>
 <li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
 </ul>
@@ -966,7 +971,7 @@ required amount of time.</p></li>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.stack_samples" title="darts.dataprocessing.transformers.midas.MIDAS.stack_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stack_samples</span></code></a>(vals)</p></td>
 <td><p>Creates an array of shape <cite>(n_timesteps * n_samples, n_components)</cite> from either a <cite>TimeSeries</cite> or the <cite>array_values</cite> of a <cite>TimeSeries</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.transform" title="darts.dataprocessing.transformers.midas.MIDAS.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(series, *args[, component_mask])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.transform" title="darts.dataprocessing.transformers.midas.MIDAS.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(series, *args[, component_mask, ...])</p></td>
 <td><p>Transforms a (sequence of) of series by calling the user-implemeneted <cite>ts_transform</cite> method.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_fit" title="darts.dataprocessing.transformers.midas.MIDAS.ts_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_fit</span></code></a>(series, params, *args, **kwargs)</p></td>
@@ -994,7 +999,7 @@ required amount of time.</p></li>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – input TimeSeries to be fed into transformer.</p></li>
-<li><p><strong>component_mask</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components to
+<li><p><strong>component_mask</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components to
 extract from <cite>series</cite>. The <cite>i`th component of `series</cite> is kept only if <cite>component_mask[i] = True</cite>.
 If not specified, no masking is performed.</p></li>
 <li><p><strong>return_ts</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, specifies that a <cite>TimeSeries</cite> should be returned, rather than an <cite>np.ndarray</cite>.</p></li>
@@ -1067,7 +1072,7 @@ components of the underlying <cite>series</cite> the transform should be fitted 
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.inverse_transform">
-<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.inverse_transform" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.inverse_transform" title="Permalink to this definition">¶</a></dt>
 <dd><p>Inverse transforms a (sequence of) series by calling the user-implemented <cite>ts_inverse_transform</cite> method.</p>
 <p>In case a sequence or list of lists is passed as input data, this function takes care of parallelising the
 transformation of multiple series in the sequence at the same time. Additionally,
@@ -1089,6 +1094,8 @@ to fit the transformer.</p></li>
 <li><p><strong>args</strong> – Additional positional arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_inverse_transform" title="darts.dataprocessing.transformers.midas.MIDAS.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> method</p></li>
 <li><p><strong>component_mask</strong> (<em>Optional</em><em>[</em><em>np.ndarray</em><em>] </em><em>= None</em>) – Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies
 which components of the underlying <cite>series</cite> the inverse transform should consider.</p></li>
+<li><p><strong>series_idx</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the index(es) of each series corresponding to their positions within the series used to fit
+the transformer (to retrieve the appropriate transformer parameters).</p></li>
 <li><p><strong>kwargs</strong> – Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_inverse_transform" title="darts.dataprocessing.transformers.midas.MIDAS.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> method</p></li>
 </ul>
 </dd>
@@ -1178,7 +1185,7 @@ by concatenating all of the samples of the `i`th component in `vals</cite>.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.midas.MIDAS.transform">
-<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.transform" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.midas.MIDAS.transform" title="Permalink to this definition">¶</a></dt>
 <dd><p>Transforms a (sequence of) of series by calling the user-implemeneted <cite>ts_transform</cite> method.</p>
 <p>In case a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is passed as input data, this function takes care of
 parallelising the transformation of multiple series in the sequence at the same time. Additionally,
@@ -1196,6 +1203,8 @@ components of the underlying <cite>series</cite> the transform should consider. 
 attribute was set to <cite>True</cite> when instantiating <cite>BaseDataTransformer</cite>, then the component mask
 will be automatically applied to each <cite>TimeSeries</cite> input. Otherwise, <cite>component_mask</cite> will be
 provided as an addition keyword argument to <cite>ts_transform</cite>. See ‘Notes’ for further details.</p></li>
+<li><p><strong>series_idx</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the index(es) of each series corresponding to their positions within the series used to fit
+the transformer (to retrieve the appropriate transformer parameters).</p></li>
 <li><p><strong>kwargs</strong> – Additional keyword arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.midas.MIDAS.ts_transform" title="darts.dataprocessing.transformers.midas.MIDAS.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
 </ul>
 </dd>
@@ -1231,7 +1240,7 @@ TimeSeries, the parallelization is handled by <cite>transform</cite> and/or <cit
 (see InvertibleDataTransformer.__init__() docstring).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]]</p>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1298,7 +1307,7 @@ the anchor date to preserve all the values.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – input TimeSeries that was fed into transformer.</p></li>
 <li><p><strong>vals</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – <cite>np.ndarray</cite> or <cite>TimeSeries</cite> to ‘unmask’</p></li>
-<li><p><strong>component_mask</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components were extracted
+<li><p><strong>component_mask</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components were extracted
 from <cite>series</cite>. If given, insert <cite>vals</cite> back into the columns of the original array. If not specified,
 nothing is ‘unmasked’.</p></li>
 </ul>
@@ -1323,11 +1332,11 @@ components previously removed by <cite>component_mask</cite> now ‘added back�
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>vals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – <cite>np.ndarray</cite> of shape <cite>(n_timesteps * n_samples, n_components)</cite> to be ‘unstacked’.</p></li>
-<li><p><strong>n_timesteps</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the number of timesteps in the array originally passed to <cite>stack_samples</cite>.
+<li><p><strong>n_timesteps</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of timesteps in the array originally passed to <cite>stack_samples</cite>.
 Does <em>not</em> need to be provided if <cite>series</cite> is specified.</p></li>
-<li><p><strong>n_samples</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the number of samples in the array originally passed to <cite>stack_samples</cite>.
+<li><p><strong>n_samples</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of samples in the array originally passed to <cite>stack_samples</cite>.
 Does <em>not</em> need to be provided if <cite>series</cite> is specified.</p></li>
-<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – Optionally, the <cite>TimeSeries</cite> object used to create <cite>vals</cite>; <cite>n_samples</cite> is inferred
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the <cite>TimeSeries</cite> object used to create <cite>vals</cite>; <cite>n_samples</cite> is inferred
 from this.</p></li>
 </ul>
 </dd>

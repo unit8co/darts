@@ -577,6 +577,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
+       Conformal Models
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.croston.html">
        Croston method
       </a>
@@ -956,8 +961,8 @@ importances, and static covariates importances.</p>
 If not provided, the background <cite>TimeSeries</cite> will be explained instead.</p></li>
 <li><p><strong>foreground_past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, one or a sequence of past covariates <cite>TimeSeries</cite> if required by the forecasting model.</p></li>
 <li><p><strong>foreground_future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, one or a sequence of future covariates <cite>TimeSeries</cite> if required by the forecasting model.</p></li>
-<li><p><strong>horizons</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]) – This parameter is not used by the <cite>TFTExplainer</cite>.</p></li>
-<li><p><strong>target_components</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – This parameter is not used by the <cite>TFTExplainer</cite>.</p></li>
+<li><p><strong>horizons</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – This parameter is not used by the <cite>TFTExplainer</cite>.</p></li>
+<li><p><strong>target_components</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – This parameter is not used by the <cite>TFTExplainer</cite>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -998,7 +1003,7 @@ Otherwise, leave it empty to compute the explanation on the background from <cit
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>expl_result</strong> (<a class="reference internal" href="darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult" title="darts.explainability.explainability_result.TFTExplainabilityResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">TFTExplainabilityResult</span></code></a>) – A <cite>TFTExplainabilityResult</cite> object. Corresponds to the output of <a class="reference internal" href="#darts.explainability.tft_explainer.TFTExplainer.explain" title="darts.explainability.tft_explainer.TFTExplainer.explain"><code class="xref py py-func docutils literal notranslate"><span class="pre">explain()</span></code></a>.</p></li>
-<li><p><strong>plot_type</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘all’, ‘time’, ‘heatmap’]]) – The type of attention head plot. One of (“all”, “time”, “heatmap”).
+<li><p><strong>plot_type</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘all’, ‘time’, ‘heatmap’], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The type of attention head plot. One of (“all”, “time”, “heatmap”).
 If “all”, will plot the attention per horizon (given the horizons in the <cite>TFTExplainabilityResult</cite>).
 The maximum horizon corresponds to the <cite>output_chunk_length</cite> of the trained <cite>TFTModel</cite>.
 If “time”, will plot the mean attention over all horizons.
@@ -1009,7 +1014,7 @@ If “relative”, will plot the x-axis from <cite>(-input_chunk_length, output_
 to the first prediction point.
 If “time”, will plot the x-axis with the actual time index (or range index) of the corresponding
 <cite>TFTExplainabilityResult</cite>.</p></li>
-<li><p><strong>ax</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code>]) – Optionally, an axis to plot on. Only effective on a single <cite>expl_result</cite>.</p></li>
+<li><p><strong>ax</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an axis to plot on. Only effective on a single <cite>expl_result</cite>.</p></li>
 <li><p><strong>max_nr_series</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximum number of plots to show in case <cite>expl_result</cite> was computed on multiple series.</p></li>
 <li><p><strong>show_plot</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to show the plot.</p></li>
 </ul>
