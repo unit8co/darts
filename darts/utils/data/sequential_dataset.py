@@ -28,6 +28,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
+        stride: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
@@ -64,6 +65,8 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
             The length of the emitted future series.
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future.
+        stride
+            The number of time steps between consecutive entries.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -94,6 +97,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
             output_chunk_length=output_chunk_length,
             shift=shift,
             shift_covariates=False,
+            stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
@@ -123,6 +127,7 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
+        stride: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
@@ -159,6 +164,8 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
             The length of the emitted future series.
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future.
+        stride
+            The number of time steps between consecutive entries.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -189,6 +196,7 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
             output_chunk_length=output_chunk_length,
             shift=shift,
             shift_covariates=True,
+            stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.FUTURE,
             use_static_covariates=use_static_covariates,
@@ -218,6 +226,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
+        stride: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
@@ -255,6 +264,8 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
             The length of the emitted future series.
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future.
+        stride
+            The number of time steps between consecutive entries.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -286,6 +297,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
             output_chunk_length=output_chunk_length,
             shift=shift,
             shift_covariates=False,
+            stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.HISTORIC_FUTURE,
             use_static_covariates=use_static_covariates,
@@ -300,6 +312,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
             output_chunk_length=output_chunk_length,
             shift=shift,
             shift_covariates=True,
+            stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.FUTURE,
             use_static_covariates=use_static_covariates,
@@ -341,6 +354,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
+        stride: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
@@ -381,6 +395,8 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
             The length of the emitted future series.
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future.
+        stride
+            The number of time steps between consecutive entries.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -412,6 +428,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
             output_chunk_length=output_chunk_length,
             shift=shift,
             shift_covariates=False,
+            stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
@@ -425,6 +442,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
+            stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=use_static_covariates,
         )
@@ -467,6 +485,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
+        stride: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
@@ -506,6 +525,8 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
             The length of the emitted future series.
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future.
+        stride
+            The number of time steps between consecutive entries.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -536,6 +557,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
             output_chunk_length=output_chunk_length,
             shift=shift,
             shift_covariates=False,
+            stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
@@ -550,6 +572,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
             output_chunk_length=output_chunk_length,
             shift=shift,
             shift_covariates=True,
+            stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.FUTURE,
             use_static_covariates=use_static_covariates,
