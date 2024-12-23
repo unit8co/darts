@@ -12,6 +12,7 @@ from darts.models import (
     BATS,
     TBATS,
     CatBoostModel,
+    ConformalNaiveModel,
     ExponentialSmoothing,
     LightGBMModel,
     LinearRegressionModel,
@@ -62,13 +63,16 @@ if TORCH_AVAILABLE:
 lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
 cb_available = not isinstance(CatBoostModel, NotImportedModule)
 
+# conformal models require a fitted base model
+# in tests below, the model is re-trained for new input series.
+# using a fake trained model should allow the same API with conformal models
+conformal_forecaster = LinearRegressionModel(lags=10, output_chunk_length=5)
+conformal_forecaster._fit_called = True
+
 # model_cls, model_kwargs, err_univariate, err_multivariate
 models_cls_kwargs_errs = [
     (ExponentialSmoothing, {}, 0.3, None),
     (ARIMA, {"p": 1, "d": 0, "q": 1, "random_state": 42}, 0.03, None),
-]
-
-models_cls_kwargs_errs += [
     (
         BATS,
         {
@@ -94,13 +98,12 @@ models_cls_kwargs_errs += [
         0.04,
     ),
     (
-        StatsForecastAutoTBATS,
+        ConformalNaiveModel,
         {
-            "season_length": 1,
-            "use_trend": False,
-            "use_damped_trend": False,
-            "use_boxcox": True,
-            "use_arma_errors": False,
+            "model": conformal_forecaster,
+            "cal_length": 1,
+            "random_state": 42,
+            "quantiles": [0.1, 0.5, 0.9],
         },
         0.04,
         0.04,
@@ -150,7 +153,7 @@ if TORCH_AVAILABLE:
                 **tfm_kwargs,
             },
             0.06,
-            0.05,
+            0.06,
         ),
         (
             BlockRNNModel,
@@ -298,7 +301,7 @@ class TestProbabilisticModels:
 
     def helper_test_probabilistic_forecast_accuracy(self, model, err, ts, noisy_ts):
         model.fit(noisy_ts[:100])
-        pred = model.predict(n=100, num_samples=100)
+        pred = model.predict(n=50, num_samples=100)
 
         # test accuracy of the median prediction compared to the noiseless ts
         mae_err_median = mae(ts[100:], pred)

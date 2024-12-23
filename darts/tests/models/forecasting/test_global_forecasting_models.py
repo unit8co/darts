@@ -276,12 +276,10 @@ class TestGlobalForecastingModels:
             ),
         ],
     )
-    def test_save_load_model(self, tmpdir_module, model):
+    def test_save_load_model(self, tmpdir_fn, model):
         # check if save and load methods work and if loaded model creates same forecasts as original model
-        cwd = os.getcwd()
-        os.chdir(tmpdir_module)
         model_path_str = type(model).__name__
-        full_model_path_str = os.path.join(tmpdir_module, model_path_str)
+        full_model_path_str = os.path.join(tmpdir_fn, model_path_str)
 
         model.fit(self.ts_pass_train)
         model_prediction = model.predict(self.forecasting_horizon)
@@ -293,9 +291,7 @@ class TestGlobalForecastingModels:
         assert os.path.exists(full_model_path_str)
         assert (
             len([
-                p
-                for p in os.listdir(tmpdir_module)
-                if p.startswith(type(model).__name__)
+                p for p in os.listdir(tmpdir_fn) if p.startswith(type(model).__name__)
             ])
             == 4
         )
@@ -304,8 +300,6 @@ class TestGlobalForecastingModels:
         loaded_model = type(model).load(model_path_str)
 
         assert model_prediction == loaded_model.predict(self.forecasting_horizon)
-
-        os.chdir(cwd)
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_single_ts(self, config):
