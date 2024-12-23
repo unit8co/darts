@@ -17,7 +17,6 @@ from darts.models import (
     LightGBMModel,
     LinearRegressionModel,
     NotImportedModule,
-    StatsForecastAutoTBATS,
     XGBModel,
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
