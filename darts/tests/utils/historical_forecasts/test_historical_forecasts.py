@@ -59,7 +59,20 @@ if TORCH_AVAILABLE:
     from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 
 models = [LinearRegressionModel, NaiveDrift]
-models_reg_no_cov_cls_kwargs = [(LinearRegressionModel, {"lags": 8}, {}, (8, 1))]
+models_reg_no_cov_cls_kwargs = [
+    (LinearRegressionModel, {"lags": 8}, {}, (8, 1)),
+    # output_chunk_length only
+    (LinearRegressionModel, {"lags": 5, "output_chunk_length": 2}, {}, (5, 1)),
+    # output_chunk_shift only
+    (LinearRegressionModel, {"lags": 5, "output_chunk_shift": 1}, {}, (5, 1)),
+    # output_chunk_shift + output_chunk_length only
+    (
+        LinearRegressionModel,
+        {"lags": 5, "output_chunk_shift": 1, "output_chunk_length": 2},
+        {},
+        (5, 1),
+    ),
+]
 if not isinstance(CatBoostModel, NotImportedModule):
     models_reg_no_cov_cls_kwargs.append((
         CatBoostModel,
@@ -656,6 +669,22 @@ class TestHistoricalforecast:
         model_cls, kwargs, model_kwarg, bounds = config
         model = model_cls(**kwargs, **model_kwarg)
 
+        if model.output_chunk_shift > 0:
+            with pytest.raises(ValueError) as err:
+                forecasts = model.historical_forecasts(
+                    series=self.ts_pass_val,
+                    forecast_horizon=forecast_horizon,
+                    stride=1,
+                    train_length=train_length,
+                    retrain=True,
+                    overlap_end=False,
+                )
+            assert str(err.value).startswith(
+                "Cannot perform auto-regression `(n > output_chunk_length)`"
+            )
+            # continue the test without autogregression if we are using shifts
+            forecast_horizon = model.output_chunk_length
+
         # time index
         forecasts = model.historical_forecasts(
             series=self.ts_pass_val,
@@ -1152,6 +1181,22 @@ class TestHistoricalforecast:
             **model_kwargs,
         )
         model.fit(self.ts_pass_train)
+
+        if model.output_chunk_shift > 0:
+            with pytest.raises(ValueError) as err:
+                forecasts = model.historical_forecasts(
+                    series=[self.ts_pass_val, self.ts_pass_val],
+                    forecast_horizon=forecast_horizon,
+                    train_length=train_length,
+                    stride=1,
+                    retrain=True,
+                    overlap_end=False,
+                )
+            assert str(err.value).startswith(
+                "Cannot perform auto-regression `(n > output_chunk_length)`"
+            )
+            # continue the test without autogregression if we are using shifts
+            forecast_horizon = model.output_chunk_length
 
         forecasts = model.historical_forecasts(
             series=[self.ts_pass_val, self.ts_pass_val],
