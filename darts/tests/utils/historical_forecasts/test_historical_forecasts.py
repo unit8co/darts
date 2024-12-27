@@ -1182,7 +1182,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize("config", models_reg_no_cov_cls_kwargs)
     def test_regression_auto_start_multiple_no_cov(self, config):
-        # minimum required train length (+1 since sklearn models require 2 sampels)
+        # minimum required train length (+1 since sklearn models require 2 samples)
         forecast_horizon = 10
         model_cls, kwargs, model_kwargs, bounds = config
         train_length = bounds[0] + bounds[1] + 1
