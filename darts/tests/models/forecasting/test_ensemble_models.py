@@ -766,14 +766,10 @@ class TestEnsembleModels:
         )
 
     @pytest.mark.parametrize("model_cls", [NaiveEnsembleModel, RegressionEnsembleModel])
-    def test_save_load_ensemble_models(self, tmpdir_module, model_cls):
+    def test_save_load_ensemble_models(self, tmpdir_fn, model_cls):
         # check if save and load methods work and
         # if loaded ensemble model creates same forecasts as original ensemble models
-        cwd = os.getcwd()
-        os.chdir(tmpdir_module)
-        os.mkdir(model_cls.__name__)
-        full_model_path_str = os.path.join(tmpdir_module, model_cls.__name__)
-        os.chdir(full_model_path_str)
+        full_model_path_str = os.getcwd()
         kwargs = {}
         expected_suffixes = [".pkl", ".pkl.RNNModel_2.pt", ".pkl.RNNModel_2.pt.ckpt"]
 
@@ -827,5 +823,3 @@ class TestEnsembleModels:
         for p in pkl_files:
             loaded_model = model_cls.load(p)
             assert model_prediction == loaded_model.predict(5)
-
-        os.chdir(cwd)
