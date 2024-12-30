@@ -86,6 +86,15 @@ Regression models example notebook:
 
    examples/20-RegressionModel-examples.ipynb
 
+Conformal Prediction
+=================
+
+Conformal prediction example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/23-Conformal-Prediction-examples.ipynb
 
 Fast Fourier Transform
 ======================
