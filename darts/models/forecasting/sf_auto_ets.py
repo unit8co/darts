@@ -31,7 +31,7 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
         on Numba and jit compilation.
 
         We refer to the `statsforecast AutoETS documentation
-        <https://nixtla.github.io/statsforecast/src/core/models.html#autoets>`_
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoets>`_
         for the exhaustive documentation of the arguments.
 
         In addition to the StatsForecast implementation, this model can handle future covariates. It does so by first
