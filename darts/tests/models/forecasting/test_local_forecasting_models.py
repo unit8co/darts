@@ -35,6 +35,7 @@ from darts.models import (
     StatsForecastAutoARIMA,
     StatsForecastAutoCES,
     StatsForecastAutoETS,
+    StatsForecastAutoTBATS,
     StatsForecastAutoTheta,
     Theta,
 )
@@ -57,6 +58,7 @@ models = [
     (StatsForecastAutoTheta(season_length=12), 5.5),
     (StatsForecastAutoCES(season_length=12, model="Z"), 7.3),
     (StatsForecastAutoETS(season_length=12, model="AAZ"), 7.3),
+    (StatsForecastAutoTBATS(season_length=12), 10),
     (Croston(version="classic"), 23),
     (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 23),
     (Theta(), 11),
@@ -142,8 +144,6 @@ class TestLocalForecastingModels:
     @pytest.mark.parametrize("model", [ARIMA(1, 1, 1), LinearRegressionModel(lags=12)])
     def test_save_load_model(self, tmpdir_module, model):
         # check if save and load methods work and if loaded model creates same forecasts as original model
-        cwd = os.getcwd()
-        os.chdir(tmpdir_module)
         model_path_str = type(model).__name__
         model_path_pathlike = pathlib.Path(model_path_str + "_pathlike")
         model_path_binary = model_path_str + "_binary"
@@ -185,8 +185,6 @@ class TestLocalForecastingModels:
 
         for loaded_model in loaded_models:
             assert model_prediction == loaded_model.predict(self.forecasting_horizon)
-
-        os.chdir(cwd)
 
     def test_save_load_model_invalid_path(self):
         # check if save and load methods raise an error when given an invalid path
