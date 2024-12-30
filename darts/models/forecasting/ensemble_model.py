@@ -239,9 +239,10 @@ class EnsembleModel(GlobalForecastingModel):
         # stacks multiple sequences of timeseries elementwise
         return [self._stack_ts_seq(ts_list) for ts_list in zip(*predictions_list)]
 
+    @property
     def _model_encoder_settings(self):
         raise NotImplementedError(
-            "Encoders are not supported by EnsembleModels. Instead add encoder to the underlying `forecasting_models`."
+            "Encoders are not supported by EnsembleModels. Instead add encoders to the underlying `forecasting_models`."
         )
 
     def _make_multiple_predictions(
@@ -436,15 +437,6 @@ class EnsembleModel(GlobalForecastingModel):
 
     @staticmethod
     def load(path: Union[str, os.PathLike, BinaryIO]) -> "EnsembleModel":
-        """
-        Loads the ensemble model from a given path or file handle.
-
-        Parameters
-        ----------
-        path
-            Path or file handle from which to load the ensemble model.
-        """
-
         model: EnsembleModel = GlobalForecastingModel.load(path)
 
         for i, m in enumerate(model.forecasting_models):
