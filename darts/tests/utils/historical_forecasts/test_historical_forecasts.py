@@ -1188,10 +1188,10 @@ class TestHistoricalforecast:
     @pytest.mark.parametrize(
         "config",
         itertools.product(
-            [ts_univariate, ts_multivariate],
-            models_reg_no_cov_cls_kwargs + models_reg_cov_cls_kwargs,
-            [True, False],
-            [1, 5],
+            [ts_univariate, ts_multivariate],  # series components
+            models_reg_no_cov_cls_kwargs + models_reg_cov_cls_kwargs,  # model config
+            [True, False],  # multi_models
+            [1, 5],  # forecast_horizon
         ),
     )
     def test_optimized_historical_forecasts_regression(self, config):
@@ -1216,19 +1216,32 @@ class TestHistoricalforecast:
             ),
         )
         # ocl >= forecast horizon
-        model_kwargs_diff = model_kwargs.copy()
-        model_kwargs_diff["output_chunk_length"] = 5
-        model_kwargs_diff["multi_models"] = multi_models
-        model_diff = model_cls(**model_kwargs_same)
-        model_diff.fit(
+        model_kwargs_direct = model_kwargs.copy()
+        model_kwargs_direct["output_chunk_length"] = forecast_horizon + 1
+        model_kwargs_direct["multi_models"] = multi_models
+        model_direct = model_cls(**model_kwargs_direct)
+        model_direct.fit(
             series=ts[:start],
-            past_covariates=ts_covs if model_diff.supports_past_covariates else None,
+            past_covariates=ts_covs if model_direct.supports_past_covariates else None,
             future_covariates=(
-                ts_covs if model_diff.supports_future_covariates else None
+                ts_covs if model_direct.supports_future_covariates else None
+            ),
+        )
+
+        # ocl <= forecast horizon
+        model_kwargs_autoreg = model_kwargs.copy()
+        model_kwargs_autoreg["output_chunk_length"] = max(1, forecast_horizon - 1)
+        model_kwargs_autoreg["multi_models"] = multi_models
+        model_autoreg = model_cls(**model_kwargs_autoreg)
+        model_autoreg.fit(
+            series=ts[:start],
+            past_covariates=ts_covs if model_autoreg.supports_past_covariates else None,
+            future_covariates=(
+                ts_covs if model_autoreg.supports_future_covariates else None
             ),
         )
         # no parametrization to save time on model training at the cost of test granularity
-        for model in [model_same, model_diff]:
+        for model in [model_same, model_direct, model_autoreg]:
             for last_points_only in [True, False]:
                 for stride in [1, 2]:
                     hist_fct = model.historical_forecasts(
