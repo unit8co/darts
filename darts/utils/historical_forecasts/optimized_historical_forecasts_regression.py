@@ -162,19 +162,24 @@ def _optimized_historical_forecasts_last_points_only(
         else:
             forecast = forecast[:, 0]
 
+        if (
+            stride == 1
+            and model.output_chunk_length == 1
+            and model.output_chunk_shift == 0
+        ):
+            times = times[0]
+        else:
+            times = generate_index(
+                start=hist_fct_start
+                + (forecast_horizon + model.output_chunk_shift - 1) * freq,
+                length=forecast.shape[0],
+                freq=freq * stride,
+                name=series_.time_index.name,
+            )
+
         forecasts_list.append(
             TimeSeries.from_times_and_values(
-                times=(
-                    times[0]
-                    if stride == 1 and model.output_chunk_length == 1
-                    else generate_index(
-                        start=hist_fct_start
-                        + (forecast_horizon + model.output_chunk_shift - 1) * freq,
-                        length=forecast.shape[0],
-                        freq=freq * stride,
-                        name=series_.time_index.name,
-                    )
-                ),
+                times=times,
                 values=forecast,
                 columns=forecast_components,
                 static_covariates=series_.static_covariates,
