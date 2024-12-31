@@ -209,6 +209,8 @@ class AnomalyScorer(ABC):
             Optionally, the name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC".
+        multivariate_plot
+            If True, it will separately plot each component in multivariate series.
         """
         series = _check_input(series, name="series", num_series_expected=1)[0]
         pred_series = _check_input(

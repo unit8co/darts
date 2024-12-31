@@ -507,6 +507,8 @@ class ForecastingAnomalyModel(AnomalyModel):
             Optionally, the name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC".
+        multivariate_plot
+            If True, it will separately plot each component in multivariate series.
         score_kwargs
             parameters for the `score()` method.
         """

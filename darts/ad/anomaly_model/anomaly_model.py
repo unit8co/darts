@@ -284,6 +284,8 @@ class AnomalyModel(ABC):
             Default: "AUC_ROC".
         score_kwargs
             parameters for the `score()` method.
+        multivariate_plot
+            If True, it will separately plot each component in multivariate series.
         """
         series = _check_input(series, name="series", num_series_expected=1)[0]
         predict_kwargs = predict_kwargs if predict_kwargs is not None else {}
