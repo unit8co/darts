@@ -15,6 +15,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Added a `stride` argument to the `Dataset` classes (torch-based models) and the fitting methods of the `RegressionModels` to reduce the size of the training set or apply elaborate training approaches. [#2624](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou)
 
 **Fixed**
+- Fixed a bug when performing optimized historical forecasts with `stride=1` using a `RegressionModel` with `output_chunk_shift>=1` and `output_chunk_length=1`, where the forecast time index was not properly shifted. [#2634](https://github.com/unit8co/darts/pull/2634) by [Mattias De Charleroy](https://github.com/MattiasDC).
 
 **Dependencies**
 
