@@ -442,7 +442,7 @@ def show_anomalies_from_scores(
             name="pred_series",
             width_expected=series.width,
             num_series_expected=1,
-            check_multivariate=True,
+            check_multivariate=multivariate_plot,
         )[0]
 
     if anomalies is not None:
@@ -452,7 +452,7 @@ def show_anomalies_from_scores(
             width_expected=series.width,
             num_series_expected=1,
             check_binary=True,
-            check_multivariate=True,
+            check_multivariate=multivariate_plot,
         )[0]
 
     if pred_scores is not None:
@@ -462,7 +462,7 @@ def show_anomalies_from_scores(
                 name="pred_score",
                 width_expected=series.width,
                 num_series_expected=1,
-                check_multivariate=True,
+                check_multivariate=multivariate_plot,
             )[0]
 
     if multivariate_plot:
