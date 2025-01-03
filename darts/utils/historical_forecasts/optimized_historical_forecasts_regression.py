@@ -178,6 +178,7 @@ def _optimized_historical_forecasts_last_points_only(
                 tgt_hf_idx=(hist_fct_tgt_start, hist_fct_tgt_end),
                 pc_hf_idx=(hist_fct_pc_start, hist_fct_pc_end),
                 fc_hf_idx=(hist_fct_fc_start, hist_fct_fc_end),
+                show_warnings=show_warnings,
                 **kwargs,
             )
 
@@ -385,6 +386,7 @@ def _optimized_historical_forecasts_all_points(
                 tgt_hf_idx=(hist_fct_tgt_start, hist_fct_tgt_end),
                 pc_hf_idx=(hist_fct_pc_start, hist_fct_pc_end),
                 fc_hf_idx=(hist_fct_fc_start, hist_fct_fc_end),
+                show_warnings=show_warnings,
                 **kwargs,
             )
 
@@ -429,12 +431,21 @@ def _optimized_hf_autoregression(
     tgt_hf_idx: tuple,
     pc_hf_idx: tuple,
     fc_hf_idx: tuple,
+    show_warnings: bool,
     **kwargs,
 ):
     """perform autoregression on all the horizon in parallel.
 
     the parent function is responsible for extracting the relevant timestamps (last_point_only)
     """
+    if show_warnings:
+        logger.warning(
+            "`predict()` was called with `n > output_chunk_length`: using auto-regression to forecast the values "
+            "after `output_chunk_length` points. The model will access `(n - output_chunk_length)` future values of "
+            "your `past_covariates` (relative to the first predicted time step). To hide this warning, set "
+            "`show_warnings=False`."
+        )
+
     if predict_likelihood_parameters:
         raise_log(
             ValueError(
@@ -442,12 +453,6 @@ def _optimized_hf_autoregression(
             ),
             logger,
         )
-        # forecast_ = model._predict_and_sample(
-        #    x=X,
-        #    num_samples=1,
-        #    predict_likelihood_parameters=False,
-        #    **kwargs,
-        # )
 
     forecast_ = forecast
     # indexes used to control tabularization boundaries
@@ -510,11 +515,14 @@ def _optimized_hf_autoregression(
         # reorder the lagged values
         X_ = lagged_vals[:, lags_order[0]]
 
+        # TODO: use the same logic as the target, finding the absolute position of the start in the index
         # shift the boundaries of the covariates
-        hist_fct_pc_start += model.output_chunk_length * unit
-        hist_fct_pc_end += model.output_chunk_length * unit
-        hist_fct_fc_start += model.output_chunk_length * unit
-        hist_fct_fc_end += model.output_chunk_length * unit
+        if past_covariates:
+            hist_fct_pc_start += model.output_chunk_length * unit
+            hist_fct_pc_end += model.output_chunk_length * unit
+        if future_covariates:
+            hist_fct_fc_start += model.output_chunk_length * unit
+            hist_fct_fc_end += model.output_chunk_length * unit
 
         # target series is passed just for the static covariates (lags=None)
         if model.uses_static_covariates or past_covariates or future_covariates:
