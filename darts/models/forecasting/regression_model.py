@@ -780,7 +780,9 @@ class RegressionModel(GlobalForecastingModel):
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         stride
-            The number of time steps between consecutive entries.
+            The number of time steps between consecutive samples (windows of lagged values extracted from the target
+            series), applied starting from the end of the series. This should be used with caution as it might
+            introduce bias in the forecasts.
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
@@ -1001,11 +1003,11 @@ class RegressionModel(GlobalForecastingModel):
             If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
             Default: ``False``
+        show_warnings
+            Optionally, control whether warnings are shown. Not effective for all models.
         **kwargs : dict, optional
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
-        show_warnings
-            Optionally, control whether warnings are shown. Not effective for all models.
         """
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
