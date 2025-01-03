@@ -356,7 +356,6 @@ def show_anomalies_from_scores(
     multivariate_plot
         If True, it will separately plot each component in multivariate series.
     """
-
     series = _check_input(
         series,
         name="series",
@@ -426,78 +425,80 @@ def show_anomalies_from_scores(
             )
 
         nbr_plots += len(set(window))
-        series_width = series.n_components
-        plots_per_ts = nbr_plots * series_width if multivariate_plot else nbr_plots
-        fig, axs = plt.subplots(
-            plots_per_ts,
-            figsize=(8, 4 + 2 * (plots_per_ts - 1)),
-            sharex=True,
-            gridspec_kw={"height_ratios": [2] + [1] * (plots_per_ts - 1)},
-            squeeze=False,
-        )
 
+    series_width = series.n_components
     if pred_series is not None:
         pred_series = _check_input(
             pred_series,
             name="pred_series",
-            width_expected=series.width,
+            width_expected=series_width,
             num_series_expected=1,
             check_multivariate=multivariate_plot,
         )[0]
 
-    if anomalies is not None:
+    if anomalies is not None and multivariate_plot:
         anomalies = _check_input(
             anomalies,
             name="anomalies",
-            width_expected=series.width,
+            width_expected=series_width,
             num_series_expected=1,
             check_binary=True,
             check_multivariate=multivariate_plot,
         )[0]
 
-    if pred_scores is not None:
+    if pred_scores is not None and multivariate_plot:
         for pred_score in pred_scores:
-            pred_score = _check_input(
+            _ = _check_input(
                 pred_score,
                 name="pred_score",
-                width_expected=series.width,
+                width_expected=series_width,
                 num_series_expected=1,
                 check_multivariate=multivariate_plot,
             )[0]
 
-    if multivariate_plot:
-        for i in range(series_width):
-            _plot_series_and_anomalies(
-                series=series[series.components[i]],
-                anomalies=anomalies[anomalies.components[i]]
-                if anomalies is not None
-                else None,
-                pred_series=pred_series[pred_series.components[i]]
-                if pred_series is not None
-                else None,
-                pred_scores=pred_scores,
-                window=window,
-                names_of_scorers=names_of_scorers,
-                metric=metric,
-                axs=axs,
-                index_ax=i * nbr_plots,
-                nbr_plots=nbr_plots,
-            )
+    plots_per_ts = nbr_plots * series_width if multivariate_plot else nbr_plots
+    fig, axs = plt.subplots(
+        plots_per_ts,
+        figsize=(8, 4 + 2 * (plots_per_ts - 1)),
+        sharex=True,
+        gridspec_kw={"height_ratios": [2] + [1] * (plots_per_ts - 1)},
+        squeeze=False,
+    )
 
-    else:
+    for i in range(series_width if multivariate_plot else 1):
+        if multivariate_plot:
+            series_ = series[series.components[i]]
+            anomalies_ = (
+                anomalies[anomalies.components[i]] if anomalies is not None else None
+            )
+            pred_series_ = (
+                pred_series[pred_series.components[i]]
+                if pred_series is not None
+                else None
+            )
+            pred_scores_ = (
+                [pc[pc.components[i]] for pc in pred_scores]
+                if pred_scores is not None
+                else None
+            )
+        else:
+            series_ = series
+            anomalies_ = anomalies
+            pred_series_ = pred_series
+            pred_scores_ = pred_scores
+
         _plot_series_and_anomalies(
-            series=series,
-            anomalies=anomalies,
-            pred_series=pred_series,
-            pred_scores=pred_scores,
+            series=series_,
+            anomalies=anomalies_,
+            pred_series=pred_series_,
+            pred_scores=pred_scores_,
             window=window,
             names_of_scorers=names_of_scorers,
             metric=metric,
             axs=axs,
-            index_ax=0,
+            index_ax=i * nbr_plots,
             nbr_plots=nbr_plots,
         )
-
     fig.suptitle(title)
 
 
@@ -838,9 +839,7 @@ def _plot_series_and_anomalies(
                 value = round(
                     eval_metric_from_scores(
                         anomalies=anomalies,
-                        pred_scores=pred_scores[idx][
-                            pred_scores[idx].components[index_ax // nbr_plots]
-                        ],
+                        pred_scores=pred_scores[idx],
                         window=w,
                         metric=metric,
                     ),
@@ -855,9 +854,7 @@ def _plot_series_and_anomalies(
                 label = f"score_{str(idx)}" + [f" ({value})", ""][value is None]
 
             _plot_series(
-                series=elem[1]["series_score"][
-                    elem[1]["series_score"].components[index_ax // nbr_plots]
-                ],
+                series=elem[1]["series_score"],
                 ax_id=axs[index_ax][0],
                 linewidth=0.5,
                 label_name=label,
