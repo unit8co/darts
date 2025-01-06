@@ -463,6 +463,7 @@ def show_anomalies_from_scores(
         sharex=True,
         gridspec_kw={"height_ratios": [2] + [1] * (plots_per_ts - 1)},
         squeeze=False,
+        constrained_layout=True,
     )
 
     for i in range(series_width if multivariate_plot else 1):
