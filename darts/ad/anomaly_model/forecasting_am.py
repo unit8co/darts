@@ -440,7 +440,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
         metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
-        multivariate_plot: bool = False,
+        component_wise: bool = False,
         **score_kwargs,
     ):
         """Plot the results of the anomaly model.
@@ -507,7 +507,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             Optionally, the name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC".
-        multivariate_plot
+        component_wise
             If True, it will separately plot each component in multivariate series.
         score_kwargs
             parameters for the `score()` method.
@@ -530,7 +530,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             names_of_scorers=names_of_scorers,
             title=title,
             metric=metric,
-            multivariate_plot=multivariate_plot,
+            component_wise=component_wise,
             **score_kwargs,
         )
 
