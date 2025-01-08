@@ -4257,7 +4257,7 @@ class TimeSeries:
                     )
 
         ax.legend()
-        ax.set_title(title if title else self._xa.name)
+        ax.set_title(title if title is not None else self._xa.name)
         return ax
 
     def with_columns_renamed(
