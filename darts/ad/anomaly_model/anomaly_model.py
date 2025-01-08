@@ -285,7 +285,7 @@ class AnomalyModel(ABC):
         score_kwargs
             parameters for the `score()` method.
         component_wise
-            If True, it will separately plot each component in multivariate series.
+            If True, will separately plot each component in case of multivariate anomaly detection.
         """
         series = _check_input(series, name="series", num_series_expected=1)[0]
         predict_kwargs = predict_kwargs if predict_kwargs is not None else {}

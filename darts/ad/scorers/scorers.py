@@ -210,7 +210,7 @@ class AnomalyScorer(ABC):
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC".
         component_wise
-            If True, it will separately plot each component in multivariate series.
+            If True, will separately plot each component in case of multivariate anomaly detection.
         """
         series = _check_input(series, name="series", num_series_expected=1)[0]
         pred_series = _check_input(
@@ -616,7 +616,7 @@ class FittableAnomalyScorer(AnomalyScorer):
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC".
         component_wise
-            If True, it will separately plot each component in multivariate series.
+            If True, will separately plot each component in case of multivariate anomaly detection.
         """
         series = _check_input(series, name="series", num_series_expected=1)[0]
         pred_scores = self.score(series)
