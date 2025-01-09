@@ -247,6 +247,7 @@ class AnomalyModel(ABC):
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
         metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
+        component_wise: bool = False,
         **score_kwargs,
     ):
         """Plot the results of the anomaly model.
@@ -283,6 +284,8 @@ class AnomalyModel(ABC):
             Default: "AUC_ROC".
         score_kwargs
             parameters for the `score()` method.
+        component_wise
+            If True, will separately plot each component in case of multivariate anomaly detection.
         """
         series = _check_input(series, name="series", num_series_expected=1)[0]
         predict_kwargs = predict_kwargs if predict_kwargs is not None else {}
@@ -310,6 +313,7 @@ class AnomalyModel(ABC):
             names_of_scorers=names_of_scorers,
             title=title,
             metric=metric,
+            component_wise=component_wise,
         )
 
     @property
