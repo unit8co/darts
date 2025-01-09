@@ -69,6 +69,25 @@ class TestDataset:
             else:
                 assert right is None
 
+    def _check_strided_ds(self, regular_ds, strided_ds, stride: int):
+        """
+        Every `stride`-th values in a dataset with stride=1 should be identical to the dataset strided with `stride
+        """
+        # if the un-strided length is a multiple of the stride
+        if len(regular_ds) % stride == 0:
+            assert len(regular_ds) == len(strided_ds) * stride
+        else:
+            assert len(regular_ds) > len(strided_ds) * stride
+
+        for idx, batch_str in enumerate(strided_ds):
+            print("****", idx)
+            for entry_s, entry_r in zip(batch_str, regular_ds[idx * stride]):
+                if entry_s is not None and entry_r is not None:
+                    np.testing.assert_almost_equal(entry_s, entry_r)
+                else:
+                    assert entry_s == entry_r
+            print("****", idx, "passed")
+
     def test_past_covariates_inference_dataset(self):
         # one target series
         ds = PastCovariatesInferenceDataset(
@@ -491,7 +510,7 @@ class TestDataset:
     @pytest.mark.parametrize(
         "config",
         [
-            # (dataset class, whether contains future, future batch index)
+            # (dataset class, future batch index)
             (PastCovariatesInferenceDataset, None),
             (FutureCovariatesInferenceDataset, 1),
             (DualCovariatesInferenceDataset, 2),
@@ -1322,36 +1341,40 @@ class TestDataset:
 
     @pytest.mark.parametrize("use_weight", [False, True])
     def test_horizon_based_dataset(self, use_weight):
+        ds_kwargs = {
+            "output_chunk_length": 10,
+            "lh": (1, 3),
+            "lookback": 2,
+        }
         weight1 = self.target1 + 1
         weight2 = self.target2 + 1
 
-        weight = weight1 if use_weight else None
         weight_exp = weight1[85:95] if use_weight else None
         # one target series
-        ds = HorizonBasedDataset(
-            target_series=self.target1,
-            output_chunk_length=10,
-            lh=(1, 3),
-            lookback=2,
-            sample_weight=weight,
-        )
+        ds_kwargs["target_series"] = self.target1
+        ds_kwargs["sample_weight"] = weight1 if use_weight else None
+        ds = HorizonBasedDataset(**ds_kwargs)
         assert len(ds) == 20
         self._assert_eq(
             ds[5],
             (self.target1[65:85], None, self.cov_st1, weight_exp, self.target1[85:95]),
         )
+        # one target series, with stride
+        self._check_strided_ds(
+            regular_ds=ds,
+            strided_ds=HorizonBasedDataset(
+                **ds_kwargs,
+                stride=3,
+            ),
+            stride=3,
+        )
 
         # two target series
-        weight = [weight1, weight2] if use_weight else None
         weight_exp1 = weight1[85:95] if use_weight else None
         weight_exp2 = weight2[135:145] if use_weight else None
-        ds = HorizonBasedDataset(
-            target_series=[self.target1, self.target2],
-            output_chunk_length=10,
-            lh=(1, 3),
-            lookback=2,
-            sample_weight=weight,
-        )
+        ds_kwargs["target_series"] = [self.target1, self.target2]
+        ds_kwargs["sample_weight"] = [weight1, weight2] if use_weight else None
+        ds = HorizonBasedDataset(**ds_kwargs)
         assert len(ds) == 40
         self._assert_eq(
             ds[5],
@@ -1367,6 +1390,12 @@ class TestDataset:
                 self.target2[135:145],
             ),
         )
+        # two target series, with stride
+        self._check_strided_ds(
+            regular_ds=ds,
+            strided_ds=HorizonBasedDataset(**ds_kwargs, stride=3),
+            stride=3,
+        )
 
         # two targets and one covariate
         with pytest.raises(ValueError):
@@ -1375,17 +1404,12 @@ class TestDataset:
             )
 
         # two targets and two covariates
-        weight = [weight1, weight2] if use_weight else None
         weight_exp1 = weight1[85:95] if use_weight else None
         weight_exp2 = weight2[135:145] if use_weight else None
-        ds = HorizonBasedDataset(
-            target_series=[self.target1, self.target2],
-            covariates=[self.cov1, self.cov2],
-            output_chunk_length=10,
-            lh=(1, 3),
-            lookback=2,
-            sample_weight=weight,
-        )
+        ds_kwargs["target_series"] = [self.target1, self.target2]
+        ds_kwargs["covariates"] = [self.cov1, self.cov2]
+        ds_kwargs["sample_weight"] = [weight1, weight2] if use_weight else None
+        ds = HorizonBasedDataset(**ds_kwargs)
         self._assert_eq(
             ds[5],
             (
@@ -1406,11 +1430,17 @@ class TestDataset:
                 self.target2[135:145],
             ),
         )
+        # two targets and two covariates, with stride
+        self._check_strided_ds(
+            regular_ds=ds,
+            strided_ds=HorizonBasedDataset(**ds_kwargs, stride=3),
+            stride=3,
+        )
 
     @pytest.mark.parametrize(
         "config",
         [
-            # (dataset class, whether contains future, future batch index)
+            # (dataset class, future batch index)
             (PastCovariatesSequentialDataset, None),
             (FutureCovariatesSequentialDataset, 1),
             (DualCovariatesSequentialDataset, 2),
@@ -1709,7 +1739,7 @@ class TestDataset:
     @pytest.mark.parametrize(
         "config",
         [
-            # (dataset class, whether contains future, future batch index)
+            # (dataset class, future batch index)
             (PastCovariatesSequentialDataset, None),
             (FutureCovariatesSequentialDataset, 1),
             (DualCovariatesSequentialDataset, 2),
@@ -1746,13 +1776,7 @@ class TestDataset:
             **ds_covs,
         )
         assert len(ds_stride) * 3 == len(ds_reg) == nb_samples
-        # regular dataset with stride=1, every 3rd values should be identical to the dataset with stride=3
-        for idx, batch_str in enumerate(ds_stride):
-            for entry_s, entry_r in zip(batch_str, ds_reg[idx * 3]):
-                if entry_s is not None and entry_r is not None:
-                    np.testing.assert_almost_equal(entry_s, entry_r)
-                else:
-                    assert entry_s == entry_r
+        self._check_strided_ds(regular_ds=ds_reg, strided_ds=ds_stride, stride=3)
 
     def test_get_matching_index(self):
         from darts.utils.data.utils import _get_matching_index
