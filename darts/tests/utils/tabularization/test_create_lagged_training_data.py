@@ -104,7 +104,8 @@ class TestCreateLaggedTrainingData:
             times = times.intersection(future_times)
         # Apply stride
         if stride > 1:
-            times = times[::stride]
+            # apply the stride from the end and then reorder the samples
+            times = times[::-stride][::-1]
         # Take most recent `max_samples_per_ts` samples if requested:
         if (max_samples_per_ts is not None) and (len(times) > max_samples_per_ts):
             times = times[-max_samples_per_ts:]
