@@ -566,7 +566,7 @@ class RNNModel(DualCovariatesTorchModel):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
-        stride: int,
+        stride: int = 1,
     ) -> DualCovariatesShiftedDataset:
         return DualCovariatesShiftedDataset(
             target_series=target,

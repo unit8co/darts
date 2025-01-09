@@ -76,17 +76,13 @@ class TestDataset:
         # if the un-strided length is a multiple of the stride
         if len(regular_ds) % stride == 0:
             assert len(regular_ds) == len(strided_ds) * stride
-        else:
-            assert len(regular_ds) > len(strided_ds) * stride
 
         for idx, batch_str in enumerate(strided_ds):
-            print("****", idx)
             for entry_s, entry_r in zip(batch_str, regular_ds[idx * stride]):
                 if entry_s is not None and entry_r is not None:
                     np.testing.assert_almost_equal(entry_s, entry_r)
                 else:
                     assert entry_s == entry_r
-            print("****", idx, "passed")
 
     def test_past_covariates_inference_dataset(self):
         # one target series

@@ -538,7 +538,7 @@ class TCNModel(PastCovariatesTorchModel):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
-        stride: int,
+        stride: int = 1,
     ) -> PastCovariatesShiftedDataset:
         return PastCovariatesShiftedDataset(
             target_series=target,
