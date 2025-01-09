@@ -4,6 +4,7 @@ Horizon-Based Training Dataset
 """
 
 from collections.abc import Sequence
+from math import ceil
 from typing import Optional, Union
 
 import numpy as np
@@ -25,6 +26,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         output_chunk_length: int = 12,
         lh: tuple[int, int] = (1, 3),
         lookback: int = 3,
+        stride: int = 1,
         use_static_covariates: bool = True,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ) -> None:
@@ -39,7 +41,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
 
         Given the horizon `output_chunk_length` of a model, this dataset will compute some "past/future"
         splits as follows:
-        First a "forecast point" is selected in the the range of the last
+        First a "forecast point" is selected in the range of the last
         `(min_lh * output_chunk_length, max_lh * output_chunk_length)` points before the end of the time series.
         The "future" then consists in the following `output_chunk_length` points, and the "past" will be the preceding
         `lookback * output_chunk_length` points.
@@ -72,6 +74,10 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
             A integer interval for the length of the input in the emitted input and output splits, expressed as a
             multiple of `output_chunk_length`. For instance, `lookback=3` will emit "inputs" of lengths
             `3 * output_chunk_length`.
+        stride
+            The number of time steps between consecutive samples (windows of lagged values extracted from the target
+            series), applied starting from the end of the series. This should be used with caution as it might
+            introduce bias in the forecasts.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         sample_weight
@@ -104,8 +110,15 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         self.output_chunk_length = output_chunk_length
         self.min_lh, self.max_lh = lh
         self.lookback = lookback
+        self.stride = stride
 
         # Checks
+        if not (isinstance(stride, int) and stride > 0):
+            raise_log(
+                ValueError("`stride` must be a positive integer greater than 0."),
+                logger=logger,
+            )
+
         if not (self.max_lh >= self.min_lh >= 1):
             raise_log(
                 ValueError(
@@ -114,7 +127,9 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
                 ),
                 logger=logger,
             )
-        self.nr_samples_per_ts = (self.max_lh - self.min_lh) * self.output_chunk_length
+        self.nr_samples_per_ts = ceil(
+            ((self.max_lh - self.min_lh) * self.output_chunk_length) / self.stride
+        )
         self.total_nr_samples = len(self.target_series) * self.nr_samples_per_ts
         self.use_static_covariates = use_static_covariates
 
@@ -149,7 +164,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
 
         # determine the index lh_idx of the forecasting point (the last point of the input series, before the target)
         # lh_idx should be in [0, self.nr_samples_per_ts)
-        lh_idx = idx - (target_idx * self.nr_samples_per_ts)
+        lh_idx = idx * self.stride - (target_idx * self.nr_samples_per_ts)
 
         # determine the index at the end of the output chunk
         end_of_output_idx = len(target_series) - (
