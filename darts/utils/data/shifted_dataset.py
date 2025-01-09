@@ -4,6 +4,7 @@ Shifted Training Dataset
 """
 
 from collections.abc import Sequence
+from math import ceil
 from typing import Optional, Union
 
 import numpy as np
@@ -164,7 +165,9 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
         shift
             The number of time steps by which to shift the output chunks relative to the start of the input chunks.
         stride
-            The number of time steps between consecutive entries.
+            The number of time steps between consecutive samples (windows of lagged values extracted from the target
+            series), applied starting from the end of the series. This should be used with caution as it might
+            introduce bias in the forecasts.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -264,7 +267,9 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
         shift
             The number of time steps by which to shift the output chunks relative to the start of the input chunks.
         stride
-            The number of time steps between consecutive entries.
+            The number of time steps between consecutive samples (windows of lagged values extracted from the target
+            series), applied starting from the end of the series. This should be used with caution as it might
+            introduce bias in the forecasts.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -392,7 +397,9 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
         shift
             The number of time steps by which to shift the output chunks relative to the start of the input chunks.
         stride
-            The number of time steps between consecutive entries.
+            The number of time steps between consecutive samples (windows of lagged values extracted from the target
+            series), applied starting from the end of the series. This should be used with caution as it might
+            introduce bias in the forecasts.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -518,7 +525,9 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
         shift
             The number of time steps by which to shift the output chunks relative to the start of the input chunks.
         stride
-            The number of time steps between consecutive entries.
+            The number of time steps between consecutive samples (windows of lagged values extracted from the target
+            series), applied starting from the end of the series. This should be used with caution as it might
+            introduce bias in the forecasts.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -638,7 +647,9 @@ class GenericShiftedDataset(TrainingDataset):
             Whether to shift the covariates forward the same way as the target.
             FutureCovariatesModel's require this set to True, while PastCovariatesModel's require this set to False.
         stride
-            The number of time steps between consecutive entries.
+            The number of time steps between consecutive samples (windows of lagged values extracted from the target
+            series), applied starting from the end of the series. This should be used with caution as it might
+            introduce bias in the forecasts.
         max_samples_per_ts
             This is an upper bound on the number of tuples that can be produced per time series.
             It can be used in order to have an upper bound on the total size of the dataset and
@@ -662,6 +673,12 @@ class GenericShiftedDataset(TrainingDataset):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
         super().__init__()
+
+        if not (isinstance(stride, int) and stride > 0):
+            raise_log(
+                ValueError("`stride` must be a positive integer greater than 0."),
+                logger=logger,
+            )
 
         # setup target and sequence
         self.target_series = series2seq(target_series)
@@ -719,9 +736,12 @@ class GenericShiftedDataset(TrainingDataset):
         # setup samples
         if self.max_samples_per_ts is None:
             # read all time series to get the maximum size
-            self.max_samples_per_ts = (
-                max(len(ts) for ts in self.target_series) - self.size_of_both_chunks
-            ) // self.stride + 1
+            max_samples_per_ts = (
+                max(len(ts) for ts in self.target_series) - self.size_of_both_chunks + 1
+            )
+
+        # adjust by `stride`
+        self.max_samples_per_ts = ceil(max_samples_per_ts / self.stride)
         self.ideal_nr_samples = len(self.target_series) * self.max_samples_per_ts
 
     def __len__(self):
@@ -742,9 +762,9 @@ class GenericShiftedDataset(TrainingDataset):
         target_vals = target_series.random_component_values(copy=False)
 
         # determine the actual number of possible samples in this time series
-        n_samples_in_ts = (
-            len(target_vals) - self.size_of_both_chunks
-        ) // self.stride + 1
+        n_samples_in_ts = ceil(
+            (len(target_vals) - self.size_of_both_chunks + 1) / self.stride
+        )
 
         if n_samples_in_ts < 1:
             raise_log(
