@@ -222,7 +222,9 @@ def create_lagged_data(
         computed globally based on the length of the longest series in `series`. Then for each series, the weights
         are extracted from the end of the global weights. This gives a common time weighting across all series.
     stride
-        The number of time steps between consecutive entries.
+        The number of time steps between consecutive samples (windows of lagged values extracted from the target
+        series), applied starting from the end of the series. This should be used with caution as it might
+        introduce bias in the forecasts.
     show_warnings
         Whether to show warnings.
 
@@ -504,7 +506,9 @@ def create_lagged_training_data(
         feature/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
     stride
-        The number of time steps between consecutive entries.
+        The number of time steps between consecutive samples (windows of lagged values extracted from the target
+        series), applied starting from the end of the series. This should be used with caution as it might
+        introduce bias in the forecasts.
     sample_weight
         Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
         per label (each step in `output_chunk_length`), and per component.
@@ -652,7 +656,9 @@ def create_lagged_prediction_data(
         arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
     stride
-        The number of time steps between consecutive entries.
+        The number of time steps between consecutive samples (windows of lagged values extracted from the target
+        series), applied starting from the end of the series. This should be used with caution as it will cause
+        gaps in the forecasts.
     show_warnings
         Whether to show warnings.
 
@@ -1047,7 +1053,9 @@ def _create_lagged_data_by_moving_window(
         times = pd.date_range(start=time_bounds[0], end=time_bounds[1], freq=freq)
 
     if stride > 1:
-        times = times[::stride]
+        # calculate the starting index so that the last element is included after applying the stride
+        # equivalent to times[::-stride][::-1]
+        times = times[(len(times) - 1) % stride :: stride]
     num_samples = len(times)
     if num_samples > max_samples_per_ts:
         times = times[-max_samples_per_ts:]
@@ -1106,9 +1114,9 @@ def _create_lagged_data_by_moving_window(
             first_window_start_idx = start_time_idx - max_lag_i
             first_window_end_idx = first_window_start_idx + window_len
             # Other windows are formed by sequentially shifting first window forward
-            # by stride position each time; to create `(num_samples - 1)` more windows
-            # in addition to the first window, need to take `(num_samples - 1)` values
-            # after `first_window_end_idx`:
+            # by `stride` position each time; to create `(num_samples - 1)` more windows
+            # in addition to the first window, need to take `(num_samples - 1) * stride`
+            # values after `first_window_end_idx`:
             vals = series_i.all_values(copy=False)[
                 first_window_start_idx : first_window_end_idx
                 + (num_samples - 1) * stride,
@@ -1151,7 +1159,8 @@ def _create_lagged_data_by_moving_window(
                 continue
 
             # To create `(num_samples - 1)` other windows in addition to first window,
-            # must take `(num_samples - 1)` values ahead of `first_window_end_idx`
+            # must take `(num_samples - 1) * stride` values ahead of `first_window_end_idx`
+            # to also take the stride into consideration
             vals = vals[
                 first_window_start_idx : first_window_end_idx
                 + (num_samples - 1) * stride,
@@ -1285,7 +1294,9 @@ def _create_lagged_data_by_intersecting_times(
             logger=logger,
         )
     if stride > 1:
-        shared_times = shared_times[::stride]
+        # calculate the starting index so that the last element is included after applying the stride
+        # equivalent to shared_times[::-stride][::-1]
+        shared_times = shared_times[(len(shared_times) - 1) % stride :: stride]
     if len(shared_times) > max_samples_per_ts:
         shared_times = shared_times[-max_samples_per_ts:]
     X = []
