@@ -3382,7 +3382,7 @@ class TimeSeries:
                                 "first", "interpolate", "last", "max", "mean", "median", "min",
                                 "nearest", "pad", "prod", "quantile", "reduce", "std", "sum", "var"].
         kwargs
-            use method_args:dict[str:Any] to specify method specific arguments, otherwise
+            use method_args:dict[str, Any] to specify method specific arguments, otherwise
             some keyword arguments for the `xarray.resample` method, notably `offset` or `base` to indicate where
             to start the resampling and avoid nan at the first value of the resampled TimeSeries
             For more information, see the `xarray resample() documentation
