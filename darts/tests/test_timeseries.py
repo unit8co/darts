@@ -1409,12 +1409,14 @@ class TestTimeSeries:
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries.from_series(pd_series)
 
+        # up-sample with pad
         resampled_timeseries = timeseries.resample(freqs["h"])
         assert resampled_timeseries.freq_str == freqs["h"]
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101020000")] == 0
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130102020000")] == 1
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130109090000")] == 8
 
+        # down-sample with pad
         resampled_timeseries = timeseries.resample("2D")
         assert resampled_timeseries.freq_str == "2D"
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0
@@ -1422,6 +1424,96 @@ class TestTimeSeries:
             resampled_timeseries.pd_series().at[pd.Timestamp("20130102")]
 
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130109")] == 8
+
+        # down-sample with all
+        resampled_timeseries = timeseries.resample("2D", "all")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 1
+
+        # down-sample with any
+        resampled_timeseries = timeseries.resample("2D", "any")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 1
+
+        # up-sample with asfreq
+        resampled_timeseries = timeseries.resample("12h", "asfreq")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101000000")] == 0
+        assert pd.isna(
+            resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")]
+        )
+
+        # up-sample with backfill
+        resampled_timeseries = timeseries.resample("12h", "backfill")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 1
+
+        # up-sample with bfill
+        resampled_timeseries = timeseries.resample("12h", "bfill")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 1
+
+        # down-sample with count
+        resampled_timeseries = timeseries.resample("2D", "count")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 2
+
+        # up-sample with ffill
+        resampled_timeseries = timeseries.resample("12h", "ffill")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 0
+
+        # down-sample with first
+        resampled_timeseries = timeseries.resample("2D", "first")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 2
+
+        # up-sample with interpolate
+        resampled_timeseries = timeseries.resample("12h", "interpolate")
+        assert (
+            resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 0.5
+        )
+
+        # down-sample with last
+        resampled_timeseries = timeseries.resample("2D", "last")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 3
+
+        # down-sample with max
+        resampled_timeseries = timeseries.resample("2D", "max")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 3
+
+        # down-sample with mean
+        resampled_timeseries = timeseries.resample("2D", "mean")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0.5
+
+        # down-sample with median
+        resampled_timeseries = timeseries.resample("3D", "median")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 1
+
+        # down-sample with min
+        resampled_timeseries = timeseries.resample("2D", "min")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 2
+
+        # up-sample with nearest (next is the nearest if equals)
+        resampled_timeseries = timeseries.resample("12h", "nearest")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 1
+
+        # down-sample with quantile
+        resampled_timeseries = timeseries.resample(
+            "2D", "quantile", method_args={"q": 0.05}
+        )
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0.05
+
+        # down-sample with sum using reduce
+        resampled_timeseries = timeseries.resample(
+            "2D", "reduce", method_args={"func": np.sum}
+        )
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 5
+
+        # down-sample with std
+        resampled_timeseries = timeseries.resample("2D", "std")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0.5
+
+        # down-sample with sum
+        resampled_timeseries = timeseries.resample("2D", "sum")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 5
+
+        # down-sample with var
+        resampled_timeseries = timeseries.resample("2D", "var")
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0.25
 
         # using offset to avoid nan in the first value
         times = pd.date_range(

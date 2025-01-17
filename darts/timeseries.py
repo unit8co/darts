@@ -3367,7 +3367,7 @@ class TimeSeries:
     ) -> Self:
         """
         Build a reindexed ``TimeSeries`` with a given frequency.
-        Provided method is used to fill holes in reindexed TimeSeries, by default 'pad'.
+        Provided method is used to aggregate/fill holes in reindexed TimeSeries, by default 'pad'.
 
         Parameters
         ----------
@@ -3375,12 +3375,14 @@ class TimeSeries:
             The new time difference between two adjacent entries in the returned TimeSeries.
             Expects a `pandas.DateOffset` or `DateOffset` alias.
         method:
-            Method to fill holes in reindexed TimeSeries (note this does not fill NaNs that already were present):
-
-            'pad': propagate last valid observation forward to next valid
-
-            'backfill': use NEXT valid observation to fill.
+            Method to either aggregate grouped values (for down-sampling) or fill holes (for up-sampling)
+            in reindexed TimeSeries. For more information, see the `xarray DataArrayResample documentation
+            <https://docs.xarray.dev/en/stable/generated/xarray.core.resample.DataArrayResample.html>`_.
+            Supported methods: ["all", "any", "asfreq", "backfill", "bfill", "count", "ffill",
+                                "first", "interpolate", "last", "max", "mean", "median", "min",
+                                "nearest", "pad", "prod", "quantile", "reduce", "std", "sum", "var"].
         kwargs
+            use method_args:dict[str:Any] to specify method specific arguments, otherwise
             some keyword arguments for the `xarray.resample` method, notably `offset` or `base` to indicate where
             to start the resampling and avoid nan at the first value of the resampled TimeSeries
             For more information, see the `xarray resample() documentation
@@ -3410,25 +3412,67 @@ class TimeSeries:
         >>> print(resampled_ts.values())
         [[0.]
         [4.]]
+        >>> resampled_ts = ts.resample(freq="1h", offset=pd.Timedelta("30min"))
+        >>> downsampled_mean_ts = ts.resample(freq="30min", method="mean")
+        >>> print(downsampled_mean_ts.values())
+        [[0.5]
+        [2.5]
+        [4.5]]
+        >>> downsampled_reduce_ts = ts.resample(freq="30min", method="reduce", method_args={"func":np.mean})
+        >>> print(downsampled_reduce_ts.values())
+        [[0.5]
+        [2.5]
+        [4.5]]
 
         Returns
         -------
         TimeSeries
             A reindexed TimeSeries with given frequency.
         """
+
+        SUPPORTED_METHODS = [
+            "all",
+            "any",
+            "asfreq",
+            "backfill",
+            "bfill",
+            "count",
+            "ffill",
+            "first",
+            "interpolate",
+            "last",
+            "max",
+            "mean",
+            "median",
+            "min",
+            "nearest",
+            "pad",
+            "prod",
+            "quantile",
+            "reduce",
+            "std",
+            "sum",
+            "var",
+        ]
+
         if isinstance(freq, pd.DateOffset):
             freq = freq.freqstr
+
+        method_args = kwargs.pop("method_args", {})
 
         resample = self._xa.resample(
             indexer={self._time_dim: freq},
             **kwargs,
         )
 
-        # TODO: check
-        if method == "pad":
-            new_xa = resample.pad()
-        elif method in ["bfill", "backfill"]:
-            new_xa = resample.backfill()
+        if method in SUPPORTED_METHODS:
+            applied_method = getattr(xr.core.resample.DataArrayResample, method)
+            new_xa = applied_method(resample, **method_args)
+
+            # Convert boolean to int as Timeseries must contain numeric values only
+            # method: "all", "any"
+            if new_xa.dtype == "bool":
+                new_xa = new_xa.astype(int)
         else:
             raise_log(ValueError(f"Unknown method: {method}"), logger)
         return self.__class__(new_xa)
