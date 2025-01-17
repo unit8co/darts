@@ -1601,6 +1601,10 @@ class TestTimeSeries:
         # days 3,4 group: [2,4] -> 0.25
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 0.25
 
+        # unsupported method: apply
+        with pytest.raises(ValueError):
+            resampled_timeseries = timeseries.resample("2D", "apply")
+
         # using offset to avoid nan in the first value
         times = pd.date_range(
             start=pd.Timestamp("20200101233000"), periods=10, freq="15" + freqs["min"]
