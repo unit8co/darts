@@ -5672,12 +5672,9 @@ def slice_intersect(series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
     for ts in series[1:]:
         int_time_index = int_time_index.intersection(ts.time_index)
 
-    ts_other = series[0]
-    for ts in series[1:]:
-        int_time_index = int_time_index.intersection(
-            ts.time_index.intersection(ts_other.time_index)
-        )
-        ts_other = ts
+        # early exit if intersection is empty
+        if int_time_index.empty:
+            break
 
     return [ts[int_time_index] for ts in series]
 
