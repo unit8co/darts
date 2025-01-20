@@ -1643,7 +1643,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 aggregated.append([sample[i] for sample in batch])
         return tuple(aggregated)
 
-    def save(self, path: Optional[str] = None) -> None:
+    def save(
+        self,
+        path: Optional[str] = None,
+        drop_training_series: bool = False,
+    ) -> None:
         """
         Saves the model under a given path.
 
@@ -1669,14 +1673,33 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "best-" to avoid collision with Pytorch-Ligthning checkpoints. If no path is specified, the model
             is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pt"``.
             E.g., ``"RNNModel_2020-01-01_12_00_00.pt"``.
+        drop_training_series
+            If True the save model does not include training series and past/future covariates series.
+            This reduces the size of the instance, so it can be saved with less memory.
+            Note: After loading the model back, 'model.predict()' will require a serie in argument,
+            even if the prediction happens on the training series.
         """
         if path is None:
             # default path
             path = self._default_save_path() + ".pt"
 
+        temp_series_dict = {}
+        if drop_training_series:
+            temp_series_dict["training_series"] = self.training_series
+            temp_series_dict["past_covariates_series"] = self.past_covariate_series
+            temp_series_dict["future_covariates_series"] = self.future_covariate_series
+            self.training_series = None
+            self.past_covariate_series = None
+            self.future_covariate_series = None
+
         # save the TorchForecastingModel (does not save the PyTorch LightningModule, and Trainer)
         with open(path, "wb") as f_out:
             torch.save(self, f_out)
+
+        if drop_training_series:
+            self.training_series = temp_series_dict["training_series"]
+            self.past_covariate_series = temp_series_dict["past_covariates_series"]
+            self.future_covariate_series = temp_series_dict["future_covariates_series"]
 
         # save the LightningModule checkpoint
         path_ptl_ckpt = path + ".ckpt"

@@ -3059,6 +3059,61 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 "To hide this warning, set `show_warnings=False`."
             )
 
+    def save(
+        self,
+        path: Optional[Union[str, os.PathLike, BinaryIO]] = None,
+        drop_training_series: bool = False,
+        **pkl_kwargs,
+    ) -> None:
+        """
+        Saves the model under a given path or file handle.
+
+        Example for saving and loading a :class:`RegressionModel`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RegressionModel
+
+                model = RegressionModel(lags=4)
+
+                model.save("my_model.pkl")
+                model_loaded = RegressionModel.load("my_model.pkl")
+            ..
+
+        Parameters
+        ----------
+        path
+            Path or file handle under which to save the model at its current state. If no path is specified, the model
+            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
+            E.g., ``"RegressionModel_2020-01-01_12_00_00.pkl"``.
+        drop_training_series
+            If True the save model does not include training series and past/future covariates series.
+            This reduces the size of the instance, so it can be pickled with less memory.
+            Note: After loading the model back, 'model.predict()' will require a serie in argument,
+            even if the prediction happens on the training series.
+        pkl_kwargs
+            Keyword arguments passed to `pickle.dump()`
+        """
+
+        temp_series_dict = {}
+        if drop_training_series:
+            temp_series_dict["training_series"] = self.training_series
+            temp_series_dict["past_covariates_series"] = self.past_covariate_series
+            temp_series_dict["future_covariates_series"] = self.future_covariate_series
+            self.training_series = None
+            self.past_covariate_series = None
+            self.future_covariate_series = None
+
+        res = super().save(path, **pkl_kwargs)
+
+        if drop_training_series:
+            self.training_series = temp_series_dict["training_series"]
+            self.past_covariate_series = temp_series_dict["past_covariates_series"]
+            self.future_covariate_series = temp_series_dict["future_covariates_series"]
+
+        return res
+
     @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         """GlobalForecastingModel supports historical forecasts without retraining the model"""

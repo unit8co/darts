@@ -27,6 +27,7 @@ from darts.models import (
     GlobalNaiveAggregate,
     GlobalNaiveDrift,
     GlobalNaiveSeasonal,
+    LinearRegressionModel,
     NBEATSModel,
     NLinearModel,
     RNNModel,
@@ -274,32 +275,50 @@ class TestGlobalForecastingModels:
                 output_chunk_length=3,
                 **tfm_kwargs,
             ),
+            LinearRegressionModel(lags=12),
         ],
     )
     def test_save_load_model(self, tmpdir_fn, model):
         # check if save and load methods work and if loaded model creates same forecasts as original model
         model_path_str = type(model).__name__
+        model_path_drop_str = type(model).__name__ + "_drop_training_series"
+
         full_model_path_str = os.path.join(tmpdir_fn, model_path_str)
+        full_model_path_drop_str = os.path.join(tmpdir_fn, model_path_drop_str)
 
         model.fit(self.ts_pass_train)
         model_prediction = model.predict(self.forecasting_horizon)
 
         # test save
         model.save()
-        model.save(model_path_str)
+        model.save(full_model_path_str)
 
-        assert os.path.exists(full_model_path_str)
+        temp_training_series = model.training_series
+        model.save(full_model_path_drop_str, drop_training_series=True)
         assert (
-            len([
-                p for p in os.listdir(tmpdir_fn) if p.startswith(type(model).__name__)
-            ])
-            == 4
-        )
+            temp_training_series == model.training_series
+        )  # No side effect to drop the training series
+
+        # This test is only valid for torch models
+        # assert os.path.exists(full_model_path_str)
+        # assert (
+        #     len([
+        #         p for p in os.listdir(tmpdir_fn) if p.startswith(type(model).__name__)
+        #     ])
+        #     == 6  # One for model, one for checkpoints => 3x2 = 6
+        # )
 
         # test load
-        loaded_model = type(model).load(model_path_str)
+        loaded_model = type(model).load(full_model_path_str)
+        loaded_model_drop_str = type(model).load(full_model_path_drop_str)
 
         assert model_prediction == loaded_model.predict(self.forecasting_horizon)
+        assert model_prediction == loaded_model_drop_str.predict(
+            self.forecasting_horizon, self.ts_pass_train
+        )
+
+        # test save with drop_training_series
+        assert loaded_model_drop_str.training_series is None
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_single_ts(self, config):
