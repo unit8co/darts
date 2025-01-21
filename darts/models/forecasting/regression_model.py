@@ -1005,7 +1005,7 @@ class RegressionModel(GlobalForecastingModel):
                 raise_log(
                     ValueError(
                         "Input `series` must be provided. This is the result either from fitting on multiple series, "
-                        "or from not having fit the model yet."
+                        "from not having fit the model yet, or from loading a model saved without the training series'."
                     ),
                     logger,
                 )

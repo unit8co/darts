@@ -294,19 +294,13 @@ class TestGlobalForecastingModels:
         model.save(full_model_path_str)
 
         temp_training_series = model.training_series
+        temp_future_cov = model.future_covariate_series
+        temp_past_cov = model.past_covariate_series
         model.save(full_model_path_drop_str, drop_training_series=True)
-        assert (
-            temp_training_series == model.training_series
-        )  # No side effect to drop the training series
-
-        # This test is only valid for torch models
-        # assert os.path.exists(full_model_path_str)
-        # assert (
-        #     len([
-        #         p for p in os.listdir(tmpdir_fn) if p.startswith(type(model).__name__)
-        #     ])
-        #     == 6  # One for model, one for checkpoints => 3x2 = 6
-        # )
+        # No side effect to drop the training series
+        assert temp_training_series == model.training_series
+        assert temp_future_cov == model.future_covariate_series
+        assert temp_past_cov == model.past_covariate_series
 
         # test load
         loaded_model = type(model).load(full_model_path_str)
