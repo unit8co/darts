@@ -1,5 +1,6 @@
 import itertools
 import logging
+import math
 from copy import deepcopy
 from itertools import product
 from typing import Optional
@@ -22,6 +23,7 @@ from darts.models import (
     ARIMA,
     AutoARIMA,
     CatBoostModel,
+    ConformalNaiveModel,
     LightGBMModel,
     LinearRegressionModel,
     NaiveDrift,
@@ -35,6 +37,7 @@ from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import n_steps_between
 from darts.utils import timeseries_generation as tg
 from darts.utils.ts_utils import SeriesType, get_series_seq_type
+from darts.utils.utils import likelihood_component_names, quantile_names
 
 if TORCH_AVAILABLE:
     import torch
@@ -56,7 +59,20 @@ if TORCH_AVAILABLE:
     from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 
 models = [LinearRegressionModel, NaiveDrift]
-models_reg_no_cov_cls_kwargs = [(LinearRegressionModel, {"lags": 8}, {}, (8, 1))]
+models_reg_no_cov_cls_kwargs = [
+    (LinearRegressionModel, {"lags": 8}, {}, (8, 1)),
+    # output_chunk_length only
+    (LinearRegressionModel, {"lags": 5, "output_chunk_length": 2}, {}, (5, 2)),
+    # output_chunk_shift only
+    (LinearRegressionModel, {"lags": 5, "output_chunk_shift": 1}, {}, (5, 2)),
+    # output_chunk_shift + output_chunk_length only
+    (
+        LinearRegressionModel,
+        {"lags": 5, "output_chunk_shift": 1, "output_chunk_length": 2},
+        {},
+        (5, 3),
+    ),
+]
 if not isinstance(CatBoostModel, NotImportedModule):
     models_reg_no_cov_cls_kwargs.append((
         CatBoostModel,
@@ -647,13 +663,42 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize("config", models_reg_no_cov_cls_kwargs)
     def test_historical_forecasts(self, config):
-        train_length = 10
+        """Tests historical forecasts with retraining for expected forecast lengths and times"""
         forecast_horizon = 8
         # if no fit and retrain=false, should fit at fist iteration
         model_cls, kwargs, model_kwarg, bounds = config
         model = model_cls(**kwargs, **model_kwarg)
+        # set train length to be the minimum required training length
+        # +1 as sklearn models require min 2 train samples
+        train_length = bounds[0] + bounds[1] + 1
 
-        # time index
+        if model.output_chunk_shift > 0:
+            with pytest.raises(ValueError) as err:
+                forecasts = model.historical_forecasts(
+                    series=self.ts_pass_val,
+                    forecast_horizon=forecast_horizon,
+                    stride=1,
+                    train_length=train_length,
+                    retrain=True,
+                    overlap_end=False,
+                )
+            assert str(err.value).startswith(
+                "Cannot perform auto-regression `(n > output_chunk_length)`"
+            )
+            # continue the test without auto-regression if we are using shifts
+            forecast_horizon = model.output_chunk_length
+
+        # time index without train length
+        forecasts_no_train_length = model.historical_forecasts(
+            series=self.ts_pass_val,
+            forecast_horizon=forecast_horizon,
+            stride=1,
+            train_length=None,
+            retrain=True,
+            overlap_end=False,
+        )
+
+        # time index with minimum train length
         forecasts = model.historical_forecasts(
             series=self.ts_pass_val,
             forecast_horizon=forecast_horizon,
@@ -663,22 +708,20 @@ class TestHistoricalforecast:
             overlap_end=False,
         )
 
+        assert len(forecasts_no_train_length) == len(forecasts)
         theorical_forecast_length = (
             self.ts_val_length
-            - max([
-                (
-                    bounds[0] + bounds[1] + 1
-                ),  # +1 as sklearn models require min 2 train samples
-                train_length,
-            ])  # because we train
+            - train_length  # because we train
             - forecast_horizon  # because we have overlap_end = False
             + 1  # because we include the first element
         )
-
         assert len(forecasts) == theorical_forecast_length, (
             f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
             f"of retrain=True and overlap_end=False, and a time index of type DateTimeIndex. "
             f"Expected {theorical_forecast_length}, got {len(forecasts)}"
+        )
+        assert forecasts.time_index.equals(
+            self.ts_pass_val.time_index[-theorical_forecast_length:]
         )
 
         # range index
@@ -696,6 +739,10 @@ class TestHistoricalforecast:
             f"of retrain=True, overlap_end=False, and a time index of type RangeIndex."
             f"Expected {theorical_forecast_length}, got {len(forecasts)}"
         )
+        assert forecasts.time_index.equals(
+            self.ts_pass_val_range.time_index[-theorical_forecast_length:]
+        )
+        start_idx = self.ts_pass_val_range.get_index_at_point(forecasts.start_time())
 
         # stride 2
         forecasts = model.historical_forecasts(
@@ -707,29 +754,29 @@ class TestHistoricalforecast:
             overlap_end=False,
         )
 
-        theorical_forecast_length = np.floor(
-            (
+        theorical_forecast_length = int(
+            np.floor(
                 (
-                    self.ts_val_length
-                    - max([
-                        (
-                            bounds[0] + bounds[1] + 1
-                        ),  # +1 as sklearn models require min 2 train samples
-                        train_length,
-                    ])  # because we train
-                    - forecast_horizon  # because we have overlap_end = False
-                    + 1  # because we include the first element
+                    (
+                        self.ts_val_length
+                        - train_length  # because we train
+                        - forecast_horizon  # because we have overlap_end = False
+                        + 1  # because we include the first element
+                    )
+                    - 1
                 )
-                - 1
-            )
-            / 2
-            + 1  # because of stride
-        )  # if odd number of elements, we keep the floor
+                / 2
+                + 1  # because of stride
+            )  # if odd number of elements, we keep the floor
+        )
 
         assert len(forecasts) == theorical_forecast_length, (
             f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
             f"of retrain=True and overlap_end=False and stride=2. "
             f"Expected {theorical_forecast_length}, got {len(forecasts)}"
+        )
+        assert forecasts.time_index.equals(
+            self.ts_pass_val_range.time_index[start_idx::2]
         )
 
         # stride 3
@@ -746,12 +793,7 @@ class TestHistoricalforecast:
             (
                 (
                     self.ts_val_length
-                    - max([
-                        (
-                            bounds[0] + bounds[1] + 1
-                        ),  # +1 as sklearn models require min 2 train samples
-                        train_length,
-                    ])  # because we train
+                    - train_length  # because we train
                     - forecast_horizon  # because we have overlap_end = False
                     + 1  # because we include the first element
                 )
@@ -767,6 +809,9 @@ class TestHistoricalforecast:
             f"of retrain=True and overlap_end=False and stride=3. "
             f"Expected {theorical_forecast_length}, got {len(forecasts)}"
         )
+        assert forecasts.time_index.equals(
+            self.ts_pass_val_range.time_index[start_idx::3]
+        )
 
         # last points only False
         forecasts = model.historical_forecasts(
@@ -781,12 +826,7 @@ class TestHistoricalforecast:
 
         theorical_forecast_length = (
             self.ts_val_length
-            - max([
-                (
-                    bounds[0] + bounds[1] + 1
-                ),  # +1 as sklearn models require min 2 train samples
-                train_length,
-            ])  # because we train
+            - train_length  # because we train
             - forecast_horizon  # because we have overlap_end = False
             + 1  # because we include the first element
         )
@@ -800,6 +840,11 @@ class TestHistoricalforecast:
         assert len(forecasts[0]) == forecast_horizon, (
             f"Model {model_cls} does not return forecast_horizon points per historical forecast in the case of "
             f"retrain=True and overlap_end=False, and last_points_only=False"
+        )
+        last_points_times = np.array([fc.end_time() for fc in forecasts])
+        np.testing.assert_equal(
+            last_points_times,
+            self.ts_pass_val_range.time_index[-theorical_forecast_length:].values,
         )
 
         if not model.supports_past_covariates:
@@ -1141,14 +1186,31 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize("config", models_reg_no_cov_cls_kwargs)
     def test_regression_auto_start_multiple_no_cov(self, config):
-        train_length = 15
+        # minimum required train length (+1 since sklearn models require 2 samples)
         forecast_horizon = 10
         model_cls, kwargs, model_kwargs, bounds = config
+        train_length = bounds[0] + bounds[1] + 1
         model = model_cls(
             **kwargs,
             **model_kwargs,
         )
         model.fit(self.ts_pass_train)
+
+        if model.output_chunk_shift > 0:
+            with pytest.raises(ValueError) as err:
+                forecasts = model.historical_forecasts(
+                    series=[self.ts_pass_val, self.ts_pass_val],
+                    forecast_horizon=forecast_horizon,
+                    train_length=train_length,
+                    stride=1,
+                    retrain=True,
+                    overlap_end=False,
+                )
+            assert str(err.value).startswith(
+                "Cannot perform auto-regression `(n > output_chunk_length)`"
+            )
+            # continue the test without autogregression if we are using shifts
+            forecast_horizon = model.output_chunk_length
 
         forecasts = model.historical_forecasts(
             series=[self.ts_pass_val, self.ts_pass_val],
@@ -1165,12 +1227,7 @@ class TestHistoricalforecast:
 
         theorical_forecast_length = (
             self.ts_val_length
-            - max([
-                (
-                    bounds[0] + bounds[1] + 1
-                ),  # +1 as sklearn models require min 2 train samples
-                train_length,
-            ])  # because we train
+            - train_length
             - forecast_horizon  # because we have overlap_end = False
             + 1  # because we include the first element
         )
@@ -1180,6 +1237,9 @@ class TestHistoricalforecast:
             f"of retrain=True and overlap_end=False, and a time index of type DateTimeIndex. "
             f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}"
         )
+        assert forecasts[0].time_index.equals(forecasts[1].time_index) and forecasts[
+            0
+        ].time_index.equals(self.ts_pass_val.time_index[-theorical_forecast_length:])
 
     @pytest.mark.slow
     @pytest.mark.parametrize(
@@ -1600,13 +1660,13 @@ class TestHistoricalforecast:
             assert ohfc[0].start_time() == first_ts_expected
             # check hist fc end
             assert ohfc[-1].end_time() == last_ts_expected
-            for hfc, ohfc in zip(hfc, ohfc):
-                assert hfc.columns.equals(series.columns)
-                assert ohfc.columns.equals(series.columns)
-                assert len(ohfc) == n_pred_points_expected
-                assert (hfc.time_index == ohfc.time_index).all()
+            for hfc_, ohfc_ in zip(hfc, ohfc):
+                assert hfc_.columns.equals(series.columns)
+                assert ohfc_.columns.equals(series.columns)
+                assert len(ohfc_) == n_pred_points_expected
+                assert (hfc_.time_index == ohfc_.time_index).all()
                 np.testing.assert_array_almost_equal(
-                    hfc.all_values(), ohfc.all_values()
+                    hfc_.all_values(), ohfc_.all_values()
                 )
 
     def test_hist_fc_end_exact_with_covs(self):
@@ -3287,3 +3347,453 @@ class TestHistoricalforecast:
         assert str(err.value).startswith(
             "Since `start_format='position'`, `start` must be an integer, received"
         )
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [False, True],  # use covariates
+            [True, False],  # last points only
+            [True, False],  # overlap end
+            [1, 3],  # stride
+            [
+                3,  # horizon < ocl
+                5,  # horizon == ocl
+                7,  # horizon > ocl -> autoregression
+            ],
+            [False, True],  # use integer indexed series
+            [False, True],  # use multi-series
+            [0, 1],  # output chunk shift
+        ),
+    )
+    def test_conformal_historical_forecasts(self, config):
+        """Tests historical forecasts output naive conformal model with last points only, covariates, stride,
+        different horizons and overlap end.
+        Tests that the returned dimensions, lengths and start / end times are correct.
+        """
+        (
+            use_covs,
+            last_points_only,
+            overlap_end,
+            stride,
+            horizon,
+            use_int_idx,
+            use_multi_series,
+            ocs,
+        ) = config
+        q = [0.1, 0.5, 0.9]
+        pred_lklp = {"num_samples": 1, "predict_likelihood_parameters": True}
+        # compute minimum series length to generate n forecasts
+        icl = 3
+        ocl = 5
+        horizon_ocs = horizon + ocs
+        min_len_val_series = icl + horizon_ocs + int(not overlap_end) * horizon_ocs
+        n_forecasts = 3
+        # get train and val series of that length
+        series = self.ts_pass_val[: min_len_val_series + n_forecasts - 1]
+        if use_int_idx:
+            series = TimeSeries.from_values(
+                values=series.all_values(),
+                columns=series.columns,
+            )
+        # check that too short input raises error
+        series_too_short = series[:-n_forecasts]
+
+        # optionally, generate covariates
+        if use_covs:
+            pc = tg.gaussian_timeseries(
+                start=series.start_time(),
+                end=series.end_time() + max(0, horizon - ocl) * series.freq,
+                freq=series.freq,
+            )
+            fc = tg.gaussian_timeseries(
+                start=series.start_time(),
+                end=series.end_time() + (max(ocl, horizon) + ocs) * series.freq,
+                freq=series.freq,
+            )
+        else:
+            pc, fc = None, None
+
+        # first train the ForecastingModel
+        model_kwargs = (
+            {}
+            if not use_covs
+            else {"lags_past_covariates": icl, "lags_future_covariates": (icl, ocl)}
+        )
+        forecasting_model = LinearRegressionModel(
+            lags=icl, output_chunk_length=ocl, output_chunk_shift=ocs, **model_kwargs
+        )
+        forecasting_model.fit(series, past_covariates=pc, future_covariates=fc)
+
+        # add an offset and rename columns in second series to make sure that conformal hist fc works as expected
+        if use_multi_series:
+            series = [
+                series,
+                (series + 10).shift(1).with_columns_renamed(series.columns, "test_col"),
+            ]
+            pc = [pc, pc.shift(1)] if pc is not None else None
+            fc = [fc, fc.shift(1)] if fc is not None else None
+
+        # conformal model
+        model = ConformalNaiveModel(forecasting_model, quantiles=q)
+
+        hfc_kwargs = dict(
+            {
+                "retrain": False,
+                "last_points_only": last_points_only,
+                "overlap_end": overlap_end,
+                "stride": stride,
+                "forecast_horizon": horizon,
+            },
+            **pred_lklp,
+        )
+        # cannot perform auto regression with output chunk shift
+        if ocs and horizon > ocl:
+            with pytest.raises(ValueError) as exc:
+                _ = model.historical_forecasts(
+                    series=series,
+                    past_covariates=pc,
+                    future_covariates=fc,
+                    **hfc_kwargs,
+                )
+            assert str(exc.value).startswith("Cannot perform auto-regression")
+            return
+
+        # compute conformal historical forecasts
+        hist_fct = model.historical_forecasts(
+            series=series, past_covariates=pc, future_covariates=fc, **hfc_kwargs
+        )
+        # raises error with too short target series
+        with pytest.raises(ValueError) as exc:
+            _ = model.historical_forecasts(
+                series=series_too_short,
+                past_covariates=pc,
+                future_covariates=fc,
+                **hfc_kwargs,
+            )
+        assert str(exc.value).startswith(
+            "Could not build the minimum required calibration input with the provided `series`"
+        )
+
+        if not isinstance(series, list):
+            series = [series]
+            hist_fct = [hist_fct]
+
+        for (
+            series_,
+            hfc,
+        ) in zip(series, hist_fct):
+            if not isinstance(hfc, list):
+                hfc = [hfc]
+
+            n_preds_with_overlap = (
+                len(series_)
+                - icl  # input for first prediction
+                - horizon_ocs  # skip first forecasts to avoid look-ahead bias
+                + 1  # minimum one forecast
+            )
+            if not last_points_only:
+                # last points only = False gives a list of forecasts per input series
+                # where each forecast contains the predictions over the entire horizon
+                n_pred_series_expected = n_preds_with_overlap
+                n_pred_points_expected = horizon
+                first_ts_expected = series_.time_index[icl] + series_.freq * (
+                    horizon_ocs + ocs
+                )
+                last_ts_expected = series_.end_time() + series_.freq * horizon_ocs
+                # no overlapping means less predictions
+                if not overlap_end:
+                    n_pred_series_expected -= horizon_ocs
+            else:
+                # last points only = True gives one contiguous time series per input series
+                # with only predictions from the last point in the horizon
+                n_pred_series_expected = 1
+                n_pred_points_expected = n_preds_with_overlap
+                first_ts_expected = series_.time_index[icl] + series_.freq * (
+                    horizon_ocs + ocs + horizon - 1
+                )
+                last_ts_expected = series_.end_time() + series_.freq * horizon_ocs
+                # no overlapping means less predictions
+                if not overlap_end:
+                    n_pred_points_expected -= horizon_ocs
+
+            # no overlapping means less predictions
+            if not overlap_end:
+                last_ts_expected -= series_.freq * horizon_ocs
+
+            # adapt based on stride
+            if stride > 1:
+                if not last_points_only:
+                    n_pred_series_expected = n_pred_series_expected // stride + int(
+                        n_pred_series_expected % stride
+                    )
+                else:
+                    n_pred_points_expected = n_pred_points_expected // stride + int(
+                        n_pred_points_expected % stride
+                    )
+                first_ts_expected = hfc[0].start_time()
+                last_ts_expected = hfc[-1].end_time()
+
+            cols_excpected = likelihood_component_names(
+                series_.columns, quantile_names(q)
+            )
+            # check length match between optimized and default hist fc
+            assert len(hfc) == n_pred_series_expected
+            # check hist fc start
+            assert hfc[0].start_time() == first_ts_expected
+            # check hist fc end
+            assert hfc[-1].end_time() == last_ts_expected
+            for hfc_ in hfc:
+                assert hfc_.columns.tolist() == cols_excpected
+                assert len(hfc_) == n_pred_points_expected
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [False, True],  # last points only
+            [None, 1, 2],  # cal length
+            [False, True],  # use start
+            ["value", "position"],  # start format
+            [False, True],  # use integer indexed series
+            [False, True],  # use multi-series
+            [0, 1],  # output chunk shift
+        ),
+    )
+    def test_conformal_historical_start_cal_length(self, config):
+        """Tests naive conformal model historical forecasts without `cal_stride`."""
+        (
+            last_points_only,
+            cal_length,
+            use_start,
+            start_format,
+            use_int_idx,
+            use_multi_series,
+            ocs,
+        ) = config
+        q = [0.1, 0.5, 0.9]
+        pred_lklp = {"num_samples": 1, "predict_likelihood_parameters": True}
+        # compute minimum series length to generate n forecasts
+        icl = 3
+        ocl = 5
+        horizon = 5
+        horizon_ocs = horizon + ocs
+        add_cal_length = cal_length - 1 if cal_length is not None else 0
+        add_start = 2 * int(use_start)
+        min_len_val_series = icl + 2 * horizon_ocs + add_cal_length + add_start
+        n_forecasts = 3
+        # get train and val series of that length
+        series = self.ts_pass_val[: min_len_val_series + n_forecasts - 1]
+
+        if use_int_idx:
+            series = TimeSeries.from_values(
+                values=series.all_values(),
+                columns=series.columns,
+            )
+
+        # first train the ForecastingModel
+        forecasting_model = LinearRegressionModel(
+            lags=icl,
+            output_chunk_length=ocl,
+            output_chunk_shift=ocs,
+        )
+        forecasting_model.fit(series)
+
+        # optionally compute the start as a positional index
+        start_position = icl + horizon_ocs + add_cal_length + add_start
+        start = None
+        if use_start:
+            if start_format == "value":
+                start = series.time_index[start_position]
+            else:
+                start = start_position
+
+        # add an offset and rename columns in second series to make sure that conformal hist fc works as expected
+        if use_multi_series:
+            series = [
+                series,
+                (series + 10).shift(1).with_columns_renamed(series.columns, "test_col"),
+            ]
+
+        # compute conformal historical forecasts (skips some of the first forecasts to get minimum required cal set)
+        model = ConformalNaiveModel(
+            forecasting_model, quantiles=q, cal_length=cal_length
+        )
+        hist_fct = model.historical_forecasts(
+            series=series,
+            retrain=False,
+            start=start,
+            start_format=start_format,
+            last_points_only=last_points_only,
+            forecast_horizon=horizon,
+            overlap_end=False,
+            **pred_lklp,
+        )
+
+        if not isinstance(series, list):
+            series = [series]
+            hist_fct = [hist_fct]
+
+        for idx, (
+            series_,
+            hfc,
+        ) in enumerate(zip(series, hist_fct)):
+            if not isinstance(hfc, list):
+                hfc = [hfc]
+
+            # multi series: second series is shifted by one time step (+/- idx);
+            # start_format = "value" requires a shift
+            add_start_series_2 = idx * int(use_start) * int(start_format == "value")
+
+            n_preds_without_overlap = (
+                len(series_)
+                - icl  # input for first prediction
+                - horizon_ocs  # skip first forecasts to avoid look-ahead bias
+                - horizon_ocs  # cannot compute with `overlap_end=False`
+                + 1  # minimum one forecast
+                - add_cal_length  # skip based on train length
+                - add_start  # skip based on start
+                + add_start_series_2  # skip based on start if second series
+            )
+            if not last_points_only:
+                n_pred_series_expected = n_preds_without_overlap
+                n_pred_points_expected = horizon
+                # seconds series is shifted by one time step (- idx)
+                first_ts_expected = series_.time_index[
+                    start_position - add_start_series_2 + ocs
+                ]
+                last_ts_expected = series_.end_time()
+            else:
+                n_pred_series_expected = 1
+                n_pred_points_expected = n_preds_without_overlap
+                # seconds series is shifted by one time step (- idx)
+                first_ts_expected = (
+                    series_.time_index[start_position - add_start_series_2]
+                    + (horizon_ocs - 1) * series_.freq
+                )
+                last_ts_expected = series_.end_time()
+
+            cols_excpected = likelihood_component_names(
+                series_.columns, quantile_names(q)
+            )
+            # check historical forecasts dimensions
+            assert len(hfc) == n_pred_series_expected
+            # check hist fc start
+            assert hfc[0].start_time() == first_ts_expected
+            # check hist fc end
+            assert hfc[-1].end_time() == last_ts_expected
+            for hfc_ in hfc:
+                assert hfc_.columns.tolist() == cols_excpected
+                assert len(hfc_) == n_pred_points_expected
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [False, True],  # last points only
+            [None, 2],  # cal length
+            ["value", "position"],  # start format
+            [2, 4],  # stride
+            [1, 2],  # cal stride
+            [0, 1],  # output chunk shift
+        ),
+    )
+    def test_conformal_historical_forecast_start_stride(self, caplog, config):
+        """Tests naive conformal model with `start` being the first forecastable index is identical to a start
+        before forecastable index (including stride, cal stride).
+        """
+        (
+            last_points_only,
+            cal_length,
+            start_format,
+            stride,
+            cal_stride,
+            ocs,
+        ) = config
+        q = [0.1, 0.5, 0.9]
+        pred_lklp = {"num_samples": 1, "predict_likelihood_parameters": True}
+        # compute minimum series length to generate n forecasts
+        icl = 3
+        ocl = 5
+        horizon = 2
+
+        # the position of the first conformal forecast start point without look-ahead bias; assuming min cal_length=1
+        horizon_ocs = math.ceil((horizon + ocs) / cal_stride) * cal_stride
+        # adjust by the number of calibration examples
+        add_cal_length = cal_stride * (cal_length - 1) if cal_length is not None else 0
+        # the minimum series length is the sum of the above, plus the length of one forecast (horizon + ocs)
+        min_len_val_series = icl + horizon_ocs + add_cal_length + horizon + ocs
+        n_forecasts = 3
+        # to get `n_forecasts` with `stride`, we need more points
+        n_forecasts_stride = stride * n_forecasts - int(1 % stride > 0)
+        # get train and val series of that length
+        series = tg.linear_timeseries(
+            length=min_len_val_series + n_forecasts_stride - 1
+        )
+
+        # first train the ForecastingModel
+        forecasting_model = LinearRegressionModel(
+            lags=icl,
+            output_chunk_length=ocl,
+            output_chunk_shift=ocs,
+        )
+        forecasting_model.fit(series)
+
+        # optionally compute the start as a positional index
+        start_position = icl + horizon_ocs + add_cal_length
+        if start_format == "value":
+            start = series.time_index[start_position]
+            start_too_early = series.time_index[start_position - 1]
+            start_too_early_stride = series.time_index[start_position - stride]
+        else:
+            start = start_position
+            start_too_early = start_position - 1
+            start_too_early_stride = start_position - stride
+        start_first_fc = series.time_index[start_position] + series.freq * (
+            horizon + ocs - 1 if last_points_only else ocs
+        )
+        too_early_warn_exp = "is before the first predictable/trainable historical"
+
+        hfc_params = {
+            "series": series,
+            "retrain": False,
+            "start_format": start_format,
+            "stride": stride,
+            "last_points_only": last_points_only,
+            "forecast_horizon": horizon,
+        }
+        # compute regular historical forecasts
+        hist_fct_all = forecasting_model.historical_forecasts(start=start, **hfc_params)
+        assert len(hist_fct_all) == n_forecasts
+        assert hist_fct_all[0].start_time() == start_first_fc
+        assert (
+            hist_fct_all[1].start_time() - stride * series.freq
+            == hist_fct_all[0].start_time()
+        )
+
+        # compute conformal historical forecasts (starting at first possible conformal forecast)
+        model = ConformalNaiveModel(
+            forecasting_model, quantiles=q, cal_length=cal_length, cal_stride=cal_stride
+        )
+        with caplog.at_level(logging.WARNING):
+            hist_fct = model.historical_forecasts(
+                start=start, **hfc_params, **pred_lklp
+            )
+            assert too_early_warn_exp not in caplog.text
+        caplog.clear()
+        assert len(hist_fct) == len(hist_fct_all)
+        assert hist_fct_all[0].start_time() == hist_fct[0].start_time()
+        assert (
+            hist_fct[1].start_time() - stride * series.freq == hist_fct[0].start_time()
+        )
+
+        # start one earlier gives warning
+        with caplog.at_level(logging.WARNING):
+            _ = model.historical_forecasts(
+                start=start_too_early, **hfc_params, **pred_lklp
+            )
+            assert too_early_warn_exp in caplog.text
+        caplog.clear()
+
+        # starting stride before first valid start, gives identical results
+        hist_fct_too_early = model.historical_forecasts(
+            start=start_too_early_stride, **hfc_params, **pred_lklp
+        )
+        assert hist_fct_too_early == hist_fct

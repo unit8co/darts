@@ -4070,6 +4070,7 @@ class TimeSeries:
         low_quantile: Optional[float] = 0.05,
         high_quantile: Optional[float] = 0.95,
         default_formatting: bool = True,
+        title: Optional[str] = None,
         label: Optional[Union[str, Sequence[str]]] = "",
         max_nr_components: int = 10,
         ax: Optional[matplotlib.axes.Axes] = None,
@@ -4099,6 +4100,8 @@ class TimeSeries:
             interval is shown if `high_quantile` is None (default 0.95).
         default_formatting
             Whether to use the darts default scheme.
+        title
+            Optionally, a custom plot title. If `None`, will use the name of the underlying `xarray.DataArray`.
         label
             Can either be a string or list of strings. If a string and the series only has a single component, it is
             used as the label for that component. If a string and the series has multiple components, it is used as
@@ -4247,7 +4250,7 @@ class TimeSeries:
                     )
 
         ax.legend()
-        ax.set_title(self._xa.name)
+        ax.set_title(title if title is not None else self._xa.name)
         return ax
 
     def with_columns_renamed(
