@@ -3059,10 +3059,18 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 "To hide this warning, set `show_warnings=False`."
             )
 
+    def _clean(self) -> "GlobalForecastingModel":
+        """Return a cleaned instance of the model by removing the training series and covariates."""
+        cleaned_model = copy.deepcopy(self)
+        cleaned_model.training_series = None
+        cleaned_model.past_covariate_series = None
+        cleaned_model.future_covariate_series = None
+        return cleaned_model
+
     def save(
         self,
         path: Optional[Union[str, os.PathLike, BinaryIO]] = None,
-        drop_training_series: bool = False,
+        clean: bool = False,
         **pkl_kwargs,
     ) -> None:
         """
@@ -3087,8 +3095,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             Path or file handle under which to save the model at its current state. If no path is specified, the model
             is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
             E.g., ``"RegressionModel_2020-01-01_12_00_00.pkl"``.
-        drop_training_series
-            If True the save model does not include training series and past/future covariates series.
+        clean
+            If True a cleaned model is saved, ie training series and past/future covariates series are not included.
             This reduces the size of the instance, so it can be pickled with less memory.
             Note: After loading the model back, 'model.predict()' will require a serie in argument,
             even if the prediction happens on the training series.
@@ -3096,21 +3104,10 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             Keyword arguments passed to `pickle.dump()`
         """
 
-        temp_series_dict = {}
-        if drop_training_series:
-            temp_series_dict["training_series"] = self.training_series
-            temp_series_dict["past_covariates_series"] = self.past_covariate_series
-            temp_series_dict["future_covariates_series"] = self.future_covariate_series
-            self.training_series = None
-            self.past_covariate_series = None
-            self.future_covariate_series = None
-
-        res = super().save(path, **pkl_kwargs)
-
-        if drop_training_series:
-            self.training_series = temp_series_dict["training_series"]
-            self.past_covariate_series = temp_series_dict["past_covariates_series"]
-            self.future_covariate_series = temp_series_dict["future_covariates_series"]
+        if clean:
+            res = ForecastingModel.save(self._clean(), path, **pkl_kwargs)
+        else:
+            res = super().save(path, **pkl_kwargs)
 
         return res
 

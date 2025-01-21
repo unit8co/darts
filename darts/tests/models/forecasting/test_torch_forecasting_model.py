@@ -328,7 +328,7 @@ class TestTorchForecastingModel:
         temp_training_series = model_manual_save.training_series
         temp_future_cov = model_manual_save.future_covariate_series
         temp_past_cov = model_manual_save.past_covariate_series
-        model_manual_save.save(no_training_ckpt_path, drop_training_series=True)
+        model_manual_save.save(no_training_ckpt_path, clean=True)
         # No side effect to drop the training series
         assert temp_training_series == model_manual_save.training_series
         assert temp_future_cov == model_manual_save.future_covariate_series
@@ -365,7 +365,7 @@ class TestTorchForecastingModel:
         )
 
         # save manually saved model
-        model_manual_save.save(model_path_manual, drop_training_series=True)
+        model_manual_save.save(model_path_manual, clean=True)
         assert os.path.exists(model_path_manual)
 
         # check that the PTL checkpoint path is also there
@@ -418,7 +418,7 @@ class TestTorchForecastingModel:
             map_location="cpu",
         )
         # save model directly after loading, model has no trainer
-        model_auto_save2.save(model_path_manual_2, drop_training_series=True)
+        model_auto_save2.save(model_path_manual_2, clean=True)
 
         # assert original .ckpt checkpoint was correctly copied
         assert os.path.exists(model_path_manual_ckpt_2)

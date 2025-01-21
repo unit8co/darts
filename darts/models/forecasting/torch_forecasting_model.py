@@ -1646,7 +1646,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def save(
         self,
         path: Optional[str] = None,
-        drop_training_series: bool = False,
+        clean: bool = False,
     ) -> None:
         """
         Saves the model under a given path.
@@ -1673,8 +1673,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "best-" to avoid collision with Pytorch-Ligthning checkpoints. If no path is specified, the model
             is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pt"``.
             E.g., ``"RNNModel_2020-01-01_12_00_00.pt"``.
-        drop_training_series
-            If True the save model does not include training series and past/future covariates series.
+        clean
+            If True a cleaned model is saved: training series, past/future covariates series and
+            model callbacks are not included.
             This reduces the size of the instance, so it can be saved with less memory.
             Note: After loading the model back, 'model.predict()' will require a serie in argument,
             even if the prediction happens on the training series.
@@ -1683,28 +1684,22 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # default path
             path = self._default_save_path() + ".pt"
 
-        temp_series_dict = {}
-        if drop_training_series:
-            temp_series_dict["training_series"] = self.training_series
-            temp_series_dict["past_covariates_series"] = self.past_covariate_series
-            temp_series_dict["future_covariates_series"] = self.future_covariate_series
-            self.training_series = None
-            self.past_covariate_series = None
-            self.future_covariate_series = None
-
         # save the TorchForecastingModel (does not save the PyTorch LightningModule, and Trainer)
         with open(path, "wb") as f_out:
-            torch.save(self, f_out)
-
-        if drop_training_series:
-            self.training_series = temp_series_dict["training_series"]
-            self.past_covariate_series = temp_series_dict["past_covariates_series"]
-            self.future_covariate_series = temp_series_dict["future_covariates_series"]
+            torch.save(self._clean() if clean else self, f_out)
 
         # save the LightningModule checkpoint
         path_ptl_ckpt = path + ".ckpt"
         if self.trainer is not None:
+            temp_callback = (
+                self.trainer.callbacks
+            )  # deepcopy is not possible on trainer
+            if clean:
+                self.trainer.callbacks = []
             self.trainer.save_checkpoint(path_ptl_ckpt)
+            if clean:
+                self.trainer.callbacks = temp_callback
+
         # TODO: keep track of PyTorch Lightning to see if they implement model checkpoint saving
         #  without having to call fit/predict/validate/test before
         # try to recover original automatic PL checkpoint

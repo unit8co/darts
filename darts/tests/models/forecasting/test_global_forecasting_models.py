@@ -281,10 +281,10 @@ class TestGlobalForecastingModels:
     def test_save_load_model(self, tmpdir_fn, model):
         # check if save and load methods work and if loaded model creates same forecasts as original model
         model_path_str = type(model).__name__
-        model_path_drop_str = type(model).__name__ + "_drop_training_series"
+        model_clean_path_str = type(model).__name__ + "_clean"
 
         full_model_path_str = os.path.join(tmpdir_fn, model_path_str)
-        full_model_path_drop_str = os.path.join(tmpdir_fn, model_path_drop_str)
+        full_model_clean_path_str = os.path.join(tmpdir_fn, model_clean_path_str)
 
         model.fit(self.ts_pass_train)
         model_prediction = model.predict(self.forecasting_horizon)
@@ -296,7 +296,7 @@ class TestGlobalForecastingModels:
         temp_training_series = model.training_series
         temp_future_cov = model.future_covariate_series
         temp_past_cov = model.past_covariate_series
-        model.save(full_model_path_drop_str, drop_training_series=True)
+        model.save(full_model_clean_path_str, clean=True)
         # No side effect to drop the training series
         assert temp_training_series == model.training_series
         assert temp_future_cov == model.future_covariate_series
@@ -304,14 +304,14 @@ class TestGlobalForecastingModels:
 
         # test load
         loaded_model = type(model).load(full_model_path_str)
-        loaded_model_drop_str = type(model).load(full_model_path_drop_str)
+        loaded_model_drop_str = type(model).load(full_model_clean_path_str)
 
         assert model_prediction == loaded_model.predict(self.forecasting_horizon)
         assert model_prediction == loaded_model_drop_str.predict(
             self.forecasting_horizon, self.ts_pass_train
         )
 
-        # test save with drop_training_series
+        # test save with clean
         assert loaded_model_drop_str.training_series is None
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
