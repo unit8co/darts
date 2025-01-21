@@ -1560,7 +1560,7 @@ class TestTimeSeries:
         # down-sample with quantile
         # one value per 2 days -> keep the quantile of the values of the group
         resampled_timeseries = timeseries.resample(
-            "2D", "quantile", method_args={"q": 0.05}
+            "2D", "quantile", method_kwargs={"q": 0.05}
         )
         # days 1,2 group: [0,1] -> 0.05
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0.05
@@ -1578,7 +1578,7 @@ class TestTimeSeries:
         # down-sample with sum using reduce
         # one value per 2 days -> keep the sum of the values of the group
         resampled_timeseries = timeseries.resample(
-            "2D", "reduce", method_args={"func": np.sum}
+            "2D", "reduce", method_kwargs={"func": np.sum}
         )
         # days 1,2 group: [0,1] -> 1
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 1

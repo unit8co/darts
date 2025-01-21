@@ -53,8 +53,12 @@ from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
-from darts.utils import _build_tqdm_iterator, _parallel_apply
+from darts.utils import (
+    _build_tqdm_iterator,
+    _parallel_apply,
+)
 from darts.utils.utils import (
+    SUPPORTED_RESAMPLE_METHODS,
     expand_arr,
     generate_index,
     n_steps_between,
@@ -3363,7 +3367,11 @@ class TimeSeries:
         )
 
     def resample(
-        self, freq: Union[str, pd.DateOffset], method: str = "pad", **kwargs
+        self,
+        freq: Union[str, pd.DateOffset],
+        method: str = "pad",
+        method_kwargs: dict[str, Any] = {},
+        **kwargs,
     ) -> Self:
         """
         Build a reindexed ``TimeSeries`` with a given frequency.
@@ -3430,44 +3438,17 @@ class TimeSeries:
             A reindexed TimeSeries with given frequency.
         """
 
-        SUPPORTED_METHODS = [
-            "all",
-            "any",
-            "asfreq",
-            "backfill",
-            "bfill",
-            "count",
-            "ffill",
-            "first",
-            "interpolate",
-            "last",
-            "max",
-            "mean",
-            "median",
-            "min",
-            "nearest",
-            "pad",
-            "prod",
-            "quantile",
-            "reduce",
-            "std",
-            "sum",
-            "var",
-        ]
-
         if isinstance(freq, pd.DateOffset):
             freq = freq.freqstr
-
-        method_args = kwargs.pop("method_args", {})
 
         resample = self._xa.resample(
             indexer={self._time_dim: freq},
             **kwargs,
         )
 
-        if method in SUPPORTED_METHODS:
+        if method in SUPPORTED_RESAMPLE_METHODS:
             applied_method = getattr(xr.core.resample.DataArrayResample, method)
-            new_xa = applied_method(resample, **method_args)
+            new_xa = applied_method(resample, **method_kwargs)
 
             # Convert boolean to int as Timeseries must contain numeric values only
             # method: "all", "any"
