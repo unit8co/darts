@@ -2321,8 +2321,10 @@ def wmape(
         q=q,
     )
 
-    return np.nanmean(
-        np.sum(np.abs(y_true - y_pred)) / np.sum(np.abs(y_true)), axis=TIME_AX
+    return 100 * np.nanmean(
+        np.nansum(np.abs(y_true - y_pred), axis=TIME_AX)
+        / np.nansum(np.abs(y_true), axis=TIME_AX),
+        axis=TIME_AX,
     )
 
 
