@@ -3384,7 +3384,7 @@ class TimeSeries:
             Expects a `pandas.DateOffset` or `DateOffset` alias.
         method:
             Method to either aggregate grouped values (for down-sampling) or fill holes (for up-sampling)
-            in reindexed TimeSeries. For more information, see the `xarray DataArrayResample documentation
+            in the reindexed TimeSeries. For more information, see the `xarray DataArrayResample documentation
             <https://docs.xarray.dev/en/stable/generated/xarray.core.resample.DataArrayResample.html>`_.
             Supported methods: ["all", "any", "asfreq", "backfill", "bfill", "count", "ffill",
                                 "first", "interpolate", "last", "max", "mean", "median", "min",
