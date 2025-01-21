@@ -1643,6 +1643,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 aggregated.append([sample[i] for sample in batch])
         return tuple(aggregated)
 
+    def _clean(self):
+        """Returns a cleaned model, removing the training series, past/future covariates series and model callbacks."""
+        model = super()._clean()
+        if self.trainer is not None:
+            # Shallow copy of the trainer is enough here, since only the link to the callback are modified
+            model.trainer = copy.copy(self.trainer)
+            model.trainer.callback = []
+        return model
+
     def save(
         self,
         path: Optional[str] = None,
@@ -1684,21 +1693,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # default path
             path = self._default_save_path() + ".pt"
 
+        model_to_save = self._clean() if clean else self
+
         # save the TorchForecastingModel (does not save the PyTorch LightningModule, and Trainer)
         with open(path, "wb") as f_out:
-            torch.save(self._clean() if clean else self, f_out)
+            torch.save(model_to_save, f_out)
 
         # save the LightningModule checkpoint
         path_ptl_ckpt = path + ".ckpt"
         if self.trainer is not None:
-            temp_callback = (
-                self.trainer.callbacks
-            )  # deepcopy is not possible on trainer
-            if clean:
-                self.trainer.callbacks = []
-            self.trainer.save_checkpoint(path_ptl_ckpt)
-            if clean:
-                self.trainer.callbacks = temp_callback
+            model_to_save.trainer.save_checkpoint(path_ptl_ckpt)
 
         # TODO: keep track of PyTorch Lightning to see if they implement model checkpoint saving
         #  without having to call fit/predict/validate/test before

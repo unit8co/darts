@@ -3061,7 +3061,9 @@ class GlobalForecastingModel(ForecastingModel, ABC):
 
     def _clean(self) -> "GlobalForecastingModel":
         """Return a cleaned instance of the model by removing the training series and covariates."""
-        cleaned_model = copy.deepcopy(self)
+
+        # Shallow is enough here since we are only interested into removing pointers to the training data
+        cleaned_model = copy.copy(self)
         cleaned_model.training_series = None
         cleaned_model.past_covariate_series = None
         cleaned_model.future_covariate_series = None
