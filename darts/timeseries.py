@@ -3437,7 +3437,6 @@ class TimeSeries:
         TimeSeries
             A reindexed TimeSeries with given frequency.
         """
-
         if isinstance(freq, pd.DateOffset):
             freq = freq.freqstr
 
