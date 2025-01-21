@@ -422,7 +422,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             for h in horizons:
                 plt.title(
                     "Target: `{}` - Horizon: {}".format(
-                        t, "t+" + str(h + self.explainers.model.output_chunk_shift)
+                        t, "t+" + str(h + self.model.output_chunk_shift)
                     )
                 )
                 shap.summary_plot(
