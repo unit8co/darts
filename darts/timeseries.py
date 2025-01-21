@@ -3375,7 +3375,7 @@ class TimeSeries:
     ) -> Self:
         """
         Build a reindexed ``TimeSeries`` with a given frequency.
-        Provided method is used to aggregate/fill holes in reindexed TimeSeries, by default 'pad'.
+        Provided method is used to aggregate/fill holes in the reindexed TimeSeries, by default 'pad'.
 
         Parameters
         ----------
