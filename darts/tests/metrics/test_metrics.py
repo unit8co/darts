@@ -22,6 +22,14 @@ def metric_residuals(y_true, y_pred, **kwargs):
     return np.mean(y_true - y_pred)
 
 
+def metric_wmape(y_true, y_pred, **kwargs):
+    y_true = y_true[:, 0]
+    y_pred = y_pred[:, 0]
+    return (
+        100.0 / len(y_true) * np.sum(np.abs(y_true - y_pred)) / np.sum(np.abs(y_true))
+    )
+
+
 def metric_smape(y_true, y_pred, **kwargs):
     y_true = y_true[:, 0]
     y_pred = y_pred[:, 0]
@@ -1450,6 +1458,7 @@ class TestMetrics:
             (metrics.rmse, sklearn.metrics.root_mean_squared_error, {}, {}),
             (metrics.rmsle, metric_rmsle, {}, {}),
             (metrics.mape, sklearn_mape, {}, {}),
+            (metrics.wmape, metric_wmape, {}, {}),
             (metrics.smape, metric_smape, {}, {}),
             (metrics.ope, metric_ope, {}, {}),
             (metrics.marre, metric_marre, {}, {}),
