@@ -3382,15 +3382,17 @@ class TimeSeries:
         freq
             The new time difference between two adjacent entries in the returned TimeSeries.
             Expects a `pandas.DateOffset` or `DateOffset` alias.
-        method:
+        method
             Method to either aggregate grouped values (for down-sampling) or fill holes (for up-sampling)
             in reindexed TimeSeries. For more information, see the `xarray DataArrayResample documentation
             <https://docs.xarray.dev/en/stable/generated/xarray.core.resample.DataArrayResample.html>`_.
             Supported methods: ["all", "any", "asfreq", "backfill", "bfill", "count", "ffill",
                                 "first", "interpolate", "last", "max", "mean", "median", "min",
                                 "nearest", "pad", "prod", "quantile", "reduce", "std", "sum", "var"].
+        method_kwargs
+            Additional keyword arguments for the specified method. Some methods require additional arguments.
+            Xarray's errors will be raised on invalid keyword arguments.
         kwargs
-            use method_args:dict[str, Any] to specify method specific arguments, otherwise
             some keyword arguments for the `xarray.resample` method, notably `offset` or `base` to indicate where
             to start the resampling and avoid nan at the first value of the resampled TimeSeries
             For more information, see the `xarray resample() documentation
