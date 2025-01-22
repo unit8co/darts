@@ -988,9 +988,9 @@ class RegressionModel(GlobalForecastingModel):
             Number of times a prediction is sampled from a probabilistic model. Should be set to 1
             for deterministic models.
         verbose
-            Optionally, whether to print progress.
+            Whether to print the progress.
         predict_likelihood_parameters
-            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
             Default: ``False``
         **kwargs : dict, optional
