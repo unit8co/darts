@@ -2494,7 +2494,14 @@ class TimeSeries:
         TimeSeries
             a new series, containing the values of this series, over the time-span common to both time series.
         """
-        return slice_intersect([self, other])[0]
+        if other.has_same_time_as(self):
+            return self.__class__(self._xa)
+        if other.freq == self.freq and len(self) and len(other):
+            start, end = self._slice_intersect_bounds(other)
+            return self[start:end]
+        else:
+            time_index = self.time_index.intersection(other.time_index)
+            return self[time_index]
 
     def slice_intersect_values(self, other: Self, copy: bool = False) -> np.ndarray:
         """
@@ -2808,9 +2815,9 @@ class TimeSeries:
         """
         if len(other) != len(self):
             return False
-        if other.freq != self.freq:
+        elif other.freq != self.freq:
             return False
-        if other.start_time() != self.start_time():
+        elif other.start_time() != self.start_time():
             return False
         else:
             return True
@@ -5668,15 +5675,17 @@ def slice_intersect(series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
     if not series:
         return []
 
-    int_time_index = series[0].time_index
+    int_series = []
+    int_ts = series[0]
     for ts in series[1:]:
-        int_time_index = int_time_index.intersection(ts.time_index)
+        int_ts = int_ts.slice_intersect(ts)
+    int_series.append(int_ts)
 
-        # early exit if intersection is empty
-        if int_time_index.empty:
-            break
+    for ts in series[1:]:
+        ts = ts.slice_intersect(int_series[-1])
+        int_series.append(ts)
 
-    return [ts[int_time_index] for ts in series]
+    return int_series
 
 
 def _finite_rows_boundaries(
