@@ -25,9 +25,7 @@ def metric_residuals(y_true, y_pred, **kwargs):
 def metric_wmape(y_true, y_pred, **kwargs):
     y_true = y_true[:, 0]
     y_pred = y_pred[:, 0]
-    return (
-        100.0 / len(y_true) * np.sum(np.abs(y_true - y_pred)) / np.sum(np.abs(y_true))
-    )
+    return 100.0 * np.sum(np.abs(y_true - y_pred)) / np.sum(np.abs(y_true))
 
 
 def metric_smape(y_true, y_pred, **kwargs):

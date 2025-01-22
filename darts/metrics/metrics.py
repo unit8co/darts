@@ -2248,7 +2248,7 @@ def wmape(
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a
     percentage value per component/column and (optional) quantile with:
 
-    .. math:: 100 \\cdot \\frac{1}{T} \\frac{\\sum_{t=1}^T |y_t - \\hat{y}_t|}{\\sum_{t=1}^T |y_t|}
+    .. math:: 100 \\cdot \\frac{\\sum_{t=1}^T |y_t - \\hat{y}_t|}{\\sum_{t=1}^T |y_t|}
 
     If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
     specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
@@ -2321,10 +2321,10 @@ def wmape(
         q=q,
     )
 
-    return 100 * np.nanmean(
-        np.nansum(np.abs(y_true - y_pred), axis=TIME_AX)
-        / np.nansum(np.abs(y_true), axis=TIME_AX),
-        axis=TIME_AX,
+    return (
+        100.0
+        * np.nansum(np.abs(y_true - y_pred), axis=TIME_AX)
+        / np.nansum(np.abs(y_true), axis=TIME_AX)
     )
 
 
