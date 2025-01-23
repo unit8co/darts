@@ -39,6 +39,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        use_reversible_instance_norm: bool = False,
         **kwargs,
     ):
         """Linear regression model.
@@ -136,10 +137,18 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
+            It is only applied to the features of the target series and not the covariates.
         **kwargs
             Additional keyword arguments passed to `sklearn.linear_model.LinearRegression` (by default), to
             `sklearn.linear_model.PoissonRegressor` (if `likelihood="poisson"`), or to
             `sklearn.linear_model.QuantileRegressor` (if `likelihood="quantile"`).
+
+        References
+        ----------
+        .. [1] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
 
         Examples
         --------
@@ -204,6 +213,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             model=model,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
+            use_reversible_instance_norm=use_reversible_instance_norm,
         )
 
     def fit(

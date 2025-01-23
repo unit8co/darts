@@ -45,6 +45,7 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         categorical_past_covariates: Optional[Union[str, list[str]]] = None,
         categorical_future_covariates: Optional[Union[str, list[str]]] = None,
         categorical_static_covariates: Optional[Union[str, list[str]]] = None,
+        use_reversible_instance_norm: bool = False,
         **kwargs,
     ):
         """LGBM Model
@@ -152,8 +153,16 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
             Optionally, string or list of strings specifying the static covariates that should be treated as categorical
             by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the static covariates that are
             treated as categorical are integer-encoded.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
+            It is only applied to the features of the target series and not the covariates.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
+
+        References
+        ----------
+        .. [1] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
 
         Examples
         --------
@@ -217,6 +226,7 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
             categorical_past_covariates=categorical_past_covariates,
             categorical_future_covariates=categorical_future_covariates,
             categorical_static_covariates=categorical_static_covariates,
+            use_reversible_instance_norm=use_reversible_instance_norm,
         )
 
     def fit(
