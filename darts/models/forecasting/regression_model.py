@@ -635,6 +635,7 @@ class RegressionModel(GlobalForecastingModel):
             check_inputs=False,
             concatenate=False,
             sample_weight=sample_weight,
+            use_reversible_instance_norm=self.use_reversible_instance_norm,
         )
 
         expected_nb_feat = (
@@ -1143,6 +1144,15 @@ class RegressionModel(GlobalForecastingModel):
                 for ts in series
             ])
 
+        # # TODO find good comments
+        # if self.use_reversible_instance_norm:
+        #     # Compute the mean along the last dimension
+        #     mean = np.mean(series_matrix, axis=1, keepdims=True)
+        #     # Compute the standard deviation along the last dimension
+        #     std_dev = np.std(series_matrix, axis=1, keepdims=True)
+        #     eps = 1e-8
+        #     series_matrix = (series_matrix - mean) / (std_dev + eps)
+
         # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)
         # [series 0 sample 0, series 0 sample 1, ..., series n sample k]
         series_matrix = np.repeat(series_matrix, num_samples, axis=0)
@@ -1176,6 +1186,15 @@ class RegressionModel(GlobalForecastingModel):
                     [series_matrix, predictions[-1][:, :, sample_slice]], axis=1
                 )
 
+            if self.use_reversible_instance_norm:
+                # Compute the mean along the last dimension
+                current_window = series_matrix[:, self.lags["target"], :]
+                mean = np.mean(current_window, axis=1, keepdims=True)
+                # Compute the standard deviation along the last dimension
+                std_dev = np.std(current_window, axis=1, keepdims=True)
+                eps = 1e-8
+                series_matrix = (series_matrix - mean) / (std_dev + eps)
+
             # extract and concatenate lags from target and covariates series
             X = _create_lagged_data_autoregression(
                 target_series=series,
@@ -1196,6 +1215,11 @@ class RegressionModel(GlobalForecastingModel):
             prediction = self._predict_and_sample(
                 X, num_samples, predict_likelihood_parameters, **kwargs
             )
+
+            if self.use_reversible_instance_norm:
+                series_matrix = series_matrix * (std_dev + eps) + mean
+                prediction = prediction * (std_dev + eps) + mean
+
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
             # append prediction to final predictions
             predictions.append(prediction[:, last_step_shift:])
@@ -1208,6 +1232,11 @@ class RegressionModel(GlobalForecastingModel):
             predictions.reshape(len(series), num_samples, n, -1), 1, -1
         )
 
+        # if self.use_reversible_instance_norm:
+        #     predictions = (
+        #         predictions * (std_dev[:, :, :, np.newaxis] + eps)
+        #         + mean[:, :, :, np.newaxis]
+        #     )
         # build time series from the predicted values starting after end of series
         predictions = [
             self._build_forecast_series(
@@ -1720,6 +1749,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         categorical_past_covariates: Optional[Union[str, list[str]]] = None,
         categorical_future_covariates: Optional[Union[str, list[str]]] = None,
         categorical_static_covariates: Optional[Union[str, list[str]]] = None,
+        use_reversible_instance_norm: bool = False,
     ):
         """
         Extension of `RegressionModel` for regression models that support categorical covariates.
@@ -1818,6 +1848,14 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         categorical_static_covariates
             Optionally, string or list of strings specifying the static covariates that should be treated as
             categorical.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
+            It is only applied to the features of the target series and not the covariates.
+
+        References
+        ----------
+        .. [1] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
         """
         super().__init__(
             lags=lags,
@@ -1829,6 +1867,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             model=model,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
+            use_reversible_instance_norm=use_reversible_instance_norm,
         )
         self.categorical_past_covariates = (
             [categorical_past_covariates]

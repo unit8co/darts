@@ -39,6 +39,7 @@ def create_lagged_data(
     concatenate: bool = True,
     sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     show_warnings: bool = True,
+    use_reversible_instance_norm: bool = False,
 ) -> tuple[
     ArrayOrArraySequence,
     Union[None, ArrayOrArraySequence],
@@ -222,6 +223,9 @@ def create_lagged_data(
         are extracted from the end of the global weights. This gives a common time weighting across all series.
     show_warnings
         Whether to show warnings.
+    use_reversible_instance_norm
+        Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.
+        It is only applied to the features of the target series and not the covariates
 
     Returns
     -------
@@ -267,6 +271,8 @@ def create_lagged_data(
     ----------
     .. [1] https://otexts.com/fpp2/AR.html#AR
     .. [2] https://unit8.com/resources/time-series-forecasting-using-past-and-future-external-data-with-darts/
+    .. [3] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+            Distribution Shift",https://openreview.net/forum?id=cGDAkQo1C0p
 
     See Also
     --------
@@ -358,8 +364,10 @@ def create_lagged_data(
                 check_inputs=check_inputs,
                 is_training=is_training,
                 show_warnings=show_warnings,
+                use_reversible_instance_norm=use_reversible_instance_norm,
             )
         else:
+            # TODO find out what is happening here and how RINorm can be used
             X_i, y_i, times_i, weights_i = _create_lagged_data_by_intersecting_times(
                 target_series=target_i,
                 output_chunk_length=output_chunk_length,
@@ -419,6 +427,7 @@ def create_lagged_training_data(
     use_moving_windows: bool = True,
     concatenate: bool = True,
     sample_weight: Optional[Union[TimeSeries, str]] = None,
+    use_reversible_instance_norm: bool = False,
 ) -> tuple[
     ArrayOrArraySequence,
     Union[None, ArrayOrArraySequence],
@@ -507,6 +516,9 @@ def create_lagged_training_data(
         `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
         computed globally based on the length of the longest series in `series`. Then for each series, the weights
         are extracted from the end of the global weights. This gives a common time weighting across all series.
+    use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
+            It is only applied to the features of the target series and not the covariates.
 
     Returns
     -------
@@ -541,6 +553,11 @@ def create_lagged_training_data(
     ValueError
         If the provided series do not share the same type of `time_index` (e.g. `target_series` uses a
         pd.RangeIndex, but `future_covariates` uses a `pd.DatetimeIndex`).
+
+    References
+    ----------
+    .. [1] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+            Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
     """
     return create_lagged_data(
         target_series=target_series,
@@ -560,6 +577,7 @@ def create_lagged_training_data(
         is_training=True,
         concatenate=concatenate,
         sample_weight=sample_weight,
+        use_reversible_instance_norm=use_reversible_instance_norm,
     )
 
 
@@ -972,6 +990,7 @@ def _create_lagged_data_by_moving_window(
     check_inputs: bool,
     is_training: bool,
     show_warnings: bool = True,
+    use_reversible_instance_norm: bool = False,
 ) -> tuple[np.ndarray, Optional[np.ndarray], pd.Index, Optional[np.ndarray]]:
     """
     Helper function called by `create_lagged_data` that computes `X`, `y`, and `times` by
@@ -1094,6 +1113,15 @@ def _create_lagged_data_by_moving_window(
                 x=vals, window_len=window_len, stride=1, axis=0, check_inputs=False
             )
 
+            # TODO IMPROVE
+            # RINorm calculates the mean and the standard deviation of each target serie over the window.
+            if use_reversible_instance_norm:
+                mean = np.mean(windows, axis=-1, keepdims=True)
+                std_dev = np.std(windows, axis=-1, keepdims=True)
+                # Avoids divison by zero
+                eps = 1e-8
+                windows = (windows - mean) / (std_dev + eps)
+
             # Within each window, the `-1` indexed value (i.e. the value at the very end of
             # the window) corresponds to time `t - min_lag_i`. The negative index of the time
             # `t + lag_i` within this window is, therefore, `-1 + lag_i + min_lag_i`:
@@ -1139,6 +1167,11 @@ def _create_lagged_data_by_moving_window(
                 axis=0,
                 check_inputs=False,
             )
+
+            # TODO find good comment
+            if use_reversible_instance_norm:
+                windows = (windows - mean) / (std_dev + eps)
+
             # Only values at times `t + output_chunk_length - 1` used as labels:
             vals = _extract_lagged_vals_from_windows(windows, lags_to_extract)
             y_and_weights.append(vals)
