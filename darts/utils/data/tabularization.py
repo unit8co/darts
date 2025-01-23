@@ -1113,12 +1113,12 @@ def _create_lagged_data_by_moving_window(
                 x=vals, window_len=window_len, stride=1, axis=0, check_inputs=False
             )
 
-            # TODO IMPROVE
-            # RINorm calculates the mean and the standard deviation of each target serie over the window.
-            if use_reversible_instance_norm:
+            # Apply Reversible Instance Normalization (RINorm) to the target series if specified
+            if use_reversible_instance_norm and is_target_series:
+                # Calculate the mean and standard deviation of each target series over the window
                 mean = np.mean(windows, axis=-1, keepdims=True)
                 std_dev = np.std(windows, axis=-1, keepdims=True)
-                # Avoids divison by zero
+                # Avoid division by zero by adding a small epsilon value
                 eps = 1e-8
                 windows = (windows - mean) / (std_dev + eps)
 
@@ -1168,8 +1168,9 @@ def _create_lagged_data_by_moving_window(
                 check_inputs=False,
             )
 
-            # TODO find good comment
-            if use_reversible_instance_norm:
+            # Apply Reversible Instance Normalization (RINorm) to the target series if specified
+            if use_reversible_instance_norm and is_target_series:
+                # Normalize the target values using the mean and standard deviation of the training data
                 windows = (windows - mean) / (std_dev + eps)
 
             # Only values at times `t + output_chunk_length - 1` used as labels:

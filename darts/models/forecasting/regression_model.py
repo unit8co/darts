@@ -1144,15 +1144,6 @@ class RegressionModel(GlobalForecastingModel):
                 for ts in series
             ])
 
-        # # TODO find good comments
-        # if self.use_reversible_instance_norm:
-        #     # Compute the mean along the last dimension
-        #     mean = np.mean(series_matrix, axis=1, keepdims=True)
-        #     # Compute the standard deviation along the last dimension
-        #     std_dev = np.std(series_matrix, axis=1, keepdims=True)
-        #     eps = 1e-8
-        #     series_matrix = (series_matrix - mean) / (std_dev + eps)
-
         # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)
         # [series 0 sample 0, series 0 sample 1, ..., series n sample k]
         series_matrix = np.repeat(series_matrix, num_samples, axis=0)
@@ -1186,13 +1177,19 @@ class RegressionModel(GlobalForecastingModel):
                     [series_matrix, predictions[-1][:, :, sample_slice]], axis=1
                 )
 
+            # Apply Reversible Instance Normalization (RINorm) if specified
             if self.use_reversible_instance_norm:
-                # Compute the mean along the last dimension
-                current_window = series_matrix[:, self.lags["target"], :]
+                # Determine the window of lags to consider for normalization (this could be done better)
+                lag_window = np.arange(
+                    self.lags["target"][0], self.lags["target"][-1] + 1
+                )
+                # Extract the current window of series data based on the lag window
+                current_window = series_matrix[:, lag_window, :]
+                # Compute the mean and standard deviation for normalization
                 mean = np.mean(current_window, axis=1, keepdims=True)
-                # Compute the standard deviation along the last dimension
                 std_dev = np.std(current_window, axis=1, keepdims=True)
-                eps = 1e-8
+                eps = 1e-8  # Small epsilon to avoid division by zero
+                # Normalize the series matrix using the computed mean and standard deviation
                 series_matrix = (series_matrix - mean) / (std_dev + eps)
 
             # extract and concatenate lags from target and covariates series
@@ -1216,8 +1213,11 @@ class RegressionModel(GlobalForecastingModel):
                 X, num_samples, predict_likelihood_parameters, **kwargs
             )
 
+            # Apply Reversible Instance Normalization (RINorm) if specified
             if self.use_reversible_instance_norm:
+                # Invert the normalization using the mean and standard deviation
                 series_matrix = series_matrix * (std_dev + eps) + mean
+                # Invert the normalization for the prediction
                 prediction = prediction * (std_dev + eps) + mean
 
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
@@ -1232,11 +1232,6 @@ class RegressionModel(GlobalForecastingModel):
             predictions.reshape(len(series), num_samples, n, -1), 1, -1
         )
 
-        # if self.use_reversible_instance_norm:
-        #     predictions = (
-        #         predictions * (std_dev[:, :, :, np.newaxis] + eps)
-        #         + mean[:, :, :, np.newaxis]
-        #     )
         # build time series from the predicted values starting after end of series
         predictions = [
             self._build_forecast_series(
