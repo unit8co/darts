@@ -9,8 +9,7 @@ import pytest
 import xarray as xr
 from scipy.stats import kurtosis, skew
 
-from darts import TimeSeries, concatenate
-from darts.timeseries import slice_intersect
+from darts import TimeSeries, concatenate, slice_intersect
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
 from darts.utils.utils import expand_arr, freqs, generate_index
 
@@ -662,10 +661,11 @@ class TestTimeSeries:
         s2_int = intersected_series[1]
         s3_int = intersected_series[2]
 
-        assert (
-            s1_int.start_time() == s2_int.start_time() == s3_int.start_time() == startE
+        assert s1_int.time_index.equals(s2_int.time_index) and s1_int.time_index.equals(
+            s3_int.time_index
         )
-        assert s1_int.end_time() == s2_int.end_time() == s3_int.end_time() == endA
+        assert s1_int.start_time() == startE
+        assert s1_int.end_time() == endA
 
         # check treatment different time index types
         if series.has_datetime_index:

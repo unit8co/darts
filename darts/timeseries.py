@@ -2496,7 +2496,7 @@ class TimeSeries:
         """
         if other.has_same_time_as(self):
             return self.__class__(self._xa)
-        if other.freq == self.freq and len(self) and len(other):
+        elif other.freq == self.freq and len(self) and len(other):
             start, end = self._slice_intersect_bounds(other)
             return self[start:end]
         else:
@@ -5662,7 +5662,7 @@ def concatenate(
     return TimeSeries.from_xarray(da_concat, fill_missing_dates=False)
 
 
-def slice_intersect(series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
+def slice_intersect(series: Sequence[TimeSeries]) -> list[TimeSeries]:
     """Returns a list of ``TimeSeries``, where all `series` have been intersected along the time index.
 
     Parameters
@@ -5678,17 +5678,17 @@ def slice_intersect(series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
     if not series:
         return []
 
-    int_series = []
-    int_ts = series[0]
-    for ts in series[1:]:
-        int_ts = int_ts.slice_intersect(ts)
-    int_series.append(int_ts)
+    # find global intersection on first series
+    intersection = series[0]
+    for series_ in series[1:]:
+        intersection = intersection.slice_intersect(series_)
 
-    for ts in series[1:]:
-        ts = ts.slice_intersect(int_series[-1])
-        int_series.append(ts)
+    # intersect all other series
+    series_intersected = [intersection]
+    for series_ in series[1:]:
+        series_intersected.append(series_.slice_intersect(intersection))
 
-    return int_series
+    return series_intersected
 
 
 def _finite_rows_boundaries(
