@@ -1427,7 +1427,7 @@ class TestTimeSeries:
         assert resampled_timeseries.freq_str == "2D"
         # day 1: -> 0
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0
-        # day 2: -> do not exist
+        # day 2: -> does not exist
         with pytest.raises(KeyError):
             resampled_timeseries.pd_series().at[pd.Timestamp("20130102")]
         # day 9: -> 8
@@ -1487,9 +1487,9 @@ class TestTimeSeries:
         # two values per day -> holes are filled with previous value
         resampled_timeseries = timeseries.resample("12h", "ffill")
         # day 1 -> 0
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 0
-        # hole in day 1 -> 0, from day 1
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101000000")] == 0
+        # hole in day 1 -> 0, from day 1
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 0
 
         # down-sample with first
         # one value per 2 days -> keep first value of the group
@@ -1502,12 +1502,12 @@ class TestTimeSeries:
         # up-sample with interpolate
         # two values per day -> holes are filled with linearly interpolated values
         resampled_timeseries = timeseries.resample("12h", "interpolate")
+        # day 1, 0h -> 0
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101000000")] == 0
         # between [0,1] -> 0.5
         assert (
             resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 0.5
         )
-        # day 1, 0h -> 0
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101000000")] == 0
 
         # down-sample with last
         # one value per 2 days -> keep last value of the group
@@ -1603,7 +1603,7 @@ class TestTimeSeries:
 
         # unsupported method: apply
         with pytest.raises(ValueError):
-            resampled_timeseries = timeseries.resample("2D", "apply")
+            _ = timeseries.resample("2D", "apply")
 
         # using offset to avoid nan in the first value
         times = pd.date_range(

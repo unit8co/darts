@@ -53,10 +53,7 @@ from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
-from darts.utils import (
-    _build_tqdm_iterator,
-    _parallel_apply,
-)
+from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils.utils import (
     SUPPORTED_RESAMPLE_METHODS,
     expand_arr,
@@ -3370,7 +3367,7 @@ class TimeSeries:
         self,
         freq: Union[str, pd.DateOffset],
         method: str = "pad",
-        method_kwargs: dict[str, Any] = {},
+        method_kwargs: Optional[dict[str, Any]] = None,
         **kwargs,
     ) -> Self:
         """
@@ -3386,11 +3383,11 @@ class TimeSeries:
             Method to either aggregate grouped values (for down-sampling) or fill holes (for up-sampling)
             in the reindexed TimeSeries. For more information, see the `xarray DataArrayResample documentation
             <https://docs.xarray.dev/en/stable/generated/xarray.core.resample.DataArrayResample.html>`_.
-            Supported methods: ["all", "any", "asfreq", "backfill", "bfill", "count", "ffill",
-                                "first", "interpolate", "last", "max", "mean", "median", "min",
-                                "nearest", "pad", "prod", "quantile", "reduce", "std", "sum", "var"].
+            Supported methods: ["all", "any", "asfreq", "backfill", "bfill", "count", "ffill", "first", "interpolate",
+            "last", "max", "mean", "median", "min", "nearest", "pad", "prod", "quantile", "reduce", "std", "sum",
+            "var"].
         method_kwargs
-            Additional keyword arguments for the specified method. Some methods require additional arguments.
+            Additional keyword arguments for the specified `method`. Some methods require additional arguments.
             Xarray's errors will be raised on invalid keyword arguments.
         kwargs
             some keyword arguments for the `xarray.resample` method, notably `offset` or `base` to indicate where
@@ -3439,6 +3436,7 @@ class TimeSeries:
         TimeSeries
             A reindexed TimeSeries with given frequency.
         """
+        method_kwargs = method_kwargs or {}
         if isinstance(freq, pd.DateOffset):
             freq = freq.freqstr
 
