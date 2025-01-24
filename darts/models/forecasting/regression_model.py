@@ -1180,8 +1180,9 @@ class RegressionModel(GlobalForecastingModel):
             # Apply Reversible Instance Normalization (RINorm) if specified
             if self.use_reversible_instance_norm:
                 # Determine the window of lags to consider for normalization (this could be done better)
-                lag_window = np.arange(
-                    self.lags["target"][0], self.lags["target"][-1] + 1
+                lag_window = (
+                    np.arange(self.lags["target"][0], self.lags["target"][-1] + 1)
+                    - last_step_shift
                 )
                 # Extract the current window of series data based on the lag window
                 current_window = series_matrix[:, lag_window, :]
