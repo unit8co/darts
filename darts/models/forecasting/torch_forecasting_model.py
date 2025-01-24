@@ -1401,7 +1401,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 raise_log(
                     ValueError(
                         "Input `series` must be provided. This is the result either from fitting on multiple series, "
-                        "from not having fit the model yet, or from loading a model saved without the training series'."
+                        "from not having fit the model yet, or from loading a model saved with `clean=True`."
                     ),
                     logger,
                 )
