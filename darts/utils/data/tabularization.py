@@ -1169,7 +1169,7 @@ def _create_lagged_data_by_moving_window(
             )
 
             # Apply Reversible Instance Normalization (RINorm) to the target series if specified
-            if use_reversible_instance_norm and is_target_series:
+            if use_reversible_instance_norm:
                 # Normalize the target values using the mean and standard deviation of the training data
                 windows = (windows - mean) / (std_dev + eps)
 
