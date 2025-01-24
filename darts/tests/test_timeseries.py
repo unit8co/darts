@@ -1439,23 +1439,205 @@ class TestTimeSeries:
             assert series_1 == series_no_nan
 
     def test_resample_timeseries(self):
+        # 01/01/2013 -> 10/01/2013, one value per day: 0 1 2 3 … 9
         times = pd.date_range("20130101", "20130110")
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries.from_series(pd_series)
 
+        # up-sample with pad
+        # one value per hour -> same value for the whole day
         resampled_timeseries = timeseries.resample(freqs["h"])
         assert resampled_timeseries.freq_str == freqs["h"]
+        # day 1: -> 0
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101020000")] == 0
+        # day 2: -> 1
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130102020000")] == 1
+        # day 9: -> 8
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130109090000")] == 8
 
+        # down-sample with pad
+        # one value per 2 days -> entries for every other days do not exist, value of the first day is kept
         resampled_timeseries = timeseries.resample("2D")
         assert resampled_timeseries.freq_str == "2D"
+        # day 1: -> 0
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0
+        # day 2: -> does not exist
         with pytest.raises(KeyError):
             resampled_timeseries.pd_series().at[pd.Timestamp("20130102")]
-
+        # day 9: -> 8
         assert resampled_timeseries.pd_series().at[pd.Timestamp("20130109")] == 8
+
+        # down-sample with all
+        # one value per 2 days -> if all scalar in group are > 0 then 1 else 0
+        resampled_timeseries = timeseries.resample("2D", "all")
+        # group: [0,1] -> 0
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0
+        # group: [2,3] -> 1
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 1
+
+        # down-sample with any
+        # one value per 2 days -> if any scalar in group is > 0 then 1 else 0
+        resampled_timeseries = timeseries.resample("2D", "any")
+        # group: [0,1] -> 1
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 1
+        # group: [2,3] -> 1
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 1
+
+        # up-sample with asfreq
+        # two values per day -> holes are filled with nan
+        resampled_timeseries = timeseries.resample("12h", "asfreq")
+        # day 1, 0h -> 0
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101000000")] == 0
+        # day 1, 12h -> nan
+        assert pd.isna(
+            resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")]
+        )
+
+        # up-sample with backfill
+        # two values per day -> holes are filled with next value
+        resampled_timeseries = timeseries.resample("12h", "backfill")
+        # hole in day 1 -> 1, from day 2
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 1
+        # day 2 -> 1
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130102000000")] == 1
+
+        # up-sample with bfill (same as backfill)
+        # two values per day -> holes are filled with next value
+        resampled_timeseries = timeseries.resample("12h", "bfill")
+        # hole in day 1 -> 1, from day 2
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 1
+        # day 2 -> 1
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130102000000")] == 1
+
+        # down-sample with count
+        # two values per day -> count number of values per group
+        resampled_timeseries = timeseries.resample("2D", "count")
+        # days 1,2 grouped -> 2
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 2
+        # days 3,4 grouped -> 2
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 2
+
+        # up-sample with ffill
+        # two values per day -> holes are filled with previous value
+        resampled_timeseries = timeseries.resample("12h", "ffill")
+        # day 1 -> 0
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101000000")] == 0
+        # hole in day 1 -> 0, from day 1
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 0
+
+        # down-sample with first
+        # one value per 2 days -> keep first value of the group
+        resampled_timeseries = timeseries.resample("2D", "first")
+        # days 1,2 grouped -> 0, from day 1
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0
+        # days 3,4 grouped -> 2, from day 3
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 2
+
+        # up-sample with interpolate
+        # two values per day -> holes are filled with linearly interpolated values
+        resampled_timeseries = timeseries.resample("12h", "interpolate")
+        # day 1, 0h -> 0
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101000000")] == 0
+        # between [0,1] -> 0.5
+        assert (
+            resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 0.5
+        )
+
+        # down-sample with last
+        # one value per 2 days -> keep last value of the group
+        resampled_timeseries = timeseries.resample("2D", "last")
+        # days 1,2 grouped -> 1, from day 2
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 1
+        # days 3,4 grouped -> 3, from day 4
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 3
+
+        # down-sample with max
+        # one value per 2 days -> keep the max value of the group
+        resampled_timeseries = timeseries.resample("2D", "max")
+        # days 1,2 group: [0,1] -> 1
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 1
+        # days 3,4 group: [2,3] -> 3
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 3
+
+        # down-sample with mean
+        # one value per 2 days -> keep the mean of the values of the group
+        resampled_timeseries = timeseries.resample("2D", "mean")
+        # days 1,2 group: [0,1] -> 0.5
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0.5
+        # days 3,4 group: [2,3] -> 2.5
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 2.5
+
+        # down-sample with median
+        # one value per 3 days -> keep the median of the values of the group
+        resampled_timeseries = timeseries.resample("3D", "median")
+        # days 1,2,3 group: [0,1,2] -> 1
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 1
+        # days 4,5,6 group: [3,4,5] -> 4
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130104")] == 4
+
+        # down-sample with min
+        # one value per 2 days -> keep the min value of the group
+        resampled_timeseries = timeseries.resample("2D", "min")
+        # days 1,2 group: [0,1] -> 0
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0
+        # days 3,4 group: [2,3] -> 2
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 2
+
+        # up-sample with nearest (next is the nearest if equals)
+        # two values per day -> holes are filled with nearest value
+        resampled_timeseries = timeseries.resample("12h", "nearest")
+        # days 1.5 -> 1 from day 2
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 1
+        # days 2 -> 1
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130102000000")] == 1
+
+        # down-sample with quantile
+        # one value per 2 days -> keep the quantile of the values of the group
+        resampled_timeseries = timeseries.resample(
+            "2D", "quantile", method_kwargs={"q": 0.05}
+        )
+        # days 1,2 group: [0,1] -> 0.05
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0.05
+        # days 3,4 group: [2,3] -> 2.05
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 2.05
+
+        # down-sample with std
+        # one value per 2 days -> keep the std of the values of the group
+        resampled_timeseries = timeseries.resample("2D", "std")
+        # days 1,2 group: [0,1] -> 0.5
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0.5
+        # days 3,4 group: [2,3] -> 0.5
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 0.5
+
+        # down-sample with sum using reduce
+        # one value per 2 days -> keep the sum of the values of the group
+        resampled_timeseries = timeseries.resample(
+            "2D", "reduce", method_kwargs={"func": np.sum}
+        )
+        # days 1,2 group: [0,1] -> 1
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 1
+        # days 3,4 group: [2,3] -> 5
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 5
+
+        # down-sample with sum
+        # one value per 2 days -> keep the sum of the values of the group
+        resampled_timeseries = timeseries.resample("2D", "sum")
+        # days 1,2 group: [0,1] -> 1
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 1
+        # days 3,4 group: [2,3] -> 5
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 5
+
+        # down-sample with var
+        # one value per 2 days -> keep the sum of the values of the group
+        resampled_timeseries = timeseries.resample("2D", "var")
+        # days 1,2 group: [0,1] -> 0.25
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0.25
+        # days 3,4 group: [2,4] -> 0.25
+        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 0.25
+
+        # unsupported method: apply
+        with pytest.raises(ValueError):
+            _ = timeseries.resample("2D", "apply")
 
         # using offset to avoid nan in the first value
         times = pd.date_range(
