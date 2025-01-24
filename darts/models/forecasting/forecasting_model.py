@@ -2608,8 +2608,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _default_save_path(cls) -> str:
         return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')}"
 
+    def _clean(self) -> "ForecastingModel":
+        """Return a cleaned instance of the model."""
+        return self
+
     def save(
-        self, path: Optional[Union[str, os.PathLike, BinaryIO]] = None, **pkl_kwargs
+        self,
+        path: Optional[Union[str, os.PathLike, BinaryIO]] = None,
+        clean: bool = False,
+        **pkl_kwargs,
     ) -> None:
         """
         Saves the model under a given path or file handle.
@@ -2633,6 +2640,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Path or file handle under which to save the model at its current state. If no path is specified, the model
             is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
             E.g., ``"RegressionModel_2020-01-01_12_00_00.pkl"``.
+        clean
+            If True a cleaned model is saved, ie training series and past/future covariates series are not included.
+            This reduces the size of the instance, so it can be pickled with less memory.
+            Note: After loading the model back, 'model.predict()' will require a serie in argument,
+            even if the prediction happens on the training series.
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """
@@ -2641,13 +2653,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # default path
             path = self._default_save_path() + ".pkl"
 
+        model_to_save = self._clean() if clean else self
+
         if isinstance(path, (str, os.PathLike)):
             # save the whole object using pickle
             with open(path, "wb") as handle:
-                pickle.dump(obj=self, file=handle, **pkl_kwargs)
+                pickle.dump(obj=model_to_save, file=handle, **pkl_kwargs)
         elif isinstance(path, io.BufferedWriter):
             # save the whole object using pickle
-            pickle.dump(obj=self, file=path, **pkl_kwargs)
+            pickle.dump(obj=model_to_save, file=path, **pkl_kwargs)
         else:
             raise_log(
                 ValueError(
@@ -3068,50 +3082,6 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         cleaned_model.past_covariate_series = None
         cleaned_model.future_covariate_series = None
         return cleaned_model
-
-    def save(
-        self,
-        path: Optional[Union[str, os.PathLike, BinaryIO]] = None,
-        clean: bool = False,
-        **pkl_kwargs,
-    ) -> None:
-        """
-        Saves the model under a given path or file handle.
-
-        Example for saving and loading a :class:`RegressionModel`:
-
-            .. highlight:: python
-            .. code-block:: python
-
-                from darts.models import RegressionModel
-
-                model = RegressionModel(lags=4)
-
-                model.save("my_model.pkl")
-                model_loaded = RegressionModel.load("my_model.pkl")
-            ..
-
-        Parameters
-        ----------
-        path
-            Path or file handle under which to save the model at its current state. If no path is specified, the model
-            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
-            E.g., ``"RegressionModel_2020-01-01_12_00_00.pkl"``.
-        clean
-            If True a cleaned model is saved, ie training series and past/future covariates series are not included.
-            This reduces the size of the instance, so it can be pickled with less memory.
-            Note: After loading the model back, 'model.predict()' will require a serie in argument,
-            even if the prediction happens on the training series.
-        pkl_kwargs
-            Keyword arguments passed to `pickle.dump()`
-        """
-
-        if clean:
-            res = ForecastingModel.save(self._clean(), path, **pkl_kwargs)
-        else:
-            res = super().save(path, **pkl_kwargs)
-
-        return res
 
     @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
