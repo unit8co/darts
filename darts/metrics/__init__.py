@@ -19,6 +19,7 @@ compute the deterministic metrics on:
         - :func:`MSSE <darts.metrics.metrics.msse>`: Mean Squared Scaled Error
         - :func:`RMSSE <darts.metrics.metrics.rmsse>`: Root Mean Squared Scaled Error
         - :func:`MAPE <darts.metrics.metrics.mape>`: Mean Absolute Percentage Error
+        - :func:`wMAPE <darts.metrics.metrics.wmape>`: weighted Mean Absolute Percentage Error
         - :func:`sMAPE <darts.metrics.metrics.smape>`: symmetric Mean Absolute Percentage Error
         - :func:`OPE <darts.metrics.metrics.ope>`: Overall Percentage Error
         - :func:`MARRE <darts.metrics.metrics.marre>`: Mean Absolute Ranged Relative Error
@@ -105,6 +106,7 @@ from darts.metrics.metrics import (
     sle,
     smape,
     sse,
+    wmape,
 )
 
 ALL_METRICS = {
@@ -119,6 +121,7 @@ ALL_METRICS = {
     iws,
     mae,
     mape,
+    wmape,
     marre,
     mase,
     merr,
@@ -184,6 +187,7 @@ __all__ = [
     "err",
     "mae",
     "mape",
+    "wmape",
     "marre",
     "mase",
     "merr",
