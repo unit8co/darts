@@ -104,6 +104,12 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
         pass
 
     def _produce_train_output(self, input_batch: tuple) -> torch.Tensor:
+        # only return the forecast, not the hidden state
+        return self(self._process_input_batch(input_batch))[0]
+
+    def _process_input_batch(
+        self, input_batch: tuple
+    ) -> tuple[torch.Tensor, Optional[torch.Tensor]]:
         (
             past_target,
             historic_future_covariates,
@@ -112,7 +118,7 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
         ) = input_batch
         # For the RNN we concatenate the past_target with the future_covariates
         # (they have the same length because we enforce a Shift dataset for RNNs)
-        model_input = (
+        return (
             (
                 torch.cat([past_target, future_covariates], dim=2)
                 if future_covariates is not None
@@ -120,7 +126,6 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
             ),
             static_covariates,
         )
-        return self(model_input)[0]
 
     def _produce_predict_output(
         self, x: tuple, last_hidden_state: Optional[torch.Tensor] = None
