@@ -2308,6 +2308,7 @@ def wmape(
         Same as for type `float` but for a sequence of series.
     list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
+
     References
     ----------
     .. [1] https://en.wikipedia.org/wiki/Mean_absolute_percentage_error#WMAPE
