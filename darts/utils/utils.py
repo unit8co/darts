@@ -29,6 +29,31 @@ logger = get_logger(__name__)
 MAX_TORCH_SEED_VALUE = (1 << 31) - 1  # to accommodate 32-bit architectures
 MAX_NUMPY_SEED_VALUE = (1 << 31) - 1
 
+SUPPORTED_RESAMPLE_METHODS = [
+    "all",
+    "any",
+    "asfreq",
+    "backfill",
+    "bfill",
+    "count",
+    "ffill",
+    "first",
+    "interpolate",
+    "last",
+    "max",
+    "mean",
+    "median",
+    "min",
+    "nearest",
+    "pad",
+    "prod",
+    "quantile",
+    "reduce",
+    "std",
+    "sum",
+    "var",
+]
+
 
 # Enums
 class SeasonalityMode(Enum):
