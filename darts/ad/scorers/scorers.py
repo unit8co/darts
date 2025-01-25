@@ -176,6 +176,7 @@ class AnomalyScorer(ABC):
         anomalies: TimeSeries = None,
         title: str = None,
         metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
+        component_wise: bool = False,
     ):
         """Plot the results of the scorer.
 
@@ -208,6 +209,8 @@ class AnomalyScorer(ABC):
             Optionally, the name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC".
+        component_wise
+            If True, will separately plot each component in case of multivariate anomaly detection.
         """
         series = _check_input(series, name="series", num_series_expected=1)[0]
         pred_series = _check_input(
@@ -230,6 +233,7 @@ class AnomalyScorer(ABC):
             names_of_scorers=scorer_name,
             title=title,
             metric=metric,
+            component_wise=component_wise,
         )
 
     @property
@@ -580,6 +584,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         scorer_name: str = None,
         title: str = None,
         metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
+        component_wise: bool = False,
     ):
         """Plot the results of the scorer.
 
@@ -610,6 +615,8 @@ class FittableAnomalyScorer(AnomalyScorer):
             Optionally, the name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC".
+        component_wise
+            If True, will separately plot each component in case of multivariate anomaly detection.
         """
         series = _check_input(series, name="series", num_series_expected=1)[0]
         pred_scores = self.score(series)
@@ -633,6 +640,7 @@ class FittableAnomalyScorer(AnomalyScorer):
             names_of_scorers=scorer_name,
             title=title,
             metric=metric,
+            component_wise=component_wise,
         )
 
     @property
