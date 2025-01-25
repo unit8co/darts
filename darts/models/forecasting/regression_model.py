@@ -600,6 +600,7 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates: Sequence[TimeSeries],
         max_samples_per_ts: int,
         sample_weight: Optional[Union[TimeSeries, str]] = None,
+        stride: int = 1,
         last_static_covariates_shape: Optional[tuple[int, int]] = None,
     ):
         (
@@ -624,6 +625,7 @@ class RegressionModel(GlobalForecastingModel):
             check_inputs=False,
             concatenate=False,
             sample_weight=sample_weight,
+            stride=stride,
         )
 
         expected_nb_feat = (
@@ -675,6 +677,7 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates: Sequence[TimeSeries],
         max_samples_per_ts: int,
         sample_weight: Optional[Union[Sequence[TimeSeries], str]],
+        stride: int,
         val_series: Optional[Sequence[TimeSeries]] = None,
         val_past_covariates: Optional[Sequence[TimeSeries]] = None,
         val_future_covariates: Optional[Sequence[TimeSeries]] = None,
@@ -692,6 +695,7 @@ class RegressionModel(GlobalForecastingModel):
             max_samples_per_ts=max_samples_per_ts,
             sample_weight=sample_weight,
             last_static_covariates_shape=None,
+            stride=stride,
         )
 
         if self.supports_val_set and val_series is not None:
@@ -741,6 +745,7 @@ class RegressionModel(GlobalForecastingModel):
         max_samples_per_ts: Optional[int] = None,
         n_jobs_multioutput_wrapper: Optional[int] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        stride: int = 1,
         **kwargs,
     ):
         """
@@ -774,6 +779,10 @@ class RegressionModel(GlobalForecastingModel):
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
+        stride
+            The number of time steps between consecutive samples (windows of lagged values extracted from the target
+            series), applied starting from the end of the series. This should be used with caution as it might
+            introduce bias in the forecasts.
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
@@ -952,6 +961,7 @@ class RegressionModel(GlobalForecastingModel):
             sample_weight=sample_weight,
             val_sample_weight=val_sample_weight,
             max_samples_per_ts=max_samples_per_ts,
+            stride=stride,
             **kwargs,
         )
         return self
@@ -993,11 +1003,11 @@ class RegressionModel(GlobalForecastingModel):
             If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
             Default: ``False``
+        show_warnings
+            Optionally, control whether warnings are shown. Not effective for all models.
         **kwargs : dict, optional
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
-        show_warnings
-            Optionally, control whether warnings are shown. Not effective for all models.
         """
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
