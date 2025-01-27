@@ -78,6 +78,7 @@ class RegressionModel(GlobalForecastingModel):
         model=None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        use_reversible_instance_norm: bool = False,
     ):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
@@ -168,7 +169,14 @@ class RegressionModel(GlobalForecastingModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
+            It is only applied to the features of the target series and not the covariates.
 
+        References
+        ----------
+        .. [1] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
         Examples
         --------
         >>> from darts.datasets import WeatherDataset
@@ -252,6 +260,9 @@ class RegressionModel(GlobalForecastingModel):
         )
 
         self.pred_dim = self.output_chunk_length if self.multi_models else 1
+
+        # reversible instance norm
+        self.use_reversible_instance_norm = use_reversible_instance_norm
 
     @staticmethod
     def _generate_lags(
@@ -624,6 +635,7 @@ class RegressionModel(GlobalForecastingModel):
             check_inputs=False,
             concatenate=False,
             sample_weight=sample_weight,
+            use_reversible_instance_norm=self.use_reversible_instance_norm,
         )
 
         expected_nb_feat = (
@@ -1165,6 +1177,22 @@ class RegressionModel(GlobalForecastingModel):
                     [series_matrix, predictions[-1][:, :, sample_slice]], axis=1
                 )
 
+            # Apply Reversible Instance Normalization (RINorm) if specified
+            if self.use_reversible_instance_norm:
+                # Determine the window of lags to consider for normalization (this could be done better)
+                lag_window = (
+                    np.arange(self.lags["target"][0], self.lags["target"][-1] + 1)
+                    - last_step_shift
+                )
+                # Extract the current window of series data based on the lag window
+                current_window = series_matrix[:, lag_window, :]
+                # Compute the mean and standard deviation for normalization
+                mean = np.mean(current_window, axis=1, keepdims=True)
+                std_dev = np.std(current_window, axis=1, keepdims=True)
+                eps = 1e-8  # Small epsilon to avoid division by zero
+                # Normalize the series matrix using the computed mean and standard deviation
+                series_matrix = (series_matrix - mean) / (std_dev + eps)
+
             # extract and concatenate lags from target and covariates series
             X = _create_lagged_data_autoregression(
                 target_series=series,
@@ -1185,6 +1213,14 @@ class RegressionModel(GlobalForecastingModel):
             prediction = self._predict_and_sample(
                 X, num_samples, predict_likelihood_parameters, **kwargs
             )
+
+            # Apply Reversible Instance Normalization (RINorm) if specified
+            if self.use_reversible_instance_norm:
+                # Invert the normalization using the mean and standard deviation
+                series_matrix = series_matrix * (std_dev + eps) + mean
+                # Invert the normalization for the prediction
+                prediction = prediction * (std_dev + eps) + mean
+
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
             # append prediction to final predictions
             predictions.append(prediction[:, last_step_shift:])
@@ -1709,6 +1745,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         categorical_past_covariates: Optional[Union[str, list[str]]] = None,
         categorical_future_covariates: Optional[Union[str, list[str]]] = None,
         categorical_static_covariates: Optional[Union[str, list[str]]] = None,
+        use_reversible_instance_norm: bool = False,
     ):
         """
         Extension of `RegressionModel` for regression models that support categorical covariates.
@@ -1807,6 +1844,14 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         categorical_static_covariates
             Optionally, string or list of strings specifying the static covariates that should be treated as
             categorical.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
+            It is only applied to the features of the target series and not the covariates.
+
+        References
+        ----------
+        .. [1] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
         """
         super().__init__(
             lags=lags,
@@ -1818,6 +1863,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             model=model,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
+            use_reversible_instance_norm=use_reversible_instance_norm,
         )
         self.categorical_past_covariates = (
             [categorical_past_covariates]
