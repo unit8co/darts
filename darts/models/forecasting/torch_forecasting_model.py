@@ -1644,12 +1644,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return tuple(aggregated)
 
     def _clean(self):
-        """Returns a cleaned model, removing the training series, past/future covariates series and model callbacks."""
+        """Returns a cleaned model, keeping only the necessary attributes for prediction."""
         model = super()._clean()
         if self.trainer is not None:
-            # Shallow copy of the trainer is enough here, since only the link to the callback are modified
-            model.trainer = copy.copy(self.trainer)
-            model.trainer.callback = []
+            # Copy from super()._clean() call __getstate__ which removes model and trainer
+            # model.trainer.callback = []  # save with checkpoints
+
+            # a shallow copy is enough since we are only interested in removing pointers
+            model.model = copy.copy(self.model)  # keep the model for prediction
+            model._model_params = copy.copy(self._model_params)
+            model._model_params.pl_trainer_kwargs = None
+            model.trainer_params = None
+
         return model
 
     def save(
@@ -1683,11 +1689,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pt"``.
             E.g., ``"RNNModel_2020-01-01_12_00_00.pt"``.
         clean
-            If True a cleaned model is saved: training series, past/future covariates series and
-            model callbacks are not included.
-            This reduces the size of the instance, so it can be saved with less memory.
-            Note: After loading the model back, 'model.predict()' will require a serie in argument,
-            even if the prediction happens on the training series.
+            Whether to store a cleaned version of the model. If `True`, the training series and covariates are removed.
+            Note: After loading the model, a `series` must be passed 'predict()', `historical_forecasts()` and other
+            forecasting methods.
         """
         if path is None:
             # default path
@@ -1699,10 +1703,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         with open(path, "wb") as f_out:
             torch.save(model_to_save, f_out)
 
-        # save the LightningModule checkpoint
+        # save the LightningModule checkpoint (only model weights on clean)
         path_ptl_ckpt = path + ".ckpt"
         if self.trainer is not None:
-            model_to_save.trainer.save_checkpoint(path_ptl_ckpt)
+            self.trainer.save_checkpoint(path_ptl_ckpt, weights_only=clean)
 
         # TODO: keep track of PyTorch Lightning to see if they implement model checkpoint saving
         #  without having to call fit/predict/validate/test before
@@ -1718,7 +1722,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 )
 
     @staticmethod
-    def load(path: str, **kwargs) -> "TorchForecastingModel":
+    def load(
+        path: str, pl_trainer_kwargs: Optional[dict] = None, **kwargs
+    ) -> "TorchForecastingModel":
         """
         Loads a model from a given file path.
 
@@ -1748,29 +1754,80 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path
             Path from which to load the model. If no path was specified when saving the model, the automatically
             generated path ending with ".pt" has to be provided.
+        pl_trainer_kwargs
+            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
+            that performs the training, validation and prediction processes. These presets include automatic
+            checkpointing, tensorboard logging, setting the torch device and more.
+            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
+            object. Check the `PL Trainer documentation
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            supported kwargs. Default: ``None``.
+            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
+            "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
+            dict:
+
+            - ``{"accelerator": "cpu"}`` for CPU,
+            - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+
+            For more info, see here:
+            `trainer flags
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags>`_,
+            and `training on multiple gpus
+            <https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus>`_.
+
+            With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
+            :class:`TorchForecastingModel`.
+            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional
+            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one from which it was saved.
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
             common/lightning_module.html#load-from-checkpoint>`_.
         """
-
         # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
+        map_location = kwargs.get("map_location", None)
         with open(path, "rb") as fin:
-            model: TorchForecastingModel = torch.load(
-                fin, map_location=kwargs.get("map_location", None)
-            )
+            model: TorchForecastingModel = torch.load(fin, map_location=map_location)
+
+        reset_trainer_params = model.trainer_params is None
+        if reset_trainer_params:
+            model.trainer_params = {}
 
         # if a checkpoint was saved, we also load the PyTorch LightningModule from checkpoint
         path_ptl_ckpt = path + ".ckpt"
         if os.path.exists(path_ptl_ckpt):
             model.model = model._load_from_checkpoint(path_ptl_ckpt, **kwargs)
+
+            if reset_trainer_params:
+                dtype_to_precision = (
+                    {torch.float32: "32", torch.float64: "64"}
+                    if not pl_200_or_above
+                    else {torch.float32: "32-true", torch.float64: "64-true"}
+                )
+                model.trainer_params["precision"] = dtype_to_precision[
+                    model.model.dtype
+                ]
+                model.trainer_params["accelerator"] = model.model.device.type
         else:
             model._fit_called = False
             logger.warning(
                 f"Model was loaded without weights since no PyTorch LightningModule checkpoint ('.ckpt') could be "
                 f"found at {path_ptl_ckpt}. Please call `fit()` before calling `predict()`."
             )
+
+        if pl_trainer_kwargs is not None:
+            pl_trainer_kwargs_copy = {
+                key: val for key, val in pl_trainer_kwargs.items()
+            }
+            model.trainer_params["callbacks"] += pl_trainer_kwargs_copy.pop(
+                "callbacks", []
+            )
+            model.trainer_params = dict(model.trainer_params, **pl_trainer_kwargs_copy)
+
+            model._model_params.pl_trainer_kwargs = pl_trainer_kwargs
+
         return model
 
     @staticmethod

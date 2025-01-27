@@ -1,3 +1,4 @@
+import copy
 import os
 from copy import deepcopy
 from itertools import product
@@ -286,16 +287,19 @@ class TestGlobalForecastingModels:
         full_model_path_str = os.path.join(tmpdir_fn, model_path_str)
         full_model_clean_path_str = os.path.join(tmpdir_fn, model_clean_path_str)
 
-        model.fit(self.ts_pass_train)
-        model_prediction = model.predict(self.forecasting_horizon)
+        model.fit(series=self.ts_pass_train)
+
+        model_prediction = model.predict(self.forecasting_horizon, self.ts_pass_train)
 
         # test save
         model.save()
         model.save(full_model_path_str)
 
-        temp_training_series = model.training_series
-        temp_future_cov = model.future_covariate_series
-        temp_past_cov = model.past_covariate_series
+        # TODO add past/future covariates to the save/load test
+        temp_training_series = model.training_series.copy()
+        temp_future_cov = copy.copy(model.future_covariate_series)
+        temp_past_cov = copy.copy(model.past_covariate_series)
+
         model.save(full_model_clean_path_str, clean=True)
         # No side effect to drop the training series
         assert temp_training_series == model.training_series
@@ -304,15 +308,28 @@ class TestGlobalForecastingModels:
 
         # test load
         loaded_model = type(model).load(full_model_path_str)
-        loaded_model_drop_str = type(model).load(full_model_clean_path_str)
+        loaded_model_clean_str = type(model).load(full_model_clean_path_str)
 
-        assert model_prediction == loaded_model.predict(self.forecasting_horizon)
-        assert model_prediction == loaded_model_drop_str.predict(
-            self.forecasting_horizon, self.ts_pass_train
+        assert (
+            loaded_model.predict(self.forecasting_horizon, self.ts_pass_train)
+            == model_prediction
         )
 
-        # test save with clean
-        assert loaded_model_drop_str.training_series is None
+        # Training data is not stored in the clean model
+        assert loaded_model_clean_str.training_series is None
+
+        # The serie to predict need to be provided at prediction time
+        with pytest.raises(ValueError) as err:
+            loaded_model_clean_str.predict(self.forecasting_horizon)
+        assert str(err.value) == (
+            "Input `series` must be provided. This is the result either from fitting on multiple series, "
+            "from not having fit the model yet, or from loading a model saved with `clean=True`."
+        )
+
+        # When the serie to predict is provided, the prediction is the same
+        assert model_prediction == loaded_model_clean_str.predict(
+            self.forecasting_horizon, series=self.ts_pass_train
+        )
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_single_ts(self, config):
