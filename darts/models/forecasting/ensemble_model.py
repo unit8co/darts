@@ -387,7 +387,10 @@ class EnsembleModel(GlobalForecastingModel):
         return predictions[0] if is_single_series else predictions
 
     def save(
-        self, path: Optional[Union[str, os.PathLike, BinaryIO]] = None, **pkl_kwargs
+        self,
+        path: Optional[Union[str, os.PathLike, BinaryIO]] = None,
+        clean: bool = False,
+        **pkl_kwargs,
     ) -> None:
         """
         Saves the ensemble model under a given path or file handle.
@@ -420,6 +423,10 @@ class EnsembleModel(GlobalForecastingModel):
             the ensemble model is automatically saved under ``"{RegressionEnsembleModel}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
             If the i-th model of `forecasting_models` is a TorchForecastingModel, two files (model object and
             checkpoint) are saved under ``"{path}.{ithModelClass}_{i}.pt"`` and ``"{path}.{ithModelClass}_{i}.ckpt"``.
+        clean
+            Whether to store a cleaned version of the model. If `True`, the training series and covariates are removed.
+            Note: After loading the model, a `series` must be passed 'predict()', `historical_forecasts()` and other
+            forecasting methods.
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """
@@ -428,12 +435,12 @@ class EnsembleModel(GlobalForecastingModel):
             # default path
             path = self._default_save_path() + ".pkl"
 
-        super().save(path, **pkl_kwargs)
+        super().save(path, clean=clean, **pkl_kwargs)
 
         for i, m in enumerate(self.forecasting_models):
             if TORCH_AVAILABLE and issubclass(type(m), TorchForecastingModel):
                 path_tfm = f"{path}.{type(m).__name__}_{i}.pt"
-                m.save(path=path_tfm)
+                m.save(path=path_tfm, clean=clean)
 
     @staticmethod
     def load(path: Union[str, os.PathLike, BinaryIO]) -> "EnsembleModel":

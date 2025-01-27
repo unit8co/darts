@@ -1293,7 +1293,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
         return cp_hfcs
 
     def save(
-        self, path: Optional[Union[str, os.PathLike, BinaryIO]] = None, **pkl_kwargs
+        self,
+        path: Optional[Union[str, os.PathLike, BinaryIO]] = None,
+        clean: bool = False,
+        **pkl_kwargs,
     ) -> None:
         """
         Saves the conformal model under a given path or file handle.
@@ -1327,6 +1330,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
             the ensemble model is automatically saved under ``"{ConformalNaiveModel}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
             If the forecasting model is a `TorchForecastingModel`, two files (model object and checkpoint) are saved
             under ``"{path}.{ModelClass}.pt"`` and ``"{path}.{ModelClass}.ckpt"``.
+        clean
+            Whether to store a cleaned version of the model. If `True`, the training series and covariates are removed.
+            Note: After loading the model, a `series` must be passed 'predict()', `historical_forecasts()` and other
+            forecasting methods.
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """
@@ -1335,11 +1342,11 @@ class ConformalModel(GlobalForecastingModel, ABC):
             # default path
             path = self._default_save_path() + ".pkl"
 
-        super().save(path, **pkl_kwargs)
+        super().save(path, clean=clean, **pkl_kwargs)
 
         if TORCH_AVAILABLE and issubclass(type(self.model), TorchForecastingModel):
             path_tfm = f"{path}.{type(self.model).__name__}.pt"
-            self.model.save(path=path_tfm)
+            self.model.save(path=path_tfm, clean=clean)
 
     @staticmethod
     def load(path: Union[str, os.PathLike, BinaryIO]) -> "ConformalModel":
