@@ -393,7 +393,9 @@ class RegressionModel(GlobalForecastingModel):
                 processed_lags[lags_abbrev] = [
                     lag_ + output_chunk_shift for lag_ in processed_lags[lags_abbrev]
                 ]
-                if processed_component_lags:
+                if processed_component_lags and list(tmp_components_lags.keys()) != [
+                    "default_lags"
+                ]:
                     processed_component_lags[lags_abbrev] = {
                         comp_: [lag_ + output_chunk_shift for lag_ in lags_]
                         for comp_, lags_ in processed_component_lags[
