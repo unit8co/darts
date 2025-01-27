@@ -1646,16 +1646,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _clean(self):
         """Returns a cleaned model, keeping only the necessary attributes for prediction."""
         model = super()._clean()
-        if self.trainer is not None:
-            # Copy from super()._clean() call __getstate__ which removes model and trainer
-            # model.trainer.callback = []  # save with checkpoints
-
-            # a shallow copy is enough since we are only interested in removing pointers
-            model.model = copy.copy(self.model)  # keep the model for prediction
-            model._model_params = copy.copy(self._model_params)
-            model._model_params.pl_trainer_kwargs = None
-            model.trainer_params = None
-
+        # Copy from super()._clean() call __getstate__ which removes model and trainer
+        # a shallow copy is enough since we are only interested in removing pointers
+        model.model = copy.copy(self.model)  # keep the model for prediction
+        model._model_params = copy.copy(self._model_params)
+        model._model_params["pl_trainer_kwargs"] = None
+        model.trainer_params = None
         return model
 
     def save(
@@ -1667,6 +1663,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Saves the model under a given path.
 
         Creates two files under ``path`` (model object) and ``path``.ckpt (checkpoint).
+
+        Note: Pickle errors may occur when saving models with custom classes. In this case, consider using
+        the `clean` flag to strip the saved model from training related attributes.
 
         Example for saving and loading a :class:`RNNModel`:
 
@@ -1689,7 +1688,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pt"``.
             E.g., ``"RNNModel_2020-01-01_12_00_00.pt"``.
         clean
-            Whether to store a cleaned version of the model. If `True`, the training series and covariates are removed.
+            Whether to store a cleaned version of the model. If `True`, only model parameters
+            and attributes needed for prediction are saved.
             Note: After loading the model, a `series` must be passed 'predict()', `historical_forecasts()` and other
             forecasting methods.
         """
@@ -1793,7 +1793,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         reset_trainer_params = model.trainer_params is None
         if reset_trainer_params:
-            model.trainer_params = {}
+            model.trainer_params = {"callbacks": []}
 
         # if a checkpoint was saved, we also load the PyTorch LightningModule from checkpoint
         path_ptl_ckpt = path + ".ckpt"
@@ -1826,7 +1826,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
             model.trainer_params = dict(model.trainer_params, **pl_trainer_kwargs_copy)
 
-            model._model_params.pl_trainer_kwargs = pl_trainer_kwargs
+            model._model_params["pl_trainer_kwargs"] = pl_trainer_kwargs
 
         return model
 

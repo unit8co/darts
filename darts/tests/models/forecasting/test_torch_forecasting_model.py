@@ -180,7 +180,14 @@ class TestTorchForecastingModel:
     def test_manual_save_and_load(self, tmpdir_fn, clean):
         """validate manual save with automatic save files by comparing output between the two"""
 
-        # TODO add callbakcs to models, call load with pl_trainer_kwargs
+        class CustomCallback(Callback):
+            def on_train_epoch_end(self, trainer, pl_module):
+                pass
+
+        custom_callback = CustomCallback()
+        kwargs = copy.deepcopy(tfm_kwargs)
+        if clean:
+            kwargs["pl_trainer_kwargs"]["callbacks"] = [custom_callback]
 
         model_dir = os.path.join(tmpdir_fn)
         manual_name = "test_save_manual"
@@ -194,7 +201,7 @@ class TestTorchForecastingModel:
             work_dir=tmpdir_fn,
             save_checkpoints=False,
             random_state=42,
-            **tfm_kwargs,
+            **kwargs,
         )
         model_auto_save = RNNModel(
             12,
@@ -266,8 +273,9 @@ class TestTorchForecastingModel:
             assert model_manual_save.trainer_params == {
                 "accelerator": "cpu",
                 "precision": "64-true",
+                "callbacks": [],
             }
-            assert model_manual_save._model_params.pl_trainer_kwargs is None
+            assert model_manual_save._model_params["pl_trainer_kwargs"] is None
 
             # Predicting without giving the series in args
             with pytest.raises(ValueError) as err:
@@ -280,6 +288,23 @@ class TestTorchForecastingModel:
             assert model_manual_save.predict(
                 n=4, series=self.series
             ) == model_auto_save.predict(n=4)
+
+            model_manual_save_custom_trainer = RNNModel.load(
+                model_path_manual,
+                map_location="cpu",
+                pl_trainer_kwargs={"accelerator": "gpu", "enable_progress_bar": False},
+            )
+
+            assert model_manual_save_custom_trainer.trainer_params == {
+                "accelerator": "gpu",
+                "precision": "64-true",
+                "enable_progress_bar": False,
+                "callbacks": [],
+            }
+            assert model_manual_save_custom_trainer.model_params[
+                "pl_trainer_kwargs"
+            ] == {"accelerator": "gpu", "enable_progress_bar": False}
+
         else:
             assert model_manual_save.predict(n=4) == model_auto_save.predict(n=4)
 
