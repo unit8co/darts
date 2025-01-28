@@ -152,3 +152,61 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
         vals = np.concatenate([Scaler.stack_samples(ts) for ts in series], axis=0)
         scaler = transformer.fit(vals)
         return scaler
+
+
+def rinorm(
+    series: np.ndarray,
+    eps: float = 1e-5,
+    mean: np.ndarray = None,
+    std_dev: np.ndarray = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Applies Reversible Instance Normalization (RINorm) to the input series.
+
+    Parameters
+    ----------
+    series : np.ndarray
+        The input series to be normalized. Expected shape is (..., n_features).
+    eps : float, optional
+        A small epsilon value to avoid division by zero, by default 1e-5.
+    mean : np.ndarray, optional
+        The mean used for normalization.
+    std_dev : np.ndarray, optional
+        The standard deviation used for normalization.
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray, np.ndarray]
+        A tuple containing:
+        - The normalized series.
+        - The mean of the series used for normalization.
+        - The standard deviation of the series used for normalization.
+    """
+    if mean is None and std_dev is None:
+        mean = np.mean(series, axis=-1, keepdims=True)
+        std_dev = np.std(series, axis=-1, keepdims=True)
+    return (series - mean) / (std_dev + eps), mean, std_dev
+
+
+def inverse_rinorm(
+    series: np.ndarray, mean: np.ndarray, std_dev: np.ndarray, eps: float = 1e-5
+) -> np.ndarray:
+    """
+    Reverts the Reversible Instance Normalization (RINorm) applied to the input series.
+
+    Parameters
+    ----------
+    series : np.ndarray
+        The normalized series to be reverted. Expected shape is (..., n_features).
+    mean : np.ndarray
+        The mean of the original series used for normalization.
+    std_dev : np.ndarray
+        The standard deviation of the original series used for normalization.
+    eps : float, optional
+        A small epsilon value to avoid division by zero, by default 1e-5.
+
+    Returns
+    -------
+    np.ndarray
+        The series reverted to its original scale.
+    """
+    return series * (std_dev + eps) + mean

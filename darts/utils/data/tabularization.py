@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import as_strided
 
+from darts.dataprocessing.transformers.scaler import rinorm
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils.data.utils import _process_sample_weight
@@ -225,7 +226,7 @@ def create_lagged_data(
         Whether to show warnings.
     use_reversible_instance_norm
         Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.
-        It is only applied to the features of the target series and not the covariates
+        It is only applied to the features of the target series and not the covariates.
 
     Returns
     -------
@@ -272,7 +273,7 @@ def create_lagged_data(
     .. [1] https://otexts.com/fpp2/AR.html#AR
     .. [2] https://unit8.com/resources/time-series-forecasting-using-past-and-future-external-data-with-darts/
     .. [3] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
-            Distribution Shift",https://openreview.net/forum?id=cGDAkQo1C0p
+            Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
 
     See Also
     --------
@@ -367,7 +368,6 @@ def create_lagged_data(
                 use_reversible_instance_norm=use_reversible_instance_norm,
             )
         else:
-            # TODO find out what is happening here and how RINorm can be used
             X_i, y_i, times_i, weights_i = _create_lagged_data_by_intersecting_times(
                 target_series=target_i,
                 output_chunk_length=output_chunk_length,
@@ -1115,12 +1115,8 @@ def _create_lagged_data_by_moving_window(
 
             # Apply Reversible Instance Normalization (RINorm) to the target series if specified
             if use_reversible_instance_norm and is_target_series:
-                # Calculate the mean and standard deviation of each target series over the window
-                mean = np.mean(windows, axis=-1, keepdims=True)
-                std_dev = np.std(windows, axis=-1, keepdims=True)
-                # Avoid division by zero by adding a small epsilon value
-                eps = 1e-8
-                windows = (windows - mean) / (std_dev + eps)
+                # Normalize the windows and get mean and std_dev
+                windows, mean, std_dev = rinorm(windows)
 
             # Within each window, the `-1` indexed value (i.e. the value at the very end of
             # the window) corresponds to time `t - min_lag_i`. The negative index of the time
@@ -1171,7 +1167,7 @@ def _create_lagged_data_by_moving_window(
             # Apply Reversible Instance Normalization (RINorm) to the target series if specified
             if use_reversible_instance_norm:
                 # Normalize the target values using the mean and standard deviation of the training data
-                windows = (windows - mean) / (std_dev + eps)
+                windows, _, _ = rinorm(windows, mean=mean, std_dev=std_dev)
 
             # Only values at times `t + output_chunk_length - 1` used as labels:
             vals = _extract_lagged_vals_from_windows(windows, lags_to_extract)

@@ -163,7 +163,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         **kwargs
             Additional keyword arguments passed to `xgb.XGBRegressor`.
 
-         References
+        References
         ----------
         .. [1] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
                 Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p

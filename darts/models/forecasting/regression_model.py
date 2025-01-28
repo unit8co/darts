@@ -36,6 +36,7 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.utils.validation import has_fit_parameter
 
+from darts.dataprocessing.transformers.scaler import inverse_rinorm, rinorm
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
@@ -1186,12 +1187,12 @@ class RegressionModel(GlobalForecastingModel):
                 )
                 # Extract the current window of series data based on the lag window
                 current_window = series_matrix[:, lag_window, :]
-                # Compute the mean and standard deviation for normalization
-                mean = np.mean(current_window, axis=1, keepdims=True)
-                std_dev = np.std(current_window, axis=1, keepdims=True)
-                eps = 1e-8  # Small epsilon to avoid division by zero
-                # Normalize the series matrix using the computed mean and standard deviation
-                series_matrix = (series_matrix - mean) / (std_dev + eps)
+                # Normalize the current window
+                norm_current_window, mean, std_dev = rinorm(
+                    current_window.swapaxes(1, 2)
+                )
+                # Replace the current window with the normalized one in the series matrix
+                series_matrix[:, lag_window, :] = norm_current_window.swapaxes(1, 2)
 
             # extract and concatenate lags from target and covariates series
             X = _create_lagged_data_autoregression(
@@ -1216,10 +1217,12 @@ class RegressionModel(GlobalForecastingModel):
 
             # Apply Reversible Instance Normalization (RINorm) if specified
             if self.use_reversible_instance_norm:
-                # Invert the normalization using the mean and standard deviation
-                series_matrix = series_matrix * (std_dev + eps) + mean
+                # rescale the series matrix to the original scale
+                series_matrix[:, lag_window, :] = current_window
                 # Invert the normalization for the prediction
-                prediction = prediction * (std_dev + eps) + mean
+                prediction = inverse_rinorm(
+                    prediction.swapaxes(1, 2), mean, std_dev
+                ).swapaxes(1, 2)
 
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
             # append prediction to final predictions
