@@ -202,7 +202,11 @@ class TestGlobalForecastingModels:
     scaler = Scaler()
     ts_passengers = scaler.fit_transform(ts_passengers)
     ts_pass_train, ts_pass_val = ts_passengers[:-36], ts_passengers[-36:]
-
+    ts_passangers_mock_cov = linear_timeseries(
+        length=2 * len(ts_passengers),
+        start=ts_passengers.start_time(),
+        freq=ts_passengers.freq_str,
+    )
     # an additional noisy series
     ts_pass_train_1 = ts_pass_train + 0.01 * tg.gaussian_timeseries(
         length=len(ts_pass_train),
@@ -276,7 +280,11 @@ class TestGlobalForecastingModels:
                 output_chunk_length=3,
                 **tfm_kwargs,
             ),
-            LinearRegressionModel(lags=12),
+            LinearRegressionModel(
+                lags=12,
+                lags_past_covariates=[-1, -2, -3],
+                lags_future_covariates=[1, 2, 3],
+            ),
         ],
     )
     def test_save_load_model(self, tmpdir_fn, model):
@@ -287,15 +295,25 @@ class TestGlobalForecastingModels:
         full_model_path_str = os.path.join(tmpdir_fn, model_path_str)
         full_model_clean_path_str = os.path.join(tmpdir_fn, model_clean_path_str)
 
-        model.fit(series=self.ts_pass_train)
+        cov_kwargs = (
+            {
+                "past_covariates": self.ts_passangers_mock_cov,
+                "future_covariates": self.ts_passangers_mock_cov,
+            }
+            if model.supports_future_covariates and model.supports_past_covariates
+            else {}
+        )
 
-        model_prediction = model.predict(self.forecasting_horizon, self.ts_pass_train)
+        model.fit(series=self.ts_pass_train, **cov_kwargs)
+
+        model_prediction = model.predict(
+            self.forecasting_horizon, self.ts_pass_train, **cov_kwargs
+        )
 
         # test save
         model.save()
         model.save(full_model_path_str)
 
-        # TODO add past/future covariates to the save/load test
         temp_training_series = model.training_series.copy()
         temp_future_cov = copy.copy(model.future_covariate_series)
         temp_past_cov = copy.copy(model.past_covariate_series)
@@ -311,7 +329,9 @@ class TestGlobalForecastingModels:
         loaded_model_clean_str = type(model).load(full_model_clean_path_str)
 
         assert (
-            loaded_model.predict(self.forecasting_horizon, self.ts_pass_train)
+            loaded_model.predict(
+                self.forecasting_horizon, self.ts_pass_train, **cov_kwargs
+            )
             == model_prediction
         )
 
@@ -328,7 +348,7 @@ class TestGlobalForecastingModels:
 
         # When the serie to predict is provided, the prediction is the same
         assert model_prediction == loaded_model_clean_str.predict(
-            self.forecasting_horizon, series=self.ts_pass_train
+            self.forecasting_horizon, series=self.ts_pass_train, **cov_kwargs
         )
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
