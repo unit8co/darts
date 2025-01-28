@@ -22,6 +22,12 @@ def metric_residuals(y_true, y_pred, **kwargs):
     return np.mean(y_true - y_pred)
 
 
+def metric_wmape(y_true, y_pred, **kwargs):
+    y_true = y_true[:, 0]
+    y_pred = y_pred[:, 0]
+    return 100.0 * np.sum(np.abs(y_true - y_pred)) / np.sum(np.abs(y_true))
+
+
 def metric_smape(y_true, y_pred, **kwargs):
     y_true = y_true[:, 0]
     y_pred = y_pred[:, 0]
@@ -221,6 +227,7 @@ class TestMetrics:
             (metrics.msse, False, {}),
             (metrics.rmsse, False, {}),
             (metrics.mape, False, {}),
+            (metrics.wmape, False, {}),
             (metrics.smape, False, {}),
             (metrics.ope, False, {}),
             (metrics.marre, False, {}),
@@ -813,6 +820,7 @@ class TestMetrics:
                 (metrics.msse, False),
                 (metrics.rmsse, False),
                 (metrics.mape, False),
+                (metrics.wmape, False),
                 (metrics.smape, False),
                 (metrics.ope, False),
                 (metrics.marre, False),
@@ -915,6 +923,7 @@ class TestMetrics:
             (metrics.msse, 0, False, {}),
             (metrics.rmsse, 0, False, {}),
             (metrics.mape, 0, False, {}),
+            (metrics.wmape, 0, False, {}),
             (metrics.smape, 0, False, {}),
             (metrics.ope, 0, False, {}),
             (metrics.marre, 0, False, {}),
@@ -1362,6 +1371,7 @@ class TestMetrics:
             (metrics.rmse, "max", {}),
             (metrics.rmsle, "max", {}),
             (metrics.mape, "max", {}),
+            (metrics.wmape, "max", {}),
             (metrics.smape, "max", {}),
             (metrics.ope, "max", {}),
             (metrics.marre, "max", {}),
@@ -1450,6 +1460,7 @@ class TestMetrics:
             (metrics.rmse, sklearn.metrics.root_mean_squared_error, {}, {}),
             (metrics.rmsle, metric_rmsle, {}, {}),
             (metrics.mape, sklearn_mape, {}, {}),
+            (metrics.wmape, metric_wmape, {}, {}),
             (metrics.smape, metric_smape, {}, {}),
             (metrics.ope, metric_ope, {}, {}),
             (metrics.marre, metric_marre, {}, {}),
@@ -1655,6 +1666,7 @@ class TestMetrics:
                     metrics.msse,
                     metrics.rmsse,
                     metrics.mape,
+                    metrics.wmape,
                     metrics.smape,
                     metrics.ope,
                     metrics.marre,

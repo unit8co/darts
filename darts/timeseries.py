@@ -55,6 +55,7 @@ from scipy.stats import kurtosis, skew
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils.utils import (
+    SUPPORTED_RESAMPLE_METHODS,
     expand_arr,
     generate_index,
     n_steps_between,
@@ -2496,7 +2497,7 @@ class TimeSeries:
         """
         if other.has_same_time_as(self):
             return self.__class__(self._xa)
-        if other.freq == self.freq:
+        elif other.freq == self.freq and len(self) and len(other):
             start, end = self._slice_intersect_bounds(other)
             return self[start:end]
         else:
@@ -2815,9 +2816,9 @@ class TimeSeries:
         """
         if len(other) != len(self):
             return False
-        if other.freq != self.freq:
+        elif other.freq != self.freq:
             return False
-        if other.start_time() != self.start_time():
+        elif other.start_time() != self.start_time():
             return False
         else:
             return True
@@ -3363,23 +3364,31 @@ class TimeSeries:
         )
 
     def resample(
-        self, freq: Union[str, pd.DateOffset], method: str = "pad", **kwargs
+        self,
+        freq: Union[str, pd.DateOffset],
+        method: str = "pad",
+        method_kwargs: Optional[dict[str, Any]] = None,
+        **kwargs,
     ) -> Self:
         """
         Build a reindexed ``TimeSeries`` with a given frequency.
-        Provided method is used to fill holes in reindexed TimeSeries, by default 'pad'.
+        Provided method is used to aggregate/fill holes in the reindexed TimeSeries, by default 'pad'.
 
         Parameters
         ----------
         freq
             The new time difference between two adjacent entries in the returned TimeSeries.
             Expects a `pandas.DateOffset` or `DateOffset` alias.
-        method:
-            Method to fill holes in reindexed TimeSeries (note this does not fill NaNs that already were present):
-
-            'pad': propagate last valid observation forward to next valid
-
-            'backfill': use NEXT valid observation to fill.
+        method
+            Method to either aggregate grouped values (for down-sampling) or fill holes (for up-sampling)
+            in the reindexed TimeSeries. For more information, see the `xarray DataArrayResample documentation
+            <https://docs.xarray.dev/en/stable/generated/xarray.core.resample.DataArrayResample.html>`_.
+            Supported methods: ["all", "any", "asfreq", "backfill", "bfill", "count", "ffill", "first", "interpolate",
+            "last", "max", "mean", "median", "min", "nearest", "pad", "prod", "quantile", "reduce", "std", "sum",
+            "var"].
+        method_kwargs
+            Additional keyword arguments for the specified `method`. Some methods require additional arguments.
+            Xarray's errors will be raised on invalid keyword arguments.
         kwargs
             some keyword arguments for the `xarray.resample` method, notably `offset` or `base` to indicate where
             to start the resampling and avoid nan at the first value of the resampled TimeSeries
@@ -3410,12 +3419,24 @@ class TimeSeries:
         >>> print(resampled_ts.values())
         [[0.]
         [4.]]
+        >>> resampled_ts = ts.resample(freq="1h", offset=pd.Timedelta("30min"))
+        >>> downsampled_mean_ts = ts.resample(freq="30min", method="mean")
+        >>> print(downsampled_mean_ts.values())
+        [[0.5]
+        [2.5]
+        [4.5]]
+        >>> downsampled_reduce_ts = ts.resample(freq="30min", method="reduce", method_args={"func":np.mean})
+        >>> print(downsampled_reduce_ts.values())
+        [[0.5]
+        [2.5]
+        [4.5]]
 
         Returns
         -------
         TimeSeries
             A reindexed TimeSeries with given frequency.
         """
+        method_kwargs = method_kwargs or {}
         if isinstance(freq, pd.DateOffset):
             freq = freq.freqstr
 
@@ -3424,11 +3445,14 @@ class TimeSeries:
             **kwargs,
         )
 
-        # TODO: check
-        if method == "pad":
-            new_xa = resample.pad()
-        elif method in ["bfill", "backfill"]:
-            new_xa = resample.backfill()
+        if method in SUPPORTED_RESAMPLE_METHODS:
+            applied_method = getattr(xr.core.resample.DataArrayResample, method)
+            new_xa = applied_method(resample, **method_kwargs)
+
+            # Convert boolean to int as Timeseries must contain numeric values only
+            # method: "all", "any"
+            if new_xa.dtype == "bool":
+                new_xa = new_xa.astype(int)
         else:
             raise_log(ValueError(f"Unknown method: {method}"), logger)
         return self.__class__(new_xa)
@@ -5660,6 +5684,35 @@ def concatenate(
         )
 
     return TimeSeries.from_xarray(da_concat, fill_missing_dates=False)
+
+
+def slice_intersect(series: Sequence[TimeSeries]) -> list[TimeSeries]:
+    """Returns a list of ``TimeSeries``, where all `series` have been intersected along the time index.
+
+    Parameters
+    ----------
+    series : Sequence[TimeSeries]
+        sequence of ``TimeSeries`` to intersect
+
+    Returns
+    -------
+    Sequence[TimeSeries]
+        Intersected series.
+    """
+    if not series:
+        return []
+
+    # find global intersection on first series
+    intersection = series[0]
+    for series_ in series[1:]:
+        intersection = intersection.slice_intersect(series_)
+
+    # intersect all other series
+    series_intersected = [intersection]
+    for series_ in series[1:]:
+        series_intersected.append(series_.slice_intersect(intersection))
+
+    return series_intersected
 
 
 def _finite_rows_boundaries(
