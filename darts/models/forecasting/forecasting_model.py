@@ -2641,9 +2641,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
             E.g., ``"RegressionModel_2020-01-01_12_00_00.pkl"``.
         clean
-            Whether to store a cleaned version of the model. If `True`, the training series and covariates are removed.
-            Note: After loading the model, a `series` must be passed 'predict()', `historical_forecasts()` and other
-            forecasting methods.
+            Whether to store a cleaned version of the model. This has no effect for local forecasting models.
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """
