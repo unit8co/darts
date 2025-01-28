@@ -1651,7 +1651,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model.model = copy.copy(self.model)  # keep the model for prediction
         model._model_params = copy.copy(self._model_params)
         model._model_params["pl_trainer_kwargs"] = None
-        model.trainer_params = None
+        model.trainer_params = {}
         return model
 
     def save(
@@ -1738,84 +1738,44 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 model_loaded = RNNModel.load(path)
             ..
 
-        Example for loading an :class:`RNNModel` to CPU that was saved on GPU:
-
-            .. highlight:: python
-            .. code-block:: python
-
-                from darts.models import RNNModel
-
-                model_loaded = RNNModel.load(path, map_location="cpu")
-                model_loaded.to_cpu()
-            ..
-
         Parameters
         ----------
         path
             Path from which to load the model. If no path was specified when saving the model, the automatically
             generated path ending with ".pt" has to be provided.
         pl_trainer_kwargs
-            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
-            that performs the training, validation and prediction processes. These presets include automatic
-            checkpointing, tensorboard logging, setting the torch device and more.
-            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
-            object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
-            supported kwargs. Default: ``None``.
+            Optionally, a set of kwargs to create a new PyTorch Lightning Trainer used to handle the underlying module.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
-            "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
-            dict:
-
-            - ``{"accelerator": "cpu"}`` for CPU,
-            - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
-
-            For more info, see here:
-            `trainer flags
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags>`_,
-            and `training on multiple gpus
-            <https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus>`_.
-
-            With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
-            :class:`TorchForecastingModel`.
-            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional
-            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.
+            "devices", and "auto_select_gpus"``.
+            Check the `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_
+            for more information about the supported kwargs.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
-            such as ``map_location`` to load the model onto a different device than the one from which it was saved.
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
             common/lightning_module.html#load-from-checkpoint>`_.
         """
         # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
-        map_location = kwargs.get("map_location", None)
         with open(path, "rb") as fin:
-            model: TorchForecastingModel = torch.load(fin, map_location=map_location)
-
-        reset_trainer_params = model.trainer_params is None
-        if reset_trainer_params:
-            model.trainer_params = {"callbacks": []}
+            model: TorchForecastingModel = torch.load(fin)
 
         # if a checkpoint was saved, we also load the PyTorch LightningModule from checkpoint
         path_ptl_ckpt = path + ".ckpt"
         if os.path.exists(path_ptl_ckpt):
             model.model = model._load_from_checkpoint(path_ptl_ckpt, **kwargs)
-
-            if reset_trainer_params:
-                dtype_to_precision = (
-                    {torch.float32: "32", torch.float64: "64"}
-                    if not pl_200_or_above
-                    else {torch.float32: "32-true", torch.float64: "64-true"}
-                )
-                model.trainer_params["precision"] = dtype_to_precision[
-                    model.model.dtype
-                ]
-                model.trainer_params["accelerator"] = model.model.device.type
         else:
             model._fit_called = False
             logger.warning(
                 f"Model was loaded without weights since no PyTorch LightningModule checkpoint ('.ckpt') could be "
                 f"found at {path_ptl_ckpt}. Please call `fit()` before calling `predict()`."
             )
+
+        # if the model was saved with clean=True or if pl_trainer_kwargs is provided
+        # we overwrite the trainer params
+        model.trainer_params = (
+            {"callbacks": [], "accelerator": "cpu"}  # by default, use CPU
+            if not model.trainer_params or pl_trainer_kwargs
+            else model.trainer_params
+        )
 
         if pl_trainer_kwargs is not None:
             pl_trainer_kwargs_copy = {

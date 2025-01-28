@@ -261,8 +261,7 @@ class TestTorchForecastingModel:
         assert os.path.exists(model_path_manual_ckpt)
 
         # load manual save model and compare with automatic model results
-        model_manual_save = RNNModel.load(model_path_manual, map_location="cpu")
-        model_manual_save.to_cpu()
+        model_manual_save = RNNModel.load(model_path_manual)
 
         if clean:
             # Training params are not saved with `clean=True`
@@ -271,9 +270,8 @@ class TestTorchForecastingModel:
             assert model_manual_save.past_covariate_series is None
             assert model_manual_save.future_covariate_series is None
             assert model_manual_save.trainer_params == {
-                "accelerator": "cpu",
-                "precision": "64-true",
                 "callbacks": [],
+                "accelerator": "cpu",
             }
             assert model_manual_save._model_params["pl_trainer_kwargs"] is None
 
@@ -291,13 +289,11 @@ class TestTorchForecastingModel:
 
             model_manual_save_custom_trainer = RNNModel.load(
                 model_path_manual,
-                map_location="cpu",
                 pl_trainer_kwargs={"accelerator": "gpu", "enable_progress_bar": False},
             )
 
             assert model_manual_save_custom_trainer.trainer_params == {
                 "accelerator": "gpu",
-                "precision": "64-true",
                 "enable_progress_bar": False,
                 "callbacks": [],
             }
@@ -349,6 +345,47 @@ class TestTorchForecastingModel:
         assert model_chained_load_save.predict(
             n=4, series=self.series
         ) == model_manual_save.predict(n=4, series=self.series)
+
+    @pytest.mark.parametrize("clean", [False, True])
+    def test_manual_save_and_load_precision(self, tmpdir_fn, clean):
+        # test precision (type) of the model
+
+        tfm_kwargs_32 = copy.deepcopy(tfm_kwargs)
+        tfm_kwargs_32["pl_trainer_kwargs"]["precision"] = "32-true"
+
+        model_32_name = "test_save_32"
+        model_32 = RNNModel(
+            12,
+            "RNN",
+            10,
+            10,
+            model_name=model_32_name,
+            work_dir=tmpdir_fn,
+            save_checkpoints=False,
+            random_state=42,
+            **tfm_kwargs_32,
+        )
+
+        series_32 = self.series.astype(np.float32)
+        series_64 = self.series.astype(np.float64)
+
+        model_32.fit(series_32, epochs=1)
+
+        model_32_path = os.path.join(tmpdir_fn, f"{model_32_name}.pth.tar")
+
+        model_32.save(model_32_path, clean=clean)
+
+        model_32_loaded = RNNModel.load(model_32_path)
+
+        assert model_32_loaded.predict(n=4, series=series_32) == model_32.predict(n=4)
+        with pytest.raises(ValueError) as err:
+            model_32_loaded.predict(n=4, series=series_64)
+        assert str(err.value) == (
+            "input must have the type torch.float32, got type torch.float64"
+        )
+
+    def test_load_accelerator(self, tmpdir_fn):
+        pass
 
     def test_valid_save_and_load_weights_with_different_params(self, tmpdir_fn):
         """
