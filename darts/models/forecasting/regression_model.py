@@ -381,8 +381,11 @@ class RegressionModel(GlobalForecastingModel):
                 else:
                     max_lags = max(max_lags, tmp_components_lags[comp_name][-1])
 
+            # Check if only default lags are provided
+            has_default_lags = list(tmp_components_lags.keys()) == ["default_lags"]
+
             # revert to shared lags logic when applicable
-            if list(tmp_components_lags.keys()) == ["default_lags"]:
+            if has_default_lags:
                 processed_lags[lags_abbrev] = tmp_components_lags["default_lags"]
             else:
                 processed_lags[lags_abbrev] = [min_lags, max_lags]
@@ -393,9 +396,7 @@ class RegressionModel(GlobalForecastingModel):
                 processed_lags[lags_abbrev] = [
                     lag_ + output_chunk_shift for lag_ in processed_lags[lags_abbrev]
                 ]
-                if processed_component_lags and list(tmp_components_lags.keys()) != [
-                    "default_lags"
-                ]:
+                if processed_component_lags and not has_default_lags:
                     processed_component_lags[lags_abbrev] = {
                         comp_: [lag_ + output_chunk_shift for lag_ in lags_]
                         for comp_, lags_ in processed_component_lags[
