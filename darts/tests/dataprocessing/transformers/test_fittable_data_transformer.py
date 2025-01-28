@@ -176,8 +176,19 @@ class TestLocalFittableDataTransformer:
 
         # If only one timeseries provided, should apply parameters defined for
         # for the first to that series:
-        transformed_1 = mock.transform(test_input_1)
-        assert transformed_1 == constant_timeseries(value=12, length=10)
+        assert mock.transform(test_input_1) == constant_timeseries(value=12, length=10)
+        # 2 * 2 + 10 = 14
+        assert mock.transform(test_input_2) == constant_timeseries(value=14, length=11)
+
+        # If the index of another set of parameters is provided, the output changes accordingly:
+        # 3 * 1 + 10 = 13
+        assert mock.transform(test_input_1, series_idx=1) == constant_timeseries(
+            value=13, length=10
+        )
+        # 3 * 2 + 10 = 16
+        assert mock.transform(test_input_2, series_idx=1) == constant_timeseries(
+            value=16, length=11
+        )
 
         # Have different `scale`, `translation`, and `stack_samples` params for different jobs:
         mock = self.DataTransformerMock(
@@ -198,8 +209,26 @@ class TestLocalFittableDataTransformer:
 
         # If only one timeseries provided, should apply parameters defined for
         # for the first to that series:
-        transformed_1 = mock.transform(test_input_1)
-        assert transformed_1 == constant_timeseries(value=12, length=10)
+        assert mock.transform(test_input_1) == constant_timeseries(value=12, length=10)
+        # 2 * 2 + 10 = 14
+        assert mock.transform(test_input_2) == constant_timeseries(value=14, length=11)
+
+        # If the index of another set of parameters is provided, the output changes accordingly:
+        assert mock.transform(test_input_1, series_idx=0) == constant_timeseries(
+            value=12, length=10
+        )
+        # 3 * 1 + 11 = 14
+        assert mock.transform(test_input_1, series_idx=1) == constant_timeseries(
+            value=14, length=10
+        )
+        # 2 * 2 + 10 = 14
+        assert mock.transform(test_input_2, series_idx=0) == constant_timeseries(
+            value=14, length=11
+        )
+        # 3 * 2 + 11 = 17
+        assert mock.transform(test_input_2, series_idx=1) == constant_timeseries(
+            value=17, length=11
+        )
 
         # Train on three series with three different fixed param values,
         # but pass only one or two series as inputs to `transform`;

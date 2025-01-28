@@ -18,7 +18,7 @@ class StatsForecastAutoCES(LocalForecastingModel):
         <https://onlinelibrary.wiley.com/doi/full/10.1002/nav.22074>
 
         We refer to the `statsforecast AutoCES documentation
-        <https://nixtla.github.io/statsforecast/src/core/models.html#autoces>`_
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoces>`_
         for the exhaustive documentation of the arguments.
 
         Parameters

@@ -20,10 +20,16 @@ from darts.models.forecasting.arima import ARIMA
 from darts.models.forecasting.auto_arima import AutoARIMA
 from darts.models.forecasting.baselines import (
     NaiveDrift,
+    NaiveEnsembleModel,
     NaiveMean,
     NaiveMovingAverage,
     NaiveSeasonal,
 )
+from darts.models.forecasting.conformal_models import (
+    ConformalNaiveModel,
+    ConformalQRModel,
+)
+from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
 from darts.models.forecasting.kalman_forecaster import KalmanForecaster
@@ -88,6 +94,7 @@ try:
     from darts.models.forecasting.sf_auto_arima import StatsForecastAutoARIMA
     from darts.models.forecasting.sf_auto_ces import StatsForecastAutoCES
     from darts.models.forecasting.sf_auto_ets import StatsForecastAutoETS
+    from darts.models.forecasting.sf_auto_tbats import StatsForecastAutoTBATS
     from darts.models.forecasting.sf_auto_theta import StatsForecastAutoTheta
 
 except ImportError:
@@ -102,21 +109,17 @@ except ImportError:
     StatsForecastAutoCES = NotImportedModule(module_name="StatsForecast", warn=False)
     StatsForecastAutoETS = NotImportedModule(module_name="StatsForecast", warn=False)
     StatsForecastAutoTheta = NotImportedModule(module_name="StatsForecast", warn=False)
+    StatsForecastAutoTBATS = NotImportedModule(module_name="StatsForecast", warn=False)
 
 try:
     from darts.models.forecasting.xgboost import XGBModel
 except ImportError:
     XGBModel = NotImportedModule(module_name="XGBoost")
 
+# Filtering
 from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
 from darts.models.filtering.kalman_filter import KalmanFilter
-
-# Filtering
 from darts.models.filtering.moving_average_filter import MovingAverageFilter
-from darts.models.forecasting.baselines import NaiveEnsembleModel
-
-# Ensembling
-from darts.models.forecasting.ensemble_model import EnsembleModel
 
 __all__ = [
     "LightGBMModel",
@@ -140,7 +143,7 @@ __all__ = [
     "VARIMA",
     "BlockRNNModel",
     "DLinearModel",
-    "GlobalNaiveDrift",
+    "GlobalNaiveAggregate",
     "GlobalNaiveDrift",
     "GlobalNaiveSeasonal",
     "NBEATSModel",
@@ -159,10 +162,13 @@ __all__ = [
     "StatsForecastAutoCES",
     "StatsForecastAutoETS",
     "StatsForecastAutoTheta",
+    "StatsForecastAutoTBATS",
     "XGBModel",
     "GaussianProcessFilter",
     "KalmanFilter",
     "MovingAverageFilter",
     "NaiveEnsembleModel",
     "EnsembleModel",
+    "ConformalNaiveModel",
+    "ConformalQRModel",
 ]

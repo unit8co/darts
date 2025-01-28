@@ -9,7 +9,9 @@ from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import create_lagged_prediction_data
-from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
+from darts.utils.historical_forecasts.utils import (
+    _get_historical_forecast_boundaries,
+)
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -35,9 +37,13 @@ def _optimized_historical_forecasts_last_points_only(
     Optimized historical forecasts for RegressionModel with last_points_only = True
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
+
+    The data_transformers are applied in historical_forecasts (input and predictions)
     """
     forecasts_list = []
-    iterator = _build_tqdm_iterator(series, verbose)
+    iterator = _build_tqdm_iterator(
+        series, verbose, total=len(series), desc="historical forecasts"
+    )
     for idx, series_ in enumerate(iterator):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
         future_covariates_ = (
@@ -156,19 +162,24 @@ def _optimized_historical_forecasts_last_points_only(
         else:
             forecast = forecast[:, 0]
 
+        if (
+            stride == 1
+            and model.output_chunk_length == 1
+            and model.output_chunk_shift == 0
+        ):
+            times = times[0]
+        else:
+            times = generate_index(
+                start=hist_fct_start
+                + (forecast_horizon + model.output_chunk_shift - 1) * freq,
+                length=forecast.shape[0],
+                freq=freq * stride,
+                name=series_.time_index.name,
+            )
+
         forecasts_list.append(
             TimeSeries.from_times_and_values(
-                times=(
-                    times[0]
-                    if stride == 1 and model.output_chunk_length == 1
-                    else generate_index(
-                        start=hist_fct_start
-                        + (forecast_horizon + model.output_chunk_shift - 1) * freq,
-                        length=forecast.shape[0],
-                        freq=freq * stride,
-                        name=series_.time_index.name,
-                    )
-                ),
+                times=times,
                 values=forecast,
                 columns=forecast_components,
                 static_covariates=series_.static_covariates,
@@ -200,7 +211,9 @@ def _optimized_historical_forecasts_all_points(
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
     forecasts_list = []
-    iterator = _build_tqdm_iterator(series, verbose)
+    iterator = _build_tqdm_iterator(
+        series, verbose, total=len(series), desc="historical forecasts"
+    )
     for idx, series_ in enumerate(iterator):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
         future_covariates_ = (
@@ -338,7 +351,7 @@ def _optimized_historical_forecasts_all_points(
         # TODO: check if faster to create in the loop
         new_times = generate_index(
             start=hist_fct_start + model.output_chunk_shift * series_.freq,
-            length=forecast_horizon * stride * forecast.shape[0],
+            length=forecast_horizon + (forecast.shape[0] - 1) * stride,
             freq=freq,
             name=series_.time_index.name,
         )

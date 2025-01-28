@@ -7,11 +7,15 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 
+from darts.dataprocessing.pipeline import Pipeline
+from darts.dataprocessing.transformers import (
+    BaseDataTransformer,
+    FittableDataTransformer,
+)
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries
-from darts.utils import n_steps_between
-from darts.utils.ts_utils import get_series_seq_type, series2seq
-from darts.utils.utils import generate_index
+from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
+from darts.utils.utils import generate_index, n_steps_between
 
 logger = get_logger(__name__)
 
@@ -23,7 +27,9 @@ TimeIndex = Union[
 ]
 
 
-def _historical_forecasts_general_checks(model, series, kwargs):
+def _historical_forecasts_general_checks(
+    model, series, kwargs, is_conformal: bool = False
+):
     """
     Performs checks common to ForecastingModel and RegressionModel backtest() methods
 
@@ -33,9 +39,6 @@ def _historical_forecasts_general_checks(model, series, kwargs):
         The forecasting model.
     series
         Either series when called from ForecastingModel, or target_series if called from RegressionModel
-    signature_params
-        A dictionary of the signature parameters of the calling method, to get the default values
-        Typically would be signature(self.backtest).parameters
     kwargs
         Params specified by the caller of backtest(), they take precedence over the arguments' default values
     """
@@ -53,6 +56,18 @@ def _historical_forecasts_general_checks(model, series, kwargs):
     if not n.stride > 0:
         raise_log(
             ValueError("The provided stride parameter must be a positive integer."),
+            logger,
+        )
+
+    # check stride for ConformalModel
+    if is_conformal and (
+        n.stride < model.cal_stride or n.stride % model.cal_stride > 0
+    ):
+        raise_log(
+            ValueError(
+                f"The provided `stride` parameter must be a round-multiple of `cal_stride={model.cal_stride}` "
+                f"and `>=cal_stride`. Received `stride={n.stride}`"
+            ),
             logger,
         )
 
@@ -81,13 +96,23 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 ),
                 logger,
             )
-        if isinstance(n.start, float) and not 0.0 <= n.start <= 1.0:
-            raise_log(
-                ValueError("if `start` is a float, must be between 0.0 and 1.0."),
-                logger,
-            )
+        if isinstance(n.start, float):
+            if is_conformal:
+                raise_log(
+                    ValueError(
+                        "`start` of type float is not supported for `ConformalModel`."
+                    ),
+                    logger,
+                )
+            if not 0.0 <= n.start <= 1.0:
+                raise_log(
+                    ValueError("if `start` is a float, must be between 0.0 and 1.0."),
+                    logger,
+                )
 
+        series_freq = None
         for idx, series_ in enumerate(series):
+            start_is_value = False
             # check specifically for int and Timestamp as error by `get_timestamp_at_point` is too generic
             if isinstance(n.start, pd.Timestamp):
                 if not series_._has_datetime_index:
@@ -105,6 +130,7 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                         ),
                         logger,
                     )
+                start_is_value = True
             elif isinstance(n.start, (int, np.int64)):
                 if n.start_format == "position" or series_.has_datetime_index:
                     if n.start >= len(series_):
@@ -115,13 +141,32 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                             ),
                             logger,
                         )
-                elif n.start > series_.time_index[-1]:  # format "value" and range index
+                else:
+                    if (
+                        n.start > series_.time_index[-1]
+                    ):  # format "value" and range index
+                        raise_log(
+                            ValueError(
+                                f"`start` time `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
+                                f"for series at index: {idx}."
+                            ),
+                            logger,
+                        )
+                    start_is_value = True
+
+            # `ConformalModel` with `start_format='value'` requires all series to have the same frequency
+            if is_conformal and start_is_value:
+                if series_freq is None:
+                    series_freq = series_.freq
+
+                if series_freq != series_.freq:
                     raise_log(
                         ValueError(
-                            f"`start` time `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
-                            f"for series at index: {idx}."
+                            f"Found mismatching `series` time index frequencies `{series_freq}` and `{series_.freq}`. "
+                            f"`start_format='value'` with `ConformalModel` is only supported if all series in "
+                            f"`series` have the same frequency."
                         ),
-                        logger,
+                        logger=logger,
                     )
 
             # find valid start position relative to the series start time, otherwise raise an error
@@ -192,6 +237,94 @@ def _historical_forecasts_general_checks(model, series, kwargs):
                 ),
                 logger,
             )
+
+    if n.data_transformers is not None:
+        # check the type
+        if not isinstance(n.data_transformers, dict):
+            raise_log(
+                ValueError(
+                    "`data_transformers` should either `None` or a dictionary.", logger
+                )
+            )
+        # check the keys
+        supported_keys = {"series", "past_covariates", "future_covariates"}
+        incorrect_keys = set(n.data_transformers.keys()) - supported_keys
+        if len(incorrect_keys) > 0:
+            raise_log(
+                ValueError(
+                    f"The keys supported by `data_transformers` are {supported_keys}, received the following "
+                    f"incorrect keys: {incorrect_keys}."
+                ),
+                logger,
+            )
+
+        # convert to Pipelines
+        data_pipelines = _convert_data_transformers(
+            data_transformers=n.data_transformers, copy=False
+        )
+        # extract pipelines containing at least one fittable element
+        fittable_pipelines = [
+            transf_ for transf_ in data_pipelines.values() if transf_.fittable
+        ]
+        # extract pipelines where all the fittable transformer are fitted globally
+        global_fit_pipelines = [
+            transf_ for transf_ in fittable_pipelines if transf_._global_fit
+        ]
+
+        if n.retrain:
+            # if more than one series is passed and the pipelines are retrained, they cannot be global
+            if n.show_warnings and len(series) > 1 and len(global_fit_pipelines) > 0:
+                logger.warning(
+                    "When `retrain=True` and multiple series are provided, the fittable `data_transformers` "
+                    "are trained on each series independently (`global_fit=True` will be ignored)."
+                )
+        else:
+            # must already be fitted without retraining
+            not_fitted_pipelines = [
+                name_
+                for name_, transf_ in data_pipelines.items()
+                if transf_.fittable and not transf_._fit_called
+            ]
+            if len(not_fitted_pipelines) > 0:
+                raise_log(
+                    ValueError(
+                        "All the fittable entries in `data_transformers` must already be fitted when "
+                        f"`retrain=False`, the following entries were not fitted: {', '.join(not_fitted_pipelines)}."
+                    ),
+                    logger,
+                )
+            # extract the number of fitted params in each pipeline (already fitted)
+            fitted_params_pipelines = [
+                max(
+                    len(t._fitted_params)
+                    for t in pipeline
+                    if isinstance(t, FittableDataTransformer)
+                )
+                for pipeline in data_pipelines.values()
+            ]
+
+            if len(series) > 1:
+                # if multiple series are passed and the pipelines are not all globally fitted, the number of series must
+                # match the number of fitted params in the pipelines
+                if len(global_fit_pipelines) != len(fittable_pipelines) and len(
+                    series
+                ) != max(fitted_params_pipelines):
+                    raise_log(
+                        ValueError(
+                            f"When multiple series are provided, their number should match the number of "
+                            f"`TimeSeries` used to fit the data transformers `n={max(fitted_params_pipelines)}` "
+                            f"(only relevant for fittable transformers that use `global_fit=False`)."
+                        ),
+                        logger,
+                    )
+            else:
+                # at least one pipeline was fitted on several series with `global_fit=False` but only
+                # one series was passed
+                if n.show_warnings and max(fitted_params_pipelines) > 1:
+                    logger.warning(
+                        "Provided only a single series, but at least one of the `data_transformers` "
+                        "that use `global_fit=False` was fitted on multiple `TimeSeries`."
+                    )
 
     if (
         n.sample_weight is not None
@@ -405,8 +538,12 @@ def _check_start(
         if isinstance(start, float):
             # fraction of series
             start = series.get_index_at_point(start)
-        else:
+        elif start >= 0:
+            # start >= 0 is relative to the start
             start = series.start_time() + start * series.freq
+        else:
+            # start < 0 is relative to the end
+            start = series.end_time() + (start + 1) * series.freq
     else:
         start_format_msg = "time "
     ref_msg = "" if not is_historical_forecast else "historical forecastable "
@@ -477,7 +614,7 @@ def _get_historical_forecastable_time_index(
 
     Returns
     -------
-    Union[pd.DatetimeIndex, pd.RangeIndex, Tuple[int, int], Tuple[pd.Timestamp, pd.Timestamp], None]
+    Union[pd.DatetimeIndex, pd.RangeIndex, tuple[int, int], tuple[pd.Timestamp, pd.Timestamp], None]
         The longest time_index that can be used for historical forecasting, either as a range or a tuple.
 
     Examples
@@ -1042,3 +1179,188 @@ def _process_predict_start_points_bounds(
     bounds[:, 1] -= steps_too_long
     cum_lengths = np.cumsum(np.diff(bounds) // stride + 1)
     return bounds, cum_lengths
+
+
+def _convert_data_transformers(
+    data_transformers: Optional[dict[str, Union[BaseDataTransformer, Pipeline]]],
+    copy: bool,
+) -> dict[str, Pipeline]:
+    if data_transformers is None:
+        return dict()
+    else:
+        return {
+            key_: val_
+            if isinstance(val_, Pipeline)
+            else Pipeline(transformers=[val_], copy=copy)
+            for key_, val_ in data_transformers.items()
+        }
+
+
+def _apply_data_transformers(
+    series: Union[TimeSeries, list[TimeSeries]],
+    past_covariates: Optional[Union[TimeSeries, list[TimeSeries]]],
+    future_covariates: Optional[Union[TimeSeries, list[TimeSeries]]],
+    data_transformers: dict[str, Pipeline],
+    max_future_cov_lag: int,
+    fit_transformers: bool,
+) -> tuple[
+    Union[TimeSeries, list[TimeSeries]],
+    Union[TimeSeries, list[TimeSeries]],
+    Union[TimeSeries, list[TimeSeries]],
+]:
+    """Transform each series using the corresponding Pipeline.
+
+    If the Pipeline is fittable and `fit_transformers=True`, the series are sliced to correspond
+    to the information available at model training time
+    """
+    # `global_fit`` is not supported, requires too complex time indexes manipulation across series (slice and align)
+    if fit_transformers and any(
+        not (isinstance(ts, TimeSeries) or ts is None)
+        for ts in [series, past_covariates, future_covariates]
+    ):
+        raise_log(
+            ValueError(
+                "Fitting the data transformers on multiple series is not supported, either provide trained "
+                "`data_transformers` or a single series (including for the covariates).",
+                logger,
+            )
+        )
+    transformed_ts = []
+    for ts_type, ts in zip(
+        ["series", "past_covariates", "future_covariates"],
+        [series, past_covariates, future_covariates],
+    ):
+        if ts is None or data_transformers.get(ts_type) is None:
+            transformed_ts.append(ts)
+        else:
+            if fit_transformers and data_transformers[ts_type].fittable:
+                # must slice the ts to distinguish accessible information from future information
+                if ts_type == "past_covariates":
+                    # known information is aligned with the target series
+                    tmp_ts = ts.drop_after(series.end_time())
+                elif ts_type == "future_covariates":
+                    # known information goes up to the first forecasts iteration (in case of autoregression)
+                    tmp_ts = ts.drop_after(
+                        series.end_time() + max(0, max_future_cov_lag + 1) * series.freq
+                    )
+                else:
+                    # nothing to do, the target series is already sliced appropriately
+                    tmp_ts = ts
+                data_transformers[ts_type].fit(tmp_ts)
+            # transforming the series
+            transformed_ts.append(data_transformers[ts_type].transform(ts))
+    return tuple(transformed_ts)
+
+
+def _apply_inverse_data_transformers(
+    series: Union[TimeSeries, Sequence[TimeSeries]],
+    forecasts: Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]],
+    data_transformers: dict[str, Pipeline],
+    series_idx: Optional[int] = None,
+) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
+    """
+    Apply the inverse transform to the forecasts when defined.
+
+    `series_idx` is used to retrieve the appropriate transformer when the data transformer was
+    fitted with several series and global_fit=False.
+    """
+    if "series" in data_transformers and data_transformers["series"].invertible:
+        called_with_single_series = get_series_seq_type(series) == SeriesType.SINGLE
+        if called_with_single_series:
+            forecasts = [forecasts]
+        forecasts = data_transformers["series"].inverse_transform(
+            forecasts, series_idx=series_idx
+        )
+        return forecasts[0] if called_with_single_series else forecasts
+    else:
+        return forecasts
+
+
+def _process_historical_forecast_for_backtest(
+    series: Union[TimeSeries, Sequence[TimeSeries]],
+    historical_forecasts: Union[
+        TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]
+    ],
+    last_points_only: bool,
+):
+    """Checks that the `historical_forecasts` have the correct format based on the input `series` and
+    `last_points_only`. If all checks have passed, it converts `series` and `historical_forecasts` format into a
+    multiple series case with `last_points_only=False`.
+    """
+    # remember input series type
+    series_seq_type = get_series_seq_type(series)
+    series = series2seq(series)
+
+    # check that `historical_forecasts` have correct type
+    expected_seq_type = None
+    forecast_seq_type = get_series_seq_type(historical_forecasts)
+    if last_points_only and not series_seq_type == forecast_seq_type:
+        # lpo=True -> fc sequence type must be the same
+        expected_seq_type = series_seq_type
+    elif not last_points_only and forecast_seq_type != series_seq_type + 1:
+        # lpo=False -> fc sequence type must be one order higher
+        expected_seq_type = series_seq_type + 1
+
+    if expected_seq_type is not None:
+        raise_log(
+            ValueError(
+                f"Expected `historical_forecasts` of type {expected_seq_type} "
+                f"with `last_points_only={last_points_only}` and `series` of type "
+                f"{series_seq_type}. However, received `historical_forecasts` of type "
+                f"{forecast_seq_type}. Make sure to pass the same `last_points_only` "
+                f"value that was used to generate the historical forecasts."
+            ),
+            logger=logger,
+        )
+
+    # we must wrap each fc in a list if `last_points_only=True`
+    nested = last_points_only and forecast_seq_type == SeriesType.SEQ
+    historical_forecasts = series2seq(
+        historical_forecasts, seq_type_out=SeriesType.SEQ_SEQ, nested=nested
+    )
+
+    # check that the number of series-specific forecasts corresponds to the
+    # number of series in `series`
+    if len(series) != len(historical_forecasts):
+        error_msg = (
+            f"Mismatch between the number of series-specific `historical_forecasts` "
+            f"(n={len(historical_forecasts)}) and the number of  `TimeSeries` in `series` "
+            f"(n={len(series)}). For `last_points_only={last_points_only}`, expected "
+        )
+        expected_seq_type = series_seq_type if last_points_only else series_seq_type + 1
+        if expected_seq_type == SeriesType.SINGLE:
+            error_msg += f"a single `historical_forecasts` of type {expected_seq_type}."
+        else:
+            error_msg += f"`historical_forecasts` of type {expected_seq_type} with length n={len(series)}."
+        raise_log(
+            ValueError(error_msg),
+            logger=logger,
+        )
+    return series, historical_forecasts
+
+
+def _extend_series_for_overlap_end(
+    series: Sequence[TimeSeries],
+    historical_forecasts: Sequence[Sequence[TimeSeries]],
+):
+    """Extends each target `series` to the end of the last historical forecast for that series.
+    Fills the values all missing dates with `np.nan`.
+
+    Assumes the input meets the multiple `series` case with `last_points_only=False` (e.g. the output of
+    `darts.utils.historical_forecasts.utils_process_historical_forecast_for_backtest()`).
+    """
+    series_extended = []
+    append_vals = [np.nan] * series[0].n_components
+    for series_, hfcs_ in zip(series, historical_forecasts):
+        # find number of missing target time steps based on the last forecast
+        missing_steps = n_steps_between(
+            hfcs_[-1].end_time(), series[0].end_time(), freq=series[0].freq
+        )
+        # extend the target if it is too short
+        if missing_steps > 0:
+            series_extended.append(
+                series_.append_values(np.array([append_vals] * missing_steps))
+            )
+        else:
+            series_extended.append(series_)
+    return series_extended

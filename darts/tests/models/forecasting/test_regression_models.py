@@ -1,9 +1,9 @@
-import copy
 import functools
 import importlib
 import inspect
-import itertools
 import math
+from copy import deepcopy
+from itertools import product
 from unittest.mock import patch
 
 import numpy as np
@@ -438,7 +438,7 @@ class TestRegressionModels:
 
         return series, past_covariates, future_covariates
 
-    @pytest.mark.parametrize("config", itertools.product(models, [True, False]))
+    @pytest.mark.parametrize("config", product(models, [True, False]))
     def test_model_construction(self, config):
         model, mode = config
         # TESTING SINGLE INT
@@ -1000,38 +1000,36 @@ class TestRegressionModels:
             rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
             assert rmses[1] < rmses[0]
 
-    @pytest.mark.parametrize("config", itertools.product(models, [True, False]))
+    @pytest.mark.parametrize("config", product(models, [True, False]))
     def test_models_runnability(self, config):
         model, mode = config
         train_y, test_y = self.sine_univariate1.split_before(0.7)
         # testing past covariates
+        model_instance = model(lags=4, lags_past_covariates=None, multi_models=mode)
         with pytest.raises(ValueError):
             # testing lags_past_covariates None but past_covariates during training
-            model_instance = model(lags=4, lags_past_covariates=None, multi_models=mode)
             model_instance.fit(
                 series=self.sine_univariate1,
                 past_covariates=self.sine_multivariate1,
             )
 
+        model_instance = model(lags=4, lags_past_covariates=3, multi_models=mode)
         with pytest.raises(ValueError):
             # testing lags_past_covariates but no past_covariates during fit
-            model_instance = model(lags=4, lags_past_covariates=3, multi_models=mode)
             model_instance.fit(series=self.sine_univariate1)
 
         # testing future_covariates
+        model_instance = model(lags=4, lags_future_covariates=None, multi_models=mode)
         with pytest.raises(ValueError):
             # testing lags_future_covariates None but future_covariates during training
-            model_instance = model(
-                lags=4, lags_future_covariates=None, multi_models=mode
-            )
             model_instance.fit(
                 series=self.sine_univariate1,
                 future_covariates=self.sine_multivariate1,
             )
 
+        model_instance = model(lags=4, lags_future_covariates=(0, 3), multi_models=mode)
         with pytest.raises(ValueError):
             # testing lags_covariate but no covariate during fit
-            model_instance = model(lags=4, lags_future_covariates=3, multi_models=mode)
             model_instance.fit(series=self.sine_univariate1)
 
         # testing input_dim
@@ -1056,9 +1054,7 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            models, [True, False], [sine_univariate1, sine_multivariate1]
-        ),
+        product(models, [True, False], [sine_univariate1, sine_multivariate1]),
     )
     def test_fit(self, config):
         # test fitting both on univariate and multivariate timeseries
@@ -1166,7 +1162,7 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(zip(models, range(len(models))), [True, False], [1, 5]),
+        product(zip(models, range(len(models))), [True, False], [1, 5]),
     )
     def test_models_accuracy_univariate(self, config):
         (model, idx), mode, ocl = config
@@ -1184,7 +1180,7 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(zip(models, range(len(models))), [True, False], [1, 5]),
+        product(zip(models, range(len(models))), [True, False], [1, 5]),
     )
     def test_models_accuracy_multivariate(self, config):
         (model, idx), mode, ocl = config
@@ -1202,7 +1198,7 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(zip(models, range(len(models))), [True, False], [1, 5]),
+        product(zip(models, range(len(models))), [True, False], [1, 5]),
     )
     def test_models_accuracy_multiseries_multivariate(self, config):
         (model, idx), mode, ocl = config
@@ -1368,9 +1364,7 @@ class TestRegressionModels:
     if cb_available:
         model_configs += [(CatBoostModel, cb_test_params)]
 
-    @pytest.mark.parametrize(
-        "config", itertools.product(model_configs, [1, 2], [True, False])
-    )
+    @pytest.mark.parametrize("config", product(model_configs, [1, 2], [True, False]))
     def test_multioutput_validation(self, config):
         """Check that models not supporting multi-output are properly wrapped when ocl>1"""
         (model_cls, model_kwargs), ocl, multi_models = config
@@ -1633,7 +1627,7 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        product(
             [
                 (LinearRegressionModel, {}),
                 (RandomForest, {"bootstrap": False}),
@@ -1687,7 +1681,7 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        product(
             [
                 (LinearRegressionModel, {}),
                 (RandomForest, {"bootstrap": False}),
@@ -1800,7 +1794,7 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        product(
             [True, False],
             [
                 (1, 0, 13),
@@ -1878,7 +1872,7 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        product(
             [
                 (
                     XGBModel,
@@ -2092,7 +2086,7 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        product(
             [
                 ({"lags": [-3, -2, -1]}, {"lags": {"gaussian": 3}}),
                 ({"lags": 3}, {"lags": {"gaussian": 3, "sine": 3}}),
@@ -2273,7 +2267,7 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        product(
             [
                 {"lags": {"gaussian": [-1, -3], "sine": [-2, -4, -6]}},
                 {"lags_past_covariates": {"default_lags": 2}},
@@ -2380,7 +2374,7 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        product(
             [
                 {"lags": [-1, -3]},
                 {"lags_past_covariates": 2},
@@ -2436,7 +2430,7 @@ class TestRegressionModels:
             output_chunk_length=ocl_shifted,
         )
         # adjusting the future lags should give identical models to non-shifted
-        list_lags_adj = copy.deepcopy(list_lags)
+        list_lags_adj = deepcopy(list_lags)
         if "lags_future_covariates" in list_lags_adj:
             list_lags_adj["lags_future_covariates"] = [
                 lag_ - output_chunk_shift
@@ -2519,7 +2513,7 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        product(
             [
                 {"lags": [-1, -3]},
                 {"lags_past_covariates": 2},
@@ -2712,7 +2706,7 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        product(
             [
                 (RegressionModel, {}),
                 (LinearRegressionModel, {}),
@@ -2851,7 +2845,7 @@ class TestRegressionModels:
         ):
             covariates = covariates_examples[ex]
             # don't pass covariates, let them be generated by encoders. Test single target series input
-            model_copy = copy.deepcopy(model)
+            model_copy = deepcopy(model)
             model_copy.fit(ts[0])
             assert model_copy.encoders.encoding_available
             self.helper_test_encoders_settings(model_copy, ex)
@@ -2878,7 +2872,7 @@ class TestRegressionModels:
             _ = model.predict(n=3, series=ts, **covariates)
             _ = model.predict(n=8, series=ts, **covariates)
 
-    @pytest.mark.parametrize("config", itertools.product([True, False], [True, False]))
+    @pytest.mark.parametrize("config", product([True, False], [True, False]))
     def test_encoders_from_covariates_input(self, config):
         multi_models, extreme_lags = config
         series = tg.linear_timeseries(length=10, freq="MS")
@@ -3486,9 +3480,7 @@ class TestProbabilisticRegressionModels:
     constant_noisy_multivar_ts = constant_noisy_ts.stack(constant_noisy_ts)
     num_samples = 5
 
-    @pytest.mark.parametrize(
-        "config", itertools.product(models_cls_kwargs_errs, [True, False])
-    )
+    @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
     def test_fit_predict_determinism(self, config):
         (model_cls, model_kwargs, _), mode = config
         # whether the first predictions of two models initiated with the same random state are the same
@@ -3507,9 +3499,7 @@ class TestProbabilisticRegressionModels:
         pred3 = model.predict(n=10, num_samples=2).values()
         assert (pred2 != pred3).any()
 
-    @pytest.mark.parametrize(
-        "config", itertools.product(models_cls_kwargs_errs, [True, False])
-    )
+    @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
     def test_probabilistic_forecast_accuracy_univariate(self, config):
         (model_cls, model_kwargs, err), mode = config
         model_kwargs["multi_models"] = mode
@@ -3521,9 +3511,7 @@ class TestProbabilisticRegressionModels:
             self.constant_noisy_ts,
         )
 
-    @pytest.mark.parametrize(
-        "config", itertools.product(models_cls_kwargs_errs, [True, False])
-    )
+    @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
     def test_probabilistic_forecast_accuracy_multivariate(self, config):
         (model_cls, model_kwargs, err), mode = config
         model_kwargs["multi_models"] = mode

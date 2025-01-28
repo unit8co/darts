@@ -22,6 +22,12 @@ def metric_residuals(y_true, y_pred, **kwargs):
     return np.mean(y_true - y_pred)
 
 
+def metric_wmape(y_true, y_pred, **kwargs):
+    y_true = y_true[:, 0]
+    y_pred = y_pred[:, 0]
+    return 100.0 * np.sum(np.abs(y_true - y_pred)) / np.sum(np.abs(y_true))
+
+
 def metric_smape(y_true, y_pred, **kwargs):
     y_true = y_true[:, 0]
     y_pred = y_pred[:, 0]
@@ -76,6 +82,53 @@ def metric_iw(y_true, y_pred, q_interval=None, **kwargs):
     y_pred_lo = np.quantile(y_pred, q_lo, axis=2).transpose(1, 2, 0)
     y_pred_hi = np.quantile(y_pred, q_hi, axis=2).transpose(1, 2, 0)
     res = y_pred_hi - y_pred_lo
+    return res.reshape(len(y_pred), -1)
+
+
+def metric_iws(y_true, y_pred, q_interval=None, **kwargs):
+    # this tests assumes `y_pred` are stochastic values
+    if isinstance(q_interval, tuple):
+        q_interval = [q_interval]
+    q_interval = np.array(q_interval)
+    q_lo = q_interval[:, 0]
+    q_hi = q_interval[:, 1]
+    y_pred_lo = np.quantile(y_pred, q_lo, axis=2).transpose(1, 2, 0)
+    y_pred_hi = np.quantile(y_pred, q_hi, axis=2).transpose(1, 2, 0)
+    interval_width = y_pred_hi - y_pred_lo
+    res = np.where(
+        y_true < y_pred_lo,
+        interval_width + 1 / q_lo * (y_pred_lo - y_true),
+        interval_width,
+    )
+    res = np.where(
+        y_true > y_pred_hi, interval_width + 1 / (1 - q_hi) * (y_true - y_pred_hi), res
+    )
+    return res.reshape(len(y_pred), -1)
+
+
+def metric_ic(y_true, y_pred, q_interval=None, **kwargs):
+    # this tests assumes `y_pred` are stochastic values
+    if isinstance(q_interval, tuple):
+        q_interval = [q_interval]
+    q_interval = np.array(q_interval)
+    q_lo = q_interval[:, 0]
+    q_hi = q_interval[:, 1]
+    y_pred_lo = np.quantile(y_pred, q_lo, axis=2).transpose(1, 2, 0)
+    y_pred_hi = np.quantile(y_pred, q_hi, axis=2).transpose(1, 2, 0)
+    res = np.where((y_pred_lo <= y_true) & (y_true <= y_pred_hi), 1, 0)
+    return res.reshape(len(y_pred), -1)
+
+
+def metric_incs_qr(y_true, y_pred, q_interval=None, **kwargs):
+    # this tests assumes `y_pred` are stochastic values
+    if isinstance(q_interval, tuple):
+        q_interval = [q_interval]
+    q_interval = np.array(q_interval)
+    q_lo = q_interval[:, 0]
+    q_hi = q_interval[:, 1]
+    y_pred_lo = np.quantile(y_pred, q_lo, axis=2).transpose(1, 2, 0)
+    y_pred_hi = np.quantile(y_pred, q_hi, axis=2).transpose(1, 2, 0)
+    res = np.maximum(y_pred_lo - y_true, y_true - y_pred_hi)
     return res.reshape(len(y_pred), -1)
 
 
@@ -174,6 +227,7 @@ class TestMetrics:
             (metrics.msse, False, {}),
             (metrics.rmsse, False, {}),
             (metrics.mape, False, {}),
+            (metrics.wmape, False, {}),
             (metrics.smape, False, {}),
             (metrics.ope, False, {}),
             (metrics.marre, False, {}),
@@ -766,6 +820,7 @@ class TestMetrics:
                 (metrics.msse, False),
                 (metrics.rmsse, False),
                 (metrics.mape, False),
+                (metrics.wmape, False),
                 (metrics.smape, False),
                 (metrics.ope, False),
                 (metrics.marre, False),
@@ -868,6 +923,7 @@ class TestMetrics:
             (metrics.msse, 0, False, {}),
             (metrics.rmsse, 0, False, {}),
             (metrics.mape, 0, False, {}),
+            (metrics.wmape, 0, False, {}),
             (metrics.smape, 0, False, {}),
             (metrics.ope, 0, False, {}),
             (metrics.marre, 0, False, {}),
@@ -1315,6 +1371,7 @@ class TestMetrics:
             (metrics.rmse, "max", {}),
             (metrics.rmsle, "max", {}),
             (metrics.mape, "max", {}),
+            (metrics.wmape, "max", {}),
             (metrics.smape, "max", {}),
             (metrics.ope, "max", {}),
             (metrics.marre, "max", {}),
@@ -1403,6 +1460,7 @@ class TestMetrics:
             (metrics.rmse, sklearn.metrics.root_mean_squared_error, {}, {}),
             (metrics.rmsle, metric_rmsle, {}, {}),
             (metrics.mape, sklearn_mape, {}, {}),
+            (metrics.wmape, metric_wmape, {}, {}),
             (metrics.smape, metric_smape, {}, {}),
             (metrics.ope, metric_ope, {}, {}),
             (metrics.marre, metric_marre, {}, {}),
@@ -1608,6 +1666,7 @@ class TestMetrics:
                     metrics.msse,
                     metrics.rmsse,
                     metrics.mape,
+                    metrics.wmape,
                     metrics.smape,
                     metrics.ope,
                     metrics.marre,
@@ -1853,6 +1912,9 @@ class TestMetrics:
         [
             # only time dependent quantile interval metrics
             (metrics.iw, metric_iw),
+            (metrics.iws, metric_iws),
+            (metrics.ic, metric_ic),
+            (metrics.incs_qr, metric_incs_qr),
         ],
     )
     def test_metric_quantile_interval_accuracy(self, config):
@@ -1899,6 +1961,12 @@ class TestMetrics:
                     # time dependent but with time reduction
                     metrics.iw,
                     metrics.miw,
+                    metrics.iws,
+                    metrics.miws,
+                    metrics.ic,
+                    metrics.mic,
+                    metrics.incs_qr,
+                    metrics.mincs_qr,
                 ],
                 [True, False],  # univariate series
                 [True, False],  # single series

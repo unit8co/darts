@@ -1,9 +1,9 @@
 """
-StatsForecastAutoTheta
+StatsForecastAutoTBATS
 -----------
 """
 
-from statsforecast.models import AutoTheta as SFAutoTheta
+from statsforecast.models import AutoTBATS as SFAutoTBATS
 
 from darts import TimeSeries
 from darts.models.components.statsforecast_utils import (
@@ -14,47 +14,48 @@ from darts.models.components.statsforecast_utils import (
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
 
 
-class StatsForecastAutoTheta(LocalForecastingModel):
-    def __init__(self, *autotheta_args, **autotheta_kwargs):
-        """Auto-Theta based on `Statsforecasts package
+class StatsForecastAutoTBATS(LocalForecastingModel):
+    def __init__(self, *autoTBATS_args, **autoTBATS_kwargs):
+        """Auto-TBATS based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
 
-        Automatically selects the best Theta (Standard Theta Model (‘STM’), Optimized Theta Model (‘OTM’),
-        Dynamic Standard Theta Model (‘DSTM’), Dynamic Optimized Theta Model (‘DOTM’)) model using mse.
-        <https://www.sciencedirect.com/science/article/pii/S0169207016300243>
+        Automatically selects the best TBATS model from all feasible combinations of the parameters `use_boxcox`,
+        `use_trend`, `use_damped_trend`, and `use_arma_errors`. Selection is made using the AIC.
+        Default value for `use_arma_errors` is True since this enables the evaluation of models with
+        and without ARMA errors.
+        <https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=f3de25596ab60ef0e886366826bf58a02b35a44f>
+        <https://doi.org/10.4225/03/589299681de3d>
 
-        It is probabilistic, whereas :class:`FourTheta` is not.
-
-        We refer to the `statsforecast AutoTheta documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotheta>`_
+        We refer to the `statsforecast AutoTBATS documentation
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotbats>`_
         for the exhaustive documentation of the arguments.
 
         Parameters
         ----------
-        autotheta_args
-            Positional arguments for ``statsforecasts.models.AutoTheta``.
-        autotheta_kwargs
-            Keyword arguments for ``statsforecasts.models.AutoTheta``.
+        autoTBATS_args
+            Positional arguments for ``statsforecasts.models.AutoTBATS``.
+        autoTBATS_kwargs
+            Keyword arguments for ``statsforecasts.models.AutoTBATS``.
 
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.models import StatsForecastAutoTheta
+        >>> from darts.models import StatsForecastAutoTBATS
         >>> series = AirPassengersDataset().load()
-        >>> # define StatsForecastAutoTheta parameters
-        >>> model = StatsForecastAutoTheta(season_length=12)
+        >>> # define StatsForecastAutoTBATS parameters
+        >>> model = StatsForecastAutoTBATS(season_length=12)
         >>> model.fit(series)
         >>> pred = model.predict(6)
         >>> pred.values()
-        array([[442.94078295],
-               [432.22936898],
-               [495.30609727],
-               [482.30625563],
-               [487.49312172],
-               [555.57902659]])
+        array([[450.79653684],
+               [472.09265790],
+               [497.76948306],
+               [510.74927369],
+               [520.92224557],
+               [570.33881522]])
         """
         super().__init__()
-        self.model = SFAutoTheta(*autotheta_args, **autotheta_kwargs)
+        self.model = SFAutoTBATS(*autoTBATS_args, **autoTBATS_kwargs)
 
     def fit(self, series: TimeSeries):
         super().fit(series)

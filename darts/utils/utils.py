@@ -7,12 +7,13 @@ from collections.abc import Iterator, Sequence
 from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
-from typing import Callable, Optional, TypeVar, Union
+from typing import Any, Callable, Optional, TypeVar, Union
 
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from pandas._libs.tslibs.offsets import BusinessMixin
+from sklearn.utils import check_random_state
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
 
@@ -24,6 +25,34 @@ except ModuleNotFoundError:
     get_ipython = None
 
 logger = get_logger(__name__)
+
+MAX_TORCH_SEED_VALUE = (1 << 31) - 1  # to accommodate 32-bit architectures
+MAX_NUMPY_SEED_VALUE = (1 << 31) - 1
+
+SUPPORTED_RESAMPLE_METHODS = [
+    "all",
+    "any",
+    "asfreq",
+    "backfill",
+    "bfill",
+    "count",
+    "ffill",
+    "first",
+    "interpolate",
+    "last",
+    "max",
+    "mean",
+    "median",
+    "min",
+    "nearest",
+    "pad",
+    "prod",
+    "quantile",
+    "reduce",
+    "std",
+    "sum",
+    "var",
+]
 
 
 # Enums
@@ -263,6 +292,23 @@ def _parallel_apply(
         delayed(fn)(*sample, *fn_args, **fn_kwargs) for sample in iterator
     )
     return returned_data
+
+
+def _is_method(func: Callable[..., Any]) -> bool:
+    """Check if the specified function is a method.
+
+    Parameters
+    ----------
+    func
+        the function to inspect.
+
+    Returns
+    -------
+    bool
+        true if `func` is a method, false otherwise.
+    """
+    spec = signature(func)
+    return len(spec.parameters) > 0 and list(spec.parameters.keys())[0] == "self"
 
 
 def _check_quantiles(quantiles):
@@ -587,3 +633,114 @@ def expand_arr(arr: np.ndarray, ndim: int):
     if len(shape) != ndim:
         arr = arr.reshape(shape + tuple(1 for _ in range(ndim - len(shape))))
     return arr
+
+
+def sample_from_quantiles(
+    vals: np.ndarray,
+    quantiles: np.ndarray,
+    num_samples: int,
+):
+    """Generates `num_samples` samples from quantile predictions using linear interpolation. The generated samples
+    should have quantile values close to the quantile predictions. For the lowest and highest quantiles, the lowest
+    and highest quantile predictions are repeated.
+
+    Parameters
+    ----------
+    vals
+        A numpy array of quantile predictions/values. Either an array with two dimensions
+        (n times, n components * n quantiles), or with three dimensions (n times, n components, n quantiles).
+        In the two-dimensional case, the order is first by ascending column, then by ascending quantile value
+        `(comp_0_q_0, comp_0_q_1, ... comp_n_q_m)`
+    quantiles
+        A numpy array of quantiles.
+    num_samples
+        The number of samples to generate.
+    """
+    if not 2 <= vals.ndim <= 3:
+        raise_log(
+            ValueError(
+                "`vals` must have either two dimensions with `(n times, n components * n quantiles)` or three "
+                "dimensions with shape `(n times, n components, n quantiles)`"
+            )
+        )
+    n_time_steps = len(vals)
+    n_quantiles = len(quantiles)
+    if vals.ndim == 2:
+        if vals.shape[1] % n_quantiles > 0:
+            raise_log(
+                ValueError(
+                    "`vals` with two dimension must have shape `(n times, n components * n quantiles)`."
+                )
+            )
+        vals = vals.reshape((n_time_steps, -1, n_quantiles))
+    elif vals.ndim == 3 and vals.shape[2] != n_quantiles:
+        raise_log(
+            ValueError(
+                "`vals` with three dimension must have shape `(n times, n components, n quantiles)`."
+            )
+        )
+    n_columns = vals.shape[1]
+
+    # Generate uniform random samples
+    random_samples = np.random.uniform(0, 1, (n_time_steps, n_columns, num_samples))
+    # Find the indices of the quantiles just below and above the random samples
+    lower_indices = np.searchsorted(quantiles, random_samples, side="right") - 1
+    upper_indices = lower_indices + 1
+
+    # Handle edge cases
+    lower_indices = np.clip(lower_indices, 0, n_quantiles - 1)
+    upper_indices = np.clip(upper_indices, 0, n_quantiles - 1)
+
+    # Gather the corresponding quantile values and vals values
+    q_lower = quantiles[lower_indices]
+    q_upper = quantiles[upper_indices]
+    z_lower = np.take_along_axis(vals, lower_indices, axis=2)
+    z_upper = np.take_along_axis(vals, upper_indices, axis=2)
+
+    y = z_lower
+    # Linear interpolation
+    mask = q_lower != q_upper
+    y[mask] = z_lower[mask] + (z_upper[mask] - z_lower[mask]) * (
+        random_samples[mask] - q_lower[mask]
+    ) / (q_upper[mask] - q_lower[mask])
+    return y
+
+
+def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
+    """Decorator usable on any method within a class that will provide a random context.
+
+    The decorator will store a `_random_instance` property on the object in order to persist successive calls to the
+    RNG.
+
+    This is the equivalent to `darts.utils.torch.random_method` but for non-torch models.
+
+    Parameters
+    ----------
+    decorated
+        A method to be run in an isolated torch random context.
+    """
+    # check that @random_method has been applied to a method.
+    if not _is_method(decorated):
+        raise_log(ValueError("@random_method can only be used on methods."), logger)
+
+    @wraps(decorated)
+    def decorator(self, *args, **kwargs):
+        if "random_state" in kwargs.keys():
+            # get random state for first time from model constructor
+            self._random_instance = check_random_state(
+                kwargs["random_state"]
+            ).get_state()
+        elif not hasattr(self, "_random_instance"):
+            # get random state for first time from other method
+            self._random_instance = check_random_state(
+                np.random.randint(0, high=MAX_NUMPY_SEED_VALUE)
+            ).get_state()
+
+        # handle the randomness
+        np.random.set_state(self._random_instance)
+        result = decorated(self, *args, **kwargs)
+        # update the random state after the function call
+        self._random_instance = np.random.get_state()
+        return result
+
+    return decorator

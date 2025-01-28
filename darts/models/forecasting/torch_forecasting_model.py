@@ -14,9 +14,6 @@ This file contains several abstract classes:
       as well as past and future values of some future covariates.
     * SplitCovariatesTorchModel(TorchForecastingModel) for torch models consuming past-observed as well as future
       values of some future covariates.
-
-    * TorchParametricProbabilisticForecastingModel(TorchForecastingModel) is the super-class of all probabilistic torch
-      forecasting models.
 """
 
 import copy
@@ -706,7 +703,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom ``trainer`` will
             override Darts' default trainer.
         verbose
-            Optionally, whether to print the progress. Ignored if there is a `ProgressBar` callback in
+            Whether to print the progress. Ignored if there is a `ProgressBar` callback in
             `pl_trainer_kwargs`.
         epochs
             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
@@ -932,7 +929,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, a custom PyTorch-Lightning Trainer object to perform prediction. Using a custom `trainer` will
             override Darts' default trainer.
         verbose
-            Optionally, whether to print the progress. Ignored if there is a `ProgressBar` callback in
+            Whether to print the progress. Ignored if there is a `ProgressBar` callback in
             `pl_trainer_kwargs`.
         epochs
             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
@@ -1237,7 +1234,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom ``trainer`` will
             override Darts' default trainer.
         verbose
-            Optionally, whether to print the progress. Ignored if there is a `ProgressBar` callback in
+            Whether to print the progress. Ignored if there is a `ProgressBar` callback in
             `pl_trainer_kwargs`.
         epochs
             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
@@ -1366,7 +1363,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         batch_size
             Size of batches during prediction. Defaults to the models' training ``batch_size`` value.
         verbose
-            Optionally, whether to print the progress. Ignored if there is a `ProgressBar` callback in
+            Whether to print the progress. Ignored if there is a `ProgressBar` callback in
             `pl_trainer_kwargs`.
         n_jobs
             The number of jobs to run in parallel. ``-1`` means using all processors. Defaults to ``1``.
@@ -1376,8 +1373,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             (and optionally future covariates) back into the model. If this parameter is not provided,
             it will be set ``output_chunk_length`` by default.
         num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
-            for deterministic models.
+            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instance for the
             inference/prediction dataset. For more information on `DataLoader`, check out `this link
@@ -1388,7 +1384,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, enable monte carlo dropout for predictions using neural network based models.
             This allows bayesian approximation by specifying an implicit prior over learned models.
         predict_likelihood_parameters
-            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
             Default: ``False``.
         show_warnings
@@ -1514,7 +1510,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         batch_size
             Size of batches during prediction. Defaults to the models ``batch_size`` value.
         verbose
-            Optionally, whether to print the progress. Ignored if there is a `ProgressBar` callback in
+            Whether to print the progress. Ignored if there is a `ProgressBar` callback in
             `pl_trainer_kwargs`.
         n_jobs
             The number of jobs to run in parallel. ``-1`` means using all processors. Defaults to ``1``.
@@ -1524,8 +1520,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             (and optionally future covariates) back into the model. If this parameter is not provided,
             it will be set ``output_chunk_length`` by default.
         num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
-            for deterministic models.
+            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instance for the
             inference/prediction dataset. For more information on `DataLoader`, check out `this link
@@ -1536,7 +1531,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, enable monte carlo dropout for predictions using neural network based models.
             This allows bayesian approximation by specifying an implicit prior over learned models.
         predict_likelihood_parameters
-            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
             Default: ``False``
 
