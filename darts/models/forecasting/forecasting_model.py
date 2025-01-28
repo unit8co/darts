@@ -2608,8 +2608,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _default_save_path(cls) -> str:
         return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')}"
 
+    def _clean(self) -> "ForecastingModel":
+        """Return a cleaned instance of the model."""
+        return self
+
     def save(
-        self, path: Optional[Union[str, os.PathLike, BinaryIO]] = None, **pkl_kwargs
+        self,
+        path: Optional[Union[str, os.PathLike, BinaryIO]] = None,
+        clean: bool = False,
+        **pkl_kwargs,
     ) -> None:
         """
         Saves the model under a given path or file handle.
@@ -2633,6 +2640,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Path or file handle under which to save the model at its current state. If no path is specified, the model
             is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
             E.g., ``"RegressionModel_2020-01-01_12_00_00.pkl"``.
+        clean
+            Whether to store a cleaned version of the model. This has no effect for local forecasting models.
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """
@@ -2641,13 +2650,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # default path
             path = self._default_save_path() + ".pkl"
 
+        model_to_save = self._clean() if clean else self
+
         if isinstance(path, (str, os.PathLike)):
             # save the whole object using pickle
             with open(path, "wb") as handle:
-                pickle.dump(obj=self, file=handle, **pkl_kwargs)
+                pickle.dump(obj=model_to_save, file=handle, **pkl_kwargs)
         elif isinstance(path, io.BufferedWriter):
             # save the whole object using pickle
-            pickle.dump(obj=self, file=path, **pkl_kwargs)
+            pickle.dump(obj=model_to_save, file=path, **pkl_kwargs)
         else:
             raise_log(
                 ValueError(
@@ -3058,6 +3069,16 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 "future values of your `past_covariates` (relative to the first predicted time step). "
                 "To hide this warning, set `show_warnings=False`."
             )
+
+    def _clean(self) -> "GlobalForecastingModel":
+        """Returns a cleaned instance of the model by removing the training series and covariates."""
+
+        # a shallow copy is enough since we are only interested in removing pointers to the training data
+        cleaned_model = copy.copy(self)
+        cleaned_model.training_series = None
+        cleaned_model.past_covariate_series = None
+        cleaned_model.future_covariate_series = None
+        return cleaned_model
 
     @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
