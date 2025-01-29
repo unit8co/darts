@@ -386,6 +386,14 @@ class EnsembleModel(GlobalForecastingModel):
             ]
         return predictions[0] if is_single_series else predictions
 
+    def _clean(self) -> "EnsembleModel":
+        """Cleans the model and sub-models."""
+        cleaned_model = super()._clean()
+        cleaned_model.forecasting_models = [
+            model._clean() for model in self.forecasting_models
+        ]
+        return cleaned_model
+
     def save(
         self,
         path: Optional[Union[str, os.PathLike, BinaryIO]] = None,
@@ -443,13 +451,38 @@ class EnsembleModel(GlobalForecastingModel):
                 m.save(path=path_tfm, clean=clean)
 
     @staticmethod
-    def load(path: Union[str, os.PathLike, BinaryIO]) -> "EnsembleModel":
+    def load(
+        path: Union[str, os.PathLike, BinaryIO],
+        pl_trainer_kwargs: Optional[dict] = None,
+        **kwargs,
+    ) -> "EnsembleModel":
+        """
+        Loads an ensemble model from a given path.
+
+        Parameters
+        ----------
+        path
+            Path from which to load the model.
+        pl_trainer_kwargs
+            Optionally, a set of kwargs to create the new PyTorch Lightning Trainers
+            used to handle the ``TorchForecastingModel``.
+            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
+            "devices", and "auto_select_gpus"``.
+            Check the `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_
+            for more information about the supported kwargs.
+        **kwargs
+            Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
+            For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
+            common/lightning_module.html#load-from-checkpoint>`_. This is only used for ``TorchForecastingModel``.
+        """
         model: EnsembleModel = GlobalForecastingModel.load(path)
 
         for i, m in enumerate(model.forecasting_models):
             if TORCH_AVAILABLE and issubclass(type(m), TorchForecastingModel):
                 path_tfm = f"{path}.{type(m).__name__}_{i}.pt"
-                model.forecasting_models[i] = TorchForecastingModel.load(path_tfm)
+                model.forecasting_models[i] = TorchForecastingModel.load(
+                    path_tfm, pl_trainer_kwargs=pl_trainer_kwargs, **kwargs
+                )
         return model
 
     @property
