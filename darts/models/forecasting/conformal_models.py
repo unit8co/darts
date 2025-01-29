@@ -1292,6 +1292,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
             cp_hfcs.append(cp_preds)
         return cp_hfcs
 
+    def _clean(self) -> "ConformalModel":
+        """Cleans the model and sub-model."""
+        cleaned_model = super()._clean()
+        cleaned_model.model = cleaned_model.model._clean()
+        return cleaned_model
+
     def save(
         self,
         path: Optional[Union[str, os.PathLike, BinaryIO]] = None,
@@ -1349,12 +1355,39 @@ class ConformalModel(GlobalForecastingModel, ABC):
             self.model.save(path=path_tfm, clean=clean)
 
     @staticmethod
-    def load(path: Union[str, os.PathLike, BinaryIO]) -> "ConformalModel":
+    def load(
+        path: Union[str, os.PathLike, BinaryIO],
+        pl_trainer_kwargs: Optional[dict] = None,
+        **kwargs,
+    ) -> "ConformalModel":
+        """
+        Loads an conformal model from a given path.
+
+        Parameters
+        ----------
+        path
+            Path from which to load the model.
+        pl_trainer_kwargs
+            Optionally, a set of kwargs to create the new PyTorch Lightning Trainers
+            used to handle the ``TorchForecastingModel``.
+            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
+            "devices", and "auto_select_gpus"``.
+            Check the `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_
+            for more information about the supported kwargs.
+        **kwargs
+            Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
+            For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
+            common/lightning_module.html#load-from-checkpoint>`_. This is only used for ``TorchForecastingModel``.
+        """
         model: ConformalModel = GlobalForecastingModel.load(path)
 
         if TORCH_AVAILABLE and issubclass(type(model.model), TorchForecastingModel):
             path_tfm = f"{path}.{type(model.model).__name__}.pt"
-            model.model = TorchForecastingModel.load(path_tfm)
+            model.model = TorchForecastingModel.load(
+                path_tfm,
+                pl_trainer_kwargs=pl_trainer_kwargs,
+                **kwargs,
+            )
         return model
 
     @abstractmethod
