@@ -209,6 +209,12 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             use_static_covariates=use_static_covariates,
         )
 
+    def _native_support_multioutput(self):
+        return (
+            super()._native_support_multioutput()
+            and not self.model.get_params()["loss_function"] == "RMSEWithUncertainty"
+        )
+
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -218,7 +224,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
-        # n_jobs_multioutput_wrapper: Optional[int] = None,
+        n_jobs_multioutput_wrapper: Optional[int] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         val_sample_weight: Optional[
             Union[TimeSeries, Sequence[TimeSeries], str]
@@ -313,7 +319,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             val_past_covariates=val_past_covariates,
             val_future_covariates=val_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
-            # n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+            n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
             sample_weight=sample_weight,
             val_sample_weight=val_sample_weight,
             verbose=verbose,
