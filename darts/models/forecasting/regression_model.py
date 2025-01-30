@@ -853,13 +853,14 @@ class RegressionModel(GlobalForecastingModel):
             "future": future_covariates[0].width if future_covariates else None,
         }
 
-        # if multi-output regression
+        # Check if multi-output regression is required
         require_multioutput = not series[0].is_univariate or (
             self.output_chunk_length > 1
             and self.multi_models
             and not isinstance(self.model, MultiOutputRegressor)
         )
 
+        # If multi-output required and model doesn't support it natively, wrap it in a MultiOutputRegressor
         if require_multioutput and (
             not self._native_support_multioutput() or sample_weight is not None
         ):
@@ -871,45 +872,6 @@ class RegressionModel(GlobalForecastingModel):
             }
             self.model = MultiOutputRegressor(self.model, **mor_kwargs)
 
-        # # if multi-output regression
-        # use_mor = False
-        # if not series[0].is_univariate or (
-        #     self.output_chunk_length > 1
-        #     and self.multi_models
-        #     and not isinstance(self.model, MultiOutputRegressor)
-        # ):
-        #     if sample_weight is not None:
-        #         # we have 2D sample (and time) weights, only supported in Darts
-        #         use_mor = True
-        #     elif not (
-        #         callable(getattr(self.model, "_get_tags", None))
-        #         and isinstance(self.model._get_tags(), dict)
-        #         and self.model._get_tags().get("multioutput")
-        #     ):
-        #         # model does not support multi-output regression natively
-        #         use_mor = True
-        #     elif (
-        #         self.model.__class__.__name__ == "CatBoostRegressor"
-        #         and self.model.get_params()["loss_function"] == "RMSEWithUncertainty"
-        #     ):
-        #         use_mor = True
-        #     elif (
-        #         self.model.__class__.__name__ == "XGBRegressor"
-        #         and self.likelihood is not None
-        #     ):
-        #         # since xgboost==2.1.0, likelihoods do not support native multi output regression
-        #         use_mor = True
-
-        # if use_mor:
-        #     val_set_name, val_weight_name = self.val_set_params
-        #     mor_kwargs = {
-        #         "eval_set_name": val_set_name,
-        #         "eval_weight_name": val_weight_name,
-        #         "n_jobs": n_jobs_multioutput_wrapper,
-        #     }
-        #     self.model = MultiOutputRegressor(self.model, **mor_kwargs)
-
-        # warn if n_jobs_multioutput_wrapper was provided but not used
         if (
             not isinstance(self.model, MultiOutputRegressor)
             and n_jobs_multioutput_wrapper is not None

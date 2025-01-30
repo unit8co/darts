@@ -7,7 +7,6 @@ CatBoost based regression model.
 This implementation comes with the ability to produce probabilistic forecasts.
 """
 
-import warnings
 from collections.abc import Sequence
 from typing import Optional, Union
 
@@ -17,6 +16,7 @@ from catboost import CatBoostRegressor, Pool
 from darts.logging import get_logger
 from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
 from darts.timeseries import TimeSeries
+from darts.utils.multioutput import MultiOutputRegressor
 
 logger = get_logger(__name__)
 
@@ -210,10 +210,8 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         )
 
     def _native_support_multioutput(self):
-        return (
-            super()._native_support_multioutput()
-            and not self.model.get_params()["loss_function"] == "RMSEWithUncertainty"
-        )
+        # CatBoostRegressor supports multioutput natively, but only with the "MultiRMSE" loss function
+        return self.kwargs["loss_function"] == "MultiRMSE"
 
     def fit(
         self,
@@ -292,7 +290,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
                     val_past_covariates=val_past_covariates,
                     val_future_covariates=val_future_covariates,
                     max_samples_per_ts=max_samples_per_ts,
-                    # n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+                    n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                     sample_weight=sample_weight,
                     val_sample_weight=val_sample_weight,
                     verbose=verbose,
@@ -302,14 +300,21 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             return self
 
         # If multioutput, and notprobabilistic, use MultiRMSE loss for CatBoost native multioutput support
-        if not series[0].is_univariate or (
+        require_multioutput = not series[0].is_univariate or (
             self.output_chunk_length > 1
             and self.multi_models
-            and self.likelihood is None
+            and not isinstance(self.model, MultiOutputRegressor)
+        )
+
+        if require_multioutput and (
+            self.kwargs.get("loss_function") is None
+            or self.kwargs["loss_function"] == "RMSE"
         ):
             self.kwargs["loss_function"] = "MultiRMSE"
             self.model = CatBoostRegressor(**self.kwargs)
-            warnings.warn("MultiRMSE loss function used for multioutput regression")
+            logger.warning(
+                "Changed loss function to 'MultiRMSE' for multioutput support"
+            )
 
         super().fit(
             series=series,
