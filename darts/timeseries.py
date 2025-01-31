@@ -46,9 +46,11 @@ from typing import Any, Callable, Literal, Optional, Union
 
 import matplotlib.axes
 import matplotlib.pyplot as plt
+import narwhals as nw
 import numpy as np
 import pandas as pd
 import xarray as xr
+from narwhals.typing import DataFrameT
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
@@ -735,6 +737,177 @@ class TimeSeries:
             series_df.values[:, :, np.newaxis],
             dims=(time_index.name,) + DIMS[-2:],
             coords={time_index.name: time_index, DIMS[1]: series_df.columns},
+            attrs={STATIC_COV_TAG: static_covariates, HIERARCHY_TAG: hierarchy},
+        )
+
+        return cls.from_xarray(
+            xa=xa,
+            fill_missing_dates=fill_missing_dates,
+            freq=freq,
+            fillna_value=fillna_value,
+        )
+
+    @classmethod
+    def from_narwhals_dataframe(
+        cls,
+        df: DataFrameT,
+        time_col: Optional[str] = None,
+        value_cols: Optional[Union[list[str], str]] = None,
+        fill_missing_dates: Optional[bool] = False,
+        freq: Optional[Union[str, int]] = None,
+        fillna_value: Optional[float] = None,
+        static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        hierarchy: Optional[dict] = None,
+    ) -> Self:
+        """
+        Build a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
+        One column (or the DataFrame index) has to represent the time,
+        and a list of columns `value_cols` has to represent the values for this time series.
+
+        Parameters
+        ----------
+        df
+            The DataFrame
+        time_col
+            The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
+            timestamps) or a RangeIndex (if it contains integers).
+            If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
+            either a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index that can be converted to a
+            RangeIndex. It is better if the index has no holes; alternatively setting `fill_missing_dates` can in some
+            cases solve these issues (filling holes with NaN, or with the provided `fillna_value` numeric value, if
+            any).
+        value_cols
+            A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
+            `None`, the whole DataFrame will be used.
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
+            with NaN values. This requires either a provided `freq` or the possibility to infer the frequency from the
+            provided timestamps. See :meth:`_fill_missing_dates() <TimeSeries._fill_missing_dates>` for more info.
+        freq
+            Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
+            to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+            If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            supported frequencies).
+            If an integer, represents the step size of the pandas Index or pandas RangeIndex.
+        fillna_value
+            Optionally, a numeric value to fill missing values (NaNs) with.
+        static_covariates
+            Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a pandas
+            DataFrame. If a Series, the index represents the static variables. The covariates are globally 'applied'
+            to all components of the TimeSeries. If a DataFrame, the columns represent the static variables and the
+            rows represent the components of the uni/multivariate TimeSeries. If a single-row DataFrame, the covariates
+            are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
+            rows must match the number of components of the TimeSeries (in this case, the number of columns in
+            ``value_cols``). This adds control for component-specific static covariates.
+        hierarchy
+            Optionally, a dictionary describing the grouping(s) of the time series. The keys are component names, and
+            for a given component name `c`, the value is a list of component names that `c` "belongs" to. For instance,
+            if there is a `total` component, split both in two divisions `d1` and `d2` and in two regions `r1` and `r2`,
+            and four products `d1r1` (in division `d1` and region `r1`), `d2r1`, `d1r2` and `d2r2`, the hierarchy would
+            be encoded as follows.
+
+            .. highlight:: python
+            .. code-block:: python
+
+                hierarchy={
+                    "d1r1": ["d1", "r1"],
+                    "d1r2": ["d1", "r2"],
+                    "d2r1": ["d2", "r1"],
+                    "d2r2": ["d2", "r2"],
+                    "d1": ["total"],
+                    "d2": ["total"],
+                    "r1": ["total"],
+                    "r2": ["total"]
+                }
+            ..
+            The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
+            different levels are consistent), see `hierarchical reconciliation
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
+
+        Returns
+        -------
+        TimeSeries
+            A univariate or multivariate deterministic TimeSeries constructed from the inputs.
+        """
+        df = nw.from_native(df)
+
+        # get values
+        if value_cols is None:
+            if time_col is not None:
+                series_df = df.drop(time_col)
+            else:
+                series_df = df
+        else:
+            if isinstance(value_cols, str):
+                value_cols = [value_cols]
+            series_df = df[value_cols]
+
+        # get time index
+        if time_col:
+            if time_col not in df.columns:
+                raise_log(AttributeError(f"time_col='{time_col}' is not present."))
+            time_col_vals = df[time_col]
+
+            if time_col_vals.dtype == nw.String:
+                # Try to convert to integers if needed
+                try:
+                    time_col_vals = time_col_vals.cast(nw.Int64)
+                except Exception:
+                    pass
+
+            if time_col_vals.dtype == nw.Int64 or time_col_vals.dtype == np.integer:
+                # We have to check all integers appear only once to have a valid index
+                if time_col_vals.is_duplicated().any():
+                    raise_log(
+                        ValueError(
+                            "The provided integer time index column contains duplicate values."
+                        )
+                    )
+
+                # Temporarily use an integer Index to sort the values, and replace by a
+                # RangeIndex in `TimeSeries.from_xarray()`
+                time_index = time_col_vals.to_list()
+
+            elif time_col_vals.dtype == nw.String:
+                # The integer conversion failed; try datetimes
+                try:
+                    time_index = nw.Datetime(time_col_vals)
+                except Exception:
+                    raise_log(
+                        AttributeError(
+                            "'time_col' is of 'Utf8' dtype but doesn't contain valid timestamps"
+                        )
+                    )
+            elif time_col_vals.dtype == nw.Datetime:
+                time_index = time_col_vals.to_list()
+            else:
+                raise_log(
+                    AttributeError(
+                        "Invalid type of `time_col`: it needs to be of either 'Utf8', 'Datetime' or 'Int64' dtype."
+                    )
+                )
+        else:
+            time_col_vals = nw.maybe_get_index(df)
+            if time_col_vals is None:
+                raise_log(ValueError("No time column or index found in the DataFrame."))
+            # if we are here, the dataframe was pandas
+            raise_if_not(
+                isinstance(time_col_vals, VALID_INDEX_TYPES)
+                or np.issubdtype(time_col_vals.dtype, np.integer),
+                "If time_col is not specified, the DataFrame must be indexed either with "
+                "a DatetimeIndex, a RangeIndex, or an integer Index that can be converted into a RangeIndex",
+                logger,
+            )
+            time_index = time_col_vals.to_list()
+
+        xa = xr.DataArray(
+            series_df.to_numpy()[:, :, np.newaxis],
+            dims=(time_col if time_col else DIMS[0],) + DIMS[-2:],
+            coords={
+                time_col if time_col else DIMS[0]: time_index,
+                DIMS[1]: series_df.columns,
+            },
             attrs={STATIC_COV_TAG: static_covariates, HIERARCHY_TAG: hierarchy},
         )
 
