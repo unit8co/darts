@@ -1773,7 +1773,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
         with open(path, "rb") as fin:
-            model: TorchForecastingModel = torch.load(fin)
+            model: TorchForecastingModel = torch.load(fin, weights_only=False)
 
         # if a checkpoint was saved, we also load the PyTorch LightningModule from checkpoint
         path_ptl_ckpt = path + ".ckpt"
@@ -1887,7 +1887,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             logger,
         )
         model: TorchForecastingModel = torch.load(
-            base_model_path, map_location=kwargs.get("map_location")
+            base_model_path, weights_only=False, map_location=kwargs.get("map_location")
         )
 
         # load PyTorch LightningModule from checkpoint
@@ -2021,7 +2021,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             tfm_save_file_name = file_name[:-5]
 
         ckpt_path = os.path.join(checkpoint_dir, file_name)
-        ckpt = torch.load(ckpt_path, **kwargs)
+        ckpt = torch.load(ckpt_path, weights_only=False, **kwargs)
 
         # indicate to the user than checkpoints generated with darts <= 0.23.1 are not supported
         raise_if_not(
@@ -2056,7 +2056,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # updating model attributes before self._init_model() which create new tfm ckpt
             with open(tfm_save_file_path, "rb") as tfm_save_file:
                 tfm_save: TorchForecastingModel = torch.load(
-                    tfm_save_file, map_location=kwargs.get("map_location", None)
+                    tfm_save_file,
+                    weights_only=False,
+                    map_location=kwargs.get("map_location", None),
                 )
 
             # encoders are necessary for direct inference
