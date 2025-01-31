@@ -157,7 +157,6 @@ class TestLocalForecastingModels:
         model.save()
         model.save(model_path_str)
         model.save(model_path_pathlike)
-
         with open(model_path_binary, "wb") as f:
             model.save(f)
 

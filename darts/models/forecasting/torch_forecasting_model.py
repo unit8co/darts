@@ -1786,24 +1786,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 f"found at {path_ptl_ckpt}. Please call `fit()` before calling `predict()`."
             )
 
-        # if the model was saved with `clean=True` or if pl_trainer_kwargs is provided
-        # we overwrite the trainer params
-        model.trainer_params = (
-            {"callbacks": [], "accelerator": "cpu"}  # by default, use CPU
-            if not model.trainer_params or pl_trainer_kwargs
-            else model.trainer_params
-        )
-
         if pl_trainer_kwargs is not None:
-            pl_trainer_kwargs_copy = {
-                key: val for key, val in pl_trainer_kwargs.items()
-            }
-            model.trainer_params["callbacks"] += pl_trainer_kwargs_copy.pop(
-                "callbacks", []
-            )
-            model.trainer_params = dict(model.trainer_params, **pl_trainer_kwargs_copy)
-
-            model._model_params["pl_trainer_kwargs"] = pl_trainer_kwargs
+            model.trainer_params = pl_trainer_kwargs
+            model._model_params["pl_trainer_kwargs"] = copy.deepcopy(pl_trainer_kwargs)
 
         return model
 
@@ -1886,9 +1871,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             f"Could not find base model save file `{INIT_MODEL_NAME}` in {model_dir}.",
             logger,
         )
-        model: TorchForecastingModel = torch.load(
-            base_model_path, weights_only=False, map_location=kwargs.get("map_location")
-        )
+        model: TorchForecastingModel = torch.load(base_model_path, weights_only=False)
 
         # load PyTorch LightningModule from checkpoint
         # if file_name is None, find the path of the best or most recent checkpoint in savepath
@@ -2056,9 +2039,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # updating model attributes before self._init_model() which create new tfm ckpt
             with open(tfm_save_file_path, "rb") as tfm_save_file:
                 tfm_save: TorchForecastingModel = torch.load(
-                    tfm_save_file,
-                    weights_only=False,
-                    map_location=kwargs.get("map_location", None),
+                    tfm_save_file, weights_only=False
                 )
 
             # encoders are necessary for direct inference

@@ -261,7 +261,10 @@ class TestTorchForecastingModel:
         assert os.path.exists(model_path_manual_ckpt)
 
         # load manual save model and compare with automatic model results
-        model_manual_save = RNNModel.load(model_path_manual)
+        pl_kwargs_load = {"accelerator": "cpu"}
+        model_manual_save = RNNModel.load(
+            model_path_manual, pl_trainer_kwargs=pl_kwargs_load
+        )
 
         if clean:
             # Training params are not saved with `clean=True`
@@ -269,11 +272,10 @@ class TestTorchForecastingModel:
             assert model_manual_save.training_series is None
             assert model_manual_save.past_covariate_series is None
             assert model_manual_save.future_covariate_series is None
-            assert model_manual_save.trainer_params == {
-                "callbacks": [],
-                "accelerator": "cpu",
-            }
-            assert model_manual_save._model_params["pl_trainer_kwargs"] is None
+            assert model_manual_save.trainer_params == pl_kwargs_load
+            assert (
+                model_manual_save._model_params["pl_trainer_kwargs"] == pl_kwargs_load
+            )
 
             # Predicting without giving the series in args
             with pytest.raises(ValueError) as err:
@@ -295,7 +297,6 @@ class TestTorchForecastingModel:
             assert model_manual_save_custom_trainer.trainer_params == {
                 "accelerator": "gpu",
                 "enable_progress_bar": False,
-                "callbacks": [],
             }
             assert model_manual_save_custom_trainer.model_params[
                 "pl_trainer_kwargs"
@@ -339,7 +340,9 @@ class TestTorchForecastingModel:
         # assert original .ckpt checkpoint was correctly copied
         assert os.path.exists(model_path_manual_ckpt_2)
 
-        model_chained_load_save = RNNModel.load(model_path_manual_2, map_location="cpu")
+        model_chained_load_save = RNNModel.load(
+            model_path_manual_2, pl_trainer_kwargs=pl_kwargs_load
+        )
 
         # compare chained load_from_checkpoint() save() with manual save
         assert model_chained_load_save.predict(
@@ -375,7 +378,9 @@ class TestTorchForecastingModel:
 
         model_32.save(model_32_path, clean=clean)
 
-        model_32_loaded = RNNModel.load(model_32_path)
+        model_32_loaded = RNNModel.load(
+            model_32_path, pl_trainer_kwargs={"accelerator": "cpu"}
+        )
 
         assert model_32_loaded.predict(n=4, series=series_32) == model_32.predict(n=4)
         with pytest.raises(ValueError) as err:
