@@ -18,6 +18,7 @@ import inspect
 import io
 import os
 import pickle
+import sys
 import time
 from abc import ABC, ABCMeta, abstractmethod
 from collections import OrderedDict
@@ -25,6 +26,11 @@ from collections.abc import Sequence
 from itertools import product
 from random import sample
 from typing import Any, BinaryIO, Callable, Literal, Optional, Union
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 import numpy as np
 import pandas as pd
@@ -2608,8 +2614,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _default_save_path(cls) -> str:
         return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')}"
 
-    def _clean(self) -> "ForecastingModel":
-        """Return a cleaned instance of the model."""
+    def _clean(self) -> Self:
+        """Returns a cleaned instance of the model. Has no effect for local forecasting models."""
         return self
 
     def save(
@@ -2641,7 +2647,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
             E.g., ``"RegressionModel_2020-01-01_12_00_00.pkl"``.
         clean
-            Whether to store a cleaned version of the model. This has no effect for local forecasting models.
+            Whether to store a cleaned version of the model. Only effective for global forecasting models.
+            If `True`, the training series and covariates are removed.
+
+            Note: After loading a global forecasting model stored with `clean=True`, a `series` must be passed
+            'predict()', `historical_forecasts()` and other forecasting methods.
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """
@@ -2651,7 +2661,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             path = self._default_save_path() + ".pkl"
 
         model_to_save = self._clean() if clean else self
-
         if isinstance(path, (str, os.PathLike)):
             # save the whole object using pickle
             with open(path, "wb") as handle:
@@ -2671,7 +2680,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     @staticmethod
     def load(path: Union[str, os.PathLike, BinaryIO]) -> "ForecastingModel":
         """
-        Loads the model from a given path or file handle.
+        Loads a model from a given path or file handle.
 
         Parameters
         ----------
@@ -3070,7 +3079,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 "To hide this warning, set `show_warnings=False`."
             )
 
-    def _clean(self) -> "GlobalForecastingModel":
+    def _clean(self) -> Self:
         """Returns a cleaned instance of the model by removing the training series and covariates."""
 
         # a shallow copy is enough since we are only interested in removing pointers to the training data
@@ -3078,6 +3087,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         cleaned_model.training_series = None
         cleaned_model.past_covariate_series = None
         cleaned_model.future_covariate_series = None
+        cleaned_model.static_covariates = None
         return cleaned_model
 
     @property

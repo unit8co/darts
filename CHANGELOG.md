@@ -18,10 +18,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Added general function `darts.slice_intersect()` to intersect a sequence of `TimeSeries` along the time index. [#2592](https://github.com/unit8co/darts/pull/2592) by [Yoav Matzkevich](https://github.com/ymatzkevich).
 - Added new time aggregated metric `wmape()` (Weighted Mean Absolute Percentage Error). [#2544](https://github.com/unit8co/darts/pull/2648) by [He Weilin](https://github.com/cnhwl).
 - Added parameter `clean: bool` to `ForecastingModel.save()` to store a cleaned version of the model (removes training data from global models, and callbacks from torch models). [#2649](https://github.com/unit8co/darts/pull/2649) by [Jonas Blanc](https://github.com/jonasblanc).
+- 🔴 Removed `map_location` parameter of `TorchForecastingModel.load*()`, which had no effect, location should be specified via `"accelerator"` of `pl_trainer_kwargs`. [#2649](https://github.com/unit8co/darts/pull/2649) by [Jonas Blanc](https://github.com/jonasblanc).
 
 **Fixed**
 
-- 🔴 Deprecate `map_location` parameter of `TorchForecastingModel.load()`, which had no effect, location should be specified via `accelerator` of 'pl_trainer_kwargs'. [#2649](https://github.com/unit8co/darts/pull/2649) by [Jonas Blanc](https://github.com/jonasblanc).
 - Fixed a bug when performing optimized historical forecasts with `stride=1` using a `RegressionModel` with `output_chunk_shift>=1` and `output_chunk_length=1`, where the forecast time index was not properly shifted. [#2634](https://github.com/unit8co/darts/pull/2634) by [Mattias De Charleroy](https://github.com/MattiasDC).
 - Fixed the `ShapExplainer` `summary_plot` title where Horizon does not include `output_chunk_shift`. [#2647](https://github.com/unit8co/darts/pull/2647) by [He Weilin](https://github.com/cnhwl).
 

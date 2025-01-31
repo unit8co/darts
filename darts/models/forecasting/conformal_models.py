@@ -8,6 +8,7 @@ A collection of conformal prediction models for pre-trained global forecasting m
 import copy
 import math
 import os
+import sys
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import Any, BinaryIO, Callable, Optional, Union
@@ -16,6 +17,11 @@ try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 import numpy as np
 import pandas as pd
@@ -1292,7 +1298,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             cp_hfcs.append(cp_preds)
         return cp_hfcs
 
-    def _clean(self) -> "ConformalModel":
+    def _clean(self) -> Self:
         """Cleans the model and sub-model."""
         cleaned_model = super()._clean()
         cleaned_model.model = cleaned_model.model._clean()
@@ -1338,8 +1344,11 @@ class ConformalModel(GlobalForecastingModel, ABC):
             under ``"{path}.{ModelClass}.pt"`` and ``"{path}.{ModelClass}.ckpt"``.
         clean
             Whether to store a cleaned version of the model. If `True`, the training series and covariates are removed.
-            Note: After loading the model, a `series` must be passed 'predict()', `historical_forecasts()` and other
-            forecasting methods.
+            If the underlying forecasting `model` is a `TorchForecastingModel`, will additionally remove all Lightning
+            Trainer-related parameters.
+
+            Note: After loading a model stored with `clean=True`, a `series` must be passed 'predict()',
+            `historical_forecasts()` and other forecasting methods.
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """
@@ -1361,23 +1370,24 @@ class ConformalModel(GlobalForecastingModel, ABC):
         **kwargs,
     ) -> "ConformalModel":
         """
-        Loads an conformal model from a given path.
+        Loads a model from a given path or file handle.
 
         Parameters
         ----------
         path
-            Path from which to load the model.
+            Path or file handle from which to load the model.
         pl_trainer_kwargs
-            Optionally, a set of kwargs to create the new PyTorch Lightning Trainers
-            used to handle the ``TorchForecastingModel``.
-            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
-            "devices", and "auto_select_gpus"``.
-            Check the `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_
+            Only effective if the underlying forecasting model is a `TorchForecastingModel`.
+            Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
+            tasks (e.g. prediction).
+            Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
+            `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_
             for more information about the supported kwargs.
         **kwargs
+            Only effective if the underlying forecasting model is a `TorchForecastingModel`.
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
-            common/lightning_module.html#load-from-checkpoint>`_. This is only used for ``TorchForecastingModel``.
+            common/lightning_module.html#load-from-checkpoint>`_.
         """
         model: ConformalModel = GlobalForecastingModel.load(path)
 
