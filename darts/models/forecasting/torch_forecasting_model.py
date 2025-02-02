@@ -1704,11 +1704,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # default path
             path = self._default_save_path() + ".pt"
 
-        model_to_save = self._clean() if clean else self
-
         # save the TorchForecastingModel (does not save the PyTorch LightningModule, and Trainer)
-        with open(path, "wb") as f_out:
-            torch.save(model_to_save, f_out)
+        super().save(path, clean=clean)
 
         # save the LightningModule checkpoint (weights only with `clean=True`)
         path_ptl_ckpt = path + ".ckpt"
@@ -1772,8 +1769,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             common/lightning_module.html#load-from-checkpoint>`_.
         """
         # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
-        with open(path, "rb") as fin:
-            model: TorchForecastingModel = torch.load(fin, weights_only=False)
+        model: TorchForecastingModel = ForecastingModel.load(path)
 
         # if a checkpoint was saved, we also load the PyTorch LightningModule from checkpoint
         path_ptl_ckpt = path + ".ckpt"
@@ -1871,7 +1867,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             f"Could not find base model save file `{INIT_MODEL_NAME}` in {model_dir}.",
             logger,
         )
-        model: TorchForecastingModel = torch.load(base_model_path, weights_only=False)
+        model: TorchForecastingModel = ForecastingModel.load(base_model_path)
 
         # load PyTorch LightningModule from checkpoint
         # if file_name is None, find the path of the best or most recent checkpoint in savepath
@@ -2038,9 +2034,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
             # updating model attributes before self._init_model() which create new tfm ckpt
             with open(tfm_save_file_path, "rb") as tfm_save_file:
-                tfm_save: TorchForecastingModel = torch.load(
-                    tfm_save_file, weights_only=False
-                )
+                tfm_save: TorchForecastingModel = ForecastingModel.load(tfm_save_file)
 
             # encoders are necessary for direct inference
             self.encoders, self.add_encoders = self._load_encoders(
