@@ -205,8 +205,9 @@ class TestShapExplainer:
 
         # Good type of explainers
         shap_explain = ShapExplainer(m)
-        if isinstance(m, XGBModel):
+        if m._native_support_multioutput():
             # since xgboost > 2.1.0, model supports native multi output regression
+            # CatBoostModel supports multioutput for certain loss functions
             assert isinstance(shap_explain.explainers.explainers, shap.explainers.Tree)
         else:
             assert isinstance(
@@ -270,7 +271,7 @@ class TestShapExplainer:
             future_covariates=self.fut_cov_ts,
         )
         shap_explain = ShapExplainer(m)
-        if isinstance(m, XGBModel):
+        if m._native_support_multioutput():
             assert isinstance(shap_explain.explainers.explainers, shap.explainers.Tree)
         else:
             assert isinstance(
