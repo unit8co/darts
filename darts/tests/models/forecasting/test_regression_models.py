@@ -2388,6 +2388,20 @@ class TestRegressionModels:
                     "lags_past_covariates": 4,
                     "lags_future_covariates": [-3, 1],
                 },
+                # check that component-specific lags with output_chunk_shift works
+                {
+                    "lags_past_covariates": {"lin_past": [-3, -1]},
+                    "lags_future_covariates": [1, 2],
+                },
+                {
+                    "lags_past_covariates": [-3, -1],
+                    "lags_future_covariates": {"lin_future": [1, 2]},
+                },
+                {
+                    "lags": {"gaussian": 5},
+                    "lags_past_covariates": [-3, -1],
+                    "lags_future_covariates": [1, 2],
+                },
             ],
             [True, False],
             [3, 5],
@@ -2429,11 +2443,19 @@ class TestRegressionModels:
         )
         # adjusting the future lags should give identical models to non-shifted
         list_lags_adj = deepcopy(list_lags)
+        # this loop works for both component-specific and non-component-specific future lags
         if "lags_future_covariates" in list_lags_adj:
-            list_lags_adj["lags_future_covariates"] = [
-                lag_ - output_chunk_shift
-                for lag_ in list_lags_adj["lags_future_covariates"]
-            ]
+            if isinstance(list_lags_adj["lags_future_covariates"], dict):
+                for key in list_lags_adj["lags_future_covariates"]:
+                    list_lags_adj["lags_future_covariates"][key] = [
+                        lag_ - output_chunk_shift
+                        for lag_ in list_lags_adj["lags_future_covariates"][key]
+                    ]
+            else:
+                list_lags_adj["lags_future_covariates"] = [
+                    lag_ - output_chunk_shift
+                    for lag_ in list_lags_adj["lags_future_covariates"]
+                ]
         model_shift_adj = LinearRegressionModel(
             **list_lags_adj,
             output_chunk_shift=output_chunk_shift,
