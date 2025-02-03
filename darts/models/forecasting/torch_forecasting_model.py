@@ -2033,8 +2033,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 )
 
             # updating model attributes before self._init_model() which create new tfm ckpt
-            with open(tfm_save_file_path, "rb") as tfm_save_file:
-                tfm_save: TorchForecastingModel = ForecastingModel.load(tfm_save_file)
+            tfm_save: TorchForecastingModel = ForecastingModel.load(tfm_save_file_path)
 
             # encoders are necessary for direct inference
             self.encoders, self.add_encoders = self._load_encoders(
