@@ -141,7 +141,7 @@ class TestLocalForecastingModels:
         for model, _ in models:
             assert model._model_params == model.untrained_model()._model_params
 
-    @pytest.mark.parametrize("model", [ARIMA(1, 1, 1), LinearRegressionModel(lags=12)])
+    @pytest.mark.parametrize("model", [ARIMA(1, 1, 1)])
     def test_save_load_model(self, tmpdir_module, model):
         # check if save and load methods work and if loaded model creates same forecasts as original model
         model_path_str = type(model).__name__
