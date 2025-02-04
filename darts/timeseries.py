@@ -857,7 +857,7 @@ class TimeSeries:
                 except Exception:
                     pass
 
-            if time_col_vals.dtype == nw.Int64 or time_col_vals.dtype == np.integer:
+            if time_col_vals.dtype.is_integer():
                 # We have to check all integers appear only once to have a valid index
                 if time_col_vals.is_duplicated().any():
                     raise_log(
@@ -873,7 +873,7 @@ class TimeSeries:
             elif time_col_vals.dtype == nw.String:
                 # The integer conversion failed; try datetimes
                 try:
-                    time_index = nw.Datetime(time_col_vals)
+                    time_index = time_col_vals.str.to_datetime()
                 except Exception:
                     raise_log(
                         AttributeError(
