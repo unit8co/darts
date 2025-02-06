@@ -409,6 +409,7 @@ class NaiveEnsembleModel(EnsembleModel):
             columns=series.components,
             static_covariates=series.static_covariates,
             hierarchy=series.hierarchy,
+            metadata=prediction.metadata,
         )
 
     def _params_average(self, prediction: TimeSeries, series: TimeSeries) -> TimeSeries:
@@ -444,4 +445,5 @@ class NaiveEnsembleModel(EnsembleModel):
             columns=prediction.components[: likelihood_n_params * n_components],
             static_covariates=None,
             hierarchy=None,
+            metadata=prediction.metadata,
         )

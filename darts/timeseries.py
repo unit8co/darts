@@ -321,13 +321,21 @@ class TimeSeries:
                 c for c in self.components if c in bottom_level
             ]
 
-        # check metadata
+        # prepare metadata
         metadata = self._xa.attrs.get(METADATA_TAG, None)
-        if not (isinstance(metadata, dict) or metadata is None):
+        if not (
+            isinstance(metadata, pd.Series)
+            or (isinstance(metadata, pd.DataFrame) and metadata.shape[0] == 1)
+            or metadata is None
+        ):
             raise_log(
-                ValueError("`metadata` must be either a dictionary or None"),
+                ValueError(
+                    "`metadata` must be either a pandas Series, 1-rowed DataFrame or None"
+                ),
                 logger,
             )
+        if isinstance(metadata, pd.DataFrame):
+            metadata = metadata.iloc[0]
 
         # store static covariates, hierarchy and metadata in attributes (potentially storing None)
         self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy, metadata)
@@ -490,7 +498,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
-        metadata: Optional[dict] = None,
+        metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
         **kwargs,
     ) -> Self:
         """
@@ -555,7 +563,7 @@ class TimeSeries:
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
-            Optionally, a dictionary whose keys define properties for metadata attributes.
+            Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
 
         **kwargs
             Optional arguments to be passed to `pandas.read_csv` function
@@ -590,7 +598,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
-        metadata: Optional[dict] = None,
+        metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
     ) -> Self:
         """
         Build a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
@@ -658,7 +666,7 @@ class TimeSeries:
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
-            Optionally, a dictionary whose keys define properties for metadata attributes.
+            Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
 
         Returns
         -------
@@ -774,13 +782,13 @@ class TimeSeries:
         time_col: Optional[str] = None,
         value_cols: Optional[Union[list[str], str]] = None,
         static_cols: Optional[Union[list[str], str]] = None,
+        metadata_cols: Optional[Union[list[str], str]] = None,
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
         drop_group_cols: Optional[Union[list[str], str]] = None,
         n_jobs: Optional[int] = 1,
         verbose: Optional[bool] = False,
-        metadata: Optional[dict] = None,
     ) -> list[Self]:
         """
         Build a list of TimeSeries instances grouped by a selection of columns from a DataFrame.
@@ -815,6 +823,9 @@ class TimeSeries:
             appended as static covariates to the resulting TimeSeries groups. Different to `group_cols`, the
             DataFrame is not grouped by these columns. Note that for every group, there must be exactly one
             unique value.
+        metadata_cols
+            A string or list of strings representing metadata columns from the DataFrame that should be
+            appended as metadata to the resulting TimeSeries groups.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
             with NaN values. This requires either a provided `freq` or the possibility to infer the frequency from the
@@ -835,8 +846,6 @@ class TimeSeries:
             `joblib.Parallel` class.
         verbose
             Optionally, a boolean value indicating whether to display a progress bar.
-        metadata
-            Optionally, a dictionary whose keys define properties for metadata attributes.
 
         Returns
         -------
@@ -888,7 +897,25 @@ class TimeSeries:
             value_cols = df.columns.drop(static_cov_cols + extract_time_col).tolist()
         extract_value_cols = [value_cols] if isinstance(value_cols, str) else value_cols
 
-        df = df[static_cov_cols + extract_value_cols + extract_time_col]
+        if metadata_cols is not None:
+            metadata_cols = (
+                [metadata_cols]
+                if not isinstance(metadata_cols, list)
+                else metadata_cols
+            )
+        else:
+            metadata_cols = []
+        # columns that are used for metadata but not for grouping or static covariates
+        extract_metadata_cols = [
+            col for col in metadata_cols if col not in static_cov_cols
+        ]
+
+        df = df[
+            static_cov_cols
+            + extract_value_cols
+            + extract_time_col
+            + extract_metadata_cols
+        ]
 
         if time_col:
             if np.issubdtype(df[time_col].dtype, object) or np.issubdtype(
@@ -912,6 +939,7 @@ class TimeSeries:
 
         groups = df.groupby(group_cols[0] if len(group_cols) == 1 else group_cols)
 
+        # build progress bar for iterator
         iterator = _build_tqdm_iterator(
             groups,
             verbose=verbose,
@@ -960,6 +988,29 @@ class TimeSeries:
                 # add the static covariates to the group values
                 static_cov_vals += tuple(group[static_cols].values[0])
 
+            metadata_vals = tuple()
+            # check that for each group there is only one unique value per column in `metadata_cols`
+            if metadata_cols:
+                metadata_cols_valid = [
+                    len(group[col].unique()) == 1 for col in metadata_cols
+                ]
+                if not all(metadata_cols_valid):
+                    invalid_cols = [
+                        metadata_col
+                        for metadata_col, is_valid in zip(
+                            metadata_cols, metadata_cols_valid
+                        )
+                        if not is_valid
+                    ]
+                    raise_if(
+                        True,
+                        f"Encountered more than one unique value in group {group} for given metadata columns: "
+                        f"{invalid_cols}.",
+                        logger,
+                    )
+                # add the metadata to the group values
+                metadata_vals += tuple(group[metadata_cols].values[0])
+
             return cls.from_dataframe(
                 df=split,
                 fill_missing_dates=fill_missing_dates,
@@ -970,7 +1021,11 @@ class TimeSeries:
                     if extract_static_cov_cols
                     else None
                 ),
-                metadata=metadata,
+                metadata=(
+                    pd.DataFrame([metadata_vals], columns=metadata_cols)
+                    if metadata_cols
+                    else None
+                ),
             )
 
         return _parallel_apply(
@@ -989,7 +1044,7 @@ class TimeSeries:
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
-        metadata: Optional[dict] = None,
+        metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
     ) -> Self:
         """
         Build a univariate deterministic series from a pandas Series.
@@ -1021,7 +1076,7 @@ class TimeSeries:
             single-row pandas DataFrame. If a Series, the index represents the static variables. If a DataFrame, the
             columns represent the static variables and the single row represents the univariate TimeSeries component.
         metadata
-            Optionally, a dictionary whose keys define properties for metadata attributes.
+            Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
 
         Returns
         -------
@@ -1051,7 +1106,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
-        metadata: Optional[dict] = None,
+        metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
     ) -> Self:
         """
         Build a series from a time index and value array.
@@ -1115,7 +1170,7 @@ class TimeSeries:
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
-            Optionally, a dictionary whose keys define properties for metadata attributes.
+            Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
 
         Returns
         -------
@@ -1175,7 +1230,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
-        metadata: Optional[dict] = None,
+        metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
     ) -> Self:
         """
         Build an integer-indexed series from an array of values.
@@ -1224,7 +1279,7 @@ class TimeSeries:
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
-            Optionally, a dictionary whose keys define properties for metadata attributes.
+            Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
 
         Returns
         -------
@@ -1254,7 +1309,7 @@ class TimeSeries:
         json_str: str,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
-        metadata: Optional[dict] = None,
+        metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
     ) -> Self:
         """
         Build a series from the JSON String representation of a ``TimeSeries``
@@ -1299,7 +1354,7 @@ class TimeSeries:
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
-            Optionally, a dictionary whose keys define properties for metadata attributes.
+            Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
 
         Returns
         -------
@@ -1364,10 +1419,10 @@ class TimeSeries:
         return self._xa.attrs.get(HIERARCHY_TAG, None)
 
     @property
-    def metadata(self) -> Optional[dict]:
+    def metadata(self) -> Optional[pd.Series]:
         """
         The metadata of this TimeSeries, if any.
-        If set, the metadata is encoded as a dictionary whose keys define properties
+        If set, the metadata is encoded as a pandas Series which defines properties
         for identifying and describing the nature of the TimeSeries.
         """
         return self._xa.attrs.get(METADATA_TAG, None)
@@ -3258,16 +3313,16 @@ class TimeSeries:
             )
         )
 
-    def with_metadata(self, metadata: Optional[dict]):
+    def with_metadata(self, metadata: Optional[Union[pd.Series, pd.DataFrame]]):
         """
         Adds metadata to the TimeSeries.
 
         Parameters
         ----------
         metadata
-            A dictionary whose keys define properties for identifying and describing the underlying data of the
-            TimeSeries. The types of the dictionary values can be different. For example:
-            ``metadata = {'source_file': 'woolyrnq.csv', 'keywords': ['wool', 'australia']}``
+            A pandas Series or 1-rowed DataFrame defining properties for identifying and describing
+            the underlying data of the TimeSeries. The types of the values can be different. For example:
+            ``metadata = pd.Series({'source_file': 'woolyrnq.csv', 'has_wool': True, 'start_year': 1965})``
         """
 
         return self.__class__(

@@ -37,6 +37,7 @@ def constant_timeseries(
     freq: Union[str, int] = None,
     column_name: Optional[str] = "constant",
     dtype: np.dtype = np.float64,
+    metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
 ) -> TimeSeries:
     """
     Creates a constant univariate TimeSeries with the given value, length (or end date), start date and frequency.
@@ -65,6 +66,8 @@ def constant_timeseries(
         Optionally, the name of the value column for the returned TimeSeries
     dtype
         The desired NumPy dtype (np.float32 or np.float64) for the resulting series
+    metadata
+        Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
 
     Returns
     -------
@@ -76,7 +79,7 @@ def constant_timeseries(
     values = np.full(len(index), value, dtype=dtype)
 
     return TimeSeries.from_times_and_values(
-        index, values, freq=freq, columns=pd.Index([column_name])
+        index, values, freq=freq, columns=pd.Index([column_name]), metadata=metadata
     )
 
 
@@ -89,6 +92,7 @@ def linear_timeseries(
     freq: Union[str, int] = None,
     column_name: Optional[str] = "linear",
     dtype: np.dtype = np.float64,
+    metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
 ) -> TimeSeries:
     """
     Creates a univariate TimeSeries with a starting value of `start_value` that increases linearly such that
@@ -122,6 +126,8 @@ def linear_timeseries(
         Optionally, the name of the value column for the returned TimeSeries
     dtype
         The desired NumPy dtype (np.float32 or np.float64) for the resulting series
+    metadata
+        Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
 
     Returns
     -------
@@ -132,7 +138,7 @@ def linear_timeseries(
     index = generate_index(start=start, end=end, freq=freq, length=length)
     values = np.linspace(start_value, end_value, len(index), dtype=dtype)
     return TimeSeries.from_times_and_values(
-        index, values, freq=freq, columns=pd.Index([column_name])
+        index, values, freq=freq, columns=pd.Index([column_name]), metadata=metadata
     )
 
 
@@ -147,6 +153,7 @@ def sine_timeseries(
     freq: Union[str, int] = None,
     column_name: Optional[str] = "sine",
     dtype: np.dtype = np.float64,
+    metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
 ) -> TimeSeries:
     """
     Creates a univariate TimeSeries with a sinusoidal value progression with a given frequency, amplitude,
@@ -182,6 +189,8 @@ def sine_timeseries(
         Optionally, the name of the value column for the returned TimeSeries
     dtype
         The desired NumPy dtype (np.float32 or np.float64) for the resulting series
+    metadata
+        Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
 
     Returns
     -------
@@ -199,7 +208,7 @@ def sine_timeseries(
     values = f(values)
 
     return TimeSeries.from_times_and_values(
-        index, values, freq=freq, columns=pd.Index([column_name])
+        index, values, freq=freq, columns=pd.Index([column_name]), metadata=metadata
     )
 
 
@@ -212,6 +221,7 @@ def gaussian_timeseries(
     freq: Union[str, int] = None,
     column_name: Optional[str] = "gaussian",
     dtype: np.dtype = np.float64,
+    metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
 ) -> TimeSeries:
     """
     Creates a gaussian univariate TimeSeries by sampling all the series values independently,
@@ -275,7 +285,7 @@ def gaussian_timeseries(
     values = np.random.normal(mean, std, size=len(index)).astype(dtype)
 
     return TimeSeries.from_times_and_values(
-        index, values, freq=freq, columns=pd.Index([column_name])
+        index, values, freq=freq, columns=pd.Index([column_name]), metadata=metadata
     )
 
 
@@ -288,6 +298,7 @@ def random_walk_timeseries(
     freq: Union[str, int] = None,
     column_name: Optional[str] = "random_walk",
     dtype: np.dtype = np.float64,
+    metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
 ) -> TimeSeries:
     """
     Creates a random walk univariate TimeSeries, where each step is obtained by sampling a gaussian distribution
@@ -319,6 +330,8 @@ def random_walk_timeseries(
         Optionally, the name of the value column for the returned TimeSeries
     dtype
         The desired NumPy dtype (np.float32 or np.float64) for the resulting series
+    metadata
+        Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
 
     Returns
     -------
@@ -330,7 +343,7 @@ def random_walk_timeseries(
     values = np.cumsum(np.random.normal(mean, std, size=len(index)), dtype=dtype)
 
     return TimeSeries.from_times_and_values(
-        index, values, freq=freq, columns=pd.Index([column_name])
+        index, values, freq=freq, columns=pd.Index([column_name]), metadata=metadata
     )
 
 
@@ -342,6 +355,7 @@ def autoregressive_timeseries(
     length: Optional[int] = None,
     freq: Union[str, int] = None,
     column_name: Optional[str] = "autoregressive",
+    metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
 ) -> TimeSeries:
     """
     Creates a univariate, autoregressive TimeSeries whose values are calculated using specified coefficients `coef` and
@@ -373,6 +387,8 @@ def autoregressive_timeseries(
         The freq is optional for generating an integer index (if not specified, 1 is used).
     column_name
         Optionally, the name of the value column for the returned TimeSeries
+    metadata
+        Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
 
     Returns
     -------
@@ -399,7 +415,11 @@ def autoregressive_timeseries(
         values[i] = np.dot(values[i - len(coef) : i], coef)
 
     return TimeSeries.from_times_and_values(
-        index, values[len(coef) :], freq=freq, columns=pd.Index([column_name])
+        index,
+        values[len(coef) :],
+        freq=freq,
+        columns=pd.Index([column_name]),
+        metadata=metadata,
     )
 
 
@@ -481,6 +501,7 @@ def holidays_timeseries(
     add_length: int = 0,
     dtype: np.dtype = np.float64,
     tz: Optional[str] = None,
+    metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
 ) -> TimeSeries:
     """
     Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within
@@ -510,6 +531,8 @@ def holidays_timeseries(
         The desired NumPy dtype (np.float32 or np.float64) for the resulting series.
     tz
         Optionally, a time zone to convert the time index to before generating the holidays.
+    metadata
+        Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
 
     Returns
     -------
@@ -530,7 +553,7 @@ def holidays_timeseries(
     index_series = pd.Series(time_index, index=time_index)
     values = index_series.apply(lambda x: x in country_holidays).astype(dtype)
     return TimeSeries.from_times_and_values(
-        time_index_ts, values, columns=pd.Index([column_name])
+        time_index_ts, values, columns=pd.Index([column_name]), metadata=metadata
     )
 
 
@@ -544,6 +567,7 @@ def datetime_attribute_timeseries(
     dtype=np.float64,
     with_columns: Optional[Union[list[str], str]] = None,
     tz: Optional[str] = None,
+    metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
 ) -> TimeSeries:
     """
     Returns a new TimeSeries with index `time_index` and one or more dimensions containing
@@ -584,6 +608,8 @@ def datetime_attribute_timeseries(
             features.
     tz
         Optionally, a time zone to convert the time index to before computing the attributes.
+    metadata
+        Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
 
     Returns
     -------
@@ -736,7 +762,7 @@ def datetime_attribute_timeseries(
             values_df = pd.DataFrame({with_columns: values})
 
     values_df.index = time_index_ts
-    return TimeSeries.from_dataframe(values_df).astype(dtype)
+    return TimeSeries.from_dataframe(values_df).astype(dtype).with_metadata(metadata)
 
 
 def _build_forecast_series(
