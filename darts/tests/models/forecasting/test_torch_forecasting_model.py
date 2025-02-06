@@ -176,8 +176,18 @@ class TestTorchForecastingModel:
         model1.save(path=os.path.join(tmpdir_fn, model_name))
         patch_save_model.assert_called()
 
-    def test_manual_save_and_load(self, tmpdir_fn):
+    @pytest.mark.parametrize("clean", [False, True])
+    def test_manual_save_and_load(self, tmpdir_fn, clean):
         """validate manual save with automatic save files by comparing output between the two"""
+
+        class CustomCallback(Callback):
+            def on_train_epoch_end(self, trainer, pl_module):
+                pass
+
+        custom_callback = CustomCallback()
+        kwargs = copy.deepcopy(tfm_kwargs)
+        if clean:
+            kwargs["pl_trainer_kwargs"]["callbacks"] = [custom_callback]
 
         model_dir = os.path.join(tmpdir_fn)
         manual_name = "test_save_manual"
@@ -191,7 +201,7 @@ class TestTorchForecastingModel:
             work_dir=tmpdir_fn,
             save_checkpoints=False,
             random_state=42,
-            **tfm_kwargs,
+            **kwargs,
         )
         model_auto_save = RNNModel(
             12,
@@ -206,9 +216,10 @@ class TestTorchForecastingModel:
         )
 
         # save model without training
-        no_training_ckpt = "no_training.pth.tar"
-        no_training_ckpt_path = os.path.join(model_dir, no_training_ckpt)
-        model_manual_save.save(no_training_ckpt_path)
+        no_training_ckpt_path = os.path.join(model_dir, "no_training.pth.tar")
+
+        model_manual_save.save(no_training_ckpt_path, clean=clean)
+
         # check that model object file was created
         assert os.path.exists(no_training_ckpt_path)
         # check that the PyTorch Ligthning ckpt does not exist
@@ -218,8 +229,8 @@ class TestTorchForecastingModel:
             no_train_model = RNNModel.load(no_training_ckpt_path)
             no_train_model.predict(n=4)
         assert str(err.value) == (
-            "Input `series` must be provided. This is the result either from "
-            "fitting on multiple series, or from not having fit the model yet."
+            "Input `series` must be provided. This is the result either from fitting on multiple series, "
+            "from not having fit the model yet, or from loading a model saved with `clean=True`."
         )
 
         model_manual_save.fit(self.series, epochs=1)
@@ -234,24 +245,65 @@ class TestTorchForecastingModel:
         checkpoint_path_manual = os.path.join(model_dir, manual_name)
         os.mkdir(checkpoint_path_manual)
 
-        checkpoint_file_name = "checkpoint_0.pth.tar"
-        model_path_manual = os.path.join(checkpoint_path_manual, checkpoint_file_name)
-        checkpoint_file_name_cpkt = "checkpoint_0.pth.tar.ckpt"
+        model_path_manual = os.path.join(checkpoint_path_manual, "checkpoint_0.pth.tar")
         model_path_manual_ckpt = os.path.join(
-            checkpoint_path_manual, checkpoint_file_name_cpkt
+            checkpoint_path_manual, "checkpoint_0.pth.tar.ckpt"
         )
 
-        # save manually saved model
-        model_manual_save.save(model_path_manual)
+        # save manually clean model
+        training_series = model_manual_save.training_series.copy()
+        model_manual_save.save(model_path_manual, clean=clean)
+        assert model_manual_save.training_series == training_series
+
         assert os.path.exists(model_path_manual)
 
         # check that the PTL checkpoint path is also there
         assert os.path.exists(model_path_manual_ckpt)
 
         # load manual save model and compare with automatic model results
-        model_manual_save = RNNModel.load(model_path_manual, map_location="cpu")
-        model_manual_save.to_cpu()
-        assert model_manual_save.predict(n=4) == model_auto_save.predict(n=4)
+        pl_kwargs_load = {"accelerator": "cpu"}
+        model_manual_save = RNNModel.load(
+            model_path_manual, pl_trainer_kwargs=pl_kwargs_load
+        )
+
+        if clean:
+            # Training params are not saved with `clean=True`
+            assert model_manual_save.trainer is None
+            assert model_manual_save.training_series is None
+            assert model_manual_save.past_covariate_series is None
+            assert model_manual_save.future_covariate_series is None
+            assert model_manual_save.trainer_params == pl_kwargs_load
+            assert (
+                model_manual_save._model_params["pl_trainer_kwargs"] == pl_kwargs_load
+            )
+
+            # Predicting without giving the series in args
+            with pytest.raises(ValueError) as err:
+                model_manual_save.predict(n=4)
+            assert str(err.value) == (
+                "Input `series` must be provided. This is the result either from fitting on multiple series, "
+                "from not having fit the model yet, or from loading a model saved with `clean=True`."
+            )
+            # Predicting while giving the training series in args should yield same prediction
+            assert model_manual_save.predict(
+                n=4, series=self.series
+            ) == model_auto_save.predict(n=4)
+
+            model_manual_save_custom_trainer = RNNModel.load(
+                model_path_manual,
+                pl_trainer_kwargs={"accelerator": "gpu", "enable_progress_bar": False},
+            )
+
+            assert model_manual_save_custom_trainer.trainer_params == {
+                "accelerator": "gpu",
+                "enable_progress_bar": False,
+            }
+            assert model_manual_save_custom_trainer.model_params[
+                "pl_trainer_kwargs"
+            ] == {"accelerator": "gpu", "enable_progress_bar": False}
+
+        else:
+            assert model_manual_save.predict(n=4) == model_auto_save.predict(n=4)
 
         # load automatically saved model with manual load() and load_from_checkpoint()
         model_auto_save1 = RNNModel.load_from_checkpoint(
@@ -262,7 +314,9 @@ class TestTorchForecastingModel:
         )
         model_auto_save1.to_cpu()
         # compare loaded checkpoint with manual save
-        assert model_manual_save.predict(n=4) == model_auto_save1.predict(n=4)
+        assert model_manual_save.predict(
+            n=4, series=self.series
+        ) == model_auto_save.predict(n=4)
 
         # save() model directly after load_from_checkpoint()
         checkpoint_file_name_2 = "checkpoint_1.pth.tar"
@@ -281,15 +335,62 @@ class TestTorchForecastingModel:
             map_location="cpu",
         )
         # save model directly after loading, model has no trainer
-        model_auto_save2.save(model_path_manual_2)
+        model_auto_save2.save(model_path_manual_2, clean=clean)
 
         # assert original .ckpt checkpoint was correctly copied
         assert os.path.exists(model_path_manual_ckpt_2)
 
-        model_chained_load_save = RNNModel.load(model_path_manual_2, map_location="cpu")
+        model_chained_load_save = RNNModel.load(
+            model_path_manual_2, pl_trainer_kwargs=pl_kwargs_load
+        )
 
         # compare chained load_from_checkpoint() save() with manual save
-        assert model_chained_load_save.predict(n=4) == model_manual_save.predict(n=4)
+        assert model_chained_load_save.predict(
+            n=4, series=self.series
+        ) == model_manual_save.predict(n=4, series=self.series)
+
+    @pytest.mark.parametrize("clean", [False, True])
+    def test_manual_save_and_load_precision(self, tmpdir_fn, clean):
+        # test precision (type) of the model
+
+        tfm_kwargs_32 = copy.deepcopy(tfm_kwargs)
+        tfm_kwargs_32["pl_trainer_kwargs"]["precision"] = "32-true"
+
+        model_32_name = "test_save_32"
+        model_32 = RNNModel(
+            12,
+            "RNN",
+            10,
+            10,
+            model_name=model_32_name,
+            work_dir=tmpdir_fn,
+            save_checkpoints=False,
+            random_state=42,
+            **tfm_kwargs_32,
+        )
+
+        series_32 = self.series.astype(np.float32)
+        series_64 = self.series.astype(np.float64)
+
+        model_32.fit(series_32, epochs=1)
+
+        model_32_path = os.path.join(tmpdir_fn, f"{model_32_name}.pth.tar")
+
+        model_32.save(model_32_path, clean=clean)
+
+        model_32_loaded = RNNModel.load(
+            model_32_path, pl_trainer_kwargs={"accelerator": "cpu"}
+        )
+
+        assert model_32_loaded.predict(n=4, series=series_32) == model_32.predict(n=4)
+        with pytest.raises(ValueError) as err:
+            model_32_loaded.predict(n=4, series=series_64)
+        assert str(err.value) == (
+            "input must have the type torch.float32, got type torch.float64"
+        )
+
+    def test_load_accelerator(self, tmpdir_fn):
+        pass
 
     def test_valid_save_and_load_weights_with_different_params(self, tmpdir_fn):
         """
