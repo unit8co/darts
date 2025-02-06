@@ -76,8 +76,8 @@ def create_random_dataframes(
 
 def test_dataframes() -> list:
     test_config = product(
-        [10, 100, 1000, 10000],
-        [10, 100, 500, 1000],
+        [10, 100, 1000],
+        [10, 100, 500],
         [True, False],
     )
 
@@ -93,31 +93,64 @@ def test_dataframes() -> list:
 
 df_list = test_dataframes()
 
-############ PANDAS ############
-pandas_timer = time.time()
-for df_config in df_list:
-    for df, col_names, time_col in df_config:
-        _ = TimeSeries.from_dataframe(
-            df, value_cols=col_names, time_col=time_col, freq=None
-        )
-        df_shuffle = df.sample(frac=1)
-        _ = TimeSeries.from_dataframe(
-            df_shuffle, value_cols=col_names, time_col=time_col, freq=None
-        )
-pandas_timer = time.time() - pandas_timer
+num_iter = 5
+pandas_global_timer = 0
+narwhals_global_timer = 0
 
-############ NARWHALS ############
-narwhals_timer = time.time()
-for df_config in df_list:
-    for df, col_names, time_col in df_config:
-        _ = TimeSeries.from_narwhals_dataframe(
-            df, value_cols=col_names, time_col=time_col, freq=None
-        )
-        df_shuffle = df.sample(frac=1)
-        _ = TimeSeries.from_narwhals_dataframe(
-            df_shuffle, value_cols=col_names, time_col=time_col, freq=None
-        )
-narwhals_timer = time.time() - narwhals_timer
+for _ in range(num_iter):
+    pandas_timer = 0
+    narwhals_timer = 0
+    for df_config in df_list:
+        for df, col_names, time_col in df_config:
+            for i in range(2):
+                # on the second run we shuffle the data
+                if i == 1:
+                    df = df.sample(frac=1)
 
-print("pandas processing time: ", pandas_timer)
-print("narwhals processing time: ", narwhals_timer)
+                # pandas processing time
+                begin = time.time()
+                pandas_timeseries = TimeSeries.from_dataframe(
+                    df, value_cols=col_names, time_col=time_col, freq=None
+                )
+                end = time.time()
+                pandas_timer += end - begin
+
+                # narwhals processing time
+                begin_nw = time.time()
+                narwhals_timeseries = TimeSeries.from_narwhals_dataframe(
+                    df, value_cols=col_names, time_col=time_col, freq=None
+                )
+                end_nw = time.time()
+                narwhals_timer += end_nw - begin_nw
+
+                # Check if the TimeSeries objects are equal
+                try:
+                    assert pandas_timeseries.time_index.equals(
+                        narwhals_timeseries.time_index
+                    )
+                except AssertionError as e:
+                    print(
+                        f"Index assertion failed for DataFrame with columns {col_names} and time_col {time_col}: {e}"
+                    )
+                try:
+                    np.testing.assert_array_almost_equal(
+                        pandas_timeseries.all_values(), narwhals_timeseries.all_values()
+                    )
+                except AssertionError as e:
+                    print(
+                        f"Equal assertion failed for DataFrame with columns {col_names} and time_col {time_col}: {e}"
+                    )
+
+    print("pandas processing time: ", pandas_timer)
+    print("narwhals processing time: ", narwhals_timer, "\n")
+    pandas_global_timer += pandas_timer
+    narwhals_global_timer += narwhals_timer
+
+pandas_global_timer /= num_iter
+narwhals_global_timer /= num_iter
+
+print("Average pandas processing time: ", pandas_global_timer)
+print("Average narwhals processing time: ", narwhals_global_timer)
+
+diff_in_fraction = (-pandas_global_timer + narwhals_global_timer) / pandas_global_timer
+print(f"Average processing time difference: {diff_in_fraction:.2%}")

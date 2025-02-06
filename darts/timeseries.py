@@ -836,7 +836,8 @@ class TimeSeries:
         # get values
         if value_cols is None:
             if time_col is not None:
-                series_df = df.drop(time_col)
+                # series_df = df.drop(time_col)
+                series_df = df.loc[:, df.columns != time_col]
             else:
                 series_df = df
         else:
@@ -869,6 +870,7 @@ class TimeSeries:
                 # Temporarily use an integer Index to sort the values, and replace by a
                 # RangeIndex in `TimeSeries.from_xarray()`
                 time_index = time_col_vals.to_list()
+                # time_index = pd.Index(time_col_vals)
 
             elif time_col_vals.dtype == nw.String:
                 # The integer conversion failed; try datetimes
@@ -882,6 +884,7 @@ class TimeSeries:
                     )
             elif time_col_vals.dtype == nw.Datetime:
                 time_index = time_col_vals.to_list()
+                # time_index = pd.DatetimeIndex(time_col_vals)
             else:
                 raise_log(
                     AttributeError(
