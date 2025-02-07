@@ -658,7 +658,7 @@ class TimeSeries:
         else:
             if isinstance(value_cols, str):
                 value_cols = [value_cols]
-            series_df = df[value_cols]
+            series_df = df[value_cols]  # slow
 
         # get time index
         if time_col:
@@ -734,14 +734,14 @@ class TimeSeries:
         if series_df.columns.name:
             series_df.columns.name = None
 
-        xa = xr.DataArray(
+        xa = xr.DataArray(  # fast
             series_df.values[:, :, np.newaxis],
             dims=(time_index.name,) + DIMS[-2:],
             coords={time_index.name: time_index, DIMS[1]: series_df.columns},
             attrs={STATIC_COV_TAG: static_covariates, HIERARCHY_TAG: hierarchy},
         )
 
-        return cls.from_xarray(
+        return cls.from_xarray(  # slow
             xa=xa,
             fill_missing_dates=fill_missing_dates,
             freq=freq,
@@ -843,7 +843,7 @@ class TimeSeries:
         else:
             if isinstance(value_cols, str):
                 value_cols = [value_cols]
-            series_df = df[value_cols]
+            series_df = df[value_cols]  # quite slow
 
         # get time index
         if time_col:
@@ -903,9 +903,9 @@ class TimeSeries:
                 "a DatetimeIndex, a RangeIndex, or an integer Index that can be converted into a RangeIndex",
                 logger,
             )
-            time_index = time_col_vals.to_list()
+            time_index = time_col_vals.to_list()  # slow
 
-        xa = xr.DataArray(
+        xa = xr.DataArray(  # really slow
             series_df.to_numpy()[:, :, np.newaxis],
             dims=(time_col if time_col else DIMS[0],) + DIMS[-2:],
             coords={
@@ -915,7 +915,7 @@ class TimeSeries:
             attrs={STATIC_COV_TAG: static_covariates, HIERARCHY_TAG: hierarchy},
         )
 
-        return cls.from_xarray(
+        return cls.from_xarray(  # really slow
             xa=xa,
             fill_missing_dates=fill_missing_dates,
             freq=freq,

@@ -76,8 +76,8 @@ def create_random_dataframes(
 
 def test_dataframes() -> list:
     test_config = product(
-        [10, 100, 1000],
-        [10, 100, 500],
+        [10, 100, 1000, 10000],
+        [10, 100, 500, 1000],
         [True, False],
     )
 
