@@ -42,6 +42,7 @@ from darts.models.forecasting.torch_forecasting_model import (
     DualCovariatesTorchModel,
     MixedCovariatesTorchModel,
     PastCovariatesTorchModel,
+    TorchForecastingModel,
 )
 from darts.utils.likelihood_models import GaussianLikelihood
 
@@ -326,7 +327,13 @@ class TestGlobalForecastingModels:
 
         # test load
         loaded_model = type(model).load(full_model_path_str)
-        loaded_model_clean_str = type(model).load(full_model_clean_path_str)
+        if isinstance(model, TorchForecastingModel):
+            load_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
+        else:
+            load_kwargs = {}
+        loaded_model_clean_str = type(model).load(
+            full_model_clean_path_str, **load_kwargs
+        )
 
         assert (
             loaded_model.predict(
@@ -498,12 +505,18 @@ class TestGlobalForecastingModels:
             input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
         )
         model.fit(series=self.ts_pass_train, **cov_kwargs_train)
-        if is_past:
-            # with past covariates from train we can predict up until output_chunk_length
-            pred1 = model.predict(1)
-            pred2 = model.predict(1, series=self.ts_pass_train)
-            pred3 = model.predict(1, **cov_kwargs_train)
-            pred4 = model.predict(1, **cov_kwargs_train, series=self.ts_pass_train)
+        if is_past or is_past is None:
+            # without covariates or with past covariates from train we can predict up until output_chunk_length
+            pred1 = model.predict(OUT_LEN)
+            pred2 = model.predict(OUT_LEN, series=self.ts_pass_train)
+            pred3 = model.predict(OUT_LEN, **cov_kwargs_train)
+            pred4 = model.predict(
+                OUT_LEN, **cov_kwargs_train, series=self.ts_pass_train
+            )
+
+            if is_past is None:
+                # without covariates we can predict any horizon
+                _ = model.predict(OUT_LEN + 1)
         else:
             # with future covariates we need additional time steps to predict
             with pytest.raises(ValueError):
@@ -515,10 +528,14 @@ class TestGlobalForecastingModels:
             with pytest.raises(ValueError):
                 _ = model.predict(1, **cov_kwargs_train, series=self.ts_pass_train)
 
-            pred1 = model.predict(1, **cov_kwargs_notrain)
-            pred2 = model.predict(1, series=self.ts_pass_train, **cov_kwargs_notrain)
-            pred3 = model.predict(1, **cov_kwargs_notrain)
-            pred4 = model.predict(1, **cov_kwargs_notrain, series=self.ts_pass_train)
+            pred1 = model.predict(OUT_LEN, **cov_kwargs_notrain)
+            pred2 = model.predict(
+                OUT_LEN, series=self.ts_pass_train, **cov_kwargs_notrain
+            )
+            pred3 = model.predict(OUT_LEN, **cov_kwargs_notrain)
+            pred4 = model.predict(
+                OUT_LEN, **cov_kwargs_notrain, series=self.ts_pass_train
+            )
 
         assert pred1 == pred2
         assert pred1 == pred3
