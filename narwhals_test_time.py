@@ -97,7 +97,7 @@ num_iter = 5
 pandas_global_timer = 0
 narwhals_global_timer = 0
 
-for _ in range(num_iter):
+for iter in range(num_iter + 1):
     pandas_timer = 0
     narwhals_timer = 0
     for df_config in df_list:
@@ -140,17 +140,18 @@ for _ in range(num_iter):
                     print(
                         f"Equal assertion failed for DataFrame with columns {col_names} and time_col {time_col}: {e}"
                     )
-
-    print("pandas processing time: ", pandas_timer)
-    print("narwhals processing time: ", narwhals_timer, "\n")
-    pandas_global_timer += pandas_timer
-    narwhals_global_timer += narwhals_timer
+    # throw first iteration away, memory initialization
+    if iter > 0:
+        print(f"pandas processing time: {pandas_timer:.4f}")
+        print(f"narwhals processing time: {narwhals_timer:.4f} \n")
+        pandas_global_timer += pandas_timer
+        narwhals_global_timer += narwhals_timer
 
 pandas_global_timer /= num_iter
 narwhals_global_timer /= num_iter
 
-print("Average pandas processing time: ", pandas_global_timer)
-print("Average narwhals processing time: ", narwhals_global_timer)
+print(f"Average pandas processing time: {pandas_global_timer:.4f}")
+print(f"Average narwhals processing time: {narwhals_global_timer:.4f} \n")
 
 diff_in_fraction = (-pandas_global_timer + narwhals_global_timer) / pandas_global_timer
 print(f"Average processing time difference: {diff_in_fraction:.2%}")

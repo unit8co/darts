@@ -849,6 +849,8 @@ class TimeSeries:
         if time_col:
             if time_col not in df.columns:
                 raise_log(AttributeError(f"time_col='{time_col}' is not present."))
+
+            time_index = pd.Index([])
             time_col_vals = df[time_col]
 
             if time_col_vals.dtype == nw.String:
@@ -869,13 +871,13 @@ class TimeSeries:
 
                 # Temporarily use an integer Index to sort the values, and replace by a
                 # RangeIndex in `TimeSeries.from_xarray()`
-                time_index = time_col_vals.to_list()
-                # time_index = pd.Index(time_col_vals)
+                time_index = pd.Index(time_col_vals)
 
             elif time_col_vals.dtype == nw.String:
                 # The integer conversion failed; try datetimes
                 try:
                     time_index = time_col_vals.str.to_datetime()
+                    time_index = pd.DatetimeIndex(time_index)
                 except Exception:
                     raise_log(
                         AttributeError(
@@ -883,8 +885,7 @@ class TimeSeries:
                         )
                     )
             elif time_col_vals.dtype == nw.Datetime:
-                time_index = time_col_vals.to_list()
-                # time_index = pd.DatetimeIndex(time_col_vals)
+                time_index = pd.DatetimeIndex(time_col_vals)
             else:
                 raise_log(
                     AttributeError(
@@ -903,9 +904,9 @@ class TimeSeries:
                 "a DatetimeIndex, a RangeIndex, or an integer Index that can be converted into a RangeIndex",
                 logger,
             )
-            time_index = time_col_vals.to_list()  # slow
+            time_index = time_col_vals
 
-        xa = xr.DataArray(  # really slow
+        xa = xr.DataArray(
             series_df.to_numpy()[:, :, np.newaxis],
             dims=(time_col if time_col else DIMS[0],) + DIMS[-2:],
             coords={
