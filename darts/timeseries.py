@@ -836,8 +836,7 @@ class TimeSeries:
         # get values
         if value_cols is None:
             if time_col is not None:
-                # series_df = df.drop(time_col)
-                series_df = df.loc[:, df.columns != time_col]
+                series_df = df.drop(time_col)
             else:
                 series_df = df
         else:
@@ -904,15 +903,31 @@ class TimeSeries:
                 "a DatetimeIndex, a RangeIndex, or an integer Index that can be converted into a RangeIndex",
                 logger,
             )
-            time_index = time_col_vals
+            # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
+            # pandas.DataFrame loses the tz information if it's not its index
+            if (
+                isinstance(time_col_vals, pd.DatetimeIndex)
+                and time_col_vals.tz is not None
+            ):
+                logger.warning(
+                    "The provided DatetimeIndex was associated with a timezone, which is currently not supported "
+                    "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                    f"`ts.time_index.tz_localize({time_col_vals.tz})` when exporting the results."
+                    "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                    "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                    "original timezone."
+                )
+                time_index = time_col_vals.tz_localize(None)
+            else:
+                time_index = time_col_vals
+
+        if not time_index.name:
+            time_index.name = time_col if time_col else DIMS[0]
 
         xa = xr.DataArray(
             series_df.to_numpy()[:, :, np.newaxis],
-            dims=(time_col if time_col else DIMS[0],) + DIMS[-2:],
-            coords={
-                time_col if time_col else DIMS[0]: time_index,
-                DIMS[1]: series_df.columns,
-            },
+            dims=(time_index.name,) + DIMS[-2:],
+            coords={time_index.name: time_index, DIMS[1]: series_df.columns},
             attrs={STATIC_COV_TAG: static_covariates, HIERARCHY_TAG: hierarchy},
         )
 
