@@ -15,6 +15,7 @@ def create_random_dataframes(
     num_rows: int = 10,
     num_columns: int = 3,
     index: bool = True,
+    col_names_given: bool = True,
     start_date: str = "2023-01-01",
     freq: str = "D",
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -50,7 +51,10 @@ def create_random_dataframes(
     df_numpy = pd.DataFrame(data)
     df_integer = pd.DataFrame(data)
 
-    col_names = df_date.columns.values
+    if col_names_given:
+        col_names = df_date.columns.values
+    else:
+        col_names = None
 
     # Set the date as index or as a column based on the index parameter
     if index:
@@ -79,13 +83,17 @@ def test_dataframes() -> list:
         [10, 100, 1000, 10000],
         [10, 100, 500, 1000],
         [True, False],
+        [True, False],
     )
 
     dataframes_list = [
         create_random_dataframes(
-            num_rows=num_rows, num_columns=num_columns, index=index
+            num_rows=num_rows,
+            num_columns=num_columns,
+            index=index,
+            col_names_given=col_names_given,
         )
-        for num_rows, num_columns, index in test_config
+        for num_rows, num_columns, index, col_names_given in test_config
     ]
 
     return dataframes_list
