@@ -120,10 +120,9 @@ class ForecastingAnomalyModel(AnomalyModel):
             If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
             an error if the value is not in `series`' index. Default: `'value'`
         num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
-            deterministic models.
+            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
         verbose
-            Whether to print progress.
+            Whether to print the progress.
         show_warnings
             Whether to show warnings related to historical forecasts optimization, or parameters `start` and
             `train_length`.
@@ -201,10 +200,9 @@ class ForecastingAnomalyModel(AnomalyModel):
             If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
             an error if the value is not in `series`' index. Default: `'value'`
         num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
-            deterministic models.
+            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
         verbose
-            Whether to print progress.
+            Whether to print the progress.
         show_warnings
             Whether to show warnings related to historical forecasts optimization, or parameters `start` and
             `train_length`.
@@ -289,10 +287,9 @@ class ForecastingAnomalyModel(AnomalyModel):
             If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
             an error if the value is not in `series`' index. Default: `'value'`
         num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
-            deterministic models.
+            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
         verbose
-            Whether to print progress.
+            Whether to print the progress.
         show_warnings
             Whether to show warnings related to historical forecasts optimization, or parameters `start` and
             `train_length`.
@@ -385,10 +382,9 @@ class ForecastingAnomalyModel(AnomalyModel):
             If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
             an error if the value is not in `series`' index. Default: `'value'`
         num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
-            deterministic models.
+            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
         verbose
-            Whether to print progress.
+            Whether to print the progress.
         show_warnings
             Whether to show warnings related to historical forecasts optimization, or parameters `start` and
             `train_length`.
@@ -444,6 +440,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
         metric: Optional[Literal["AUC_ROC", "AUC_PR"]] = None,
+        component_wise: bool = False,
         **score_kwargs,
     ):
         """Plot the results of the anomaly model.
@@ -491,10 +488,9 @@ class ForecastingAnomalyModel(AnomalyModel):
             If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
             an error if the value is not in `series`' index. Default: `'value'`
         num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
-            deterministic models.
+            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
         verbose
-            Whether to print progress.
+            Whether to print the progress.
         show_warnings
             Whether to show warnings related to historical forecasts optimization, or parameters `start` and
             `train_length`.
@@ -511,6 +507,8 @@ class ForecastingAnomalyModel(AnomalyModel):
             Optionally, the name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC".
+        component_wise
+            If True, will separately plot each component in case of multivariate anomaly detection.
         score_kwargs
             parameters for the `score()` method.
         """
@@ -532,6 +530,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             names_of_scorers=names_of_scorers,
             title=title,
             metric=metric,
+            component_wise=component_wise,
             **score_kwargs,
         )
 

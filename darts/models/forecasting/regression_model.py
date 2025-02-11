@@ -381,8 +381,11 @@ class RegressionModel(GlobalForecastingModel):
                 else:
                     max_lags = max(max_lags, tmp_components_lags[comp_name][-1])
 
+            # Check if only default lags are provided
+            has_default_lags = list(tmp_components_lags.keys()) == ["default_lags"]
+
             # revert to shared lags logic when applicable
-            if list(tmp_components_lags.keys()) == ["default_lags"]:
+            if has_default_lags:
                 processed_lags[lags_abbrev] = tmp_components_lags["default_lags"]
             else:
                 processed_lags[lags_abbrev] = [min_lags, max_lags]
@@ -393,7 +396,7 @@ class RegressionModel(GlobalForecastingModel):
                 processed_lags[lags_abbrev] = [
                     lag_ + output_chunk_shift for lag_ in processed_lags[lags_abbrev]
                 ]
-                if processed_component_lags:
+                if processed_component_lags and not has_default_lags:
                     processed_component_lags[lags_abbrev] = {
                         comp_: [lag_ + output_chunk_shift for lag_ in lags_]
                         for comp_, lags_ in processed_component_lags[
@@ -988,9 +991,9 @@ class RegressionModel(GlobalForecastingModel):
             Number of times a prediction is sampled from a probabilistic model. Should be set to 1
             for deterministic models.
         verbose
-            Optionally, whether to print progress.
+            Whether to print the progress.
         predict_likelihood_parameters
-            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
             Default: ``False``
         **kwargs : dict, optional
@@ -1005,7 +1008,7 @@ class RegressionModel(GlobalForecastingModel):
                 raise_log(
                     ValueError(
                         "Input `series` must be provided. This is the result either from fitting on multiple series, "
-                        "or from not having fit the model yet."
+                        "from not having fit the model yet, or from loading a model saved with `clean=True`."
                     ),
                     logger,
                 )

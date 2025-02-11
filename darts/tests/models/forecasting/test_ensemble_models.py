@@ -18,8 +18,14 @@ from darts.models import (
     StatsForecastAutoARIMA,
     Theta,
 )
+from darts.models.forecasting.forecasting_model import LocalForecastingModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
+
+if TORCH_AVAILABLE:
+    from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+else:
+    TorchForecastingModel = None
 
 logger = get_logger(__name__)
 
@@ -766,14 +772,10 @@ class TestEnsembleModels:
         )
 
     @pytest.mark.parametrize("model_cls", [NaiveEnsembleModel, RegressionEnsembleModel])
-    def test_save_load_ensemble_models(self, tmpdir_module, model_cls):
+    def test_save_load_ensemble_models(self, tmpdir_fn, model_cls):
         # check if save and load methods work and
         # if loaded ensemble model creates same forecasts as original ensemble models
-        cwd = os.getcwd()
-        os.chdir(tmpdir_module)
-        os.mkdir(model_cls.__name__)
-        full_model_path_str = os.path.join(tmpdir_module, model_cls.__name__)
-        os.chdir(full_model_path_str)
+        full_model_path_str = os.getcwd()
         kwargs = {}
         expected_suffixes = [".pkl", ".pkl.RNNModel_2.pt", ".pkl.RNNModel_2.pt.ckpt"]
 
@@ -828,4 +830,19 @@ class TestEnsembleModels:
             loaded_model = model_cls.load(p)
             assert model_prediction == loaded_model.predict(5)
 
-        os.chdir(cwd)
+            # test pl_trainer_kwargs (only for torch models)
+            loaded_model = model_cls.load(p, pl_trainer_kwargs={"accelerator": "cuda"})
+            for i, m in enumerate(loaded_model.forecasting_models):
+                if TORCH_AVAILABLE and issubclass(type(m), TorchForecastingModel):
+                    assert m.trainer_params["accelerator"] == "cuda"
+
+        # test clean save
+        path = os.path.join(full_model_path_str, f"clean_{model_cls.__name__}.pkl")
+        model.save(path, clean=True)
+        clean_model = model_cls.load(path)
+        for i, m in enumerate(clean_model.forecasting_models):
+            if not issubclass(type(m), LocalForecastingModel):
+                assert m.training_series is None
+                assert m.past_covariate_series is None
+                assert m.future_covariate_series is None
+        assert model.predict(5) == clean_model.predict(5, self.series1 + self.series2)

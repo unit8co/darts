@@ -3,9 +3,15 @@ Ensemble Model Base Class
 """
 
 import os
+import sys
 from abc import abstractmethod
 from collections.abc import Sequence
 from typing import BinaryIO, Optional, Union
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import (
@@ -239,9 +245,10 @@ class EnsembleModel(GlobalForecastingModel):
         # stacks multiple sequences of timeseries elementwise
         return [self._stack_ts_seq(ts_list) for ts_list in zip(*predictions_list)]
 
+    @property
     def _model_encoder_settings(self):
         raise NotImplementedError(
-            "Encoders are not supported by EnsembleModels. Instead add encoder to the underlying `forecasting_models`."
+            "Encoders are not supported by EnsembleModels. Instead add encoders to the underlying `forecasting_models`."
         )
 
     def _make_multiple_predictions(
@@ -385,8 +392,19 @@ class EnsembleModel(GlobalForecastingModel):
             ]
         return predictions[0] if is_single_series else predictions
 
+    def _clean(self) -> Self:
+        """Cleans the model and sub-models."""
+        cleaned_model = super()._clean()
+        cleaned_model.forecasting_models = [
+            model._clean() for model in self.forecasting_models
+        ]
+        return cleaned_model
+
     def save(
-        self, path: Optional[Union[str, os.PathLike, BinaryIO]] = None, **pkl_kwargs
+        self,
+        path: Optional[Union[str, os.PathLike, BinaryIO]] = None,
+        clean: bool = False,
+        **pkl_kwargs,
     ) -> None:
         """
         Saves the ensemble model under a given path or file handle.
@@ -419,6 +437,13 @@ class EnsembleModel(GlobalForecastingModel):
             the ensemble model is automatically saved under ``"{RegressionEnsembleModel}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
             If the i-th model of `forecasting_models` is a TorchForecastingModel, two files (model object and
             checkpoint) are saved under ``"{path}.{ithModelClass}_{i}.pt"`` and ``"{path}.{ithModelClass}_{i}.ckpt"``.
+        clean
+            Whether to store a cleaned version of the model. If `True`, the training series and covariates are removed.
+            If the underlying `forecasting_models` contain any `TorchForecastingModel`, will additionally remove all of
+            their Lightning Trainer-related parameters.
+
+            Note: After loading a model stored with `clean=True`, a `series` must be passed 'predict()',
+            `historical_forecasts()` and other forecasting methods.
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """
@@ -427,30 +452,47 @@ class EnsembleModel(GlobalForecastingModel):
             # default path
             path = self._default_save_path() + ".pkl"
 
-        super().save(path, **pkl_kwargs)
+        super().save(path, clean=clean, **pkl_kwargs)
 
         for i, m in enumerate(self.forecasting_models):
             if TORCH_AVAILABLE and issubclass(type(m), TorchForecastingModel):
                 path_tfm = f"{path}.{type(m).__name__}_{i}.pt"
-                m.save(path=path_tfm)
+                m.save(path=path_tfm, clean=clean)
 
     @staticmethod
-    def load(path: Union[str, os.PathLike, BinaryIO]) -> "EnsembleModel":
+    def load(
+        path: Union[str, os.PathLike, BinaryIO],
+        pl_trainer_kwargs: Optional[dict] = None,
+        **kwargs,
+    ) -> "EnsembleModel":
         """
-        Loads the ensemble model from a given path or file handle.
+        Loads a model from a given path or file handle.
 
         Parameters
         ----------
         path
-            Path or file handle from which to load the ensemble model.
+            Path or file handle from which to load the model.
+        pl_trainer_kwargs
+            Only effective if the underlying forecasting models contain a `TorchForecastingModel`.
+            Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
+            tasks (e.g. prediction).
+            Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
+            `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_
+            for more information about the supported kwargs.
+        **kwargs
+            Only effective if the underlying forecasting models contain a `TorchForecastingModel`.
+            Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
+            For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
+            common/lightning_module.html#load-from-checkpoint>`_.
         """
-
         model: EnsembleModel = GlobalForecastingModel.load(path)
 
         for i, m in enumerate(model.forecasting_models):
             if TORCH_AVAILABLE and issubclass(type(m), TorchForecastingModel):
                 path_tfm = f"{path}.{type(m).__name__}_{i}.pt"
-                model.forecasting_models[i] = TorchForecastingModel.load(path_tfm)
+                model.forecasting_models[i] = TorchForecastingModel.load(
+                    path_tfm, pl_trainer_kwargs=pl_trainer_kwargs, **kwargs
+                )
         return model
 
     @property

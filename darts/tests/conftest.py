@@ -1,4 +1,5 @@
 import logging
+import os
 import shutil
 import tempfile
 
@@ -40,15 +41,31 @@ def set_up_tests(request):
 
 @pytest.fixture(scope="module")
 def tmpdir_module():
-    """Sets up a temporary directory that will be deleted after the test module (script) finished."""
+    """Sets up and moves into a temporary directory that will be deleted after the test module (script) finished."""
     temp_work_dir = tempfile.mkdtemp(prefix="darts")
+    # remember origin
+    cwd = os.getcwd()
+    # move to temp dir
+    os.chdir(temp_work_dir)
+    # go into test with temp dir as input
     yield temp_work_dir
+    # move back to origin
     shutil.rmtree(temp_work_dir)
+    # remove temp dir
+    os.chdir(cwd)
 
 
 @pytest.fixture(scope="function")
 def tmpdir_fn():
-    """Sets up a temporary directory that will be deleted after the test function finished."""
+    """Sets up and moves into a temporary directory that will be deleted after the test function finished."""
     temp_work_dir = tempfile.mkdtemp(prefix="darts")
+    # remember origin
+    cwd = os.getcwd()
+    # move to temp dir
+    os.chdir(temp_work_dir)
+    # go into test with temp dir as input
     yield temp_work_dir
+    # move back to origin
+    os.chdir(cwd)
+    # remove temp dir
     shutil.rmtree(temp_work_dir)

@@ -5,37 +5,88 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.31.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.32.0...master)
 
 ### For users of the library:
 
 **Improved**
 
-- Improvements to `ForecastingModel`: Improved `start` handling for historical forecasts, backtest, residuals, and gridsearch. If `start` is not within the trainable / forecastable points, uses the closest valid start point that is a round multiple of `stride` ahead of start. Raises a ValueError, if no valid start point exists. This guarantees that all historical forecasts are `n * stride` points away from start, and will simplify many downstream tasks. [#2560](https://github.com/unit8co/darts/issues/2560) by [Dennis Bader](https://github.com/dennisbader).
-- Added `data_transformers` argument to `historical_forecasts`, `backtest`, `residuals`, and `gridsearch` that allow to automatically apply `DataTransformer` and/or `Pipeline` to the input series without data-leakage (fit on historic window of input series, transform the input series, and inverse transform the forecasts). [#2529](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou) and [Jan Fidor](https://github.com/JanFidor)
+- New model: `StatsForecastAutoTBATS`. This model offers the [AutoTBATS](https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotbats) model from Nixtla's `statsforecasts` library. [#2611](https://github.com/unit8co/darts/pull/2611) by [He Weilin](https://github.com/cnhwl).
+- Added the `title` attribute to `TimeSeries.plot()`. This allows to set a title for the plot. [#2639](https://github.com/unit8co/darts/pull/2639) by [Jonathan Koch](https://github.com/jonathankoch99).
+- Added parameter `component_wise` to `show_anomalies()` to separately plot each component in multivariate series. [#2544](https://github.com/unit8co/darts/pull/2544) by [He Weilin](https://github.com/cnhwl).
+- Added more resampling methods to `TimeSeries.resample()`. This allows to aggregate values when down-sampling and to fill or keep the holes when up-sampling. [#2654](https://github.com/unit8co/darts/pull/2654) by [Jonas Blanc](https://github.com/jonasblanc)
+- Added general function `darts.slice_intersect()` to intersect a sequence of `TimeSeries` along the time index. [#2592](https://github.com/unit8co/darts/pull/2592) by [Yoav Matzkevich](https://github.com/ymatzkevich).
+- Added new time aggregated metric `wmape()` (Weighted Mean Absolute Percentage Error). [#2544](https://github.com/unit8co/darts/pull/2648) by [He Weilin](https://github.com/cnhwl).
+- Improvements to `ForecastingModel`:
+  - Added parameter `clean: bool` to `ForecastingModel.save()` to store a cleaned version of the model (removes training data from global models, and Lightning Trainer-related parameters from torch models). [#2649](https://github.com/unit8co/darts/pull/2649) by [Jonas Blanc](https://github.com/jonasblanc).
+- Added parameter `pl_trainer_kwargs` to `TorchForecastingModel.load()` to setup a new Lightning Trainer used to configure the model for downstream tasks (e.g. prediction). [#2649](https://github.com/unit8co/darts/pull/2649) by [Jonas Blanc](https://github.com/jonasblanc).
+
+**Fixed**
+
+- Fixed a bug when performing optimized historical forecasts with `stride=1` using a `RegressionModel` with `output_chunk_shift>=1` and `output_chunk_length=1`, where the forecast time index was not properly shifted. [#2634](https://github.com/unit8co/darts/pull/2634) by [Mattias De Charleroy](https://github.com/MattiasDC).
+- Fixed the `ShapExplainer` `summary_plot` title where Horizon does not include `output_chunk_shift`. [#2647](https://github.com/unit8co/darts/pull/2647) by [He Weilin](https://github.com/cnhwl).
+- Fixed a bug where global naive models could not be used in ensemble models. [#2666](https://github.com/unit8co/darts/pull/2666) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug with global naive models where some `supports_*` properties were wrongly defined as methods. [#2666](https://github.com/unit8co/darts/pull/2666) by [Dennis Bader](https://github.com/dennisbader).
+
+**Dependencies**
+
+### For developers of the library:
+
+## [0.32.0](https://github.com/unit8co/darts/tree/0.32.0) (2024-12-21)
+
+### For users of the library:
+
+**Improved**
+
+- 🚀🚀 Introducing Conformal Prediction: You can now add calibrated prediction intervals to any pre-trained global forecasting model with our first two conformal prediction models : [#2552](https://github.com/unit8co/darts/pull/2552) by [Dennis Bader](https://github.com/dennisbader).
+  - `ConformalNaiveModel`: Uses past point forecast errors to produce calibrated forecast intervals with a specified coverage probability.
+  - `ConformalQRModel`: Combines quantile regression (or any probabilistic model) with conformal prediction techniques. It adjusts the quantile estimates to generate calibrated prediction intervals with a specified coverage probability.
+  - Both models offer the following support:
+    - identical API as forecasting models
+    - use any pre-trained global forecasting model as the base forecaster
+    - uni and multivariate forecasts
+    - single and multiple series forecasts
+    - single and multi-horizon forecasts
+    - generate a single or multiple calibrated prediction intervals
+    - direct quantile value predictions (interval bounds) or sampled predictions from these quantile values
+    - covariates based on the underlying forecasting model
+  - Check out our [conformal prediction notebook](https://unit8co.github.io/darts/examples/23-Conformal-Prediction-examples.html) for detailed information and usage examples!
+- Improvements to backtesting with `ForecastingModel` (`historical_forecasts()`, `backtest()`, `residuals()`, and `gridsearch()`):
+  - 🚀🚀 Added support for data transformers and pipelines. Use argument `data_transformers` to automatically apply any `DataTransformer` and/or `Pipeline` to the input series without data-leakage (optional fit on historic window of input series, transform the input series, and inverse transform the forecasts). [#2529](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou) and [Jan Fidor](https://github.com/JanFidor)
+  - Improved `start` handling. If `start` is not within the trainable / forecastable points, uses the closest valid start point that is a round multiple of `stride` ahead of start. Raises a ValueError, if no valid start point exists. This guarantees that all historical forecasts are `n * stride` points away from start, and will simplify many downstream tasks. [#2560](https://github.com/unit8co/darts/issues/2560) by [Dennis Bader](https://github.com/dennisbader).
+  - Added support for `overlap_end=True` to `residuals()`. This computes historical forecasts and residuals that can extend further than the end of the target series. Guarantees that all returned residual values have the same length per forecast (the last residuals will contain missing values, if the forecasts extended further into the future than the end of the target series). [#2552](https://github.com/unit8co/darts/pull/2552) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to `metrics`: Added three new quantile interval metrics (plus their aggregated versions) : [#2552](https://github.com/unit8co/darts/pull/2552) by [Dennis Bader](https://github.com/dennisbader).
+  - Interval Winkler Score `iws()`, and Mean Interval Winkler Scores `miws()` (time-aggregated) ([source](https://otexts.com/fpp3/distaccuracy.html))
+  - Interval Coverage `ic()` (binary if observation is within the quantile interval), and Mean Interval Coverage `mic()` (time-aggregated)
+  - Interval Non-Conformity Score for Quantile Regression `incs_qr()`, and Mean ... `mincs_qr()` (time-aggregated) ([source](https://arxiv.org/pdf/1905.03222))
 - Added `series_idx` argument to `DataTransformer` that allows users to use only a subset of the transformers when `global_fit=False` and severals series are used. [#2529](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou)
 - Updated the Documentation URL of `Statsforecast` models. [#2610](https://github.com/unit8co/darts/pull/2610) by [He Weilin](https://github.com/cnhwl).
 
 **Fixed**
 
+- Fixed a bug when initiating a `RegressionModel` with `lags_past_covariates` as dict and `lags_future_covariates` as some other type (not dict) and `output_chunk_shift>0`, [#2652](https://github.com/unit8co/darts/issues/2652) by [Jules Authier](https://github.com/authierj).
 - Fixed a bug which raised an error when computing residuals (or backtest with "per time step" metrics) on multiple series with corresponding historical forecasts of different lengths. [#2604](https://github.com/unit8co/darts/pull/2604) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when using `darts.utils.data.tabularization.create_lagged_component_names()` with target `lags=None`, that did not return any lagged target label component names. [#2576](https://github.com/unit8co/darts/pull/2576) by [Dennis Bader](https://github.com/dennisbader).
-- Fixed a bug when using `num_samples > 1` with a deterministic regression model and the optimized `historical_forecasts()` method, an exception was not raised. [#2576](https://github.com/unit8co/darts/pull/2588) by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed a bug when using `num_samples > 1` with a deterministic regression model and the optimized `historical_forecasts()` method, which did not raise an exception. [#2576](https://github.com/unit8co/darts/pull/2588) by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed a bug when performing optimized historical forecasts with `RegressionModel` and `last_points_only=False`, where the forecast index generation could result in out-of-bound dates. [#2623](https://github.com/unit8co/darts/pull/2623) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed the failing docker image deployment. [#2583](https://github.com/unit8co/darts/pull/2583) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 
 - 🔴 Removed support for Python 3.8. The new minimum Python version is 3.9. [#2586](https://github.com/unit8co/darts/pull/2586) by [Dennis Bader](https://github.com/dennisbader).
+- We set an upper version cap on `sklkearn<=1.5.0` until `xgboost` officially supports version `1.6.0`.  [#2618](https://github.com/unit8co/darts/pull/2618) by [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:
 
 **Improved**
-- Improvements to CI/CD: [#2584](https://github.com/unit8co/darts/pull/2584) by [Dennis Bader](https://github.com/dennisbader).
-  - updated all workflows with most recent action versions
+
+- Improvements to CI/CD : [#2584](https://github.com/unit8co/darts/pull/2584) by [Dennis Bader](https://github.com/dennisbader).
+  - updated all workflows with most recent GitHub actions versions
   - improved caching across `master` branch and its children
   - fixed failing docker deployment
-  - removed `gradle` dependency in favor of native GitHub action plugins.
-- Updated ruff to v0.7.2 and target-version to python39, also fixed various typos [#2589](https://github.com/unit8co/darts/pull/2589) by [Greg DeVosNouri](https://github.com/gdevos010) and [Antoine Madrona](https://github.com/madtoinou).
-- Replaced the deprecated `torch.nn.utils.weight_norm` function with `torch.nn.utils.parametrizations.weight_norm` [#2593](https://github.com/unit8co/darts/pull/2593) by [Saeed Foroutan](https://github.com/SaeedForoutan).
+  - removed `gradle` dependency in favor of native GitHub actions plugins.
+- Updated ruff to v0.7.2 and target-version to python39, also fixed various typos. [#2589](https://github.com/unit8co/darts/pull/2589) by [Greg DeVosNouri](https://github.com/gdevos010) and [Antoine Madrona](https://github.com/madtoinou).
+- Replaced the deprecated `torch.nn.utils.weight_norm` function with `torch.nn.utils.parametrizations.weight_norm`. [#2593](https://github.com/unit8co/darts/pull/2593) by [Saeed Foroutan](https://github.com/SaeedForoutan).
 
 ## [0.31.0](https://github.com/unit8co/darts/tree/0.31.0) (2024-10-13)
 
@@ -84,7 +135,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Fixed the comment of `scorers_are_univariate` in class `AnomalyModel`. [#2452](https://github.com/unit8co/darts/pull/2542) by [He Weilin](https://github.com/cnhwl).
 
 **Dependencies**
-- Bumped release requirements versions for jupyterlab and dependencies: [#2515](https://github.com/unit8co/darts/pull/2515) by [Dennis Bader](https://github.com/dennisbader).
+
+- Bumped release requirements versions for jupyterlab and dependencies : [#2515](https://github.com/unit8co/darts/pull/2515) by [Dennis Bader](https://github.com/dennisbader).
   - Bumped `ipython` from 8.10.0 to 8.18.1
   - Bumped `ipykernel` from 5.3.4 to 6.29.5
   - Bumped `ipywidgets` from 7.5.1 to 8.1.5
