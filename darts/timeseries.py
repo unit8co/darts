@@ -50,7 +50,7 @@ import narwhals as nw
 import numpy as np
 import pandas as pd
 import xarray as xr
-from narwhals.typing import DataFrameT
+from narwhals.typing import IntoDataFrame, IntoSeries
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
@@ -751,7 +751,7 @@ class TimeSeries:
     @classmethod
     def from_narwhals_dataframe(
         cls,
-        df: DataFrameT,
+        df: IntoDataFrame,
         time_col: Optional[str] = None,
         value_cols: Optional[Union[list[str], str]] = None,
         fill_missing_dates: Optional[bool] = False,
@@ -1194,6 +1194,62 @@ class TimeSeries:
             A univariate and deterministic TimeSeries constructed from the inputs.
         """
         df = pd.DataFrame(pd_series)
+        return cls.from_dataframe(
+            df,
+            time_col=None,
+            value_cols=None,
+            fill_missing_dates=fill_missing_dates,
+            freq=freq,
+            fillna_value=fillna_value,
+            static_covariates=static_covariates,
+        )
+
+    @classmethod
+    def from_narwhals_series(
+        cls,
+        pd_series: IntoSeries,
+        fill_missing_dates: Optional[bool] = False,
+        freq: Optional[Union[str, int]] = None,
+        fillna_value: Optional[float] = None,
+        static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
+    ) -> Self:
+        """
+        Build a univariate deterministic series from a pandas Series.
+
+        The series must contain an index that is either a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index
+        that can be converted into a RangeIndex. It is better if the index has no holes; alternatively setting
+        `fill_missing_dates` can in some cases solve these issues (filling holes with NaN, or with the provided
+        `fillna_value` numeric value, if any).
+
+        Parameters
+        ----------
+        pd_series
+            The pandas Series instance.
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
+            with NaN values. This requires either a provided `freq` or the possibility to infer the frequency from the
+            provided timestamps. See :meth:`_fill_missing_dates() <TimeSeries._fill_missing_dates>` for more info.
+        freq
+            Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
+            to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+            If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            supported frequencies).
+            If an integer, represents the step size of the pandas Index or pandas RangeIndex.
+        fillna_value
+            Optionally, a numeric value to fill missing values (NaNs) with.
+        static_covariates
+            Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a
+            single-row pandas DataFrame. If a Series, the index represents the static variables. If a DataFrame, the
+            columns represent the static variables and the single row represents the univariate TimeSeries component.
+
+        Returns
+        -------
+        TimeSeries
+            A univariate and deterministic TimeSeries constructed from the inputs.
+        """
+        nw_series = nw.from_native(pd_series, allow_series=True)
+        df = nw_series.to_frame()
         return cls.from_dataframe(
             df,
             time_col=None,
