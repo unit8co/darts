@@ -1870,6 +1870,34 @@ class TestRegressionModels:
     @pytest.mark.parametrize(
         "config",
         product(
+            [(XGBModel, xgb_test_params)]
+            + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else [])
+            + ([(CatBoostModel, cb_test_params)] if cb_available else []),
+            [True, False],
+        ),
+    )
+    def test_val_set_weights_runnability_trees(self, config):
+        """Tests using weights in val set for single and multi series."""
+        (model_cls, model_kwargs), single_series = config
+        model = model_cls(lags=10, **model_kwargs)
+
+        series = tg.sine_timeseries(length=20)
+        weights = tg.linear_timeseries(length=20)
+        if not single_series:
+            series = [series] * 2
+            weights = [weights] * 2
+
+        model.fit(
+            series=series,
+            val_series=series,
+            sample_weight=weights,
+            val_sample_weight=weights,
+        )
+        _ = model.predict(1, series=series)
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
             [
                 (
                     XGBModel,
