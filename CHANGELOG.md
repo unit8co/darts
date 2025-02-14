@@ -20,6 +20,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to `ForecastingModel`:
   - Added parameter `clean: bool` to `ForecastingModel.save()` to store a cleaned version of the model (removes training data from global models, and Lightning Trainer-related parameters from torch models). [#2649](https://github.com/unit8co/darts/pull/2649) by [Jonas Blanc](https://github.com/jonasblanc).
 - Added parameter `pl_trainer_kwargs` to `TorchForecastingModel.load()` to setup a new Lightning Trainer used to configure the model for downstream tasks (e.g. prediction). [#2649](https://github.com/unit8co/darts/pull/2649) by [Jonas Blanc](https://github.com/jonasblanc).
+- Improved the documentation of how `WindowedAnomalyScorer` extract the training data from the input series. [#2674](https://github.com/unit8co/darts/pull/2674) by [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
 
