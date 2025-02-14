@@ -7,8 +7,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 [Full Changelog](https://github.com/unit8co/darts/compare/0.32.0...master)
 
-- Fix the bug in [#2579 ](https://github.com/unit8co/darts/issues/2579)  that causes an error when `val_sample_weight` is set in the CatBoost and XGBoost models.
-
 ### For users of the library:
 
 **Improved**
@@ -22,6 +20,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to `ForecastingModel`:
   - Added parameter `clean: bool` to `ForecastingModel.save()` to store a cleaned version of the model (removes training data from global models, and Lightning Trainer-related parameters from torch models). [#2649](https://github.com/unit8co/darts/pull/2649) by [Jonas Blanc](https://github.com/jonasblanc).
 - Added parameter `pl_trainer_kwargs` to `TorchForecastingModel.load()` to setup a new Lightning Trainer used to configure the model for downstream tasks (e.g. prediction). [#2649](https://github.com/unit8co/darts/pull/2649) by [Jonas Blanc](https://github.com/jonasblanc).
+- Fixed a bug with `RegressionModel.fit()` which raised an error when passing a single series as `val_sample_weight`. [#2626](https://github.com/unit8co/darts/pull/2626) by [Kylin Schmidt](https://github.com/kylinschmidt).
 
 **Fixed**
 
@@ -1460,7 +1459,7 @@ ts: TimeSeries = AirPassengers().load()
   ```python
   # Assuming a multivariate TimeSeries named series with 3 columns or variables.
   # To apply fn to columns with names '0' and '2':
-  
+
   #old syntax
   series.map(fn, cols=['0', '2']) # returned a time series with 3 columns
   #new syntax
@@ -1472,13 +1471,13 @@ ts: TimeSeries = AirPassengers().load()
   ```python
   #old syntax
   fillna(series, fill=0)
-  
+
   #new syntax
   fill_missing_values(series, fill=0)
-  
+
   #old syntax
   auto_fillna(series, **interpolate_kwargs)
-  
+
   #new syntax
   fill_missing_values(series, fill='auto', **interpolate_kwargs)
   fill_missing_values(series, **interpolate_kwargs) # fill='auto' by default
@@ -1516,13 +1515,13 @@ ts: TimeSeries = AirPassengers().load()
     ```python
     # old syntax:
     backtest_forecasting(forecasting_model, *args, **kwargs)
-    
+
     # new syntax:
     forecasting_model.backtest(*args, **kwargs)
-    
+
     # old syntax:
     backtest_regression(regression_model, *args, **kwargs)
-    
+
     # new syntax:
     regression_model.backtest(*args, **kwargs)
     ```
@@ -1531,13 +1530,13 @@ ts: TimeSeries = AirPassengers().load()
   ```python
   # old syntax:
   multivariate_model.fit(multivariate_series, target_indices=[0, 1])
-  
+
   # new syntax:
   multivariate_model.fit(multivariate_series, multivariate_series[["0", "1"]])
-  
+
   # old syntax:
   univariate_model.fit(multivariate_series, component_index=2)
-  
+
   # new syntax:
   univariate_model.fit(multivariate_series["2"])
   ```
