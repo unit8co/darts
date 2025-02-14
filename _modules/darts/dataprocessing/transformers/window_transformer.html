@@ -178,18 +178,18 @@
 <span class="sd">------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Mapping</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">BaseDataTransformer</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span>
-<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseDataTransformer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="WindowTransformer"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.window_transformer.html#darts.dataprocessing.transformers.window_transformer.WindowTransformer">[docs]</a><span class="k">class</span> <span class="nc">WindowTransformer</span><span class="p">(</span><span class="n">BaseDataTransformer</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="WindowTransformer"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.window_transformer.html#darts.dataprocessing.transformers.window_transformer.WindowTransformer">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">WindowTransformer</span><span class="p">(</span><span class="n">BaseDataTransformer</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">transforms</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]],</span>
         <span class="n">treat_na</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -332,7 +332,7 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">n_jobs</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
 
 <div class="viewcode-block" id="WindowTransformer.ts_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.window_transformer.html#darts.dataprocessing.transformers.window_transformer.WindowTransformer.ts_transform">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ts_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">window_transform</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">])</span></div></div>
 </pre></div>
 
@@ -355,7 +355,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

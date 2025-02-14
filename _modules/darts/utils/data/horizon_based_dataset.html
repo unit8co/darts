@@ -178,22 +178,22 @@
 <span class="sd">------------------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.utils.data.training_dataset</span> <span class="kn">import</span> <span class="n">PastCovariatesTrainingDataset</span>
-<span class="kn">from</span> <span class="nn">darts.utils.data.utils</span> <span class="kn">import</span> <span class="n">CovariateType</span><span class="p">,</span> <span class="n">_process_sample_weight</span>
-<span class="kn">from</span> <span class="nn">darts.utils.ts_utils</span> <span class="kn">import</span> <span class="n">series2seq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data.training_dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">PastCovariatesTrainingDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">CovariateType</span><span class="p">,</span> <span class="n">_process_sample_weight</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">series2seq</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="HorizonBasedDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.horizon_based_dataset.html#darts.utils.data.horizon_based_dataset.HorizonBasedDataset">[docs]</a><span class="k">class</span> <span class="nc">HorizonBasedDataset</span><span class="p">(</span><span class="n">PastCovariatesTrainingDataset</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="HorizonBasedDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.horizon_based_dataset.html#darts.utils.data.horizon_based_dataset.HorizonBasedDataset">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">HorizonBasedDataset</span><span class="p">(</span><span class="n">PastCovariatesTrainingDataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -293,13 +293,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">total_nr_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_samples_per_ts</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">use_static_covariates</span> <span class="o">=</span> <span class="n">use_static_covariates</span>
 
-    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns the total number of possible (input, target) splits.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_nr_samples</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span>
         <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -448,7 +448,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

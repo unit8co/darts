@@ -677,6 +677,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
+       StatsForecastAutoTBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
        StatsForecastAutoTheta
       </a>
@@ -892,15 +897,16 @@ series. If set to <cite>True</cite>, the model will treat each component indepen
 <cite>k</cite>-means model for each dimension. If set to <cite>False</cite>, the model concatenates the dimensions in
 each windows of length <cite>W</cite> and computes the score using only one underlying <cite>k</cite>-means model.</p>
 <p><strong>Training with</strong> <cite>fit()</cite>:</p>
-<p>The input can be a series (univariate or multivariate) or multiple series. The series will be sliced
-into equal size subsequences. The subsequence will be of size <cite>W</cite> * <cite>D</cite>, with:</p>
+<p>The input can be a series (univariate or multivariate) or multiple series. The series will be partitioned
+into equal size subsequences. Each subsequence has size <cite>W * D</cite> (features), where:</p>
 <ul class="simple">
-<li><p><cite>W</cite> being the size of the window given as a parameter <cite>window</cite></p></li>
-<li><p><cite>D</cite> being the dimension of the series (<cite>D</cite> = 1 if univariate or if <cite>component_wise</cite> is set to <cite>True</cite>)</p></li>
+<li><p><cite>W</cite> is the size of the window given as a parameter <cite>window</cite></p></li>
+<li><p><cite>D</cite> is the dimension of the series (<cite>D</cite> = 1 if univariate or if <cite>component_wise</cite> is set to <cite>True</cite>)</p></li>
 </ul>
-<p>For a series of length <cite>N</cite>, (<cite>N</cite> - <cite>W</cite> + 1)/W subsequences will be generated. If a list of series is given
-of length L, each series will be partitioned into subsequences, and the results will be concatenated into
-an array of length L * number of subsequences of each series.</p>
+<p>For a series of length <cite>N</cite>, <cite>(N - W + 1)</cite> subsequences will be generated. The final array <cite>X</cite> passed to the
+underlying scorer has shape <cite>(N - W + 1, W * D)</cite>; or in other terms (number of samples, number of features).
+If a list of series is given of length L, each series <cite>i</cite> is partitioned, and all <cite>X_i</cite> are concatenated along
+the sample axis.</p>
 <p>The <cite>k</cite>-means model will be fitted on the generated subsequences. The model will find <cite>k</cite> clusters
 in the vector space of dimension equal to the length of the subsequences (<cite>D</cite> * <cite>W</cite>).</p>
 <p>If <cite>component_wise</cite> is set to <cite>True</cite>, the algorithm will be applied to each dimension independently. For each
@@ -1191,7 +1197,7 @@ the scorer will score each series independently and return an anomaly score for 
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.ad.scorers.kmeans_scorer.KMeansScorer.show_anomalies">
-<span class="sig-name descname"><span class="pre">show_anomalies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anomalies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scorer_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.kmeans_scorer.KMeansScorer.show_anomalies" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">show_anomalies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anomalies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scorer_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_wise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.kmeans_scorer.KMeansScorer.show_anomalies" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the results of the scorer.</p>
 <p>Computes the score on the given series input. And plots the results.</p>
 <dl>
@@ -1219,6 +1225,7 @@ the scorer will score each series independently and return an anomaly score for 
 <li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘AUC_ROC’, ‘AUC_PR’], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the metric function to use. Must be one of “AUC_ROC” (Area Under the
 Receiver Operating Characteristic Curve) and “AUC_PR” (Average Precision from scores).
 Default: “AUC_ROC”.</p></li>
+<li><p><strong>component_wise</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True, will separately plot each component in case of multivariate anomaly detection.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1226,7 +1233,7 @@ Default: “AUC_ROC”.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.ad.scorers.kmeans_scorer.KMeansScorer.show_anomalies_from_prediction">
-<span class="sig-name descname"><span class="pre">show_anomalies_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scorer_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anomalies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.kmeans_scorer.KMeansScorer.show_anomalies_from_prediction" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">show_anomalies_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scorer_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">anomalies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_wise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.kmeans_scorer.KMeansScorer.show_anomalies_from_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the results of the scorer.</p>
 <p>Computes the anomaly score on the two series. And plots the results.</p>
 <dl class="simple">
@@ -1255,6 +1262,7 @@ if the actual anomalies is provided.</p></li>
 <li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘AUC_ROC’, ‘AUC_PR’], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the metric function to use. Must be one of “AUC_ROC” (Area Under the
 Receiver Operating Characteristic Curve) and “AUC_PR” (Average Precision from scores).
 Default: “AUC_ROC”.</p></li>
+<li><p><strong>component_wise</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If True, will separately plot each component in case of multivariate anomaly detection.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1298,7 +1306,7 @@ Default: “AUC_ROC”.</p></li>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

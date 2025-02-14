@@ -180,22 +180,22 @@
 <span class="sd">An ensemble model which uses a regression model to compute the ensemble forecast.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.ensemble_model</span> <span class="kn">import</span> <span class="n">EnsembleModel</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="n">ForecastingModel</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.linear_regression_model</span> <span class="kn">import</span> <span class="n">LinearRegressionModel</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.regression_model</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
-<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
-<span class="kn">from</span> <span class="nn">darts.utils.ts_utils</span> <span class="kn">import</span> <span class="n">seq2series</span><span class="p">,</span> <span class="n">series2seq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.ensemble_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">EnsembleModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">ForecastingModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.linear_regression_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegressionModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.regression_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">seq2series</span><span class="p">,</span> <span class="n">series2seq</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="RegressionEnsembleModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel">[docs]</a><span class="k">class</span> <span class="nc">RegressionEnsembleModel</span><span class="p">(</span><span class="n">EnsembleModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="RegressionEnsembleModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RegressionEnsembleModel</span><span class="p">(</span><span class="n">EnsembleModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">forecasting_models</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ForecastingModel</span><span class="p">],</span>
         <span class="n">regression_train_n_points</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -342,7 +342,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">train_using_historical_forecasts</span> <span class="o">=</span> <span class="n">train_using_historical_forecasts</span>
 
-    <span class="k">def</span> <span class="nf">_split_multi_ts_sequence</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_split_multi_ts_sequence</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">ts_sequence</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
@@ -351,7 +351,7 @@
         <span class="n">right</span> <span class="o">=</span> <span class="p">[</span><span class="n">ts</span><span class="p">[</span><span class="o">-</span><span class="n">n_</span><span class="p">:]</span> <span class="k">for</span> <span class="n">ts</span><span class="p">,</span> <span class="n">n_</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">ts_sequence</span><span class="p">,</span> <span class="n">n</span><span class="p">)]</span>
         <span class="k">return</span> <span class="n">left</span><span class="p">,</span> <span class="n">right</span>
 
-    <span class="k">def</span> <span class="nf">_make_multiple_historical_forecasts</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_make_multiple_historical_forecasts</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">train_n_points</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
@@ -452,7 +452,7 @@
             <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stack_ts_multiseq</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
         <span class="p">)</span>
 
-<div class="viewcode-block" id="RegressionEnsembleModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
+<div class="viewcode-block" id="RegressionEnsembleModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -620,7 +620,7 @@
                 <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="RegressionEnsembleModel.ensemble"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.ensemble">[docs]</a>    <span class="k">def</span> <span class="nf">ensemble</span><span class="p">(</span>
+<div class="viewcode-block" id="RegressionEnsembleModel.ensemble"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel.ensemble">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">ensemble</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">predictions</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
@@ -644,7 +644,7 @@
         <span class="k">return</span> <span class="n">seq2series</span><span class="p">(</span><span class="n">ensembled</span><span class="p">)</span> <span class="k">if</span> <span class="n">is_single_series</span> <span class="k">else</span> <span class="n">ensembled</span></div>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">extreme_lags</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extreme_lags</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
@@ -664,24 +664,24 @@
             <span class="k">return</span> <span class="p">(</span><span class="n">extreme_lags_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">,)</span> <span class="o">+</span> <span class="n">extreme_lags_</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">output_chunk_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">output_chunk_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the `output_chunk_length` of the regression model (ensembling layer)&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">output_chunk_length</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_likelihood_parameter_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_likelihood_parameter_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;RegressionEnsembleModel supports likelihood parameters predictions if its regression model does&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">supports_likelihood_parameter_prediction</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">supports_multivariate</span>
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">supports_multivariate</span>
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A RegressionEnsembleModel is probabilistic if its regression</span>
 <span class="sd">        model is probabilistic (ensembling layer)</span>
@@ -708,7 +708,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

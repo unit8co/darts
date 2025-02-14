@@ -677,6 +677,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
+       StatsForecastAutoTBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
        StatsForecastAutoTheta
       </a>
@@ -911,9 +916,9 @@ required amount of time.</p></li>
 <p>In case the <a class="reference internal" href="#darts.dataprocessing.transformers.scaler.Scaler" title="darts.dataprocessing.transformers.scaler.Scaler"><code class="xref py py-class docutils literal notranslate"><span class="pre">Scaler</span></code></a> is applied to multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects, a deep-copy of the
 chosen scaler will be instantiated, fitted, and stored, for each <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">MinMaxScaler</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">MinMaxScaler</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">scaler</span> <span class="o">=</span> <span class="n">MinMaxScaler</span><span class="p">(</span><span class="n">feature_range</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">transformer</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">(</span><span class="n">scaler</span><span class="p">)</span>
@@ -1490,7 +1495,7 @@ from this.</p></li>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

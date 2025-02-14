@@ -185,24 +185,24 @@
 <span class="sd">.. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">):</span>
-    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TypeAlias</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypeAlias</span>
 <span class="k">else</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">TypeAlias</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypeAlias</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">statsmodels</span> <span class="kn">import</span> <span class="n">__version_tuple__</span> <span class="k">as</span> <span class="n">statsmodels_version</span>
-<span class="kn">from</span> <span class="nn">statsmodels.tsa.arima.model</span> <span class="kn">import</span> <span class="n">ARIMA</span> <span class="k">as</span> <span class="n">staARIMA</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">statsmodels</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version_tuple__</span> <span class="k">as</span> <span class="n">statsmodels_version</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">statsmodels.tsa.arima.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">ARIMA</span> <span class="k">as</span> <span class="n">staARIMA</span>
 
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">TransferableFutureCovariatesLocalForecastingModel</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -213,8 +213,8 @@
 <span class="n">IntOrIntSequence</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
 
 
-<div class="viewcode-block" id="ARIMA"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.arima.html#darts.models.forecasting.arima.ARIMA">[docs]</a><span class="k">class</span> <span class="nc">ARIMA</span><span class="p">(</span><span class="n">TransferableFutureCovariatesLocalForecastingModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="ARIMA"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.arima.html#darts.models.forecasting.arima.ARIMA">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ARIMA</span><span class="p">(</span><span class="n">TransferableFutureCovariatesLocalForecastingModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">p</span><span class="p">:</span> <span class="n">IntOrIntSequence</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">d</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -323,10 +323,10 @@
             <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">random_state</span> <span class="k">if</span> <span class="n">random_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="nf">_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
@@ -345,7 +345,7 @@
 
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="nf">_predict</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -409,11 +409,11 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="mi">30</span></div>
 </pre></div>
 
@@ -436,7 +436,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

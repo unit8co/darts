@@ -178,17 +178,17 @@
 <span class="sd">----------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">math</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">argrelmax</span>
-<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">norm</span>
-<span class="kn">from</span> <span class="nn">statsmodels.compat.python</span> <span class="kn">import</span> <span class="n">lzip</span>
-<span class="kn">from</span> <span class="nn">statsmodels.tsa.seasonal</span> <span class="kn">import</span> <span class="n">MSTL</span><span class="p">,</span> <span class="n">STL</span><span class="p">,</span> <span class="n">seasonal_decompose</span>
-<span class="kn">from</span> <span class="nn">statsmodels.tsa.stattools</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">argrelmax</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">norm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">statsmodels.compat.python</span><span class="w"> </span><span class="kn">import</span> <span class="n">lzip</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">statsmodels.tsa.seasonal</span><span class="w"> </span><span class="kn">import</span> <span class="n">MSTL</span><span class="p">,</span> <span class="n">STL</span><span class="p">,</span> <span class="n">seasonal_decompose</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">statsmodels.tsa.stattools</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">acf</span><span class="p">,</span>
     <span class="n">adfuller</span><span class="p">,</span>
     <span class="n">ccovf</span><span class="p">,</span>
@@ -197,15 +197,15 @@
     <span class="n">pacf</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.utils.missing_values</span> <span class="kn">import</span> <span class="n">fill_missing_values</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">ModelMode</span><span class="p">,</span> <span class="n">SeasonalityMode</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.missing_values</span><span class="w"> </span><span class="kn">import</span> <span class="n">fill_missing_values</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelMode</span><span class="p">,</span> <span class="n">SeasonalityMode</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="check_seasonality"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.check_seasonality">[docs]</a><span class="k">def</span> <span class="nf">check_seasonality</span><span class="p">(</span>
+<div class="viewcode-block" id="check_seasonality"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.check_seasonality">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">check_seasonality</span><span class="p">(</span>
     <span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_lag</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">24</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -279,7 +279,7 @@
     <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="mi">0</span></div>
 
 
-<span class="k">def</span> <span class="nf">_bartlett_formula</span><span class="p">(</span><span class="n">r</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">length</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_bartlett_formula</span><span class="p">(</span><span class="n">r</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">length</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Computes the standard error of `r` at order `m` with respect to `length` according to Bartlett&#39;s formula.</span>
 
@@ -304,7 +304,7 @@
         <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">r</span><span class="p">[:</span> <span class="n">m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])))</span> <span class="o">/</span> <span class="n">length</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="extract_trend_and_seasonality"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.extract_trend_and_seasonality">[docs]</a><span class="k">def</span> <span class="nf">extract_trend_and_seasonality</span><span class="p">(</span>
+<div class="viewcode-block" id="extract_trend_and_seasonality"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.extract_trend_and_seasonality">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">extract_trend_and_seasonality</span><span class="p">(</span>
     <span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">freq</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">SeasonalityMode</span><span class="p">,</span> <span class="n">ModelMode</span><span class="p">]</span> <span class="o">=</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">,</span>
@@ -413,7 +413,7 @@
     <span class="k">return</span> <span class="n">trend</span><span class="p">,</span> <span class="n">season</span></div>
 
 
-<div class="viewcode-block" id="remove_from_series"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.remove_from_series">[docs]</a><span class="k">def</span> <span class="nf">remove_from_series</span><span class="p">(</span>
+<div class="viewcode-block" id="remove_from_series"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.remove_from_series">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">remove_from_series</span><span class="p">(</span>
     <span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">SeasonalityMode</span><span class="p">,</span> <span class="n">ModelMode</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -458,7 +458,7 @@
     <span class="k">return</span> <span class="n">new_ts</span></div>
 
 
-<div class="viewcode-block" id="remove_seasonality"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.remove_seasonality">[docs]</a><span class="k">def</span> <span class="nf">remove_seasonality</span><span class="p">(</span>
+<div class="viewcode-block" id="remove_seasonality"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.remove_seasonality">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">remove_seasonality</span><span class="p">(</span>
     <span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">freq</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">SeasonalityMode</span> <span class="o">=</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">,</span>
@@ -513,7 +513,7 @@
     <span class="k">return</span> <span class="n">new_ts</span></div>
 
 
-<div class="viewcode-block" id="remove_trend"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.remove_trend">[docs]</a><span class="k">def</span> <span class="nf">remove_trend</span><span class="p">(</span>
+<div class="viewcode-block" id="remove_trend"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.remove_trend">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">remove_trend</span><span class="p">(</span>
     <span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">ModelMode</span> <span class="o">=</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">,</span>
     <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;naive&quot;</span><span class="p">,</span>
@@ -557,7 +557,7 @@
     <span class="k">return</span> <span class="n">new_ts</span></div>
 
 
-<div class="viewcode-block" id="stationarity_tests"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.stationarity_tests">[docs]</a><span class="k">def</span> <span class="nf">stationarity_tests</span><span class="p">(</span>
+<div class="viewcode-block" id="stationarity_tests"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.stationarity_tests">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">stationarity_tests</span><span class="p">(</span>
     <span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">p_value_threshold_adfuller</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
     <span class="n">p_value_threshold_kpss</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
@@ -596,7 +596,7 @@
     <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="stationarity_test_kpss"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.stationarity_test_kpss">[docs]</a><span class="k">def</span> <span class="nf">stationarity_test_kpss</span><span class="p">(</span>
+<div class="viewcode-block" id="stationarity_test_kpss"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.stationarity_test_kpss">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">stationarity_test_kpss</span><span class="p">(</span>
     <span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">regression</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="n">nlags</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -638,7 +638,7 @@
     <span class="k">return</span> <span class="n">kpss</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">regression</span><span class="p">,</span> <span class="n">nlags</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="stationarity_test_adf"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.stationarity_test_adf">[docs]</a><span class="k">def</span> <span class="nf">stationarity_test_adf</span><span class="p">(</span>
+<div class="viewcode-block" id="stationarity_test_adf"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.stationarity_test_adf">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">stationarity_test_adf</span><span class="p">(</span>
     <span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">maxlag</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">regression</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span>
@@ -690,7 +690,7 @@
     <span class="k">return</span> <span class="n">adfuller</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">maxlag</span><span class="p">,</span> <span class="n">regression</span><span class="p">,</span> <span class="n">autolag</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="granger_causality_tests"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.granger_causality_tests">[docs]</a><span class="k">def</span> <span class="nf">granger_causality_tests</span><span class="p">(</span>
+<div class="viewcode-block" id="granger_causality_tests"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.granger_causality_tests">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">granger_causality_tests</span><span class="p">(</span>
     <span class="n">ts_cause</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">ts_effect</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">maxlag</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -767,7 +767,7 @@
     <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="plot_acf"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.plot_acf">[docs]</a><span class="k">def</span> <span class="nf">plot_acf</span><span class="p">(</span>
+<div class="viewcode-block" id="plot_acf"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.plot_acf">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">plot_acf</span><span class="p">(</span>
     <span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">m</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">max_lag</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">24</span><span class="p">,</span>
@@ -865,7 +865,7 @@
     <span class="n">axis</span><span class="o">.</span><span class="n">plot</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_lag</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span> <span class="k">if</span> <span class="n">default_formatting</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="plot_pacf"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.plot_pacf">[docs]</a><span class="k">def</span> <span class="nf">plot_pacf</span><span class="p">(</span>
+<div class="viewcode-block" id="plot_pacf"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.plot_pacf">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">plot_pacf</span><span class="p">(</span>
     <span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">m</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">max_lag</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">24</span><span class="p">,</span>
@@ -966,7 +966,7 @@
     <span class="n">axis</span><span class="o">.</span><span class="n">plot</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_lag</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span> <span class="k">if</span> <span class="n">default_formatting</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="plot_ccf"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.plot_ccf">[docs]</a><span class="k">def</span> <span class="nf">plot_ccf</span><span class="p">(</span>
+<div class="viewcode-block" id="plot_ccf"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.plot_ccf">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">plot_ccf</span><span class="p">(</span>
     <span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">ts_other</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">m</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1086,7 +1086,7 @@
     <span class="n">axis</span><span class="o">.</span><span class="n">plot</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_lag</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span> <span class="k">if</span> <span class="n">default_formatting</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="plot_hist"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.plot_hist">[docs]</a><span class="k">def</span> <span class="nf">plot_hist</span><span class="p">(</span>
+<div class="viewcode-block" id="plot_hist"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.plot_hist">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">plot_hist</span><span class="p">(</span>
     <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
     <span class="n">bins</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">density</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -1171,7 +1171,7 @@
         <span class="n">ax_i</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="plot_residuals_analysis"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.plot_residuals_analysis">[docs]</a><span class="k">def</span> <span class="nf">plot_residuals_analysis</span><span class="p">(</span>
+<div class="viewcode-block" id="plot_residuals_analysis"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.plot_residuals_analysis">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">plot_residuals_analysis</span><span class="p">(</span>
     <span class="n">residuals</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
     <span class="n">fill_nan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -1268,7 +1268,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

@@ -331,15 +331,15 @@
 <span class="sd">..</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.encoders.encoder_base</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.encoders.encoder_base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">CovariatesIndexGenerator</span><span class="p">,</span>
     <span class="n">Encoder</span><span class="p">,</span>
     <span class="n">FutureCovariatesIndexGenerator</span><span class="p">,</span>
@@ -349,12 +349,12 @@
     <span class="n">SupportedIndex</span><span class="p">,</span>
     <span class="n">_EncoderMethod</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">FittableDataTransformer</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
-<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">DIMS</span>
-<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
-<span class="kn">from</span> <span class="nn">darts.utils.ts_utils</span> <span class="kn">import</span> <span class="n">seq2series</span><span class="p">,</span> <span class="n">series2seq</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">generate_index</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">FittableDataTransformer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">DIMS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.timeseries_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">seq2series</span><span class="p">,</span> <span class="n">series2seq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_index</span>
 
 <span class="n">SupportedTimeSeries</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -371,10 +371,10 @@
 <span class="n">INTEGER_INDEX_ATTRIBUTES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;relative&quot;</span><span class="p">]</span>
 
 
-<div class="viewcode-block" id="CyclicTemporalEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder">[docs]</a><span class="k">class</span> <span class="nc">CyclicTemporalEncoder</span><span class="p">(</span><span class="n">SingleEncoder</span><span class="p">):</span>
+<div class="viewcode-block" id="CyclicTemporalEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.CyclicTemporalEncoder">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">CyclicTemporalEncoder</span><span class="p">(</span><span class="n">SingleEncoder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;`CyclicTemporalEncoder`: Cyclic encoding of time series datetime attributes.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">index_generator</span><span class="p">:</span> <span class="n">CovariatesIndexGenerator</span><span class="p">,</span>
         <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -402,7 +402,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">=</span> <span class="n">attribute</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tz</span> <span class="o">=</span> <span class="n">tz</span>
 
-    <span class="k">def</span> <span class="nf">_encode</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_encode</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">target_end</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`.&quot;&quot;&quot;</span>
@@ -420,27 +420,27 @@
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;`CyclicTemporalEncoder` should not be transformed. Returns two elements for sine and cosine waves.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">requires_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">requires_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">base_component_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">base_component_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">base_component_name</span> <span class="o">+</span> <span class="s2">&quot;_cyc_&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">encoding_n_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">encoding_n_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="mi">2</span></div>
 
 
-<div class="viewcode-block" id="PastCyclicEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.PastCyclicEncoder">[docs]</a><span class="k">class</span> <span class="nc">PastCyclicEncoder</span><span class="p">(</span><span class="n">CyclicTemporalEncoder</span><span class="p">):</span>
+<div class="viewcode-block" id="PastCyclicEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.PastCyclicEncoder">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">PastCyclicEncoder</span><span class="p">(</span><span class="n">CyclicTemporalEncoder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;`CyclicEncoder`: Cyclic encoding of past covariates datetime attributes.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -486,10 +486,10 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="FutureCyclicEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.FutureCyclicEncoder">[docs]</a><span class="k">class</span> <span class="nc">FutureCyclicEncoder</span><span class="p">(</span><span class="n">CyclicTemporalEncoder</span><span class="p">):</span>
+<div class="viewcode-block" id="FutureCyclicEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.FutureCyclicEncoder">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">FutureCyclicEncoder</span><span class="p">(</span><span class="n">CyclicTemporalEncoder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;`CyclicEncoder`: Cyclic encoding of future covariates datetime attributes.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -535,12 +535,12 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="DatetimeAttributeEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder">[docs]</a><span class="k">class</span> <span class="nc">DatetimeAttributeEncoder</span><span class="p">(</span><span class="n">SingleEncoder</span><span class="p">):</span>
+<div class="viewcode-block" id="DatetimeAttributeEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.DatetimeAttributeEncoder">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">DatetimeAttributeEncoder</span><span class="p">(</span><span class="n">SingleEncoder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;`DatetimeAttributeEncoder`: Adds pd.DatatimeIndex attribute information derived from the index as scalars.</span>
 <span class="sd">    Requires the underlying TimeSeries to have a pd.DatetimeIndex</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">index_generator</span><span class="p">:</span> <span class="n">CovariatesIndexGenerator</span><span class="p">,</span>
         <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -566,7 +566,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">=</span> <span class="n">attribute</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tz</span> <span class="o">=</span> <span class="n">tz</span>
 
-    <span class="k">def</span> <span class="nf">_encode</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_encode</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">target_end</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Encode `index` as a scalar.&quot;&quot;&quot;</span>
@@ -580,27 +580,27 @@
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;`DatetimeAttributeEncoder` accepts transformations&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">requires_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">requires_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">base_component_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">base_component_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">base_component_name</span> <span class="o">+</span> <span class="s2">&quot;_dta_&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">encoding_n_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">encoding_n_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="mi">1</span></div>
 
 
-<div class="viewcode-block" id="PastDatetimeAttributeEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.PastDatetimeAttributeEncoder">[docs]</a><span class="k">class</span> <span class="nc">PastDatetimeAttributeEncoder</span><span class="p">(</span><span class="n">DatetimeAttributeEncoder</span><span class="p">):</span>
+<div class="viewcode-block" id="PastDatetimeAttributeEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.PastDatetimeAttributeEncoder">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">PastDatetimeAttributeEncoder</span><span class="p">(</span><span class="n">DatetimeAttributeEncoder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Datetime attribute encoder for past covariates.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -646,10 +646,10 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="FutureDatetimeAttributeEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.FutureDatetimeAttributeEncoder">[docs]</a><span class="k">class</span> <span class="nc">FutureDatetimeAttributeEncoder</span><span class="p">(</span><span class="n">DatetimeAttributeEncoder</span><span class="p">):</span>
+<div class="viewcode-block" id="FutureDatetimeAttributeEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.FutureDatetimeAttributeEncoder">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">FutureDatetimeAttributeEncoder</span><span class="p">(</span><span class="n">DatetimeAttributeEncoder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Datetime attribute encoder for future covariates.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -695,12 +695,12 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="IntegerIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.IntegerIndexEncoder">[docs]</a><span class="k">class</span> <span class="nc">IntegerIndexEncoder</span><span class="p">(</span><span class="n">SingleEncoder</span><span class="p">):</span>
+<div class="viewcode-block" id="IntegerIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.IntegerIndexEncoder">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">IntegerIndexEncoder</span><span class="p">(</span><span class="n">SingleEncoder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;IntegerIndexEncoder: Adds integer index value (position) derived from the underlying TimeSeries&#39; time index</span>
 <span class="sd">    for past and future covariates.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index_generator</span><span class="p">:</span> <span class="n">CovariatesIndexGenerator</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index_generator</span><span class="p">:</span> <span class="n">CovariatesIndexGenerator</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -721,7 +721,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">=</span> <span class="n">attribute</span>
 
-    <span class="k">def</span> <span class="nf">_encode</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_encode</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">target_end</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Adds integer index value (position) to the provided `index`.</span>
@@ -753,31 +753,31 @@
         <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;`IntegerIndexEncoder` accepts transformations. Note that transforming &#39;relative&#39; `IntegerIndexEncoder`</span>
 <span class="sd">        will return the absolute position (in the transformed space).&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">requires_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">requires_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="c1"># requires fitting to get the reference index from `IntegerIndexEncoder.index_generator` for inference</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">base_component_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">base_component_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">base_component_name</span> <span class="o">+</span> <span class="s2">&quot;_pos_&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">encoding_n_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">encoding_n_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="mi">1</span></div>
 
 
-<div class="viewcode-block" id="PastIntegerIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.PastIntegerIndexEncoder">[docs]</a><span class="k">class</span> <span class="nc">PastIntegerIndexEncoder</span><span class="p">(</span><span class="n">IntegerIndexEncoder</span><span class="p">):</span>
+<div class="viewcode-block" id="PastIntegerIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.PastIntegerIndexEncoder">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">PastIntegerIndexEncoder</span><span class="p">(</span><span class="n">IntegerIndexEncoder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;`IntegerIndexEncoder`: Adds integer index value (position) for past covariates derived from the underlying</span>
 <span class="sd">    TimeSeries&#39; time index.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -816,12 +816,12 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="FutureIntegerIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.FutureIntegerIndexEncoder">[docs]</a><span class="k">class</span> <span class="nc">FutureIntegerIndexEncoder</span><span class="p">(</span><span class="n">IntegerIndexEncoder</span><span class="p">):</span>
+<div class="viewcode-block" id="FutureIntegerIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.FutureIntegerIndexEncoder">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">FutureIntegerIndexEncoder</span><span class="p">(</span><span class="n">IntegerIndexEncoder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;`IntegerIndexEncoder`: Adds integer index value (position) for future covariates derived from the underlying</span>
 <span class="sd">    TimeSeries&#39; time index.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -860,12 +860,12 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="CallableIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.CallableIndexEncoder">[docs]</a><span class="k">class</span> <span class="nc">CallableIndexEncoder</span><span class="p">(</span><span class="n">SingleEncoder</span><span class="p">):</span>
+<div class="viewcode-block" id="CallableIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.CallableIndexEncoder">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">CallableIndexEncoder</span><span class="p">(</span><span class="n">SingleEncoder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;`CallableIndexEncoder`: Applies a user-defined callable to encode the underlying index for past and future</span>
 <span class="sd">    covariates.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index_generator</span><span class="p">:</span> <span class="n">CovariatesIndexGenerator</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="n">Callable</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index_generator</span><span class="p">:</span> <span class="n">CovariatesIndexGenerator</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="n">Callable</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -890,7 +890,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">=</span> <span class="n">attribute</span>
 
-    <span class="k">def</span> <span class="nf">_encode</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_encode</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">target_end</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply the user-defined callable to encode the index&quot;&quot;&quot;</span>
@@ -903,29 +903,29 @@
         <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;`CallableIndexEncoder` accepts transformations.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">requires_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">requires_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">base_component_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">base_component_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">base_component_name</span> <span class="o">+</span> <span class="s2">&quot;_cus_&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">encoding_n_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">encoding_n_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="mi">1</span></div>
 
 
-<div class="viewcode-block" id="PastCallableIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.PastCallableIndexEncoder">[docs]</a><span class="k">class</span> <span class="nc">PastCallableIndexEncoder</span><span class="p">(</span><span class="n">CallableIndexEncoder</span><span class="p">):</span>
+<div class="viewcode-block" id="PastCallableIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.PastCallableIndexEncoder">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">PastCallableIndexEncoder</span><span class="p">(</span><span class="n">CallableIndexEncoder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;`IntegerIndexEncoder`: Adds integer index value (position) for past covariates derived from the underlying</span>
 <span class="sd">    TimeSeries&#39; time index.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">attribute</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -967,12 +967,12 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="FutureCallableIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.FutureCallableIndexEncoder">[docs]</a><span class="k">class</span> <span class="nc">FutureCallableIndexEncoder</span><span class="p">(</span><span class="n">CallableIndexEncoder</span><span class="p">):</span>
+<div class="viewcode-block" id="FutureCallableIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.FutureCallableIndexEncoder">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">FutureCallableIndexEncoder</span><span class="p">(</span><span class="n">CallableIndexEncoder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;`IntegerIndexEncoder`: Adds integer index value (position) for future covariates derived from the underlying</span>
 <span class="sd">    TimeSeries&#39; time index.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">attribute</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1014,13 +1014,13 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="SequentialEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.SequentialEncoder">[docs]</a><span class="k">class</span> <span class="nc">SequentialEncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
+<div class="viewcode-block" id="SequentialEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.SequentialEncoder">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">SequentialEncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A `SequentialEncoder` object can store and control multiple past and future covariates encoders at once.</span>
 <span class="sd">    It provides the same functionality as single encoders (`encode_train()`, `encode_inference()`,</span>
 <span class="sd">    `encode_train_inference()`).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">add_encoders</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1140,7 +1140,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_setup_encoders</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_setup_transformer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
 
-<div class="viewcode-block" id="SequentialEncoder.encode_train"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.SequentialEncoder.encode_train">[docs]</a>    <span class="k">def</span> <span class="nf">encode_train</span><span class="p">(</span>
+<div class="viewcode-block" id="SequentialEncoder.encode_train"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.SequentialEncoder.encode_train">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">encode_train</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">target</span><span class="p">:</span> <span class="n">SupportedTimeSeries</span><span class="p">,</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SupportedTimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1202,7 +1202,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span></div>
 
-<div class="viewcode-block" id="SequentialEncoder.encode_inference"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.SequentialEncoder.encode_inference">[docs]</a>    <span class="k">def</span> <span class="nf">encode_inference</span><span class="p">(</span>
+<div class="viewcode-block" id="SequentialEncoder.encode_inference"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.SequentialEncoder.encode_inference">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">encode_inference</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">target</span><span class="p">:</span> <span class="n">SupportedTimeSeries</span><span class="p">,</span>
@@ -1254,7 +1254,7 @@
             <span class="n">encode_future</span><span class="o">=</span><span class="n">encode_future</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="SequentialEncoder.encode_train_inference"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.SequentialEncoder.encode_train_inference">[docs]</a>    <span class="k">def</span> <span class="nf">encode_train_inference</span><span class="p">(</span>
+<div class="viewcode-block" id="SequentialEncoder.encode_train_inference"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.SequentialEncoder.encode_train_inference">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">encode_train_inference</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">target</span><span class="p">:</span> <span class="n">SupportedTimeSeries</span><span class="p">,</span>
@@ -1312,7 +1312,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span></div>
 
-    <span class="k">def</span> <span class="nf">_launch_encoder</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_launch_encoder</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">SupportedTimeSeries</span><span class="p">,</span>
@@ -1364,7 +1364,7 @@
             <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">seq2series</span><span class="p">(</span><span class="n">future_covariates</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span>
 
-    <span class="k">def</span> <span class="nf">_encode_sequence</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_encode_sequence</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">encoders</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SingleEncoder</span><span class="p">],</span>
         <span class="n">transformer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SequentialEncoderTransformer</span><span class="p">],</span>
@@ -1419,36 +1419,36 @@
         <span class="k">return</span> <span class="n">encoded_sequence</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">past_encoders</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SingleEncoder</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">past_encoders</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SingleEncoder</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the past covariates encoders&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_past_encoders</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">future_encoders</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SingleEncoder</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">future_encoders</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SingleEncoder</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the future covariates encoders&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_future_encoders</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">encoders</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">SingleEncoder</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="n">SingleEncoder</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">encoders</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">SingleEncoder</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="n">SingleEncoder</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a tuple of (past covariates encoders, future covariates encoders)&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">past_encoders</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_encoders</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">past_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">past_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the past covariates component names generated by `SequentialEncoder.past_encoders`.</span>
 <span class="sd">        Only available after calling `SequentialEncoder.encode_train()`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_past_components</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">future_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">future_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the future covariates component names generated by `SequentialEncoder.future_encoders`.</span>
 <span class="sd">        Only available after calling `SequentialEncoder.encode_train()`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_future_components</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the covariates component names generated by `SequentialEncoder.past_encoders` and</span>
 <span class="sd">        `SequentialEncoder.future_encoders`. A tuple of (past encoded components, future encoded components).</span>
 <span class="sd">        Only available after calling `SequentialEncoder.encode_train()`</span>
@@ -1456,7 +1456,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">past_components</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_components</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">encoding_n_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">encoding_n_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the number of components generated by `SequentialEncoder.past_encoders` and</span>
 <span class="sd">        `SequentialEncoder.future_encoders`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1470,23 +1470,23 @@
         <span class="k">return</span> <span class="n">past_enc_n_compoments</span><span class="p">,</span> <span class="n">future_enc_n_compoments</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">past_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SequentialEncoderTransformer</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">past_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SequentialEncoderTransformer</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the past transformer object&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_past_transformer</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">future_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SequentialEncoderTransformer</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">future_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SequentialEncoderTransformer</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the future transformer object&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_future_transformer</span>
 
-<div class="viewcode-block" id="SequentialEncoder.transformers"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.SequentialEncoder.transformers">[docs]</a>    <span class="k">def</span> <span class="nf">transformers</span><span class="p">(</span>
+<div class="viewcode-block" id="SequentialEncoder.transformers"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.encoders.encoders.html#darts.dataprocessing.encoders.encoders.SequentialEncoder.transformers">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">transformers</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">SequentialEncoderTransformer</span><span class="p">,</span> <span class="n">SequentialEncoderTransformer</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a tuple of (past transformer, future transformer).&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">past_transformer</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_transformer</span></div>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">encoder_map</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">encoder_map</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Mapping between encoder identifier string (from parameters at model creations) and the corresponding</span>
 <span class="sd">        future or past covariates encoder&quot;&quot;&quot;</span>
         <span class="n">mapper</span> <span class="o">=</span> <span class="p">{</span>
@@ -1501,7 +1501,7 @@
         <span class="p">}</span>
         <span class="k">return</span> <span class="n">mapper</span>
 
-    <span class="k">def</span> <span class="nf">_setup_encoders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_encoders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets up/Initializes all past and future encoders and an optional transformer from `add_encoder` parameter</span>
 <span class="sd">        used at model creation.</span>
 
@@ -1540,7 +1540,7 @@
         <span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">encoding_available</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="nf">_setup_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets up/Initializes an optional transformer from `add_encoder` parameter used at model creation.</span>
 
 <span class="sd">        Parameters</span>
@@ -1563,7 +1563,7 @@
                 <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">transformer</span><span class="p">),</span> <span class="n">transform_future_mask</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_process_input_encoders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="nb">list</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_input_encoders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="nb">list</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Processes input and returns two lists of tuples `(encoder_id, attribute)` from relevant encoder</span>
 <span class="sd">        parameters at model creation.</span>
 
@@ -1670,7 +1670,7 @@
         <span class="n">future_encoders</span> <span class="o">=</span> <span class="n">future_encoders</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">takes_future_covariates</span> <span class="k">else</span> <span class="p">[]</span>
         <span class="k">return</span> <span class="n">past_encoders</span><span class="p">,</span> <span class="n">future_encoders</span>
 
-    <span class="k">def</span> <span class="nf">_process_input_transformer</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_input_transformer</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">FittableDataTransformer</span><span class="p">],</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">list</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Processes input params used at model creation and returns tuple of one transformer object and two masks</span>
@@ -1710,7 +1710,7 @@
         <span class="k">return</span> <span class="n">transformer</span><span class="p">,</span> <span class="n">transform_past_mask</span><span class="p">,</span> <span class="n">transform_future_mask</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_process_timezone</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_timezone</span><span class="p">(</span><span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Processes input params used at model creation for time zone specification, and returns the time zone.</span>
 
 <span class="sd">        Parameters</span>
@@ -1725,7 +1725,7 @@
         <span class="k">return</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">TZ_KEYS</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">requires_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">requires_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">any</span><span class="p">([</span>
             <span class="n">enc</span><span class="o">.</span><span class="n">requires_fit</span> <span class="k">for</span> <span class="n">cov_enc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoders</span> <span class="k">for</span> <span class="n">enc</span> <span class="ow">in</span> <span class="n">cov_enc</span>
         <span class="p">])</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">([</span><span class="n">tf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">tf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformers</span><span class="p">()])</span></div>
@@ -1750,7 +1750,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

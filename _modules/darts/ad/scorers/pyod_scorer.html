@@ -181,19 +181,19 @@
 <span class="sd">`PyOD https://pyod.readthedocs.io/en/latest/#`_.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">pyod.models.base</span> <span class="kn">import</span> <span class="n">BaseDetector</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pyod.models.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseDetector</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">metrics</span>
-<span class="kn">from</span> <span class="nn">darts.ad.scorers.scorers</span> <span class="kn">import</span> <span class="n">WindowedAnomalyScorer</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
-<span class="kn">from</span> <span class="nn">darts.metrics.metrics</span> <span class="kn">import</span> <span class="n">METRIC_TYPE</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">metrics</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.ad.scorers.scorers</span><span class="w"> </span><span class="kn">import</span> <span class="n">WindowedAnomalyScorer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">METRIC_TYPE</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="PyODScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.pyod_scorer.html#darts.ad.scorers.pyod_scorer.PyODScorer">[docs]</a><span class="k">class</span> <span class="nc">PyODScorer</span><span class="p">(</span><span class="n">WindowedAnomalyScorer</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="PyODScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.pyod_scorer.html#darts.ad.scorers.pyod_scorer.PyODScorer">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">PyODScorer</span><span class="p">(</span><span class="n">WindowedAnomalyScorer</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model</span><span class="p">:</span> <span class="n">BaseDetector</span><span class="p">,</span>
         <span class="n">window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -220,14 +220,15 @@
 <span class="sd">        **Training with** ``fit()``:</span>
 
 <span class="sd">        The input can be a series (univariate or multivariate) or multiple series. The series will be partitioned</span>
-<span class="sd">        into equal size subsequences. The subsequence will be of size `W` * `D`, with:</span>
+<span class="sd">        into equal size subsequences. Each subsequence has size `W * D` (features), where:</span>
 
-<span class="sd">        - `W` being the size of the window given as a parameter `window`</span>
-<span class="sd">        - `D` being the dimension of the series (`D` = 1 if univariate or if `component_wise` is set to `True`)</span>
+<span class="sd">        - `W` is the size of the window given as a parameter `window`</span>
+<span class="sd">        - `D` is the dimension of the series (`D` = 1 if univariate or if `component_wise` is set to `True`)</span>
 
-<span class="sd">        For a series of length `N`, (`N` - `W` + 1)/W subsequences will be generated. If a list of series is given</span>
-<span class="sd">        of length L, each series will be partitioned into subsequences, and the results will be concatenated into</span>
-<span class="sd">        an array of length L * number of subsequences of each series.</span>
+<span class="sd">        For a series of length `N`, `(N - W + 1)` subsequences will be generated. The final array `X` passed to the</span>
+<span class="sd">        underlying scorer has shape `(N - W + 1, W * D)`; or in other terms (number of samples, number of features).</span>
+<span class="sd">        If a list of series is given of length L, each series `i` is partitioned, and all `X_i` are concatenated along</span>
+<span class="sd">        the sample axis.</span>
 
 <span class="sd">        The PyOD model will be fitted on the generated subsequences.</span>
 
@@ -289,10 +290,10 @@
             <span class="n">diff_fn</span><span class="o">=</span><span class="n">diff_fn</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;PyODScorer (model </span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
 
-    <span class="k">def</span> <span class="nf">_model_score_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_model_score_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Wrapper around model inference method&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">decision_function</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
 </pre></div>
@@ -316,7 +317,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

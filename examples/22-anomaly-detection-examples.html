@@ -755,7 +755,7 @@ div.rendered_html tbody tr:hover {
 <li><p><code class="docutils literal notranslate"><span class="pre">Anomaly</span> <span class="pre">Models</span></code>: offer a convenient way to produce anomaly scores from any of Darts’ global forecasting models or filtering models by comparing the models’ predictions with actual observations. Each Anomaly Model takes one forecasting/filtering model and one or multiple scorers. The model produces some predictions, which are fed together with the actual series to the scorer(s). It will return anomaly scores for each scorer.</p></li>
 </ul>
 <p>The figure below illustrates the different input/output for each tool:</p>
-<p><img alt="a3d2e9ca32194aa8b22285fe2137f165" class="no-scaled-link" src="../_images/ad_4_sub_modules.png" style="width: 800px;" /></p>
+<p><img alt="a717da5c969d4399bc7938b337ef38c2" class="no-scaled-link" src="../_images/ad_4_sub_modules.png" style="width: 800px;" /></p>
 <p>The notebook is devided into two sections:</p>
 <ul class="simple">
 <li><p>How to use <code class="docutils literal notranslate"><span class="pre">ForecastingAnomalyModel</span></code> to find anomalies in the number of taxi passengers in New York.</p></li>
@@ -768,7 +768,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># fix python path if working locally</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
 <span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
 <span class="o">%</span><span class="k">matplotlib</span> inline
@@ -791,25 +791,25 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.ad</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.ad</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ForecastingAnomalyModel</span><span class="p">,</span>
     <span class="n">KMeansScorer</span><span class="p">,</span>
     <span class="n">NormScorer</span><span class="p">,</span>
     <span class="n">WassersteinScorer</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.ad.utils</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.ad.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">eval_metric_from_scores</span><span class="p">,</span>
     <span class="n">show_anomalies_from_scores</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">TaxiNewYorkDataset</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mae</span><span class="p">,</span> <span class="n">rmse</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaxiNewYorkDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mae</span><span class="p">,</span> <span class="n">rmse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionModel</span>
 </pre></div>
 </div>
 </div>
@@ -883,7 +883,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">plot_anom</span><span class="p">(</span><span class="n">selected_anomaly</span><span class="p">,</span> <span class="n">delta_plotted_days</span><span class="p">):</span>
+<span></span><span class="k">def</span><span class="w"> </span><span class="nf">plot_anom</span><span class="p">(</span><span class="n">selected_anomaly</span><span class="p">,</span> <span class="n">delta_plotted_days</span><span class="p">):</span>
     <span class="n">one_day</span> <span class="o">=</span> <span class="n">series_taxi</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">2</span>
     <span class="n">anomaly_date</span> <span class="o">=</span> <span class="n">anomalies_day</span><span class="p">[</span><span class="n">selected_anomaly</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">start_timestamp</span> <span class="o">=</span> <span class="n">anomaly_date</span> <span class="o">-</span> <span class="n">delta_plotted_days</span> <span class="o">*</span> <span class="n">one_day</span>
@@ -962,7 +962,7 @@ RegressionModel(lags=336, lags_past_covariates=None, lags_future_covariates=[0],
 <p>The <code class="docutils literal notranslate"><span class="pre">window</span></code> parameter is an integer value indicating the window size used by the scorer to transform the series into an anomaly score. A scorer will slice the given series into subsequences of size W and returns a value indicating how anomalous these subset of W values are.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">window_agg</span></code> can be used to transform the window-wise scores into point-wise scores by aggregating all anomaly scores from each window that the point was included in.</p>
 <p>The following figure illustrates the mechanism of a Forecasting Anomaly model:</p>
-<p><img alt="b67fc0fa3a6d4c3a8e4f0e03a1020974" class="no-scaled-link" src="../_images/ad_inside_anomaly_model.png" style="width: 800px;" /></p>
+<p><img alt="85f1b448e48f4818976679ee3fbb758d" class="no-scaled-link" src="../_images/ad_inside_anomaly_model.png" style="width: 800px;" /></p>
 <section id="Using-the-main-functions:-fit(),-score(),-eval_metric()-and-show_anomalies()">
 <h3>Using the main functions: fit(), score(), eval_metric() and show_anomalies()<a class="headerlink" href="#Using-the-main-functions:-fit(),-score(),-eval_metric()-and-show_anomalies()" title="Permalink to this heading">¶</a></h3>
 <div class="nbinput nblast docutils container">
@@ -1183,7 +1183,7 @@ On testing set -&gt; MAE: 595.190366262045, RMSE: 896.6287614972252
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">darts.ad.detectors</span> <span class="kn">import</span> <span class="n">QuantileDetector</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.ad.detectors</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileDetector</span>
 
 <span class="n">contamination</span> <span class="o">=</span> <span class="mf">0.95</span>
 <span class="n">detector</span> <span class="o">=</span> <span class="n">QuantileDetector</span><span class="p">(</span><span class="n">high_quantile</span><span class="o">=</span><span class="n">contamination</span><span class="p">)</span>
@@ -1354,7 +1354,7 @@ f1: 0.45/1
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">plot_anom_eval</span><span class="p">(</span><span class="n">selected_anomaly</span><span class="p">,</span> <span class="n">delta_plotted_days</span><span class="p">):</span>
+<span></span><span class="k">def</span><span class="w"> </span><span class="nf">plot_anom_eval</span><span class="p">(</span><span class="n">selected_anomaly</span><span class="p">,</span> <span class="n">delta_plotted_days</span><span class="p">):</span>
     <span class="n">one_day</span> <span class="o">=</span> <span class="n">series_taxi</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">2</span>
     <span class="n">anomaly_date</span> <span class="o">=</span> <span class="n">anomalies_day</span><span class="p">[</span><span class="n">selected_anomaly</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">start</span> <span class="o">=</span> <span class="n">anomaly_date</span> <span class="o">-</span> <span class="n">one_day</span> <span class="o">*</span> <span class="n">delta_plotted_days</span>
@@ -1400,7 +1400,7 @@ f1: 0.45/1
 <h1>Simple case: <code class="docutils literal notranslate"><span class="pre">KMeansScorer</span></code><a class="headerlink" href="#Simple-case:-KMeansScorer" title="Permalink to this heading">¶</a></h1>
 <p>Let’s have a closer look at the scorer’s <code class="docutils literal notranslate"><span class="pre">window</span></code> parameter on the example of the <code class="docutils literal notranslate"><span class="pre">KmeansScorer</span></code>. We’ll use two toy datasets to demonstrate how the scorers perform with different window sizes. In first example we set <code class="docutils literal notranslate"><span class="pre">window=1</span></code> on a multivariate time series, and in the second we set <code class="docutils literal notranslate"><span class="pre">window=2</span></code> on a univariate time series.</p>
 <p>The figure below illustrates the Scorer’s windowing process:</p>
-<p><img alt="2c5175c5aec4481d8d33e7fc44961a28" class="no-scaled-link" src="../_images/ad_windowing.png" style="width: 1000px;" /></p>
+<p><img alt="f04d956158524f13ad161f67f7cc8d72" class="no-scaled-link" src="../_images/ad_windowing.png" style="width: 1000px;" /></p>
 <section id="Multivariate-case-with-window=1">
 <h2>Multivariate case with window=1<a class="headerlink" href="#Multivariate-case-with-window=1" title="Permalink to this heading">¶</a></h2>
 <section id="Synthetic-data-creation">
@@ -1465,7 +1465,7 @@ f1: 0.45/1
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">generate_data_ex1</span><span class="p">(</span><span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span></span><span class="k">def</span><span class="w"> </span><span class="nf">generate_data_ex1</span><span class="p">(</span><span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
 
     <span class="c1"># create the train set</span>
@@ -1675,7 +1675,7 @@ AUC_PR: 1.0
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">generate_data_ex2</span><span class="p">(</span><span class="n">start_val</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span></span><span class="k">def</span><span class="w"> </span><span class="nf">generate_data_ex2</span><span class="p">(</span><span class="n">start_val</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
     <span class="c1"># create the test set</span>
     <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
@@ -1939,7 +1939,7 @@ Text(0.5, 1.0, &#39;Training set&#39;)
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

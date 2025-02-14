@@ -264,15 +264,15 @@
 <section id="use-cpu">
 <h2>Use CPU<a class="headerlink" href="#use-cpu" title="Permalink to this heading">¶</a></h2>
 <p>By default all models will run on CPU. As shown in the RNN example above, we’ll import the Air Passenger dataset, as well as other necessary modules.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mape</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mape</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
 </pre></div>
 </div>
 <p>Now we read and scale the data like this:</p>
@@ -380,7 +380,7 @@
 <li><p>In case you have a nested script without a root package</p></li>
 </ul>
 <p>This in practice means, that execution has to happen in a separate <code class="docutils literal notranslate"><span class="pre">.py</span></code> script, that has the following general context around the code executing the training:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
 
@@ -481,7 +481,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

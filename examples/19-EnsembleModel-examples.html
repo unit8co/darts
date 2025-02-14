@@ -681,7 +681,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># fix python path if working locally</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
 <span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
 </pre></div>
@@ -695,14 +695,14 @@ div.rendered_html tbody tr:hover {
 <span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
 <span class="o">%</span><span class="k">autoreload</span> 2
 <span class="o">%</span><span class="k">matplotlib</span> inline
-<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mape</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mape</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ExponentialSmoothing</span><span class="p">,</span>
     <span class="n">KalmanForecaster</span><span class="p">,</span>
     <span class="n">LinearRegressionModel</span><span class="p">,</span>
@@ -713,13 +713,13 @@ div.rendered_html tbody tr:hover {
     <span class="n">RegressionEnsembleModel</span><span class="p">,</span>
     <span class="n">TCNModel</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.timeseries_generation</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">datetime_attribute_timeseries</span> <span class="k">as</span> <span class="n">dt_attr</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
 
-<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
 <span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
 </pre></div>
@@ -1074,7 +1074,7 @@ RegressionEnsemble (v2) MAPE: 4.63334
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">Ridge</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ridge</span>
 
 <span class="n">ensemble</span> <span class="o">=</span> <span class="n">RegressionEnsembleModel</span><span class="p">(</span>
     <span class="n">forecasting_models</span><span class="o">=</span><span class="p">[</span><span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">12</span><span class="p">),</span> <span class="n">ExponentialSmoothing</span><span class="p">()],</span>
@@ -1427,7 +1427,7 @@ RegressionEnsemble (pre-trained) MAPE: 3.61749
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

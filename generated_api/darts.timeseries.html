@@ -679,6 +679,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
+       StatsForecastAutoTBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
        StatsForecastAutoTheta
       </a>
@@ -1180,7 +1185,7 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.random_component_values" title="darts.timeseries.TimeSeries.random_component_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">random_component_values</span></code></a>([copy])</p></td>
 <td><p>Return a 2-D array of shape (time, component), containing the values for one sample taken uniformly at random among this series' samples.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.resample" title="darts.timeseries.TimeSeries.resample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resample</span></code></a>(freq[, method])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.resample" title="darts.timeseries.TimeSeries.resample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resample</span></code></a>(freq[, method, method_kwargs])</p></td>
 <td><p>Build a reindexed <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> with a given frequency.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.rescale_with_value" title="darts.timeseries.TimeSeries.rescale_with_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rescale_with_value</span></code></a>(value_at_first_step)</p></td>
@@ -2648,7 +2653,7 @@ as ‘component_s#’ (e.g. with two components and two samples:
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.plot">
-<span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">central_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_formatting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_nr_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.plot" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">central_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_formatting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_nr_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the series.</p>
 <p>This is a wrapper method around <code class="xref py py-func docutils literal notranslate"><span class="pre">xarray.DataArray.plot()</span></code>.</p>
 <dl class="field-list simple">
@@ -2666,6 +2671,7 @@ interval is shown if <cite>confidence_low_quantile</cite> is None (default 0.05)
 this is applied to each component separately (i.e., displaying marginal distributions). No confidence
 interval is shown if <cite>high_quantile</cite> is None (default 0.95).</p></li>
 <li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the darts default scheme.</p></li>
+<li><p><strong>title</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a custom plot title. If <cite>None</cite>, will use the name of the underlying <cite>xarray.DataArray</cite>.</p></li>
 <li><p><strong>label</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Can either be a string or list of strings. If a string and the series only has a single component, it is
 used as the label for that component. If a string and the series has multiple components, it is used as
 a prefix for each component name. If a list of strings with length equal to the number of components in
@@ -2854,18 +2860,21 @@ Leave it to True unless you know what you are doing.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.resample">
-<span class="sig-name descname"><span class="pre">resample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pad'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.resample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.resample" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">resample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pad'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.resample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.resample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build a reindexed <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> with a given frequency.
-Provided method is used to fill holes in reindexed TimeSeries, by default ‘pad’.</p>
+Provided method is used to aggregate/fill holes in the reindexed TimeSeries, by default ‘pad’.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DateOffset</span></code>]) – The new time difference between two adjacent entries in the returned TimeSeries.
 Expects a <cite>pandas.DateOffset</cite> or <cite>DateOffset</cite> alias.</p></li>
-<li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – <p>Method to fill holes in reindexed TimeSeries (note this does not fill NaNs that already were present):</p>
-<p>’pad’: propagate last valid observation forward to next valid</p>
-<p>’backfill’: use NEXT valid observation to fill.</p>
-</p></li>
+<li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Method to either aggregate grouped values (for down-sampling) or fill holes (for up-sampling)
+in the reindexed TimeSeries. For more information, see the <a class="reference external" href="https://docs.xarray.dev/en/stable/generated/xarray.core.resample.DataArrayResample.html">xarray DataArrayResample documentation</a>.
+Supported methods: [“all”, “any”, “asfreq”, “backfill”, “bfill”, “count”, “ffill”, “first”, “interpolate”,
+“last”, “max”, “mean”, “median”, “min”, “nearest”, “pad”, “prod”, “quantile”, “reduce”, “std”, “sum”,
+“var”].</p></li>
+<li><p><strong>method_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Additional keyword arguments for the specified <cite>method</cite>. Some methods require additional arguments.
+Xarray’s errors will be raised on invalid keyword arguments.</p></li>
 <li><p><strong>kwargs</strong> – some keyword arguments for the <cite>xarray.resample</cite> method, notably <cite>offset</cite> or <cite>base</cite> to indicate where
 to start the resampling and avoid nan at the first value of the resampled TimeSeries
 For more information, see the <a class="reference external" href="https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html">xarray resample() documentation</a>.</p></li>
@@ -2895,6 +2904,17 @@ For more information, see the <a class="reference external" href="https://docs.x
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">resampled_ts</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
 <span class="go">[[0.]</span>
 <span class="go">[4.]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">resampled_ts</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="s2">&quot;1h&quot;</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="s2">&quot;30min&quot;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">downsampled_mean_ts</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="s2">&quot;30min&quot;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;mean&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">downsampled_mean_ts</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+<span class="go">[[0.5]</span>
+<span class="go">[2.5]</span>
+<span class="go">[4.5]]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">downsampled_reduce_ts</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="s2">&quot;30min&quot;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;reduce&quot;</span><span class="p">,</span> <span class="n">method_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">downsampled_reduce_ts</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+<span class="go">[[0.5]</span>
+<span class="go">[2.5]</span>
+<span class="go">[4.5]]</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
@@ -3722,8 +3742,8 @@ number of components of the TimeSeries. This adds component-specific static cova
 dimension), there might be a noticeable performance penalty for creating <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects, unless
 the covariates already have the same <code class="docutils literal notranslate"><span class="pre">dtype</span></code> as the series data.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">linear_timeseries</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.timeseries_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">linear_timeseries</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># add global static covariates</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">static_covs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">],</span> <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;static_cov_1&quot;</span><span class="p">,</span> <span class="s2">&quot;static_cov_2&quot;</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">linear_timeseries</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
@@ -3835,6 +3855,23 @@ When <cite>axis=0</cite> or <cite>axis=2</cite>, the hierarchy of the first seri
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.timeseries.slice_intersect">
+<span class="sig-prename descclassname"><span class="pre">darts.timeseries.</span></span><span class="sig-name descname"><span class="pre">slice_intersect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#slice_intersect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.slice_intersect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>, where all <cite>series</cite> have been intersected along the time index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>series</strong> (<em>Sequence</em><em>[</em><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a><em>]</em>) – sequence of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> to intersect</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Intersected series.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Sequence[<a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -3871,7 +3908,7 @@ When <cite>axis=0</cite> or <cite>axis=2</cite>, the hierarchy of the first seri
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

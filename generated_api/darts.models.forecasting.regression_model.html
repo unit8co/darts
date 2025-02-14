@@ -677,6 +677,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
+       StatsForecastAutoTBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
        StatsForecastAutoTheta
       </a>
@@ -942,7 +947,7 @@ transform the generated covariates. This happens all under one hood and only nee
 model creation.
 Read <code class="xref py py-meth docutils literal notranslate"><span class="pre">SequentialEncoder</span></code> to find out more about
 <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>. An example showing some of <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> features:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">encode_year</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">encode_year</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">year</span> <span class="o">-</span> <span class="mi">1950</span><span class="p">)</span> <span class="o">/</span> <span class="mi">50</span>
 
 <span class="n">add_encoders</span><span class="o">=</span><span class="p">{</span>
@@ -970,9 +975,9 @@ that all target <cite>series</cite> have the same static covariate dimensionalit
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">WeatherDataset</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">Ridge</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">WeatherDataset</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionModel</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ridge</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">WeatherDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># predicting atmospheric pressure</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">target</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="s1">&#39;p (mbar)&#39;</span><span class="p">][:</span><span class="mi">100</span><span class="p">]</span>
@@ -1120,7 +1125,7 @@ that all target <cite>series</cite> have the same static covariate dimensionalit
 <td><p>Generates historical forecasts by simulating predictions at various points in time throughout the history of the provided (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_model.RegressionModel.load" title="darts.models.forecasting.regression_model.RegressionModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
-<td><p>Loads the model from a given path or file handle.</p></td>
+<td><p>Loads a model from a given path or file handle.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_model.RegressionModel.predict" title="darts.models.forecasting.regression_model.RegressionModel.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, series, past_covariates, ...])</p></td>
 <td><p>Forecasts values for <cite>n</cite> time steps after the end of the series.</p></td>
@@ -1128,7 +1133,7 @@ that all target <cite>series</cite> have the same static covariate dimensionalit
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_model.RegressionModel.residuals" title="darts.models.forecasting.regression_model.RegressionModel.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_model.RegressionModel.save" title="darts.models.forecasting.regression_model.RegressionModel.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_model.RegressionModel.save" title="darts.models.forecasting.regression_model.RegressionModel.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
 <td><p>Saves the model under a given path or file handle.</p></td>
 </tr>
 </tbody>
@@ -1857,7 +1862,7 @@ each series.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.regression_model.RegressionModel.load">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.regression_model.RegressionModel.load" title="Permalink to this definition">¶</a></dt>
-<dd><p>Loads the model from a given path or file handle.</p>
+<dd><p>Loads a model from a given path or file handle.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>]) – Path or file handle from which to load the model.</p>
@@ -2105,11 +2110,11 @@ all possible series-specific historical forecasts.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.regression_model.RegressionModel.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pkl_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.regression_model.RegressionModel.save" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pkl_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.regression_model.RegressionModel.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Saves the model under a given path or file handle.</p>
 <p>Example for saving and loading a <a class="reference internal" href="#darts.models.forecasting.regression_model.RegressionModel" title="darts.models.forecasting.regression_model.RegressionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code></a>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionModel</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 
@@ -2124,6 +2129,11 @@ all possible series-specific historical forecasts.</p></li>
 <li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path or file handle under which to save the model at its current state. If no path is specified, the model
 is automatically saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl&quot;</span></code>.
 E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RegressionModel_2020-01-01_12_00_00.pkl&quot;</span></code>.</p></li>
+<li><p><strong>clean</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – <p>Whether to store a cleaned version of the model. Only effective for global forecasting models.
+If <cite>True</cite>, the training series and covariates are removed.</p>
+<p>Note: After loading a global forecasting model stored with <cite>clean=True</cite>, a <cite>series</cite> must be passed
+‘predict()’, <cite>historical_forecasts()</cite> and other forecasting methods.</p>
+</p></li>
 <li><p><strong>pkl_kwargs</strong> – Keyword arguments passed to <cite>pickle.dump()</cite></p></li>
 </ul>
 </dd>
@@ -2350,7 +2360,7 @@ transform the generated covariates. This happens all under one hood and only nee
 model creation.
 Read <code class="xref py py-meth docutils literal notranslate"><span class="pre">SequentialEncoder</span></code> to find out more about
 <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>. An example showing some of <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> features:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">encode_year</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">encode_year</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">year</span> <span class="o">-</span> <span class="mi">1950</span><span class="p">)</span> <span class="o">/</span> <span class="mi">50</span>
 
 <span class="n">add_encoders</span><span class="o">=</span><span class="p">{</span>
@@ -2503,7 +2513,7 @@ categorical.</p></li>
 <td><p>Generates historical forecasts by simulating predictions at various points in time throughout the history of the provided (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.load" title="darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
-<td><p>Loads the model from a given path or file handle.</p></td>
+<td><p>Loads a model from a given path or file handle.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.predict" title="darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, series, past_covariates, ...])</p></td>
 <td><p>Forecasts values for <cite>n</cite> time steps after the end of the series.</p></td>
@@ -2511,7 +2521,7 @@ categorical.</p></li>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.residuals" title="darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.save" title="darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.save" title="darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
 <td><p>Saves the model under a given path or file handle.</p></td>
 </tr>
 </tbody>
@@ -3241,7 +3251,7 @@ each series.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.load">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.load" title="Permalink to this definition">¶</a></dt>
-<dd><p>Loads the model from a given path or file handle.</p>
+<dd><p>Loads a model from a given path or file handle.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>]) – Path or file handle from which to load the model.</p>
@@ -3489,11 +3499,11 @@ all possible series-specific historical forecasts.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pkl_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.save" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pkl_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Saves the model under a given path or file handle.</p>
 <p>Example for saving and loading a <a class="reference internal" href="#darts.models.forecasting.regression_model.RegressionModel" title="darts.models.forecasting.regression_model.RegressionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code></a>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionModel</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 
@@ -3508,6 +3518,11 @@ all possible series-specific historical forecasts.</p></li>
 <li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path or file handle under which to save the model at its current state. If no path is specified, the model
 is automatically saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl&quot;</span></code>.
 E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RegressionModel_2020-01-01_12_00_00.pkl&quot;</span></code>.</p></li>
+<li><p><strong>clean</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – <p>Whether to store a cleaned version of the model. Only effective for global forecasting models.
+If <cite>True</cite>, the training series and covariates are removed.</p>
+<p>Note: After loading a global forecasting model stored with <cite>clean=True</cite>, a <cite>series</cite> must be passed
+‘predict()’, <cite>historical_forecasts()</cite> and other forecasting methods.</p>
+</p></li>
 <li><p><strong>pkl_kwargs</strong> – Keyword arguments passed to <cite>pickle.dump()</cite></p></li>
 </ul>
 </dd>
@@ -3713,7 +3728,7 @@ a validation set.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

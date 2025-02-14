@@ -677,6 +677,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
+       StatsForecastAutoTBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
        StatsForecastAutoTheta
       </a>
@@ -880,8 +885,8 @@ progress bar.</p>
 <p>This class is a PyTorch Lightning <cite>Callback</cite> and can be passed to the <cite>TorchForecastingModel</cite> constructor
 through the <cite>pl_trainer_kwargs</cite> parameter.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NBEATSModel</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.utils.callbacks</span> <span class="kn">import</span> <span class="n">TFMProgressBar</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NBEATSModel</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">TFMProgressBar</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># only display the training bar and not the validation, prediction, and sanity check bars</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">prog_bar</span> <span class="o">=</span> <span class="n">TFMProgressBar</span><span class="p">(</span><span class="n">enable_train_bar_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;callbacks&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">prog_bar</span><span class="p">]})</span>
@@ -1179,7 +1184,7 @@ to temporarily enable and disable the training progress bar.</p>
 <dd><p>Combines progress bar metrics collected from the trainer with standard metrics from get_standard_metrics.
 Implement this to override the items displayed in the progress bar.</p>
 <p>Here is an example of how to override the defaults:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
     <span class="c1"># don&#39;t show the version number</span>
     <span class="n">items</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_metrics</span><span class="p">(</span><span class="n">trainer</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
     <span class="n">items</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;v_num&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
@@ -1606,18 +1611,18 @@ loss returned from <code class="docutils literal notranslate"><span class="pre">
 <dd><p>Called when the train epoch ends.</p>
 <p>To access all batch outputs at the end of the epoch, you can cache step outputs as an attribute of the
 <code class="xref py py-class docutils literal notranslate"><span class="pre">pytorch_lightning.core.LightningModule</span></code> and access them in this hook:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyLightningModule</span><span class="p">(</span><span class="n">L</span><span class="o">.</span><span class="n">LightningModule</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">MyLightningModule</span><span class="p">(</span><span class="n">L</span><span class="o">.</span><span class="n">LightningModule</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">training_step_outputs</span> <span class="o">=</span> <span class="p">[]</span>
 
-    <span class="k">def</span> <span class="nf">training_step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">training_step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">loss</span> <span class="o">=</span> <span class="o">...</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">training_step_outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">loss</span>
 
-<span class="k">class</span> <span class="nc">MyCallback</span><span class="p">(</span><span class="n">L</span><span class="o">.</span><span class="n">Callback</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">on_train_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyCallback</span><span class="p">(</span><span class="n">L</span><span class="o">.</span><span class="n">Callback</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_train_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">):</span>
         <span class="c1"># do something with all training_step outputs, for example:</span>
         <span class="n">epoch_mean</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">pl_module</span><span class="o">.</span><span class="n">training_step_outputs</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
         <span class="n">pl_module</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;training_epoch_mean&quot;</span><span class="p">,</span> <span class="n">epoch_mean</span><span class="p">)</span>
@@ -2013,7 +2018,7 @@ dataloader is of infinite size.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

@@ -195,22 +195,22 @@
 <span class="sd">.. [1] https://robjhyndman.com/papers/ComplexSeasonality.pdf</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">inv_boxcox</span>
-<span class="kn">from</span> <span class="nn">tbats</span> <span class="kn">import</span> <span class="n">BATS</span> <span class="k">as</span> <span class="n">tbats_BATS</span>
-<span class="kn">from</span> <span class="nn">tbats</span> <span class="kn">import</span> <span class="n">TBATS</span> <span class="k">as</span> <span class="n">tbats_TBATS</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.special</span><span class="w"> </span><span class="kn">import</span> <span class="n">inv_boxcox</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tbats</span><span class="w"> </span><span class="kn">import</span> <span class="n">BATS</span> <span class="k">as</span> <span class="n">tbats_BATS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tbats</span><span class="w"> </span><span class="kn">import</span> <span class="n">TBATS</span> <span class="k">as</span> <span class="n">tbats_TBATS</span>
 
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="n">LocalForecastingModel</span>
-<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalForecastingModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_seasonality_from_freq</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_seasonality_from_freq</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Infer a naive seasonality based on the frequency</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -248,7 +248,7 @@
     <span class="k">return</span> <span class="kc">None</span>
 
 
-<span class="k">def</span> <span class="nf">_compute_samples</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">predictions</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_compute_samples</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">predictions</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This function is drawn from Model._calculate_confidence_intervals() in tbats.</span>
 <span class="sd">    We have to implement our own version here in order to compute the samples before</span>
@@ -292,8 +292,8 @@
     <span class="k">return</span> <span class="n">samples</span>
 
 
-<span class="k">class</span> <span class="nc">_BaseBatsTbatsModel</span><span class="p">(</span><span class="n">LocalForecastingModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_BaseBatsTbatsModel</span><span class="p">(</span><span class="n">LocalForecastingModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">use_box_cox</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">box_cox_bounds</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
@@ -391,10 +391,10 @@
         <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
@@ -410,7 +410,7 @@
 
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -425,15 +425,15 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seasonal_periods</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
             <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seasonal_periods</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
@@ -443,13 +443,13 @@
         <span class="k">return</span> <span class="mi">3</span>
 
 
-<div class="viewcode-block" id="TBATS"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.TBATS">[docs]</a><span class="k">class</span> <span class="nc">TBATS</span><span class="p">(</span><span class="n">_BaseBatsTbatsModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="TBATS"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.TBATS">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">TBATS</span><span class="p">(</span><span class="n">_BaseBatsTbatsModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">tbats_TBATS</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="BATS"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.BATS">[docs]</a><span class="k">class</span> <span class="nc">BATS</span><span class="p">(</span><span class="n">_BaseBatsTbatsModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="BATS"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.BATS">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">BATS</span><span class="p">(</span><span class="n">_BaseBatsTbatsModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">tbats_BATS</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span></div>
 </pre></div>
 
@@ -472,7 +472,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

@@ -677,6 +677,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
+       StatsForecastAutoTBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
        StatsForecastAutoTheta
       </a>
@@ -957,7 +962,7 @@ transform the generated covariates. This happens all under one hood and only nee
 model creation.
 Read <code class="xref py py-meth docutils literal notranslate"><span class="pre">SequentialEncoder</span></code> to find out more about
 <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>. An example showing some of <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> features:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">encode_year</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">encode_year</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">year</span> <span class="o">-</span> <span class="mi">1950</span><span class="p">)</span> <span class="o">/</span> <span class="mi">50</span>
 
 <span class="n">add_encoders</span><span class="o">=</span><span class="p">{</span>
@@ -998,7 +1003,7 @@ dict:</p>
 The model will stop training early if the validation loss <cite>val_loss</cite> does not improve beyond
 specifications. For more information on callbacks, visit:
 <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html">PyTorch Lightning Callbacks</a></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks.early_stopping</span> <span class="kn">import</span> <span class="n">EarlyStopping</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pytorch_lightning.callbacks.early_stopping</span><span class="w"> </span><span class="kn">import</span> <span class="n">EarlyStopping</span>
 
 <span class="c1"># stop training when validation loss does not decrease more than 0.05 (`min_delta`) over</span>
 <span class="c1"># a period of 5 epochs (`patience`)</span>
@@ -1032,8 +1037,8 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">WeatherDataset</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NLinearModel</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">WeatherDataset</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NLinearModel</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">WeatherDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># predicting atmospheric pressure</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">target</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="s1">&#39;p (mbar)&#39;</span><span class="p">][:</span><span class="mi">100</span><span class="p">]</span>
@@ -1173,7 +1178,7 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.nlinear.NLinearModel.historical_forecasts" title="darts.models.forecasting.nlinear.NLinearModel.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Generates historical forecasts by simulating predictions at various points in time throughout the history of the provided (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.nlinear.NLinearModel.load" title="darts.models.forecasting.nlinear.NLinearModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.nlinear.NLinearModel.load" title="darts.models.forecasting.nlinear.NLinearModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path[, pl_trainer_kwargs])</p></td>
 <td><p>Loads a model from a given file path.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.nlinear.NLinearModel.load_from_checkpoint" title="darts.models.forecasting.nlinear.NLinearModel.load_from_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_from_checkpoint</span></code></a>(model_name[, work_dir, ...])</p></td>
@@ -1200,7 +1205,7 @@ Distribution Shift”, <a class="reference external" href="https://openreview.ne
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.nlinear.NLinearModel.residuals" title="darts.models.forecasting.nlinear.NLinearModel.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.nlinear.NLinearModel.save" title="darts.models.forecasting.nlinear.NLinearModel.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.nlinear.NLinearModel.save" title="darts.models.forecasting.nlinear.NLinearModel.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
 <td><p>Saves the model under a given path.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.nlinear.NLinearModel.to_cpu" title="darts.models.forecasting.nlinear.NLinearModel.to_cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_cpu</span></code></a>()</p></td>
@@ -1947,22 +1952,21 @@ each series.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.nlinear.NLinearModel.load">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.nlinear.NLinearModel.load" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_trainer_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.nlinear.NLinearModel.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Loads a model from a given file path.</p>
 <p>Example for loading a general save from <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </pre></div>
 </div>
 </div></blockquote>
-<p>Example for loading an <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> to CPU that was saved on GPU:</p>
+<p>Example for loading an <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> to GPU:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
-<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
-<span class="n">model_loaded</span><span class="o">.</span><span class="n">to_cpu</span><span class="p">()</span>
+<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;accelerator&quot;</span><span class="p">:</span> <span class="s2">&quot;gpu&quot;</span><span class="p">})</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -1971,8 +1975,12 @@ each series.</p></li>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>path</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Path from which to load the model. If no path was specified when saving the model, the automatically
 generated path ending with “.pt” has to be provided.</p></li>
+<li><p><strong>pl_trainer_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
+tasks (e.g. prediction).
+Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
+<a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">Lightning Trainer documentation</a>
+for more information about the supported kwargs.</p></li>
 <li><p><strong>**kwargs</strong> – Additional kwargs for PyTorch Lightning’s <code class="xref py py-func docutils literal notranslate"><span class="pre">LightningModule.load_from_checkpoint()</span></code> method,
-such as <code class="docutils literal notranslate"><span class="pre">map_location</span></code> to load the model onto a different device than the one from which it was saved.
 For more information, read the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_module.html#load-from-checkpoint">official documentation</a>.</p></li>
 </ul>
 </dd>
@@ -1991,7 +1999,7 @@ This method is used for models that were created with <code class="docutils lite
 <p>Example for loading a <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> from checkpoint (<code class="docutils literal notranslate"><span class="pre">model_name</span></code> is the <code class="docutils literal notranslate"><span class="pre">model_name</span></code> used at model
 creation):</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">best</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
@@ -2003,7 +2011,7 @@ creation):</p>
 recent checkpoint (if <code class="docutils literal notranslate"><span class="pre">best</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code> from ‘{work_dir}/darts_logs/{model_name}/checkpoints/’.</p>
 <p>Example for loading an <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> checkpoint to CPU that was saved on GPU:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">best</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
 <span class="n">model_loaded</span><span class="o">.</span><span class="n">to_cpu</span><span class="p">()</span>
@@ -2107,9 +2115,9 @@ Consider creating a new model object with the suggested learning rate for exampl
 parameters <cite>optimizer_cls</cite>, <cite>optimizer_kwargs</cite>, <cite>lr_scheduler_cls</cite>, and <cite>lr_scheduler_kwargs</cite>.</p>
 <p>Example using a <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NBEATSModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NBEATSModel</span>
 
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">18</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">18</span><span class="p">:]</span>
@@ -2529,12 +2537,14 @@ all possible series-specific historical forecasts.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.nlinear.NLinearModel.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.nlinear.NLinearModel.save" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.nlinear.NLinearModel.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Saves the model under a given path.</p>
 <p>Creates two files under <code class="docutils literal notranslate"><span class="pre">path</span></code> (model object) and <code class="docutils literal notranslate"><span class="pre">path</span></code>.ckpt (checkpoint).</p>
+<p>Note: Pickle errors may occur when saving models with custom classes. In this case, consider using
+the <cite>clean</cite> flag to strip the saved model from training related attributes.</p>
 <p>Example for saving and loading a <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 
@@ -2545,10 +2555,18 @@ all possible series-specific historical forecasts.</p></li>
 </div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path under which to save the model at its current state. Please avoid path starting with “last-” or
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path under which to save the model at its current state. Please avoid path starting with “last-” or
 “best-” to avoid collision with Pytorch-Ligthning checkpoints. If no path is specified, the model
 is automatically saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pt&quot;</span></code>.
-E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNModel_2020-01-01_12_00_00.pt&quot;</span></code>.</p>
+E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNModel_2020-01-01_12_00_00.pt&quot;</span></code>.</p></li>
+<li><p><strong>clean</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – <p>Whether to store a cleaned version of the model. If <cite>True</cite>, the training series and covariates are removed.
+Additionally, removes all Lightning Trainer-related parameters (passed with <cite>pl_trainer_kwargs</cite> at model
+creation).</p>
+<p>Note: After loading a model stored with <cite>clean=True</cite>, a <cite>series</cite> must be passed ‘predict()’,
+<cite>historical_forecasts()</cite> and other forecasting methods.</p>
+</p></li>
+</ul>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
@@ -2735,7 +2753,7 @@ probabilistic predictions.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

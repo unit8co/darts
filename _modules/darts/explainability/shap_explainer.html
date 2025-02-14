@@ -199,28 +199,28 @@
 <span class="sd">   layout.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">NewType</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">NewType</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">shap</span>
-<span class="kn">from</span> <span class="nn">sklearn.multioutput</span> <span class="kn">import</span> <span class="n">MultiOutputRegressor</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shap</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.multioutput</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiOutputRegressor</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.explainability.explainability</span> <span class="kn">import</span> <span class="n">_ForecastingModelExplainer</span>
-<span class="kn">from</span> <span class="nn">darts.explainability.explainability_result</span> <span class="kn">import</span> <span class="n">ShapExplainabilityResult</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.regression_model</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
-<span class="kn">from</span> <span class="nn">darts.utils.data.tabularization</span> <span class="kn">import</span> <span class="n">create_lagged_prediction_data</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.explainability.explainability</span><span class="w"> </span><span class="kn">import</span> <span class="n">_ForecastingModelExplainer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.explainability.explainability_result</span><span class="w"> </span><span class="kn">import</span> <span class="n">ShapExplainabilityResult</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.regression_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data.tabularization</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_lagged_prediction_data</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="n">MIN_BACKGROUND_SAMPLE</span> <span class="o">=</span> <span class="mi">10</span>
 
 
-<span class="k">class</span> <span class="nc">_ShapMethod</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_ShapMethod</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
     <span class="n">TREE</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">GRADIENT</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="n">DEEP</span> <span class="o">=</span> <span class="mi">2</span>
@@ -235,10 +235,10 @@
 <span class="n">ShapMethod</span> <span class="o">=</span> <span class="n">NewType</span><span class="p">(</span><span class="s2">&quot;ShapMethod&quot;</span><span class="p">,</span> <span class="n">_ShapMethod</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="ShapExplainer"><a class="viewcode-back" href="../../../generated_api/darts.explainability.shap_explainer.html#darts.explainability.shap_explainer.ShapExplainer">[docs]</a><span class="k">class</span> <span class="nc">ShapExplainer</span><span class="p">(</span><span class="n">_ForecastingModelExplainer</span><span class="p">):</span>
+<div class="viewcode-block" id="ShapExplainer"><a class="viewcode-back" href="../../../generated_api/darts.explainability.shap_explainer.html#darts.explainability.shap_explainer.ShapExplainer">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ShapExplainer</span><span class="p">(</span><span class="n">_ForecastingModelExplainer</span><span class="p">):</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">RegressionModel</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model</span><span class="p">:</span> <span class="n">RegressionModel</span><span class="p">,</span>
         <span class="n">background_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -371,7 +371,7 @@
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
-<div class="viewcode-block" id="ShapExplainer.explain"><a class="viewcode-back" href="../../../generated_api/darts.explainability.shap_explainer.html#darts.explainability.shap_explainer.ShapExplainer.explain">[docs]</a>    <span class="k">def</span> <span class="nf">explain</span><span class="p">(</span>
+<div class="viewcode-block" id="ShapExplainer.explain"><a class="viewcode-back" href="../../../generated_api/darts.explainability.shap_explainer.html#darts.explainability.shap_explainer.ShapExplainer.explain">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">explain</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">foreground_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">foreground_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
@@ -543,7 +543,7 @@
             <span class="n">shap_values_list</span><span class="p">,</span> <span class="n">feature_values_list</span><span class="p">,</span> <span class="n">shap_explanation_object_list</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="ShapExplainer.summary_plot"><a class="viewcode-back" href="../../../generated_api/darts.explainability.shap_explainer.html#darts.explainability.shap_explainer.ShapExplainer.summary_plot">[docs]</a>    <span class="k">def</span> <span class="nf">summary_plot</span><span class="p">(</span>
+<div class="viewcode-block" id="ShapExplainer.summary_plot"><a class="viewcode-back" href="../../../generated_api/darts.explainability.shap_explainer.html#darts.explainability.shap_explainer.ShapExplainer.summary_plot">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">summary_plot</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">horizons</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">target_components</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -595,7 +595,11 @@
 
         <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">target_components</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">horizons</span><span class="p">:</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Target: `</span><span class="si">{}</span><span class="s2">` - Horizon: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="s2">&quot;t+&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">h</span><span class="p">)))</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span>
+                    <span class="s2">&quot;Target: `</span><span class="si">{}</span><span class="s2">` - Horizon: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">t</span><span class="p">,</span> <span class="s2">&quot;t+&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">h</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">output_chunk_shift</span><span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
                 <span class="n">shap</span><span class="o">.</span><span class="n">summary_plot</span><span class="p">(</span>
                     <span class="n">shaps_</span><span class="p">[</span><span class="n">h</span><span class="p">][</span><span class="n">t</span><span class="p">],</span>
                     <span class="n">foreground_X_sampled</span><span class="p">,</span>
@@ -604,7 +608,7 @@
                 <span class="p">)</span>
         <span class="k">return</span> <span class="n">shaps_</span></div>
 
-<div class="viewcode-block" id="ShapExplainer.force_plot_from_ts"><a class="viewcode-back" href="../../../generated_api/darts.explainability.shap_explainer.html#darts.explainability.shap_explainer.ShapExplainer.force_plot_from_ts">[docs]</a>    <span class="k">def</span> <span class="nf">force_plot_from_ts</span><span class="p">(</span>
+<div class="viewcode-block" id="ShapExplainer.force_plot_from_ts"><a class="viewcode-back" href="../../../generated_api/darts.explainability.shap_explainer.html#darts.explainability.shap_explainer.ShapExplainer.force_plot_from_ts">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">force_plot_from_ts</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">foreground_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">foreground_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -683,7 +687,7 @@
         <span class="p">)</span></div></div>
 
 
-<span class="k">class</span> <span class="nc">_RegressionShapExplainers</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_RegressionShapExplainers</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Helper Class to wrap the different cases encountered with shap different explainers, multivariates,</span>
 <span class="sd">    horizon etc.</span>
@@ -734,7 +738,7 @@
         <span class="s2">&quot;MLPRegressor&quot;</span><span class="p">:</span> <span class="n">_ShapMethod</span><span class="o">.</span><span class="n">PERMUTATION</span><span class="p">,</span>
     <span class="p">}</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model</span><span class="p">:</span> <span class="n">RegressionModel</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -792,7 +796,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_X</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shap_method</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">shap_explanations</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">shap_explanations</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">foreground_X</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
         <span class="n">horizons</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -858,7 +862,7 @@
 
         <span class="k">return</span> <span class="n">shap_explanations</span>
 
-    <span class="k">def</span> <span class="nf">_build_explainer_sklearn</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_explainer_sklearn</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model_sklearn</span><span class="p">,</span>
         <span class="n">background_X</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
@@ -908,7 +912,7 @@
 
         <span class="k">return</span> <span class="n">explainer</span>
 
-    <span class="k">def</span> <span class="nf">_create_regression_model_shap_X</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_regression_model_shap_X</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">target_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]],</span>
@@ -988,7 +992,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

@@ -178,18 +178,18 @@
 <span class="sd">------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
 
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.pl_forecasting_module</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">PLMixedCovariatesModule</span><span class="p">,</span>
     <span class="n">io_processor</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">MixedCovariatesTorchModel</span>
-<span class="kn">from</span> <span class="nn">darts.utils.torch</span> <span class="kn">import</span> <span class="n">MonteCarloDropout</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.torch_forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">MixedCovariatesTorchModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">MonteCarloDropout</span>
 
 <span class="n">MixedCovariatesTrainTensorType</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span>
     <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
@@ -199,8 +199,8 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">_ResidualBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_ResidualBlock</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -228,7 +228,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="c1"># residual connection</span>
         <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dense</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
@@ -239,8 +239,8 @@
         <span class="k">return</span> <span class="n">x</span>
 
 
-<span class="k">class</span> <span class="nc">_TideModule</span><span class="p">(</span><span class="n">PLMixedCovariatesModule</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_TideModule</span><span class="p">(</span><span class="n">PLMixedCovariatesModule</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -441,7 +441,7 @@
         <span class="p">)</span>
 
     <span class="nd">@io_processor</span>
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;TiDE model forward pass.</span>
@@ -546,8 +546,8 @@
         <span class="k">return</span> <span class="n">y</span>
 
 
-<div class="viewcode-block" id="TiDEModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tide_model.html#darts.models.forecasting.tide_model.TiDEModel">[docs]</a><span class="k">class</span> <span class="nc">TiDEModel</span><span class="p">(</span><span class="n">MixedCovariatesTorchModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="TiDEModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tide_model.html#darts.models.forecasting.tide_model.TiDEModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">TiDEModel</span><span class="p">(</span><span class="n">MixedCovariatesTorchModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -828,7 +828,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">use_layer_norm</span> <span class="o">=</span> <span class="n">use_layer_norm</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
 
-    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">MixedCovariatesTrainTensorType</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
         <span class="p">(</span>
@@ -897,14 +897,14 @@
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_static_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_static_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="nf">_check_ckpt_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tfm_save</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_ckpt_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tfm_save</span><span class="p">):</span>
         <span class="c1"># new parameters were added that will break loading weights</span>
         <span class="n">new_params</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;temporal_hidden_size_past&quot;</span><span class="p">,</span> <span class="s2">&quot;temporal_hidden_size_future&quot;</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">new_params</span><span class="p">:</span>
@@ -932,7 +932,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

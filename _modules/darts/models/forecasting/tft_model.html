@@ -178,24 +178,24 @@
 <span class="sd">-------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
-<span class="kn">from</span> <span class="nn">torch.nn</span> <span class="kn">import</span> <span class="n">LSTM</span> <span class="k">as</span> <span class="n">_LSTM</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="kn">import</span> <span class="n">LSTM</span> <span class="k">as</span> <span class="n">_LSTM</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.models.components</span> <span class="kn">import</span> <span class="n">glu_variants</span><span class="p">,</span> <span class="n">layer_norm_variants</span>
-<span class="kn">from</span> <span class="nn">darts.models.components.glu_variants</span> <span class="kn">import</span> <span class="n">GLU_FFN</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.components</span><span class="w"> </span><span class="kn">import</span> <span class="n">glu_variants</span><span class="p">,</span> <span class="n">layer_norm_variants</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.components.glu_variants</span><span class="w"> </span><span class="kn">import</span> <span class="n">GLU_FFN</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.pl_forecasting_module</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">PLMixedCovariatesModule</span><span class="p">,</span>
     <span class="n">io_processor</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.tft_submodels</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.tft_submodels</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">_GateAddNorm</span><span class="p">,</span>
     <span class="n">_GatedResidualNetwork</span><span class="p">,</span>
     <span class="n">_InterpretableMultiHeadAttention</span><span class="p">,</span>
@@ -203,13 +203,13 @@
     <span class="n">_VariableSelectionNetwork</span><span class="p">,</span>
     <span class="n">get_embedding_size</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">MixedCovariatesTorchModel</span>
-<span class="kn">from</span> <span class="nn">darts.utils.data</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.torch_forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">MixedCovariatesTorchModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">MixedCovariatesSequentialDataset</span><span class="p">,</span>
     <span class="n">MixedCovariatesTrainingDataset</span><span class="p">,</span>
     <span class="n">TrainingDataset</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">Likelihood</span><span class="p">,</span> <span class="n">QuantileRegression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Likelihood</span><span class="p">,</span> <span class="n">QuantileRegression</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -218,8 +218,8 @@
 <span class="p">]</span>
 
 
-<span class="k">class</span> <span class="nc">_TFTModule</span><span class="p">(</span><span class="n">PLMixedCovariatesModule</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_TFTModule</span><span class="p">(</span><span class="n">PLMixedCovariatesModule</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">output_dim</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
         <span class="n">variables_meta</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]],</span>
@@ -508,56 +508,56 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_decoder_sparse_weights</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">reals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List of all continuous variables in model</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;model_config&quot;</span><span class="p">][</span><span class="s2">&quot;reals_input&quot;</span><span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">static_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">static_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List of all static variables in model</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;model_config&quot;</span><span class="p">][</span><span class="s2">&quot;static_input&quot;</span><span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">numeric_static_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">numeric_static_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List of numeric static variables in model</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;model_config&quot;</span><span class="p">][</span><span class="s2">&quot;static_input_numeric&quot;</span><span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">categorical_static_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">categorical_static_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List of categorical static variables in model</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;model_config&quot;</span><span class="p">][</span><span class="s2">&quot;static_input_categorical&quot;</span><span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">encoder_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">encoder_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List of all encoder variables in model (excluding static variables)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;model_config&quot;</span><span class="p">][</span><span class="s2">&quot;time_varying_encoder_input&quot;</span><span class="p">]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">decoder_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">decoder_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List of all decoder variables in model (excluding static variables)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;model_config&quot;</span><span class="p">][</span><span class="s2">&quot;time_varying_decoder_input&quot;</span><span class="p">]</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">expand_static_context</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">time_steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">expand_static_context</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">time_steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        add time dimension to static context</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">context</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">time_steps</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_relative_index</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_relative_index</span><span class="p">(</span>
         <span class="n">encoder_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">decoder_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -576,7 +576,7 @@
         <span class="k">return</span> <span class="n">index</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_attention_mask_full</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_attention_mask_full</span><span class="p">(</span>
         <span class="n">time_steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -587,7 +587,7 @@
         <span class="k">return</span> <span class="n">mask</span> <span class="o">&lt;</span> <span class="mi">1</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_attention_mask_future</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_attention_mask_future</span><span class="p">(</span>
         <span class="n">encoder_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">decoder_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -627,7 +627,7 @@
         <span class="k">return</span> <span class="n">mask</span>
 
     <span class="nd">@io_processor</span>
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;TFT model forward pass.</span>
@@ -827,8 +827,8 @@
         <span class="k">return</span> <span class="n">out</span>
 
 
-<div class="viewcode-block" id="TFTModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel">[docs]</a><span class="k">class</span> <span class="nc">TFTModel</span><span class="p">(</span><span class="n">MixedCovariatesTorchModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="TFTModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">TFTModel</span><span class="p">(</span><span class="n">MixedCovariatesTorchModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -1139,7 +1139,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">norm_type</span> <span class="o">=</span> <span class="n">norm_type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_considers_static_covariates</span> <span class="o">=</span> <span class="n">use_static_covariates</span>
 
-    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">MixedCovariatesTrainTensorType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">MixedCovariatesTrainTensorType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        `train_sample` contains the following tensors:</span>
 <span class="sd">            (past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates,</span>
@@ -1330,7 +1330,7 @@
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_build_train_dataset</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_train_dataset</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
@@ -1359,18 +1359,18 @@
             <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_verify_train_dataset_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_dataset</span><span class="p">:</span> <span class="n">TrainingDataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_verify_train_dataset_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_dataset</span><span class="p">:</span> <span class="n">TrainingDataset</span><span class="p">):</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="nb">isinstance</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">,</span> <span class="n">MixedCovariatesTrainingDataset</span><span class="p">),</span>
             <span class="s2">&quot;TFTModel requires a training dataset of type MixedCovariatesTrainingDataset.&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_static_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_static_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span></div>
 </pre></div>
 
@@ -1393,7 +1393,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

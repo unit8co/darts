@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>darts.models.forecasting.sf_auto_ces &#8212; darts  documentation</title>
+    <title>darts.models.forecasting.sf_auto_tbats &#8212; darts  documentation</title>
     
   <link href="../../../../_static/css/theme.css" rel="stylesheet">
   <link href="../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -172,58 +172,67 @@
               
               <div>
                 
-  <h1>Source code for darts.models.forecasting.sf_auto_ces</h1><div class="highlight"><pre>
+  <h1>Source code for darts.models.forecasting.sf_auto_tbats</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">StatsForecastAutoCES</span>
+<span class="sd">StatsForecastAutoTBATS</span>
 <span class="sd">-----------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">statsforecast.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoCES</span> <span class="k">as</span> <span class="n">SFAutoCES</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">statsforecast.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTBATS</span> <span class="k">as</span> <span class="n">SFAutoTBATS</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.components.statsforecast_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">create_normal_samples</span><span class="p">,</span>
+    <span class="n">one_sigma_rule</span><span class="p">,</span>
+    <span class="n">unpack_sf_dict</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalForecastingModel</span>
 
 
-<div class="viewcode-block" id="StatsForecastAutoCES"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">StatsForecastAutoCES</span><span class="p">(</span><span class="n">LocalForecastingModel</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">autoces_args</span><span class="p">,</span> <span class="o">**</span><span class="n">autoces_kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Auto-CES based on `Statsforecasts package</span>
+<div class="viewcode-block" id="StatsForecastAutoTBATS"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_tbats.html#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">StatsForecastAutoTBATS</span><span class="p">(</span><span class="n">LocalForecastingModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">autoTBATS_args</span><span class="p">,</span> <span class="o">**</span><span class="n">autoTBATS_kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Auto-TBATS based on `Statsforecasts package</span>
 <span class="sd">        &lt;https://github.com/Nixtla/statsforecast&gt;`_.</span>
 
-<span class="sd">        Automatically selects the best Complex Exponential Smoothing model using an information criterion.</span>
-<span class="sd">        &lt;https://onlinelibrary.wiley.com/doi/full/10.1002/nav.22074&gt;</span>
+<span class="sd">        Automatically selects the best TBATS model from all feasible combinations of the parameters `use_boxcox`,</span>
+<span class="sd">        `use_trend`, `use_damped_trend`, and `use_arma_errors`. Selection is made using the AIC.</span>
+<span class="sd">        Default value for `use_arma_errors` is True since this enables the evaluation of models with</span>
+<span class="sd">        and without ARMA errors.</span>
+<span class="sd">        &lt;https://citeseerx.ist.psu.edu/document?repid=rep1&amp;type=pdf&amp;doi=f3de25596ab60ef0e886366826bf58a02b35a44f&gt;</span>
+<span class="sd">        &lt;https://doi.org/10.4225/03/589299681de3d&gt;</span>
 
-<span class="sd">        We refer to the `statsforecast AutoCES documentation</span>
-<span class="sd">        &lt;https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoces&gt;`_</span>
+<span class="sd">        We refer to the `statsforecast AutoTBATS documentation</span>
+<span class="sd">        &lt;https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotbats&gt;`_</span>
 <span class="sd">        for the exhaustive documentation of the arguments.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        autoces_args</span>
-<span class="sd">            Positional arguments for ``statsforecasts.models.AutoCES``.</span>
-<span class="sd">        autoces_kwargs</span>
-<span class="sd">            Keyword arguments for ``statsforecasts.models.AutoCES``.</span>
+<span class="sd">        autoTBATS_args</span>
+<span class="sd">            Positional arguments for ``statsforecasts.models.AutoTBATS``.</span>
+<span class="sd">        autoTBATS_kwargs</span>
+<span class="sd">            Keyword arguments for ``statsforecasts.models.AutoTBATS``.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
 <span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
-<span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastAutoCES</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastAutoTBATS</span>
 <span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
-<span class="sd">        &gt;&gt;&gt; # define StatsForecastAutoCES parameters</span>
-<span class="sd">        &gt;&gt;&gt; model = StatsForecastAutoCES(season_length=12, model=&quot;Z&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; # define StatsForecastAutoTBATS parameters</span>
+<span class="sd">        &gt;&gt;&gt; model = StatsForecastAutoTBATS(season_length=12)</span>
 <span class="sd">        &gt;&gt;&gt; model.fit(series)</span>
 <span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
 <span class="sd">        &gt;&gt;&gt; pred.values()</span>
-<span class="sd">        array([[453.03417969],</span>
-<span class="sd">               [429.34039307],</span>
-<span class="sd">               [488.64471436],</span>
-<span class="sd">               [500.28955078],</span>
-<span class="sd">               [519.79962158],</span>
-<span class="sd">               [586.47503662]])</span>
+<span class="sd">        array([[450.79653684],</span>
+<span class="sd">               [472.09265790],</span>
+<span class="sd">               [497.76948306],</span>
+<span class="sd">               [510.74927369],</span>
+<span class="sd">               [520.92224557],</span>
+<span class="sd">               [570.33881522]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SFAutoCES</span><span class="p">(</span><span class="o">*</span><span class="n">autoces_args</span><span class="p">,</span> <span class="o">**</span><span class="n">autoces_kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SFAutoTBATS</span><span class="p">(</span><span class="o">*</span><span class="n">autoTBATS_args</span><span class="p">,</span> <span class="o">**</span><span class="n">autoTBATS_kwargs</span><span class="p">)</span>
 
-<div class="viewcode-block" id="StatsForecastAutoCES.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
+<div class="viewcode-block" id="StatsForecastAutoTBATS.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_tbats.html#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
@@ -232,7 +241,7 @@
         <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="StatsForecastAutoCES.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.predict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
+<div class="viewcode-block" id="StatsForecastAutoTBATS.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_tbats.html#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.predict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -242,11 +251,16 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
         <span class="n">forecast_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
             <span class="n">h</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="p">(</span><span class="n">one_sigma_rule</span><span class="p">,),</span>  <span class="c1"># ask one std for the confidence interval.</span>
         <span class="p">)</span>
 
-        <span class="n">mu</span> <span class="o">=</span> <span class="n">forecast_dict</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">]</span>
+        <span class="n">mu</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="n">unpack_sf_dict</span><span class="p">(</span><span class="n">forecast_dict</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">num_samples</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">samples</span> <span class="o">=</span> <span class="n">create_normal_samples</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">samples</span> <span class="o">=</span> <span class="n">mu</span>
 
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span></div>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -258,6 +272,10 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_supports_range_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span></div>
 </pre></div>
 

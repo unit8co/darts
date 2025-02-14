@@ -173,24 +173,24 @@
               <div>
                 
   <h1>Source code for darts.models.utils</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="k">try</span><span class="p">:</span>
-    <span class="kn">import</span> <span class="nn">torch</span>  <span class="c1"># noqa: F401</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>  <span class="c1"># noqa: F401</span>
 
     <span class="n">TORCH_AVAILABLE</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
     <span class="n">TORCH_AVAILABLE</span> <span class="o">=</span> <span class="kc">False</span>
 
 
-<div class="viewcode-block" id="NotImportedModule"><a class="viewcode-back" href="../../../generated_api/darts.models.utils.html#darts.models.utils.NotImportedModule">[docs]</a><span class="k">class</span> <span class="nc">NotImportedModule</span><span class="p">:</span>
+<div class="viewcode-block" id="NotImportedModule"><a class="viewcode-back" href="../../../generated_api/darts.models.utils.html#darts.models.utils.NotImportedModule">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">NotImportedModule</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper class for handling import errors of optional dependencies.&quot;&quot;&quot;</span>
 
     <span class="n">usable</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">warn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">warn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;The `</span><span class="si">{</span><span class="n">module_name</span><span class="si">}</span><span class="s2">` module could not be imported. &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;To enable </span><span class="si">{</span><span class="n">module_name</span><span class="si">}</span><span class="s2"> support in Darts, follow the detailed &quot;</span>
@@ -200,7 +200,7 @@
         <span class="k">if</span> <span class="n">warn</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">error_message</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="n">raise_log</span><span class="p">(</span><span class="ne">ImportError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">error_message</span><span class="p">),</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span></div>
 </pre></div>
 
@@ -223,7 +223,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

@@ -178,22 +178,22 @@
 <span class="sd">-------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span>
-<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">nfoursid.kalman</span> <span class="kn">import</span> <span class="n">Kalman</span>
-<span class="kn">from</span> <span class="nn">nfoursid.nfoursid</span> <span class="kn">import</span> <span class="n">NFourSID</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nfoursid.kalman</span><span class="w"> </span><span class="kn">import</span> <span class="n">Kalman</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nfoursid.nfoursid</span><span class="w"> </span><span class="kn">import</span> <span class="n">NFourSID</span>
 
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
-<span class="kn">from</span> <span class="nn">darts.models.filtering.filtering_model</span> <span class="kn">import</span> <span class="n">FilteringModel</span>
-<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.filtering.filtering_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilteringModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 
 
-<div class="viewcode-block" id="KalmanFilter"><a class="viewcode-back" href="../../../../generated_api/darts.models.filtering.kalman_filter.html#darts.models.filtering.kalman_filter.KalmanFilter">[docs]</a><span class="k">class</span> <span class="nc">KalmanFilter</span><span class="p">(</span><span class="n">FilteringModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim_x</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">kf</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Kalman</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="KalmanFilter"><a class="viewcode-back" href="../../../../generated_api/darts.models.filtering.kalman_filter.html#darts.models.filtering.kalman_filter.KalmanFilter">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">KalmanFilter</span><span class="p">(</span><span class="n">FilteringModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim_x</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">kf</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Kalman</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This model implements a Kalman filter over a time series.</span>
 
@@ -244,10 +244,10 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim_u</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_expect_covariates</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;KalmanFilter(dim_x=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_x</span><span class="si">}</span><span class="s2">)&quot;</span>
 
-<div class="viewcode-block" id="KalmanFilter.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.filtering.kalman_filter.html#darts.models.filtering.kalman_filter.KalmanFilter.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
+<div class="viewcode-block" id="KalmanFilter.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.filtering.kalman_filter.html#darts.models.filtering.kalman_filter.KalmanFilter.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
         <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -314,7 +314,7 @@
 
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="KalmanFilter.filter"><a class="viewcode-back" href="../../../../generated_api/darts.models.filtering.kalman_filter.html#darts.models.filtering.kalman_filter.KalmanFilter.filter">[docs]</a>    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span>
+<div class="viewcode-block" id="KalmanFilter.filter"><a class="viewcode-back" href="../../../../generated_api/darts.models.filtering.kalman_filter.html#darts.models.filtering.kalman_filter.KalmanFilter.filter">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">filter</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
         <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -437,7 +437,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

@@ -182,20 +182,20 @@
 <span class="sd">returns a multivariate series.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">darts.ad.scorers.scorers</span> <span class="kn">import</span> <span class="n">AnomalyScorer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.ad.scorers.scorers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnomalyScorer</span>
 
 
-<div class="viewcode-block" id="DifferenceScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.difference_scorer.html#darts.ad.scorers.difference_scorer.DifferenceScorer">[docs]</a><span class="k">class</span> <span class="nc">DifferenceScorer</span><span class="p">(</span><span class="n">AnomalyScorer</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="DifferenceScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.difference_scorer.html#darts.ad.scorers.difference_scorer.DifferenceScorer">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">DifferenceScorer</span><span class="p">(</span><span class="n">AnomalyScorer</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Difference Scorer&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">is_univariate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;Difference&quot;</span>
 
-    <span class="k">def</span> <span class="nf">_score_core_from_prediction</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_score_core_from_prediction</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
         <span class="n">pred_vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -224,7 +224,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

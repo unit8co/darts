@@ -190,12 +190,12 @@
 <span class="sd">.. [1] https://en.wikipedia.org/wiki/Random_forest</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
-<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">RandomForestRegressor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestRegressor</span>
 
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.regression_model</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.regression_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">FUTURE_LAGS_TYPE</span><span class="p">,</span>
     <span class="n">LAGS_TYPE</span><span class="p">,</span>
     <span class="n">RegressionModel</span><span class="p">,</span>
@@ -204,8 +204,8 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="RandomForest"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest">[docs]</a><span class="k">class</span> <span class="nc">RandomForest</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="RandomForest"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RandomForest</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LAGS_TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LAGS_TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -378,7 +378,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

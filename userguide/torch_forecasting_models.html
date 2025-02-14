@@ -669,7 +669,7 @@ We also noticed that our ice-cream sales depend on the day of the week so we wan
 So we set <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span> <span class="pre">=</span> <span class="pre">7</span></code> days to let the model look back an entire week into the past.
 The <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> can be set to <code class="docutils literal notranslate"><span class="pre">1</span></code> day to predict the next day.</p>
 <p>Now we can create a model and train it! Figure 2 shows you how <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> will use our data.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TFTModel</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TFTModel</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">TFTModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">ice_cream_sales</span><span class="p">,</span>
@@ -857,13 +857,13 @@ The code is triggered once the process execution reaches the corresponding hooks
 <p>Early stopping is an efficient way to avoid overfitting and reduce training time.
 It will exit the training process once the validation loss has not significantly improved over some epochs.</p>
 <p>You can use Early Stopping with any <code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, leveraging PyTorch Lightning’s <a class="reference external" href="https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.EarlyStopping.html#lightning.pytorch.callbacks.EarlyStopping">EarlyStopping</a> callback:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks</span> <span class="kn">import</span> <span class="n">EarlyStopping</span>
-<span class="kn">from</span> <span class="nn">torchmetrics</span> <span class="kn">import</span> <span class="n">MeanAbsolutePercentageError</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pytorch_lightning.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">EarlyStopping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torchmetrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">MeanAbsolutePercentageError</span>
 
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NBEATSModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NBEATSModel</span>
 
 <span class="c1"># read data</span>
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
@@ -917,18 +917,18 @@ It will exit the training process once the validation loss has not significantly
 </pre></div>
 </div>
 <p>Let’s check out how to implement a <strong>custom callback</strong> to make the model losses accessible in Python.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks</span> <span class="kn">import</span> <span class="n">Callback</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pytorch_lightning.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callback</span>
 
-<span class="k">class</span> <span class="nc">LossLogger</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LossLogger</span><span class="p">(</span><span class="n">Callback</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">train_loss</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">val_loss</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="c1"># will automatically be called at the end of each epoch</span>
-    <span class="k">def</span> <span class="nf">on_train_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="s2">&quot;pl.Trainer&quot;</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">:</span> <span class="s2">&quot;pl.LightningModule&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_train_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="s2">&quot;pl.Trainer&quot;</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">:</span> <span class="s2">&quot;pl.LightningModule&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">train_loss</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">trainer</span><span class="o">.</span><span class="n">callback_metrics</span><span class="p">[</span><span class="s2">&quot;train_loss&quot;</span><span class="p">]))</span>
 
-    <span class="k">def</span> <span class="nf">on_validation_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="s2">&quot;pl.Trainer&quot;</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">:</span> <span class="s2">&quot;pl.LightningModule&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_validation_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trainer</span><span class="p">:</span> <span class="s2">&quot;pl.Trainer&quot;</span><span class="p">,</span> <span class="n">pl_module</span><span class="p">:</span> <span class="s2">&quot;pl.LightningModule&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">val_loss</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">trainer</span><span class="o">.</span><span class="n">callback_metrics</span><span class="p">[</span><span class="s2">&quot;val_loss&quot;</span><span class="p">]))</span>
 
 
@@ -1447,7 +1447,7 @@ We train two models; <code class="docutils literal notranslate"><span class="pre
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

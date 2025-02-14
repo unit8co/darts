@@ -174,22 +174,22 @@
                 
   <h1>Source code for torch.nn.modules.normalization</h1><div class="highlight"><pre>
 <span></span><span class="c1"># mypy: allow-untyped-defs</span>
-<span class="kn">import</span> <span class="nn">numbers</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numbers</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">Size</span><span class="p">,</span> <span class="n">Tensor</span>
-<span class="kn">from</span> <span class="nn">torch.nn</span> <span class="kn">import</span> <span class="n">functional</span> <span class="k">as</span> <span class="n">F</span><span class="p">,</span> <span class="n">init</span>
-<span class="kn">from</span> <span class="nn">torch.nn.parameter</span> <span class="kn">import</span> <span class="n">Parameter</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">Size</span><span class="p">,</span> <span class="n">Tensor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="kn">import</span> <span class="n">functional</span> <span class="k">as</span> <span class="n">F</span><span class="p">,</span> <span class="n">init</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.nn.parameter</span><span class="w"> </span><span class="kn">import</span> <span class="n">Parameter</span>
 
-<span class="kn">from</span> <span class="nn">._functions</span> <span class="kn">import</span> <span class="n">CrossMapLRN2d</span> <span class="k">as</span> <span class="n">_cross_map_lrn2d</span>
-<span class="kn">from</span> <span class="nn">.module</span> <span class="kn">import</span> <span class="n">Module</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._functions</span><span class="w"> </span><span class="kn">import</span> <span class="n">CrossMapLRN2d</span> <span class="k">as</span> <span class="n">_cross_map_lrn2d</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.module</span><span class="w"> </span><span class="kn">import</span> <span class="n">Module</span>
 
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;LocalResponseNorm&quot;</span><span class="p">,</span> <span class="s2">&quot;CrossMapLRN2d&quot;</span><span class="p">,</span> <span class="s2">&quot;LayerNorm&quot;</span><span class="p">,</span> <span class="s2">&quot;GroupNorm&quot;</span><span class="p">,</span> <span class="s2">&quot;RMSNorm&quot;</span><span class="p">]</span>
 
 
-<span class="k">class</span> <span class="nc">LocalResponseNorm</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LocalResponseNorm</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies local response normalization over an input signal.</span>
 
 <span class="sd">    The input signal is composed of several input planes, where channels occupy the second dimension.</span>
@@ -225,7 +225,7 @@
     <span class="n">beta</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">k</span><span class="p">:</span> <span class="nb">float</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span> <span class="n">beta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.75</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
@@ -234,20 +234,20 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">=</span> <span class="n">k</span>
 
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">local_response_norm</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{size}</span><span class="s2">, alpha=</span><span class="si">{alpha}</span><span class="s2">, beta=</span><span class="si">{beta}</span><span class="s2">, k=</span><span class="si">{k}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">CrossMapLRN2d</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CrossMapLRN2d</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
     <span class="n">size</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">beta</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">k</span><span class="p">:</span> <span class="nb">float</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span> <span class="n">beta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.75</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
@@ -256,17 +256,17 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">=</span> <span class="n">k</span>
 
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_cross_map_lrn2d</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{size}</span><span class="s2">, alpha=</span><span class="si">{alpha}</span><span class="s2">, beta=</span><span class="si">{beta}</span><span class="s2">, k=</span><span class="si">{k}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
 
 
 <span class="n">_shape_t</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Size</span><span class="p">]</span>
 
 
-<span class="k">class</span> <span class="nc">LayerNorm</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LayerNorm</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies Layer Normalization over a mini-batch of inputs.</span>
 
 <span class="sd">    This layer implements the operation as described in</span>
@@ -281,7 +281,7 @@
 <span class="sd">    the last 2 dimensions of the input (i.e. ``input.mean((-2, -1))``).</span>
 <span class="sd">    :math:`\gamma` and :math:`\beta` are learnable affine transform parameters of</span>
 <span class="sd">    :attr:`normalized_shape` if :attr:`elementwise_affine` is ``True``.</span>
-<span class="sd">    The standard-deviation is calculated via the biased estimator, equivalent to</span>
+<span class="sd">    The variance is calculated via the biased estimator, equivalent to</span>
 <span class="sd">    `torch.var(input, unbiased=False)`.</span>
 
 <span class="sd">    .. note::</span>
@@ -349,7 +349,7 @@
     <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">elementwise_affine</span><span class="p">:</span> <span class="nb">bool</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">normalized_shape</span><span class="p">:</span> <span class="n">_shape_t</span><span class="p">,</span>
         <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
@@ -382,25 +382,25 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
 
-<div class="viewcode-block" id="LayerNorm.reset_parameters"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.LayerNorm.reset_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="LayerNorm.reset_parameters"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.LayerNorm.reset_parameters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">elementwise_affine</span><span class="p">:</span>
             <span class="n">init</span><span class="o">.</span><span class="n">ones_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">init</span><span class="o">.</span><span class="n">zeros_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="LayerNorm.forward"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.LayerNorm.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="LayerNorm.forward"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.LayerNorm.forward">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">layer_norm</span><span class="p">(</span>
             <span class="nb">input</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalized_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="LayerNorm.extra_repr"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.LayerNorm.extra_repr">[docs]</a>    <span class="k">def</span> <span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<div class="viewcode-block" id="LayerNorm.extra_repr"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.LayerNorm.extra_repr">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="s2">&quot;</span><span class="si">{normalized_shape}</span><span class="s2">, eps=</span><span class="si">{eps}</span><span class="s2">, &quot;</span>
             <span class="s2">&quot;elementwise_affine=</span><span class="si">{elementwise_affine}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
         <span class="p">)</span></div>
 
 
-<span class="k">class</span> <span class="nc">GroupNorm</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">GroupNorm</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies Group Normalization over a mini-batch of inputs.</span>
 
 <span class="sd">    This layer implements the operation as described in</span>
@@ -415,7 +415,7 @@
 <span class="sd">    separately over the each group. :math:`\gamma` and :math:`\beta` are learnable</span>
 <span class="sd">    per-channel affine transform parameter vectors of size :attr:`num_channels` if</span>
 <span class="sd">    :attr:`affine` is ``True``.</span>
-<span class="sd">    The standard-deviation is calculated via the biased estimator, equivalent to</span>
+<span class="sd">    The variance is calculated via the biased estimator, equivalent to</span>
 <span class="sd">    `torch.var(input, unbiased=False)`.</span>
 
 <span class="sd">    This layer uses statistics computed from input data in both training and</span>
@@ -452,7 +452,7 @@
     <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">affine</span><span class="p">:</span> <span class="nb">bool</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">num_groups</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">num_channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -479,32 +479,33 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="p">:</span>
             <span class="n">init</span><span class="o">.</span><span class="n">ones_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
             <span class="n">init</span><span class="o">.</span><span class="n">zeros_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">group_norm</span><span class="p">(</span><span class="nb">input</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_groups</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bias</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{num_groups}</span><span class="s2">, </span><span class="si">{num_channels}</span><span class="s2">, eps=</span><span class="si">{eps}</span><span class="s2">, &quot;</span> <span class="s2">&quot;affine=</span><span class="si">{affine}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span>
         <span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">RMSNorm</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RMSNorm</span><span class="p">(</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Applies Root Mean Square Layer Normalization over a mini-batch of inputs.</span>
 
 <span class="sd">    This layer implements the operation as described in</span>
 <span class="sd">    the paper `Root Mean Square Layer Normalization &lt;https://arxiv.org/pdf/1910.07467.pdf&gt;`__</span>
 
 <span class="sd">    .. math::</span>
-<span class="sd">        y = \frac{x}{\sqrt{\mathrm{RMS}[x] + \epsilon}} * \gamma</span>
+<span class="sd">        y_i = \frac{x_i}{\mathrm{RMS}(x)} * \gamma_i, \quad</span>
+<span class="sd">        \text{where} \quad \text{RMS}(x) = \sqrt{\epsilon + \frac{1}{n} \sum_{i=1}^{n} x_i^2}</span>
 
-<span class="sd">    The root mean squared norm is taken over the last ``D`` dimensions, where ``D``</span>
+<span class="sd">    The RMS is taken over the last ``D`` dimensions, where ``D``</span>
 <span class="sd">    is the dimension of :attr:`normalized_shape`. For example, if :attr:`normalized_shape`</span>
-<span class="sd">    is ``(3, 5)`` (a 2-dimensional shape), the rms norm is computed over</span>
+<span class="sd">    is ``(3, 5)`` (a 2-dimensional shape), the RMS is computed over</span>
 <span class="sd">    the last 2 dimensions of the input.</span>
 
 <span class="sd">    Args:</span>
@@ -519,8 +520,7 @@
 <span class="sd">            normalize over the last dimension which is expected to be of that specific size.</span>
 <span class="sd">        eps: a value added to the denominator for numerical stability. Default: :func:`torch.finfo(x.dtype).eps`</span>
 <span class="sd">        elementwise_affine: a boolean value that when set to ``True``, this module</span>
-<span class="sd">            has learnable per-element affine parameters initialized to ones (for weights)</span>
-<span class="sd">            and zeros (for biases). Default: ``True``.</span>
+<span class="sd">            has learnable per-element affine parameters initialized to ones (for weights). Default: ``True``.</span>
 
 <span class="sd">    Shape:</span>
 <span class="sd">        - Input: :math:`(N, *)`</span>
@@ -538,7 +538,7 @@
     <span class="n">eps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
     <span class="n">elementwise_affine</span><span class="p">:</span> <span class="nb">bool</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">normalized_shape</span><span class="p">:</span> <span class="n">_shape_t</span><span class="p">,</span>
         <span class="n">eps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -562,20 +562,20 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">register_parameter</span><span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">reset_parameters</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Resets parameters based on their initialization used in __init__.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">elementwise_affine</span><span class="p">:</span>
             <span class="n">init</span><span class="o">.</span><span class="n">ones_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Runs forward pass.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">rms_norm</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalized_shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extra_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extra information about the module.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -609,7 +609,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

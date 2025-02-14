@@ -292,7 +292,7 @@ The forecasting models in Darts are <a class="reference external" href="https://
 <p>All forecasting models work in the same way: first they are built (taking some hyper-parameters in argument), then they are fit on one or several series
 by calling the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function, and finally they are used to obtain one or several forecasts by calling the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function.</p>
 <p><strong>Example:</strong></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NaiveSeasonal</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NaiveSeasonal</span>
 
 <span class="n">naive_model</span> <span class="o">=</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="n">K</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>            <span class="c1"># init</span>
 <span class="n">naive_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>                      <span class="c1"># fit</span>
@@ -304,7 +304,7 @@ When <code class="docutils literal notranslate"><span class="pre">fit()</span></
 On the other hand, some models support calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> on multiple time series (a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code>). In such cases, one or several series must
 be provided to <code class="docutils literal notranslate"><span class="pre">predict()</span></code>, and the model will produce forecasts for this/these time series.</p>
 <p><strong>Example:</strong></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NBEATSModel</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NBEATSModel</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>                 <span class="c1"># init</span>
                     <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
@@ -324,7 +324,7 @@ be provided to <code class="docutils literal notranslate"><span class="pre">pred
 <p>If you wish to save a particular model and use it elsewhere or at a later point in time, darts can achieve that. It leverages pickle and in the case of Torch models relies on saving PyTorch Lightning trainer checkpoints.
 All forecasting models support saving the model on the filesystem, by calling the <code class="docutils literal notranslate"><span class="pre">save()</span></code> function, which saves that particular <code class="docutils literal notranslate"><span class="pre">ForecastingModel</span></code> object instance. When the model is to be used again, the method <code class="docutils literal notranslate"><span class="pre">load()</span></code> can be used. Please note that the methods <code class="docutils literal notranslate"><span class="pre">save_model()</span></code> and <code class="docutils literal notranslate"><span class="pre">load_model()</span></code> are deprecated.</p>
 <p><strong>Example:</strong></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionModel</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 
@@ -338,7 +338,7 @@ Optionally there is also pickle specific keyword arguments <code class="docutils
 More info: <a class="reference external" href="https://docs.python.org/3/library/pickle.html?highlight=dump#pickle.dump">pickle.dump()</a></p>
 <p>With torch models, the model parameters and the training state are saved. We use the trainer to save the model checkpoint.</p>
 <p><strong>Example:</strong></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NBEATSModel</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NBEATSModel</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
                     <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
@@ -358,9 +358,9 @@ More info: <a class="reference external" href="https://docs.python.org/3/library
 <p>Some models support multivariate time series. This means that the target (and potential covariates) series provided to the model
 during fit and predict stage can have multiple dimensions. The model will then in turn produce multivariate forecasts.</p>
 <p>Here is an example, using a <code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code> to forecast a single multivariate series made of 2 components:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="k">as</span> <span class="nn">tg</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">KalmanForecaster</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">darts.utils.timeseries_generation</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tg</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">KalmanForecaster</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
 <span class="n">series1</span> <span class="o">=</span> <span class="n">tg</span><span class="o">.</span><span class="n">sine_timeseries</span><span class="p">(</span><span class="n">value_frequency</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">tg</span><span class="o">.</span><span class="n">gaussian_timeseries</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 <span class="n">series2</span> <span class="o">=</span> <span class="n">tg</span><span class="o">.</span><span class="n">sine_timeseries</span><span class="p">(</span><span class="n">value_frequency</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">tg</span><span class="o">.</span><span class="n">gaussian_timeseries</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
@@ -387,8 +387,8 @@ The advantage of training on multiple series is that a single model can be expos
 <p>In turn, the advantage of having <code class="docutils literal notranslate"><span class="pre">predict()</span></code> providing forecasts for potentially several series at once is that the computation can often be batched and vectorized across the multiple series, which is computationally faster than calling <code class="docutils literal notranslate"><span class="pre">predict()</span></code> multiple times on isolated series.</p>
 <p>These models are shown with a “✅” under the <code class="docutils literal notranslate"><span class="pre">Multiple-series</span> <span class="pre">training</span></code> column on the <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">model list</a>.</p>
 <p>You can also find out programmatically, whether a model supports multiple series.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="n">GlobalForecastingModel</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlobalForecastingModel</span>
 
 <span class="c1"># when True, multiple time series are supported</span>
 <span class="n">supports_multi_ts</span> <span class="o">=</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">,</span> <span class="n">GlobalForecastingModel</span><span class="p">)</span>
@@ -419,9 +419,9 @@ and contain multiple “covariate dimensions”; see the <a class="reference ext
 <p>Models supporting probabilistic forecasts are indicated with a “✅” in the <code class="docutils literal notranslate"><span class="pre">Probabilistic</span></code> column on the <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">model list</a>.
 The actual probabilistic distribution of the forecasts depends on the model.</p>
 <p>Some models such as ARIMA, Exponential Smoothing, (T)BATS or KalmanForecaster make normality assumptions and the resulting distribution is a Gaussian with time-dependent parameters. For example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">ExponentialSmoothing</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExponentialSmoothing</span>
 
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
@@ -443,11 +443,11 @@ In such cases, the model will output the parameters of the distribution, and it 
 Most of the likelihood models also support prior values for the distribution’s parameters, in which case the training loss is regularized by a Kullback-Leibler divergence term pushing the resulting distribution in the direction of the distribution specified by the prior parameters.
 The strength of this regularization term can also be specified when creating the likelihood model object.</p>
 <p>For example, the code below trains a TCNModel to fit a Laplace distribution. So the neural network outputs 2 parameters (location and scale) of the Laplace distribution. We also specify a prior value of 0.1 on the scale parameter.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TCNModel</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
-<span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">LaplaceLikelihood</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TCNModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">LaplaceLikelihood</span>
 
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
@@ -470,11 +470,11 @@ The strength of this regularization term can also be specified when creating the
 <a class="reference external image-reference" href="./images/probabilistic/example_tcn_laplace.png"><img alt="TCN Laplace regression" src="../_images/example_tcn_laplace.png" /></a>
 <p>It is also possible to perform quantile regression (using arbitrary quantiles) with neural networks, by using <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression">darts.utils.likelihood_models.QuantileRegression</a>, in which case the network will be trained with the pinball loss. This produces an empirical non-parametric distribution, and it can often be a good option in practice, when one is not sure of the “real” distribution, or when fitting parametric likelihoods give poor results.
 For example, the code snippet below is almost exactly the same as the preceding snippet; the only difference is that it now uses a <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code> likelihood, which means that the neural network will be trained with a pinball loss, and its number of outputs will be dynamically configured to match the number of quantiles.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TCNModel</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
-<span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">QuantileRegression</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TCNModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
 
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
@@ -500,11 +500,11 @@ For example, the code snippet below is almost exactly the same as the preceding 
 <h3>Capturing model uncertainty using Monte Carlo Dropout<a class="headerlink" href="#capturing-model-uncertainty-using-monte-carlo-dropout" title="Permalink to this heading">¶</a></h3>
 <p>In Darts, dropout can also be used as an additional way to capture model uncertainty, following the approach described in [1]. This is sometimes referred to as <em>epistemic uncertainty</em>, and can be seen as a way to marginalize over a family of models represented by all the different dropout activation functions.</p>
 <p>This feature is readily available for all deep learning models integrating some dropout (except RNN models - we refer to the dropout API reference documentations for a mention of models supporting this). It only requires to specify <code class="docutils literal notranslate"><span class="pre">mc_dropout=True</span></code> at prediction time. For example, the code below trains a TCN model (using the default MSE loss) with a dropout rate of 10%, and then produces a probabilistic forecasts using Monte Carlo Dropout:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TCNModel</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
-<span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">QuantileRegression</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TCNModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
 
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
@@ -531,9 +531,9 @@ For example, the code snippet below is almost exactly the same as the preceding 
 <h3>Probabilistic regression models<a class="headerlink" href="#probabilistic-regression-models" title="Permalink to this heading">¶</a></h3>
 <p>Some regression models can also be configured to produce probabilistic forecasts too. At the time of writing, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html">LinearRegressionModel</a>, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html">LightGBMModel</a> and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html">XGBModel</a> support a <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> argument. When set to <code class="docutils literal notranslate"><span class="pre">&quot;poisson&quot;</span></code> the model will fit a Poisson distribution, and when set to <code class="docutils literal notranslate"><span class="pre">&quot;quantile&quot;</span></code> the model will use the pinball loss to perform quantile regression (the quantiles themselves can be specified using the <code class="docutils literal notranslate"><span class="pre">quantiles</span></code> argument).</p>
 <p>Example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">LinearRegressionModel</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegressionModel</span>
 
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
@@ -588,7 +588,7 @@ For example, the code snippet below is almost exactly the same as the preceding 
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

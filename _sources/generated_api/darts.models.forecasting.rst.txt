@@ -35,6 +35,7 @@
         darts.models.forecasting.sf_auto_arima
         darts.models.forecasting.sf_auto_ces
         darts.models.forecasting.sf_auto_ets
+        darts.models.forecasting.sf_auto_tbats
         darts.models.forecasting.sf_auto_theta
         darts.models.forecasting.tbats_model
         darts.models.forecasting.tcn_model

@@ -679,6 +679,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
+       StatsForecastAutoTBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
        StatsForecastAutoTheta
       </a>
@@ -3418,6 +3423,78 @@ and component reductions, and shape (n time steps, n quantiles) without time but
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.metrics.metrics.wmape">
+<span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">wmape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#wmape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.wmape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Weighted Mean Absolute Percentage Error (WMAPE). (see <a class="reference internal" href="#r383dbe9c3466-1" id="id9">[1]</a> for more information).</p>
+<p>For the true series <span class="math notranslate nohighlight">\(y\)</span> and predicted series <span class="math notranslate nohighlight">\(\hat{y}\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as a
+percentage value per component/column and (optional) quantile with:</p>
+<div class="math notranslate nohighlight">
+\[100 \cdot \frac{\sum_{t=1}^T |y_t - \hat{y}_t|}{\sum_{t=1}^T |y_t|}\]</div>
+<p>If <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> are stochastic (contains several samples) or quantile predictions, use parameter <cite>q</cite> to
+specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+(over all samples, or, if given, the quantile prediction itself).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
+<li><p><strong>pred_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted series.</p></li>
+<li><p><strong>intersect</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – For time series that are overlapping in time without having the same time index, setting <cite>True</cite>
+will consider the values only over their common time interval (intersection in time).</p></li>
+<li><p><strong>q</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.</p></li>
+<li><p><strong>component_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a <cite>np.ndarray</cite>
+of shape <cite>(t, c)</cite> to a <cite>np.ndarray</cite> of shape <cite>(t,)</cite>. The function takes as input a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code> and a
+parameter named <cite>axis</cite>, and returns the reduced array. The <cite>axis</cite> receives value <cite>1</cite> corresponding to the
+component axis. If <cite>None</cite>, will return a metric per component.</p></li>
+<li><p><strong>series_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a function to aggregate the metrics over multiple series. It must reduce a <cite>np.ndarray</cite>
+of shape <cite>(s, t, c)</cite> to a <cite>np.ndarray</cite> of shape <cite>(t, c)</cite> The function takes as input a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code> and a
+parameter named <cite>axis</cite>, and returns the reduced array. The <cite>axis</cite> receives value <cite>0</cite> corresponding to the
+series axis. For example with <cite>np.nanmean</cite>, will return the average over all series metrics. If <cite>None</cite>, will
+return a metric per component.</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
+passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <cite>actual_series</cite> contains some zeros.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><em>float</em> – A single metric score (when <cite>len(q) &lt;= 1</cite>) for:</p>
+<ul>
+<li><p>a single univariate series.</p></li>
+<li><p>a single multivariate series with <cite>component_reduction</cite>.</p></li>
+<li><p>a sequence (list) of uni/multivariate series with <cite>series_reduction</cite> and <cite>component_reduction</cite>.</p></li>
+</ul>
+</li>
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+and shape (n quantiles,) with component reduction and <cite>len(q) &gt; 1</cite>.
+For:</p>
+<ul>
+<li><p>the same input arguments that result in the <cite>float</cite> return case from above but with <cite>len(q) &gt; 1</cite>.</p></li>
+<li><p>a single multivariate series and at least <cite>component_reduction=None</cite>.</p></li>
+<li><p>a sequence of uni/multivariate series including <cite>series_reduction</cite> and <cite>component_reduction=None</cite>.</p></li>
+</ul>
+</li>
+<li><p><em>list[float]</em> – Same as for type <cite>float</cite> but for a sequence of series.</p></li>
+<li><p><em>list[np.ndarray]</em> – Same as for type <cite>np.ndarray</cite> but for a sequence of series.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r383dbe9c3466-1"><span class="brackets"><a class="fn-backref" href="#id9">1</a></span></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Mean_absolute_percentage_error#WMAPE">https://en.wikipedia.org/wiki/Mean_absolute_percentage_error#WMAPE</a></p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -3454,7 +3531,7 @@ and component reductions, and shape (n time steps, n quantiles) without time but
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

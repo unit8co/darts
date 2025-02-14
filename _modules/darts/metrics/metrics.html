@@ -180,20 +180,20 @@
 <span class="sd">Some metrics to compare time series.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">inspect</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
-<span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">wraps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">inspect</span><span class="w"> </span><span class="kn">import</span> <span class="n">signature</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing</span> <span class="kn">import</span> <span class="n">dtw</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.utils.ts_utils</span> <span class="kn">import</span> <span class="n">SeriesType</span><span class="p">,</span> <span class="n">get_series_seq_type</span><span class="p">,</span> <span class="n">series2seq</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">dtw</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">SeriesType</span><span class="p">,</span> <span class="n">get_series_seq_type</span><span class="p">,</span> <span class="n">series2seq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">_build_tqdm_iterator</span><span class="p">,</span>
     <span class="n">_parallel_apply</span><span class="p">,</span>
     <span class="n">likelihood_component_names</span><span class="p">,</span>
@@ -217,14 +217,14 @@
 <span class="p">]</span>
 
 
-<div class="viewcode-block" id="interval_support"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.interval_support">[docs]</a><span class="k">def</span> <span class="nf">interval_support</span><span class="p">(</span><span class="n">func</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">]:</span>
+<div class="viewcode-block" id="interval_support"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.interval_support">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">interval_support</span><span class="p">(</span><span class="n">func</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This decorator adds support for quantile interval metrics with sanity checks, processing, and extraction of</span>
 <span class="sd">    quantiles from the intervals.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">wrapper_interval_support</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">wrapper_interval_support</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="n">q</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;q&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">q</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">raise_log</span><span class="p">(</span>
@@ -262,7 +262,7 @@
     <span class="k">return</span> <span class="n">wrapper_interval_support</span></div>
 
 
-<div class="viewcode-block" id="multi_ts_support"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.multi_ts_support">[docs]</a><span class="k">def</span> <span class="nf">multi_ts_support</span><span class="p">(</span><span class="n">func</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">]:</span>
+<div class="viewcode-block" id="multi_ts_support"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.multi_ts_support">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">multi_ts_support</span><span class="p">(</span><span class="n">func</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This decorator further adapts the metrics that took as input two (or three for scaled metrics with `insample`)</span>
 <span class="sd">    univariate/multivariate ``TimeSeries`` instances, adding support for equally-sized sequences of ``TimeSeries``</span>
@@ -275,7 +275,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">wrapper_multi_ts_support</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">wrapper_multi_ts_support</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="n">actual_series</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;actual_series&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;actual_series&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="p">)</span>
@@ -428,7 +428,7 @@
     <span class="k">return</span> <span class="n">wrapper_multi_ts_support</span></div>
 
 
-<div class="viewcode-block" id="multivariate_support"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.multivariate_support">[docs]</a><span class="k">def</span> <span class="nf">multivariate_support</span><span class="p">(</span><span class="n">func</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">]:</span>
+<div class="viewcode-block" id="multivariate_support"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.multivariate_support">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">multivariate_support</span><span class="p">(</span><span class="n">func</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This decorator transforms a metric function that takes as input two univariate TimeSeries instances</span>
 <span class="sd">    into a function that takes two equally-sized multivariate TimeSeries instances, computes the pairwise univariate</span>
@@ -437,7 +437,7 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">wrapper_multivariate_support</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">wrapper_multivariate_support</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
         <span class="n">params</span> <span class="o">=</span> <span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span>
         <span class="c1"># we can avoid checks about args and kwargs since the input is adjusted by the previous decorator</span>
         <span class="n">actual_series</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -553,7 +553,7 @@
     <span class="k">return</span> <span class="n">wrapper_multivariate_support</span></div>
 
 
-<span class="k">def</span> <span class="nf">_get_values</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_values</span><span class="p">(</span>
     <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">vals_components</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span>
     <span class="n">actual_components</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span>
@@ -598,7 +598,7 @@
     <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">transpose</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
 
 
-<span class="k">def</span> <span class="nf">_get_values_or_raise</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_values_or_raise</span><span class="p">(</span>
     <span class="n">series_a</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">series_b</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
@@ -688,7 +688,7 @@
     <span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_get_quantile_intervals</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_quantile_intervals</span><span class="p">(</span>
     <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">q</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">q_interval</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -713,7 +713,7 @@
     <span class="k">return</span> <span class="n">vals</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">q_idx</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">vals</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">q_idx</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]]</span>
 
 
-<span class="k">def</span> <span class="nf">_get_wrapped_metric</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_wrapped_metric</span><span class="p">(</span>
     <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">],</span> <span class="n">n_wrappers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the inner metric function `func` which bypasses the decorators `multi_ts_support` and</span>
@@ -731,7 +731,7 @@
         <span class="k">return</span> <span class="n">func</span><span class="o">.</span><span class="n">__wrapped__</span><span class="o">.</span><span class="n">__wrapped__</span><span class="o">.</span><span class="n">__wrapped__</span>
 
 
-<span class="k">def</span> <span class="nf">_get_reduction</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_reduction</span><span class="p">(</span>
     <span class="n">kwargs</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">red_name</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">sanity_check</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the reduction function either from user kwargs or metric default.</span>
@@ -779,7 +779,7 @@
     <span class="k">return</span> <span class="n">red_fn</span>
 
 
-<span class="k">def</span> <span class="nf">_get_error_scale</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_error_scale</span><span class="p">(</span>
     <span class="n">insample</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">m</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -818,7 +818,7 @@
 
 <div class="viewcode-block" id="err"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.err">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">err</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">err</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -912,7 +912,7 @@
 
 <div class="viewcode-block" id="merr"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.merr">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">merr</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">merr</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -997,7 +997,7 @@
 
 <div class="viewcode-block" id="ae"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.ae">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">ae</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ae</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -1091,7 +1091,7 @@
 
 <div class="viewcode-block" id="mae"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.mae">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">mae</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mae</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -1176,7 +1176,7 @@
 
 <div class="viewcode-block" id="ase"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.ase">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">ase</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ase</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">insample</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
@@ -1296,7 +1296,7 @@
 
 <div class="viewcode-block" id="mase"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.mase">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">mase</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mase</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">insample</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
@@ -1410,7 +1410,7 @@
 
 <div class="viewcode-block" id="se"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.se">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">se</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">se</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -1504,7 +1504,7 @@
 
 <div class="viewcode-block" id="mse"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.mse">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">mse</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mse</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -1589,7 +1589,7 @@
 
 <div class="viewcode-block" id="sse"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.sse">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">sse</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sse</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">insample</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
@@ -1709,7 +1709,7 @@
 
 <div class="viewcode-block" id="msse"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.msse">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">msse</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">msse</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">insample</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
@@ -1823,7 +1823,7 @@
 
 <div class="viewcode-block" id="rmse"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.rmse">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">rmse</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rmse</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -1907,7 +1907,7 @@
 
 <div class="viewcode-block" id="rmsse"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.rmsse">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">rmsse</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rmsse</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">insample</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
@@ -2018,7 +2018,7 @@
 
 <div class="viewcode-block" id="sle"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.sle">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">sle</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sle</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -2115,7 +2115,7 @@
 
 <div class="viewcode-block" id="rmsle"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.rmsle">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">rmsle</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">rmsle</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -2204,7 +2204,7 @@
 
 <div class="viewcode-block" id="ape"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.ape">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">ape</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ape</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -2313,7 +2313,7 @@
 
 <div class="viewcode-block" id="mape"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.mape">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">mape</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mape</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -2405,9 +2405,108 @@
     <span class="p">)</span></div>
 
 
+<div class="viewcode-block" id="wmape"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.wmape">[docs]</a><span class="nd">@multi_ts_support</span>
+<span class="nd">@multivariate_support</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">wmape</span><span class="p">(</span>
+    <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">q</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">component_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
+    <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Weighted Mean Absolute Percentage Error (WMAPE). (see [1]_ for more information).</span>
+
+<span class="sd">    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed as a</span>
+<span class="sd">    percentage value per component/column and (optional) quantile with:</span>
+
+<span class="sd">    .. math:: 100 \\cdot \\frac{\\sum_{t=1}^T |y_t - \\hat{y}_t|}{\\sum_{t=1}^T |y_t|}</span>
+
+<span class="sd">    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to</span>
+<span class="sd">    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile</span>
+<span class="sd">    (over all samples, or, if given, the quantile prediction itself).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actual_series</span>
+<span class="sd">        The (sequence of) actual series.</span>
+<span class="sd">    pred_series</span>
+<span class="sd">        The (sequence of) predicted series.</span>
+<span class="sd">    intersect</span>
+<span class="sd">        For time series that are overlapping in time without having the same time index, setting `True`</span>
+<span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
+<span class="sd">    q</span>
+<span class="sd">        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.</span>
+<span class="sd">    component_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the</span>
+<span class="sd">        component axis. If `None`, will return a metric per component.</span>
+<span class="sd">    series_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the</span>
+<span class="sd">        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will</span>
+<span class="sd">        return a metric per component.</span>
+<span class="sd">    n_jobs</span>
+<span class="sd">        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is</span>
+<span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
+<span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Optionally, whether to print operations progress</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If `actual_series` contains some zeros.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        A single metric score (when `len(q) &lt;= 1`) for:</span>
+
+<span class="sd">        - a single univariate series.</span>
+<span class="sd">        - a single multivariate series with `component_reduction`.</span>
+<span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,</span>
+<span class="sd">        and shape (n quantiles,) with component reduction and `len(q) &gt; 1`.</span>
+<span class="sd">        For:</span>
+
+<span class="sd">        - the same input arguments that result in the `float` return case from above but with `len(q) &gt; 1`.</span>
+<span class="sd">        - a single multivariate series and at least `component_reduction=None`.</span>
+<span class="sd">        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.</span>
+<span class="sd">    list[float]</span>
+<span class="sd">        Same as for type `float` but for a sequence of series.</span>
+<span class="sd">    list[np.ndarray]</span>
+<span class="sd">        Same as for type `np.ndarray` but for a sequence of series.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://en.wikipedia.org/wiki/Mean_absolute_percentage_error#WMAPE</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span>
+        <span class="n">actual_series</span><span class="p">,</span>
+        <span class="n">pred_series</span><span class="p">,</span>
+        <span class="n">intersect</span><span class="p">,</span>
+        <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="mf">100.0</span>
+        <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_true</span> <span class="o">-</span> <span class="n">y_pred</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">)</span>
+        <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_true</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">)</span>
+    <span class="p">)</span></div>
+
+
 <div class="viewcode-block" id="sape"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.sape">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">sape</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sape</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -2517,7 +2616,7 @@
 
 <div class="viewcode-block" id="smape"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.smape">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">smape</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">smape</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -2614,7 +2713,7 @@
 
 <div class="viewcode-block" id="ope"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.ope">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">ope</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ope</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -2716,7 +2815,7 @@
 
 <div class="viewcode-block" id="arre"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.arre">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">arre</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">arre</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -2825,7 +2924,7 @@
 
 <div class="viewcode-block" id="marre"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.marre">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">marre</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">marre</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -2911,7 +3010,7 @@
 
 <div class="viewcode-block" id="r2_score"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.r2_score">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">r2_score</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">r2_score</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -3006,7 +3105,7 @@
 
 <div class="viewcode-block" id="coefficient_of_variation"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.coefficient_of_variation">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">coefficient_of_variation</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">coefficient_of_variation</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -3100,7 +3199,7 @@
 <span class="c1"># Dynamic Time Warping</span>
 <div class="viewcode-block" id="dtw_metric"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.dtw_metric">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">dtw_metric</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">dtw_metric</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">metric</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span>
@@ -3183,7 +3282,7 @@
 
 <div class="viewcode-block" id="qr"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.qr">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">qr</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">qr</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -3293,7 +3392,7 @@
 
 <div class="viewcode-block" id="ql"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.ql">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">ql</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ql</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -3395,7 +3494,7 @@
 
 <div class="viewcode-block" id="mql"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.mql">[docs]</a><span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">mql</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mql</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -3488,7 +3587,7 @@
 <div class="viewcode-block" id="iw"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.iw">[docs]</a><span class="nd">@interval_support</span>
 <span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">iw</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">iw</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -3590,7 +3689,7 @@
 <div class="viewcode-block" id="miw"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.miw">[docs]</a><span class="nd">@interval_support</span>
 <span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">miw</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">miw</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -3684,7 +3783,7 @@
 <div class="viewcode-block" id="iws"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.iws">[docs]</a><span class="nd">@interval_support</span>
 <span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">iws</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">iws</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -3813,7 +3912,7 @@
 <div class="viewcode-block" id="miws"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.miws">[docs]</a><span class="nd">@interval_support</span>
 <span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">miws</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">miws</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -3909,7 +4008,7 @@
 <div class="viewcode-block" id="ic"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.ic">[docs]</a><span class="nd">@interval_support</span>
 <span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">ic</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">ic</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -4016,7 +4115,7 @@
 <div class="viewcode-block" id="mic"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.mic">[docs]</a><span class="nd">@interval_support</span>
 <span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">mic</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mic</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -4108,7 +4207,7 @@
 <div class="viewcode-block" id="incs_qr"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.incs_qr">[docs]</a><span class="nd">@interval_support</span>
 <span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">incs_qr</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">incs_qr</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -4217,7 +4316,7 @@
 <div class="viewcode-block" id="mincs_qr"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.mincs_qr">[docs]</a><span class="nd">@interval_support</span>
 <span class="nd">@multi_ts_support</span>
 <span class="nd">@multivariate_support</span>
-<span class="k">def</span> <span class="nf">mincs_qr</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mincs_qr</span><span class="p">(</span>
     <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -4330,7 +4429,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

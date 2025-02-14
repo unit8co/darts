@@ -737,35 +737,35 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># fix python path if working locally</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
 <span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
 
-<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">concatenate</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">ElectricityDataset</span><span class="p">,</span> <span class="n">MonthlyMilkDataset</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mae</span><span class="p">,</span> <span class="n">mape</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">concatenate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">ElectricityDataset</span><span class="p">,</span> <span class="n">MonthlyMilkDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mae</span><span class="p">,</span> <span class="n">mape</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">VARIMA</span><span class="p">,</span>
     <span class="n">BlockRNNModel</span><span class="p">,</span>
     <span class="n">NBEATSModel</span><span class="p">,</span>
     <span class="n">RNNModel</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.utils.callbacks</span> <span class="kn">import</span> <span class="n">TFMProgressBar</span>
-<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">TFMProgressBar</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.timeseries_generation</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">datetime_attribute_timeseries</span><span class="p">,</span>
     <span class="n">sine_timeseries</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
 
-<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
 
@@ -776,7 +776,7 @@ div.rendered_html tbody tr:hover {
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">generate_torch_kwargs</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_torch_kwargs</span><span class="p">():</span>
     <span class="c1"># run torch models on CPU, and disable progress bars for all model stages except training.</span>
     <span class="k">return</span> <span class="p">{</span>
         <span class="s2">&quot;pl_trainer_kwargs&quot;</span><span class="p">:</span> <span class="p">{</span>
@@ -874,7 +874,7 @@ div.rendered_html tbody tr:hover {
 </ul>
 <p>Some models use only past covariates, others use only future covariates, and some models might use both. We will dive deeper in this topic in some other notebook, but this <a class="reference external" href="https://unit8co.github.io/darts/README.html#forecasting-models">table</a> details the covariates supported by each model.</p>
 <p>All of the global models listed above support training on multiple series. In addition, they also all support <em>multivariate series</em>. This means that they can seamlessly be used with time series of more than one dimension; the target series can contain one (as is often the case) or several dimensions. A time series with several dimensions is really just a regular time series where the values at each time stamps are vectors instead of scalars.</p>
-<p>As an example, the BlockRNNModel, N-Beats, TCN and Transformer models follow a “block” architecture. They contain a neural network that takes chunks of time series in input, and outputs chunks of (predicted) future time series values. The input dimensionality is the number of dimensions (components) of the target series, plus the number of components of all the covariates - stacked together. The output dimensionality is simply the number of dimensions of the target series: <img alt="image0" src="../_images/seq_dataset_one_ts.png" /></p>
+<p>As an example, the BlockRNNModel, N-Beats, TCN and Transformer models follow a “block” architecture. They contain a neural network that takes chunks of time series in input, and outputs chunks of (predicted) future time series values. The input dimensionality is the number of dimensions (components) of the target series, plus the number of components of all the covariates - stacked together. The output dimensionality is simply the number of dimensions of the target series: <img alt="image1" src="../_images/seq_dataset_one_ts.png" /></p>
 <p>The <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> works differently, in a recurrent fashion (which is also why they support future covariates). The good news is that as a user, we don’t have to worry too much about the different model types and input/output dimensionalities. The dimensionalities are automatically inferred for us by the model based on the training data, and the support for past or future covariates is simply handled by the <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> arguments.</p>
 <p>We’ll still have to specify two important parameters when building our models:</p>
 <ul class="simple">
@@ -964,7 +964,7 @@ MAPE = 8.02%
 <p>So what happened when we called <code class="docutils literal notranslate"><span class="pre">model_air.fit()</span></code> above?</p>
 <p>In order to train the internal neural network, Darts first makes a dataset of inputs/outputs examples from the provided time series (in this case: <code class="docutils literal notranslate"><span class="pre">series_air_scaled</span></code>). There are several ways this can be done and Darts contains a few different dataset implementations in the <code class="docutils literal notranslate"><span class="pre">darts.utils.data</span></code> package.</p>
 <p>By default, <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code> will instantiate a <code class="docutils literal notranslate"><span class="pre">darts.utils.data.PastCovariatesSequentialDataset</span></code>, which simply builds all the consecutive pairs of input/output sub-sequences (of lengths <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>) existing in the series).</p>
-<p>For an example series of length 14, with <code class="docutils literal notranslate"><span class="pre">input_chunk_length=4</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length=2</span></code>, it looks as follows: <img alt="image0" src="../_images/seq_dataset_one_ts.png" /></p>
+<p>For an example series of length 14, with <code class="docutils literal notranslate"><span class="pre">input_chunk_length=4</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length=2</span></code>, it looks as follows: <img alt="image1" src="../_images/seq_dataset_one_ts.png" /></p>
 <p>For such a dataset, a series of length <code class="docutils literal notranslate"><span class="pre">N</span></code> would result in a “training set” of <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">-</span> <span class="pre">input_chunk_length</span> <span class="pre">-</span> <span class="pre">output_chunk_length</span> <span class="pre">+</span> <span class="pre">1</span></code> samples. In the toy example above, we have <code class="docutils literal notranslate"><span class="pre">N=14</span></code>, <code class="docutils literal notranslate"><span class="pre">input_chunk_length=4</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length=2</span></code>, so the number of samples used for training would be K = 9. In this context, a training <em>epoch</em> consists in complete pass (possibly consisting of several mini-batches) over all the samples.</p>
 <p>Note that different models are susceptible to use different datasets by default. For instance, <code class="docutils literal notranslate"><span class="pre">darts.utils.data.HorizonBasedDataset</span></code> is inspired by the <a class="reference external" href="https://arxiv.org/abs/1905.10437">N-BEATS paper</a> and produces samples that are “close” to the end of the series, possibly even ignoring the beginning of the series.</p>
 <p>If you have the need to control the way training samples are produced from <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instances, you can implement your own training dataset by inheriting the abstract <code class="docutils literal notranslate"><span class="pre">darts.utils.data.TrainingDataset</span></code> class. Darts datasets are inheriting from torch <code class="docutils literal notranslate"><span class="pre">Dataset</span></code>, which means it’s easy to implement lazy versions that do not load all data in memory at once. Once you have your own instance of a dataset, you can directly call the <code class="docutils literal notranslate"><span class="pre">fit_from_dataset()</span></code> method, which is supported by all global
@@ -972,7 +972,7 @@ forecasting models.</p>
 <section id="Training-a-Model-on-Multiple-Time-Series">
 <h3>Training a Model on Multiple Time Series<a class="headerlink" href="#Training-a-Model-on-Multiple-Time-Series" title="Permalink to this heading">¶</a></h3>
 <p>All this machinery can be seamlessly used with multiple time series. Here’s how a sequential dataset with <code class="docutils literal notranslate"><span class="pre">input_chunk_length=4</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length=2</span></code> looks for two series of lengths N and M:</p>
-<p><img alt="image1" src="../_images/seq_dataset_multi_ts.png" /></p>
+<img alt="../_images/seq_dataset_multi_ts.png" src="../_images/seq_dataset_multi_ts.png" />
 <p>Note a few things here:</p>
 <ul class="simple">
 <li><p>The different series do not need to have the same length, or even to share the same time stamps.</p></li>
@@ -1571,7 +1571,7 @@ have a sufficient span, otherwise Darts will complain.</p>
 <span class="n">validation_scaled</span> <span class="o">=</span> <span class="n">scaler_dataset</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">validation_set</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">fit_and_pred</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">training</span><span class="p">,</span> <span class="n">validation</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fit_and_pred</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">training</span><span class="p">,</span> <span class="n">validation</span><span class="p">):</span>
     <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">training</span><span class="p">)</span>
     <span class="n">forecast</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">validation</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">forecast</span>
@@ -1703,7 +1703,7 @@ MAE (RNN) = 0.10
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

@@ -178,25 +178,25 @@
 <span class="sd">-----------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">bisect</span>
-<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">bisect</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">Dataset</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch.utils.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.utils.data.utils</span> <span class="kn">import</span> <span class="n">CovariateType</span>
-<span class="kn">from</span> <span class="nn">darts.utils.historical_forecasts.utils</span> <span class="kn">import</span> <span class="n">_process_predict_start_points_bounds</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">CovariateType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.historical_forecasts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_process_predict_start_points_bounds</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="InferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.InferenceDataset">[docs]</a><span class="k">class</span> <span class="nc">InferenceDataset</span><span class="p">(</span><span class="n">ABC</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="InferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.InferenceDataset">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">InferenceDataset</span><span class="p">(</span><span class="n">ABC</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Abstract class for all darts torch inference dataset.</span>
 
@@ -209,15 +209,15 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">pass</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
         <span class="k">pass</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_covariate_indexer</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_covariate_indexer</span><span class="p">(</span>
         <span class="n">target_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">past_start</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
         <span class="n">past_end</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
@@ -298,8 +298,8 @@
         <span class="k">return</span> <span class="n">covariate_start</span><span class="p">,</span> <span class="n">covariate_end</span></div>
 
 
-<div class="viewcode-block" id="GenericInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.GenericInferenceDataset">[docs]</a><span class="k">class</span> <span class="nc">GenericInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="GenericInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.GenericInferenceDataset">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">GenericInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -402,11 +402,11 @@
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">len_preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cum_lengths</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">len_preds</span>
 
 <div class="viewcode-block" id="GenericInferenceDataset.find_list_index"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.GenericInferenceDataset.find_list_index">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">find_list_index</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">cumulative_lengths</span><span class="p">,</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">stride</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_list_index</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">cumulative_lengths</span><span class="p">,</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">stride</span><span class="p">):</span>
         <span class="n">list_index</span> <span class="o">=</span> <span class="n">bisect</span><span class="o">.</span><span class="n">bisect_right</span><span class="p">(</span><span class="n">cumulative_lengths</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
         <span class="n">bound_left</span> <span class="o">=</span> <span class="n">bounds</span><span class="p">[</span><span class="n">list_index</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">list_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -415,7 +415,7 @@
             <span class="n">stride_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">index</span> <span class="o">-</span> <span class="n">cumulative_lengths</span><span class="p">[</span><span class="n">list_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">stride</span>
         <span class="k">return</span> <span class="n">list_index</span><span class="p">,</span> <span class="n">bound_left</span> <span class="o">+</span> <span class="n">stride_idx</span></div>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span>
         <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -515,8 +515,8 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="PastCovariatesInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.PastCovariatesInferenceDataset">[docs]</a><span class="k">class</span> <span class="nc">PastCovariatesInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="PastCovariatesInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.PastCovariatesInferenceDataset">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">PastCovariatesInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -578,10 +578,10 @@
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span>
         <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -594,8 +594,8 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="FutureCovariatesInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.FutureCovariatesInferenceDataset">[docs]</a><span class="k">class</span> <span class="nc">FutureCovariatesInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="FutureCovariatesInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.FutureCovariatesInferenceDataset">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">FutureCovariatesInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -652,10 +652,10 @@
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span>
         <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -681,8 +681,8 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="DualCovariatesInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.DualCovariatesInferenceDataset">[docs]</a><span class="k">class</span> <span class="nc">DualCovariatesInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="DualCovariatesInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.DualCovariatesInferenceDataset">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">DualCovariatesInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -752,10 +752,10 @@
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span>
         <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -784,8 +784,8 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="MixedCovariatesInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.MixedCovariatesInferenceDataset">[docs]</a><span class="k">class</span> <span class="nc">MixedCovariatesInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="MixedCovariatesInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.MixedCovariatesInferenceDataset">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">MixedCovariatesInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -861,10 +861,10 @@
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span>
         <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -897,8 +897,8 @@
         <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="SplitCovariatesInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.SplitCovariatesInferenceDataset">[docs]</a><span class="k">class</span> <span class="nc">SplitCovariatesInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="SplitCovariatesInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.SplitCovariatesInferenceDataset">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">SplitCovariatesInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -974,10 +974,10 @@
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span>
         <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -1027,7 +1027,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

@@ -184,24 +184,24 @@
 <span class="sd">- :class:`GlobalNaiveSeasonal`</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.pl_forecasting_module</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">PLMixedCovariatesModule</span><span class="p">,</span>
     <span class="n">io_processor</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.torch_forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">MixedCovariatesTorchModel</span><span class="p">,</span>
     <span class="n">TorchForecastingModel</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.utils.data.sequential_dataset</span> <span class="kn">import</span> <span class="n">MixedCovariatesSequentialDataset</span>
-<span class="kn">from</span> <span class="nn">darts.utils.data.training_dataset</span> <span class="kn">import</span> <span class="n">MixedCovariatesTrainingDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data.sequential_dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">MixedCovariatesSequentialDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data.training_dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">MixedCovariatesTrainingDataset</span>
 
 <span class="n">MixedCovariatesTrainTensorType</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span>
     <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
@@ -211,7 +211,7 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_extract_targets</span><span class="p">(</span><span class="n">batch</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">n_targets</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_extract_targets</span><span class="p">(</span><span class="n">batch</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">n_targets</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Extracts and returns the target components from an input batch</span>
 
 <span class="sd">    Parameters</span>
@@ -224,7 +224,7 @@
     <span class="k">return</span> <span class="n">batch</span><span class="p">[</span><span class="mi">0</span><span class="p">][:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">n_targets</span><span class="p">]</span>
 
 
-<span class="k">def</span> <span class="nf">_repeat_along_output_chunk</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">ocl</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_repeat_along_output_chunk</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">ocl</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Expands a tensor `x` of shape (batch size, n components) to a tensor of shape</span>
 <span class="sd">    (batch size, `ocl`, n target components, 1 (n samples)), by repeating the values</span>
 <span class="sd">    along the `output_chunk_length` axis.</span>
@@ -239,8 +239,8 @@
     <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">ocl</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">_GlobalNaiveModule</span><span class="p">(</span><span class="n">PLMixedCovariatesModule</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_GlobalNaiveModule</span><span class="p">(</span><span class="n">PLMixedCovariatesModule</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Pytorch module for implementing naive models.</span>
 
 <span class="sd">        Implement your own naive module by subclassing from `_GlobalNaiveModule`, and implement the</span>
@@ -249,7 +249,7 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="nd">@io_processor</span>
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Naive model forward pass.</span>
@@ -268,13 +268,13 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="n">x_in</span><span class="p">)</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Private method to implement the forward method in the subclasses.&quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
 
-<span class="k">class</span> <span class="nc">_GlobalNaiveModel</span><span class="p">(</span><span class="n">MixedCovariatesTorchModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_GlobalNaiveModel</span><span class="p">(</span><span class="n">MixedCovariatesTorchModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -327,7 +327,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_considers_static_covariates</span> <span class="o">=</span> <span class="n">use_static_covariates</span>
 
-    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -362,7 +362,7 @@
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">load_from_checkpoint</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_from_checkpoint</span><span class="p">(</span>
         <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">work_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">file_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -376,7 +376,7 @@
             <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">load_weights_from_checkpoint</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_weights_from_checkpoint</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">work_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -395,36 +395,38 @@
         <span class="p">)</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">MixedCovariatesTrainTensorType</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_GlobalNaiveModule</span><span class="p">:</span>
         <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">_verify_predict_sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predict_sample</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_verify_predict_sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predict_sample</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">):</span>
         <span class="c1"># naive models do not have to be trained, predict sample does not</span>
         <span class="c1"># have to match the training sample</span>
         <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">supports_likelihood_parameter_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">False</span>
-
-    <span class="k">def</span> <span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_likelihood_parameter_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_static_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_static_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">_requires_training</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_requires_training</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="c1"># naive models do not have to be trained.</span>
         <span class="k">return</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="nf">_build_train_dataset</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_train_dataset</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
@@ -445,35 +447,35 @@
         <span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">_NoCovariatesMixin</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_NoCovariatesMixin</span><span class="p">:</span>
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_static_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_static_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_future_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_future_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_past_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_past_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
 
-<span class="k">class</span> <span class="nc">_GlobalNaiveAggregateModule</span><span class="p">(</span><span class="n">_GlobalNaiveModule</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_GlobalNaiveAggregateModule</span><span class="p">(</span><span class="n">_GlobalNaiveModule</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">agg_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">agg_fn</span> <span class="o">=</span> <span class="n">agg_fn</span>
 
-    <span class="k">def</span> <span class="nf">_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">y_target</span> <span class="o">=</span> <span class="n">_extract_targets</span><span class="p">(</span><span class="n">x_in</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_targets</span><span class="p">)</span>
         <span class="n">aggregate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agg_fn</span><span class="p">(</span><span class="n">y_target</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">_repeat_along_output_chunk</span><span class="p">(</span><span class="n">aggregate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="GlobalNaiveAggregate"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate">[docs]</a><span class="k">class</span> <span class="nc">GlobalNaiveAggregate</span><span class="p">(</span><span class="n">_NoCovariatesMixin</span><span class="p">,</span> <span class="n">_GlobalNaiveModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="GlobalNaiveAggregate"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">GlobalNaiveAggregate</span><span class="p">(</span><span class="n">_NoCovariatesMixin</span><span class="p">,</span> <span class="n">_GlobalNaiveModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -621,21 +623,21 @@
             <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">agg_fn</span> <span class="o">=</span> <span class="n">agg_fn</span>
 
-    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">MixedCovariatesTrainTensorType</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_GlobalNaiveModule</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_GlobalNaiveAggregateModule</span><span class="p">(</span><span class="n">agg_fn</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">agg_fn</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span><span class="p">)</span></div>
 
 
-<span class="k">class</span> <span class="nc">_GlobalNaiveSeasonalModule</span><span class="p">(</span><span class="n">_GlobalNaiveModule</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_GlobalNaiveSeasonalModule</span><span class="p">(</span><span class="n">_GlobalNaiveModule</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">y_target</span> <span class="o">=</span> <span class="n">_extract_targets</span><span class="p">(</span><span class="n">x_in</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_targets</span><span class="p">)</span>
         <span class="n">season</span> <span class="o">=</span> <span class="n">y_target</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span>
         <span class="k">return</span> <span class="n">_repeat_along_output_chunk</span><span class="p">(</span><span class="n">season</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="GlobalNaiveSeasonal"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal">[docs]</a><span class="k">class</span> <span class="nc">GlobalNaiveSeasonal</span><span class="p">(</span><span class="n">_NoCovariatesMixin</span><span class="p">,</span> <span class="n">_GlobalNaiveModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="GlobalNaiveSeasonal"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">GlobalNaiveSeasonal</span><span class="p">(</span><span class="n">_NoCovariatesMixin</span><span class="p">,</span> <span class="n">_GlobalNaiveModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -721,14 +723,14 @@
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">MixedCovariatesTrainTensorType</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_GlobalNaiveModule</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_GlobalNaiveSeasonalModule</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span><span class="p">)</span></div>
 
 
-<span class="k">class</span> <span class="nc">_GlobalNaiveDrift</span><span class="p">(</span><span class="n">_GlobalNaiveModule</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_GlobalNaiveDrift</span><span class="p">(</span><span class="n">_GlobalNaiveModule</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">y_target</span> <span class="o">=</span> <span class="n">_extract_targets</span><span class="p">(</span><span class="n">x_in</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_targets</span><span class="p">)</span>
         <span class="n">slope</span> <span class="o">=</span> <span class="n">_repeat_along_output_chunk</span><span class="p">(</span>
             <span class="p">(</span><span class="n">y_target</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">-</span> <span class="n">y_target</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:])</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span>
@@ -745,8 +747,8 @@
         <span class="k">return</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y_0</span>
 
 
-<div class="viewcode-block" id="GlobalNaiveDrift"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift">[docs]</a><span class="k">class</span> <span class="nc">GlobalNaiveDrift</span><span class="p">(</span><span class="n">_NoCovariatesMixin</span><span class="p">,</span> <span class="n">_GlobalNaiveModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="GlobalNaiveDrift"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">GlobalNaiveDrift</span><span class="p">(</span><span class="n">_NoCovariatesMixin</span><span class="p">,</span> <span class="n">_GlobalNaiveModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -834,7 +836,7 @@
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">MixedCovariatesTrainTensorType</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_GlobalNaiveModule</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_GlobalNaiveDrift</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span><span class="p">)</span></div>
@@ -859,7 +861,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

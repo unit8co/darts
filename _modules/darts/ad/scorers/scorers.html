@@ -181,44 +181,44 @@
 <span class="c1">#     - add stride for Scorers like Kmeans and Wasserstein</span>
 <span class="c1">#     - add option to normalize the windows for kmeans? capture only the form and not the values.</span>
 
-<span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">):</span>
-    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Self</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span>
 <span class="k">else</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Self</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span>
 <span class="k">try</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">metrics</span>
-<span class="kn">from</span> <span class="nn">darts.ad.utils</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">metrics</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.ad.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">_assert_same_length</span><span class="p">,</span>
     <span class="n">_check_input</span><span class="p">,</span>
     <span class="n">_sanity_check_two_series</span><span class="p">,</span>
     <span class="n">eval_metric_from_scores</span><span class="p">,</span>
     <span class="n">show_anomalies_from_scores</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.metrics.metrics</span> <span class="kn">import</span> <span class="n">METRIC_TYPE</span>
-<span class="kn">from</span> <span class="nn">darts.utils.data.tabularization</span> <span class="kn">import</span> <span class="n">create_lagged_data</span>
-<span class="kn">from</span> <span class="nn">darts.utils.ts_utils</span> <span class="kn">import</span> <span class="n">series2seq</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">_build_tqdm_iterator</span><span class="p">,</span> <span class="n">_parallel_apply</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">METRIC_TYPE</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data.tabularization</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_lagged_data</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">series2seq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_build_tqdm_iterator</span><span class="p">,</span> <span class="n">_parallel_apply</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="AnomalyScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer">[docs]</a><span class="k">class</span> <span class="nc">AnomalyScorer</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<div class="viewcode-block" id="AnomalyScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">AnomalyScorer</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all anomaly scorers&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">is_univariate</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">is_univariate</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -241,7 +241,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">=</span> <span class="n">window</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_is_univariate</span> <span class="o">=</span> <span class="n">is_univariate</span>
 
-<div class="viewcode-block" id="AnomalyScorer.score_from_prediction"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer.score_from_prediction">[docs]</a>    <span class="k">def</span> <span class="nf">score_from_prediction</span><span class="p">(</span>
+<div class="viewcode-block" id="AnomalyScorer.score_from_prediction"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer.score_from_prediction">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">score_from_prediction</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
@@ -298,7 +298,7 @@
             <span class="n">pred_scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">pred_scores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">called_with_single_series</span> <span class="k">else</span> <span class="n">pred_scores</span></div>
 
-<div class="viewcode-block" id="AnomalyScorer.eval_metric_from_prediction"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer.eval_metric_from_prediction">[docs]</a>    <span class="k">def</span> <span class="nf">eval_metric_from_prediction</span><span class="p">(</span>
+<div class="viewcode-block" id="AnomalyScorer.eval_metric_from_prediction"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer.eval_metric_from_prediction">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">eval_metric_from_prediction</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
@@ -343,7 +343,7 @@
             <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="AnomalyScorer.show_anomalies_from_prediction"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer.show_anomalies_from_prediction">[docs]</a>    <span class="k">def</span> <span class="nf">show_anomalies_from_prediction</span><span class="p">(</span>
+<div class="viewcode-block" id="AnomalyScorer.show_anomalies_from_prediction"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.AnomalyScorer.show_anomalies_from_prediction">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">show_anomalies_from_prediction</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
         <span class="n">pred_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
@@ -351,6 +351,7 @@
         <span class="n">anomalies</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">metric</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">component_wise</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot the results of the scorer.</span>
 
@@ -383,6 +384,8 @@
 <span class="sd">            Optionally, the name of the metric function to use. Must be one of &quot;AUC_ROC&quot; (Area Under the</span>
 <span class="sd">            Receiver Operating Characteristic Curve) and &quot;AUC_PR&quot; (Average Precision from scores).</span>
 <span class="sd">            Default: &quot;AUC_ROC&quot;.</span>
+<span class="sd">        component_wise</span>
+<span class="sd">            If True, will separately plot each component in case of multivariate anomaly detection.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">series</span> <span class="o">=</span> <span class="n">_check_input</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;series&quot;</span><span class="p">,</span> <span class="n">num_series_expected</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">pred_series</span> <span class="o">=</span> <span class="n">_check_input</span><span class="p">(</span>
@@ -405,37 +408,38 @@
             <span class="n">names_of_scorers</span><span class="o">=</span><span class="n">scorer_name</span><span class="p">,</span>
             <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
             <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
+            <span class="n">component_wise</span><span class="o">=</span><span class="n">component_wise</span><span class="p">,</span>
         <span class="p">)</span></div>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_probabilistic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_probabilistic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the scorer expects a probabilistic prediction as the first input.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_univariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_univariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the Scorer is a univariate scorer.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_univariate</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_trainable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_trainable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the scorer is trainable.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;returns the name of the scorer&quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_score_core_from_prediction</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_score_core_from_prediction</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
         <span class="n">pred_vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">_check_univariate_scorer</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_univariate_scorer</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if `anomalies` contains only univariate series when the scorer has the</span>
@@ -450,7 +454,7 @@
 <span class="sd">                same number of components as the input (can be univariate or multivariate).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">def</span> <span class="nf">_check_univariate</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_check_univariate</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Checks if `anomalies` contains only univariate series, which</span>
 <span class="sd">            is required if any of the scorers returns a univariate score.</span>
 <span class="sd">            &quot;&quot;&quot;</span>
@@ -466,7 +470,7 @@
 
         <span class="n">_</span> <span class="o">=</span> <span class="n">_check_input</span><span class="p">(</span><span class="n">anomalies</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;anomalies&quot;</span><span class="p">,</span> <span class="n">extra_checks</span><span class="o">=</span><span class="n">_check_univariate</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_check_window_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_window_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the parameter window is less or equal than the length of the given series&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
             <span class="n">raise_log</span><span class="p">(</span>
@@ -478,7 +482,7 @@
                 <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_assert_stochastic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">name_series</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_assert_stochastic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">name_series</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the series is stochastic (number of samples is larger than one).&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">series</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">raise_log</span><span class="p">(</span>
@@ -489,7 +493,7 @@
                 <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_extract_deterministic_series</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">name_series</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_deterministic_series</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">name_series</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract a deterministic series from `series` (quantile=0.5 if `series` is probabilistic).&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">is_deterministic</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">series</span>
@@ -501,7 +505,7 @@
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">quantile_timeseries</span><span class="p">(</span><span class="n">quantile</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_extract_deterministic_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">name_series</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_deterministic_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">name_series</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract deterministic values from `series` (quantile=0.5 if `series` is probabilistic).&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">series</span>
@@ -514,10 +518,10 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="FittableAnomalyScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer">[docs]</a><span class="k">class</span> <span class="nc">FittableAnomalyScorer</span><span class="p">(</span><span class="n">AnomalyScorer</span><span class="p">):</span>
+<div class="viewcode-block" id="FittableAnomalyScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">FittableAnomalyScorer</span><span class="p">(</span><span class="n">AnomalyScorer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class of scorers that require training.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">is_univariate</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="n">window</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -567,7 +571,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">width_trained_on</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-<div class="viewcode-block" id="FittableAnomalyScorer.fit"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
+<div class="viewcode-block" id="FittableAnomalyScorer.fit"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
@@ -599,7 +603,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="FittableAnomalyScorer.fit_from_prediction"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.fit_from_prediction">[docs]</a>    <span class="k">def</span> <span class="nf">fit_from_prediction</span><span class="p">(</span>
+<div class="viewcode-block" id="FittableAnomalyScorer.fit_from_prediction"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.fit_from_prediction">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit_from_prediction</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
@@ -636,7 +640,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">diff_series</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span></div>
 
-<div class="viewcode-block" id="FittableAnomalyScorer.score"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.score">[docs]</a>    <span class="k">def</span> <span class="nf">score</span><span class="p">(</span>
+<div class="viewcode-block" id="FittableAnomalyScorer.score"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.score">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">score</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
@@ -666,7 +670,7 @@
         <span class="n">pred_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_score_core</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">pred_scores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">called_with_single_series</span> <span class="k">else</span> <span class="n">pred_scores</span></div>
 
-<div class="viewcode-block" id="FittableAnomalyScorer.score_from_prediction"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.score_from_prediction">[docs]</a>    <span class="k">def</span> <span class="nf">score_from_prediction</span><span class="p">(</span>
+<div class="viewcode-block" id="FittableAnomalyScorer.score_from_prediction"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.score_from_prediction">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">score_from_prediction</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
@@ -704,7 +708,7 @@
         <span class="n">pred_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">pred_scores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">called_with_single_series</span> <span class="k">else</span> <span class="n">pred_scores</span></div>
 
-<div class="viewcode-block" id="FittableAnomalyScorer.eval_metric"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.eval_metric">[docs]</a>    <span class="k">def</span> <span class="nf">eval_metric</span><span class="p">(</span>
+<div class="viewcode-block" id="FittableAnomalyScorer.eval_metric"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.eval_metric">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">eval_metric</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
@@ -748,13 +752,14 @@
             <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="FittableAnomalyScorer.show_anomalies"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.show_anomalies">[docs]</a>    <span class="k">def</span> <span class="nf">show_anomalies</span><span class="p">(</span>
+<div class="viewcode-block" id="FittableAnomalyScorer.show_anomalies"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer.show_anomalies">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">show_anomalies</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
         <span class="n">anomalies</span><span class="p">:</span> <span class="n">TimeSeries</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">scorer_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">metric</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">component_wise</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot the results of the scorer.</span>
 
@@ -785,6 +790,8 @@
 <span class="sd">            Optionally, the name of the metric function to use. Must be one of &quot;AUC_ROC&quot; (Area Under the</span>
 <span class="sd">            Receiver Operating Characteristic Curve) and &quot;AUC_PR&quot; (Average Precision from scores).</span>
 <span class="sd">            Default: &quot;AUC_ROC&quot;.</span>
+<span class="sd">        component_wise</span>
+<span class="sd">            If True, will separately plot each component in case of multivariate anomaly detection.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">series</span> <span class="o">=</span> <span class="n">_check_input</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;series&quot;</span><span class="p">,</span> <span class="n">num_series_expected</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">pred_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
@@ -808,31 +815,32 @@
             <span class="n">names_of_scorers</span><span class="o">=</span><span class="n">scorer_name</span><span class="p">,</span>
             <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
             <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
+            <span class="n">component_wise</span><span class="o">=</span><span class="n">component_wise</span><span class="p">,</span>
         <span class="p">)</span></div>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_trainable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_trainable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the Scorer is trainable.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_fit_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fit_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">pass</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_score_core</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_score_core</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
         <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">_score_core_from_prediction</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_score_core_from_prediction</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
         <span class="n">pred_vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">_diff_series</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_diff_series</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
         <span class="n">pred_series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
@@ -862,7 +870,7 @@
             <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s2</span><span class="o">.</span><span class="n">with_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="n">time_index</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">res</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">out</span>
 
-    <span class="k">def</span> <span class="nf">_fun_window_agg</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fun_window_agg</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">scores</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">window</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -892,7 +900,7 @@
             <span class="n">scores_point_wise</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score_point_wise</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">scores_point_wise</span>
 
-    <span class="k">def</span> <span class="nf">_check_fit_called</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_fit_called</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the scorer has been fitted before calling its `score()` function.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">:</span>
             <span class="n">raise_log</span><span class="p">(</span>
@@ -903,10 +911,10 @@
             <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="WindowedAnomalyScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.WindowedAnomalyScorer">[docs]</a><span class="k">class</span> <span class="nc">WindowedAnomalyScorer</span><span class="p">(</span><span class="n">FittableAnomalyScorer</span><span class="p">):</span>
+<div class="viewcode-block" id="WindowedAnomalyScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.WindowedAnomalyScorer">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">WindowedAnomalyScorer</span><span class="p">(</span><span class="n">FittableAnomalyScorer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for anomaly scorers that rely on windows to detect anomalies&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">is_univariate</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="n">window</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -942,11 +950,11 @@
         <span class="p">)</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_model_score_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_model_score_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Wrapper around model inference method&quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">_fit_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fit_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Train one sub-model for each component when self.is_univariate=False and series is multivariate&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_univariate</span> <span class="ow">or</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tabularize_series</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">component_wise</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
@@ -966,7 +974,7 @@
             <span class="n">fn_kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_score_core</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_score_core</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply the scorer (sub) model scoring method on the series components&quot;&quot;&quot;</span>
@@ -1005,7 +1013,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">score_series</span>
 
-    <span class="k">def</span> <span class="nf">_tabularize_series</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_tabularize_series</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">component_wise</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Internal function called by WindowedAnomalyScorer `fit()` and `score()` functions.</span>
@@ -1041,7 +1049,7 @@
             <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">[</span><span class="n">d_time</span><span class="p">,</span> <span class="n">d_comp</span><span class="p">],</span> <span class="p">[</span><span class="n">d_wind</span><span class="p">,</span> <span class="n">d_time</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">data</span>
 
-    <span class="k">def</span> <span class="nf">_convert_tabular_to_series</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_tabular_to_series</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">score_vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts generated anomaly score from `np.ndarray` into a sequence of series. For efficiency reasons,</span>
@@ -1073,10 +1081,10 @@
         <span class="k">return</span> <span class="n">result</span></div>
 
 
-<div class="viewcode-block" id="NLLScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.NLLScorer">[docs]</a><span class="k">class</span> <span class="nc">NLLScorer</span><span class="p">(</span><span class="n">AnomalyScorer</span><span class="p">):</span>
+<div class="viewcode-block" id="NLLScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.NLLScorer">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">NLLScorer</span><span class="p">(</span><span class="n">AnomalyScorer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Parent class for all LikelihoodScorer&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1090,10 +1098,10 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">is_univariate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_probabilistic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_probabilistic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="nf">_score_core_from_prediction</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_score_core_from_prediction</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
         <span class="n">pred_vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
@@ -1132,7 +1140,7 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np_anomaly_scores</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_score_core_nllikelihood</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_score_core_nllikelihood</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pred_vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;For each timestamp, the corresponding distribution is fitted on the probabilistic time-series</span>
@@ -1161,7 +1169,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

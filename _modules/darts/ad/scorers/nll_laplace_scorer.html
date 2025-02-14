@@ -183,14 +183,14 @@
 <span class="sd">under a Laplace distribution estimated from the stochastic prediction.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">laplace</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">laplace</span>
 
-<span class="kn">from</span> <span class="nn">darts.ad.scorers.scorers</span> <span class="kn">import</span> <span class="n">NLLScorer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.ad.scorers.scorers</span><span class="w"> </span><span class="kn">import</span> <span class="n">NLLScorer</span>
 
 
-<div class="viewcode-block" id="LaplaceNLLScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.nll_laplace_scorer.html#darts.ad.scorers.nll_laplace_scorer.LaplaceNLLScorer">[docs]</a><span class="k">class</span> <span class="nc">LaplaceNLLScorer</span><span class="p">(</span><span class="n">NLLScorer</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="LaplaceNLLScorer"><a class="viewcode-back" href="../../../../generated_api/darts.ad.scorers.nll_laplace_scorer.html#darts.ad.scorers.nll_laplace_scorer.LaplaceNLLScorer">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LaplaceNLLScorer</span><span class="p">(</span><span class="n">NLLScorer</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;NLL Laplace Scorer</span>
 
 <span class="sd">        Parameters</span>
@@ -204,10 +204,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;LaplaceNLLScorer&quot;</span>
 
-    <span class="k">def</span> <span class="nf">_score_core_nllikelihood</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_score_core_nllikelihood</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pred_vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="c1"># ML estimate for the Laplace loc</span>
@@ -238,7 +238,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

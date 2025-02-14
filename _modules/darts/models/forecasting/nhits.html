@@ -178,20 +178,20 @@
 <span class="sd">------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
-<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
 
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.pl_forecasting_module</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">PLPastCovariatesModule</span><span class="p">,</span>
     <span class="n">io_processor</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">PastCovariatesTorchModel</span>
-<span class="kn">from</span> <span class="nn">darts.utils.torch</span> <span class="kn">import</span> <span class="n">MonteCarloDropout</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.torch_forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">PastCovariatesTorchModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">MonteCarloDropout</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -209,8 +209,8 @@
 <span class="p">]</span>
 
 
-<span class="k">class</span> <span class="nc">_Block</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_Block</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -345,7 +345,7 @@
             <span class="n">in_features</span><span class="o">=</span><span class="n">layer_width</span><span class="p">,</span> <span class="n">out_features</span><span class="o">=</span><span class="n">nr_params</span> <span class="o">*</span> <span class="n">n_theta_forecast</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
         <span class="n">batch_size</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="c1"># pooling</span>
@@ -382,8 +382,8 @@
         <span class="k">return</span> <span class="n">x_hat</span><span class="p">,</span> <span class="n">y_hat</span>
 
 
-<span class="k">class</span> <span class="nc">_Stack</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_Stack</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -468,7 +468,7 @@
         <span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blocks_list</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
         <span class="c1"># One forecast vector per parameter in the distribution</span>
         <span class="n">stack_forecast</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
             <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
@@ -493,8 +493,8 @@
         <span class="k">return</span> <span class="n">stack_residual</span><span class="p">,</span> <span class="n">stack_forecast</span>
 
 
-<span class="k">class</span> <span class="nc">_NHiTSModule</span><span class="p">(</span><span class="n">PLPastCovariatesModule</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_NHiTSModule</span><span class="p">(</span><span class="n">PLPastCovariatesModule</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -597,7 +597,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">backcast_linear_layer</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="nd">@io_processor</span>
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">):</span>
         <span class="n">x</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">x_in</span>
 
         <span class="c1"># if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts</span>
@@ -636,8 +636,8 @@
         <span class="k">return</span> <span class="n">y</span>
 
 
-<div class="viewcode-block" id="NHiTSModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.nhits.html#darts.models.forecasting.nhits.NHiTSModel">[docs]</a><span class="k">class</span> <span class="nc">NHiTSModel</span><span class="p">(</span><span class="n">PastCovariatesTorchModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="NHiTSModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.nhits.html#darts.models.forecasting.nhits.NHiTSModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">NHiTSModel</span><span class="p">(</span><span class="n">PastCovariatesTorchModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -927,14 +927,14 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span> <span class="o">=</span> <span class="p">[</span><span class="n">layer_widths</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_stacks</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_prepare_pooling_downsampling</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_pooling_downsampling</span><span class="p">(</span>
         <span class="n">pooling_kernel_sizes</span><span class="p">,</span> <span class="n">n_freq_downsample</span><span class="p">,</span> <span class="n">in_len</span><span class="p">,</span> <span class="n">out_len</span><span class="p">,</span> <span class="n">num_blocks</span><span class="p">,</span> <span class="n">num_stacks</span>
     <span class="p">):</span>
-        <span class="k">def</span> <span class="nf">_check_sizes</span><span class="p">(</span><span class="n">tup</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_check_sizes</span><span class="p">(</span><span class="n">tup</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
             <span class="n">raise_if_not</span><span class="p">(</span>
                 <span class="nb">len</span><span class="p">(</span><span class="n">tup</span><span class="p">)</span> <span class="o">==</span> <span class="n">num_stacks</span><span class="p">,</span>
                 <span class="sa">f</span><span class="s2">&quot;the length of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must match the number of stacks.&quot;</span><span class="p">,</span>
@@ -982,7 +982,7 @@
 
         <span class="k">return</span> <span class="n">pooling_kernel_sizes</span><span class="p">,</span> <span class="n">n_freq_downsample</span>
 
-    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
         <span class="c1"># samples are made of (past_target, past_covariates, future_target)</span>
         <span class="n">input_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span>
             <span class="n">train_sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
@@ -1027,7 +1027,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

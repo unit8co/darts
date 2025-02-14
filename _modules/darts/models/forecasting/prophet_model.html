@@ -178,27 +178,27 @@
 <span class="sd">----------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">import</span> <span class="nn">re</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">prophet</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">prophet</span>
 
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">execute_and_suppress_output</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">execute_and_suppress_output</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">FutureCovariatesLocalForecastingModel</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 <span class="n">logger</span><span class="o">.</span><span class="n">level</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span>  <span class="c1"># set to warning to suppress prophet logs</span>
 
 
-<div class="viewcode-block" id="Prophet"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet">[docs]</a><span class="k">class</span> <span class="nc">Prophet</span><span class="p">(</span><span class="n">FutureCovariatesLocalForecastingModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="Prophet"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">Prophet</span><span class="p">(</span><span class="n">FutureCovariatesLocalForecastingModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">add_seasonalities</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">country_holidays</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -379,7 +379,7 @@
                 <span class="c1"># Use 0 as default value</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_floor</span> <span class="o">=</span> <span class="mi">0</span>
 
-    <span class="k">def</span> <span class="nf">_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
@@ -432,7 +432,7 @@
 
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="nf">_predict</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -454,7 +454,7 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_add_capacities_to_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_capacities_to_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
         <span class="n">dates</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;ds&quot;</span><span class="p">]</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">df</span><span class="p">[</span><span class="s2">&quot;cap&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cap</span><span class="p">(</span><span class="n">dates</span><span class="p">)</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cap</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cap</span>
@@ -470,7 +470,7 @@
             <span class="k">raise</span>
         <span class="k">return</span> <span class="n">df</span>
 
-    <span class="k">def</span> <span class="nf">_generate_predict_df</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_predict_df</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a pandas DataFrame in the format required for Prophet.predict() with `n` dates after the end of</span>
@@ -488,7 +488,7 @@
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">predict_df</span>
 
-    <span class="k">def</span> <span class="nf">_check_seasonality_conditions</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_seasonality_conditions</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -560,14 +560,14 @@
         <span class="k">return</span> <span class="n">conditional_seasonality_covariates</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="nf">_stochastic_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predict_df</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_stochastic_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predict_df</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns stochastic forecast of `n_samples` samples.</span>
 <span class="sd">        This method is a replicate of Prophet.predict() which suspends simplification of stochastic samples to</span>
 <span class="sd">        deterministic target values.&quot;&quot;&quot;</span>
@@ -594,7 +594,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">uncertainty_samples</span> <span class="o">=</span> <span class="n">n_samples_default</span>
         <span class="k">return</span> <span class="n">forecast</span><span class="p">[</span><span class="s2">&quot;yhat&quot;</span><span class="p">]</span>
 
-<div class="viewcode-block" id="Prophet.predict_raw"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet.predict_raw">[docs]</a>    <span class="k">def</span> <span class="nf">predict_raw</span><span class="p">(</span>
+<div class="viewcode-block" id="Prophet.predict_raw"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet.predict_raw">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_raw</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the output of the base Facebook Prophet model in form of a pandas DataFrame. Note however,</span>
@@ -608,7 +608,7 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">predict_df</span><span class="p">,</span> <span class="n">vectorized</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Prophet.add_seasonality"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet.add_seasonality">[docs]</a>    <span class="k">def</span> <span class="nf">add_seasonality</span><span class="p">(</span>
+<div class="viewcode-block" id="Prophet.add_seasonality"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet.add_seasonality">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">add_seasonality</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">seasonal_periods</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
@@ -662,7 +662,7 @@
         <span class="p">}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_store_add_seasonality_call</span><span class="p">(</span><span class="n">seasonality_call</span><span class="o">=</span><span class="n">function_call</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">_store_add_seasonality_call</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_store_add_seasonality_call</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">seasonality_call</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks the validity of an add_seasonality() call and stores valid calls.</span>
@@ -744,7 +744,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_add_seasonalities</span><span class="p">[</span><span class="n">seasonality_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">add_seasonality_call</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_extract_auto_seasonality</span><span class="p">(</span><span class="n">prophet_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_auto_seasonality</span><span class="p">(</span><span class="n">prophet_kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the automatically added seasonalities by Prophet&#39;s base model based on kwargs of model creation&quot;&quot;&quot;</span>
         <span class="n">auto_seasonalities</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">auto_seasonality</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;daily&quot;</span><span class="p">,</span> <span class="s2">&quot;weekly&quot;</span><span class="p">,</span> <span class="s2">&quot;yearly&quot;</span><span class="p">]:</span>
@@ -754,7 +754,7 @@
         <span class="k">return</span> <span class="n">auto_seasonalities</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_freq_to_days</span><span class="p">(</span><span class="n">freq</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_freq_to_days</span><span class="p">(</span><span class="n">freq</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts a frequency to number of days required by Facebook Prophet</span>
 
 <span class="sd">        Parameters</span>
@@ -828,7 +828,7 @@
         <span class="k">return</span> <span class="n">freq_times</span> <span class="o">*</span> <span class="n">days</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">_supports_range_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_supports_range_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prophet does not support integer range index.&quot;&quot;&quot;</span>
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="kc">True</span><span class="p">,</span>
@@ -858,7 +858,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

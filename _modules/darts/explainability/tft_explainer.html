@@ -197,29 +197,29 @@
 <span class="sd">&lt;https://unit8co.github.io/darts/examples/13-TFT-examples.html#Explainability&gt;`_.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">matplotlib.axes</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">Tensor</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.axes</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.explainability</span> <span class="kn">import</span> <span class="n">TFTExplainabilityResult</span>
-<span class="kn">from</span> <span class="nn">darts.explainability.explainability</span> <span class="kn">import</span> <span class="n">_ForecastingModelExplainer</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TFTModel</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">generate_index</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.explainability</span><span class="w"> </span><span class="kn">import</span> <span class="n">TFTExplainabilityResult</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.explainability.explainability</span><span class="w"> </span><span class="kn">import</span> <span class="n">_ForecastingModelExplainer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TFTModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_index</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="TFTExplainer"><a class="viewcode-back" href="../../../generated_api/darts.explainability.tft_explainer.html#darts.explainability.tft_explainer.TFTExplainer">[docs]</a><span class="k">class</span> <span class="nc">TFTExplainer</span><span class="p">(</span><span class="n">_ForecastingModelExplainer</span><span class="p">):</span>
+<div class="viewcode-block" id="TFTExplainer"><a class="viewcode-back" href="../../../generated_api/darts.explainability.tft_explainer.html#darts.explainability.tft_explainer.TFTExplainer">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">TFTExplainer</span><span class="p">(</span><span class="n">_ForecastingModelExplainer</span><span class="p">):</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">TFTModel</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model</span><span class="p">:</span> <span class="n">TFTModel</span><span class="p">,</span>
         <span class="n">background_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -292,7 +292,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">future_covariates_components</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;add_relative_index&quot;</span><span class="p">]</span>
 
-<div class="viewcode-block" id="TFTExplainer.explain"><a class="viewcode-back" href="../../../generated_api/darts.explainability.tft_explainer.html#darts.explainability.tft_explainer.TFTExplainer.explain">[docs]</a>    <span class="k">def</span> <span class="nf">explain</span><span class="p">(</span>
+<div class="viewcode-block" id="TFTExplainer.explain"><a class="viewcode-back" href="../../../generated_api/darts.explainability.tft_explainer.html#darts.explainability.tft_explainer.TFTExplainer.explain">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">explain</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">foreground_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">foreground_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
@@ -407,7 +407,7 @@
             <span class="n">explanations</span><span class="o">=</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">results</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="TFTExplainer.plot_variable_selection"><a class="viewcode-back" href="../../../generated_api/darts.explainability.tft_explainer.html#darts.explainability.tft_explainer.TFTExplainer.plot_variable_selection">[docs]</a>    <span class="k">def</span> <span class="nf">plot_variable_selection</span><span class="p">(</span>
+<div class="viewcode-block" id="TFTExplainer.plot_variable_selection"><a class="viewcode-back" href="../../../generated_api/darts.explainability.tft_explainer.html#darts.explainability.tft_explainer.TFTExplainer.plot_variable_selection">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">plot_variable_selection</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">expl_result</span><span class="p">:</span> <span class="n">TFTExplainabilityResult</span><span class="p">,</span>
         <span class="n">fig_size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -466,7 +466,7 @@
             <span class="k">if</span> <span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">==</span> <span class="n">max_nr_series</span><span class="p">:</span>
                 <span class="k">break</span></div>
 
-<div class="viewcode-block" id="TFTExplainer.plot_attention"><a class="viewcode-back" href="../../../generated_api/darts.explainability.tft_explainer.html#darts.explainability.tft_explainer.TFTExplainer.plot_attention">[docs]</a>    <span class="k">def</span> <span class="nf">plot_attention</span><span class="p">(</span>
+<div class="viewcode-block" id="TFTExplainer.plot_attention"><a class="viewcode-back" href="../../../generated_api/darts.explainability.tft_explainer.html#darts.explainability.tft_explainer.TFTExplainer.plot_attention">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">plot_attention</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">expl_result</span><span class="p">:</span> <span class="n">TFTExplainabilityResult</span><span class="p">,</span>
         <span class="n">plot_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="s2">&quot;time&quot;</span><span class="p">,</span> <span class="s2">&quot;heatmap&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
@@ -580,7 +580,7 @@
         <span class="k">return</span> <span class="n">ax</span></div>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">_encoder_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_encoder_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the encoder variable importance of the TFT model.</span>
 
 <span class="sd">        The encoder_weights are calculated for the past inputs of the model.</span>
@@ -600,7 +600,7 @@
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">_decoder_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_decoder_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the decoder variable importance of the TFT model.</span>
 
 <span class="sd">        The decoder_weights are calculated for the known future inputs of the model.</span>
@@ -620,7 +620,7 @@
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">_static_covariates_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_static_covariates_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the static covariates importance of the TFT model.</span>
 
 <span class="sd">        The static covariate importances are calculated for the static inputs of the model (numeric and / or</span>
@@ -638,7 +638,7 @@
             <span class="n">names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">static_variables</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_importance</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_importance</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">weight</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span>
         <span class="n">names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -683,7 +683,7 @@
         <span class="k">return</span> <span class="n">importance</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">_name_mapping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_name_mapping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the feature name mapping of the TFT model.</span>
 
 <span class="sd">        Returns</span>
@@ -700,7 +700,7 @@
 <span class="sd">             }</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">def</span> <span class="nf">map_cols</span><span class="p">(</span><span class="n">comps</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">suffix</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">map_cols</span><span class="p">(</span><span class="n">comps</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">suffix</span><span class="p">):</span>
             <span class="n">comps</span> <span class="o">=</span> <span class="n">comps</span> <span class="k">if</span> <span class="n">comps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
             <span class="k">return</span> <span class="p">{</span>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="n">colname</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">colname</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">comps</span><span class="p">)</span>
@@ -716,7 +716,7 @@
         <span class="p">}</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_plot_cov_selection</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_plot_cov_selection</span><span class="p">(</span>
         <span class="n">importance</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
         <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Variable importance&quot;</span><span class="p">,</span>
         <span class="n">ax</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">matplotlib</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -760,7 +760,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

@@ -415,6 +415,12 @@ on bringing more models and features.
      - 🔴 🔴 🔴
      - ✅ 🔴
      - 🔴
+   * - `StatsForecastAutoTBATS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_tbats.html#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS>`_
+     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
+     - ✅ 🔴
+     - 🔴 🔴 🔴
+     - ✅ 🔴
+     - 🔴
    * - `Theta <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta>`_ and `FourTheta <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta>`_
      - `Theta <https://robjhyndman.com/papers/Theta.pdf>`_ & `4 Theta <https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R>`_
      - ✅ 🔴

@@ -173,14 +173,14 @@
               <div>
                 
   <h1>Source code for darts.utils.callbacks</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 
-<span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks</span> <span class="kn">import</span> <span class="n">TQDMProgressBar</span>
-<span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks.progress.tqdm_progress</span> <span class="kn">import</span> <span class="n">Tqdm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pytorch_lightning.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">TQDMProgressBar</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pytorch_lightning.callbacks.progress.tqdm_progress</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tqdm</span>
 
 
-<div class="viewcode-block" id="TFMProgressBar"><a class="viewcode-back" href="../../../generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar">[docs]</a><span class="k">class</span> <span class="nc">TFMProgressBar</span><span class="p">(</span><span class="n">TQDMProgressBar</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="TFMProgressBar"><a class="viewcode-back" href="../../../generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">TFMProgressBar</span><span class="p">(</span><span class="n">TQDMProgressBar</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">enable_sanity_check_bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">enable_train_bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -228,7 +228,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">enable_prediction_bar</span> <span class="o">=</span> <span class="n">enable_prediction_bar</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">enable_train_bar_only</span> <span class="o">=</span> <span class="n">enable_train_bar_only</span>
 
-<div class="viewcode-block" id="TFMProgressBar.init_sanity_tqdm"><a class="viewcode-back" href="../../../generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar.init_sanity_tqdm">[docs]</a>    <span class="k">def</span> <span class="nf">init_sanity_tqdm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tqdm</span><span class="p">:</span>
+<div class="viewcode-block" id="TFMProgressBar.init_sanity_tqdm"><a class="viewcode-back" href="../../../generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar.init_sanity_tqdm">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">init_sanity_tqdm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tqdm</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Override this to customize the tqdm bar for the validation sanity run.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Tqdm</span><span class="p">(</span>
             <span class="n">desc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sanity_check_description</span><span class="p">,</span>
@@ -239,7 +239,7 @@
             <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="TFMProgressBar.init_predict_tqdm"><a class="viewcode-back" href="../../../generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar.init_predict_tqdm">[docs]</a>    <span class="k">def</span> <span class="nf">init_predict_tqdm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tqdm</span><span class="p">:</span>
+<div class="viewcode-block" id="TFMProgressBar.init_predict_tqdm"><a class="viewcode-back" href="../../../generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar.init_predict_tqdm">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">init_predict_tqdm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tqdm</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Override this to customize the tqdm bar for predicting.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Tqdm</span><span class="p">(</span>
             <span class="n">desc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">predict_description</span><span class="p">,</span>
@@ -251,7 +251,7 @@
             <span class="n">smoothing</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="TFMProgressBar.init_train_tqdm"><a class="viewcode-back" href="../../../generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar.init_train_tqdm">[docs]</a>    <span class="k">def</span> <span class="nf">init_train_tqdm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tqdm</span><span class="p">:</span>
+<div class="viewcode-block" id="TFMProgressBar.init_train_tqdm"><a class="viewcode-back" href="../../../generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar.init_train_tqdm">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">init_train_tqdm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tqdm</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Override this to customize the tqdm bar for training.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Tqdm</span><span class="p">(</span>
             <span class="n">desc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">train_description</span><span class="p">,</span>
@@ -263,7 +263,7 @@
             <span class="n">smoothing</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="TFMProgressBar.init_validation_tqdm"><a class="viewcode-back" href="../../../generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar.init_validation_tqdm">[docs]</a>    <span class="k">def</span> <span class="nf">init_validation_tqdm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tqdm</span><span class="p">:</span>
+<div class="viewcode-block" id="TFMProgressBar.init_validation_tqdm"><a class="viewcode-back" href="../../../generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar.init_validation_tqdm">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">init_validation_tqdm</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tqdm</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Override this to customize the tqdm bar for validation.&quot;&quot;&quot;</span>
         <span class="c1"># The train progress bar doesn&#39;t exist in `trainer.validate()`</span>
         <span class="n">has_main_bar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">fn</span> <span class="o">!=</span> <span class="s2">&quot;validate&quot;</span>
@@ -296,7 +296,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

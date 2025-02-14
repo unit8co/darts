@@ -182,20 +182,20 @@
 <span class="sd">identifies time points as anomalous when values are beyond the thresholds.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">darts.ad.detectors.detectors</span> <span class="kn">import</span> <span class="n">Detector</span><span class="p">,</span> <span class="n">_BoundedDetectorMixin</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.ad.detectors.detectors</span><span class="w"> </span><span class="kn">import</span> <span class="n">Detector</span><span class="p">,</span> <span class="n">_BoundedDetectorMixin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="ThresholdDetector"><a class="viewcode-back" href="../../../../generated_api/darts.ad.detectors.threshold_detector.html#darts.ad.detectors.threshold_detector.ThresholdDetector">[docs]</a><span class="k">class</span> <span class="nc">ThresholdDetector</span><span class="p">(</span><span class="n">Detector</span><span class="p">,</span> <span class="n">_BoundedDetectorMixin</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="ThresholdDetector"><a class="viewcode-back" href="../../../../generated_api/darts.ad.detectors.threshold_detector.html#darts.ad.detectors.threshold_detector.ThresholdDetector">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ThresholdDetector</span><span class="p">(</span><span class="n">Detector</span><span class="p">,</span> <span class="n">_BoundedDetectorMixin</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">low_threshold</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">high_threshold</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -235,7 +235,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_low_threshold</span> <span class="o">=</span> <span class="n">low_threshold</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_high_threshold</span> <span class="o">=</span> <span class="n">high_threshold</span>
 
-    <span class="k">def</span> <span class="nf">_detect_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;series&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_detect_core</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;series&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low_threshold</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">low_threshold</span><span class="p">)</span> <span class="o">!=</span> <span class="n">series</span><span class="o">.</span><span class="n">width</span><span class="p">:</span>
             <span class="n">raise_log</span><span class="p">(</span>
                 <span class="ne">ValueError</span><span class="p">(</span>
@@ -253,7 +253,7 @@
         <span class="c1"># (time, components)</span>
         <span class="n">np_series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">_detect_fn</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_detect_fn</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">):</span>
             <span class="c1"># x of shape (time,) for 1 component</span>
             <span class="k">return</span> <span class="p">(</span><span class="n">x</span> <span class="o">&lt;</span> <span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span> <span class="k">if</span> <span class="n">lo</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">lo</span><span class="p">))</span> <span class="o">|</span> <span class="p">(</span>
                 <span class="n">x</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span> <span class="k">if</span> <span class="n">hi</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">hi</span><span class="p">)</span>
@@ -270,11 +270,11 @@
         <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">detected</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">dtype</span><span class="p">))</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">low_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">low_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_low_threshold</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">high_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">high_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_high_threshold</span></div>
 </pre></div>
 
@@ -297,7 +297,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

@@ -195,6 +195,10 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
      - 
      - 
      - 
+   * - `StatsForecastAutoTBATS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_tbats.html#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS>`_
+     - 
+     - 
+     - 
    * - `Theta <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta>`_ and `FourTheta <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta>`_
      - 
      - 

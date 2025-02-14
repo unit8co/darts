@@ -197,11 +197,11 @@
 <span class="sd">SOFTWARE.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
 
 
-<div class="viewcode-block" id="RMSNorm"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.RMSNorm">[docs]</a><span class="k">class</span> <span class="nc">RMSNorm</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<div class="viewcode-block" id="RMSNorm"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.RMSNorm">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RMSNorm</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;An alternate to layer normalization, without mean centering and the learned bias [1]</span>
 
 <span class="sd">    References</span>
@@ -210,29 +210,29 @@
 <span class="sd">           Processing Systems 32 (2019).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">dim</span><span class="o">**-</span><span class="mf">0.5</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">g</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dim</span><span class="p">))</span>
 
-<div class="viewcode-block" id="RMSNorm.forward"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.RMSNorm.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<div class="viewcode-block" id="RMSNorm.forward"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.RMSNorm.forward">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
         <span class="n">norm</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
         <span class="k">return</span> <span class="n">x</span> <span class="o">/</span> <span class="n">norm</span><span class="o">.</span><span class="n">clamp</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">g</span></div></div>
 
 
-<div class="viewcode-block" id="LayerNormNoBias"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.LayerNormNoBias">[docs]</a><span class="k">class</span> <span class="nc">LayerNormNoBias</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_size</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="LayerNormNoBias"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.LayerNormNoBias">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LayerNormNoBias</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_size</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="n">elementwise_affine</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="LayerNorm"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.LayerNorm">[docs]</a><span class="k">class</span> <span class="nc">LayerNorm</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_size</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="LayerNorm"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.LayerNorm">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LayerNorm</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_size</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="RINorm"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.RINorm">[docs]</a><span class="k">class</span> <span class="nc">RINorm</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="RINorm"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.RINorm">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RINorm</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Reversible Instance Normalization based on [1]</span>
 
 <span class="sd">        Parameters</span>
@@ -259,7 +259,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">affine_weight</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">affine_bias</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">))</span>
 
-<div class="viewcode-block" id="RINorm.forward"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.RINorm.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+<div class="viewcode-block" id="RINorm.forward"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.RINorm.forward">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
         <span class="c1"># at the beginning of `PLForecastingModule.forward()`, `x` has shape</span>
         <span class="c1"># (batch_size, input_chunk_length, n_targets).</span>
         <span class="c1"># select all dimensions except batch and input_dim (0, -1)</span>
@@ -279,7 +279,7 @@
 
         <span class="k">return</span> <span class="n">x</span></div>
 
-<div class="viewcode-block" id="RINorm.inverse"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.RINorm.inverse">[docs]</a>    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+<div class="viewcode-block" id="RINorm.inverse"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.layer_norm_variants.html#darts.models.components.layer_norm_variants.RINorm.inverse">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
         <span class="c1"># x is assumed to be the output of PLForecastingModule.forward(), and has shape</span>
         <span class="c1"># (batch_size, output_chunk_length, n_targets, nr_params). we ha</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">affine</span><span class="p">:</span>
@@ -312,7 +312,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

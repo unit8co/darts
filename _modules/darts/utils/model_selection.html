@@ -179,21 +179,21 @@
 <span class="sd">Utilities that help in model selection e.g. by splitting a dataset.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="n">MODEL_AWARE</span> <span class="o">=</span> <span class="s2">&quot;model-aware&quot;</span>
 <span class="n">SIMPLE</span> <span class="o">=</span> <span class="s2">&quot;simple&quot;</span>
 
 
-<span class="k">class</span> <span class="nc">SplitTimeSeriesSequence</span><span class="p">(</span><span class="n">Sequence</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SplitTimeSeriesSequence</span><span class="p">(</span><span class="n">Sequence</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This class is primarily meant to be instantiated from ``train_test_split()`` function.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
@@ -237,7 +237,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">vertical_split_type</span> <span class="o">=</span> <span class="n">vertical_split_type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_horizontal_split_index</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_get_horizontal_split_index</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_horizontal_split_index</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_horizontal_split_index</span><span class="p">:</span>
             <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_size</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_horizontal_split_index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span>
@@ -248,7 +248,7 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_horizontal_split_index</span>
 
-    <span class="k">def</span> <span class="nf">_get_vertical_split_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts_length</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_vertical_split_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts_length</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">vertical_split_type</span> <span class="o">==</span> <span class="n">SIMPLE</span><span class="p">:</span>
             <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_size</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">test_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ts_length</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_size</span><span class="p">)</span>
@@ -300,7 +300,7 @@
 
         <span class="k">return</span> <span class="n">train_end_index</span><span class="p">,</span> <span class="n">test_start_index</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">split_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_horizontal_split_index</span><span class="p">()</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;train&quot;</span><span class="p">:</span>
@@ -320,7 +320,7 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">test_start_index</span><span class="p">:]</span>
 
-    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">split_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_horizontal_split_index</span><span class="p">()</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">&quot;train&quot;</span><span class="p">:</span>
@@ -331,7 +331,7 @@
             <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">make_splitter</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_splitter</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">test_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span>
@@ -379,7 +379,7 @@
                 <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">train_set</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">test_set</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="train_test_split"><a class="viewcode-back" href="../../../generated_api/darts.utils.model_selection.html#darts.utils.model_selection.train_test_split">[docs]</a><span class="k">def</span> <span class="nf">train_test_split</span><span class="p">(</span>
+<div class="viewcode-block" id="train_test_split"><a class="viewcode-back" href="../../../generated_api/darts.utils.model_selection.html#darts.utils.model_selection.train_test_split">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">train_test_split</span><span class="p">(</span>
     <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">test_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">0.25</span><span class="p">,</span>
     <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
@@ -468,7 +468,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

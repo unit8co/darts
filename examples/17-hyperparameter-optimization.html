@@ -693,25 +693,25 @@ weeks), while keeping a small overall model size.</p>
 <span></span><span class="o">%</span><span class="k">matplotlib</span> inline
 
 
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">optuna</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">optuna.integration</span> <span class="kn">import</span> <span class="n">PyTorchLightningPruningCallback</span>
-<span class="kn">from</span> <span class="nn">optuna.visualization</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">optuna</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">optuna.integration</span><span class="w"> </span><span class="kn">import</span> <span class="n">PyTorchLightningPruningCallback</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">optuna.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">plot_contour</span><span class="p">,</span>
     <span class="n">plot_optimization_history</span><span class="p">,</span>
     <span class="n">plot_param_importances</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks</span> <span class="kn">import</span> <span class="n">EarlyStopping</span>
-<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">MaxAbsScaler</span>
-<span class="kn">from</span> <span class="nn">tqdm.notebook</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pytorch_lightning.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">EarlyStopping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">MaxAbsScaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm.notebook</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">ElectricityDataset</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">smape</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">LinearRegressionModel</span><span class="p">,</span> <span class="n">TCNModel</span>
-<span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">GaussianLikelihood</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">ElectricityDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">smape</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegressionModel</span><span class="p">,</span> <span class="n">TCNModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">GaussianLikelihood</span>
 </pre></div>
 </div>
 </div>
@@ -855,7 +855,7 @@ create these longer validation sets dynamically); it will be mainly useful for e
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">eval_model</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">train_set</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">val_set</span><span class="o">=</span><span class="n">val</span><span class="p">):</span>
+<span></span><span class="k">def</span><span class="w"> </span><span class="nf">eval_model</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">train_set</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">val_set</span><span class="o">=</span><span class="n">val</span><span class="p">):</span>
     <span class="n">smapes</span> <span class="o">=</span> <span class="n">smape</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">val_set</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> sMAPE: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">smapes</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> +- </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">smapes</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
@@ -935,7 +935,7 @@ linear regression sMAPE: 16.01 +- 20.59
 <span class="sd">&quot;&quot;&quot;</span>
 
 
-<span class="k">def</span> <span class="nf">build_fit_tcn_model</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_fit_tcn_model</span><span class="p">(</span>
     <span class="n">in_len</span><span class="p">,</span>
     <span class="n">out_len</span><span class="p">,</span>
     <span class="n">kernel_size</span><span class="p">,</span>
@@ -1148,7 +1148,7 @@ First TCN model sMAPE: 16.94 +- 20.03
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">objective</span><span class="p">(</span><span class="n">trial</span><span class="p">):</span>
+<span></span><span class="k">def</span><span class="w"> </span><span class="nf">objective</span><span class="p">(</span><span class="n">trial</span><span class="p">):</span>
     <span class="n">callback</span> <span class="o">=</span> <span class="p">[</span><span class="n">PyTorchLightningPruningCallback</span><span class="p">(</span><span class="n">trial</span><span class="p">,</span> <span class="n">monitor</span><span class="o">=</span><span class="s2">&quot;val_loss&quot;</span><span class="p">)]</span>
 
     <span class="c1"># set input_chunk_length, between 5 and 14 days</span>
@@ -1197,7 +1197,7 @@ First TCN model sMAPE: 16.94 +- 20.03
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">print_callback</span><span class="p">(</span><span class="n">study</span><span class="p">,</span> <span class="n">trial</span><span class="p">):</span>
+<span></span><span class="k">def</span><span class="w"> </span><span class="nf">print_callback</span><span class="p">(</span><span class="n">study</span><span class="p">,</span> <span class="n">trial</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Current value: </span><span class="si">{</span><span class="n">trial</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">, Current params: </span><span class="si">{</span><span class="n">trial</span><span class="o">.</span><span class="n">params</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Best value: </span><span class="si">{</span><span class="n">study</span><span class="o">.</span><span class="n">best_value</span><span class="si">}</span><span class="s2">, Best params: </span><span class="si">{</span><span class="n">study</span><span class="o">.</span><span class="n">best_trial</span><span class="o">.</span><span class="n">params</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
@@ -1755,7 +1755,7 @@ linear regression, on test set sMAPE: 20.07 +- 22.67
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

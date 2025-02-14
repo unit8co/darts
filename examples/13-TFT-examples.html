@@ -718,7 +718,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># fix python path if working locally</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
 <span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
 </pre></div>
@@ -740,23 +740,23 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">warnings</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">IceCreamHeaterDataset</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mape</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TFTModel</span>
-<span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">QuantileRegression</span>
-<span class="kn">from</span> <span class="nn">darts.utils.statistics</span> <span class="kn">import</span> <span class="n">check_seasonality</span><span class="p">,</span> <span class="n">plot_acf</span>
-<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">IceCreamHeaterDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mape</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TFTModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.statistics</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_seasonality</span><span class="p">,</span> <span class="n">plot_acf</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.timeseries_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
 
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
-<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
 <span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
 </pre></div>
@@ -966,7 +966,7 @@ TFTModel(hidden_size=64, lstm_layers=1, num_attention_heads=4, full_attention=Fa
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">eval_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">actual_series</span><span class="p">,</span> <span class="n">val_series</span><span class="p">):</span>
+<span></span><span class="k">def</span><span class="w"> </span><span class="nf">eval_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">actual_series</span><span class="p">,</span> <span class="n">val_series</span><span class="p">):</span>
     <span class="n">pred_series</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">)</span>
 
     <span class="c1"># plot actual series</span>
@@ -1052,7 +1052,7 @@ TFTModel(hidden_size=64, lstm_layers=1, num_attention_heads=4, full_attention=Fa
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">eval_backtest</span><span class="p">(</span><span class="n">backtest_series</span><span class="p">,</span> <span class="n">actual_series</span><span class="p">,</span> <span class="n">horizon</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">transformer</span><span class="p">):</span>
+<span></span><span class="k">def</span><span class="w"> </span><span class="nf">eval_backtest</span><span class="p">(</span><span class="n">backtest_series</span><span class="p">,</span> <span class="n">actual_series</span><span class="p">,</span> <span class="n">horizon</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">transformer</span><span class="p">):</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
     <span class="n">actual_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
     <span class="n">backtest_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
@@ -1369,7 +1369,7 @@ MAPE: 5.32%
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">darts.explainability</span> <span class="kn">import</span> <span class="n">TFTExplainer</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.explainability</span><span class="w"> </span><span class="kn">import</span> <span class="n">TFTExplainer</span>
 </pre></div>
 </div>
 </div>
@@ -1698,7 +1698,7 @@ MAPE: 5.32%
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

@@ -183,28 +183,28 @@
 
 <span class="c1"># TODO:</span>
 <span class="c1">#     - put start default value to its minimal value (wait for the release of historical_forecast)</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">):</span>
-    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Self</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span>
 <span class="k">else</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Self</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span>
 
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span> <span class="nn">darts.ad.anomaly_model.anomaly_model</span> <span class="kn">import</span> <span class="n">AnomalyModel</span>
-<span class="kn">from</span> <span class="nn">darts.ad.scorers.scorers</span> <span class="kn">import</span> <span class="n">AnomalyScorer</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="n">GlobalForecastingModel</span>
-<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.ad.anomaly_model.anomaly_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnomalyModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.ad.scorers.scorers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnomalyScorer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlobalForecastingModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="ForecastingAnomalyModel"><a class="viewcode-back" href="../../../../generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel">[docs]</a><span class="k">class</span> <span class="nc">ForecastingAnomalyModel</span><span class="p">(</span><span class="n">AnomalyModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="ForecastingAnomalyModel"><a class="viewcode-back" href="../../../../generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ForecastingAnomalyModel</span><span class="p">(</span><span class="n">AnomalyModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model</span><span class="p">:</span> <span class="n">GlobalForecastingModel</span><span class="p">,</span>
         <span class="n">scorer</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">AnomalyScorer</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">AnomalyScorer</span><span class="p">]],</span>
@@ -240,7 +240,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">scorer</span><span class="o">=</span><span class="n">scorer</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ForecastingAnomalyModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
+<div class="viewcode-block" id="ForecastingAnomalyModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -327,7 +327,7 @@
             <span class="o">**</span><span class="n">model_fit_kwargs</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="ForecastingAnomalyModel.score"><a class="viewcode-back" href="../../../../generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.score">[docs]</a>    <span class="k">def</span> <span class="nf">score</span><span class="p">(</span>
+<div class="viewcode-block" id="ForecastingAnomalyModel.score"><a class="viewcode-back" href="../../../../generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.score">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">score</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -414,7 +414,7 @@
             <span class="n">return_model_prediction</span><span class="o">=</span><span class="n">return_model_prediction</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="ForecastingAnomalyModel.predict_series"><a class="viewcode-back" href="../../../../generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.predict_series">[docs]</a>    <span class="k">def</span> <span class="nf">predict_series</span><span class="p">(</span>
+<div class="viewcode-block" id="ForecastingAnomalyModel.predict_series"><a class="viewcode-back" href="../../../../generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.predict_series">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_series</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -500,7 +500,7 @@
             <span class="n">enable_optimization</span><span class="o">=</span><span class="n">enable_optimization</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="ForecastingAnomalyModel.eval_metric"><a class="viewcode-back" href="../../../../generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.eval_metric">[docs]</a>    <span class="k">def</span> <span class="nf">eval_metric</span><span class="p">(</span>
+<div class="viewcode-block" id="ForecastingAnomalyModel.eval_metric"><a class="viewcode-back" href="../../../../generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.eval_metric">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">eval_metric</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
@@ -599,7 +599,7 @@
             <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="ForecastingAnomalyModel.show_anomalies"><a class="viewcode-back" href="../../../../generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.show_anomalies">[docs]</a>    <span class="k">def</span> <span class="nf">show_anomalies</span><span class="p">(</span>
+<div class="viewcode-block" id="ForecastingAnomalyModel.show_anomalies"><a class="viewcode-back" href="../../../../generated_api/darts.ad.anomaly_model.forecasting_am.html#darts.ad.anomaly_model.forecasting_am.ForecastingAnomalyModel.show_anomalies">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">show_anomalies</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -615,6 +615,7 @@
         <span class="n">names_of_scorers</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">metric</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">component_wise</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="o">**</span><span class="n">score_kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot the results of the anomaly model.</span>
@@ -681,6 +682,8 @@
 <span class="sd">            Optionally, the name of the metric function to use. Must be one of &quot;AUC_ROC&quot; (Area Under the</span>
 <span class="sd">            Receiver Operating Characteristic Curve) and &quot;AUC_PR&quot; (Average Precision from scores).</span>
 <span class="sd">            Default: &quot;AUC_ROC&quot;.</span>
+<span class="sd">        component_wise</span>
+<span class="sd">            If True, will separately plot each component in case of multivariate anomaly detection.</span>
 <span class="sd">        score_kwargs</span>
 <span class="sd">            parameters for the `score()` method.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -702,10 +705,11 @@
             <span class="n">names_of_scorers</span><span class="o">=</span><span class="n">names_of_scorers</span><span class="p">,</span>
             <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
             <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
+            <span class="n">component_wise</span><span class="o">=</span><span class="n">component_wise</span><span class="p">,</span>
             <span class="o">**</span><span class="n">score_kwargs</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">_fit_core</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fit_core</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -776,7 +780,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

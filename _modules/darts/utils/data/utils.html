@@ -173,15 +173,15 @@
               <div>
                 
   <h1>Source code for darts.utils.data.utils</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.utils.ts_utils</span> <span class="kn">import</span> <span class="n">series2seq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">series2seq</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -191,7 +191,7 @@
 <span class="n">SUPPORTED_SAMPLE_WEIGHT</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;exponential&quot;</span><span class="p">}</span>
 
 
-<div class="viewcode-block" id="CovariateType"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.utils.html#darts.utils.data.utils.CovariateType">[docs]</a><span class="k">class</span> <span class="nc">CovariateType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<div class="viewcode-block" id="CovariateType"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.utils.html#darts.utils.data.utils.CovariateType">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">CovariateType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
     <span class="n">PAST</span> <span class="o">=</span> <span class="s2">&quot;past&quot;</span>
     <span class="n">FUTURE_PAST</span> <span class="o">=</span> <span class="s2">&quot;future_past&quot;</span>
     <span class="n">HISTORIC_FUTURE</span> <span class="o">=</span> <span class="s2">&quot;historic_future&quot;</span>
@@ -199,7 +199,7 @@
     <span class="n">NONE</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
-<span class="k">def</span> <span class="nf">_get_matching_index</span><span class="p">(</span><span class="n">ts_target</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">ts_covariate</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_matching_index</span><span class="p">(</span><span class="n">ts_target</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">ts_covariate</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Given two overlapping series `ts_target` and `ts_covariate` and an index point `idx` of `ts_target`, returns the</span>
 <span class="sd">    matching index point in `ts_covariate`, based on the ending times of the two series.</span>
@@ -226,7 +226,7 @@
     <span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_index_diff</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_index_diff</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">freq</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">offsets</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the difference between two indexes `other` and `self` (`other` - `self`) of frequency `freq`.&quot;&quot;&quot;</span>
@@ -245,7 +245,7 @@
         <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">other</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">))</span>
 
 
-<span class="k">def</span> <span class="nf">_process_sample_weight</span><span class="p">(</span><span class="n">sample_weight</span><span class="p">,</span> <span class="n">target_series</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_process_sample_weight</span><span class="p">(</span><span class="n">sample_weight</span><span class="p">,</span> <span class="n">target_series</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
 
@@ -314,7 +314,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

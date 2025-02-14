@@ -677,6 +677,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
+       StatsForecastAutoTBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
        StatsForecastAutoTheta
       </a>
@@ -1030,8 +1035,8 @@ of samples given with parameter <cite>num_samples</cite> in downstream tasks (e.
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.historical_forecasts" title="darts.models.forecasting.conformal_models.ConformalModel.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Generates calibrated historical forecasts by simulating predictions at various points in time throughout the history of the provided (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.load" title="darts.models.forecasting.conformal_models.ConformalModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
-<td><p>Loads the model from a given path or file handle.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.load" title="darts.models.forecasting.conformal_models.ConformalModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path[, pl_trainer_kwargs])</p></td>
+<td><p>Loads a model from a given path or file handle.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.predict" title="darts.models.forecasting.conformal_models.ConformalModel.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, series, past_covariates, ...])</p></td>
 <td><p>Forecasts calibrated quantile intervals (or samples from calibrated intervals) for <cite>n</cite> time steps after the end of the <cite>series</cite>.</p></td>
@@ -1039,7 +1044,7 @@ of samples given with parameter <cite>num_samples</cite> in downstream tasks (e.
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.residuals" title="darts.models.forecasting.conformal_models.ConformalModel.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.save" title="darts.models.forecasting.conformal_models.ConformalModel.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.save" title="darts.models.forecasting.conformal_models.ConformalModel.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
 <td><p>Saves the conformal model under a given path or file handle.</p></td>
 </tr>
 </tbody>
@@ -1625,11 +1630,22 @@ each series.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.conformal_models.ConformalModel.load">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/conformal_models.html#ConformalModel.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalModel.load" title="Permalink to this definition">¶</a></dt>
-<dd><p>Loads the model from a given path or file handle.</p>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_trainer_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/conformal_models.html#ConformalModel.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalModel.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a model from a given path or file handle.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>]) – Path or file handle from which to load the model.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>]) – Path or file handle from which to load the model.</p></li>
+<li><p><strong>pl_trainer_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Only effective if the underlying forecasting model is a <cite>TorchForecastingModel</cite>.
+Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
+tasks (e.g. prediction).
+Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
+<a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">Lightning Trainer documentation</a>
+for more information about the supported kwargs.</p></li>
+<li><p><strong>**kwargs</strong> – Only effective if the underlying forecasting model is a <cite>TorchForecastingModel</cite>.
+Additional kwargs for PyTorch Lightning’s <code class="xref py py-func docutils literal notranslate"><span class="pre">LightningModule.load_from_checkpoint()</span></code> method,
+For more information, read the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_module.html#load-from-checkpoint">official documentation</a>.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel" title="darts.models.forecasting.conformal_models.ConformalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConformalModel</span></code></a></p>
@@ -1881,13 +1897,13 @@ all possible series-specific historical forecasts.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.conformal_models.ConformalModel.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pkl_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/conformal_models.html#ConformalModel.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalModel.save" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pkl_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/conformal_models.html#ConformalModel.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalModel.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Saves the conformal model under a given path or file handle.</p>
 <p>Additionally, two files are stored if <cite>self.model</cite> is a <cite>TorchForecastingModel</cite>.</p>
 <p>Example for saving and loading a <a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel" title="darts.models.forecasting.conformal_models.ConformalNaiveModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConformalNaiveModel</span></code></a>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">ConformalNaiveModel</span><span class="p">,</span> <span class="n">LinearRegressionModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConformalNaiveModel</span><span class="p">,</span> <span class="n">LinearRegressionModel</span>
 
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">forecasting_model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
@@ -1909,6 +1925,12 @@ all possible series-specific historical forecasts.</p></li>
 the ensemble model is automatically saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ConformalNaiveModel}_{YYYY-mm-dd_HH_MM_SS}.pkl&quot;</span></code>.
 If the forecasting model is a <cite>TorchForecastingModel</cite>, two files (model object and checkpoint) are saved
 under <code class="docutils literal notranslate"><span class="pre">&quot;{path}.{ModelClass}.pt&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;{path}.{ModelClass}.ckpt&quot;</span></code>.</p></li>
+<li><p><strong>clean</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – <p>Whether to store a cleaned version of the model. If <cite>True</cite>, the training series and covariates are removed.
+If the underlying forecasting <cite>model</cite> is a <cite>TorchForecastingModel</cite>, will additionally remove all Lightning
+Trainer-related parameters.</p>
+<p>Note: After loading a model stored with <cite>clean=True</cite>, a <cite>series</cite> must be passed ‘predict()’,
+<cite>historical_forecasts()</cite> and other forecasting methods.</p>
+</p></li>
 <li><p><strong>pkl_kwargs</strong> – Keyword arguments passed to <cite>pickle.dump()</cite></p></li>
 </ul>
 </dd>
@@ -2239,8 +2261,8 @@ of samples given with parameter <cite>num_samples</cite> in downstream tasks (e.
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.historical_forecasts" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Generates calibrated historical forecasts by simulating predictions at various points in time throughout the history of the provided (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.load" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
-<td><p>Loads the model from a given path or file handle.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.load" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path[, pl_trainer_kwargs])</p></td>
+<td><p>Loads a model from a given path or file handle.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.predict" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, series, past_covariates, ...])</p></td>
 <td><p>Forecasts calibrated quantile intervals (or samples from calibrated intervals) for <cite>n</cite> time steps after the end of the <cite>series</cite>.</p></td>
@@ -2248,7 +2270,7 @@ of samples given with parameter <cite>num_samples</cite> in downstream tasks (e.
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.residuals" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.save" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.save" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
 <td><p>Saves the conformal model under a given path or file handle.</p></td>
 </tr>
 </tbody>
@@ -2834,11 +2856,24 @@ each series.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.conformal_models.ConformalNaiveModel.load">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.load" title="Permalink to this definition">¶</a></dt>
-<dd><p>Loads the model from a given path or file handle.</p>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_trainer_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a model from a given path or file handle.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>]) – Path or file handle from which to load the model.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>]) – Path or file handle from which to load the model.</p></li>
+<li><p><strong>pl_trainer_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>Only effective if the underlying forecasting model is a <cite>TorchForecastingModel</cite>.
+Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
+tasks (e.g. prediction).
+Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
+<a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">Lightning Trainer documentation</a>
+for more information about the supported kwargs.</p>
+</p></li>
+<li><p><strong>**kwargs</strong> – <p>Only effective if the underlying forecasting model is a <cite>TorchForecastingModel</cite>.
+Additional kwargs for PyTorch Lightning’s <code class="xref py py-func docutils literal notranslate"><span class="pre">LightningModule.load_from_checkpoint()</span></code> method,
+For more information, read the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_module.html#load-from-checkpoint">official documentation</a>.</p>
+</p></li>
+</ul>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel" title="darts.models.forecasting.conformal_models.ConformalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConformalModel</span></code></a></p>
@@ -3090,13 +3125,13 @@ all possible series-specific historical forecasts.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.conformal_models.ConformalNaiveModel.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pkl_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.save" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pkl_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Saves the conformal model under a given path or file handle.</p>
 <p>Additionally, two files are stored if <cite>self.model</cite> is a <cite>TorchForecastingModel</cite>.</p>
 <p>Example for saving and loading a <a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel" title="darts.models.forecasting.conformal_models.ConformalNaiveModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConformalNaiveModel</span></code></a>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">ConformalNaiveModel</span><span class="p">,</span> <span class="n">LinearRegressionModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConformalNaiveModel</span><span class="p">,</span> <span class="n">LinearRegressionModel</span>
 
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">forecasting_model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
@@ -3118,6 +3153,12 @@ all possible series-specific historical forecasts.</p></li>
 the ensemble model is automatically saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ConformalNaiveModel}_{YYYY-mm-dd_HH_MM_SS}.pkl&quot;</span></code>.
 If the forecasting model is a <cite>TorchForecastingModel</cite>, two files (model object and checkpoint) are saved
 under <code class="docutils literal notranslate"><span class="pre">&quot;{path}.{ModelClass}.pt&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;{path}.{ModelClass}.ckpt&quot;</span></code>.</p></li>
+<li><p><strong>clean</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – <p>Whether to store a cleaned version of the model. If <cite>True</cite>, the training series and covariates are removed.
+If the underlying forecasting <cite>model</cite> is a <cite>TorchForecastingModel</cite>, will additionally remove all Lightning
+Trainer-related parameters.</p>
+<p>Note: After loading a model stored with <cite>clean=True</cite>, a <cite>series</cite> must be passed ‘predict()’,
+<cite>historical_forecasts()</cite> and other forecasting methods.</p>
+</p></li>
 <li><p><strong>pkl_kwargs</strong> – Keyword arguments passed to <cite>pickle.dump()</cite></p></li>
 </ul>
 </dd>
@@ -3452,8 +3493,8 @@ of samples given with parameter <cite>num_samples</cite> in downstream tasks (e.
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.historical_forecasts" title="darts.models.forecasting.conformal_models.ConformalQRModel.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Generates calibrated historical forecasts by simulating predictions at various points in time throughout the history of the provided (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.load" title="darts.models.forecasting.conformal_models.ConformalQRModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
-<td><p>Loads the model from a given path or file handle.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.load" title="darts.models.forecasting.conformal_models.ConformalQRModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path[, pl_trainer_kwargs])</p></td>
+<td><p>Loads a model from a given path or file handle.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.predict" title="darts.models.forecasting.conformal_models.ConformalQRModel.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, series, past_covariates, ...])</p></td>
 <td><p>Forecasts calibrated quantile intervals (or samples from calibrated intervals) for <cite>n</cite> time steps after the end of the <cite>series</cite>.</p></td>
@@ -3461,7 +3502,7 @@ of samples given with parameter <cite>num_samples</cite> in downstream tasks (e.
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.residuals" title="darts.models.forecasting.conformal_models.ConformalQRModel.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.save" title="darts.models.forecasting.conformal_models.ConformalQRModel.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.save" title="darts.models.forecasting.conformal_models.ConformalQRModel.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
 <td><p>Saves the conformal model under a given path or file handle.</p></td>
 </tr>
 </tbody>
@@ -3587,9 +3628,9 @@ each metric separately and only if they are present in the corresponding metric 
 <li><p><em>np.ndarray</em> – An numpy array of backtest scores. For single series and one of:</p>
 <ul>
 <li><p>a single <cite>metric</cite> function, <cite>historical_forecasts</cite> generated with <cite>last_points_only=False</cite>
-and backtest <cite>reduction=None</cite>. The output has shape (n forecasts, <a href="#id27"><span class="problematic" id="id28">*</span></a>).</p></li>
+and backtest <cite>reduction=None</cite>. The output has shape (n forecasts, <a href="#id29"><span class="problematic" id="id30">*</span></a>).</p></li>
 <li><p>multiple <cite>metric</cite> functions and <cite>historical_forecasts</cite> generated with <cite>last_points_only=False</cite>.
-The output has shape (<a href="#id29"><span class="problematic" id="id30">*</span></a>, n metrics) when using a backtest <cite>reduction</cite>, and (n forecasts, <a href="#id31"><span class="problematic" id="id32">*</span></a>, n metrics)
+The output has shape (<a href="#id31"><span class="problematic" id="id32">*</span></a>, n metrics) when using a backtest <cite>reduction</cite>, and (n forecasts, <a href="#id33"><span class="problematic" id="id34">*</span></a>, n metrics)
 when <cite>reduction=None</cite></p></li>
 <li><p>multiple uni/multivariate series including <cite>series_reduction</cite> and at least one of
 <cite>component_reduction=None</cite> or <cite>time_reduction=None</cite> for “per time step metrics”</p></li>
@@ -4047,11 +4088,24 @@ each series.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.conformal_models.ConformalQRModel.load">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalQRModel.load" title="Permalink to this definition">¶</a></dt>
-<dd><p>Loads the model from a given path or file handle.</p>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_trainer_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalQRModel.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a model from a given path or file handle.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>]) – Path or file handle from which to load the model.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>]) – Path or file handle from which to load the model.</p></li>
+<li><p><strong>pl_trainer_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>Only effective if the underlying forecasting model is a <cite>TorchForecastingModel</cite>.
+Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
+tasks (e.g. prediction).
+Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
+<a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">Lightning Trainer documentation</a>
+for more information about the supported kwargs.</p>
+</p></li>
+<li><p><strong>**kwargs</strong> – <p>Only effective if the underlying forecasting model is a <cite>TorchForecastingModel</cite>.
+Additional kwargs for PyTorch Lightning’s <code class="xref py py-func docutils literal notranslate"><span class="pre">LightningModule.load_from_checkpoint()</span></code> method,
+For more information, read the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_module.html#load-from-checkpoint">official documentation</a>.</p>
+</p></li>
+</ul>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel" title="darts.models.forecasting.conformal_models.ConformalModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConformalModel</span></code></a></p>
@@ -4303,13 +4357,13 @@ all possible series-specific historical forecasts.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.conformal_models.ConformalQRModel.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pkl_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalQRModel.save" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pkl_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalQRModel.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Saves the conformal model under a given path or file handle.</p>
 <p>Additionally, two files are stored if <cite>self.model</cite> is a <cite>TorchForecastingModel</cite>.</p>
 <p>Example for saving and loading a <a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel" title="darts.models.forecasting.conformal_models.ConformalNaiveModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConformalNaiveModel</span></code></a>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">ConformalNaiveModel</span><span class="p">,</span> <span class="n">LinearRegressionModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConformalNaiveModel</span><span class="p">,</span> <span class="n">LinearRegressionModel</span>
 
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">forecasting_model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
@@ -4331,6 +4385,12 @@ all possible series-specific historical forecasts.</p></li>
 the ensemble model is automatically saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ConformalNaiveModel}_{YYYY-mm-dd_HH_MM_SS}.pkl&quot;</span></code>.
 If the forecasting model is a <cite>TorchForecastingModel</cite>, two files (model object and checkpoint) are saved
 under <code class="docutils literal notranslate"><span class="pre">&quot;{path}.{ModelClass}.pt&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;{path}.{ModelClass}.ckpt&quot;</span></code>.</p></li>
+<li><p><strong>clean</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – <p>Whether to store a cleaned version of the model. If <cite>True</cite>, the training series and covariates are removed.
+If the underlying forecasting <cite>model</cite> is a <cite>TorchForecastingModel</cite>, will additionally remove all Lightning
+Trainer-related parameters.</p>
+<p>Note: After loading a model stored with <cite>clean=True</cite>, a <cite>series</cite> must be passed ‘predict()’,
+<cite>historical_forecasts()</cite> and other forecasting methods.</p>
+</p></li>
 <li><p><strong>pkl_kwargs</strong> – Keyword arguments passed to <cite>pickle.dump()</cite></p></li>
 </ul>
 </dd>
@@ -4512,7 +4572,7 @@ probabilistic predictions.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

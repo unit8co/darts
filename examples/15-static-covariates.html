@@ -690,7 +690,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># fix python path if working locally</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
 <span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
 </pre></div>
@@ -712,16 +712,16 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">warnings</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
-<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
 <span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
 </pre></div>
@@ -1002,7 +1002,7 @@ global_components  SERIES2  0.75
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">StaticCovariatesTransformer</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">StaticCovariatesTransformer</span>
 
 <span class="n">transformer</span> <span class="o">=</span> <span class="n">StaticCovariatesTransformer</span><span class="p">()</span>
 <span class="n">series_transformed</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">series_multi</span><span class="p">)</span>
@@ -1046,15 +1046,15 @@ global_components  1.0   1.0
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks</span> <span class="kn">import</span> <span class="n">TQDMProgressBar</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pytorch_lightning.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">TQDMProgressBar</span>
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">StaticCovariatesTransformer</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">rmse</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TFTModel</span>
-<span class="kn">from</span> <span class="nn">darts.utils</span> <span class="kn">import</span> <span class="n">timeseries_generation</span> <span class="k">as</span> <span class="n">tg</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">StaticCovariatesTransformer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">rmse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TFTModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">timeseries_generation</span> <span class="k">as</span> <span class="n">tg</span>
 </pre></div>
 </div>
 </div>
@@ -1106,7 +1106,7 @@ global_components  1.0   1.0
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">test_case</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">train_series</span><span class="p">,</span> <span class="n">predict_series</span><span class="p">):</span>
+<span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_case</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">train_series</span><span class="p">,</span> <span class="n">predict_series</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;helper function which performs model training, prediction and plotting&quot;&quot;&quot;</span>
     <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">)</span>
     <span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">period</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">250</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">predict_series</span><span class="p">)</span>
@@ -1117,7 +1117,7 @@ global_components  1.0   1.0
     <span class="k">return</span> <span class="n">preds</span>
 
 
-<span class="k">def</span> <span class="nf">get_model_params</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_model_params</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;helper function that generates model parameters with a new Progress Bar object&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="p">{</span>
         <span class="s2">&quot;input_chunk_length&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">period</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
@@ -1448,7 +1448,7 @@ RMSE  0.289051  0.138122  0.138631
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

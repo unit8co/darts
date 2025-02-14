@@ -753,12 +753,12 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># fix python path if working locally</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
 <span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
 
 <span class="c1"># activate javascript</span>
-<span class="kn">from</span> <span class="nn">shap</span> <span class="kn">import</span> <span class="n">initjs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shap</span><span class="w"> </span><span class="kn">import</span> <span class="n">initjs</span>
 
 <span class="n">initjs</span><span class="p">()</span>
 </pre></div>
@@ -817,15 +817,15 @@ n===t._wrapperState.initialValue&&(e.value=n)}});t.exports=l},function(t,e,n){"u
 <span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
 <span class="o">%</span><span class="k">autoreload</span> 2
 <span class="o">%</span><span class="k">matplotlib</span> inline
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">BayesianRidge</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">BayesianRidge</span>
 
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">ElectricityConsumptionZurichDataset</span>
-<span class="kn">from</span> <span class="nn">darts.explainability</span> <span class="kn">import</span> <span class="n">ShapExplainer</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mape</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">ElectricityConsumptionZurichDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.explainability</span><span class="w"> </span><span class="kn">import</span> <span class="n">ShapExplainer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mape</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">CatBoostModel</span><span class="p">,</span>
     <span class="n">LightGBMModel</span><span class="p">,</span>
     <span class="n">LinearRegressionModel</span><span class="p">,</span>
@@ -928,7 +928,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <li><p>we have a target series with 7 time steps <code class="docutils literal notranslate"><span class="pre">t_i,</span> <span class="pre">...,</span> <span class="pre">t_i+6</span></code> (blue).</p></li>
 </ul>
 <p><em>Note: This example only shows target ``lags`` extraction, but the same is applied to ``lags_past/future_covariates``.</em></p>
-<p><img alt="forecast_single_model_ocl3" src="../_images/regression_model_train.png" /></p>
+<img alt="forecast_single_model_ocl3" src="../_images/regression_model_train.png" />
 <section id="Examples">
 <h3>Examples<a class="headerlink" href="#Examples" title="Permalink to this heading">¶</a></h3>
 <p>Let’s try to apply this to our electricity dataset. Assume, we want to predict the consumption of the next couple of hours after the end of our training set.</p>
@@ -1207,10 +1207,10 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <p>To vizualize what is happening under the hood, let’s simplify the model a bit and show the process for different parameters.</p>
 <p>Model setup: <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel(lags=[-4,</span> <span class="pre">-3,</span> <span class="pre">-2,</span> <span class="pre">-1],</span> <span class="pre">output_chunk_length=2,</span> <span class="pre">multi_models=True)</span></code>.</p>
 <p>When calling <code class="docutils literal notranslate"><span class="pre">predict(n=4)</span></code>, the input series is processed as follows:</p>
-<p><img alt="forecast_multi_model_ocl2" src="../_images/multi_model_ocl2.png" /></p>
+<img alt="forecast_multi_model_ocl2" src="../_images/multi_model_ocl2.png" />
 <p>Since <code class="docutils literal notranslate"><span class="pre">n&gt;output_chunk_length</span></code>, the model had to use auto-regression and the forecasted period is composed of two chunks of size <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>. There was no lags shift per output chunk because <code class="docutils literal notranslate"><span class="pre">multi_models=True</span></code>.</p>
 <p>Model setup: <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel(lags=[-4,</span> <span class="pre">-3,</span> <span class="pre">-2,</span> <span class="pre">-1],</span> <span class="pre">output_chunk_length=2,</span> <span class="pre">multi_models=False)</span></code>.</p>
-<p><img alt="forecast_single_model_ocl2" src="../_images/single_model_ocl2.png" /></p>
+<img alt="forecast_single_model_ocl2" src="../_images/single_model_ocl2.png" />
 <p>Apart from the auto-regressive prediction, we can see the lags shift per predicted time step because <code class="docutils literal notranslate"><span class="pre">multi_models=False</span></code>.</p>
 <p>The same process also occurs during tabularizion for training the model: each green chunk is paired with an orange value, constituting the training dataset.</p>
 </section>
@@ -1424,23 +1424,23 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">class</span> <span class="nc">CustomRegressionModel</span><span class="p">:</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+<span></span><span class="k">class</span><span class="w"> </span><span class="nc">CustomRegressionModel</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Barebone weighted average&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">norm_coef</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply weights on each sample&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">correlate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;valid&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">X</span><span class="p">])</span>
             <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm_coef</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deep</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deep</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;weights&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="p">}</span>
 
 
@@ -1573,7 +1573,7 @@ CatboostModel MAPE: 2.373275454432286
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

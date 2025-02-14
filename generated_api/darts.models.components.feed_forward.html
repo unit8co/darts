@@ -677,6 +677,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
+       StatsForecastAutoTBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
        StatsForecastAutoTheta
       </a>
@@ -954,7 +959,7 @@ $$x Phi(x)$$ where $Phi(x) = P(X le x), X sim mathcal{N}(0,1)$
 <td><p>Set the module in evaluation mode.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.extra_repr" title="darts.models.components.feed_forward.FeedForward.extra_repr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extra_repr</span></code></a>()</p></td>
-<td><p>Set the extra representation of the module.</p></td>
+<td><p>Return the extra representation of the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.float" title="darts.models.components.feed_forward.FeedForward.float"><code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">float</span></code> datatype.</p></td>
@@ -1137,7 +1142,7 @@ $$x Phi(x)$$ where $Phi(x) = P(X le x), X sim mathcal{N}(0,1)$
 <td><p>Set the module in evaluation mode.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.extra_repr" title="darts.models.components.feed_forward.FeedForward.extra_repr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extra_repr</span></code></a>()</p></td>
-<td><p>Set the extra representation of the module.</p></td>
+<td><p>Return the extra representation of the module.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.float" title="darts.models.components.feed_forward.FeedForward.float"><code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code></a>()</p></td>
 <td><p>Casts all floating point parameters and buffers to <code class="docutils literal notranslate"><span class="pre">float</span></code> datatype.</p></td>
@@ -1313,7 +1318,7 @@ accessed from this module using the given name</p></li>
 </dl>
 <p>Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">init_weights</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span><span class="w"> </span><span class="nf">init_weights</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
 <span class="gp">&gt;&gt;&gt; </span>    <span class="nb">print</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span>    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="o">==</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">:</span>
 <span class="gp">&gt;&gt;&gt; </span>        <span class="n">m</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">fill_</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
@@ -1434,7 +1439,7 @@ to <code class="xref py py-func docutils literal notranslate"><span class="pre">
 <span class="sig-name descname"><span class="pre">cuda</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.cuda" title="Permalink to this definition">¶</a></dt>
 <dd><p>Move all model parameters and buffers to the GPU.</p>
 <p>This also makes associated parameters and buffers different objects. So
-it should be called before constructing optimizer if the module will
+it should be called before constructing the optimizer if the module will
 live on GPU while being optimized.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -1481,9 +1486,9 @@ copied to that device</p>
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.eval">
 <span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.eval" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the module in evaluation mode.</p>
-<p>This has any effect only on certain modules. See documentations of
+<p>This has an effect only on certain modules. See the documentation of
 particular modules for details of their behaviors in training/evaluation
-mode, if they are affected, e.g. <code class="xref py py-class docutils literal notranslate"><span class="pre">Dropout</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BatchNorm</span></code>,
+mode, i.e. whether they are affected, e.g. <code class="xref py py-class docutils literal notranslate"><span class="pre">Dropout</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BatchNorm</span></code>,
 etc.</p>
 <p>This is equivalent with <code class="xref py py-meth docutils literal notranslate"><span class="pre">self.train(False)</span></code>.</p>
 <p>See <span class="xref std std-ref">locally-disable-grad-doc</span> for a comparison between
@@ -1501,7 +1506,7 @@ etc.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.extra_repr">
 <span class="sig-name descname"><span class="pre">extra_repr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.extra_repr" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set the extra representation of the module.</p>
+<dd><p>Return the extra representation of the module.</p>
 <p>To print customized extra information, you should re-implement
 this method in your own modules. Both single-line and multi-line
 strings are acceptable.</p>
@@ -1579,7 +1584,7 @@ buffer</p>
 if you need to store extra state. This function is called when building the
 module’s <cite>state_dict()</cite>.</p>
 <p>Note that extra state should be picklable to ensure working serialization
-of the state_dict. We only provide provide backwards compatibility guarantees
+of the state_dict. We only provide backwards compatibility guarantees
 for serializing Tensors; other objects may break backwards compatibility if
 their serialized pickled form changes.</p>
 <dl class="field-list simple">
@@ -1635,7 +1640,7 @@ looks like this:</p>
 )
 </pre></div>
 </div>
-<p>(The diagram shows an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code>. <code class="docutils literal notranslate"><span class="pre">A</span></code> has a nested
+<p>(The diagram shows an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code>. <code class="docutils literal notranslate"><span class="pre">A</span></code> which has a nested
 submodule <code class="docutils literal notranslate"><span class="pre">net_b</span></code>, which itself has two submodules <code class="docutils literal notranslate"><span class="pre">net_c</span></code>
 and <code class="docutils literal notranslate"><span class="pre">linear</span></code>. <code class="docutils literal notranslate"><span class="pre">net_c</span></code> then has a submodule <code class="docutils literal notranslate"><span class="pre">conv</span></code>.)</p>
 <p>To check whether or not we have the <code class="docutils literal notranslate"><span class="pre">linear</span></code> submodule, we
@@ -1691,7 +1696,7 @@ path or resolves to something that is not an
 <span class="sig-name descname"><span class="pre">ipu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.ipu" title="Permalink to this definition">¶</a></dt>
 <dd><p>Move all model parameters and buffers to the IPU.</p>
 <p>This also makes associated parameters and buffers different objects. So
-it should be called before constructing optimizer if the module will
+it should be called before constructing the optimizer if the module will
 live on IPU while being optimized.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -1732,9 +1737,9 @@ persistent buffers.</p></li>
 <li><p><strong>strict</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to strictly enforce that the keys
 in <a class="reference internal" href="#darts.models.components.feed_forward.FeedForward.state_dict" title="darts.models.components.feed_forward.FeedForward.state_dict"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state_dict</span></code></a> match the keys returned by this module’s
 <code class="xref py py-meth docutils literal notranslate"><span class="pre">state_dict()</span></code> function. Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p></li>
-<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
-in the current module are preserved while when <code class="docutils literal notranslate"><span class="pre">True</span></code>, the
-properties of the Tensors in the state dict are preserved. The only
+<li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
+in the current module are preserved whereas setting it to <code class="docutils literal notranslate"><span class="pre">True</span></code> preserves
+properties of the Tensors in the state dict. The only
 exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate">
 <span class="pre">Default:</span> <span class="pre">``False`</span></code></p></li>
 </ul>
@@ -1805,7 +1810,7 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 <span class="sig-name descname"><span class="pre">mtia</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.mtia" title="Permalink to this definition">¶</a></dt>
 <dd><p>Move all model parameters and buffers to the MTIA.</p>
 <p>This also makes associated parameters and buffers different objects. So
-it should be called before constructing optimizer if the module will
+it should be called before constructing the optimizer if the module will
 live on MTIA while being optimized.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2614,9 +2619,9 @@ be recursively moved to the specified device.</p></li>
 <dt class="sig sig-object py" id="darts.models.components.feed_forward.FeedForward.train">
 <span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.feed_forward.FeedForward.train" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the module in training mode.</p>
-<p>This has any effect only on certain modules. See documentations of
+<p>This has an effect only on certain modules. See the documentation of
 particular modules for details of their behaviors in training/evaluation
-mode, if they are affected, e.g. <code class="xref py py-class docutils literal notranslate"><span class="pre">Dropout</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BatchNorm</span></code>,
+mode, i.e., whether they are affected, e.g. <code class="xref py py-class docutils literal notranslate"><span class="pre">Dropout</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BatchNorm</span></code>,
 etc.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -2736,7 +2741,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

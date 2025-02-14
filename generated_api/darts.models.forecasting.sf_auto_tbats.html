@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>StatsForecastAutoCES &#8212; darts  documentation</title>
+    <title>StatsForecastAutoTBATS &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -39,8 +39,8 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="StatsForecastAutoETS" href="darts.models.forecasting.sf_auto_ets.html" />
-    <link rel="prev" title="StatsForecastAutoARIMA" href="darts.models.forecasting.sf_auto_arima.html" />
+    <link rel="next" title="StatsForecastAutoTheta" href="darts.models.forecasting.sf_auto_theta.html" />
+    <link rel="prev" title="StatsForecastAutoETS" href="darts.models.forecasting.sf_auto_ets.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -666,8 +666,8 @@
        StatsForecastAutoARIMA
       </a>
      </li>
-     <li class="toctree-l3 current active">
-      <a class="current reference internal" href="#">
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
        StatsForecastAutoCES
       </a>
      </li>
@@ -676,8 +676,8 @@
        StatsForecastAutoETS
       </a>
      </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
+     <li class="toctree-l3 current active">
+      <a class="current reference internal" href="#">
        StatsForecastAutoTBATS
       </a>
      </li>
@@ -870,40 +870,44 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.forecasting.sf_auto_ces"></span><section id="statsforecastautoces">
-<h1>StatsForecastAutoCES<a class="headerlink" href="#statsforecastautoces" title="Permalink to this heading">¶</a></h1>
+  <span class="target" id="module-darts.models.forecasting.sf_auto_tbats"></span><section id="statsforecastautotbats">
+<h1>StatsForecastAutoTBATS<a class="headerlink" href="#statsforecastautotbats" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.sf_auto_ces.</span></span><span class="sig-name descname"><span class="pre">StatsForecastAutoCES</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/sf_auto_ces.html#StatsForecastAutoCES"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.sf_auto_tbats.</span></span><span class="sig-name descname"><span class="pre">StatsForecastAutoTBATS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/sf_auto_tbats.html#StatsForecastAutoTBATS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">LocalForecastingModel</span></code></p>
-<p>Auto-CES based on <a class="reference external" href="https://github.com/Nixtla/statsforecast">Statsforecasts package</a>.</p>
-<p>Automatically selects the best Complex Exponential Smoothing model using an information criterion.
-&lt;<a class="reference external" href="https://onlinelibrary.wiley.com/doi/full/10.1002/nav.22074">https://onlinelibrary.wiley.com/doi/full/10.1002/nav.22074</a>&gt;</p>
-<p>We refer to the <a class="reference external" href="https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoces">statsforecast AutoCES documentation</a>
+<p>Auto-TBATS based on <a class="reference external" href="https://github.com/Nixtla/statsforecast">Statsforecasts package</a>.</p>
+<p>Automatically selects the best TBATS model from all feasible combinations of the parameters <cite>use_boxcox</cite>,
+<cite>use_trend</cite>, <cite>use_damped_trend</cite>, and <cite>use_arma_errors</cite>. Selection is made using the AIC.
+Default value for <cite>use_arma_errors</cite> is True since this enables the evaluation of models with
+and without ARMA errors.
+&lt;<a class="reference external" href="https://citeseerx.ist.psu.edu/document?repid=rep1&amp;type=pdf&amp;doi=f3de25596ab60ef0e886366826bf58a02b35a44f">https://citeseerx.ist.psu.edu/document?repid=rep1&amp;type=pdf&amp;doi=f3de25596ab60ef0e886366826bf58a02b35a44f</a>&gt;
+&lt;<a class="reference external" href="https://doi.org/10.4225/03/589299681de3d">https://doi.org/10.4225/03/589299681de3d</a>&gt;</p>
+<p>We refer to the <a class="reference external" href="https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotbats">statsforecast AutoTBATS documentation</a>
 for the exhaustive documentation of the arguments.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>autoces_args</strong> – Positional arguments for <code class="docutils literal notranslate"><span class="pre">statsforecasts.models.AutoCES</span></code>.</p></li>
-<li><p><strong>autoces_kwargs</strong> – Keyword arguments for <code class="docutils literal notranslate"><span class="pre">statsforecasts.models.AutoCES</span></code>.</p></li>
+<li><p><strong>autoTBATS_args</strong> – Positional arguments for <code class="docutils literal notranslate"><span class="pre">statsforecasts.models.AutoTBATS</span></code>.</p></li>
+<li><p><strong>autoTBATS_kwargs</strong> – Keyword arguments for <code class="docutils literal notranslate"><span class="pre">statsforecasts.models.AutoTBATS</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">StatsForecastAutoCES</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">StatsForecastAutoTBATS</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c1"># define StatsForecastAutoCES parameters</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">StatsForecastAutoCES</span><span class="p">(</span><span class="n">season_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">&quot;Z&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># define StatsForecastAutoTBATS parameters</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">StatsForecastAutoTBATS</span><span class="p">(</span><span class="n">season_length</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">pred</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
-<span class="go">array([[453.03417969],</span>
-<span class="go">       [429.34039307],</span>
-<span class="go">       [488.64471436],</span>
-<span class="go">       [500.28955078],</span>
-<span class="go">       [519.79962158],</span>
-<span class="go">       [586.47503662]])</span>
+<span class="go">array([[450.79653684],</span>
+<span class="go">       [472.09265790],</span>
+<span class="go">       [497.76948306],</span>
+<span class="go">       [510.74927369],</span>
+<span class="go">       [520.92224557],</span>
+<span class="go">       [570.33881522]])</span>
 </pre></div>
 </div>
 <p class="rubric">Attributes</p>
@@ -913,55 +917,55 @@ for the exhaustive documentation of the arguments.</p>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.considers_static_covariates" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.considers_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">considers_static_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.considers_static_covariates" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.considers_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">considers_static_covariates</span></code></a></p></td>
 <td><p>Whether the model considers static covariates, if there are any.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.extreme_lags" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.extreme_lags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extreme_lags</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.extreme_lags" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.extreme_lags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extreme_lags</span></code></a></p></td>
 <td><p>A 8-tuple containing in order: (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate lag, max future covariate lag, output shift, max target lag train (only for RNNModel)).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.min_train_samples" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.min_train_samples" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
 <td><p>The minimum number of samples for training the model.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.output_chunk_length" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.output_chunk_length" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
 <td><p>Number of time steps predicted at once by the model, not defined for statistical models.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.output_chunk_shift" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.output_chunk_shift" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
 <td><p>Number of time steps that the output/prediction starts after the end of the input.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_future_covariates" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_future_covariates" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
 <td><p>Whether model supports future covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_likelihood_parameter_prediction" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_likelihood_parameter_prediction" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
 <td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_multivariate" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_multivariate" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
 <td><p>Whether the model considers more than one variate in the time series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_optimized_historical_forecasts" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_optimized_historical_forecasts" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
 <td><p>Whether the model supports optimized historical forecasts</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_past_covariates" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_past_covariates" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
 <td><p>Whether model supports past covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_probabilistic_prediction" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_probabilistic_prediction" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
 <td><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_sample_weight" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_sample_weight" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
 <td><p>Whether model supports sample weight for training.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_static_covariates" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_static_covariates" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
 <td><p>Whether model supports static covariates</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_transferrable_series_prediction" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_transferrable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferrable_series_prediction</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_transferrable_series_prediction" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_transferrable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferrable_series_prediction</span></code></a></p></td>
 <td><p>Whether the model supports prediction for any input <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.uses_future_covariates" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.uses_future_covariates" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
 <td><p>Whether the model uses future covariates, once fitted.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.uses_past_covariates" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.uses_past_covariates" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
 <td><p>Whether the model uses past covariates, once fitted.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.uses_static_covariates" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.uses_static_covariates" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
 <td><p>Whether the model uses static covariates, once fitted.</p></td>
 </tr>
 </tbody>
@@ -984,44 +988,44 @@ for the exhaustive documentation of the arguments.</p>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.backtest" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.backtest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">backtest</span></code></a>(series[, past_covariates, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.backtest" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.backtest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">backtest</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute error values that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.fit" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.fit" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
 <td><p>Fit/train the model on the provided series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.generate_fit_encodings" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.generate_fit_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_fit_encodings</span></code></a>(series[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.generate_fit_encodings" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.generate_fit_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_fit_encodings</span></code></a>(series[, ...])</p></td>
 <td><p>Generates the covariate encodings that were used/generated for fitting the model and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.generate_fit_predict_encodings" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.generate_fit_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_fit_predict_encodings</span></code></a>(n, series[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.generate_fit_predict_encodings" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.generate_fit_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_fit_predict_encodings</span></code></a>(n, series[, ...])</p></td>
 <td><p>Generates covariate encodings for training and inference/prediction and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.generate_predict_encodings" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.generate_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_predict_encodings</span></code></a>(n, series[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.generate_predict_encodings" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.generate_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_predict_encodings</span></code></a>(n, series[, ...])</p></td>
 <td><p>Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.gridsearch" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.gridsearch" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
 <td><p>Find the best hyper-parameters among a given set using a grid search.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.historical_forecasts" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.historical_forecasts" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Generates historical forecasts by simulating predictions at various points in time throughout the history of the provided (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.load" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.load" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
 <td><p>Loads a model from a given path or file handle.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.predict" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples, verbose, show_warnings])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.predict" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples, verbose, show_warnings])</p></td>
 <td><p>Forecasts values for <cite>n</cite> time steps after the end of the training series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.residuals" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.residuals" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.save" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.save" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
 <td><p>Saves the model under a given path or file handle.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.backtest">
-<span class="sig-name descname"><span class="pre">backtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">historical_forecasts=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_optimization=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.backtest" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.backtest">
+<span class="sig-name descname"><span class="pre">backtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">historical_forecasts=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_optimization=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.backtest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute error values that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p>
 <p>If <cite>historical_forecasts</cite> are provided, the metric(s) (given by the <cite>metric</cite> function) is evaluated directly on
 all forecasts and actual values. The same <cite>series</cite> and <cite>last_points_only</cite> value must be passed that were used
@@ -1185,8 +1189,8 @@ when <cite>reduction=None</cite></p></li>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.considers_static_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">considers_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.considers_static_covariates" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.considers_static_covariates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">considers_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.considers_static_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model considers static covariates, if there are any.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1196,8 +1200,8 @@ when <cite>reduction=None</cite></p></li>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.extreme_lags">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">extreme_lags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.extreme_lags" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.extreme_lags">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">extreme_lags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.extreme_lags" title="Permalink to this definition">¶</a></dt>
 <dd><p>A 8-tuple containing in order:
 (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate
 lag, max future covariate lag, output shift, max target lag train (only for RNNModel)). If 0 is the index of the
@@ -1250,8 +1254,8 @@ lag and maximum target lags potentially different from -1 and 0.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/sf_auto_ces.html#StatsForecastAutoCES.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.fit" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/sf_auto_tbats.html#StatsForecastAutoTBATS.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit/train the model on the provided series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1267,8 +1271,8 @@ lag and maximum target lags potentially different from -1 and 0.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.generate_fit_encodings">
-<span class="sig-name descname"><span class="pre">generate_fit_encodings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.generate_fit_encodings" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.generate_fit_encodings">
+<span class="sig-name descname"><span class="pre">generate_fit_encodings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.generate_fit_encodings" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates the covariate encodings that were used/generated for fitting the model and returns a tuple of
 past, and future covariates series with the original and encoded covariates stacked together. The encodings are
 generated by the encoders defined at model creation with parameter <cite>add_encoders</cite>. Pass the same <cite>series</cite>,
@@ -1292,8 +1296,8 @@ encoded covariates.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.generate_fit_predict_encodings">
-<span class="sig-name descname"><span class="pre">generate_fit_predict_encodings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.generate_fit_predict_encodings" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.generate_fit_predict_encodings">
+<span class="sig-name descname"><span class="pre">generate_fit_predict_encodings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.generate_fit_predict_encodings" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates covariate encodings for training and inference/prediction and returns a tuple of past, and future
 covariates series with the original and encoded covariates stacked together. The encodings are generated by the
 encoders defined at model creation with parameter <cite>add_encoders</cite>. Pass the same <cite>series</cite>, <cite>past_covariates</cite>,
@@ -1320,8 +1324,8 @@ encoded covariates.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.generate_predict_encodings">
-<span class="sig-name descname"><span class="pre">generate_predict_encodings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.generate_predict_encodings" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.generate_predict_encodings">
+<span class="sig-name descname"><span class="pre">generate_predict_encodings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.generate_predict_encodings" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future
 covariates series with the original and encoded covariates stacked together. The encodings are generated by the
 encoders defined at model creation with parameter <cite>add_encoders</cite>. Pass the same <cite>series</cite>, <cite>past_covariates</cite>,
@@ -1348,8 +1352,8 @@ encoded covariates.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.gridsearch">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gridsearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_fitted_values=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_random_samples=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.gridsearch" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.gridsearch">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gridsearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_fitted_values=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_random_samples=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.gridsearch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the best hyper-parameters among a given set using a grid search.</p>
 <p>This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
 The three modes of operation evaluate every possible combination of hyper-parameter values
@@ -1361,7 +1365,7 @@ thus the model resulting in the smallest <cite>metric</cite> output will be chos
 <p>Expanding window mode (activated when <cite>forecast_horizon</cite> is passed):
 For every hyperparameter combination, the model is repeatedly trained and evaluated on different
 splits of <cite>series</cite>. This process is accomplished by using
-the <a class="reference internal" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.backtest" title="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.backtest"><code class="xref py py-func docutils literal notranslate"><span class="pre">backtest()</span></code></a> function as a subroutine to produce historic forecasts starting from <cite>start</cite>
+the <a class="reference internal" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.backtest" title="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.backtest"><code class="xref py py-func docutils literal notranslate"><span class="pre">backtest()</span></code></a> function as a subroutine to produce historic forecasts starting from <cite>start</cite>
 that are compared against the ground truth values of <cite>series</cite>.
 Note that the model is retrained for every single prediction, thus this mode is slower.</p>
 <p>Split window mode (activated when <cite>val_series</cite> is passed):
@@ -1478,8 +1482,8 @@ and metric score for the best hyper-parameters.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.historical_forecasts">
-<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_optimization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.historical_forecasts">
+<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_optimization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.historical_forecasts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates historical forecasts by simulating predictions at various points in time throughout the history of
 the provided (potentially multiple) <cite>series</cite>. This process involves retrospectively applying the model to
 different time steps, as if the forecasts were made in real-time at those specific moments. This allows for an
@@ -1637,8 +1641,8 @@ each series.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.load">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.load" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.load">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Loads a model from a given path or file handle.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1651,8 +1655,8 @@ each series.</p></li>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.min_train_samples">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">min_train_samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.min_train_samples" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.min_train_samples">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">min_train_samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.min_train_samples" title="Permalink to this definition">¶</a></dt>
 <dd><p>The minimum number of samples for training the model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1662,8 +1666,8 @@ each series.</p></li>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.model_params">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.model_params" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.model_params">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.model_params" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
@@ -1672,8 +1676,8 @@ each series.</p></li>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.output_chunk_length">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.output_chunk_length" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.output_chunk_length">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.output_chunk_length" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of time steps predicted at once by the model, not defined for statistical models.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1683,8 +1687,8 @@ each series.</p></li>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.output_chunk_shift">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_shift</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.output_chunk_shift" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.output_chunk_shift">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_shift</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.output_chunk_shift" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of time steps that the output/prediction starts after the end of the input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1694,8 +1698,8 @@ each series.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/sf_auto_ces.html#StatsForecastAutoCES.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.predict" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/sf_auto_tbats.html#StatsForecastAutoTBATS.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Forecasts values for <cite>n</cite> time steps after the end of the training series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1716,8 +1720,8 @@ each series.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.residuals">
-<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">historical_forecasts=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">err&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_optimization=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values_only=False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.residuals" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.residuals">
+<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">historical_forecasts=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">err&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_optimization=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values_only=False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.residuals" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the residuals that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p>
 <p>This function computes the difference (or one of Darts’ “per time step” metrics) between the actual
 observations from <cite>series</cite> and the fitted values obtained by training the model on <cite>series</cite> (or using a
@@ -1876,8 +1880,8 @@ all possible series-specific historical forecasts.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pkl_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.save" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pkl_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Saves the model under a given path or file handle.</p>
 <p>Example for saving and loading a <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>:</p>
 <blockquote>
@@ -1911,8 +1915,8 @@ If <cite>True</cite>, the training series and covariates are removed.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_future_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_future_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_future_covariates" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_future_covariates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_future_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_future_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports future covariates</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1922,8 +1926,8 @@ If <cite>True</cite>, the training series and covariates are removed.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_likelihood_parameter_prediction">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_likelihood_parameter_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_likelihood_parameter_prediction" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_likelihood_parameter_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_likelihood_parameter_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_likelihood_parameter_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model instance supports direct prediction of likelihood parameters</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1933,8 +1937,8 @@ If <cite>True</cite>, the training series and covariates are removed.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_multivariate">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_multivariate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_multivariate" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_multivariate">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_multivariate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_multivariate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model considers more than one variate in the time series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1944,8 +1948,8 @@ If <cite>True</cite>, the training series and covariates are removed.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_optimized_historical_forecasts">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_optimized_historical_forecasts</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_optimized_historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_optimized_historical_forecasts">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_optimized_historical_forecasts</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_optimized_historical_forecasts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model supports optimized historical forecasts</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1955,8 +1959,8 @@ If <cite>True</cite>, the training series and covariates are removed.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_past_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_past_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_past_covariates" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_past_covariates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_past_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_past_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports past covariates</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1966,8 +1970,8 @@ If <cite>True</cite>, the training series and covariates are removed.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_probabilistic_prediction">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_probabilistic_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p>
 <p>By default, returns False. Needs to be overwritten by models that do support
 probabilistic predictions.</p>
@@ -1979,8 +1983,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_sample_weight">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_sample_weight</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_sample_weight" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_sample_weight">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_sample_weight</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_sample_weight" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports sample weight for training.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1990,8 +1994,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_static_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_static_covariates" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_static_covariates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_static_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports static covariates</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2001,8 +2005,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_transferrable_series_prediction">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferrable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.supports_transferrable_series_prediction" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_transferrable_series_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferrable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.supports_transferrable_series_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model supports prediction for any input <cite>series</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2012,8 +2016,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.uses_future_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_future_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.uses_future_covariates" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.uses_future_covariates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_future_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.uses_future_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model uses future covariates, once fitted.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2023,8 +2027,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.uses_past_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_past_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.uses_past_covariates" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.uses_past_covariates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_past_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.uses_past_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model uses past covariates, once fitted.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2034,8 +2038,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.uses_static_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.uses_static_covariates" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.uses_static_covariates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.uses_static_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model uses static covariates, once fitted.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2054,17 +2058,17 @@ probabilistic predictions.</p>
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.models.forecasting.sf_auto_arima.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="darts.models.forecasting.sf_auto_ets.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">StatsForecastAutoARIMA</p>
+            <p class="prev-next-title">StatsForecastAutoETS</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.models.forecasting.sf_auto_ets.html" title="next page">
+    <a class='right-next' id="next-link" href="darts.models.forecasting.sf_auto_theta.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">StatsForecastAutoETS</p>
+        <p class="prev-next-title">StatsForecastAutoTheta</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

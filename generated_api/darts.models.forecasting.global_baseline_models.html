@@ -677,6 +677,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
+       StatsForecastAutoTBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
        StatsForecastAutoTheta
       </a>
@@ -916,7 +921,7 @@ cannot generate autoregressive predictions (<cite>n &gt; output_chunk_length</ci
 <li><p><strong>agg_fn</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]) – <p>The aggregation function to use. If a string, must be the name of <cite>torch</cite> function that can be imported
 directly from <cite>torch</cite> (e.g. <cite>“mean”</cite> for <cite>torch.mean</cite>, <cite>“sum”</cite> for <cite>torch.sum</cite>).
 The function must have the signature below. If a <cite>Callable</cite>, it must also have the signature below.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">agg_fn</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">agg_fn</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
     <span class="c1"># x has shape `(batch size, input_chunk_length, n targets)`, `dim` is always `1`.</span>
     <span class="c1"># function must return a tensor of shape `(batch size, n targets)`</span>
     <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
@@ -932,8 +937,8 @@ Since naive models are not trained, the following parameters will have no effect
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">IceCreamHeaterDataset</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">GlobalNaiveAggregate</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">IceCreamHeaterDataset</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlobalNaiveAggregate</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># create list of multivariate series</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">series_1</span> <span class="o">=</span> <span class="n">IceCreamHeaterDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">series_2</span> <span class="o">=</span> <span class="n">series_1</span> <span class="o">+</span> <span class="mf">100.</span>
@@ -992,11 +997,17 @@ Since naive models are not trained, the following parameters will have no effect
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.output_chunk_shift" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
 <td><p>Number of time steps that the output/prediction starts after the end of the input.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_multivariate" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_likelihood_parameter_prediction" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
+<td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_multivariate" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
 <td><p>Whether the model considers more than one variate in the time series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_optimized_historical_forecasts" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_optimized_historical_forecasts" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
 <td><p>Whether the model supports optimized historical forecasts</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_probabilistic_prediction" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
+<td><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_sample_weight" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
 <td><p>Whether model supports sample weight for training.</p></td>
@@ -1078,7 +1089,7 @@ Since naive models are not trained, the following parameters will have no effect
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.historical_forecasts" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Generates historical forecasts by simulating predictions at various points in time throughout the history of the provided (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.load" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.load" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path[, pl_trainer_kwargs])</p></td>
 <td><p>Loads a model from a given file path.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.load_from_checkpoint" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.load_from_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_from_checkpoint</span></code></a>(model_name[, work_dir, ...])</p></td>
@@ -1105,14 +1116,8 @@ Since naive models are not trained, the following parameters will have no effect
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.residuals" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.save" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.save" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
 <td><p>Saves the model under a given path.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_likelihood_parameter_prediction" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a>()</p></td>
-<td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_probabilistic_prediction" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a>()</p></td>
-<td><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.to_cpu" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.to_cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_cpu</span></code></a>()</p></td>
 <td><p>Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time <a href="#id1"><span class="problematic" id="id2">:fun:`fit()`</span></a> or <a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.predict" title="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> is called.</p></td>
@@ -1819,22 +1824,21 @@ each series.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.load">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.load" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_trainer_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Loads a model from a given file path.</p>
 <p>Example for loading a general save from <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </pre></div>
 </div>
 </div></blockquote>
-<p>Example for loading an <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> to CPU that was saved on GPU:</p>
+<p>Example for loading an <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> to GPU:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
-<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
-<span class="n">model_loaded</span><span class="o">.</span><span class="n">to_cpu</span><span class="p">()</span>
+<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;accelerator&quot;</span><span class="p">:</span> <span class="s2">&quot;gpu&quot;</span><span class="p">})</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -1843,8 +1847,12 @@ each series.</p></li>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>path</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Path from which to load the model. If no path was specified when saving the model, the automatically
 generated path ending with “.pt” has to be provided.</p></li>
+<li><p><strong>pl_trainer_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
+tasks (e.g. prediction).
+Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
+<a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">Lightning Trainer documentation</a>
+for more information about the supported kwargs.</p></li>
 <li><p><strong>**kwargs</strong> – Additional kwargs for PyTorch Lightning’s <code class="xref py py-func docutils literal notranslate"><span class="pre">LightningModule.load_from_checkpoint()</span></code> method,
-such as <code class="docutils literal notranslate"><span class="pre">map_location</span></code> to load the model onto a different device than the one from which it was saved.
 For more information, read the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_module.html#load-from-checkpoint">official documentation</a>.</p></li>
 </ul>
 </dd>
@@ -1863,7 +1871,7 @@ This method is used for models that were created with <code class="docutils lite
 <p>Example for loading a <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> from checkpoint (<code class="docutils literal notranslate"><span class="pre">model_name</span></code> is the <code class="docutils literal notranslate"><span class="pre">model_name</span></code> used at model
 creation):</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">best</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
@@ -1875,7 +1883,7 @@ creation):</p>
 recent checkpoint (if <code class="docutils literal notranslate"><span class="pre">best</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code> from ‘{work_dir}/darts_logs/{model_name}/checkpoints/’.</p>
 <p>Example for loading an <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> checkpoint to CPU that was saved on GPU:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">best</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
 <span class="n">model_loaded</span><span class="o">.</span><span class="n">to_cpu</span><span class="p">()</span>
@@ -1979,9 +1987,9 @@ Consider creating a new model object with the suggested learning rate for exampl
 parameters <cite>optimizer_cls</cite>, <cite>optimizer_kwargs</cite>, <cite>lr_scheduler_cls</cite>, and <cite>lr_scheduler_kwargs</cite>.</p>
 <p>Example using a <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NBEATSModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NBEATSModel</span>
 
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">18</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">18</span><span class="p">:]</span>
@@ -2401,12 +2409,14 @@ all possible series-specific historical forecasts.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.save" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Saves the model under a given path.</p>
 <p>Creates two files under <code class="docutils literal notranslate"><span class="pre">path</span></code> (model object) and <code class="docutils literal notranslate"><span class="pre">path</span></code>.ckpt (checkpoint).</p>
+<p>Note: Pickle errors may occur when saving models with custom classes. In this case, consider using
+the <cite>clean</cite> flag to strip the saved model from training related attributes.</p>
 <p>Example for saving and loading a <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 
@@ -2417,10 +2427,18 @@ all possible series-specific historical forecasts.</p></li>
 </div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path under which to save the model at its current state. Please avoid path starting with “last-” or
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path under which to save the model at its current state. Please avoid path starting with “last-” or
 “best-” to avoid collision with Pytorch-Ligthning checkpoints. If no path is specified, the model
 is automatically saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pt&quot;</span></code>.
-E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNModel_2020-01-01_12_00_00.pt&quot;</span></code>.</p>
+E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNModel_2020-01-01_12_00_00.pt&quot;</span></code>.</p></li>
+<li><p><strong>clean</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – <p>Whether to store a cleaned version of the model. If <cite>True</cite>, the training series and covariates are removed.
+Additionally, removes all Lightning Trainer-related parameters (passed with <cite>pl_trainer_kwargs</cite> at model
+creation).</p>
+<p>Note: After loading a model stored with <cite>clean=True</cite>, a <cite>series</cite> must be passed ‘predict()’,
+<cite>historical_forecasts()</cite> and other forecasting methods.</p>
+</p></li>
+</ul>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
@@ -2439,9 +2457,9 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNMode
 </dl>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_likelihood_parameter_prediction">
-<span class="sig-name descname"><span class="pre">supports_likelihood_parameter_prediction</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_likelihood_parameter_prediction" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_likelihood_parameter_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_likelihood_parameter_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model instance supports direct prediction of likelihood parameters</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2483,9 +2501,9 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNMode
 </dl>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_probabilistic_prediction">
-<span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p>
 <p>By default, returns False. Needs to be overwritten by models that do support
 probabilistic predictions.</p>
@@ -2620,8 +2638,8 @@ Since naive models are not trained, the following parameters will have no effect
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">IceCreamHeaterDataset</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">GlobalNaiveDrift</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">IceCreamHeaterDataset</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlobalNaiveDrift</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># create list of multivariate series</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">series_1</span> <span class="o">=</span> <span class="n">IceCreamHeaterDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">series_2</span> <span class="o">=</span> <span class="n">series_1</span> <span class="o">+</span> <span class="mf">100.</span>
@@ -2671,11 +2689,17 @@ Since naive models are not trained, the following parameters will have no effect
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.output_chunk_shift" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
 <td><p>Number of time steps that the output/prediction starts after the end of the input.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_multivariate" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_likelihood_parameter_prediction" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
+<td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_multivariate" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
 <td><p>Whether the model considers more than one variate in the time series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_optimized_historical_forecasts" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_optimized_historical_forecasts" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
 <td><p>Whether the model supports optimized historical forecasts</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_probabilistic_prediction" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
+<td><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_sample_weight" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
 <td><p>Whether model supports sample weight for training.</p></td>
@@ -2757,7 +2781,7 @@ Since naive models are not trained, the following parameters will have no effect
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.historical_forecasts" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Generates historical forecasts by simulating predictions at various points in time throughout the history of the provided (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.load" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.load" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path[, pl_trainer_kwargs])</p></td>
 <td><p>Loads a model from a given file path.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.load_from_checkpoint" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.load_from_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_from_checkpoint</span></code></a>(model_name[, work_dir, ...])</p></td>
@@ -2784,14 +2808,8 @@ Since naive models are not trained, the following parameters will have no effect
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.residuals" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.save" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.save" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
 <td><p>Saves the model under a given path.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_likelihood_parameter_prediction" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a>()</p></td>
-<td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_probabilistic_prediction" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a>()</p></td>
-<td><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.to_cpu" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.to_cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_cpu</span></code></a>()</p></td>
 <td><p>Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time <a href="#id26"><span class="problematic" id="id27">:fun:`fit()`</span></a> or <a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.predict" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> is called.</p></td>
@@ -3499,22 +3517,21 @@ each series.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.load">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.load" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_trainer_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Loads a model from a given file path.</p>
 <p>Example for loading a general save from <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </pre></div>
 </div>
 </div></blockquote>
-<p>Example for loading an <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> to CPU that was saved on GPU:</p>
+<p>Example for loading an <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> to GPU:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
-<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
-<span class="n">model_loaded</span><span class="o">.</span><span class="n">to_cpu</span><span class="p">()</span>
+<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;accelerator&quot;</span><span class="p">:</span> <span class="s2">&quot;gpu&quot;</span><span class="p">})</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -3523,8 +3540,13 @@ each series.</p></li>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>path</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Path from which to load the model. If no path was specified when saving the model, the automatically
 generated path ending with “.pt” has to be provided.</p></li>
+<li><p><strong>pl_trainer_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
+tasks (e.g. prediction).
+Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
+<a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">Lightning Trainer documentation</a>
+for more information about the supported kwargs.</p>
+</p></li>
 <li><p><strong>**kwargs</strong> – <p>Additional kwargs for PyTorch Lightning’s <code class="xref py py-func docutils literal notranslate"><span class="pre">LightningModule.load_from_checkpoint()</span></code> method,
-such as <code class="docutils literal notranslate"><span class="pre">map_location</span></code> to load the model onto a different device than the one from which it was saved.
 For more information, read the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_module.html#load-from-checkpoint">official documentation</a>.</p>
 </p></li>
 </ul>
@@ -3544,7 +3566,7 @@ This method is used for models that were created with <code class="docutils lite
 <p>Example for loading a <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> from checkpoint (<code class="docutils literal notranslate"><span class="pre">model_name</span></code> is the <code class="docutils literal notranslate"><span class="pre">model_name</span></code> used at model
 creation):</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">best</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
@@ -3556,7 +3578,7 @@ creation):</p>
 recent checkpoint (if <code class="docutils literal notranslate"><span class="pre">best</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code> from ‘{work_dir}/darts_logs/{model_name}/checkpoints/’.</p>
 <p>Example for loading an <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> checkpoint to CPU that was saved on GPU:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">best</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
 <span class="n">model_loaded</span><span class="o">.</span><span class="n">to_cpu</span><span class="p">()</span>
@@ -3660,9 +3682,9 @@ Consider creating a new model object with the suggested learning rate for exampl
 parameters <cite>optimizer_cls</cite>, <cite>optimizer_kwargs</cite>, <cite>lr_scheduler_cls</cite>, and <cite>lr_scheduler_kwargs</cite>.</p>
 <p>Example using a <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NBEATSModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NBEATSModel</span>
 
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">18</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">18</span><span class="p">:]</span>
@@ -4082,12 +4104,14 @@ all possible series-specific historical forecasts.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.save" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Saves the model under a given path.</p>
 <p>Creates two files under <code class="docutils literal notranslate"><span class="pre">path</span></code> (model object) and <code class="docutils literal notranslate"><span class="pre">path</span></code>.ckpt (checkpoint).</p>
+<p>Note: Pickle errors may occur when saving models with custom classes. In this case, consider using
+the <cite>clean</cite> flag to strip the saved model from training related attributes.</p>
 <p>Example for saving and loading a <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 
@@ -4098,10 +4122,18 @@ all possible series-specific historical forecasts.</p></li>
 </div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path under which to save the model at its current state. Please avoid path starting with “last-” or
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path under which to save the model at its current state. Please avoid path starting with “last-” or
 “best-” to avoid collision with Pytorch-Ligthning checkpoints. If no path is specified, the model
 is automatically saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pt&quot;</span></code>.
-E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNModel_2020-01-01_12_00_00.pt&quot;</span></code>.</p>
+E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNModel_2020-01-01_12_00_00.pt&quot;</span></code>.</p></li>
+<li><p><strong>clean</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – <p>Whether to store a cleaned version of the model. If <cite>True</cite>, the training series and covariates are removed.
+Additionally, removes all Lightning Trainer-related parameters (passed with <cite>pl_trainer_kwargs</cite> at model
+creation).</p>
+<p>Note: After loading a model stored with <cite>clean=True</cite>, a <cite>series</cite> must be passed ‘predict()’,
+<cite>historical_forecasts()</cite> and other forecasting methods.</p>
+</p></li>
+</ul>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
@@ -4120,9 +4152,9 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNMode
 </dl>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_likelihood_parameter_prediction">
-<span class="sig-name descname"><span class="pre">supports_likelihood_parameter_prediction</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_likelihood_parameter_prediction" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_likelihood_parameter_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_likelihood_parameter_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model instance supports direct prediction of likelihood parameters</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -4164,9 +4196,9 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNMode
 </dl>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_probabilistic_prediction">
-<span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p>
 <p>By default, returns False. Needs to be overwritten by models that do support
 probabilistic predictions.</p>
@@ -4213,7 +4245,7 @@ probabilistic predictions.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.to_cpu">
 <span class="sig-name descname"><span class="pre">to_cpu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.to_cpu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time <a href="#id52"><span class="problematic" id="id53">:fun:`fit()`</span></a> or
+<dd><p>Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time <a href="#id53"><span class="problematic" id="id54">:fun:`fit()`</span></a> or
 <a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.predict" title="darts.models.forecasting.global_baseline_models.GlobalNaiveDrift.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> is called.</p>
 </dd></dl>
 
@@ -4299,8 +4331,8 @@ Since naive models are not trained, the following parameters will have no effect
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">IceCreamHeaterDataset</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">GlobalNaiveSeasonal</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">IceCreamHeaterDataset</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlobalNaiveSeasonal</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="c1"># create list of multivariate series</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">series_1</span> <span class="o">=</span> <span class="n">IceCreamHeaterDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">series_2</span> <span class="o">=</span> <span class="n">series_1</span> <span class="o">+</span> <span class="mf">100.</span>
@@ -4350,11 +4382,17 @@ Since naive models are not trained, the following parameters will have no effect
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.output_chunk_shift" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
 <td><p>Number of time steps that the output/prediction starts after the end of the input.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_multivariate" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_likelihood_parameter_prediction" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
+<td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_multivariate" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
 <td><p>Whether the model considers more than one variate in the time series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_optimized_historical_forecasts" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_optimized_historical_forecasts" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
 <td><p>Whether the model supports optimized historical forecasts</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_probabilistic_prediction" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
+<td><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_sample_weight" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
 <td><p>Whether model supports sample weight for training.</p></td>
@@ -4436,7 +4474,7 @@ Since naive models are not trained, the following parameters will have no effect
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.historical_forecasts" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Generates historical forecasts by simulating predictions at various points in time throughout the history of the provided (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.load" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.load" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path[, pl_trainer_kwargs])</p></td>
 <td><p>Loads a model from a given file path.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.load_from_checkpoint" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.load_from_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_from_checkpoint</span></code></a>(model_name[, work_dir, ...])</p></td>
@@ -4463,17 +4501,11 @@ Since naive models are not trained, the following parameters will have no effect
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.residuals" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.save" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.save" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
 <td><p>Saves the model under a given path.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_likelihood_parameter_prediction" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a>()</p></td>
-<td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_probabilistic_prediction" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a>()</p></td>
-<td><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p></td>
-</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.to_cpu" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.to_cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_cpu</span></code></a>()</p></td>
-<td><p>Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time <a href="#id54"><span class="problematic" id="id55">:fun:`fit()`</span></a> or <a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.predict" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> is called.</p></td>
+<td><p>Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time <a href="#id55"><span class="problematic" id="id56">:fun:`fit()`</span></a> or <a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.predict" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> is called.</p></td>
 </tr>
 </tbody>
 </table>
@@ -4625,9 +4657,9 @@ computed per time <cite>series</cite>.</p></li>
 <li><p><em>np.ndarray</em> – An numpy array of backtest scores. For single series and one of:</p>
 <ul>
 <li><p>a single <cite>metric</cite> function, <cite>historical_forecasts</cite> generated with <cite>last_points_only=False</cite>
-and backtest <cite>reduction=None</cite>. The output has shape (n forecasts, <a href="#id57"><span class="problematic" id="id58">*</span></a>).</p></li>
+and backtest <cite>reduction=None</cite>. The output has shape (n forecasts, <a href="#id58"><span class="problematic" id="id59">*</span></a>).</p></li>
 <li><p>multiple <cite>metric</cite> functions and <cite>historical_forecasts</cite> generated with <cite>last_points_only=False</cite>.
-The output has shape (<a href="#id59"><span class="problematic" id="id60">*</span></a>, n metrics) when using a backtest <cite>reduction</cite>, and (n forecasts, <a href="#id61"><span class="problematic" id="id62">*</span></a>, n metrics)
+The output has shape (<a href="#id60"><span class="problematic" id="id61">*</span></a>, n metrics) when using a backtest <cite>reduction</cite>, and (n forecasts, <a href="#id62"><span class="problematic" id="id63">*</span></a>, n metrics)
 when <cite>reduction=None</cite></p></li>
 <li><p>multiple uni/multivariate series including <cite>series_reduction</cite> and at least one of
 <cite>component_reduction=None</cite> or <cite>time_reduction=None</cite> for “per time step metrics”</p></li>
@@ -4763,7 +4795,7 @@ will be trained for some (extra) <code class="docutils literal notranslate"><spa
 <li><p><strong>train_dataset</strong> (<a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrainingDataset</span></code></a>) – A training dataset with a type matching this model (e.g. <code class="xref py py-class docutils literal notranslate"><span class="pre">PastCovariatesTrainingDataset</span></code> for
 <code class="xref py py-class docutils literal notranslate"><span class="pre">PastCovariatesTorchModel</span></code>).</p></li>
 <li><p><strong>val_dataset</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrainingDataset</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A training dataset with a type matching this model (e.g. <code class="xref py py-class docutils literal notranslate"><span class="pre">PastCovariatesTrainingDataset</span></code> for
-:class:<a href="#id64"><span class="problematic" id="id65">`</span></a>PastCovariatesTorchModel`s), representing the validation set (to track the validation loss).</p></li>
+:class:<a href="#id65"><span class="problematic" id="id66">`</span></a>PastCovariatesTorchModel`s), representing the validation set (to track the validation loss).</p></li>
 <li><p><strong>trainer</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a custom PyTorch-Lightning Trainer object to perform prediction. Using a custom <cite>trainer</cite> will
 override Darts’ default trainer.</p></li>
 <li><p><strong>verbose</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Whether to print the progress. Ignored if there is a <cite>ProgressBar</cite> callback in
@@ -5178,22 +5210,21 @@ each series.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.load">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.load" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pl_trainer_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Loads a model from a given file path.</p>
 <p>Example for loading a general save from <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </pre></div>
 </div>
 </div></blockquote>
-<p>Example for loading an <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> to CPU that was saved on GPU:</p>
+<p>Example for loading an <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> to GPU:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
-<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
-<span class="n">model_loaded</span><span class="o">.</span><span class="n">to_cpu</span><span class="p">()</span>
+<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;accelerator&quot;</span><span class="p">:</span> <span class="s2">&quot;gpu&quot;</span><span class="p">})</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -5202,8 +5233,13 @@ each series.</p></li>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>path</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Path from which to load the model. If no path was specified when saving the model, the automatically
 generated path ending with “.pt” has to be provided.</p></li>
+<li><p><strong>pl_trainer_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
+tasks (e.g. prediction).
+Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
+<a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">Lightning Trainer documentation</a>
+for more information about the supported kwargs.</p>
+</p></li>
 <li><p><strong>**kwargs</strong> – <p>Additional kwargs for PyTorch Lightning’s <code class="xref py py-func docutils literal notranslate"><span class="pre">LightningModule.load_from_checkpoint()</span></code> method,
-such as <code class="docutils literal notranslate"><span class="pre">map_location</span></code> to load the model onto a different device than the one from which it was saved.
 For more information, read the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_module.html#load-from-checkpoint">official documentation</a>.</p>
 </p></li>
 </ul>
@@ -5223,7 +5259,7 @@ This method is used for models that were created with <code class="docutils lite
 <p>Example for loading a <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> from checkpoint (<code class="docutils literal notranslate"><span class="pre">model_name</span></code> is the <code class="docutils literal notranslate"><span class="pre">model_name</span></code> used at model
 creation):</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">best</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
@@ -5235,7 +5271,7 @@ creation):</p>
 recent checkpoint (if <code class="docutils literal notranslate"><span class="pre">best</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code> from ‘{work_dir}/darts_logs/{model_name}/checkpoints/’.</p>
 <p>Example for loading an <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> checkpoint to CPU that was saved on GPU:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">best</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
 <span class="n">model_loaded</span><span class="o">.</span><span class="n">to_cpu</span><span class="p">()</span>
@@ -5339,9 +5375,9 @@ Consider creating a new model object with the suggested learning rate for exampl
 parameters <cite>optimizer_cls</cite>, <cite>optimizer_kwargs</cite>, <cite>lr_scheduler_cls</cite>, and <cite>lr_scheduler_kwargs</cite>.</p>
 <p>Example using a <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NBEATSModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NBEATSModel</span>
 
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">18</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">18</span><span class="p">:]</span>
@@ -5761,12 +5797,14 @@ all possible series-specific historical forecasts.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.save" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Saves the model under a given path.</p>
 <p>Creates two files under <code class="docutils literal notranslate"><span class="pre">path</span></code> (model object) and <code class="docutils literal notranslate"><span class="pre">path</span></code>.ckpt (checkpoint).</p>
+<p>Note: Pickle errors may occur when saving models with custom classes. In this case, consider using
+the <cite>clean</cite> flag to strip the saved model from training related attributes.</p>
 <p>Example for saving and loading a <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code>:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 
@@ -5777,10 +5815,18 @@ all possible series-specific historical forecasts.</p></li>
 </div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path under which to save the model at its current state. Please avoid path starting with “last-” or
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path under which to save the model at its current state. Please avoid path starting with “last-” or
 “best-” to avoid collision with Pytorch-Ligthning checkpoints. If no path is specified, the model
 is automatically saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pt&quot;</span></code>.
-E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNModel_2020-01-01_12_00_00.pt&quot;</span></code>.</p>
+E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNModel_2020-01-01_12_00_00.pt&quot;</span></code>.</p></li>
+<li><p><strong>clean</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – <p>Whether to store a cleaned version of the model. If <cite>True</cite>, the training series and covariates are removed.
+Additionally, removes all Lightning Trainer-related parameters (passed with <cite>pl_trainer_kwargs</cite> at model
+creation).</p>
+<p>Note: After loading a model stored with <cite>clean=True</cite>, a <cite>series</cite> must be passed ‘predict()’,
+<cite>historical_forecasts()</cite> and other forecasting methods.</p>
+</p></li>
+</ul>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
@@ -5799,9 +5845,9 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNMode
 </dl>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_likelihood_parameter_prediction">
-<span class="sig-name descname"><span class="pre">supports_likelihood_parameter_prediction</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_likelihood_parameter_prediction" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_likelihood_parameter_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_likelihood_parameter_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model instance supports direct prediction of likelihood parameters</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -5843,9 +5889,9 @@ E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNMode
 </dl>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_probabilistic_prediction">
-<span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p>
 <p>By default, returns False. Needs to be overwritten by models that do support
 probabilistic predictions.</p>
@@ -5892,7 +5938,7 @@ probabilistic predictions.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.to_cpu">
 <span class="sig-name descname"><span class="pre">to_cpu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.to_cpu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time <a href="#id80"><span class="problematic" id="id81">:fun:`fit()`</span></a> or
+<dd><p>Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time <a href="#id82"><span class="problematic" id="id83">:fun:`fit()`</span></a> or
 <a class="reference internal" href="#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.predict" title="darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> is called.</p>
 </dd></dl>
 
@@ -5967,7 +6013,7 @@ probabilistic predictions.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

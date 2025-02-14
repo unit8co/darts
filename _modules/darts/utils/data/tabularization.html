@@ -173,29 +173,29 @@
               <div>
                 
   <h1>Source code for darts.utils.data.tabularization</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">warnings</span>
-<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">reduce</span>
-<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
-<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">inf</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">reduce</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">chain</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">math</span><span class="w"> </span><span class="kn">import</span> <span class="n">inf</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">numpy.lib.stride_tricks</span> <span class="kn">import</span> <span class="n">as_strided</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numpy.lib.stride_tricks</span><span class="w"> </span><span class="kn">import</span> <span class="n">as_strided</span>
 
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.utils.data.utils</span> <span class="kn">import</span> <span class="n">_process_sample_weight</span>
-<span class="kn">from</span> <span class="nn">darts.utils.ts_utils</span> <span class="kn">import</span> <span class="n">get_single_series</span><span class="p">,</span> <span class="n">series2seq</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">n_steps_between</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_process_sample_weight</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_single_series</span><span class="p">,</span> <span class="n">series2seq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">n_steps_between</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="n">ArrayOrArraySequence</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span>
 
 
-<div class="viewcode-block" id="create_lagged_data"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.create_lagged_data">[docs]</a><span class="k">def</span> <span class="nf">create_lagged_data</span><span class="p">(</span>
+<div class="viewcode-block" id="create_lagged_data"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.create_lagged_data">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">create_lagged_data</span><span class="p">(</span>
     <span class="n">target_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -577,7 +577,7 @@
     <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">last_static_covariates_shape</span><span class="p">,</span> <span class="n">sample_weights</span></div>
 
 
-<div class="viewcode-block" id="create_lagged_training_data"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.create_lagged_training_data">[docs]</a><span class="k">def</span> <span class="nf">create_lagged_training_data</span><span class="p">(</span>
+<div class="viewcode-block" id="create_lagged_training_data"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.create_lagged_training_data">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">create_lagged_training_data</span><span class="p">(</span>
     <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -738,7 +738,7 @@
     <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="create_lagged_prediction_data"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.create_lagged_prediction_data">[docs]</a><span class="k">def</span> <span class="nf">create_lagged_prediction_data</span><span class="p">(</span>
+<div class="viewcode-block" id="create_lagged_prediction_data"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.create_lagged_prediction_data">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">create_lagged_prediction_data</span><span class="p">(</span>
     <span class="n">target_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -863,7 +863,7 @@
     <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">times</span></div>
 
 
-<div class="viewcode-block" id="add_static_covariates_to_lagged_data"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.add_static_covariates_to_lagged_data">[docs]</a><span class="k">def</span> <span class="nf">add_static_covariates_to_lagged_data</span><span class="p">(</span>
+<div class="viewcode-block" id="add_static_covariates_to_lagged_data"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.add_static_covariates_to_lagged_data">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">add_static_covariates_to_lagged_data</span><span class="p">(</span>
     <span class="n">features</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]],</span>
     <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">uses_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -952,7 +952,7 @@
     <span class="k">return</span> <span class="n">features</span><span class="p">,</span> <span class="n">last_shape</span></div>
 
 
-<div class="viewcode-block" id="create_lagged_component_names"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.create_lagged_component_names">[docs]</a><span class="k">def</span> <span class="nf">create_lagged_component_names</span><span class="p">(</span>
+<div class="viewcode-block" id="create_lagged_component_names"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.create_lagged_component_names">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">create_lagged_component_names</span><span class="p">(</span>
     <span class="n">target_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1092,7 +1092,7 @@
     <span class="k">return</span> <span class="n">lagged_feature_names</span><span class="p">,</span> <span class="n">label_feature_names</span></div>
 
 
-<span class="k">def</span> <span class="nf">_get_lagged_indices</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_lagged_indices</span><span class="p">(</span>
     <span class="n">lags</span><span class="p">,</span>
     <span class="n">lags_past_covariates</span><span class="p">,</span>
     <span class="n">lags_future_covariates</span><span class="p">,</span>
@@ -1130,7 +1130,7 @@
     <span class="k">return</span> <span class="n">lags_extract</span><span class="p">,</span> <span class="n">lags_order</span>
 
 
-<span class="k">def</span> <span class="nf">_create_lagged_data_by_moving_window</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_create_lagged_data_by_moving_window</span><span class="p">(</span>
     <span class="n">target_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
     <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -1324,7 +1324,7 @@
     <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">weights</span>
 
 
-<span class="k">def</span> <span class="nf">_extract_lagged_vals_from_windows</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_extract_lagged_vals_from_windows</span><span class="p">(</span>
     <span class="n">windows</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">lags_to_extract</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">lags_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
@@ -1368,7 +1368,7 @@
     <span class="k">return</span> <span class="n">lagged_vals</span>
 
 
-<span class="k">def</span> <span class="nf">_create_lagged_data_by_intersecting_times</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_create_lagged_data_by_intersecting_times</span><span class="p">(</span>
     <span class="n">target_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -1511,7 +1511,7 @@
     <span class="k">return</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">shared_times</span><span class="p">,</span> <span class="n">weights</span>
 
 
-<span class="k">def</span> <span class="nf">_create_lagged_data_autoregression</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_create_lagged_data_autoregression</span><span class="p">(</span>
     <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="n">t_pred</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">shift</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -1588,7 +1588,7 @@
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_extract_component_lags_autoregression</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_extract_component_lags_autoregression</span><span class="p">(</span>
     <span class="n">series_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">values_matrix</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">shift</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -1635,7 +1635,7 @@
 <span class="n">MaxLags</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
 
 
-<span class="k">def</span> <span class="nf">_get_feature_times</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_feature_times</span><span class="p">(</span>
     <span class="n">target_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1892,7 +1892,7 @@
     <span class="p">)</span>
 
 
-<div class="viewcode-block" id="get_shared_times"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.get_shared_times">[docs]</a><span class="k">def</span> <span class="nf">get_shared_times</span><span class="p">(</span>
+<div class="viewcode-block" id="get_shared_times"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.get_shared_times">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">get_shared_times</span><span class="p">(</span>
     <span class="o">*</span><span class="n">series_or_times</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">sort</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -1922,7 +1922,7 @@
     <span class="c1"># `sort = None` specifies to `pd.Index.intersection` that values should be sorted:</span>
     <span class="n">sort</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">sort</span> <span class="k">else</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="nf">intersection_func</span><span class="p">(</span><span class="n">series_or_times_1</span><span class="p">,</span> <span class="n">series_or_times_2</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">intersection_func</span><span class="p">(</span><span class="n">series_or_times_1</span><span class="p">,</span> <span class="n">series_or_times_2</span><span class="p">):</span>
         <span class="n">times_1</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">series_or_times_1</span><span class="o">.</span><span class="n">time_index</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series_or_times_1</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span>
@@ -1966,7 +1966,7 @@
     <span class="k">return</span> <span class="n">shared_times</span></div>
 
 
-<div class="viewcode-block" id="get_shared_times_bounds"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.get_shared_times_bounds">[docs]</a><span class="k">def</span> <span class="nf">get_shared_times_bounds</span><span class="p">(</span>
+<div class="viewcode-block" id="get_shared_times_bounds"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.get_shared_times_bounds">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">get_shared_times_bounds</span><span class="p">(</span>
     <span class="o">*</span><span class="n">series_or_times</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span> <span class="kc">None</span><span class="p">]],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">],</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -2042,7 +2042,7 @@
     <span class="k">return</span> <span class="n">bounds</span></div>
 
 
-<div class="viewcode-block" id="strided_moving_window"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.strided_moving_window">[docs]</a><span class="k">def</span> <span class="nf">strided_moving_window</span><span class="p">(</span>
+<div class="viewcode-block" id="strided_moving_window"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.tabularization.html#darts.utils.data.tabularization.strided_moving_window">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">strided_moving_window</span><span class="p">(</span>
     <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="n">window_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -2133,7 +2133,7 @@
 <span class="c1">#</span>
 
 
-<span class="k">def</span> <span class="nf">_extend_time_index</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_extend_time_index</span><span class="p">(</span>
     <span class="n">time_index</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span>
     <span class="n">freq</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
     <span class="n">new_start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2155,7 +2155,7 @@
     <span class="k">return</span> <span class="n">time_index</span>
 
 
-<span class="k">def</span> <span class="nf">_get_freqs</span><span class="p">(</span><span class="o">*</span><span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="kc">None</span><span class="p">]):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_freqs</span><span class="p">(</span><span class="o">*</span><span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="kc">None</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns list with the frequency of all specified (i.e. non-`None`) `series`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -2166,7 +2166,7 @@
     <span class="k">return</span> <span class="n">freqs</span>
 
 
-<span class="k">def</span> <span class="nf">_all_equal_freq</span><span class="p">(</span><span class="o">*</span><span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_all_equal_freq</span><span class="p">(</span><span class="o">*</span><span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns `True` if all specified (i.e. non-`None`) `series` have the same frequency.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -2174,7 +2174,7 @@
     <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">freqs</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span>
 
 
-<span class="k">def</span> <span class="nf">_check_lags</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_lags</span><span class="p">(</span>
     <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]],</span>
     <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]],</span>
     <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]],</span>
@@ -2213,7 +2213,7 @@
     <span class="k">return</span> <span class="kc">None</span>
 
 
-<span class="k">def</span> <span class="nf">_check_series_length</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_series_length</span><span class="p">(</span>
     <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">lags</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
     <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -2255,7 +2255,7 @@
     <span class="k">return</span> <span class="kc">None</span>
 
 
-<span class="k">def</span> <span class="nf">_extract_sample_weight</span><span class="p">(</span><span class="n">sample_weight</span><span class="p">,</span> <span class="n">target_series</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_extract_sample_weight</span><span class="p">(</span><span class="n">sample_weight</span><span class="p">,</span> <span class="n">target_series</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Extracts sample weights values from the time intersection with the target labels.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
@@ -2303,7 +2303,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

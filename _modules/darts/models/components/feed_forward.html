@@ -227,13 +227,13 @@
 <span class="sd">[Gated Linear Units](https://papers.labml.ai/paper/2002.05202) (GLU).</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span> <span class="k">as</span> <span class="n">nn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">nn</span> <span class="k">as</span> <span class="n">nn</span>
 
-<span class="kn">from</span> <span class="nn">darts.utils.torch</span> <span class="kn">import</span> <span class="n">MonteCarloDropout</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">MonteCarloDropout</span>
 
 
-<div class="viewcode-block" id="FeedForward"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.feed_forward.html#darts.models.components.feed_forward.FeedForward">[docs]</a><span class="k">class</span> <span class="nc">FeedForward</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<div class="viewcode-block" id="FeedForward"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.feed_forward.html#darts.models.components.feed_forward.FeedForward">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">FeedForward</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    ## FFN module</span>
 
@@ -241,7 +241,7 @@
 <span class="sd">    [FeedForward network](https://arxiv.org/abs/2002.05202)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">d_model</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">d_ff</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -278,7 +278,7 @@
             <span class="c1"># be multiplied by the gate, parameterized by weight $V$ and bias $c$</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">linear_v</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">d_model</span><span class="p">,</span> <span class="n">d_ff</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="n">bias_gate</span><span class="p">)</span>
 
-<div class="viewcode-block" id="FeedForward.forward"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.feed_forward.html#darts.models.components.feed_forward.FeedForward.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+<div class="viewcode-block" id="FeedForward.forward"><a class="viewcode-back" href="../../../../generated_api/darts.models.components.feed_forward.html#darts.models.components.feed_forward.FeedForward.forward">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
         <span class="c1"># $f(x W_1 + b_1)$</span>
         <span class="n">g</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layer1</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
         <span class="c1"># If gated, $f(x W_1 + b_1) \otimes (x V + b) $</span>
@@ -313,7 +313,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2024, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
