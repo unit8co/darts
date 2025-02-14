@@ -31,7 +31,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Dependencies**
 
+- Removed the upper version cap on `sklearn<1.6.0` since `xboost` added support in version `2.1.4`. [#2665](https://github.com/unit8co/darts/pull/2665) by [Dennis Bader](https://github.com/dennisbader).
+
 ### For developers of the library:
+
+- Bumped `jinja2` from 3.1.4 to 3.1.5 (release requirement). [#2672](https://github.com/unit8co/darts/pull/2672) by dapendabot.
 
 ## [0.32.0](https://github.com/unit8co/darts/tree/0.32.0) (2024-12-21)
 
