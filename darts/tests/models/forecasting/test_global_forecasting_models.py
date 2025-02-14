@@ -1,3 +1,4 @@
+import copy
 import os
 from copy import deepcopy
 from itertools import product
@@ -27,6 +28,7 @@ from darts.models import (
     GlobalNaiveAggregate,
     GlobalNaiveDrift,
     GlobalNaiveSeasonal,
+    LinearRegressionModel,
     NBEATSModel,
     NLinearModel,
     RNNModel,
@@ -40,6 +42,7 @@ from darts.models.forecasting.torch_forecasting_model import (
     DualCovariatesTorchModel,
     MixedCovariatesTorchModel,
     PastCovariatesTorchModel,
+    TorchForecastingModel,
 )
 from darts.utils.likelihood_models import GaussianLikelihood
 
@@ -200,7 +203,11 @@ class TestGlobalForecastingModels:
     scaler = Scaler()
     ts_passengers = scaler.fit_transform(ts_passengers)
     ts_pass_train, ts_pass_val = ts_passengers[:-36], ts_passengers[-36:]
-
+    ts_passangers_mock_cov = linear_timeseries(
+        length=2 * len(ts_passengers),
+        start=ts_passengers.start_time(),
+        freq=ts_passengers.freq_str,
+    )
     # an additional noisy series
     ts_pass_train_1 = ts_pass_train + 0.01 * tg.gaussian_timeseries(
         length=len(ts_pass_train),
@@ -274,32 +281,82 @@ class TestGlobalForecastingModels:
                 output_chunk_length=3,
                 **tfm_kwargs,
             ),
+            LinearRegressionModel(
+                lags=12,
+                lags_past_covariates=[-1, -2, -3],
+                lags_future_covariates=[1, 2, 3],
+            ),
         ],
     )
     def test_save_load_model(self, tmpdir_fn, model):
         # check if save and load methods work and if loaded model creates same forecasts as original model
         model_path_str = type(model).__name__
-        full_model_path_str = os.path.join(tmpdir_fn, model_path_str)
+        model_clean_path_str = type(model).__name__ + "_clean"
 
-        model.fit(self.ts_pass_train)
-        model_prediction = model.predict(self.forecasting_horizon)
+        full_model_path_str = os.path.join(tmpdir_fn, model_path_str)
+        full_model_clean_path_str = os.path.join(tmpdir_fn, model_clean_path_str)
+
+        cov_kwargs = (
+            {
+                "past_covariates": self.ts_passangers_mock_cov,
+                "future_covariates": self.ts_passangers_mock_cov,
+            }
+            if model.supports_future_covariates and model.supports_past_covariates
+            else {}
+        )
+
+        model.fit(series=self.ts_pass_train, **cov_kwargs)
+
+        model_prediction = model.predict(
+            self.forecasting_horizon, self.ts_pass_train, **cov_kwargs
+        )
 
         # test save
         model.save()
-        model.save(model_path_str)
+        model.save(full_model_path_str)
 
-        assert os.path.exists(full_model_path_str)
-        assert (
-            len([
-                p for p in os.listdir(tmpdir_fn) if p.startswith(type(model).__name__)
-            ])
-            == 4
-        )
+        temp_training_series = model.training_series.copy()
+        temp_future_cov = copy.copy(model.future_covariate_series)
+        temp_past_cov = copy.copy(model.past_covariate_series)
+
+        model.save(full_model_clean_path_str, clean=True)
+        # No side effect to drop the training series
+        assert temp_training_series == model.training_series
+        assert temp_future_cov == model.future_covariate_series
+        assert temp_past_cov == model.past_covariate_series
 
         # test load
-        loaded_model = type(model).load(model_path_str)
+        loaded_model = type(model).load(full_model_path_str)
+        if isinstance(model, TorchForecastingModel):
+            load_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
+        else:
+            load_kwargs = {}
+        loaded_model_clean_str = type(model).load(
+            full_model_clean_path_str, **load_kwargs
+        )
 
-        assert model_prediction == loaded_model.predict(self.forecasting_horizon)
+        assert (
+            loaded_model.predict(
+                self.forecasting_horizon, self.ts_pass_train, **cov_kwargs
+            )
+            == model_prediction
+        )
+
+        # Training data is not stored in the clean model
+        assert loaded_model_clean_str.training_series is None
+
+        # The serie to predict need to be provided at prediction time
+        with pytest.raises(ValueError) as err:
+            loaded_model_clean_str.predict(self.forecasting_horizon)
+        assert str(err.value) == (
+            "Input `series` must be provided. This is the result either from fitting on multiple series, "
+            "from not having fit the model yet, or from loading a model saved with `clean=True`."
+        )
+
+        # When the serie to predict is provided, the prediction is the same
+        assert model_prediction == loaded_model_clean_str.predict(
+            self.forecasting_horizon, series=self.ts_pass_train, **cov_kwargs
+        )
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_single_ts(self, config):
@@ -448,12 +505,18 @@ class TestGlobalForecastingModels:
             input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
         )
         model.fit(series=self.ts_pass_train, **cov_kwargs_train)
-        if is_past:
-            # with past covariates from train we can predict up until output_chunk_length
-            pred1 = model.predict(1)
-            pred2 = model.predict(1, series=self.ts_pass_train)
-            pred3 = model.predict(1, **cov_kwargs_train)
-            pred4 = model.predict(1, **cov_kwargs_train, series=self.ts_pass_train)
+        if is_past or is_past is None:
+            # without covariates or with past covariates from train we can predict up until output_chunk_length
+            pred1 = model.predict(OUT_LEN)
+            pred2 = model.predict(OUT_LEN, series=self.ts_pass_train)
+            pred3 = model.predict(OUT_LEN, **cov_kwargs_train)
+            pred4 = model.predict(
+                OUT_LEN, **cov_kwargs_train, series=self.ts_pass_train
+            )
+
+            if is_past is None:
+                # without covariates we can predict any horizon
+                _ = model.predict(OUT_LEN + 1)
         else:
             # with future covariates we need additional time steps to predict
             with pytest.raises(ValueError):
@@ -465,10 +528,14 @@ class TestGlobalForecastingModels:
             with pytest.raises(ValueError):
                 _ = model.predict(1, **cov_kwargs_train, series=self.ts_pass_train)
 
-            pred1 = model.predict(1, **cov_kwargs_notrain)
-            pred2 = model.predict(1, series=self.ts_pass_train, **cov_kwargs_notrain)
-            pred3 = model.predict(1, **cov_kwargs_notrain)
-            pred4 = model.predict(1, **cov_kwargs_notrain, series=self.ts_pass_train)
+            pred1 = model.predict(OUT_LEN, **cov_kwargs_notrain)
+            pred2 = model.predict(
+                OUT_LEN, series=self.ts_pass_train, **cov_kwargs_notrain
+            )
+            pred3 = model.predict(OUT_LEN, **cov_kwargs_notrain)
+            pred4 = model.predict(
+                OUT_LEN, **cov_kwargs_notrain, series=self.ts_pass_train
+            )
 
         assert pred1 == pred2
         assert pred1 == pred3
