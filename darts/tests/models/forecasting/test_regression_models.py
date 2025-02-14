@@ -952,9 +952,6 @@ class TestRegressionModels:
             assert rmses[1] < rmses[0]
 
         # given series of different sizes in input
-        train_series_no_cov = [sine_series[period:], irregular_series]
-        train_series_static_cov = [sine_series_st_cat[period:], irregular_series_st_cat]
-
         fitting_series = [
             train_series_no_cov[0][: (60 - period)],
             train_series_no_cov[1][:60],
