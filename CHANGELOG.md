@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Implemented the `from_dataframe()` and `from_series()` methods with [Narwhals](https://github.com/narwhals-dev/narwhals), a compatibility layer between dataframe librairies. From now on, Darts can transform pandas, polars, arrows and my other dataframes into `TimeSeries`. [#2661](https://github.com/unit8co/darts/pull/2661) by [Jules Authier](https://github.com/authierj)
+
 **Fixed**
 
 **Dependencies**
