@@ -695,8 +695,8 @@ class TimeSeries:
             elif time_col_vals.dtype == nw.String:
                 # The integer conversion failed; try datetimes
                 try:
-                    time_index = time_col_vals.str.to_datetime()
-                    time_index = pd.DatetimeIndex(time_index)
+                    # time_index = time_col_vals.str.to_datetime()
+                    time_index = pd.DatetimeIndex(time_col_vals)
                 except Exception:
                     raise_log(
                         AttributeError(
