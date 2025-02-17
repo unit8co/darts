@@ -49,15 +49,16 @@ class KMeansScorer(WindowedAnomalyScorer):
 
         **Training with** `fit()`:
 
-        The input can be a series (univariate or multivariate) or multiple series. The series will be sliced
-        into equal size subsequences. The subsequence will be of size `W` * `D`, with:
+        The input can be a series (univariate or multivariate) or multiple series. The series will be partitioned
+        into equal size subsequences. Each subsequence has size `W * D` (features), where:
 
-        - `W` being the size of the window given as a parameter `window`
-        - `D` being the dimension of the series (`D` = 1 if univariate or if `component_wise` is set to `True`)
+        - `W` is the size of the window given as a parameter `window`
+        - `D` is the dimension of the series (`D` = 1 if univariate or if `component_wise` is set to `True`)
 
-        For a series of length `N`, (`N` - `W` + 1)/W subsequences will be generated. If a list of series is given
-        of length L, each series will be partitioned into subsequences, and the results will be concatenated into
-        an array of length L * number of subsequences of each series.
+        For a series of length `N`, `(N - W + 1)` subsequences will be generated. The final array `X` passed to the
+        underlying scorer has shape `(N - W + 1, W * D)`; or in other terms (number of samples, number of features).
+        If a list of series is given of length L, each series `i` is partitioned, and all `X_i` are concatenated along
+        the sample axis.
 
         The `k`-means model will be fitted on the generated subsequences. The model will find `k` clusters
         in the vector space of dimension equal to the length of the subsequences (`D` * `W`).
