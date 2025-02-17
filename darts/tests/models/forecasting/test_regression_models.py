@@ -1358,9 +1358,7 @@ class TestRegressionModels:
     if lgbm_available:
         model_configs += [(LightGBMModel, lgbm_test_params)]
     if cb_available:
-        model_configs += [
-            (CatBoostModel, dict({"likelihood": "poisson"}, **cb_test_params))
-        ]
+        model_configs += [(CatBoostModel, cb_test_params)]
 
     @pytest.mark.parametrize("config", product(model_configs, [1, 2], [True, False]))
     def test_multioutput_validation(self, config):

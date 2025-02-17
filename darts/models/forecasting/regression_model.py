@@ -736,16 +736,6 @@ class RegressionModel(GlobalForecastingModel):
             )
         )
 
-    def _native_support_multioutput(self) -> bool:
-        """
-        Returns True if the model supports multi-output regression natively.
-        """
-        return (
-            callable(getattr(self.model, "_get_tags", None))
-            and isinstance(self.model._get_tags(), dict)
-            and self.model._get_tags().get("multioutput")
-        )
-
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -857,15 +847,15 @@ class RegressionModel(GlobalForecastingModel):
         }
 
         # Check if multi-output regression is required
-        require_multioutput = not series[0].is_univariate or (
+        requires_multioutput = not series[0].is_univariate or (
             self.output_chunk_length > 1
             and self.multi_models
             and not isinstance(self.model, MultiOutputRegressor)
         )
 
         # If multi-output required and model doesn't support it natively, wrap it in a MultiOutputRegressor
-        if require_multioutput and (
-            not self._native_support_multioutput() or sample_weight is not None
+        if requires_multioutput and (
+            not self._supports_native_multioutput or sample_weight is not None
         ):
             val_set_name, val_weight_name = self.val_set_params
             mor_kwargs = {
@@ -1380,6 +1370,17 @@ class RegressionModel(GlobalForecastingModel):
                 **kwargs,
             )
         return series2seq(hfc, seq_type_out=series_seq_type)
+
+    @property
+    def _supports_native_multioutput(self) -> bool:
+        """
+        Returns True if the model supports multi-output regression natively.
+        """
+        return (
+            callable(getattr(self.model, "_get_tags", None))
+            and isinstance(self.model._get_tags(), dict)
+            and self.model._get_tags().get("multioutput")
+        )
 
 
 class _LikelihoodMixin:

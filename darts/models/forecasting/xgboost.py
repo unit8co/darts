@@ -225,10 +225,6 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             use_static_covariates=use_static_covariates,
         )
 
-    def _native_support_multioutput(self):
-        # since xgboost==2.1.0, likelihoods do not support native multi output regression
-        return super()._native_support_multioutput() and self.likelihood is None
-
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -372,3 +368,8 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
                 else self.output_chunk_length
             ),
         )
+
+    @property
+    def _supports_native_multioutput(self):
+        # since xgboost==2.1.0, likelihoods do not support native multi output regression
+        return super()._supports_native_multioutput and self.likelihood is None
