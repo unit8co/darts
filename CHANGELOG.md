@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added a metadata attribute to `TimeSeries`. [#2656](https://github.com/unit8co/darts/pull/2656) by [Yoav Matzkevich](https://github.com/ymatzkevich).
+
 **Fixed**
 
 **Dependencies**
@@ -38,6 +40,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Added new time aggregated metric `wmape()` (Weighted Mean Absolute Percentage Error). [#2544](https://github.com/unit8co/darts/pull/2648) by [He Weilin](https://github.com/cnhwl).
 
 **Fixed**
+
+- Fixed a bug which raised an error when loading a torch model with `torch>=2.6.0`. [#2658](https://github.com/unit8co/darts/pull/2658) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when performing optimized historical forecasts with `stride=1` using a `RegressionModel` with `output_chunk_shift>=1` and `output_chunk_length=1`, where the forecast time index was not properly shifted. [#2634](https://github.com/unit8co/darts/pull/2634) by [Mattias De Charleroy](https://github.com/MattiasDC).
 - Fixed a bug where global naive models could not be used in ensemble models. [#2666](https://github.com/unit8co/darts/pull/2666) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug with global naive models where some `supports_*` properties were wrongly defined as methods. [#2666](https://github.com/unit8co/darts/pull/2666) by [Dennis Bader](https://github.com/dennisbader).
