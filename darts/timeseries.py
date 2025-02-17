@@ -4081,6 +4081,7 @@ class TimeSeries:
         label: Optional[Union[str, Sequence[str]]] = "",
         max_nr_components: int = 10,
         ax: Optional[matplotlib.axes.Axes] = None,
+        colors: Optional[str] = None,
         *args,
         **kwargs,
     ) -> matplotlib.axes.Axes:
@@ -4183,6 +4184,17 @@ class TimeSeries:
         else:
             custom_labels = False
 
+        if not isinstance(colors, str) and isinstance(colors, Sequence):
+            raise_if_not(
+                len(colors) == self.n_components,
+                "The colors argument should have the same length as the number of plotted components "
+                f"({min(self.n_components, n_components_to_plot)}), only {len(colors)} labels were provided",
+                logger,
+            )
+            custom_colors = True
+        else:
+            custom_colors = False
+
         for i, c in enumerate(self._xa.component[:n_components_to_plot]):
             comp_name = str(c.values)
             comp = self._xa.sel(component=c)
@@ -4206,6 +4218,9 @@ class TimeSeries:
                 else:
                     label_to_use = f"{label}_{comp_name}"
             kwargs["label"] = label_to_use
+
+            if custom_colors:
+                kwargs["color"] = colors[i]
 
             kwargs_central = deepcopy(kwargs)
             if not self.is_deterministic:
