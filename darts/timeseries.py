@@ -334,8 +334,11 @@ class TimeSeries:
                 ),
                 logger,
             )
-        if isinstance(metadata, pd.DataFrame):
-            metadata = metadata.iloc[0]
+        if metadata is not None:
+            metadata = (
+                metadata.iloc[0] if isinstance(metadata, pd.DataFrame) else metadata
+            )
+            metadata = pd.Series(metadata, name=METADATA_TAG)
 
         # store static covariates, hierarchy and metadata in attributes (potentially storing None)
         self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy, metadata)
