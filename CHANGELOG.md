@@ -10,6 +10,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For users of the library:
 
 **Improved**
+- Extended `TimeSeries.plot()` to accept list or tupple of colors to specify the color of the componenents of a TimeSeries. [#2680](https://github.com/unit8co/darts/pull/2680) by [Jules Authier](https://github.com/authierj)
 
 **Fixed**
 
