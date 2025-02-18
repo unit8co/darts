@@ -4105,7 +4105,6 @@ class TimeSeries:
         label: Optional[Union[str, Sequence[str]]] = "",
         max_nr_components: int = 10,
         ax: Optional[matplotlib.axes.Axes] = None,
-        colors: Optional[str] = None,
         *args,
         **kwargs,
     ) -> matplotlib.axes.Axes:
@@ -4144,14 +4143,20 @@ class TimeSeries:
         ax
             Optionally, an axis to plot on. If `None`, and `new_plot=False`, will use the current axis. If
             `new_plot=True`, will create a new axis.
-        alpha
-             Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
-            probabilistic series.
         args
             some positional arguments for the `plot()` method
         kwargs
             some keyword arguments for the `plot()` method
 
+            alpha
+                Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
+                probabilistic series.
+            color or c
+                Can either be a single color or list of color. Any matlplotlib colors is accepeted (string, hex string,
+                RGB/RGBA tuple). If a single color and the series only has a single component, it is used as the color
+                for that component. If a single color and the series has multiple components, it is used as the color
+                for each component. If a list of colors with length equal to the number of components in the series, the
+                colors will be mapped to the components in order.
         Returns
         -------
         matplotlib.axes.Axes
@@ -4208,11 +4213,23 @@ class TimeSeries:
         else:
             custom_labels = False
 
-        if not isinstance(colors, str) and isinstance(colors, Sequence):
+        color = None
+        if "color" in kwargs:
+            color_key = "color"
+            color = kwargs[color_key]
+        elif "c" in kwargs:
+            color_key = "c"
+            color = kwargs[color_key]
+
+        if (
+            not isinstance(color, str)
+            and not isinstance(color, tuple)
+            and isinstance(color, Sequence)
+        ):
             raise_if_not(
-                len(colors) == self.n_components,
+                len(color) == self.n_components,
                 "The colors argument should have the same length as the number of plotted components "
-                f"({min(self.n_components, n_components_to_plot)}), only {len(colors)} labels were provided",
+                f"({min(self.n_components, n_components_to_plot)}), only {len(color)} labels were provided",
                 logger,
             )
             custom_colors = True
@@ -4244,7 +4261,10 @@ class TimeSeries:
             kwargs["label"] = label_to_use
 
             if custom_colors:
-                kwargs["color"] = colors[i]
+                kwargs[color_key] = color[i]
+            else:
+                if color is not None:
+                    kwargs[color_key] = color
 
             kwargs_central = deepcopy(kwargs)
             if not self.is_deterministic:
