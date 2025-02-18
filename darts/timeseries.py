@@ -34,7 +34,6 @@ Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/co
 """
 
 import itertools
-import numbers
 import pickle
 import re
 import sys
@@ -4153,7 +4152,7 @@ class TimeSeries:
                 Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
                 probabilistic series.
             color or c
-                Can either be a single color or list of color. Any matlplotlib colors is accepeted (string, hex string,
+                Can either be a single color or list of colors. Any matlplotlib colors is accepeted (string, hex string,
                 RGB/RGBA tuple). If a single color and the series only has a single component, it is used as the color
                 for that component. If a single color and the series has multiple components, it is used as the color
                 for each component. If a list of colors with length equal to the number of components in the series, the
@@ -4214,28 +4213,22 @@ class TimeSeries:
         else:
             custom_labels = False
 
-        color = None
-        if "color" in kwargs:
-            color_key = "color"
-            color = kwargs[color_key]
-        elif "c" in kwargs:
-            color_key = "c"
-            color = kwargs[color_key]
+        color_key = "color" if "color" in kwargs else "c" if "c" in kwargs else None
+        color = kwargs.get(color_key, None)
 
-        if (
-            not isinstance(color, str)
-            and isinstance(color, Sequence)
-            and not isinstance(color[0], numbers.Number)
-        ):
+        if isinstance(color, (str, tuple)):
+            color = [color]
+            multi_color = False
+        else:
+            multi_color = isinstance(color, Sequence)
+
+        if multi_color:
             raise_if_not(
                 len(color) == self.n_components,
-                "The colors argument should have the same length as the number of plotted components "
+                "The color argument should have the same length as the number of plotted components "
                 f"({min(self.n_components, n_components_to_plot)}), only {len(color)} labels were provided",
                 logger,
             )
-            custom_colors = True
-        else:
-            custom_colors = False
 
         for i, c in enumerate(self._xa.component[:n_components_to_plot]):
             comp_name = str(c.values)
@@ -4261,11 +4254,8 @@ class TimeSeries:
                     label_to_use = f"{label}_{comp_name}"
             kwargs["label"] = label_to_use
 
-            if custom_colors:
+            if multi_color:
                 kwargs[color_key] = color[i]
-            else:
-                if color is not None:
-                    kwargs[color_key] = color
 
             kwargs_central = deepcopy(kwargs)
             if not self.is_deterministic:
