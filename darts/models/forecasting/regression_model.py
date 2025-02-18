@@ -1380,9 +1380,6 @@ class RegressionModel(GlobalForecastingModel):
             callable(getattr(self.model, "_get_tags", None))
             and isinstance(self.model._get_tags(), dict)
             and self.model._get_tags().get("multioutput")
-        ) or (
-            hasattr(self.model, "_supports_native_multioutput")
-            and bool(self.model._supports_native_multioutput)
         )
 
 

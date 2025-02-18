@@ -1354,7 +1354,7 @@ class TestRegressionModels:
     model_configs_multioutput = [
         (
             RegressionModel,
-            {"lags": 4, "model": LinearRegressionModel},
+            {"lags": 4, "model": LinearRegression()},
             True,
         ),
         (LinearRegressionModel, {"lags": 4}, True),
