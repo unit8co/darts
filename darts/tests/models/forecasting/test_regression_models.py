@@ -948,9 +948,6 @@ class TestRegressionModels:
             assert rmses[1] < rmses[0]
 
         # given series of different sizes in input
-        train_series_no_cov = [sine_series[period:], irregular_series]
-        train_series_static_cov = [sine_series_st_cat[period:], irregular_series_st_cat]
-
         fitting_series = [
             train_series_no_cov[0][: (60 - period)],
             train_series_no_cov[1][:60],
@@ -1865,6 +1862,34 @@ class TestRegressionModels:
                 past_covariates=past_covariates[: -25 + req_past_offset],
                 future_covariates=future_covariates[: -26 + req_future_offset],
             )
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            [(XGBModel, xgb_test_params)]
+            + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else [])
+            + ([(CatBoostModel, cb_test_params)] if cb_available else []),
+            [True, False],
+        ),
+    )
+    def test_val_set_weights_runnability_trees(self, config):
+        """Tests using weights in val set for single and multi series."""
+        (model_cls, model_kwargs), single_series = config
+        model = model_cls(lags=10, **model_kwargs)
+
+        series = tg.sine_timeseries(length=20)
+        weights = tg.linear_timeseries(length=20)
+        if not single_series:
+            series = [series] * 2
+            weights = [weights] * 2
+
+        model.fit(
+            series=series,
+            val_series=series,
+            sample_weight=weights,
+            val_sample_weight=weights,
+        )
+        _ = model.predict(1, series=series)
 
     @pytest.mark.parametrize(
         "config",

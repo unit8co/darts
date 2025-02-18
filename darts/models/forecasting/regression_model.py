@@ -591,7 +591,7 @@ class RegressionModel(GlobalForecastingModel):
             val_weights = val_weights or None
         else:
             val_sets = [(val_samples, val_labels)]
-            val_weights = val_weight
+            val_weights = [val_weight]
 
         val_set_name, val_weight_name = self.val_set_params
         return dict(kwargs, **{val_set_name: val_sets, val_weight_name: val_weights})
