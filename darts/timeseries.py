@@ -34,6 +34,7 @@ Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/co
 """
 
 import itertools
+import numbers
 import pickle
 import re
 import sys
@@ -4223,8 +4224,8 @@ class TimeSeries:
 
         if (
             not isinstance(color, str)
-            and not isinstance(color, tuple)
             and isinstance(color, Sequence)
+            and not isinstance(color[0], numbers.Number)
         ):
             raise_if_not(
                 len(color) == self.n_components,
