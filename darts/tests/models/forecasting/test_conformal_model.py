@@ -326,7 +326,9 @@ class TestConformalModel:
         # test clean save
         clean_model_path = os.path.join(tmpdir_fn, f"clean_{model_cls.__name__}.pkl")
         model.save(clean_model_path, clean=True)
-        clean_model = model_cls.load(clean_model_path)
+        clean_model = model_cls.load(
+            clean_model_path, pl_trainer_kwargs={"accelerator": "cpu"}
+        )
         assert clean_model.model.training_series is None
         assert clean_model.model.past_covariate_series is None
         assert clean_model.model.future_covariate_series is None
