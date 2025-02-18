@@ -839,7 +839,7 @@ class TestEnsembleModels:
         # test clean save
         path = os.path.join(full_model_path_str, f"clean_{model_cls.__name__}.pkl")
         model.save(path, clean=True)
-        clean_model = model_cls.load(path)
+        clean_model = model_cls.load(path, pl_trainer_kwargs={"accelerator": "cpu"})
         for i, m in enumerate(clean_model.forecasting_models):
             if not issubclass(type(m), LocalForecastingModel):
                 assert m.training_series is None
