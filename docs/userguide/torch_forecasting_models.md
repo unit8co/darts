@@ -353,13 +353,13 @@ model_finetune.load_weights("/your/path/to/save/model.pt")
 
 #### Exporting model to ONNX format for inference
 
-It is also possible to export the model weights to the ONNX format to run inference in a lightweight environment. This example assumes that the model is trained using past, future covariates, and static covariates. Note that all series and covariates must extend far enough into the past (`input_chunk_length)` and future (`output_chunk_length`) relative to the end of the target `series`. It will not be possible to forecast a horizon `n > output_chunk_length` without implementing the auto-regression logic.
+It is also possible to export the model weights to the ONNX format to run inference in a lightweight environment. The example below works for any `TorchForecastingModel` except `RNNModel` and for optional usage of past, future and / or static covariates. Note that all series and covariates must extend far enough into the past (`input_chunk_length)` and future (`output_chunk_length`) relative to the end of the target `series`. It will not be possible to forecast a horizon `n > output_chunk_length` without implementing the auto-regression logic.
 
 ```python
 model = SomeTorchForecastingModel(...)
 model.fit(...)
 
-# make sure to have onnx installed
+# make sure to have `onnx` and `onnxruntime` installed
 onnx_filename = "example_onnx.onnx"
 model.to_onnx(onnx_filename, export_params=True)
 ```
