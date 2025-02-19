@@ -584,13 +584,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 logger,
             )
 
-    def to_onnx(self, file_path, input_sample=None, **kwargs):
-        if not input_sample:
-            logger.warning(
-                "It is recommended to use `TorchForecastingModel.to_onnx` method instead."
-            )
-        super().to_onnx(file_path=file_path, input_sample=input_sample, **kwargs)
-
     @property
     def epochs_trained(self):
         current_epoch = self.current_epoch
@@ -832,6 +825,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             future_covariates,
             static_covariates,
         ) = input_batch
+        dim_comp = 2
 
         x_past = torch.cat(
             [
@@ -843,7 +837,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
                 ]
                 if tensor is not None
             ],
-            dim=2,
+            dim=dim_comp,
         )
         return x_past, future_covariates, static_covariates
 
