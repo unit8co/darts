@@ -4216,19 +4216,16 @@ class TimeSeries:
         color_key = "color" if "color" in kwargs else "c" if "c" in kwargs else None
         color = kwargs.get(color_key, None)
 
-        if isinstance(color, (str, tuple)):
-            color = [color]
-            multi_color = False
-        else:
-            multi_color = isinstance(color, Sequence)
-
-        if multi_color:
+        if not isinstance(color, (str, tuple)) and isinstance(color, Sequence):
             raise_if_not(
                 len(color) == self.n_components,
                 "The color argument should have the same length as the number of plotted components "
                 f"({min(self.n_components, n_components_to_plot)}), only {len(color)} labels were provided",
                 logger,
             )
+            custom_colors = True
+        else:
+            custom_colors = False
 
         for i, c in enumerate(self._xa.component[:n_components_to_plot]):
             comp_name = str(c.values)
