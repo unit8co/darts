@@ -115,6 +115,7 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 df=series.pd_dataframe(copy=False).diff().dropna(),
                 static_covariates=series.static_covariates,
                 hierarchy=series.hierarchy,
+                metadata=series.metadata,
             )
         return series
 

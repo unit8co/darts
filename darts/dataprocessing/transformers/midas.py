@@ -488,4 +488,5 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             values=arr,
             columns=cols,
             static_covariates=static_covariates,
+            metadata=series.metadata,
         )

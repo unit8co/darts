@@ -258,6 +258,20 @@ class TimeSeries:
                     {col: self.dtype for col in cols_to_cast}, copy=False
                 )
 
+        # prepare metadata
+        metadata = self._xa.attrs.get(METADATA_TAG, None)
+        if metadata is None or isinstance(metadata, pd.Series):
+            pass
+        elif isinstance(metadata, pd.DataFrame) and len(metadata) == 1:
+            metadata = metadata.iloc[0]
+        else:
+            raise_log(
+                ValueError(
+                    "`metadata` must be either a pandas Series, 1-rowed DataFrame or None"
+                ),
+                logger,
+            )
+
         # handle hierarchy
         hierarchy = self._xa.attrs.get(HIERARCHY_TAG, None)
         self._top_level_component = None
@@ -320,25 +334,6 @@ class TimeSeries:
             self._bottom_level_components = [
                 c for c in self.components if c in bottom_level
             ]
-
-        # prepare metadata
-        metadata = self._xa.attrs.get(METADATA_TAG, None)
-        if not (
-            isinstance(metadata, pd.Series)
-            or (isinstance(metadata, pd.DataFrame) and metadata.shape[0] == 1)
-            or metadata is None
-        ):
-            raise_log(
-                ValueError(
-                    "`metadata` must be either a pandas Series, 1-rowed DataFrame or None"
-                ),
-                logger,
-            )
-        if metadata is not None:
-            metadata = (
-                metadata.iloc[0] if isinstance(metadata, pd.DataFrame) else metadata
-            )
-            metadata = pd.Series(metadata, name=METADATA_TAG)
 
         # store static covariates, hierarchy and metadata in attributes (potentially storing None)
         self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy, metadata)

@@ -771,7 +771,6 @@ def _build_forecast_series(
     custom_columns: list[str] = None,
     with_static_covs: bool = True,
     with_hierarchy: bool = True,
-    with_metadata: bool = True,
     pred_start: Optional[Union[pd.Timestamp, int]] = None,
     time_index: Union[pd.DatetimeIndex, pd.RangeIndex] = None,
 ) -> TimeSeries:
@@ -791,8 +790,6 @@ def _build_forecast_series(
         If set to `False`, do not copy the input_series `static_covariates` attribute
     with_hierarchy
         If set to `False`, do not copy the input_series `hierarchy` attribute
-    with_metadata
-        If set to `False`, do not copy the input_series `metadata` attribute
     pred_start
         Optionally, give a custom prediction start point. Only effective if `time_index` is `None`.
     time_index
@@ -827,7 +824,7 @@ def _build_forecast_series(
         columns=input_series.columns if custom_columns is None else custom_columns,
         static_covariates=input_series.static_covariates if with_static_covs else None,
         hierarchy=input_series.hierarchy if with_hierarchy else None,
-        metadata=input_series.metadata if with_metadata else None,
+        metadata=input_series.metadata,
     )
 
 
