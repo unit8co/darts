@@ -4252,8 +4252,7 @@ class TimeSeries:
                     label_to_use = f"{label}_{comp_name}"
             kwargs["label"] = label_to_use
 
-            if custom_colors:
-                kwargs[color_key] = color[i]
+            kwargs["c"] = color[i] if custom_colors else color
 
             kwargs_central = deepcopy(kwargs)
             if not self.is_deterministic:
