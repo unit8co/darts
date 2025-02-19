@@ -12,6 +12,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 - Added a metadata attribute to `TimeSeries`. [#2656](https://github.com/unit8co/darts/pull/2656) by [Yoav Matzkevich](https://github.com/ymatzkevich).
+- Added ONNX support for torch-based models with method `TorchForecastingModel.to_onnx()`. Check out [this example](https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html#exporting-model-to-onnx-format-for-inference) from the user guide on how to export and load a model for inference. [#2620](https://github.com/unit8co/darts/pull/2620) by [Antoine Madrona](https://github.com/madtoinou)
+- Made method `ForecastingModel.untrained_model()` public. Use this method to get a new (untrained) model instance created with the same parameters. [#2684](https://github.com/unit8co/darts/pull/2684) by [Timon Erhart](https://github.com/turbotimon)
 
 **Fixed**
 
