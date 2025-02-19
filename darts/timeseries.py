@@ -4147,16 +4147,18 @@ class TimeSeries:
             some positional arguments for the `plot()` method
         kwargs
             some keyword arguments for the `plot()` method
+        alpha
+            Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
+            probabilistic series.
+        color
+            Can either be a single color or list of colors. Any matlplotlib colors is accepeted (string, hex string,
+            RGB/RGBA tuple). If a single color and the series only has a single component, it is used as the color
+            for that component. If a single color and the series has multiple components, it is used as the color
+            for each component. If a list of colors with length equal to the number of components in the series, the
+            colors will be mapped to the components in order.
+        c
+            An alias for color
 
-            alpha
-                Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
-                probabilistic series.
-            color or c
-                Can either be a single color or list of colors. Any matlplotlib colors is accepeted (string, hex string,
-                RGB/RGBA tuple). If a single color and the series only has a single component, it is used as the color
-                for that component. If a single color and the series has multiple components, it is used as the color
-                for each component. If a list of colors with length equal to the number of components in the series, the
-                colors will be mapped to the components in order.
         Returns
         -------
         matplotlib.axes.Axes
