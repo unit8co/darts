@@ -2601,7 +2601,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return model_params
 
     def untrained_model(self):
-        """Returns a new (untrained) model instance create with the same parameters."""
+        """Returns a new (untrained) model instance created with the same parameters."""
         return self.__class__(**copy.deepcopy(self.model_params))
 
     @property
