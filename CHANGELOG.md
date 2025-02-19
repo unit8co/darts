@@ -11,7 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- Added ONNX support for torch-based models, and an example of export and loading for inference in the User Guide. [#2620](https://github.com/unit8co/darts/pull/2620) by [Antoine Madrona](https://github.com/madtoinou)
+- Added ONNX support for torch-based models with method `TorchForecastingModel.to_onnx()`. Check out [this example](https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html#exporting-model-to-onnx-format-for-inference) from the user guide on how to export and load a model for inference. [#2620](https://github.com/unit8co/darts/pull/2620) by [Antoine Madrona](https://github.com/madtoinou)
 
 **Dependencies**
 
