@@ -4151,7 +4151,7 @@ class TimeSeries:
             Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
             probabilistic series.
         color
-            Can either be a single color or list of colors. Any matlplotlib colors is accepeted (string, hex string,
+            Can either be a single color or list of colors. Any matplotlib color is accepted (string, hex string,
             RGB/RGBA tuple). If a single color and the series only has a single component, it is used as the color
             for that component. If a single color and the series has multiple components, it is used as the color
             for each component. If a list of colors with length equal to the number of components in the series, the
