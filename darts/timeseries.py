@@ -4105,6 +4105,9 @@ class TimeSeries:
         label: Optional[Union[str, Sequence[str]]] = "",
         max_nr_components: int = 10,
         ax: Optional[matplotlib.axes.Axes] = None,
+        alpha: Optional[float] = None,
+        color: Optional[Union[str, tuple, Sequence[str, tuple]]] = None,
+        c: Optional[Union[str, tuple, Sequence[str, tuple]]] = None,
         *args,
         **kwargs,
     ) -> matplotlib.axes.Axes:
@@ -4215,6 +4218,11 @@ class TimeSeries:
         else:
             custom_labels = False
 
+        raise_if(
+            color and c,
+            "color and c should not be used simultaneously, use one or the other",
+            logger,
+        )
         color = color or c
 
         if not isinstance(color, (str, tuple)) and isinstance(color, Sequence):
@@ -4240,7 +4248,9 @@ class TimeSeries:
             else:
                 central_series = comp.mean(dim=DIMS[2])
 
-            alpha = kwargs["alpha"] if "alpha" in kwargs else None
+            if alpha:
+                kwargs["alpha"] = alpha
+
             if custom_labels:
                 label_to_use = label[i]
             else:
