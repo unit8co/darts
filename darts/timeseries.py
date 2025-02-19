@@ -655,10 +655,7 @@ class TimeSeries:
 
         # get values
         if value_cols is None:
-            if time_col is not None:
-                series_df = df.drop(time_col)
-            else:
-                series_df = df
+            series_df = df.drop(time_col) if time_col else df
         else:
             if isinstance(value_cols, str):
                 value_cols = [value_cols]
@@ -669,7 +666,6 @@ class TimeSeries:
             if time_col not in df.columns:
                 raise_log(AttributeError(f"time_col='{time_col}' is not present."))
 
-            time_index = pd.Index([])
             time_col_vals = df[time_col]
 
             if time_col_vals.dtype == nw.String:
@@ -680,14 +676,12 @@ class TimeSeries:
                     pass
 
             if time_col_vals.dtype.is_integer():
-                # We have to check all integers appear only once to have a valid index
                 if time_col_vals.is_duplicated().any():
                     raise_log(
                         ValueError(
                             "The provided integer time index column contains duplicate values."
                         )
                     )
-
                 # Temporarily use an integer Index to sort the values, and replace by a
                 # RangeIndex in `TimeSeries.from_xarray()`
                 time_index = pd.Index(time_col_vals)
@@ -695,7 +689,6 @@ class TimeSeries:
             elif time_col_vals.dtype == nw.String:
                 # The integer conversion failed; try datetimes
                 try:
-                    # time_index = time_col_vals.str.to_datetime()
                     time_index = pd.DatetimeIndex(time_col_vals)
                 except Exception:
                     raise_log(
@@ -704,6 +697,18 @@ class TimeSeries:
                         )
                     )
             elif time_col_vals.dtype == nw.Datetime:
+                # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
+                # pandas.DataFrame loses the tz information if it's not its index
+                if time_col_vals.dtype.time_zone is not None:
+                    logger.warning(
+                        "The provided Datetime data was associated with a timezone, which is currently not supported "
+                        "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                        f"`ts.time_index.tz_localize({time_col_vals.dtype.time_zone})` when exporting the results."
+                        "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                        "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                        "original timezone."
+                    )
+                    time_col_vals = time_col_vals.dt.replace_time_zone(None)
                 time_index = pd.DatetimeIndex(time_col_vals)
             else:
                 raise_log(
