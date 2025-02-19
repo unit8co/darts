@@ -646,12 +646,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 logger=logger,
             )
 
-    def to_onnx(
-        self,
-        path: Optional[str] = None,
-        input_sample: Optional[tuple] = None,
-        **kwargs,
-    ):
+    def to_onnx(self, path: Optional[str] = None, **kwargs):
         """Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning's
         :func:`torch.onnx.export` method (`official documentation <https://lightning.ai/docs/pytorch/
         stable/common/lightning_module.html#to-onnx>`_).
@@ -663,13 +658,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         .. highlight:: python
         .. code-block:: python
 
+            from darts.datasets import AirPassengersDataset
             from darts.models import DLinearModel
-            from darts import TimeSeries
-            import numpy as np
 
-            train_ts = TimeSeries.from_values(np.arange(0,100))
+            series = AirPassengersDataset().load()
             model = DLinearModel(input_chunk_length=4, output_chunk_length=1)
-            model.fit(train_ts, epochs=1)
+            model.fit(series, epochs=1)
             model.to_onnx("my_model.onnx")
         ..
 
@@ -678,14 +672,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path
             Path under which to save the model at its current state. If no path is specified, the model
             is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.onnx"``.
-        input_sample
-            Tuple of Tensor corresponding to the inputs of the model forward pass. In order to avoid data leakage,
-            it's recommended to randomize the values as only the shape is important.
         **kwargs
-            Additional kwargs for PyTorch's :func:`torch.onnx.export` method, such as ``verbose`` prints a
-            description of the model being exported to stdout.
-            For more information, read the `official documentation <https://pytorch.org/docs/master/
-            onnx.html#torch.onnx.export>`_.
+            Additional kwargs for PyTorch's :func:`torch.onnx.export` method (except parameters ``file_path``,
+            ``input_sample``, ``input_name``). For more information, read the `official documentation
+            <https://pytorch.org/docs/master/onnx.html#torch.onnx.export>`_.
         """
         if not self._fit_called:
             raise_log(
@@ -695,13 +685,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if path is None:
             path = self._default_save_path() + ".onnx"
 
-        if not input_sample:
-            # last dimension in train_sample_shape is the expected target
-            mock_batch = tuple(
-                torch.rand((1,) + shape, dtype=self.model.dtype) if shape else None
-                for shape in self.model.train_sample_shape[:-1]
-            )
-            input_sample = self.model._process_input_batch(mock_batch)
+        # last dimension in train_sample_shape is the expected target
+        mock_batch = tuple(
+            torch.rand((1,) + shape, dtype=self.model.dtype) if shape else None
+            for shape in self.model.train_sample_shape[:-1]
+        )
+        input_sample = self.model._process_input_batch(mock_batch)
 
         # torch models necessarily use historic target values as features in current implementation
         input_names = ["x_past"]
