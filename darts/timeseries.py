@@ -4215,8 +4215,7 @@ class TimeSeries:
         else:
             custom_labels = False
 
-        color_key = "color" if "color" in kwargs else "c" if "c" in kwargs else None
-        color = kwargs.get(color_key, None)
+        color = color or c
 
         if not isinstance(color, (str, tuple)) and isinstance(color, Sequence):
             raise_if_not(
