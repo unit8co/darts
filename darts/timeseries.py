@@ -4254,7 +4254,7 @@ class TimeSeries:
                     label_to_use = f"{label}_{comp_name}"
             kwargs["label"] = label_to_use
 
-            if multi_color:
+            if custom_colors:
                 kwargs[color_key] = color[i]
 
             kwargs_central = deepcopy(kwargs)
