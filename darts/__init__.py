@@ -8,9 +8,9 @@ import os
 import matplotlib as mpl
 from matplotlib import cycler
 
-from darts.timeseries import TimeSeries, concatenate
+from darts.timeseries import TimeSeries, concatenate, slice_intersect
 
-__version__ = "0.32.0"
+__version__ = "0.33.0"
 
 colors = cycler(
     color=["black", "003DFD", "b512b8", "11a9ba", "0d780f", "f77f07", "ba0f0f"]
@@ -42,4 +42,4 @@ u8plots_mplstyle = {
 if os.getenv("DARTS_CONFIGURE_MATPLOTLIB", "1") != "0":
     mpl.rcParams.update(u8plots_mplstyle)
 
-__all__ = ["TimeSeries", "concatenate"]
+__all__ = ["TimeSeries", "concatenate", "slice_intersect"]

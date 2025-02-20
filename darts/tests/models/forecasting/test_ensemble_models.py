@@ -18,8 +18,14 @@ from darts.models import (
     StatsForecastAutoARIMA,
     Theta,
 )
+from darts.models.forecasting.forecasting_model import LocalForecastingModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
+
+if TORCH_AVAILABLE:
+    from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+else:
+    TorchForecastingModel = None
 
 logger = get_logger(__name__)
 
@@ -823,3 +829,20 @@ class TestEnsembleModels:
         for p in pkl_files:
             loaded_model = model_cls.load(p)
             assert model_prediction == loaded_model.predict(5)
+
+            # test pl_trainer_kwargs (only for torch models)
+            loaded_model = model_cls.load(p, pl_trainer_kwargs={"accelerator": "cuda"})
+            for i, m in enumerate(loaded_model.forecasting_models):
+                if TORCH_AVAILABLE and issubclass(type(m), TorchForecastingModel):
+                    assert m.trainer_params["accelerator"] == "cuda"
+
+        # test clean save
+        path = os.path.join(full_model_path_str, f"clean_{model_cls.__name__}.pkl")
+        model.save(path, clean=True)
+        clean_model = model_cls.load(path, pl_trainer_kwargs={"accelerator": "cpu"})
+        for i, m in enumerate(clean_model.forecasting_models):
+            if not issubclass(type(m), LocalForecastingModel):
+                assert m.training_series is None
+                assert m.past_covariate_series is None
+                assert m.future_covariate_series is None
+        assert model.predict(5) == clean_model.predict(5, self.series1 + self.series2)

@@ -952,9 +952,6 @@ class TestRegressionModels:
             assert rmses[1] < rmses[0]
 
         # given series of different sizes in input
-        train_series_no_cov = [sine_series[period:], irregular_series]
-        train_series_static_cov = [sine_series_st_cat[period:], irregular_series_st_cat]
-
         fitting_series = [
             train_series_no_cov[0][: (60 - period)],
             train_series_no_cov[1][:60],
@@ -1873,6 +1870,34 @@ class TestRegressionModels:
     @pytest.mark.parametrize(
         "config",
         product(
+            [(XGBModel, xgb_test_params)]
+            + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else [])
+            + ([(CatBoostModel, cb_test_params)] if cb_available else []),
+            [True, False],
+        ),
+    )
+    def test_val_set_weights_runnability_trees(self, config):
+        """Tests using weights in val set for single and multi series."""
+        (model_cls, model_kwargs), single_series = config
+        model = model_cls(lags=10, **model_kwargs)
+
+        series = tg.sine_timeseries(length=20)
+        weights = tg.linear_timeseries(length=20)
+        if not single_series:
+            series = [series] * 2
+            weights = [weights] * 2
+
+        model.fit(
+            series=series,
+            val_series=series,
+            sample_weight=weights,
+            val_sample_weight=weights,
+        )
+        _ = model.predict(1, series=series)
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
             [
                 (
                     XGBModel,
@@ -2390,6 +2415,20 @@ class TestRegressionModels:
                     "lags_past_covariates": 4,
                     "lags_future_covariates": [-3, 1],
                 },
+                # check that component-specific lags with output_chunk_shift works
+                {
+                    "lags_past_covariates": {"lin_past": [-3, -1]},
+                    "lags_future_covariates": [1, 2],
+                },
+                {
+                    "lags_past_covariates": [-3, -1],
+                    "lags_future_covariates": {"lin_future": [1, 2]},
+                },
+                {
+                    "lags": {"gaussian": 5},
+                    "lags_past_covariates": [-3, -1],
+                    "lags_future_covariates": [1, 2],
+                },
             ],
             [True, False],
             [3, 5],
@@ -2431,11 +2470,19 @@ class TestRegressionModels:
         )
         # adjusting the future lags should give identical models to non-shifted
         list_lags_adj = deepcopy(list_lags)
+        # this loop works for both component-specific and non-component-specific future lags
         if "lags_future_covariates" in list_lags_adj:
-            list_lags_adj["lags_future_covariates"] = [
-                lag_ - output_chunk_shift
-                for lag_ in list_lags_adj["lags_future_covariates"]
-            ]
+            if isinstance(list_lags_adj["lags_future_covariates"], dict):
+                for key in list_lags_adj["lags_future_covariates"]:
+                    list_lags_adj["lags_future_covariates"][key] = [
+                        lag_ - output_chunk_shift
+                        for lag_ in list_lags_adj["lags_future_covariates"][key]
+                    ]
+            else:
+                list_lags_adj["lags_future_covariates"] = [
+                    lag_ - output_chunk_shift
+                    for lag_ in list_lags_adj["lags_future_covariates"]
+                ]
         model_shift_adj = LinearRegressionModel(
             **list_lags_adj,
             output_chunk_shift=output_chunk_shift,

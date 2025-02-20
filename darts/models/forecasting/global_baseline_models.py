@@ -230,9 +230,11 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         # have to match the training sample
         pass
 
+    @property
     def supports_likelihood_parameter_prediction(self) -> bool:
         return False
 
+    @property
     def supports_probabilistic_prediction(self) -> bool:
         return False
 

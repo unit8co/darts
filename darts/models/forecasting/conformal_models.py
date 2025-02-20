@@ -8,6 +8,7 @@ A collection of conformal prediction models for pre-trained global forecasting m
 import copy
 import math
 import os
+import sys
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import Any, BinaryIO, Callable, Optional, Union
@@ -16,6 +17,11 @@ try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 import numpy as np
 import pandas as pd
@@ -1292,8 +1298,17 @@ class ConformalModel(GlobalForecastingModel, ABC):
             cp_hfcs.append(cp_preds)
         return cp_hfcs
 
+    def _clean(self) -> Self:
+        """Cleans the model and sub-model."""
+        cleaned_model = super()._clean()
+        cleaned_model.model = cleaned_model.model._clean()
+        return cleaned_model
+
     def save(
-        self, path: Optional[Union[str, os.PathLike, BinaryIO]] = None, **pkl_kwargs
+        self,
+        path: Optional[Union[str, os.PathLike, BinaryIO]] = None,
+        clean: bool = False,
+        **pkl_kwargs,
     ) -> None:
         """
         Saves the conformal model under a given path or file handle.
@@ -1327,6 +1342,13 @@ class ConformalModel(GlobalForecastingModel, ABC):
             the ensemble model is automatically saved under ``"{ConformalNaiveModel}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
             If the forecasting model is a `TorchForecastingModel`, two files (model object and checkpoint) are saved
             under ``"{path}.{ModelClass}.pt"`` and ``"{path}.{ModelClass}.ckpt"``.
+        clean
+            Whether to store a cleaned version of the model. If `True`, the training series and covariates are removed.
+            If the underlying forecasting `model` is a `TorchForecastingModel`, will additionally remove all Lightning
+            Trainer-related parameters.
+
+            Note: After loading a model stored with `clean=True`, a `series` must be passed 'predict()',
+            `historical_forecasts()` and other forecasting methods.
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """
@@ -1335,19 +1357,47 @@ class ConformalModel(GlobalForecastingModel, ABC):
             # default path
             path = self._default_save_path() + ".pkl"
 
-        super().save(path, **pkl_kwargs)
+        super().save(path, clean=clean, **pkl_kwargs)
 
         if TORCH_AVAILABLE and issubclass(type(self.model), TorchForecastingModel):
             path_tfm = f"{path}.{type(self.model).__name__}.pt"
-            self.model.save(path=path_tfm)
+            self.model.save(path=path_tfm, clean=clean)
 
     @staticmethod
-    def load(path: Union[str, os.PathLike, BinaryIO]) -> "ConformalModel":
+    def load(
+        path: Union[str, os.PathLike, BinaryIO],
+        pl_trainer_kwargs: Optional[dict] = None,
+        **kwargs,
+    ) -> "ConformalModel":
+        """
+        Loads a model from a given path or file handle.
+
+        Parameters
+        ----------
+        path
+            Path or file handle from which to load the model.
+        pl_trainer_kwargs
+            Only effective if the underlying forecasting model is a `TorchForecastingModel`.
+            Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
+            tasks (e.g. prediction).
+            Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
+            `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_
+            for more information about the supported kwargs.
+        **kwargs
+            Only effective if the underlying forecasting model is a `TorchForecastingModel`.
+            Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
+            For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
+            common/lightning_module.html#load-from-checkpoint>`_.
+        """
         model: ConformalModel = GlobalForecastingModel.load(path)
 
         if TORCH_AVAILABLE and issubclass(type(model.model), TorchForecastingModel):
             path_tfm = f"{path}.{type(model.model).__name__}.pt"
-            model.model = TorchForecastingModel.load(path_tfm)
+            model.model = TorchForecastingModel.load(
+                path_tfm,
+                pl_trainer_kwargs=pl_trainer_kwargs,
+                **kwargs,
+            )
         return model
 
     @abstractmethod
