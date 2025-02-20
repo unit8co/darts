@@ -1581,18 +1581,15 @@ class TimeSeries:
         """
         self._assert_univariate()
         self._assert_deterministic()
+
+        data = self._xa[:, 0, 0].values
+        index = self._time_index
+        name = self.components[0]
+
         if copy:
-            return pd.Series(
-                self._xa[:, 0, 0].values.copy(),
-                index=self._time_index.copy(),
-                name=self.components[0],
-            )
+            return pd.Series(data=data.copy(), index=index.copy(), name=name)
         else:
-            return pd.Series(
-                self._xa[:, 0, 0].values,
-                index=self._time_index,
-                name=self.components[0],
-            )
+            return pd.Series(data=data, index=index, name=name)
 
     def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
         """
@@ -1613,6 +1610,7 @@ class TimeSeries:
         pandas.DataFrame
             The Pandas DataFrame representation of this time series
         """
+
         if not self.is_deterministic:
             if not suppress_warnings:
                 logger.warning(
@@ -1628,32 +1626,20 @@ class TimeSeries:
                 "_s".join((comp_name, str(sample_id)))
                 for comp_name, sample_id in itertools.product(comp_name, samples)
             ]
+            data = self._xa.stack(data=(DIMS[1], DIMS[2]))
+            index = self._time_index
 
             if copy:
                 return pd.DataFrame(
-                    self._xa.stack(data=(DIMS[1], DIMS[2])).values.copy(),
-                    index=self._time_index.copy(),
-                    columns=df_col_names.copy(),
+                    data=data.copy(), index=index.copy(), columns=df_col_names.copy()
                 )
             else:
-                return pd.DataFrame(
-                    self._xa.stack(data=(DIMS[1], DIMS[2])).values,
-                    index=self._time_index,
-                    columns=df_col_names,
-                )
+                return pd.DataFrame(data=data, index=index, columns=df_col_names)
         else:
             if copy:
-                return pd.DataFrame(
-                    self._xa[:, :, 0].values.copy(),
-                    index=self._time_index.copy(),
-                    columns=self._xa.get_index(DIMS[1]).copy(),
-                )
+                return self._xa[:, :, 0].copy().to_pandas()
             else:
-                return pd.DataFrame(
-                    self._xa[:, :, 0].values,
-                    index=self._time_index,
-                    columns=self._xa.get_index(DIMS[1]),
-                )
+                return self._xa[:, :, 0].to_pandas()
 
     def quantile_df(self, quantile=0.5) -> pd.DataFrame:
         """
