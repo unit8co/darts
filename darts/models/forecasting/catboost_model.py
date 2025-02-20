@@ -210,6 +210,9 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             use_static_covariates=use_static_covariates,
         )
 
+        # if no loss provided, get the default loss from the model
+        self.kwargs["loss_function"] = self.model.get_params().get("loss_function")
+
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -411,5 +414,5 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
     def _supports_native_multioutput(self):
         # CatBoostRegressor supports multioutput natively, but only with the "MultiRMSE" loss function
         return CatBoostRegressor._is_multiregression_objective(
-            self.model.get_params().get("loss_function")
+            self.kwargs.get("loss_function")
         )
