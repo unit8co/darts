@@ -26,8 +26,8 @@ class StatsForecastAutoTheta(LocalForecastingModel):
         It is probabilistic, whereas :class:`FourTheta` is not.
 
         We refer to the `statsforecast AutoTheta documentation
-        <https://nixtla.github.io/statsforecast/models.html#autotheta>`_
-        for the documentation of the arguments.
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotheta>`_
+        for the exhaustive documentation of the arguments.
 
         Parameters
         ----------
@@ -36,22 +36,25 @@ class StatsForecastAutoTheta(LocalForecastingModel):
         autotheta_kwargs
             Keyword arguments for ``statsforecasts.models.AutoTheta``.
 
-            ..
-
         Examples
         --------
-        >>> from darts.models import StatsForecastAutoTheta
         >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import StatsForecastAutoTheta
         >>> series = AirPassengersDataset().load()
+        >>> # define StatsForecastAutoTheta parameters
         >>> model = StatsForecastAutoTheta(season_length=12)
-        >>> model.fit(series[:-36])
-        >>> pred = model.predict(36, num_samples=100)
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[442.94078295],
+               [432.22936898],
+               [495.30609727],
+               [482.30625563],
+               [487.49312172],
+               [555.57902659]])
         """
         super().__init__()
         self.model = SFAutoTheta(*autotheta_args, **autotheta_kwargs)
-
-    def __str__(self):
-        return "Auto-Theta-Statsforecasts"
 
     def fit(self, series: TimeSeries):
         super().fit(series)
@@ -67,6 +70,7 @@ class StatsForecastAutoTheta(LocalForecastingModel):
         n: int,
         num_samples: int = 1,
         verbose: bool = False,
+        show_warnings: bool = True,
     ):
         super().predict(n, num_samples)
         forecast_dict = self.model.predict(
@@ -83,11 +87,17 @@ class StatsForecastAutoTheta(LocalForecastingModel):
         return self._build_forecast_series(samples)
 
     @property
+    def supports_multivariate(self) -> bool:
+        return False
+
+    @property
     def min_train_series_length(self) -> int:
         return 10
 
+    @property
     def _supports_range_index(self) -> bool:
         return True
 
-    def _is_probabilistic(self) -> bool:
+    @property
+    def supports_probabilistic_prediction(self) -> bool:
         return True

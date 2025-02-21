@@ -3,13 +3,13 @@ Missing Values Filler
 ---------------------
 """
 
-from typing import List, Sequence, Union
+from collections.abc import Mapping
+from typing import Any, Union
 
 from darts import TimeSeries
+from darts.dataprocessing.transformers.base_data_transformer import BaseDataTransformer
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.utils.missing_values import fill_missing_values
-
-from .base_data_transformer import BaseDataTransformer
 
 logger = get_logger(__name__)
 
@@ -77,18 +77,12 @@ class MissingValuesFiller(BaseDataTransformer):
             "invalid string for `fill`: can only be set to 'auto'",
             logger,
         )
-
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
+        # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self._fill = fill
+        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
 
     @staticmethod
     def ts_transform(
-        series: TimeSeries, fill: Union[str, float], **kwargs
+        series: TimeSeries, params: Mapping[str, Any], **kwargs
     ) -> TimeSeries:
-        return fill_missing_values(series, fill, **kwargs)
-
-    def transform(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
-    ) -> Union[TimeSeries, List[TimeSeries]]:
-        # adding the fill param
-        return super().transform(series, self._fill, *args, **kwargs)
+        return fill_missing_values(series, params["fixed"]["_fill"], **kwargs)

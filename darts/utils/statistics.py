@@ -4,20 +4,28 @@ Time Series Statistics
 """
 
 import math
-from typing import List, Optional, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import argrelmax
 from scipy.stats import norm
-from statsmodels.tsa.seasonal import STL, seasonal_decompose
-from statsmodels.tsa.stattools import acf, adfuller, grangercausalitytests, kpss, pacf
+from statsmodels.compat.python import lzip
+from statsmodels.tsa.seasonal import MSTL, STL, seasonal_decompose
+from statsmodels.tsa.stattools import (
+    acf,
+    adfuller,
+    ccovf,
+    grangercausalitytests,
+    kpss,
+    pacf,
+)
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
-
-from .missing_values import fill_missing_values
-from .utils import ModelMode, SeasonalityMode
+from darts.utils.missing_values import fill_missing_values
+from darts.utils.utils import ModelMode, SeasonalityMode
 
 logger = get_logger(__name__)
 
@@ -123,11 +131,11 @@ def _bartlett_formula(r: np.ndarray, m: int, length: int) -> float:
 
 def extract_trend_and_seasonality(
     ts: TimeSeries,
-    freq: int = None,
+    freq: Union[int, Sequence[int]] = None,
     model: Union[SeasonalityMode, ModelMode] = ModelMode.MULTIPLICATIVE,
     method: str = "naive",
     **kwargs,
-) -> Tuple[TimeSeries, TimeSeries]:
+) -> tuple[TimeSeries, TimeSeries]:
     """
     Extracts trend and seasonality from a TimeSeries instance using `statsmodels.tsa`.
 
@@ -146,17 +154,21 @@ def extract_trend_and_seasonality(
         The method to be used to decompose the series.
         - "naive" : Seasonal decomposition using moving averages [1]_.
         - "STL" : Season-Trend decomposition using LOESS [2]_. Only compatible with ``ADDITIVE`` model type.
+        - "MSTL" : Season-Trend decomposition using LOESS with multiple seasonalities [3]_.
+        Only compatible with ``ADDITIVE`` model type.
     kwargs
         Other keyword arguments are passed down to the decomposition method.
+
     Returns
     -------
     Tuple[TimeSeries, TimeSeries]
         A tuple of (trend, seasonal) time series.
 
     References
-    -------
+    ----------
     .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html
     .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html
+    .. [3] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.MSTL.html
     """
 
     ts._assert_univariate()
@@ -165,13 +177,18 @@ def extract_trend_and_seasonality(
         f"Unknown value for model_mode: {model}.",
         logger,
     )
+
     raise_if_not(
         model is not SeasonalityMode.NONE,
         "The model must be either MULTIPLICATIVE or ADDITIVE.",
     )
 
-    if method == "naive":
+    raise_if(
+        isinstance(freq, Sequence) and method != "MSTL",
+        f"{method} decomposition cannot be performed with more than one seasonality, received {freq}.",
+    )
 
+    if method == "naive":
         decomp = seasonal_decompose(
             ts.pd_series(), period=freq, model=model.value, extrapolate_trend="freq"
         )
@@ -186,6 +203,19 @@ def extract_trend_and_seasonality(
         decomp = STL(
             endog=ts.pd_series(),
             period=freq,
+            **kwargs,
+        ).fit()
+
+    elif method == "MSTL":
+        raise_if_not(
+            model in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE],
+            f"Only ADDITIVE model is compatible with the MSTL method. Current model is {model}.",
+            logger,
+        )
+
+        decomp = MSTL(
+            endog=ts.pd_series(),
+            periods=freq,
             **kwargs,
         ).fit()
 
@@ -226,6 +256,7 @@ def remove_from_series(
         Must be ``from darts.utils.utils import ModelMode, SeasonalityMode`` Enums member.
         Either ``MULTIPLICATIVE`` or ``ADDITIVE``.
         Defaults ``ModelMode.MULTIPLICATIVE``.
+
     Returns
     -------
     TimeSeries
@@ -246,9 +277,7 @@ def remove_from_series(
     else:
         raise_log(
             ValueError(
-                "Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {}".format(
-                    model
-                )
+                f"Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {model}"
             )
         )
     return new_ts
@@ -282,10 +311,12 @@ def remove_seasonality(
         Defaults to "naive"
     kwargs
         Other keyword arguments are passed down to the decomposition method.
-     Returns
+
+    Returns
     -------
     TimeSeries
         A new TimeSeries instance that corresponds to the seasonality-adjusted 'ts'.
+
     References
     -------
     .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html
@@ -332,6 +363,7 @@ def remove_trend(
         Defaults to "naive"
     kwargs
         Other keyword arguments are passed down to the decomposition method.
+
     Returns
     -------
     TimeSeries
@@ -355,7 +387,6 @@ def stationarity_tests(
     p_value_threshold_adfuller: float = 0.05,
     p_value_threshold_kpss: float = 0.05,
 ) -> bool:
-
     """
     Double test on stationarity using both Kwiatkowski-Phillips-Schmidt-Shin and Augmented
     Dickey-Fuller statistical tests.
@@ -489,7 +520,6 @@ def granger_causality_tests(
     ts_effect: TimeSeries,
     maxlag: int,
     addconst: bool = True,
-    verbose: bool = True,
 ) -> None:
     """
     Provides four tests for granger non causality of 2 time series using
@@ -510,8 +540,6 @@ def granger_causality_tests(
         If an iterable, computes the tests only for the lags in maxlag.
     addconst
         Include a constant in the model.
-    verbose
-        Print results.
 
     Returns
     -------
@@ -561,7 +589,6 @@ def granger_causality_tests(
         ),
         maxlag,
         addconst,
-        verbose,
     )
 
 
@@ -571,13 +598,13 @@ def plot_acf(
     max_lag: int = 24,
     alpha: float = 0.05,
     bartlett_confint: bool = True,
-    fig_size: Tuple[int, int] = (10, 5),
+    fig_size: tuple[int, int] = (10, 5),
     axis: Optional[plt.axis] = None,
     default_formatting: bool = True,
 ) -> None:
     """
-    Plots the ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
-    Uses :func:`statsmodels.tsa.stattools.acf` [1]_
+    Plots the Autocorrelation Function (ACF) of `ts`, highlighting it at lag `m`, with corresponding significance
+    interval. Uses :func:`statsmodels.tsa.stattools.acf` [1]_
 
     Parameters
     ----------
@@ -591,16 +618,16 @@ def plot_acf(
         The confidence interval to display.
     bartlett_confint
         The boolean value indicating whether the confidence interval should be
-        calculated using Bartlett's formula. If set to True, the confidence interval
+        calculated using Bartlett's formula. If set to `True`, the confidence interval
         can be used in the model identification stage for fitting ARIMA models.
-        If set to False, the confidence interval can be used to test for randomness
+        If set to `False`, the confidence interval can be used to test for randomness
         (i.e. there is no time dependence in the data) of the data.
     fig_size
         The size of the figure to be displayed.
     axis
         Optionally, an axis object to plot the ACF on.
     default_formatting
-        Whether or not to use the darts default scheme.
+        Whether to use the darts default scheme.
 
     References
     ----------
@@ -637,9 +664,11 @@ def plot_acf(
         axis.plot(
             (i, i),
             (0, r[i]),
-            color=("#b512b8" if m is not None and i == m else "black")
-            if default_formatting
-            else None,
+            color=(
+                ("#b512b8" if m is not None and i == m else "black")
+                if default_formatting
+                else None
+            ),
             lw=(1 if m is not None and i == m else 0.5),
         )
 
@@ -667,13 +696,13 @@ def plot_pacf(
     max_lag: int = 24,
     method: str = "ywadjusted",
     alpha: float = 0.05,
-    fig_size: Tuple[int, int] = (10, 5),
+    fig_size: tuple[int, int] = (10, 5),
     axis: Optional[plt.axis] = None,
     default_formatting: bool = True,
 ) -> None:
     """
-    Plots the Partial ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
-    Uses :func:`statsmodels.tsa.stattools.pacf` [1]_
+    Plots the Partial Autocorrelation Function (PACF) of `ts`, highlighting it at lag `m`, with corresponding
+    significance interval. Uses :func:`statsmodels.tsa.stattools.pacf` [1]_
 
     Parameters
     ----------
@@ -704,7 +733,7 @@ def plot_pacf(
     axis
         Optionally, an axis object to plot the ACF on.
     default_formatting
-        Whether or not to use the darts default scheme.
+        Whether to use the darts default scheme.
 
     References
     ----------
@@ -762,12 +791,132 @@ def plot_pacf(
     axis.plot((0, max_lag + 1), (0, 0), color="black" if default_formatting else None)
 
 
+def plot_ccf(
+    ts: TimeSeries,
+    ts_other: TimeSeries,
+    m: Optional[int] = None,
+    max_lag: int = 24,
+    alpha: float = 0.05,
+    bartlett_confint: bool = True,
+    fig_size: tuple[int, int] = (10, 5),
+    axis: Optional[plt.axis] = None,
+    default_formatting: bool = True,
+) -> None:
+    """
+    Plots the Cross Correlation Function (CCF) between `ts` and `ts_other`, highlighting it at lag `m`, with
+    corresponding significance interval. Uses :func:`statsmodels.tsa.stattools.ccf` [1]_
+
+    This can be used to find the cross correlation between the target and different covariates lags.
+    If `ts_other` is identical `ts`, it corresponds to `plot_acf()`.
+
+    Parameters
+    ----------
+    ts
+        The TimeSeries whose CCF with `ts_other` should be plotted.
+    ts_other
+        The TimeSeries which to compare against `ts` in the CCF. E.g. check the cross correlation of different
+        covariate lags with the target.
+    m
+        Optionally, a time lag to highlight on the plot.
+    max_lag
+        The maximal lag order to consider.
+    alpha
+        The confidence interval to display.
+    bartlett_confint
+        The boolean value indicating whether the confidence interval should be
+        calculated using Bartlett's formula.
+    fig_size
+        The size of the figure to be displayed.
+    axis
+        Optionally, an axis object to plot the CCF on.
+    default_formatting
+        Whether to use the darts default scheme.
+
+    References
+    ----------
+    .. [1] https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.ccf.html
+    """
+
+    ts._assert_univariate()
+    ts_other._assert_univariate()
+    raise_if(
+        max_lag is None or not (1 <= max_lag < len(ts)),
+        "max_lag must be greater than or equal to 1 and less than len(ts).",
+    )
+    raise_if(
+        m is not None and not (0 <= m <= max_lag),
+        "m must be greater than or equal to 0 and less than or equal to max_lag.",
+    )
+    raise_if(
+        alpha is None or not (0 < alpha < 1),
+        "alpha must be greater than 0 and less than 1.",
+    )
+    ts_other = ts_other.slice_intersect(ts)
+    if len(ts_other) != len(ts):
+        raise_log(
+            ValueError("`ts_other` must contain at least the full time index of `ts`."),
+            logger=logger,
+        )
+
+    x = ts.values()
+    y = ts_other.values()
+    cvf = ccovf(x=x, y=y, adjusted=True, demean=True, fft=False)
+
+    ccf = cvf / (np.std(x) * np.std(y))
+    ccf = ccf[: max_lag + 1]
+
+    n_obs = len(x)
+    if bartlett_confint:
+        varccf = np.ones_like(ccf) / n_obs
+        varccf[0] = 0
+        varccf[1] = 1.0 / n_obs
+        varccf[2:] *= 1 + 2 * np.cumsum(ccf[1:-1] ** 2)
+    else:
+        varccf = 1.0 / n_obs
+
+    interval = norm.ppf(1.0 - alpha / 2.0) * np.sqrt(varccf)
+    confint = np.array(lzip(ccf - interval, ccf + interval))
+
+    if axis is None:
+        plt.figure(figsize=fig_size)
+        axis = plt
+
+    for i in range(len(ccf)):
+        axis.plot(
+            (i, i),
+            (0, ccf[i]),
+            color=(
+                ("#b512b8" if m is not None and i == m else "black")
+                if default_formatting
+                else None
+            ),
+            lw=(1 if m is not None and i == m else 0.5),
+        )
+
+    # Adjusts the upper band of the confidence interval to center it on the x axis.
+    upp_band = [confint[lag][1] - ccf[lag] for lag in range(1, max_lag + 1)]
+
+    # Setting color t0 None overrides custom settings
+    extra_arguments = {}
+    if default_formatting:
+        extra_arguments["color"] = "#003DFD"
+
+    axis.fill_between(
+        np.arange(1, max_lag + 1),
+        upp_band,
+        [-x for x in upp_band],
+        alpha=0.25 if default_formatting else None,
+        **extra_arguments,
+    )
+    axis.plot((0, max_lag + 1), (0, 0), color="black" if default_formatting else None)
+
+
 def plot_hist(
-    data: Union[TimeSeries, List[float], np.ndarray],
-    bins: Optional[Union[int, np.ndarray, List[float]]] = None,
+    data: Union[TimeSeries, list[float], np.ndarray],
+    bins: Optional[Union[int, np.ndarray, list[float]]] = None,
     density: bool = False,
     title: Optional[str] = None,
-    fig_size: Optional[Tuple[int, int]] = None,
+    fig_size: Optional[tuple[int, int]] = None,
     ax: Optional[plt.axis] = None,
 ) -> None:
     """This function plots the histogram of values in a TimeSeries instance or an array-like.
@@ -786,7 +935,7 @@ def plot_hist(
         Optionally, either an integer value for the number of bins to be displayed
         or an array-like of floats determining the position of bins.
     density
-        bool, if `density` is set to True, the bin counts will be converted to probability density
+        bool, if `density` is set to `True`, the bin counts will be converted to probability density
     title
         The title of the figure to be displayed
     fig_size
@@ -852,13 +1001,14 @@ def plot_residuals_analysis(
     num_bins: int = 20,
     fill_nan: bool = True,
     default_formatting: bool = True,
+    acf_max_lag: int = 24,
 ) -> None:
     """Plots data relevant to residuals.
 
     This function takes a univariate TimeSeries instance of residuals and plots their values,
     their distribution and their ACF.
     Please note that if the residual TimeSeries instance contains NaN values, the plots
-    might be displayed incorrectly. If `fill_nan` is set to True, the missing values will
+    might be displayed incorrectly. If `fill_nan` is set to `True`, the missing values will
     be interpolated.
 
     Parameters
@@ -870,7 +1020,9 @@ def plot_residuals_analysis(
     fill_nan
         A boolean value indicating whether NaN values should be filled in the residuals.
     default_formatting
-        Whether or not to use the darts default scheme.
+        Whether to use the darts default scheme.
+    acf_max_lag
+        The maximum lag to be displayed in the ACF plot. Must be less than residuals length.
     """
 
     residuals._assert_univariate()
@@ -888,11 +1040,13 @@ def plot_residuals_analysis(
     ax1.set_title("Residual values")
 
     # plot histogram and distribution
-    res_mean, res_std = np.mean(residuals.univariate_values()), np.std(
-        residuals.univariate_values()
+    res_mean, res_std = (
+        np.mean(residuals.univariate_values()),
+        np.std(residuals.univariate_values()),
     )
-    res_min, res_max = min(residuals.univariate_values()), max(
-        residuals.univariate_values()
+    res_min, res_max = (
+        min(residuals.univariate_values()),
+        max(residuals.univariate_values()),
     )
     x = np.linspace(res_min, res_max, 100)
     ax2 = fig.add_subplot(gs[1:, 1:])
@@ -910,8 +1064,11 @@ def plot_residuals_analysis(
     ax2.set_xlabel("value")
 
     # plot ACF
+    acf_max_lag = min(acf_max_lag, len(residuals) - 1)
     ax3 = fig.add_subplot(gs[1:, :1])
-    plot_acf(residuals, axis=ax3, default_formatting=default_formatting)
+    plot_acf(
+        residuals, axis=ax3, default_formatting=default_formatting, max_lag=acf_max_lag
+    )
     ax3.set_ylabel("ACF value")
     ax3.set_xlabel("lag")
     ax3.set_title("ACF")

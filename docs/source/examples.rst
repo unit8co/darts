@@ -76,6 +76,25 @@ with Darts using the Optuna library for hyperparameter optimization.
 
    examples/17-hyperparameter-optimization.ipynb
 
+Regression Models
+=================
+
+Regression models example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/20-RegressionModel-examples.ipynb
+
+Conformal Prediction
+=================
+
+Conformal prediction example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/23-Conformal-Prediction-examples.ipynb
 
 Fast Fourier Transform
 ======================
@@ -157,6 +176,36 @@ TFT model example notebook:
 
    examples/13-TFT-examples.ipynb
 
+TimeSeries Dense Encoder (TiDE) Model
+=======================================
+
+TiDE model example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/18-TiDE-examples.ipynb
+
+TimeSeries Mixer (TSMixer) Model
+=======================================
+
+TSMixer model example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/21-TSMixer-examples.ipynb
+
+Ensemble Models
+=============================
+
+Ensemble models example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/19-EnsembleModel-examples.ipynb
+
 Kalman Filter Model
 ===================
 
@@ -176,6 +225,16 @@ Gaussian process filter model example notebook:
    :maxdepth: 1
 
    examples/11-GP-filter-examples.ipynb
+
+Anomaly Detection
+=======================================
+
+Anomaly detection example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/22-anomaly-detection-examples.ipynb
 
 Dynamic Time Warping (DTW)
 =============================

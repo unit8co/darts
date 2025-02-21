@@ -3,7 +3,7 @@ Exponential Smoothing
 ---------------------
 """
 
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
@@ -24,9 +24,9 @@ class ExponentialSmoothing(LocalForecastingModel):
         seasonal: Optional[SeasonalityMode] = SeasonalityMode.ADDITIVE,
         seasonal_periods: Optional[int] = None,
         random_state: int = 0,
+        kwargs: Optional[dict[str, Any]] = None,
         **fit_kwargs,
     ):
-
         """Exponential Smoothing
 
         This is a wrapper around
@@ -61,11 +61,34 @@ class ExponentialSmoothing(LocalForecastingModel):
         seasonal_periods
             The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
             data with a weekly cycle. If not set, inferred from frequency of the series.
+        kwargs
+            Some optional keyword arguments that will be used to call
+            :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing()`.
+            See `the documentation
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`_.
         fit_kwargs
             Some optional keyword arguments that will be used to call
             :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()`.
             See `the documentation
             <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.fit.html>`_.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import ExponentialSmoothing
+        >>> from darts.utils.utils import ModelMode, SeasonalityMode
+        >>> series = AirPassengersDataset().load()
+        >>> # using Holt's exponential smoothing
+        >>> model = ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=SeasonalityMode.MULTIPLICATIVE)
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[445.24283838],
+               [418.22618932],
+               [465.31305075],
+               [494.95129261],
+               [505.4770514 ],
+               [573.31519186]])
         """
         super().__init__()
         self.trend = trend
@@ -73,15 +96,10 @@ class ExponentialSmoothing(LocalForecastingModel):
         self.seasonal = seasonal
         self.infer_seasonal_periods = seasonal_periods is None
         self.seasonal_periods = seasonal_periods
+        self.constructor_kwargs = dict() if kwargs is None else kwargs
         self.fit_kwargs = fit_kwargs
         self.model = None
         np.random.seed(random_state)
-
-    def __str__(self):
-        return (
-            f"ExponentialSmoothing(trend={self.trend}, damped={self.damped}, "
-            f"seasonal={self.seasonal}, seasonal_periods={self.seasonal_periods}"
-        )
 
     def fit(self, series: TimeSeries):
         super().fit(series)
@@ -108,6 +126,7 @@ class ExponentialSmoothing(LocalForecastingModel):
             seasonal_periods=seasonal_periods_param,
             freq=series.freq if series.has_datetime_index else None,
             dates=series.time_index if series.has_datetime_index else None,
+            **self.constructor_kwargs,
         )
         hw_results = hw_model.fit(**self.fit_kwargs)
         self.model = hw_results
@@ -117,7 +136,13 @@ class ExponentialSmoothing(LocalForecastingModel):
 
         return self
 
-    def predict(self, n, num_samples=1, verbose: bool = False):
+    def predict(
+        self,
+        n: int,
+        num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
+    ):
         super().predict(n, num_samples)
 
         if num_samples == 1:
@@ -129,7 +154,12 @@ class ExponentialSmoothing(LocalForecastingModel):
 
         return self._build_forecast_series(forecast)
 
-    def _is_probabilistic(self) -> bool:
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
+
+    @property
+    def supports_probabilistic_prediction(self) -> bool:
         return True
 
     @property

@@ -19,7 +19,7 @@ We distinguish univariate from multivariate series:
 
 Sometimes the dimensions are called *components*. A single `TimeSeries` object can be either univariate (if it has a single component), or multivariate (if it has multiple components). In a multivariate series, all components share the same time axis. I.e., they all share the same time stamps.
 
-Some models in Darts (and all machine learning models) support multivariate series. This means that they can take multivariate series in inputs (either as targets or as covariates), and the forecasts they produce will have a dimensionality matching that of the targets. 
+Some models in Darts (and all machine learning models) support multivariate series. This means that they can take multivariate series in inputs (either as targets or as covariates), and the forecasts they produce will have a dimensionality matching that of the targets.
 
 In addition, some models can work on *multiple time series*, meaning that they can be trained on multiple `TimeSeries` objects, and used to forecasts multiple `TimeSeries` objects in one go. This is sometimes referred to as panel data. In such cases, the different `TimeSeries` need not share the same time index -- for instance, some series might be in 1990 and others in 2000. In fact, the series need not even have the same frequency. The models handling multiple series expect Python `Sequence`s of `TimeSeries` in inputs (for example, a simple list of `TimeSeries`).
 

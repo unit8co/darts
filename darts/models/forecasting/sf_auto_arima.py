@@ -32,15 +32,13 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
         It is probabilistic, whereas :class:`AutoARIMA` is not.
 
         We refer to the `statsforecast AutoARIMA documentation
-        <https://nixtla.github.io/statsforecast/models.html#arima-methods>`_
-        for the documentation of the arguments.
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoarima>`_
+        for the exhaustive documentation of the arguments.
 
         Parameters
         ----------
         autoarima_args
             Positional arguments for ``statsforecasts.models.AutoARIMA``.
-        autoarima_kwargs
-            Keyword arguments for ``statsforecasts.models.AutoARIMA``.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -53,29 +51,43 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'future': ['relative']},
-                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
-                    'transformer': Scaler()
+                    'custom': {'future': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
+        autoarima_kwargs
+            Keyword arguments for ``statsforecasts.models.AutoARIMA``.
 
         Examples
         --------
-        >>> from darts.models import StatsForecastAutoARIMA
         >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import StatsForecastAutoARIMA
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
         >>> series = AirPassengersDataset().load()
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
+        >>> # define StatsForecastAutoARIMA parameters
         >>> model = StatsForecastAutoARIMA(season_length=12)
-        >>> model.fit(series[:-36])
-        >>> pred = model.predict(36, num_samples=100)
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6, future_covariates=future_cov)
+        >>> pred.values()
+        array([[450.55179949],
+               [415.00597806],
+               [454.61353249],
+               [486.51218795],
+               [504.09229632],
+               [555.06463942]])
         """
         super().__init__(add_encoders=add_encoders)
         self.model = SFAutoARIMA(*autoarima_args, **autoarima_kwargs)
-
-    def __str__(self):
-        return "Auto-ARIMA-Statsforecasts"
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
@@ -110,11 +122,17 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
         return self._build_forecast_series(samples)
 
     @property
+    def supports_multivariate(self) -> bool:
+        return False
+
+    @property
     def min_train_series_length(self) -> int:
         return 10
 
+    @property
     def _supports_range_index(self) -> bool:
         return True
 
-    def _is_probabilistic(self) -> bool:
+    @property
+    def supports_probabilistic_prediction(self) -> bool:
         return True

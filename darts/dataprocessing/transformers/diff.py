@@ -1,12 +1,21 @@
-from typing import Any, Iterator, Sequence, Tuple, Union
+"""
+Differencing Transformer
+------------------------
+"""
+
+from collections.abc import Mapping, Sequence
+from typing import Any, Union
 
 import numpy as np
 
+from darts.dataprocessing.transformers.fittable_data_transformer import (
+    FittableDataTransformer,
+)
+from darts.dataprocessing.transformers.invertible_data_transformer import (
+    InvertibleDataTransformer,
+)
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.timeseries import TimeSeries
-
-from .fittable_data_transformer import FittableDataTransformer
-from .invertible_data_transformer import InvertibleDataTransformer
 
 logger = get_logger(__name__)
 
@@ -100,19 +109,21 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         .. [3] https://otexts.com/fpp2/stationarity.html#second-order-differencing
 
         """
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
+
         if not isinstance(lags, Sequence):
             lags = (lags,)
+        # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self._lags = lags
         self._dropna = dropna
-
-    def _fit_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, Sequence[int], int]]:
-        return ((ts, self._lags, self._dropna) for ts in series)
+        # Don't automatically apply `component_mask` - need to throw error when `dropna = True`
+        # and `component_mask` is specified:
+        super().__init__(
+            name=name, n_jobs=n_jobs, verbose=verbose, mask_components=False
+        )
 
     @staticmethod
-    def ts_fit(series: TimeSeries, lags: Sequence[int], dropna, **kwargs) -> Any:
+    def ts_fit(series: TimeSeries, params: Mapping[str, Any], **kwargs) -> Any:
+        lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
         lags_sum = sum(lags)
         raise_if(
             series.n_timesteps <= lags_sum,
@@ -121,9 +132,10 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 f"to difference with lags {lags}; series only has "
                 f"{series.n_timesteps} timesteps."
             ),
+            logger,
         )
         component_mask = Diff._get_component_mask(kwargs, dropna)
-        vals = Diff._reshape_in(series, component_mask, flatten=False)
+        vals = Diff.apply_component_mask(series, component_mask, return_ts=False)
         # First `lags_sum` values of time series will be 'lost' due to differencing;
         # need to remember these values to 'undifference':
         start_vals = vals[:lags_sum, :, :]
@@ -136,51 +148,35 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             cutoff += lag
         return start_vals, component_mask, series.start_time(), series.freq
 
-    def _transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, Sequence[int], bool]]:
-        return ((subseries, self._lags, self._dropna) for subseries in series)
-
     @staticmethod
     def ts_transform(
-        series: TimeSeries, lags: Sequence[int], dropna: bool, **kwargs
+        series: TimeSeries, params: Mapping[str, Any], **kwargs
     ) -> TimeSeries:
+        lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
         component_mask = Diff._get_component_mask(kwargs, dropna)
-        diffed = series.copy()
-        if component_mask is not None:
-            diffed = diffed.drop_columns(series.columns[~component_mask])
+        diffed = Diff.apply_component_mask(series, component_mask, return_ts=True)
         for lag in lags:
             diffed = diffed.diff(n=1, periods=lag, dropna=dropna)
-        if component_mask is not None:
-            # Add back masked (i.e. undifferenced) components:
-            diffed = Diff._reshape_out(
-                series, diffed.all_values(), component_mask, flatten=False
-            )
-            diffed = series.with_values(diffed)
-        return diffed
-
-    def _inverse_transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, float]]:
-        lags = (self._lags for _ in range(len(series)))
-        dropna = (self._dropna for _ in range(len(series)))
-        return zip(series, lags, dropna, self._fitted_params)
+        # `series` needs same `n_timesteps` as `diffed` for `unapply_component_mask`
+        if dropna:
+            series = series.drop_before(sum(lags) - 1)
+        return Diff.unapply_component_mask(series, diffed, component_mask)
 
     @staticmethod
     def ts_inverse_transform(
         series: TimeSeries,
-        lags: Sequence[int],
-        dropna: bool,
-        fitted_params: Tuple[np.ndarray, np.ndarray, int, int],
+        params: Mapping[str, Any],
         **kwargs,
     ) -> TimeSeries:
-        start_vals, fit_component_mask, start_time, freq = fitted_params
+        lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
+        start_vals, fit_component_mask, start_time, freq = params["fitted"]
         raise_if_not(
             series.freq == freq,
             (
                 f"Series is of frequency {series.freq}, but "
                 f"transform was fitted to data of frequency {freq}."
             ),
+            logger,
         )
         # Start dates 'missing' from differenced series if dropna = True, so need to shift forward:
         expected_start = start_time + sum(lags) * series.freq if dropna else start_time
@@ -190,6 +186,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 f"Expected series to begin at time {expected_start}; "
                 f"instead, it begins at time {series.start_time()}."
             ),
+            logger,
         )
         component_mask = Diff._get_component_mask(kwargs, dropna)
         raise_if_not(
@@ -198,18 +195,20 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 "Provided `component_mask` does not match "
                 "`component_mask` specified when `fit` was called."
             ),
+            logger,
         )
         if dropna:
             nan_shape = (sum(lags), series.n_components, series.n_samples)
             nan_vals = np.full(nan_shape, fill_value=np.nan)
             series = series.prepend_values(nan_vals)
-        vals = Diff._reshape_in(series, component_mask, flatten=False)
+        vals = Diff.apply_component_mask(series, component_mask, return_ts=False)
         raise_if_not(
             vals.shape[1] == start_vals.shape[1],
             (
                 f"Expected series to have {start_vals.shape[1]} components; "
                 f"instead, it has {vals.shape[1]}."
             ),
+            logger,
         )
         raise_if_not(
             vals.shape[2] == start_vals.shape[2],
@@ -217,6 +216,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 f"Expected series to have {start_vals.shape[2]} samples; "
                 f"instead, it has {vals.shape[2]}."
             ),
+            logger,
         )
         cutoff = sum(lags)
         for lag in reversed(lags):
@@ -226,7 +226,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             for i in range(lag):
                 to_undiff[i::lag, :, :] = np.cumsum(to_undiff[i::lag, :, :], axis=0)
             vals[cutoff:, :, :] = to_undiff
-        vals = Diff._reshape_out(series, vals, component_mask, flatten=False)
+        vals = Diff.unapply_component_mask(series, vals, component_mask)
         return series.with_values(vals)
 
     @staticmethod
@@ -234,6 +234,11 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         component_mask = kwargs.get("component_mask", None)
         raise_if(
             dropna and (component_mask is not None),
-            "Cannot specify `component_mask` with `dropna = True`.",
+            (
+                "Cannot specify `component_mask` with `dropna = True`, "
+                "since differenced and undifferenced components will be "
+                "of different lengths."
+            ),
+            logger,
         )
         return component_mask

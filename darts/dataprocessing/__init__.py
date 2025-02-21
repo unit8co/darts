@@ -3,4 +3,6 @@ Data Processing
 ---------------
 """
 
-from .pipeline import Pipeline
+from darts.dataprocessing.pipeline import Pipeline
+
+__all__ = ["Pipeline"]

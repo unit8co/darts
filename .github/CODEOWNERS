@@ -5,7 +5,7 @@
 # the repo. Unless a later match takes precedence,
 # @global-owner1 and @global-owner2 will be requested for
 # review when someone opens a pull request.
-*       @hrzn @dennisbader @brunnedu
+*       @dennisbader @madtoinou @hrzn
 
 # Custom CODEOWNERS can be set up for branches with specific
 # patterns, you can find more info here:

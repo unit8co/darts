@@ -3,7 +3,7 @@ Fast Fourier Transform
 ----------------------
 """
 
-from typing import Optional
+from typing import Callable, Optional
 
 import numpy as np
 import pandas as pd
@@ -105,7 +105,7 @@ def _find_relevant_timestamp_attributes(series: TimeSeries) -> set:
         # check for yearly seasonality
         if _check_approximate_seasonality(series, 12, 1, 0):
             relevant_attributes.add("month")
-    elif type(series.freq) == pd.tseries.offsets.Day:
+    elif type(series.freq) is pd.tseries.offsets.Day:
         # check for yearly seasonality
         if _check_approximate_seasonality(series, 365, 5, 20):
             relevant_attributes.update({"month", "day"})
@@ -115,7 +115,7 @@ def _find_relevant_timestamp_attributes(series: TimeSeries) -> set:
         # check for weekly seasonality
         elif _check_approximate_seasonality(series, 7, 0, 0):
             relevant_attributes.add("weekday")
-    elif type(series.freq) == pd.tseries.offsets.Hour:
+    elif type(series.freq) is pd.tseries.offsets.Hour:
         # check for yearly seasonality
         if _check_approximate_seasonality(series, 8760, 100, 100):
             relevant_attributes.update({"month", "day", "hour"})
@@ -128,7 +128,7 @@ def _find_relevant_timestamp_attributes(series: TimeSeries) -> set:
         # check for daily seasonality
         elif _check_approximate_seasonality(series, 24, 1, 1):
             relevant_attributes.add("hour")
-    elif type(series.freq) == pd.tseries.offsets.Minute:
+    elif type(series.freq) is pd.tseries.offsets.Minute:
         # check for daily seasonality
         if _check_approximate_seasonality(series, 1440, 20, 50):
             relevant_attributes.update({"hour", "minute"})
@@ -238,7 +238,7 @@ class FFT(LocalForecastingModel):
             pd.Timestamp attributes that are relevant for the seasonality automatically.
         trend
             If set, indicates what kind of detrending will be applied before performing DFT.
-            Possible values: 'poly' or 'exp', for polynomial trend, or exponential trend, respectively.
+            Possible values: 'poly', 'exp' or None, for polynomial trend, exponential trend or no trend, respectively.
         trend_poly_degree
             The degree of the polynomial that will be used for detrending, if `trend='poly'`.
 
@@ -253,6 +253,31 @@ class FFT(LocalForecastingModel):
         global trend, and do not perform any frequency filtering:
 
         >>> FFT(required_matches={'month'}, trend='exp')
+
+        Simple usage example, using one of the dataset available in darts
+
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import FFT
+        >>> series = AirPassengersDataset().load()
+        >>> # increase the number of frequency and use a polynomial trend of degree 2
+        >>> model = FFT(
+        >>>     nr_freqs_to_keep=20,
+        >>>     trend= "poly",
+        >>>     trend_poly_degree=2
+        >>> )
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[471.79323146],
+               [494.6381425 ],
+               [504.5659999 ],
+               [515.82463265],
+               [520.59404623],
+               [547.26720705]])
+
+        .. note::
+            `FFT example notebook <https://unit8co.github.io/darts/examples/03-FFT-examples.html>`_ presents techniques
+            that can be used to improve the forecasts quality compared to this simple usage example.
         """
         super().__init__()
         self.nr_freqs_to_keep = nr_freqs_to_keep
@@ -260,14 +285,23 @@ class FFT(LocalForecastingModel):
         self.trend = trend
         self.trend_poly_degree = trend_poly_degree
 
-    def __str__(self):
-        return (
-            "FFT(nr_freqs_to_keep="
-            + str(self.nr_freqs_to_keep)
-            + ", trend="
-            + str(self.trend)
-            + ")"
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
+
+    def _exp_trend(self, x) -> Callable:
+        """Helper function, used to make FFT model pickable."""
+        return np.exp(self.trend_coefficients[1]) * np.exp(
+            self.trend_coefficients[0] * x
         )
+
+    def _poly_trend(self, trend_coefficients) -> Callable:
+        """Helper function, for consistency with the other trends"""
+        return np.poly1d(trend_coefficients)
+
+    def _null_trend(self, x) -> Callable:
+        """Helper function, used to make FFT model pickable."""
+        return 0
 
     def fit(self, series: TimeSeries):
         series = fill_missing_values(series)
@@ -277,19 +311,18 @@ class FFT(LocalForecastingModel):
 
         # determine trend
         if self.trend == "poly":
-            trend_coefficients = np.polyfit(
+            self.trend_coefficients = np.polyfit(
                 range(len(series)), series.univariate_values(), self.trend_poly_degree
             )
-            self.trend_function = np.poly1d(trend_coefficients)
+            self.trend_function = self._poly_trend(self.trend_coefficients)
         elif self.trend == "exp":
-            trend_coefficients = np.polyfit(
+            self.trend_coefficients = np.polyfit(
                 range(len(series)), np.log(series.univariate_values()), 1
             )
-            self.trend_function = lambda x: np.exp(trend_coefficients[1]) * np.exp(
-                trend_coefficients[0] * x
-            )
+            self.trend_function = self._exp_trend
         else:
-            self.trend_function = lambda x: 0
+            self.trend_coefficients = None
+            self.trend_function = self._null_trend
 
         # subtract trend
         detrended_values = series.univariate_values() - self.trend_function(
@@ -323,7 +356,7 @@ class FFT(LocalForecastingModel):
         ]
 
         # set all other values in the frequency domain to 0
-        self.fft_values_filtered = np.zeros(len(self.fft_values), dtype=np.complex_)
+        self.fft_values_filtered = np.zeros(len(self.fft_values), dtype=np.complex128)
         self.fft_values_filtered[self.filtered_indices] = self.fft_values[
             self.filtered_indices
         ]
@@ -333,12 +366,18 @@ class FFT(LocalForecastingModel):
 
         return self
 
-    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
+    def predict(
+        self,
+        n: int,
+        num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
+    ):
         super().predict(n, num_samples)
-        trend_forecast = np.array(
-            [self.trend_function(i + len(self.training_series)) for i in range(n)]
-        )
-        periodic_forecast = np.array(
-            [self.predicted_values[i % len(self.predicted_values)] for i in range(n)]
-        )
+        trend_forecast = np.array([
+            self.trend_function(i + len(self.training_series)) for i in range(n)
+        ])
+        periodic_forecast = np.array([
+            self.predicted_values[i % len(self.predicted_values)] for i in range(n)
+        ])
         return self._build_forecast_series(periodic_forecast + trend_forecast)

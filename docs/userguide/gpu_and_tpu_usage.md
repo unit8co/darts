@@ -66,9 +66,9 @@ IPU available: False, using: 0 IPUs
 
   | Name      | Type    | Params
 --------------------------------------
-0 | criterion | MSELoss | 0     
-1 | rnn       | RNN     | 460   
-2 | V         | Linear  | 21    
+0 | criterion | MSELoss | 0
+1 | rnn       | RNN     | 460
+2 | V         | Linear  | 21
 --------------------------------------
 481       Trainable params
 0         Non-trainable params
@@ -105,9 +105,9 @@ LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
 
   | Name      | Type    | Params
 --------------------------------------
-0 | criterion | MSELoss | 0     
-1 | rnn       | RNN     | 460   
-2 | V         | Linear  | 21    
+0 | criterion | MSELoss | 0
+1 | rnn       | RNN     | 460
+2 | V         | Linear  | 21
 --------------------------------------
 481       Trainable params
 0         Non-trainable params
@@ -119,6 +119,44 @@ Epoch 299: 100% 8/8 [00:00<00:00, 39.81it/s, loss=0.00285, v_num=logs]
 ```
 
 From the output we can see that the GPU is both available and used. The rest of the code doesn't require any change, i.e. it's irrelevant if we are using a GPU or CPU.
+
+### Multi GPU support
+
+Darts utilizes [Lightning's multi GPU capabilities](https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html) to be able to capitalize on scalable hardware.
+
+Multiple parallelization strategies exist for multiple GPU training, which - because of different strategies for multiprocessing and data handling - interact strongly with the execution environment.
+
+Currently in Darts the `ddp_spawn` distribution strategy is tested.
+
+As per the description of the [Lightning documentation](https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html#distributed-data-parallel-spawn) has some noteworthy limitations, eg. it __can not run__ in:
+
+- Jupyter Notebook, Google COLAB, Kaggle, etc.
+
+- In case you have a nested script without a root package
+
+This in practice means, that execution has to happen in a separate `.py` script, that has the following general context around the code executing the training:
+
+```python
+import torch
+
+if __name__ == '__main__':
+
+    torch.multiprocessing.freeze_support()
+```
+
+The __main__ pattern is necessary (see [this](https://pytorch.org/docs/stable/notes/windows.html#multiprocessing-error-without-if-clause-protection)) even when your execution __does not__ happen in a windows environment.
+
+Beyond this, no other major modification to your models is necessary other than allowing multi GPU training in the `pl_trainer_args` for example like
+
+`pl_trainer_kwargs = {"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`
+
+This method automatically selects all available GPUs for training. Manual setting of the number of devices is also possible.
+
+The `ddp` family of strategies creates individual subprocesses for each GPU, so contents of the memory (notably the `Dataloder`) gets copied over. Thus, as per the [description of lightning docs](https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html#distributed-data-parallel) caution is advised in setting the `Dataloader(num_workers=N)` too high, since according to it:
+
+"Dataloader(num_workers=N), where N is large, bottlenecks training with DDP… ie: it will be VERY slow or won’t work at all. This is a PyTorch limitation."
+
+Usage of other distribution strategies with Darts currently _might_ very well work, but are yet untested and subject to individual setup / experimentation.
 
 ## Use a TPU
 
@@ -159,9 +197,9 @@ IPU available: False, using: 0 IPUs
 
   | Name      | Type    | Params
 --------------------------------------
-0 | criterion | MSELoss | 0     
-1 | rnn       | RNN     | 460   
-2 | V         | Linear  | 21    
+0 | criterion | MSELoss | 0
+1 | rnn       | RNN     | 460
+2 | V         | Linear  | 21
 --------------------------------------
 481       Trainable params
 0         Non-trainable params

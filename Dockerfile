@@ -1,20 +1,19 @@
-FROM jupyter/base-notebook:python-3.9.5
+FROM python:3.10
 
-RUN conda update --all -y --quiet \
- && conda install -c conda-forge ipywidgets -y --quiet \
- && conda clean --all -f -y
+# install python requirements before copying the rest of the files
+# this way we can cache the requirements and not have to reinstall them
+COPY requirements/ /app/requirements/
+RUN pip install -r /app/requirements/dev-all.txt
 
-USER root
+# copy local files
+COPY . /app
 
-# to build pystan
-RUN apt-get update \
- && apt-get -y install build-essential \
- && apt-get clean && rm -rf /var/lib/apt/lists/*
+# set work directory
+WORKDIR /app
 
-USER $NB_USER
+# install darts
+RUN pip install -e .
 
-ADD . /home/jovyan/work
-
-WORKDIR /home/jovyan/work
-
-RUN pip install .
+# assuming you are working from inside your darts directory:
+# docker build . -t darts-test:latest
+# docker run -it -v $(pwd)/:/app/ darts-test:latest bash

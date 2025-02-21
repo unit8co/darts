@@ -7,10 +7,11 @@ CatBoost based regression model.
 This implementation comes with the ability to produce probabilistic forecasts.
 """
 
-from typing import List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
-from catboost import CatBoostRegressor
+from catboost import CatBoostRegressor, Pool
 
 from darts.logging import get_logger
 from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
@@ -23,14 +24,16 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
     def __init__(
         self,
         lags: Union[int, list] = None,
-        lags_past_covariates: Union[int, List[int]] = None,
-        lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
+        lags_past_covariates: Union[int, list[int]] = None,
+        lags_future_covariates: Union[tuple[int, int], list[int]] = None,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
         likelihood: str = None,
-        quantiles: List = None,
+        quantiles: list = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
+        use_static_covariates: bool = True,
         **kwargs,
     ):
         """CatBoost Model
@@ -38,21 +41,52 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         Parameters
         ----------
         lags
-            Lagged target values used to predict the next time step. If an integer is given the last `lags` past lags
-            are used (from -1 backward). Otherwise a list of integers with lags is required (each lag must be < 0).
+            Lagged target `series` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`
+            corresponds the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `series` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         lags_past_covariates
-            Number of lagged past_covariates values used to predict the next time step. If an integer is given the last
-            `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
-            with lags < 0 is required.
+            Lagged `past_covariates` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags_past_covariates` past lags; e.g. `(-1, -2, ..., -lags)`,
+            where `0` corresponds to the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `past_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         lags_future_covariates
-            Number of lagged future_covariates values used to predict the next time step. If an tuple (past, future) is
-            given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
-            `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
-            of integers with lags is required.
+            Lagged `future_covariates` values used to predict the next time step/s. The lags are always relative to the
+            first step in the output chunk, even when `output_chunk_shift > 0`.
+            If a tuple of `(past, future)`, both values must be > 0. Uses the last `n=past` past lags and `n=future`
+            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0` corresponds the first
+            predicted time step of each sample. If `output_chunk_shift > 0`, the position of negative lags differ from
+            those of `lags` and `lags_past_covariates`. In this case a future lag `-5` would point at the same
+            step as a target lag of `-5 + output_chunk_shift`.
+            If a list of integers, uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
+            'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
         output_chunk_length
-            Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
-            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
-            be useful if the covariates don't extend far enough into the future.
+            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
+            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
+            one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
+            useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past and / or future covariates for prediction (depending on the model's covariate
+            support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input (history of target and past covariates) and
+            output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first
+            step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the
+            target `series`. If `output_chunk_shift` is set, the model cannot generate autoregressive predictions
+            (`n > output_chunk_length`).
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -65,12 +99,16 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
-                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
-                    'transformer': Scaler()
+                    'custom': {'past': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
         likelihood
@@ -85,20 +123,54 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             Control the randomness in the fitting procedure and for sampling.
             Default: ``None``.
         multi_models
-            If True, a separate model will be trained for each future lag to predict. If False, a single model is
-            trained to predict at step 'output_chunk_length' in the future. Default: True.
+            If True, a separate model will be trained for each future lag to predict. If False, a single model
+            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
+            `output_chunk_length - n` for each step `n`). Default: True.
+        use_static_covariates
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         **kwargs
             Additional keyword arguments passed to `catboost.CatBoostRegressor`.
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import CatBoostModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # optionally, use future temperatures (pretending this component is a forecast)
+        >>> future_cov = series['T (degC)'][:106]
+        >>> # predict 6 pressure values using the 12 past values of pressure and rainfall, as well as the 6 temperature
+        >>> # values corresponding to the forecasted period
+        >>> model = CatBoostModel(
+        >>>     lags=12,
+        >>>     lags_past_covariates=12,
+        >>>     lags_future_covariates=[0,1,2,3,4,5],
+        >>>     output_chunk_length=6
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[1006.4153701 ],
+               [1006.41907237],
+               [1006.30872957],
+               [1006.28614154],
+               [1006.22355514],
+               [1006.21607546]])
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
         self._median_idx = None
         self._model_container = None
         self._rng = None
-        self.likelihood = likelihood
+        self._likelihood = likelihood
         self.quantiles = None
 
-        self.output_chunk_length = output_chunk_length
+        self._output_chunk_length = output_chunk_length
 
         likelihood_map = {
             "quantile": None,
@@ -129,13 +201,12 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             multi_models=multi_models,
             model=CatBoostRegressor(**kwargs),
+            use_static_covariates=use_static_covariates,
         )
-
-    def __str__(self):
-        return f"CatBoostModel(lags={self.lags})"
 
     def fit(
         self,
@@ -146,6 +217,11 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
+        n_jobs_multioutput_wrapper: Optional[int] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        val_sample_weight: Optional[
+            Union[TimeSeries, Sequence[TimeSeries], str]
+        ] = None,
         verbose: Optional[Union[int, bool]] = 0,
         **kwargs,
     ):
@@ -173,20 +249,26 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        n_jobs_multioutput_wrapper
+            Number of jobs of the MultiOutputRegressor wrapper to run in parallel. Only used if the model doesn't
+            support multi-output regression natively.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
+            per label (each step in `output_chunk_length`), and per component.
+            If a series or sequence of series, then those weights are used. If the weight series only have a single
+            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+            component-specific weights, the number of components must match those of `series`.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+            computed globally based on the length of the longest series in `series`. Then for each series, the weights
+            are extracted from the end of the global weights. This gives a common time weighting across all series.
+        val_sample_weight
+            Same as for `sample_weight` but for the evaluation dataset.
         verbose
             An integer or a boolean that can be set to 1 to display catboost's default verbose output
         **kwargs
             Additional kwargs passed to `catboost.CatboostRegressor.fit()`
         """
-
-        if val_series is not None:
-            kwargs["eval_set"] = self._create_lagged_data(
-                target_series=val_series,
-                past_covariates=val_past_covariates,
-                future_covariates=val_future_covariates,
-                max_samples_per_ts=max_samples_per_ts,
-            )
-
         if self.likelihood == "quantile":
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
@@ -195,48 +277,120 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
                 # translating to catboost argument
                 self.kwargs["loss_function"] = f"Quantile:alpha={this_quantile}"
                 self.model = CatBoostRegressor(**self.kwargs)
-
                 super().fit(
                     series=series,
                     past_covariates=past_covariates,
                     future_covariates=future_covariates,
+                    val_series=val_series,
+                    val_past_covariates=val_past_covariates,
+                    val_future_covariates=val_future_covariates,
                     max_samples_per_ts=max_samples_per_ts,
+                    n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+                    sample_weight=sample_weight,
+                    val_sample_weight=val_sample_weight,
                     verbose=verbose,
                     **kwargs,
                 )
-
                 self._model_container[quantile] = self.model
-
             return self
 
         super().fit(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            val_series=val_series,
+            val_past_covariates=val_past_covariates,
+            val_future_covariates=val_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
+            n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+            sample_weight=sample_weight,
+            val_sample_weight=val_sample_weight,
             verbose=verbose,
             **kwargs,
         )
-
         return self
 
     def _predict_and_sample(
-        self, x: np.ndarray, num_samples: int, **kwargs
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
     ) -> np.ndarray:
-        """Override of RegressionModel's predict method,
-        to allow for the probabilistic case
-        """
-        if self.likelihood == "quantile":
-            return self._predict_quantiles(x, num_samples, **kwargs)
-        elif self.likelihood == "poisson":
-            return self._predict_poisson(x, num_samples, **kwargs)
-        elif self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
-            return self._predict_normal(x, num_samples, **kwargs)
+        """Override of RegressionModel's method to allow for the probabilistic case"""
+        if self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
+            return self._predict_and_sample_likelihood(
+                x, num_samples, "normal", predict_likelihood_parameters, **kwargs
+            )
+        elif self.likelihood is not None:
+            return self._predict_and_sample_likelihood(
+                x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
+            )
         else:
-            return super()._predict_and_sample(x, num_samples, **kwargs)
+            return super()._predict_and_sample(
+                x, num_samples, predict_likelihood_parameters, **kwargs
+            )
 
-    def _is_probabilistic(self) -> bool:
+    def _likelihood_components_names(
+        self, input_series: TimeSeries
+    ) -> Optional[list[str]]:
+        """Override of RegressionModel's method to support the gaussian/normal likelihood"""
+        if self.likelihood == "quantile":
+            return self._quantiles_generate_components_names(input_series)
+        elif self.likelihood == "poisson":
+            return self._likelihood_generate_components_names(input_series, ["lamba"])
+        elif self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
+            return self._likelihood_generate_components_names(
+                input_series, ["mu", "sigma"]
+            )
+        else:
+            return None
+
+    def _add_val_set_to_kwargs(
+        self,
+        kwargs: dict,
+        val_series: Sequence[TimeSeries],
+        val_past_covariates: Optional[Sequence[TimeSeries]],
+        val_future_covariates: Optional[Sequence[TimeSeries]],
+        val_sample_weight: Optional[Union[Sequence[TimeSeries], str]],
+        max_samples_per_ts: int,
+    ) -> dict:
+        # CatBoostRegressor requires sample weights to be passed with a validation set `Pool`
+        kwargs = super()._add_val_set_to_kwargs(
+            kwargs=kwargs,
+            val_series=val_series,
+            val_past_covariates=val_past_covariates,
+            val_future_covariates=val_future_covariates,
+            val_sample_weight=val_sample_weight,
+            max_samples_per_ts=max_samples_per_ts,
+        )
+        val_set_name, val_weight_name = self.val_set_params
+        val_sets = kwargs[val_set_name]
+        # CatBoost requires eval set Pool with sample weights -> remove from kwargs
+        val_weights = kwargs.pop(val_weight_name)
+        val_pools = []
+        for i, val_set in enumerate(val_sets):
+            val_pools.append(
+                Pool(
+                    data=val_set[0],
+                    label=val_set[1],
+                    weight=val_weights[i] if val_weights is not None else None,
+                )
+            )
+        kwargs[val_set_name] = val_pools
+        return kwargs
+
+    @property
+    def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None
+
+    @property
+    def supports_val_set(self) -> bool:
+        return True
+
+    @property
+    def val_set_params(self) -> tuple[Optional[str], Optional[str]]:
+        return "eval_set", "eval_sample_weight"
 
     @property
     def min_train_series_length(self) -> int:
@@ -244,7 +398,9 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         # for other regression models
         return max(
             3,
-            -self.lags["target"][0] + self.output_chunk_length + 1
-            if "target" in self.lags
-            else self.output_chunk_length,
+            (
+                -self.lags["target"][0] + self.output_chunk_length + 1
+                if "target" in self.lags
+                else self.output_chunk_length
+            ),
         )

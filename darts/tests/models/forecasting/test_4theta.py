@@ -1,23 +1,23 @@
 import random
 
 import numpy as np
+import pytest
 
 from darts.metrics import mape
 from darts.models import FourTheta, Theta
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.timeseries_generation import linear_timeseries as lt
 from darts.utils.timeseries_generation import random_walk_timeseries as rt
 from darts.utils.timeseries_generation import sine_timeseries as st
 from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
 
 
-class FourThetaTestCase(DartsBaseTestClass):
+class TestFourTheta:
     def test_input(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             FourTheta(model_mode=SeasonalityMode.ADDITIVE)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             FourTheta(season_mode=ModelMode.ADDITIVE)
-        with self.assertRaises((ValueError, TypeError)):
+        with pytest.raises((ValueError, TypeError)):
             FourTheta(trend_mode="linear")
 
     def test_negative_series(self):
@@ -29,14 +29,14 @@ class FourThetaTestCase(DartsBaseTestClass):
             normalization=False,
         )
         model.fit(sine_series)
-        self.assertTrue(
+        assert (
             model.model_mode is ModelMode.ADDITIVE
             and model.trend_mode is TrendMode.LINEAR
         )
 
     def test_zero_mean(self):
         sine_series = st(length=50)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             model = FourTheta(
                 model_mode=ModelMode.MULTIPLICATIVE, trend_mode=TrendMode.EXPONENTIAL
             )
@@ -53,7 +53,7 @@ class FourThetaTestCase(DartsBaseTestClass):
         forecast_theta = theta.predict(20)
         forecast_fourtheta = fourtheta.predict(20)
         weighted_delta = (forecast_theta - forecast_fourtheta) / forecast_theta
-        self.assertTrue((weighted_delta <= 3e-5).all().item())
+        assert (weighted_delta <= 3e-5).all().item()
 
     def test_best_model(self):
         random.seed(1)
@@ -73,9 +73,7 @@ class FourThetaTestCase(DartsBaseTestClass):
         best_model.fit(train_series)
         forecast_random = model.predict(10)
         forecast_best = best_model.predict(10)
-        self.assertTrue(
-            mape(val_series, forecast_best) <= mape(val_series, forecast_random)
-        )
+        assert mape(val_series, forecast_best) <= mape(val_series, forecast_random)
 
     def test_min_train_series_length_with_seasonality(self):
         seasonality_period = 12
@@ -90,8 +88,8 @@ class FourThetaTestCase(DartsBaseTestClass):
             season_mode=SeasonalityMode.ADDITIVE,
             seasonality_period=seasonality_period,
         )
-        self.assertEqual(fourtheta.min_train_series_length, 2 * seasonality_period)
-        self.assertEqual(theta.min_train_series_length, 2 * seasonality_period)
+        assert fourtheta.min_train_series_length == 2 * seasonality_period
+        assert theta.min_train_series_length == 2 * seasonality_period
 
     def test_min_train_series_length_without_seasonality(self):
         fourtheta = FourTheta(
@@ -105,12 +103,12 @@ class FourThetaTestCase(DartsBaseTestClass):
             season_mode=SeasonalityMode.ADDITIVE,
             seasonality_period=None,
         )
-        self.assertEqual(fourtheta.min_train_series_length, 3)
-        self.assertEqual(theta.min_train_series_length, 3)
+        assert fourtheta.min_train_series_length == 3
+        assert theta.min_train_series_length == 3
 
     def test_fit_insufficient_train_series_length(self):
         sine_series = st(length=21, freq="MS")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             fourtheta = FourTheta(
                 model_mode=ModelMode.MULTIPLICATIVE,
                 trend_mode=TrendMode.EXPONENTIAL,
@@ -118,7 +116,7 @@ class FourThetaTestCase(DartsBaseTestClass):
                 seasonality_period=12,
             )
             fourtheta.fit(sine_series)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             theta = Theta(
                 season_mode=SeasonalityMode.ADDITIVE,
                 seasonality_period=12,

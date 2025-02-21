@@ -1,12 +1,9 @@
 """
 Ensemble scikit-learn aggregator
 --------------------------------
-
-Aggregator wrapped around the Ensemble model of sklearn.
-`sklearn https://scikit-learn.org/stable/modules/ensemble.html`_.
 """
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 from sklearn.ensemble import BaseEnsemble
@@ -17,8 +14,17 @@ from darts.logging import raise_if_not
 
 
 class EnsembleSklearnAggregator(FittableAggregator):
-    def __init__(self, model) -> None:
+    def __init__(self, model: BaseEnsemble) -> None:
+        """Ensemble scikit-learn aggregator
 
+        Aggregator wrapped around the sklearn ensemble model `sklearn ensemble model
+        <https://scikit-learn.org/stable/modules/ensemble.html>`_.
+
+        Parameters
+        ----------
+        model
+            The sklearn ensemble model.
+        """
         raise_if_not(
             isinstance(model, BaseEnsemble),
             f"Scorer is expecting a model of type BaseEnsemble (from sklearn ensemble), \
@@ -28,36 +34,25 @@ class EnsembleSklearnAggregator(FittableAggregator):
         self.model = model
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "EnsembleSklearnAggregator: {}".format(
             self.model.__str__().split("(")[0]
         )
 
-    def _fit_core(
-        self,
-        actual_anomalies: Sequence[TimeSeries],
-        series: Sequence[TimeSeries],
-    ):
-
-        X = np.concatenate(
-            [s.all_values(copy=False).reshape(len(s), -1) for s in series],
-            axis=0,
-        )
-
+    def _fit_core(self, anomalies: Sequence[np.ndarray], series: Sequence[np.ndarray]):
+        X = np.concatenate(series, axis=0)
         y = np.concatenate(
-            [s.all_values(copy=False).reshape(len(s)) for s in actual_anomalies],
+            [s.flatten() for s in anomalies],
             axis=0,
         )
-
         self.model.fit(y=y, X=X)
-        return self
 
     def _predict_core(self, series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
-
+        # assume that parallelization occurs at sklearn model level
         return [
             TimeSeries.from_times_and_values(
                 s.time_index,
-                self.model.predict((s).all_values(copy=False).reshape(len(s), -1)),
+                self.model.predict(s.values(copy=False)),
             )
             for s in series
         ]

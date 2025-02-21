@@ -21,7 +21,7 @@ References
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 from scipy.special import inv_boxcox
@@ -49,21 +49,27 @@ def _seasonality_from_freq(series: TimeSeries):
         return [5]
     elif freq == "D":
         return [7]
-    elif freq == "W":
+    elif freq == "W" or freq.startswith("W-"):
         return [52]
-    elif freq in ["M", "BM", "CBM", "SM"] or freq.startswith(
-        ("M", "BM", "BS", "CBM", "SM")
-    ):
+    elif freq in [
+        "M",
+        "BM",
+        "CBM",
+        "SM",
+        "LWOM",
+        "WOM",
+    ] or freq.startswith(("M", "BM", "BS", "CBM", "SM", "LWOM", "WOM")):
         return [12]  # month
     elif freq in ["Q", "BQ", "REQ"] or freq.startswith(("Q", "BQ", "REQ")):
         return [4]  # quarter
-    elif freq in ["H", "BH", "CBH"]:
-        return [24]  # hour
-    elif freq in ["T", "min"]:
-        return [60]  # minute
-    elif freq == "S":
-        return [60]  # second
-
+    else:
+        freq_lower = freq.lower()
+        if freq_lower in ["h", "bh", "cbh"]:
+            return [24]  # hour
+        elif freq_lower in ["t", "min"]:
+            return [60]  # minute
+        elif freq_lower == "s":
+            return [60]  # second
     return None
 
 
@@ -115,17 +121,16 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
     def __init__(
         self,
         use_box_cox: Optional[bool] = None,
-        box_cox_bounds: Tuple = (0, 1),
+        box_cox_bounds: tuple = (0, 1),
         use_trend: Optional[bool] = None,
         use_damped_trend: Optional[bool] = None,
-        seasonal_periods: Optional[Union[str, List]] = "freq",
+        seasonal_periods: Optional[Union[str, list]] = "freq",
         use_arma_errors: Optional[bool] = True,
         show_warnings: bool = False,
         n_jobs: Optional[int] = None,
         multiprocessing_start_method: Optional[str] = "spawn",
         random_state: int = 0,
     ):
-
         """
         This is a wrapper around
         `tbats
@@ -173,6 +178,23 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
             See https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods
         random_state
             Sets the underlying random seed at model initialization time.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import TBATS # or BATS
+        >>> series = AirPassengersDataset().load()
+        >>> # based on preliminary analysis, the series contains a trend
+        >>> model = TBATS(use_trend=True)
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[448.29856017],
+               [439.42215052],
+               [507.73465028],
+               [493.03751671],
+               [498.85885374],
+               [564.64871897]])
         """
         super().__init__()
 
@@ -192,9 +214,6 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
         self.infer_seasonal_periods = seasonal_periods == "freq"
         self.model = None
         np.random.seed(random_state)
-
-    def __str__(self):
-        return "(T)BATS"
 
     @abstractmethod
     def _create_model(self):
@@ -216,7 +235,13 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
 
         return self
 
-    def predict(self, n, num_samples=1, verbose: bool = False):
+    def predict(
+        self,
+        n: int,
+        num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
+    ):
         super().predict(n, num_samples)
 
         yhat = self.model.forecast(steps=n)
@@ -224,13 +249,18 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
 
         return self._build_forecast_series(samples)
 
-    def _is_probabilistic(self) -> bool:
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
+
+    @property
+    def supports_probabilistic_prediction(self) -> bool:
         return True
 
     @property
     def min_train_series_length(self) -> int:
         if (
-            isinstance(self.seasonal_periods, List)
+            isinstance(self.seasonal_periods, list)
             and len(self.seasonal_periods) > 0
             and max(self.seasonal_periods) > 1
         ):

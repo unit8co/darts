@@ -1,6 +1,6 @@
 # conda-specific dependencies for the dev environment
 name: darts-dev
 dependencies:
-  - python>=3.7
+  - python>=3.9
   - conda-build
   - conda-verify

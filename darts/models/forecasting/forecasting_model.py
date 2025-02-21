@@ -11,38 +11,67 @@ The main functions are `fit()` and `predict()`. `fit()` learns the function `f()
 one or several time series. The function `predict()` applies `f()` on one or several time series in order
 to obtain forecasts for a desired number of time stamps into the future.
 """
+
 import copy
 import datetime
 import inspect
+import io
 import os
 import pickle
+import sys
 import time
 from abc import ABC, ABCMeta, abstractmethod
 from collections import OrderedDict
+from collections.abc import Sequence
 from itertools import product
 from random import sample
-from typing import Any, BinaryIO, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, BinaryIO, Callable, Literal, Optional, Union
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 import numpy as np
 import pandas as pd
 
 from darts import metrics
 from darts.dataprocessing.encoders import SequentialEncoder
+from darts.dataprocessing.pipeline import Pipeline
+from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.metrics.metrics import METRIC_TYPE
 from darts.timeseries import TimeSeries
-from darts.utils import (
-    _build_tqdm_iterator,
+from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
+from darts.utils.historical_forecasts.utils import (
+    _adjust_historical_forecasts_time_index,
+    _apply_data_transformers,
+    _apply_inverse_data_transformers,
+    _convert_data_transformers,
+    _extend_series_for_overlap_end,
+    _get_historical_forecast_predict_index,
+    _get_historical_forecast_train_index,
     _historical_forecasts_general_checks,
-    _parallel_apply,
-    _retrain_wrapper,
-    _with_sanity_checks,
+    _historical_forecasts_sanitize_kwargs,
+    _process_historical_forecast_for_backtest,
+    _reconciliate_historical_time_indices,
 )
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
-    generate_index,
 )
-from darts.utils.utils import drop_after_index, drop_before_index, series2seq
+from darts.utils.ts_utils import (
+    SeriesType,
+    get_series_seq_type,
+    get_single_series,
+    series2seq,
+)
+from darts.utils.utils import (
+    generate_index,
+    likelihood_component_names,
+    quantile_interval_names,
+    quantile_names,
+)
 
 logger = get_logger(__name__)
 
@@ -69,13 +98,9 @@ class ModelMeta(ABCMeta):
     def __call__(cls, *args, **kwargs):
         # 1) get all default values from class' __init__ signature
         sig = inspect.signature(cls.__init__)
-        all_params = OrderedDict(
-            [
-                (p.name, p.default)
-                for p in sig.parameters.values()
-                if not p.name == "self"
-            ]
-        )
+        all_params = OrderedDict([
+            (p.name, p.default) for p in sig.parameters.values() if not p.name == "self"
+        ])
 
         # 2) fill params with positional args
         for param, arg in zip(all_params, args):
@@ -114,8 +139,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self.future_covariate_series: Optional[TimeSeries] = None
         self.static_covariates: Optional[pd.DataFrame] = None
 
-        self._expect_past_covariates, self._expect_future_covariates = False, False
-        self._uses_past_covariates, self._uses_future_covariates = False, False
+        self._expect_past_covariates, self._uses_past_covariates = False, False
+        self._expect_future_covariates, self._uses_future_covariates = False, False
+        # for static covariates there is the option to consider static covariates or ignore them
+        self._considers_static_covariates = False
+        self._expect_static_covariates, self._uses_static_covariates = False, False
 
         # state; whether the model has been fit (on a single time series)
         self._fit_called = False
@@ -133,7 +161,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # by default models do not use encoders
         self.add_encoders = kwargs["add_encoders"]
-        self.encoders: Optional[SequentialEncoder] = None
+        self.encoders = self.initialize_encoders(default=True)
 
     @abstractmethod
     def fit(self, series: TimeSeries) -> "ForecastingModel":
@@ -149,18 +177,26 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self
             Fitted model.
         """
-        raise_if_not(
-            len(series) >= self.min_train_series_length,
-            "Train series only contains {} elements but {} model requires at least {} entries".format(
-                len(series), str(self), self.min_train_series_length
-            ),
-        )
+        if not isinstance(series, TimeSeries):
+            raise_log(
+                ValueError("Train `series` must be a single `TimeSeries`."),
+                logger=logger,
+            )
+        if not len(series) >= self.min_train_series_length:
+            raise_log(
+                ValueError(
+                    f"Train series only contains {len(series)} elements"
+                    f" but {str(self)} model requires at least {self.min_train_series_length} entries"
+                ),
+                logger=logger,
+            )
         self.training_series = series
         self._fit_called = True
 
         if series.has_range_index:
-            self._supports_range_index()
+            self._supports_range_index
 
+    @property
     def _supports_range_index(self) -> bool:
         """Checks if the forecasting model supports a range index.
         Some models may not support this, if for instance they rely on underlying dates.
@@ -170,46 +206,133 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         return True
 
-    def _is_probabilistic(self) -> bool:
+    @property
+    def supports_probabilistic_prediction(self) -> bool:
         """
-        Checks if the forecasting model supports probabilistic predictions.
+        Checks if the forecasting model with this configuration supports probabilistic predictions.
+
         By default, returns False. Needs to be overwritten by models that do support
         probabilistic predictions.
         """
         return False
 
+    @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         """
         Checks if the forecasting model supports historical forecasts without retraining
-        the model. By default, returns False. Needs to be overwritten by models that do
+        the model.
+
+        By default, returns False. Needs to be overwritten by models that do
         support historical forecasts without retraining.
         """
         return False
 
     @property
-    def supports_past_covariates(self):
+    @abstractmethod
+    def supports_multivariate(self) -> bool:
+        """
+        Whether the model considers more than one variate in the time series.
+        """
+
+    @property
+    def supports_past_covariates(self) -> bool:
+        """
+        Whether model supports past covariates
+        """
         return "past_covariates" in inspect.signature(self.fit).parameters.keys()
 
     @property
-    def supports_future_covariates(self):
+    def supports_future_covariates(self) -> bool:
+        """
+        Whether model supports future covariates
+        """
         return "future_covariates" in inspect.signature(self.fit).parameters.keys()
 
     @property
-    def uses_past_covariates(self):
+    def supports_static_covariates(self) -> bool:
+        """
+        Whether model supports static covariates
+        """
+        return False
+
+    @property
+    def supports_sample_weight(self) -> bool:
+        """
+        Whether model supports sample weight for training.
+        """
+        return False
+
+    @property
+    def supports_likelihood_parameter_prediction(self) -> bool:
+        """
+        Whether model instance supports direct prediction of likelihood parameters
+        """
+        return getattr(self, "likelihood", None) is not None
+
+    @property
+    @abstractmethod
+    def supports_transferrable_series_prediction(self) -> bool:
+        """
+        Whether the model supports prediction for any input `series`.
+        """
+
+    @property
+    def uses_past_covariates(self) -> bool:
         """
         Whether the model uses past covariates, once fitted.
         """
         return self._uses_past_covariates
 
     @property
-    def uses_future_covariates(self):
+    def uses_future_covariates(self) -> bool:
         """
         Whether the model uses future covariates, once fitted.
         """
         return self._uses_future_covariates
 
+    @property
+    def uses_static_covariates(self) -> bool:
+        """
+        Whether the model uses static covariates, once fitted.
+        """
+        return self._uses_static_covariates
+
+    @property
+    def considers_static_covariates(self) -> bool:
+        """
+        Whether the model considers static covariates, if there are any.
+        """
+        return self._considers_static_covariates
+
+    @property
+    def supports_optimized_historical_forecasts(self) -> bool:
+        """
+        Whether the model supports optimized historical forecasts
+        """
+        return False
+
+    @property
+    def output_chunk_length(self) -> Optional[int]:
+        """
+        Number of time steps predicted at once by the model, not defined for statistical models.
+        """
+        return None
+
+    @property
+    def output_chunk_shift(self) -> int:
+        """
+        Number of time steps that the output/prediction starts after the end of the input.
+        """
+        return 0
+
     @abstractmethod
-    def predict(self, n: int, num_samples: int = 1) -> TimeSeries:
+    def predict(
+        self,
+        n: int,
+        num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
+    ) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
 
         Parameters
@@ -217,8 +340,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         n
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
         num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
-            for deterministic models.
+            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
+        verbose
+            Optionally, set the prediction verbosity. Not effective for all models.
+        show_warnings
+            Optionally, control whether warnings are shown. Not effective for all models.
 
         Returns
         -------
@@ -234,8 +360,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ),
                 logger,
             )
+        is_autoregression = (
+            False
+            if self.output_chunk_length is None
+            else (n > self.output_chunk_length)
+        )
+        if self.output_chunk_shift and is_autoregression:
+            raise_log(
+                ValueError(
+                    "Cannot perform auto-regression `(n > output_chunk_length)` with a model that uses a "
+                    "shifted output chunk `(output_chunk_shift > 0)`."
+                ),
+                logger=logger,
+            )
 
-        if not self._is_probabilistic() and num_samples > 1:
+        if not self.supports_probabilistic_prediction and num_samples > 1:
             raise_log(
                 ValueError(
                     "`num_samples > 1` is only supported for probabilistic models."
@@ -245,86 +384,139 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _fit_wrapper(
         self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        **kwargs,
     ):
-        self.fit(series)
+        add_kwargs = {}
+        # handle past and future covariates based on model support
+        for series_, series_name in zip(
+            [past_covariates, future_covariates, sample_weight],
+            ["past_covariates", "future_covariates", "sample_weight"],
+        ):
+            if getattr(self, f"supports_{series_name}"):
+                add_kwargs[series_name] = series_
+            elif series_ is not None:
+                raise_log(
+                    ValueError(f"Model cannot be fit/trained with `{series_name}`."),
+                    logger,
+                )
+        self.fit(series=series, **add_kwargs, **kwargs)
 
     def _predict_wrapper(
         self,
         n: int,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
-        num_samples: int,
-        verbose: bool = False,
-    ) -> TimeSeries:
-        return self.predict(n, num_samples=num_samples, verbose=verbose)
+        series: Optional[TimeSeries] = None,
+        past_covariates: Optional[TimeSeries] = None,
+        future_covariates: Optional[TimeSeries] = None,
+        predict_likelihood_parameters: bool = False,
+        **kwargs,
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        add_kwargs = {}
+        # not all models supports input `series` at inference
+        if self.supports_transferrable_series_prediction:
+            add_kwargs["series"] = series
+
+        # even if predict() accepts covariates, the model might not support them at inference
+        for covs, name in zip(
+            [past_covariates, future_covariates],
+            ["past_covariates", "future_covariates"],
+        ):
+            if getattr(self, f"supports_{name}"):
+                add_kwargs[name] = covs
+            elif covs is not None:
+                raise_log(
+                    ValueError(
+                        f"Model prediction does not support `{name}`, either because it "
+                        f"does not support `{name}` in general, or because it was fit/trained "
+                        f"without using `{name}`."
+                    ),
+                    logger,
+                )
+
+        if self.supports_likelihood_parameter_prediction:
+            add_kwargs["predict_likelihood_parameters"] = predict_likelihood_parameters
+        return self.predict(n=n, **add_kwargs, **kwargs)
 
     @property
     def min_train_series_length(self) -> int:
         """
-        Class property defining the minimum required length for the training series.
-        This function/property should be overridden if a value higher than 3 is required.
+        The minimum required length for the training series.
         """
         return 3
 
     @property
+    def min_train_samples(self) -> int:
+        """
+        The minimum number of samples for training the model.
+        """
+        return 1
+
+    @property
+    @abstractmethod
     def extreme_lags(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         Optional[int],
         Optional[int],
+        Optional[int],
+        Optional[int],
+        int,
         Optional[int],
     ]:
         """
-        A 5-tuple containing in order:
-        (minimum target lag, maximum target lag, min past covariate lag, min future covariate lag, max future covariate
-        lag). If 0 is the index of the first prediction, then all lags are relative to this index, except for the
-        maximum target lag, which is relative to the last element of the time series before the first prediction.
+        A 8-tuple containing in order:
+        (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate
+        lag, max future covariate lag, output shift, max target lag train (only for RNNModel)). If 0 is the index of the
+        first prediction, then all lags are relative to this index.
+
         See examples below.
 
         If the model wasn't fitted with:
-            - target lag (concerning RegressionModels only) the first element should be `None`.
+            - target (concerning RegressionModels only): then the first element should be `None`.
 
-            - past covariates, the third element should be `None`.
+            - past covariates: then the third and fourth elements should be `None`.
 
-            - future covariates, the fourth and fifth elements should be `None`.
+            - future covariates: then the fifth and sixth elements should be `None`.
 
         Should be overridden by models that use past or future covariates, and/or for model that have minimum target
-        lag and maximum target lags potentially different from -1 and 1.
+        lag and maximum target lags potentially different from -1 and 0.
 
         Notes
         -----
-        maximum target lag (second value) cannot be `None` and is always larger than 1.
+        maximum target lag (second value) cannot be `None` and is always larger than or equal to 0.
+
         Examples
         --------
         >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-3, 2, None, None, None)
-        >>> model = LinearRegressionModel(lags=[3, 5], past_covariates_lags = 4, output_chunk_length=7)
+        (-3, 1, None, None, None, None, 0, None)
+        >>> model = LinearRegressionModel(lags=3, output_chunk_length=2, output_chunk_shift=2)
+        >>> model.fit(train_series)
+        >>> model.extreme_lags
+        (-3, 1, None, None, None, None, 2, None)
+        >>> model = LinearRegressionModel(lags=[-3, -5], lags_past_covariates = 4, output_chunk_length=7)
         >>> model.fit(train_series, past_covariates=past_covariates)
         >>> model.extreme_lags
-        (-5, 7, -4, None, None)
-        >>> model = LinearRegressionModel(lags=[3, 5], future_covariates_lags = [4, 6], output_chunk_length=7)
+        (-5, 6, -4, -1,  None, None, 0, None)
+        >>> model = LinearRegressionModel(lags=[3, 5], lags_future_covariates = [4, 6], output_chunk_length=7)
         >>> model.fit(train_series, future_covariates=future_covariates)
         >>> model.extreme_lags
-        (-5, 7, None, 4, 6)
+        (-5, 6, None, None, 4, 6, 0, None)
         >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-10, 7, None, None, None)
-        >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7, future_covariates_lags=[4, 6])
+        (-10, 6, None, None, None, None, 0, None)
+        >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7, lags_future_covariates=[4, 6])
         >>> model.fit(train_series, future_covariates)
         >>> model.extreme_lags
-        (-10, 7, None, 4, 6)
+        (-10, 6, None, None, 4, 6, 0, None)
         """
-
-        return (-1, 1, None, None, None)
 
     @property
     def _training_sample_time_index_length(self) -> int:
@@ -335,159 +527,23 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_target_lag,
             max_target_lag,
             min_past_cov_lag,
+            max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
+            output_chunk_shift,
+            max_target_lag_train,
         ) = self.extreme_lags
 
+        # some models can have different output chunks for training and prediction (e.g. `RNNModel`)
+        output_lag = max_target_lag_train or max_target_lag
         return max(
-            max_target_lag,
-            max_future_cov_lag if max_future_cov_lag else 0,
+            output_lag + 1,
+            max_future_cov_lag + 1 if max_future_cov_lag else 0,
         ) - min(
             min_target_lag if min_target_lag else 0,
             min_past_cov_lag if min_past_cov_lag else 0,
             min_future_cov_lag if min_future_cov_lag else 0,
         )
-
-    @property
-    def _predict_sample_time_index_length(self) -> int:
-        """
-        Required time_index length for one predict sample, for any model.
-         A predict sample is the minimum required set of series and covariates chunks to be able to predict
-         a single point.
-        """
-        (
-            min_target_lag,
-            max_target_lag,
-            min_past_cov_lag,
-            min_future_cov_lag,
-            max_future_cov_lag,
-        ) = self.extreme_lags
-
-        return (max_future_cov_lag if max_future_cov_lag else 0) - min(
-            min_target_lag if min_target_lag else 0,
-            min_past_cov_lag if min_past_cov_lag else 0,
-            min_future_cov_lag if min_future_cov_lag else 0,
-        )
-
-    def _get_historical_forecastable_time_index(
-        self,
-        series: Optional[TimeSeries] = None,
-        past_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
-        is_training: Optional[bool] = False,
-    ) -> Union[pd.DatetimeIndex, pd.RangeIndex, None]:
-        """
-        Private function that returns the largest time_index representing the subset of each timestamps
-        for which historical forecasts can be made, given the model's properties, the training series
-        and the covariates.
-            - If ``None`` is returned, there is no point where a forecast can be made.
-
-            - If ``is_training=False``, it returns the time_index subset of predictable timestamps.
-
-            - If ``is_training=True``, it returns the time_index subset of trainable timestamps. A trainable
-            timestamp is a timestamp that has a training sample of length at least ``self.training_sample_length``
-             preceding it.
-
-
-        Parameters
-        ----------
-        series
-            Optionally, a target series.
-        past_covariates
-            Optionally, a past covariates.
-        future_covariates
-            Optionally, a future covariates.
-        is_training
-            Whether the returned time_index should be taking into account the training.
-
-        Returns
-        -------
-        Union[pd.DatetimeIndex, pd.RangeIndex, None]
-            The longest time_index that can be used for historical forecasting.
-
-        Examples
-        --------
-        >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
-        >>> model.fit(train_series)
-        >>> series = TimeSeries.from_times_and_values(pd.date_range('2000-01-01', '2000-01-10'), np.arange(10))
-        >>> model._get_historical_forecastable_time_index(series=series, is_training=False)
-        DatetimeIndex(['2000-01-04', '2000-01-05', '2000-01-06', '2000-01-07',
-               '2000-01-08', '2000-01-09', '2000-01-10'],
-              dtype='datetime64[ns]', freq='D')
-        >>> model._get_historical_forecastable_time_index(series=series, is_training=True)
-        DatetimeIndex(['2000-01-06', '2000-01-08', '2000-01-09', '2000-01-10'],
-                dtype='datetime64[ns]', freq='D')
-
-        >>> model = NBEATSModel(input_chunk_length=3, output_chunk_length=3)
-        >>> model.fit(train_series, train_past_covariates)
-        >>> series = TimeSeries.from_times_and_values(pd.date_range('2000-10-01', '2000-10-09'), np.arange(8))
-        >>> past_covariates = TimeSeries.from_times_and_values(pd.date_range('2000-10-03', '2000-10-20'),
-        np.arange(18))
-        >>> model._get_historical_forecastable_time_index(series=series, past_covariates=past_covariates,
-        is_training=False)
-        DatetimeIndex(['2000-10-06', '2000-10-07', '2000-10-08', '2000-10-09'], dtype='datetime64[ns]', freq='D')
-        >>> model._get_historical_forecastable_time_index(series=series, past_covariates=past_covariates,
-        is_training=True)
-        DatetimeIndex(['2000-10-09'], dtype='datetime64[ns]', freq='D') # Only one point is trainable, and
-        # corresponds to the first point after we reach a common subset of timestamps of training_sample_length length.
-        """
-
-        (
-            min_target_lag,
-            max_target_lag,
-            min_past_cov_lag,
-            min_future_cov_lag,
-            max_future_cov_lag,
-        ) = self.extreme_lags
-
-        intersect_ = None
-
-        # target longest possible time index
-        if (min_target_lag is not None) and (series is not None):
-            intersect_ = generate_index(
-                start=series.start_time()
-                - (min_target_lag - max_target_lag) * series.freq
-                if is_training
-                else series.start_time() - min_target_lag * series.freq,
-                end=series.end_time(),
-                freq=series.freq,
-            )
-
-        # past covariates longest possible time index
-        if (min_past_cov_lag is not None) and (past_covariates is not None):
-            tmp_ = generate_index(
-                start=past_covariates.start_time()
-                - (min_past_cov_lag - max_target_lag) * past_covariates.freq
-                if is_training
-                else past_covariates.start_time()
-                - min_past_cov_lag * past_covariates.freq,
-                end=past_covariates.end_time(),
-                freq=past_covariates.freq,
-            )
-            if intersect_ is not None:
-                intersect_ = intersect_.intersection(tmp_)
-            else:
-                intersect_ = tmp_
-
-        # future covariates longest possible time index
-        if (min_future_cov_lag is not None) and (future_covariates is not None):
-            tmp_ = generate_index(
-                start=future_covariates.start_time()
-                - (min_future_cov_lag - max_target_lag) * future_covariates.freq
-                if is_training
-                else future_covariates.start_time()
-                - min_future_cov_lag * future_covariates.freq,
-                end=future_covariates.end_time()
-                - max_future_cov_lag * future_covariates.freq,
-                freq=future_covariates.freq,
-            )
-
-            if intersect_ is not None:
-                intersect_ = intersect_.intersection(tmp_)
-            else:
-                intersect_ = tmp_
-
-        return intersect_ if len(intersect_) > 0 else None
 
     def _generate_new_dates(
         self, n: int, input_series: Optional[TimeSeries] = None
@@ -504,15 +560,46 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self,
         points_preds: Union[np.ndarray, Sequence[np.ndarray]],
         input_series: Optional[TimeSeries] = None,
+        custom_components: Union[list[str], None] = None,
+        with_static_covs: bool = True,
+        with_hierarchy: bool = True,
+        pred_start: Optional[Union[pd.Timestamp, int]] = None,
     ) -> TimeSeries:
         """
         Builds a forecast time series starting after the end of the training time series, with the
         correct time index (or after the end of the input series, if specified).
+
+        Parameters
+        ----------
+        points_preds
+            Forecasted values, can be either the target(s) or parameters of the likelihood model
+        input_series
+            TimeSeries used as input for the prediction
+        custom_components
+            New names for the forecast TimeSeries components, used when the number of components changes
+        with_static_covs
+            If set to `False`, do not copy the input_series `static_covariates` attribute
+        with_hierarchy
+            If set to `False`, do not copy the input_series `hierarchy` attribute
+        pred_start
+            Optionally, give a custom prediction start point.
+
+        Returns
+        -------
+        TimeSeries
+            New TimeSeries instance starting after the input series
         """
         input_series = (
             input_series if input_series is not None else self.training_series
         )
-        return _build_forecast_series(points_preds, input_series)
+        return _build_forecast_series(
+            points_preds,
+            input_series,
+            custom_components,
+            with_static_covs,
+            with_hierarchy,
+            pred_start,
+        )
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Sanity checks for the historical_forecasts function
@@ -531,15 +618,33 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         # parse args and kwargs
         series = args[0]
-        _historical_forecasts_general_checks(series, kwargs)
+        is_conformal = kwargs.get("is_conformal", False)
+        _historical_forecasts_general_checks(
+            self, series, kwargs, is_conformal=is_conformal
+        )
 
-    def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
+    def _get_last_prediction_time(
+        self,
+        series,
+        forecast_horizon,
+        overlap_end,
+        latest_possible_prediction_start,
+    ):
+        # if `overlap_end` is True, we can use the pre-computed latest possible first prediction point
         if overlap_end:
-            last_valid_pred_time = series.time_index[-1]
-        else:
-            last_valid_pred_time = series.time_index[-forecast_horizon]
+            return latest_possible_prediction_start
 
-        return last_valid_pred_time
+        # otherwise, the upper bound for the last time step of the last prediction is the end of the target series
+        return series.time_index[-forecast_horizon]
+
+    def _check_optimizable_historical_forecasts(
+        self,
+        forecast_horizon: int,
+        retrain: Union[bool, int, Callable[..., bool]],
+        show_warnings: bool,
+    ) -> bool:
+        """By default, historical forecasts cannot be optimized"""
+        return False
 
     @_with_sanity_checks("_historical_forecasts_sanity_checks")
     def historical_forecasts(
@@ -547,121 +652,210 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        forecast_horizon: int = 1,
         num_samples: int = 1,
         train_length: Optional[int] = None,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
-        forecast_horizon: int = 1,
+        start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
         overlap_end: bool = False,
         last_points_only: bool = True,
         verbose: bool = False,
-    ) -> Union[
-        TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
-    ]:
+        show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+        enable_optimization: bool = True,
+        data_transformers: Optional[
+            dict[str, Union[BaseDataTransformer, Pipeline]]
+        ] = None,
+        fit_kwargs: Optional[dict[str, Any]] = None,
+        predict_kwargs: Optional[dict[str, Any]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+    ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
+        """Generates historical forecasts by simulating predictions at various points in time throughout the history of
+        the provided (potentially multiple) `series`. This process involves retrospectively applying the model to
+        different time steps, as if the forecasts were made in real-time at those specific moments. This allows for an
+        evaluation of the model's performance over the entire duration of the series, providing insights into its
+        predictive accuracy and robustness across different historical periods.
 
-        """Compute the historical forecasts that would have been obtained by this model on
-        (potentially multiple) `series`.
+        There are two main modes for this method:
 
-        This method uses an expanding training window;
-        it repeatedly builds a training set from the beginning of `series`. It trains the
-        model on the training set, emits a forecast of length equal to forecast_horizon, and then moves
-        the end of the training set forward by `stride` time steps.
+        - Re-training Mode (Default, `retrain=True`): The model is re-trained at each step of the simulation, and
+          generates a forecast using the updated model. In case of multiple series, the model is re-trained on each
+          series independently (global training is not yet supported).
+        - Pre-trained Mode (`retrain=False`): The forecasts are generated at each step of the simulation without
+          re-training. It is only supported for pre-trained global forecasting models. This mode is significantly
+          faster as it skips the re-training step.
 
-        By default, this method will return one (or a sequence of) single time series made up of
-        the last point of each historical forecast.
-        This time series will thus have a frequency of ``series.freq * stride``.
-        If `last_points_only` is set to False, it will instead return one (or a sequence of) list of the
-        historical forecasts series.
+        By choosing the appropriate mode, you can balance between computational efficiency and the need for up-to-date
+        model training.
 
-        By default, this method always re-trains the models on the entire available history,
-        corresponding to an expanding window strategy.
-        If `retrain` is set to False, the model will only be trained on the initial training window
-        (up to `start` time stamp), and only if it has not been trained before. This is not
-        supported by all models.
+        **Re-training Mode:** This mode repeatedly builds a training set by either expanding from the beginning of
+        the `series` or by using a fixed-length `train_length` (the start point can also be configured with `start`
+        and `start_format`). The model is then trained on this training set, and a forecast of length `forecast_horizon`
+        is generated. Subsequently, the end of the training set is moved forward by `stride` time steps, and the process
+        is repeated.
+
+        **Pre-trained Mode:** This mode is only supported for pre-trained global forecasting models. It uses the same
+        simulation steps as in the *Re-training Mode* (ignoring `train_length`), but generates the forecasts directly
+        without re-training.
+
+        By default, with `last_points_only=True`, this method returns a single time series (or a sequence of time
+        series) composed of the last point from each historical forecast. This time series will thus have a frequency of
+        `series.freq * stride`.
+        If `last_points_only=False`, it will instead return a list (or a sequence of lists) of the full historical
+        forecast series each with frequency `series.freq`.
 
         Parameters
         ----------
         series
-            One or multiple target time series to use to successively train and evaluate
+            A (sequence of) target time series used to successively train (if `retrain` is not ``False``) and compute
             the historical forecasts.
         past_covariates
-            Optionally, one (or a sequence of) past-observed covariate series.
+            Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
             This applies only if the model supports past covariates.
         future_covariates
-            Optionally, one (or a sequence of) of future-known covariate series.
+            Optionally, a (sequence of) future-known covariate time series for every input time series in `series`.
             This applies only if the model supports future covariates.
-        num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
-            for deterministic models.
-        train_length
-            Number of time steps in our training set (size of backtesting window to train on).
-            Default is set to train_length=None where it takes all available time steps up until prediction time,
-            otherwise the moving window strategy is used. If larger than the number of time steps available, all steps
-            up until prediction time are used, as in default case. Needs to be at least min_train_series_length.
-        start
-            The first point of time at which a prediction is computed for a future time.
-            This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
-            In the case of ``float``, the parameter will be treated as the proportion of the time series
-            that should lie before the first prediction point.
-            In the case of ``int``, the parameter will be treated as an integer index to the time index of
-            `series` that will be used as first prediction time.
-            In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
-            directly.
-            If `start` is not specified, the first prediction time will automatically be set to :
-                 - the first predictable point if `retrain` is False
-
-                 - the first trainable point if `retrain` is True and `train_length` is None
-
-                 - the first trainable point + `train_length` otherwise
         forecast_horizon
-            The forecast horizon for the predictions
+            The forecast horizon for the predictions.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Use values ``>1`` only for probabilistic
+            models.
+        train_length
+            Optionally, use a fixed length / number of time steps for every constructed training set (rolling window
+            mode). Only effective when `retrain` is not ``False``. The default is ``None``, where it uses all time
+            steps up until the prediction time (expanding window mode). If larger than the number of available time
+            steps, uses the expanding mode. Needs to be at least `min_train_series_length`.
+        start
+            Optionally, the first point in time at which a prediction is computed. This parameter supports:
+            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            If an ``int``, it is either the index position of the first prediction point for `series` with a
+            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
+            the index position with `start_format="position"`.
+            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If ``None``, the first prediction point will automatically be set to:
+
+            - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
+              predictable point is earlier than the first trainable point.
+            - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),
+              or `retrain` is a ``Callable`` and the first trainable point is earlier than the first predictable point.
+            - the first trainable point (given `train_length`) otherwise
+
+            Note: If `start` is not within the trainable / forecastable points, uses the closest valid start point that
+              is a round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
+            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
+              shifted by `output_chunk_shift` points into the future.
+            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
+              (default behavior with ``None``) and start at the first trainable/predictable point.
+        start_format
+            Defines the `start` format.
+            If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
+            range from `(-len(series), len(series) - 1)`.
+            If set to ``'value'``, `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``.
         stride
             The number of time steps between two consecutive predictions.
         retrain
             Whether and/or on which condition to retrain the model before predicting.
-            This parameter supports 3 different datatypes: ``bool``, (positive) ``int``, and
-            ``Callable`` (returning a ``bool``).
-            In the case of ``bool``: retrain the model at each step (`True`), or never retrains the model (`False`).
+            This parameter supports 3 different types: ``bool``, (positive) ``int``, and ``Callable`` (returning a
+            ``bool``).
+            In the case of ``bool``: retrain the model at each step (`True`), or never retrain the model (`False`).
             In the case of ``int``: the model is retrained every `retrain` iterations.
             In the case of ``Callable``: the model is retrained whenever callable returns `True`.
-            Arguments passed to the callable are as follows:
+            The callable must have the following positional arguments:
 
-                - `pred_time (pd.Timestamp or int)`: timestamp of forecast time (end of the training series)
-                - `train_series (TimeSeries)`: train series up to `pred_time`
-                - `past_covariates (TimeSeries)`: past_covariates series up to `pred_time`
-                - `future_covariates (TimeSeries)`: future_covariates series up
-                  to `min(pred_time + series.freq * forecast_horizon, series.end_time())`
+            - `counter` (int): current `retrain` iteration
+            - `pred_time` (pd.Timestamp or int): timestamp of forecast time (end of the training series)
+            - `train_series` (TimeSeries): train series up to `pred_time`
+            - `past_covariates` (TimeSeries): past_covariates series up to `pred_time`
+            - `future_covariates` (TimeSeries): future_covariates series up to `min(pred_time + series.freq *
+              forecast_horizon, series.end_time())`
 
-            Note: some models do require being retrained every time
-            and do not support anything else than `retrain=True`.
+            Note: if any optional `*_covariates` are not passed to `historical_forecast`, ``None`` will be passed
+            to the corresponding retrain function argument.
+            Note: some models require being retrained every time and do not support anything other than
+            `retrain=True`.
+            Note: also controls the retraining of the `data_transformers`.
         overlap_end
-            Whether the returned forecasts can go beyond the series' end or not
+            Whether the returned forecasts can go beyond the series' end or not.
         last_points_only
-            Whether to retain only the last point of each historical forecast.
-            If set to True, the method returns a single ``TimeSeries`` containing the successive point forecasts.
-            Otherwise returns a list of historical ``TimeSeries`` forecasts.
+            Whether to return only the last point of each historical forecast. If set to ``True``, the method returns a
+            single ``TimeSeries`` (for each time series in `series`) containing the successive point forecasts.
+            Otherwise, returns a list of historical ``TimeSeries`` forecasts.
         verbose
-            Whether to print progress
+            Whether to print the progress.
+        show_warnings
+            Whether to show warnings related to historical forecasts optimization, or parameters `start` and
+            `train_length`.
+        predict_likelihood_parameters
+            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``.
+        enable_optimization
+            Whether to use the optimized version of `historical_forecasts` when supported and available.
+            Default: ``True``.
+        data_transformers
+            Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
+            (possibles keys; "series", "past_covariates", "future_covariates"). If provided, all input series must be
+            in the un-transformed space. For fittable transformer / pipeline:
+
+            - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
+            - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
+
+            The fitted transformer is used to transform the input during both training and prediction.
+            If the transformation is invertible, the forecasts will be inverse-transformed.
+        fit_kwargs
+            Optionally, some additional arguments passed to the model `fit()` method.
+        predict_kwargs
+            Optionally, some additional arguments passed to the model `predict()` method.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels for training. Only effective when
+            `retrain` is not ``False``. They are applied per observation, per label (each step in
+            `output_chunk_length`), and per component.
+            If a series or sequence of series, then those weights are used. If the weight series only have a single
+            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+            component-specific weights, the number of components must match those of `series`.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+            computed per time `series`.
+
         Returns
         -------
-        TimeSeries or List[TimeSeries] or List[List[TimeSeries]]
-            If `last_points_only` is set to True and a single series is provided in input,
-            a single ``TimeSeries`` is returned, which contains the the historical forecast
-            at the desired horizon.
+        TimeSeries
+            A single historical forecast for a single `series` and `last_points_only=True`: it contains only the
+            predictions at step `forecast_horizon` from all historical forecasts.
+        List[TimeSeries]
+            A list of historical forecasts for:
 
-            A ``List[TimeSeries]`` is returned if either `series` is a ``Sequence`` of ``TimeSeries``,
-            or if `last_points_only` is set to False. A list of lists is returned if both conditions are met.
-            In this last case, the outer list is over the series provided in the input sequence,
-            and the inner lists contain the different historical forecasts.
+            - a sequence (list) of `series` and `last_points_only=True`: for each series, it contains only the
+              predictions at step `forecast_horizon` from all historical forecasts.
+            - a single `series` and `last_points_only=False`: for each historical forecast, it contains the entire
+              horizon `forecast_horizon`.
+        List[List[TimeSeries]]
+            A list of lists of historical forecasts for a sequence of `series` and `last_points_only=False`. For each
+            series, and historical forecast, it contains the entire horizon `forecast_horizon`. The outer list
+            is over the series provided in the input sequence, and the inner lists contain the historical forecasts for
+            each series.
         """
+        model: ForecastingModel = self
+        # only GlobalForecastingModels support historical forecasting without retraining the model
+        base_class_name = model.__class__.__base__.__name__
 
-        # only GlobalForecastingModels support historical forecastings without retraining the model
-        base_class_name = self.__class__.__base__.__name__
+        # we can directly abort if retrain is False and fit hasn't been called before
+        raise_if(
+            not model._fit_called and retrain is False,
+            "The model has not been fitted yet, and `retrain` is ``False``. "
+            "Either call `fit()` before `historical_forecasts()`, or set `retrain` "
+            "to something different than ``False``.",
+            logger,
+        )
+
         raise_if(
             (isinstance(retrain, Callable) or int(retrain) != 1)
-            and (not self._supports_non_retrainable_historical_forecasts()),
-            f"{base_class_name} does not support historical forecastings with `retrain` set to `False`. "
+            and (not model._supports_non_retrainable_historical_forecasts),
+            f"{base_class_name} does not support historical forecasting with `retrain` set to `False`. "
             f"For now, this is only supported with GlobalForecastingModels such as TorchForecastingModels. "
             f"For more information, read the documentation for `retrain` in `historical_forecasts()`",
             logger,
@@ -679,21 +873,63 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
         elif (
             train_length is not None
-        ) and train_length < self._training_sample_time_index_length:
+        ) and train_length < model._training_sample_time_index_length + (
+            model.min_train_samples - 1
+        ):
             raise_log(
                 ValueError(
-                    "train_length is too small for the training requirements of this model"
+                    "train_length is too small for the training requirements of this model. "
+                    f"Must be `>={model._training_sample_time_index_length + (model.min_train_samples - 1)}`."
                 ),
+                logger,
+            )
+        if train_length is not None and retrain is False:
+            raise_log(
+                ValueError("cannot use `train_length` when `retrain=False`."),
                 logger,
             )
 
         if isinstance(retrain, bool) or (isinstance(retrain, int) and retrain >= 0):
-            retrain_func = _retrain_wrapper(
-                lambda counter: counter % int(retrain) == 0 if retrain else False
-            )
+
+            def retrain_func(
+                counter, pred_time, train_series, past_covariates, future_covariates
+            ):
+                return counter % int(retrain) == 0 if retrain else False
+
         elif isinstance(retrain, Callable):
-            retrain_func = _retrain_wrapper(retrain)
+            retrain_func = retrain
+
+            # check that the signature matches the documentation
+            expected_arguments = [
+                "counter",
+                "pred_time",
+                "train_series",
+                "past_covariates",
+                "future_covariates",
+            ]
+            passed_arguments = list(inspect.signature(retrain_func).parameters.keys())
+            raise_if(
+                expected_arguments != passed_arguments,
+                f"the Callable `retrain` must have a signature/arguments matching the following positional arguments: "
+                f"{expected_arguments}.",
+                logger,
+            )
+
+            # passing dummy values to check the type of the output
+            result = retrain_func(
+                counter=0,
+                pred_time=get_single_series(series).time_index[-1],
+                train_series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
+            raise_if_not(
+                isinstance(result, bool),
+                f"Return value of `retrain` must be bool, received {type(result)}",
+                logger,
+            )
         else:
+            retrain_func = None
             raise_log(
                 ValueError(
                     "`retrain` argument must be either `bool`, positive `int` or `Callable` (returning `bool`)"
@@ -701,174 +937,280 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger,
             )
 
-        retrain_func_signature = tuple(
-            inspect.signature(retrain_func).parameters.keys()
+        data_transformers = _convert_data_transformers(
+            data_transformers=data_transformers, copy=True
         )
 
+        using_prefitted_transformers = False
+        # data transformer already fitted and can be directly applied to all the series
+        if data_transformers and not retrain:
+            using_prefitted_transformers = True
+            series, past_covariates, future_covariates = _apply_data_transformers(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                data_transformers=data_transformers,
+                max_future_cov_lag=model.extreme_lags[5],
+                fit_transformers=False,
+            )
+
+        # remove unsupported arguments, raise exception if interference with historical forecasts logic
+        fit_kwargs, predict_kwargs = _historical_forecasts_sanitize_kwargs(
+            model=model,
+            fit_kwargs=fit_kwargs,
+            predict_kwargs=predict_kwargs,
+            retrain=retrain is not False and retrain != 0,
+            show_warnings=show_warnings,
+        )
+
+        if (
+            enable_optimization
+            and model.supports_optimized_historical_forecasts
+            and model._check_optimizable_historical_forecasts(
+                forecast_horizon=forecast_horizon,
+                retrain=retrain,
+                show_warnings=show_warnings,
+            )
+        ):
+            forecasts = model._optimized_historical_forecasts(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                start=start,
+                start_format=start_format,
+                forecast_horizon=forecast_horizon,
+                stride=stride,
+                overlap_end=overlap_end,
+                last_points_only=last_points_only,
+                verbose=verbose,
+                show_warnings=show_warnings,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                **predict_kwargs,
+            )
+
+            return _apply_inverse_data_transformers(
+                series=series, forecasts=forecasts, data_transformers=data_transformers
+            )
+
+        sequence_type_in = get_series_seq_type(series)
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
-
-        # If the model has never been fitted before using historical_forecasts,
-        # we need to know if it uses past or future covariates. The only possible assumption is that
-        # the user is using the same covariates as they would in the fit method.
-        if self._fit_called is False:
-            if past_covariates is not None:
-                self._uses_past_covariates = True
-            if future_covariates is not None:
-                self._uses_future_covariates = True
+        sample_weight = (
+            sample_weight
+            if isinstance(sample_weight, str)
+            else series2seq(sample_weight)
+        )
 
         if len(series) == 1:
             # Use tqdm on the outer loop only if there's more than one series to iterate over
             # (otherwise use tqdm on the inner loop).
             outer_iterator = series
         else:
-            outer_iterator = _build_tqdm_iterator(series, verbose)
+            outer_iterator = _build_tqdm_iterator(
+                series, verbose, total=len(series), desc="historical forecasts"
+            )
+
+        # deactivate the warning after displaying it once if show_warnings is True
+        show_predict_warnings = show_warnings
 
         forecasts_list = []
         for idx, series_ in enumerate(outer_iterator):
             past_covariates_ = past_covariates[idx] if past_covariates else None
             future_covariates_ = future_covariates[idx] if future_covariates else None
+            if isinstance(sample_weight, str):
+                sample_weight_ = sample_weight
+            else:
+                sample_weight_ = sample_weight[idx] if sample_weight else None
 
-            # Determines the time index the historical forecasts will be made on
-            historical_forecasts_time_index = (
-                self._get_historical_forecastable_time_index(
+            # predictable time indexes (assuming model is already trained)
+            historical_forecasts_time_index_predict = (
+                _get_historical_forecast_predict_index(
+                    model,
                     series_,
+                    idx,
                     past_covariates_,
                     future_covariates_,
-                    (retrain is not False) or (not self._fit_called),
+                    forecast_horizon,
+                    overlap_end,
                 )
             )
 
-            # We also need the first value timestamp to be used for prediction or training
-            min_timestamp = (
-                historical_forecasts_time_index[0]
-                - (
-                    self._training_sample_time_index_length
-                    if retrain
-                    else self._predict_sample_time_index_length
-                )
-                * series_.freq
-            )
-
-            if historical_forecasts_time_index is None:
-                raise_log(
-                    ValueError(
-                        "Given the provided model, series and covariates, there is no timestamps "
-                        f" where we can make a prediction or train the model (series index: {idx}). "
-                        "Please check the time indexes of the series and covariates."
-                    ),
-                    logger,
+            if retrain:
+                # trainable time indexes (considering lags and available covariates)
+                historical_forecasts_time_index_train = (
+                    _get_historical_forecast_train_index(
+                        model,
+                        series_,
+                        idx,
+                        past_covariates_,
+                        future_covariates_,
+                        forecast_horizon,
+                        overlap_end,
+                    )
                 )
 
-            # prepare the start parameter -> pd.Timestamp
-            if start is not None:
-                historical_forecasts_time_index = drop_before_index(
+                # We need the first value timestamp to be used in order to properly shift the series
+                # Look at both past and future, since the target lags must be taken in consideration
+                min_timestamp_series = (
+                    historical_forecasts_time_index_train[0]
+                    - model._training_sample_time_index_length * series_.freq
+                )
+
+                # based on `retrain`, historical_forecasts_time_index is based either on train or predict
+                (
                     historical_forecasts_time_index,
-                    series_.get_timestamp_at_point(start),
+                    train_length_,
+                ) = _reconciliate_historical_time_indices(
+                    model=model,
+                    historical_forecasts_time_index_predict=historical_forecasts_time_index_predict,
+                    historical_forecasts_time_index_train=historical_forecasts_time_index_train,
+                    series=series_,
+                    series_idx=idx,
+                    retrain=retrain,
+                    train_length=train_length,
+                    show_warnings=show_warnings,
                 )
             else:
-                if (retrain is not False) or (not self._fit_called):
-                    if train_length:
-                        historical_forecasts_time_index = drop_before_index(
-                            historical_forecasts_time_index,
-                            historical_forecasts_time_index[0]
-                            + max(
-                                (
-                                    train_length
-                                    - self._training_sample_time_index_length
-                                ),
-                                0,
-                            )
-                            * series_.freq,
-                        )
-                    # if not we start training right away, but with 2 minimum points, so we start
-                    # 1 time step after the first trainable point.
-                    # (sklearn check that there are at least 2 points in the training set and it seems
-                    # rather reasonable)
-                    else:
-                        historical_forecasts_time_index = drop_before_index(
-                            historical_forecasts_time_index,
-                            historical_forecasts_time_index[0] + 1 * series_.freq,
-                        )
+                # we are only predicting: start of the series does not have to change
+                min_timestamp_series = series_.time_index[0]
+                historical_forecasts_time_index = (
+                    historical_forecasts_time_index_predict
+                )
+                train_length_ = None
 
-                    # if retrain is False, fit hasn't been called yet and train_length None,
-                    # it means that the entire backtesting will be based on a set of two training samples
-                    # at the first step, so we warn the user.
-                    raise_if(
-                        (not self._fit_called)
-                        and (retrain is False)
-                        and (not train_length),
-                        "The model has not been fitted yet, and `start` and train_length are not specified. "
-                        "The model is not retraining during the historical forecasts. Hence the "
-                        "first and only training would be done on 2 samples.",
-                        logger,
-                    )
-
-            # build the prediction times in advance (to be able to use tqdm)
-            last_valid_pred_time = self._get_last_prediction_time(
-                series_,
-                forecast_horizon,
-                overlap_end,
+            # based on `forecast_horizon` and `overlap_end`, historical_forecasts_time_index is shortened
+            historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
+                series=series_,
+                series_idx=idx,
+                historical_forecasts_time_index=historical_forecasts_time_index,
+                start=start,
+                start_format=start_format,
+                stride=stride,
+                show_warnings=show_warnings,
             )
 
-            historical_forecasts_time_index = drop_after_index(
-                historical_forecasts_time_index, last_valid_pred_time
+            # adjust the start of the series depending on whether we train (at some point), or predict only
+            # must be performed after the operation on historical_foreacsts_time_index
+            if min_timestamp_series > series_.time_index[0]:
+                series_ = series_.drop_before(min_timestamp_series - 1 * series_.freq)
+
+            # generate time index for the iteration
+            historical_forecasts_time_index = generate_index(
+                start=historical_forecasts_time_index[0],
+                end=historical_forecasts_time_index[-1],
+                freq=series_.freq,
             )
 
             if len(series) == 1:
                 # Only use tqdm if there's no outer loop
                 iterator = _build_tqdm_iterator(
-                    historical_forecasts_time_index[::stride], verbose
+                    historical_forecasts_time_index[::stride],
+                    verbose,
+                    total=(len(historical_forecasts_time_index) - 1) // stride + 1,
+                    desc="historical forecasts",
                 )
             else:
                 iterator = historical_forecasts_time_index[::stride]
 
             # Either store the whole forecasts or only the last points of each forecast, depending on last_points_only
             forecasts = []
-
             last_points_times = []
             last_points_values = []
-
+            _counter_train = 0
+            forecast_components = None
             # iterate and forecast
             for _counter, pred_time in enumerate(iterator):
-                # build the training series
-                if min_timestamp > series_.time_index[0]:
-                    train_series = series_.drop_before(
-                        min_timestamp - 1 * series_.freq
-                    ).drop_after(pred_time)
-                else:
+                # drop everything after `pred_time` to train on / predict with shifting input
+                if pred_time <= series_.end_time():
                     train_series = series_.drop_after(pred_time)
+                else:
+                    train_series = series_
 
-                if train_length and len(train_series) > train_length:
-                    train_series = train_series[-train_length:]
+                # optionally, apply moving window (instead of expanding window)
+                if train_length_ and len(train_series) > train_length_:
+                    train_series = train_series[-train_length_:]
 
-                if (not self._fit_called) or retrain_func(
-                    counter=_counter,
-                    pred_time=pred_time,
-                    train_series=train_series,
-                    past_covariates=past_covariates_.drop_after(pred_time)
-                    if past_covariates_
-                    and ("past_covariates" in retrain_func_signature)
-                    else None,
-                    future_covariates=future_covariates_.drop_after(
-                        min(
-                            pred_time + train_series.freq * forecast_horizon,
-                            series_.end_time(),
+                # when `retrain=True`, data transformers are also retrained between iterations to avoid data-leakage
+                # using a single series
+                if data_transformers and retrain:
+                    train_series, past_covariates_, future_covariates_ = (
+                        _apply_data_transformers(
+                            series=train_series,
+                            past_covariates=past_covariates_,
+                            future_covariates=future_covariates_,
+                            data_transformers=data_transformers,
+                            max_future_cov_lag=model.extreme_lags[5],
+                            fit_transformers=True,
                         )
                     )
-                    if future_covariates_
-                    else None,
+
+                # testing `retrain` to exclude `False` and `0`
+                if (
+                    retrain
+                    and historical_forecasts_time_index_train is not None
+                    and historical_forecasts_time_index_train[0]
+                    <= pred_time
+                    <= historical_forecasts_time_index_train[-1]
                 ):
-                    # avoid fitting the same model multiple times
-                    model = self.untrained_model()
-                    model._fit_wrapper(
-                        series=train_series,
+                    # retrain_func processes the series that would be used for training
+                    if retrain_func(
+                        counter=_counter_train,
+                        pred_time=pred_time,
+                        train_series=train_series,
                         past_covariates=past_covariates_,
                         future_covariates=future_covariates_,
+                    ):
+                        # avoid fitting the same model multiple times
+                        model = model.untrained_model()
+                        model._fit_wrapper(
+                            series=train_series,
+                            past_covariates=past_covariates_,
+                            future_covariates=future_covariates_,
+                            sample_weight=sample_weight_,
+                            **fit_kwargs,
+                        )
+                    else:
+                        # untrained model was not trained on the first trainable timestamp
+                        if not _counter_train and not model._fit_called:
+                            raise_log(
+                                ValueError(
+                                    f"`retrain` is `False` in the first train iteration at prediction point (in time) "
+                                    f"`{pred_time}` and the model has not been fit before. Either call `fit()` before "
+                                    f"`historical_forecasts()`, use a different `retrain` value or modify the function "
+                                    f"to return `True` at or before this timestamp."
+                                ),
+                                logger,
+                            )
+                    _counter_train += 1
+                elif not _counter and not model._fit_called:
+                    # model must be fit before the first prediction
+                    # `historical_forecasts_time_index_train` is known to be not None
+                    raise_log(
+                        ValueError(
+                            f"Model has not been fit before the first predict iteration at prediction point "
+                            f"(in time) `{pred_time}`. Either call `fit()` before `historical_forecasts()`, "
+                            f"set `retrain=True`, modify the function to return `True` at least once before "
+                            f"`{pred_time}`, or use a different `start` value. The first 'predictable' "
+                            f"timestamp with re-training inside `historical_forecasts` is: "
+                            f"{historical_forecasts_time_index_train[0]} (potential `start` value)."
+                        ),
+                        logger,
                     )
-                else:
-                    model = self
+
+                # for regression models with lags=None, lags_past_covariates=None and min(lags_future_covariates)>=0,
+                # the first predictable timestamp is the first timestamp of the series, a dummy ts must be created
+                # to support `predict()`
+                if len(train_series) == 0:
+                    train_series = TimeSeries.from_times_and_values(
+                        times=generate_index(
+                            start=pred_time - 1 * series_.freq,
+                            length=1,
+                            freq=series_.freq,
+                        ),
+                        values=np.array([np.nan]),
+                    )
 
                 forecast = model._predict_wrapper(
                     n=forecast_horizon,
@@ -877,7 +1219,22 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     future_covariates=future_covariates_,
                     num_samples=num_samples,
                     verbose=verbose,
+                    predict_likelihood_parameters=predict_likelihood_parameters,
+                    show_warnings=show_predict_warnings,
+                    **predict_kwargs,
                 )
+
+                forecast = _apply_inverse_data_transformers(
+                    series=train_series,
+                    forecasts=forecast,
+                    data_transformers=data_transformers,
+                    series_idx=idx if using_prefitted_transformers else None,
+                )
+
+                show_predict_warnings = False
+
+                if forecast_components is None:
+                    forecast_components = forecast.columns
 
                 if last_points_only:
                     last_points_values.append(forecast.all_values(copy=False)[-1])
@@ -885,186 +1242,373 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 else:
                     forecasts.append(forecast)
 
-            if last_points_only:
+            if last_points_only and last_points_values:
                 forecasts_list.append(
                     TimeSeries.from_times_and_values(
                         generate_index(
                             start=last_points_times[0],
                             end=last_points_times[-1],
-                            freq=series_.freq,
-                        )[::stride],
+                            freq=series_.freq * stride,
+                        ),
                         np.array(last_points_values),
-                        columns=series_.columns,
-                        static_covariates=series_.static_covariates,
-                        hierarchy=series_.hierarchy,
+                        columns=(
+                            forecast_components
+                            if forecast_components is not None
+                            else series_.columns
+                        ),
+                        static_covariates=(
+                            series_.static_covariates
+                            if not predict_likelihood_parameters
+                            else None
+                        ),
+                        hierarchy=(
+                            series_.hierarchy
+                            if not predict_likelihood_parameters
+                            else None
+                        ),
                     )
                 )
             else:
                 forecasts_list.append(forecasts)
 
-        return forecasts_list if len(series) > 1 else forecasts_list[0]
+        return series2seq(forecasts_list, seq_type_out=sequence_type_in)
 
     def backtest(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        historical_forecasts: Optional[
+            Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
+        ] = None,
+        forecast_horizon: int = 1,
         num_samples: int = 1,
         train_length: Optional[int] = None,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
-        forecast_horizon: int = 1,
+        start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
         overlap_end: bool = False,
         last_points_only: bool = False,
-        metric: Union[
-            Callable[[TimeSeries, TimeSeries], float],
-            List[Callable[[TimeSeries, TimeSeries], float]],
-        ] = metrics.mape,
-        reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
+        metric: Union[METRIC_TYPE, list[METRIC_TYPE]] = metrics.mape,
+        reduction: Union[Callable[..., float], None] = np.mean,
         verbose: bool = False,
-    ) -> Union[float, List[float], Sequence[float], List[Sequence[float]]]:
+        show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+        enable_optimization: bool = True,
+        data_transformers: Optional[
+            dict[str, Union[BaseDataTransformer, Pipeline]]
+        ] = None,
+        metric_kwargs: Optional[Union[dict[str, Any], list[dict[str, Any]]]] = None,
+        fit_kwargs: Optional[dict[str, Any]] = None,
+        predict_kwargs: Optional[dict[str, Any]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+    ) -> Union[float, np.ndarray, list[float], list[np.ndarray]]:
+        """Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.
 
-        """Compute error values that the model would have produced when
-        used on (potentially multiple) `series`.
-
-        It repeatedly builds a training set from the beginning of `series`. It trains the
-        current model on the training set, emits a forecast of length equal to forecast_horizon, and then moves
-        the end of the
-        training set forward by `stride` time steps. A metric (given by the `metric` function) is then evaluated
-        on the forecast and the actual values. Finally, the method returns a `reduction` (the mean by default)
+        If `historical_forecasts` are provided, the metric(s) (given by the `metric` function) is evaluated directly on
+        all forecasts and actual values. The same `series` and `last_points_only` value must be passed that were used
+        to generate the historical forecasts. Finally, the method returns an optional `reduction` (the mean by default)
         of all these metric scores.
 
-        By default, this method uses each historical forecast (whole) to compute error scores.
-        If `last_points_only` is set to True, it will use only the last point of each historical
-        forecast. In this case, no reduction is used.
+        If `historical_forecasts` is ``None``, it first generates the historical forecasts with the parameters given
+        below (see :meth:`ForecastingModel.historical_forecasts()
+        <darts.models.forecasting.forecasting_model.ForecastingModel.historical_forecasts>` for more info) and then
+        evaluates as described above.
 
-        By default, this method always re-trains the models on the entire available history,
-        corresponding to an expanding window strategy.
-        If `retrain` is set to False (useful for models for which training might be time-consuming, such as
-        deep learning models), the model will only be trained on the initial training window
-        (up to `start` time stamp), and only if it has not been trained before. Then, at every iteration, the
-        newly expanded input sequence will be fed to the model to produce the new output.
+        The metric(s) can be further customized `metric_kwargs` (e.g. control the aggregation over components, time
+        steps, multiple series, other required arguments such as `q` for quantile metrics, ...).
 
         Parameters
         ----------
         series
-            The (or a sequence of) target time series to use to successively train and evaluate the historical forecasts
+            A (sequence of) target time series used to successively train (if `retrain` is not ``False``) and compute
+            the historical forecasts.
         past_covariates
-            Optionally, one (or a sequence of) past-observed covariate series.
+            Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
             This applies only if the model supports past covariates.
         future_covariates
-            Optionally, one (or a sequence of) future-known covariate series.
+            Optionally, a (sequence of) future-known covariate time series for every input time series in `series`.
             This applies only if the model supports future covariates.
-        num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
-            for deterministic models.
-        train_length
-            Number of time steps in our training set (size of backtesting window to train on).
-            Default is set to train_length=None where it takes all available time steps up until prediction time,
-            otherwise the moving window strategy is used. If larger than the number of time steps available, all steps
-            up until prediction time are used, as in default case. Needs to be at least min_train_series_length.
-        start
-            The first prediction time, at which a prediction is computed for a future time.
-            This parameter supports 3 different types: ``float``, ``int`` and ``pandas.Timestamp``.
-            In the case of ``float``, the parameter will be treated as the proportion of the time series
-            that should lie before the first prediction point.
-            In the case of ``int``, the parameter will be treated as an integer index to the time index of
-            `series` that will be used as first prediction time.
-            In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
-            directly.
-            If `start` is not specified, the first prediction time will automatically be set to :
-                 - the first predictable point if `retrain` is False
-
-                 - the first trainable point if `retrain` is True and `train_length` is None
-
-                 - the first trainable point + `train_length` otherwise
+        historical_forecasts
+            Optionally, the (or a sequence of / a sequence of sequences of) historical forecasts time series to be
+            evaluated. Corresponds to the output of :meth:`historical_forecasts()
+            <darts.models.forecasting.forecasting_model.ForecastingModel.historical_forecasts>`. The same `series` and
+            `last_points_only` values must be passed that were used to generate the historical forecasts. If provided,
+            will skip historical forecasting and ignore all parameters except `series`, `last_points_only`, `metric`,
+            and `reduction`.
         forecast_horizon
-            The forecast horizon for the point prediction.
+            The forecast horizon for the predictions.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Use values ``>1`` only for probabilistic
+            models.
+        train_length
+            Optionally, use a fixed length / number of time steps for every constructed training set (rolling window
+            mode). Only effective when `retrain` is not ``False``. The default is ``None``, where it uses all time
+            steps up until the prediction time (expanding window mode). If larger than the number of available time
+            steps, uses the expanding mode. Needs to be at least `min_train_series_length`.
+        start
+            Optionally, the first point in time at which a prediction is computed. This parameter supports:
+            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            If an ``int``, it is either the index position of the first prediction point for `series` with a
+            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
+            the index position with `start_format="position"`.
+            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If ``None``, the first prediction point will automatically be set to:
+
+            - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
+              predictable point is earlier than the first trainable point.
+            - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),
+              or `retrain` is a ``Callable`` and the first trainable point is earlier than the first predictable point.
+            - the first trainable point (given `train_length`) otherwise
+
+            Note: If `start` is not within the trainable / forecastable points, uses the closest valid start point that
+              is a round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
+            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
+              shifted by `output_chunk_shift` points into the future.
+            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
+              (default behavior with ``None``) and start at the first trainable/predictable point.
+        start_format
+            Defines the `start` format.
+            If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
+            range from `(-len(series), len(series) - 1)`.
+            If set to ``'value'``, `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``.
         stride
-            The number of time steps between two consecutive training sets.
+            The number of time steps between two consecutive predictions.
         retrain
             Whether and/or on which condition to retrain the model before predicting.
-            This parameter supports 3 different datatypes: ``bool``, (positive) ``int``, and
-            ``Callable`` (returning a ``bool``).
-            In the case of ``bool``: retrain the model at each step (`True`), or never retrains the model (`False`).
+            This parameter supports 3 different types: ``bool``, (positive) ``int``, and ``Callable`` (returning a
+            ``bool``).
+            In the case of ``bool``: retrain the model at each step (`True`), or never retrain the model (`False`).
             In the case of ``int``: the model is retrained every `retrain` iterations.
             In the case of ``Callable``: the model is retrained whenever callable returns `True`.
-            Arguments passed to the callable are as follows:
+            The callable must have the following positional arguments:
 
-                - `pred_time (pd.Timestamp or int)`: timestamp of forecast time (end of the training series)
-                - `train_series (TimeSeries)`: train series up to `pred_time`
-                - `past_covariates (TimeSeries)`: past_covariates series up to `pred_time`
-                - `future_covariates (TimeSeries)`: future_covariates series up
-                  to `min(pred_time + series.freq * forecast_horizon, series.end_time())`
+            - `counter` (int): current `retrain` iteration
+            - `pred_time` (pd.Timestamp or int): timestamp of forecast time (end of the training series)
+            - `train_series` (TimeSeries): train series up to `pred_time`
+            - `past_covariates` (TimeSeries): past_covariates series up to `pred_time`
+            - `future_covariates` (TimeSeries): future_covariates series up to `min(pred_time + series.freq *
+              forecast_horizon, series.end_time())`
 
-            Note: some models do require being retrained every time
-            and do not support anything else than `retrain=True`.
+            Note: if any optional `*_covariates` are not passed to `historical_forecast`, ``None`` will be passed
+            to the corresponding retrain function argument.
+            Note: some models require being retrained every time and do not support anything other than
+            `retrain=True`.
+            Note: also controls the retraining of the `data_transformers`.
         overlap_end
-            Whether the returned forecasts can go beyond the series' end or not
+            Whether the returned forecasts can go beyond the series' end or not.
         last_points_only
-            Whether to use the whole historical forecasts or only the last point of each forecast to compute the error
+            Whether to return only the last point of each historical forecast. If set to ``True``, the method returns a
+            single ``TimeSeries`` (for each time series in `series`) containing the successive point forecasts.
+            Otherwise, returns a list of historical ``TimeSeries`` forecasts.
         metric
-            A function or a list of function that takes two ``TimeSeries`` instances as inputs and returns an
-            error value.
+            A metric function or a list of metric functions. Each metric must either be a Darts metric (see `here
+            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that has an
+            identical signature as Darts' metrics, uses decorators :func:`~darts.metrics.metrics.multi_ts_support` and
+            :func:`~darts.metrics.metrics.multi_ts_support`, and returns the metric score.
         reduction
-            A function used to combine the individual error scores obtained when `last_points_only` is set to False.
-            When providing several metric functions, the function will receive the argument `axis = 0` to obtain single
+            A function used to combine the individual error scores obtained when `last_points_only` is set to `False`.
+            When providing several metric functions, the function will receive the argument `axis = 1` to obtain single
             value for each metric function.
             If explicitly set to `None`, the method will return a list of the individual error scores instead.
             Set to ``np.mean`` by default.
         verbose
-            Whether to print progress
+            Whether to print the progress.
+        show_warnings
+            Whether to show warnings related to historical forecasts optimization, or parameters `start` and
+            `train_length`.
+        predict_likelihood_parameters
+            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``.
+        enable_optimization
+            Whether to use the optimized version of `historical_forecasts` when supported and available.
+            Default: ``True``.
+        data_transformers
+            Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
+            (possibles keys; "series", "past_covariates", "future_covariates"). If provided, all input series must be
+            in the un-transformed space. For fittable transformer / pipeline:
+
+            - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
+            - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
+
+            The fitted transformer is used to transform the input during both training and prediction.
+            If the transformation is invertible, the forecasts will be inverse-transformed.
+            Only effective when `historical_forecasts=None`.
+        metric_kwargs
+            Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'component_reduction'`
+            for reducing the component wise metrics, seasonality `'m'` for scaled metrics, etc. Will pass arguments to
+            each metric separately and only if they are present in the corresponding metric signature. Parameter
+            `'insample'` for scaled metrics (e.g. mase`, `rmsse`, ...) is ignored, as it is handled internally.
+        fit_kwargs
+            Optionally, some additional arguments passed to the model `fit()` method.
+        predict_kwargs
+            Optionally, some additional arguments passed to the model `predict()` method.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels for training. Only effective when
+            `retrain` is not ``False``. They are applied per observation, per label (each step in
+            `output_chunk_length`), and per component.
+            If a series or sequence of series, then those weights are used. If the weight series only have a single
+            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+            component-specific weights, the number of components must match those of `series`.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+            computed per time `series`.
+
         Returns
         -------
-        float or List[float] or List[List[float]]
-            The (sequence of) error score on a series, or list of list containing error scores for each
-            provided series and each sample.
-        """
+        float
+            A single backtest score for single uni/multivariate series, a single `metric` function and:
 
-        forecasts = self.historical_forecasts(
+            - `historical_forecasts` generated with `last_points_only=True`
+            - `historical_forecasts` generated with `last_points_only=False` and using a backtest `reduction`
+        np.ndarray
+            An numpy array of backtest scores. For single series and one of:
+
+            - a single `metric` function, `historical_forecasts` generated with `last_points_only=False`
+              and backtest `reduction=None`. The output has shape (n forecasts, *).
+            - multiple `metric` functions and `historical_forecasts` generated with `last_points_only=False`.
+              The output has shape (*, n metrics) when using a backtest `reduction`, and (n forecasts, *, n metrics)
+              when `reduction=None`
+            - multiple uni/multivariate series including `series_reduction` and at least one of
+              `component_reduction=None` or `time_reduction=None` for "per time step metrics"
+        List[float]
+            Same as for type `float` but for a sequence of series. The returned metric list has length
+            `len(series)` with the `float` metric for each input `series`.
+        List[np.ndarray]
+            Same as for type `np.ndarray` but for a sequence of series. The returned metric list has length
+            `len(series)` with the `np.ndarray` metrics for each input `series`.
+        """
+        metric_kwargs = metric_kwargs or dict()
+        if not isinstance(metric_kwargs, list):
+            metric_kwargs = [metric_kwargs]
+
+        if not isinstance(metric, list):
+            metric = [metric]
+
+        if len(metric_kwargs) > 1 and len(metric_kwargs) != len(metric):
+            raise_log(
+                ValueError(
+                    f"Mismatch between number of metric-specific `metric_kwargs` "
+                    f"({len(metric_kwargs)}) and number of metrics in `metric` ({len(metric)}). "
+                    f"For `metric_kwargs`, either give a list of dicts of length `{len(metric)}` "
+                    f"with metric-specific kwargs, or a single dict that is applied to all metrics."
+                ),
+                logger=logger,
+            )
+        if len(metric_kwargs) != len(metric):
+            metric_kwargs = [metric_kwargs[0] for _ in range(len(metric))]
+
+        historical_forecasts = historical_forecasts or self.historical_forecasts(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             num_samples=num_samples,
             train_length=train_length,
             start=start,
+            start_format=start_format,
             forecast_horizon=forecast_horizon,
             stride=stride,
             retrain=retrain,
             overlap_end=overlap_end,
             last_points_only=last_points_only,
             verbose=verbose,
+            show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            enable_optimization=enable_optimization,
+            data_transformers=data_transformers,
+            fit_kwargs=fit_kwargs,
+            predict_kwargs=predict_kwargs,
+            sample_weight=sample_weight,
         )
 
-        series = series2seq(series)
-        if len(series) == 1:
-            forecasts = [forecasts]
+        # remember input series type
+        series_seq_type = get_series_seq_type(series)
+        # validate historical forecasts and convert to multiple series with multiple forecasts case
+        series, historical_forecasts = _process_historical_forecast_for_backtest(
+            series=series,
+            historical_forecasts=historical_forecasts,
+            last_points_only=last_points_only,
+        )
 
-        if not isinstance(metric, list):
-            metric = [metric]
+        # we have multiple forecasts per series: rearrange forecasts to call each metric only once;
+        # flatten historical forecasts, get matching target series index, remember cumulative target lengths
+        # for later reshaping back to original
+        series_idx = []
+        cum_len = [0]
+        forecasts_list = []
+        for idx, fc_list in enumerate(historical_forecasts):
+            series_idx += [idx] * len(fc_list)
+            cum_len.append(cum_len[-1] + len(fc_list))
+            forecasts_list.extend(fc_list)
 
+        class SeriesGenerator(Sequence):
+            """Yields the target `series` corresponding the historical forecast at index `i`.
+            Allows lazy loading of target `series` in case it is a Sequence.
+            """
+
+            def __len__(self):
+                return len(forecasts_list)
+
+            def __getitem__(self, index) -> TimeSeries:
+                return series[series_idx[index]]
+
+        # extract metrics per metric and series, and optionally reduce
+        # errors shape `(n metrics, n total historical forecasts)`
+        series_gen = SeriesGenerator()
+        errors = []
+        for metric_f, metric_f_kwargs in zip(metric, metric_kwargs):
+            # add user supplied metric kwargs
+            kwargs = {k: v for k, v in metric_f_kwargs.items()}
+            metric_params = inspect.signature(metric_f).parameters
+
+            # scaled metrics require `insample` series
+            if "insample" in metric_params:
+                kwargs["insample"] = series_gen
+
+            errors.append(metric_f(series_gen, forecasts_list, **kwargs))
+        try:
+            # multiple series can result in different number of forecasts; try if we can run it efficiently
+            errors = np.array(errors)
+            is_arr = True
+        except ValueError:
+            # otherwise, compute array later
+            is_arr = False
+
+        # get errors for each input `series`
         backtest_list = []
-        for idx, target_ts in enumerate(series):
-            if last_points_only:
-                errors = [metric_f(target_ts, forecasts[idx]) for metric_f in metric]
-                if len(errors) == 1:
-                    errors = errors[0]
-                backtest_list.append(errors)
+        for i in range(len(cum_len) - 1):
+            # errors_series with shape `(n metrics, n series specific historical forecasts, *)`
+            if is_arr:
+                errors_series = errors[:, cum_len[i] : cum_len[i + 1]]
             else:
-                errors = [
-                    [metric_f(target_ts, f) for metric_f in metric]
-                    if len(metric) > 1
-                    else metric[0](target_ts, f)
-                    for f in forecasts[idx]
-                ]
+                errors_series = np.array([
+                    errors_[cum_len[i] : cum_len[i + 1]] for errors_ in errors
+                ])
 
-                if reduction is None:
-                    backtest_list.append(errors)
-                else:
-                    backtest_list.append(reduction(np.array(errors), axis=0))
+            if reduction is not None:
+                # shape `(n metrics, n forecasts, *)` -> `(n metrics, *)`
+                errors_series = reduction(errors_series, axis=1)
+            elif last_points_only:
+                # shape `(n metrics, n forecasts = 1, *)` -> `(n metrics, *)`
+                errors_series = errors_series[:, 0]
 
-        return backtest_list if len(backtest_list) > 1 else backtest_list[0]
+            if len(metric) == 1:
+                # shape `(n metrics, *)` -> `(*,)`
+                errors_series = errors_series[0]
+            else:
+                # shape `(n metrics, *)` -> `(*, n metrics)`
+                errors_series = errors_series.transpose(
+                    tuple(i for i in range(1, errors_series.ndim)) + (0,)
+                )
+
+            backtest_list.append(errors_series)
+        return (
+            backtest_list if series_seq_type > SeriesType.SINGLE else backtest_list[0]
+        )
 
     @classmethod
     def gridsearch(
@@ -1075,8 +1619,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates: Optional[TimeSeries] = None,
         forecast_horizon: Optional[int] = None,
         stride: int = 1,
-        start: Union[pd.Timestamp, float, int] = 0.5,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["position", "value"] = "value",
         last_points_only: bool = False,
+        show_warnings: bool = True,
         val_series: Optional[TimeSeries] = None,
         use_fitted_values: bool = False,
         metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
@@ -1084,7 +1630,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         verbose=False,
         n_jobs: int = 1,
         n_random_samples: Optional[Union[int, float]] = None,
-    ) -> Tuple["ForecastingModel", Dict[str, Any], float]:
+        data_transformers: Optional[
+            dict[str, Union[BaseDataTransformer, Pipeline]]
+        ] = None,
+        fit_kwargs: Optional[dict[str, Any]] = None,
+        predict_kwargs: Optional[dict[str, Any]] = None,
+        sample_weight: Optional[Union[TimeSeries, str]] = None,
+    ) -> tuple["ForecastingModel", dict[str, Any], float]:
         """
         Find the best hyper-parameters among a given set using a grid search.
 
@@ -1132,22 +1684,49 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             A dictionary containing as keys hyperparameter names, and as values lists of values for the
             respective hyperparameter.
         series
-            The TimeSeries instance used as input and target for training.
+            The target series used as input and target for training.
         past_covariates
-            An optional past-observed covariate series. This applies only if the model supports past covariates.
+            Optionally, a past-observed covariate series. This applies only if the model supports past covariates.
         future_covariates
-            An optional future-known covariate series. This applies only if the model supports future covariates.
+            Optionally, a future-known covariate series. This applies only if the model supports future covariates.
         forecast_horizon
             The integer value of the forecasting horizon. Activates expanding window mode.
         stride
-            The number of time steps between two consecutive predictions. Only used in expanding window mode.
+            Only used in expanding window mode. The number of time steps between two consecutive predictions.
         start
-            The ``int``, ``float`` or ``pandas.Timestamp`` that represents the starting point in the time index
-            of `series` from which predictions will be made to evaluate the model.
-            For a detailed description of how the different data types are interpreted, please see the documentation
-            for `ForecastingModel.backtest`.
+            Only used in expanding window mode. Optionally, the first point in time at which a prediction is computed.
+            This parameter supports: ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            If an ``int``, it is either the index position of the first prediction point for `series` with a
+            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
+            the index position with `start_format="position"`.
+            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If ``None``, the first prediction point will automatically be set to:
+
+            - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
+              predictable point is earlier than the first trainable point.
+            - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),
+              or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
+            - the first trainable point (given `train_length`) otherwise
+
+            Note: If `start` is not within the trainable / forecastable points, uses the closest valid start point that
+              is a round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
+            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
+              shifted by `output_chunk_shift` points into the future.
+            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
+              (default behavior with ``None``) and start at the first trainable/predictable point.
+        start_format
+            Only used in expanding window mode. Defines the `start` format. Only effective when `start` is an integer
+            and `series` is indexed with a `pd.RangeIndex`.
+            If set to 'position', `start` corresponds to the index position of the first predicted point and can range
+            from `(-len(series), len(series) - 1)`.
+            If set to 'value', `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``
         last_points_only
-            Whether to use the whole forecasts or only the last point of each forecast to compute the error
+            Only used in expanding window mode. Whether to use the whole forecasts or only the last point of each
+            forecast to compute the error.
+        show_warnings
+            Only used in expanding window mode. Whether to show warnings related to the `start` parameter.
         val_series
             The TimeSeries instance used for validation in split mode. If provided, this series must start right after
             the end of `series`; so that a proper comparison of the forecast can be made.
@@ -1155,13 +1734,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If `True`, uses the comparison with the fitted values.
             Raises an error if ``fitted_values`` is not an attribute of `model_class`.
         metric
-            A function that takes two TimeSeries instances as inputs (actual and prediction, in this order),
-            and returns a float error value.
+            A metric function that returns the error between two `TimeSeries` as a float value . Must either be one of
+            Darts' "aggregated over time" metrics (see `here
+            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that as input two
+            `TimeSeries` and returns the error
         reduction
             A reduction function (mapping array to float) describing how to aggregate the errors obtained
             on the different validation series when backtesting. By default it'll compute the mean of errors.
         verbose
-            Whether to print progress.
+            Whether to print the progress.
         n_jobs
             The number of jobs to run in parallel. Parallel jobs are created only when there are two or more parameters
             combinations to evaluate. Each job will instantiate, train, and evaluate a different instance of the model.
@@ -1173,6 +1754,29 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             must be between `0` and the total number of parameter combinations.
             If a float, `n_random_samples` is the ratio of parameter combinations selected from the full grid and must
             be between `0` and `1`. Defaults to `None`, for which random selection will be ignored.
+        data_transformers
+            Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
+            (possibles keys; "series", "past_covariates", "future_covariates"). If provided, all input series must be
+            in the un-transformed space. For fittable transformer / pipeline:
+
+            - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
+            - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
+
+            The fitted transformer is used to transform the input during both training and prediction.
+            If the transformation is invertible, the forecasts will be inverse-transformed.
+        fit_kwargs
+            Additional arguments passed to the model `fit()` method.
+        predict_kwargs
+            Additional arguments passed to the model `predict()` method.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels for training. Only effective when
+            `retrain` is not ``False``. They are applied per observation, per label (each step in
+            `output_chunk_length`), and per component.
+            If a series, then those weights are used. If the weight series only have a single component / column, then
+            the weights are applied globally to all components in `series`. Otherwise, for component-specific weights,
+            the number of components must match those of `series`.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight.
 
         Returns
         -------
@@ -1187,14 +1791,34 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             + use_fitted_values
             == 1,
             "Please pass exactly one of the arguments 'forecast_horizon', "
-            "'val_target_series' or 'use_fitted_values'.",
+            "'val_series' or 'use_fitted_values'.",
             logger,
         )
 
+        if not isinstance(parameters, dict):
+            raise_log(
+                ValueError(
+                    f"`parameters` should be a dictionary, received a: {type(parameters)}."
+                )
+            )
+
+        if not all(
+            isinstance(params, (list, np.ndarray)) for params in parameters.values()
+        ):
+            raise_log(
+                ValueError(
+                    "Every value in the `parameters` dictionary should be a list or a np.ndarray."
+                ),
+                logger,
+            )
+
         if use_fitted_values:
             raise_if_not(
-                hasattr(model_class(), "fitted_values"),
-                "The model must have a fitted_values attribute to compare with the train TimeSeries",
+                hasattr(
+                    model_class(**{k: v[0] for k, v in parameters.items()}),
+                    "fitted_values",
+                ),
+                "The model must have a fitted_values attribute to compare with the train TimeSeries (local models)",
                 logger,
             )
 
@@ -1205,10 +1829,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger,
             )
 
-        # TODO: here too I'd say we can leave these checks to the models
-        # if covariates is not None:
-        #     raise_if_not(series.has_same_time_as(covariates), 'The provided series and covariates must have the '
-        #                                                       'same time axes.')
+        data_transformers = _convert_data_transformers(
+            data_transformers=data_transformers, copy=True
+        )
+
+        if fit_kwargs is None:
+            fit_kwargs = dict()
+        if predict_kwargs is None:
+            predict_kwargs = dict()
 
         # compute all hyperparameter combinations from selection
         params_cross_product = list(product(*parameters.values()))
@@ -1221,7 +1849,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # iterate through all combinations of the provided parameters and choose the best one
         iterator = _build_tqdm_iterator(
-            zip(params_cross_product), verbose, total=len(params_cross_product)
+            zip(params_cross_product),
+            verbose,
+            total=len(params_cross_product),
+            desc="gridsearch",
         )
 
         def _evaluate_combination(param_combination) -> float:
@@ -1230,16 +1861,45 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
             if param_combination_dict.get("model_name", None):
                 current_time = time.strftime("%Y-%m-%d_%H.%M.%S.%f", time.localtime())
-                param_combination_dict[
-                    "model_name"
-                ] = f"{current_time}_{param_combination_dict['model_name']}"
+                param_combination_dict["model_name"] = (
+                    f"{current_time}_{param_combination_dict['model_name']}"
+                )
 
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
-                model._fit_wrapper(series, past_covariates, future_covariates)
+                if data_transformers:
+                    series_, past_covariates_, future_covariates_ = (
+                        _apply_data_transformers(
+                            series=series,
+                            past_covariates=past_covariates,
+                            future_covariates=future_covariates,
+                            data_transformers=data_transformers,
+                            max_future_cov_lag=model.extreme_lags[5],
+                            fit_transformers=True,
+                        )
+                    )
+                else:
+                    series_ = series
+                    past_covariates_ = past_covariates
+                    future_covariates_ = future_covariates
+
+                model._fit_wrapper(
+                    series=series_,
+                    past_covariates=past_covariates_,
+                    future_covariates=future_covariates_,
+                    sample_weight=sample_weight,
+                    **fit_kwargs,
+                )
                 fitted_values = TimeSeries.from_times_and_values(
                     series.time_index, model.fitted_values
                 )
+                if data_transformers and "series" in data_transformers:
+                    fitted_values = _apply_inverse_data_transformers(
+                        series=series_,
+                        forecasts=fitted_values,
+                        data_transformers=data_transformers,
+                        series_idx=None,
+                    )
                 error = metric(series, fitted_values)
             elif val_series is None:  # expanding window mode
                 error = model.backtest(
@@ -1248,28 +1908,62 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     future_covariates=future_covariates,
                     num_samples=1,
                     start=start,
+                    start_format=start_format,
                     forecast_horizon=forecast_horizon,
                     stride=stride,
                     metric=metric,
                     reduction=reduction,
                     last_points_only=last_points_only,
                     verbose=verbose,
+                    show_warnings=show_warnings,
+                    data_transformers=data_transformers,
+                    fit_kwargs=fit_kwargs,
+                    predict_kwargs=predict_kwargs,
+                    sample_weight=sample_weight,
                 )
             else:  # split mode
-                model._fit_wrapper(series, past_covariates, future_covariates)
+                if data_transformers:
+                    series_, past_covariates_, future_covariates_ = (
+                        _apply_data_transformers(
+                            series=series,
+                            past_covariates=past_covariates,
+                            future_covariates=future_covariates,
+                            data_transformers=data_transformers,
+                            max_future_cov_lag=model.extreme_lags[5],
+                            fit_transformers=True,
+                        )
+                    )
+                else:
+                    series_ = series
+                    past_covariates_ = past_covariates
+                    future_covariates_ = future_covariates
+
+                model._fit_wrapper(
+                    series=series_,
+                    past_covariates=past_covariates_,
+                    future_covariates=future_covariates_,
+                    sample_weight=sample_weight,
+                    **fit_kwargs,
+                )
                 pred = model._predict_wrapper(
-                    len(val_series),
-                    series,
-                    past_covariates,
-                    future_covariates,
+                    n=len(val_series),
+                    series=series_,
+                    past_covariates=past_covariates_,
+                    future_covariates=future_covariates_,
                     num_samples=1,
                     verbose=verbose,
+                    **predict_kwargs,
+                )
+                pred = _apply_inverse_data_transformers(
+                    series=series_,
+                    forecasts=pred,
+                    data_transformers=data_transformers,
                 )
                 error = metric(val_series, pred)
 
             return float(error)
 
-        errors: List[float] = _parallel_apply(
+        errors: list[float] = _parallel_apply(
             iterator, _evaluate_combination, n_jobs, {}, {}
         )
 
@@ -1288,89 +1982,336 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        historical_forecasts: Optional[
+            Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
+        ] = None,
         forecast_horizon: int = 1,
-        retrain: bool = True,
+        num_samples: int = 1,
+        train_length: Optional[int] = None,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["position", "value"] = "value",
+        stride: int = 1,
+        retrain: Union[bool, int, Callable[..., bool]] = True,
+        overlap_end: bool = False,
+        last_points_only: bool = True,
+        metric: METRIC_TYPE = metrics.err,
         verbose: bool = False,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        """Compute the residuals produced by this model on a (or sequence of) univariate  time series.
+        show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+        enable_optimization: bool = True,
+        data_transformers: Optional[
+            dict[str, Union[BaseDataTransformer, Pipeline]]
+        ] = None,
+        metric_kwargs: Optional[dict[str, Any]] = None,
+        fit_kwargs: Optional[dict[str, Any]] = None,
+        predict_kwargs: Optional[dict[str, Any]] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        values_only: bool = False,
+    ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
+        """Compute the residuals that the model produced for historical forecasts on (potentially multiple) `series`.
 
-        This function computes the difference between the actual observations from `series`
-        and the fitted values vector `p` obtained by training the model on `series`.
-        For every index `i` in `series`, `p[i]` is computed by training the model on
-        ``series[:(i - forecast_horizon)]`` and forecasting `forecast_horizon` into the future.
-        (`p[i]` will be set to the last value of the predicted series.)
-        The vector of residuals will be shorter than `series` due to the minimum
-        training series length required by the model and the gap introduced by `forecast_horizon`.
-        Most commonly, the term "residuals" implies a value for `forecast_horizon` of 1; but
-        this can be configured.
+        This function computes the difference (or one of Darts' "per time step" metrics) between the actual
+        observations from `series` and the fitted values obtained by training the model on `series` (or using a
+        pre-trained model with `retrain=False`). Not all models support fitted values, so we use historical forecasts
+        as an approximation for them.
 
-        This method works only on univariate series. It uses the median
-        prediction (when dealing with stochastic forecasts).
+        In sequence this method performs:
+
+        - use pre-computed `historical_forecasts` or compute historical forecasts for each series (see
+          :meth:`~darts.models.forecasting.forecasting_model.ForecastingModel.historical_forecasts` for more details).
+          How the historical forecasts are generated can be configured with parameters `num_samples`, `train_length`,
+          `start`, `start_format`, `forecast_horizon`, `stride`, `retrain`, `last_points_only`, `fit_kwargs`, and
+          `predict_kwargs`.
+        - compute a backtest using a "per time step" `metric` between the historical forecasts and `series` per
+          component/column and time step (see
+          :meth:`~darts.models.forecasting.forecasting_model.ForecastingModel.backtest` for more details). By default,
+          uses the residuals :func:`~darts.metrics.metrics.err` (error) as a `metric`.
+        - create and return `TimeSeries` (or simply a np.ndarray with `values_only=True`) with the time index from
+          historical forecasts, and values from the metrics per component and time step.
+
+        This method works for single or multiple univariate or multivariate series.
+        It uses the median prediction (when dealing with stochastic forecasts).
 
         Parameters
         ----------
         series
-            The univariate TimeSeries instance which the residuals will be computed for.
+            A (sequence of) target time series used to successively train (if `retrain` is not ``False``) and compute
+            the historical forecasts.
         past_covariates
-            One or several past-observed covariate time series.
+            Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
+            This applies only if the model supports past covariates.
         future_covariates
-            One or several future-known covariate time series.
+            Optionally, a (sequence of) future-known covariate time series for every input time series in `series`.
+            This applies only if the model supports future covariates.
+        historical_forecasts
+            Optionally, the (or a sequence of / a sequence of sequences of) historical forecasts time series to be
+            evaluated. Corresponds to the output of :meth:`historical_forecasts()
+            <darts.models.forecasting.forecasting_model.ForecastingModel.historical_forecasts>`. The same `series` and
+            `last_points_only` values must be passed that were used to generate the historical forecasts. If provided,
+            will skip historical forecasting and ignore all parameters except `series`, `last_points_only`, `metric`,
+            and `reduction`.
         forecast_horizon
-            The forecasting horizon used to predict each fitted value.
+            The forecast horizon for the predictions.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Use values ``>1`` only for probabilistic
+            models.
+        train_length
+            Optionally, use a fixed length / number of time steps for every constructed training set (rolling window
+            mode). Only effective when `retrain` is not ``False``. The default is ``None``, where it uses all time
+            steps up until the prediction time (expanding window mode). If larger than the number of available time
+            steps, uses the expanding mode. Needs to be at least `min_train_series_length`.
+        start
+            Optionally, the first point in time at which a prediction is computed. This parameter supports:
+            ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
+            If a ``float``, it is the proportion of the time series that should lie before the first prediction point.
+            If an ``int``, it is either the index position of the first prediction point for `series` with a
+            `pd.DatetimeIndex`, or the index value for `series` with a `pd.RangeIndex`. The latter can be changed to
+            the index position with `start_format="position"`.
+            If a ``pandas.Timestamp``, it is the time stamp of the first prediction point.
+            If ``None``, the first prediction point will automatically be set to:
+
+            - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
+              predictable point is earlier than the first trainable point.
+            - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),
+              or `retrain` is a ``Callable`` and the first trainable point is earlier than the first predictable point.
+            - the first trainable point (given `train_length`) otherwise
+
+            Note: If `start` is not within the trainable / forecastable points, uses the closest valid start point that
+              is a round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
+            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
+              shifted by `output_chunk_shift` points into the future.
+            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
+              (default behavior with ``None``) and start at the first trainable/predictable point.
+        start_format
+            Defines the `start` format.
+            If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
+            range from `(-len(series), len(series) - 1)`.
+            If set to ``'value'``, `start` corresponds to the index value/label of the first predicted point. Will raise
+            an error if the value is not in `series`' index. Default: ``'value'``.
+        stride
+            The number of time steps between two consecutive predictions.
         retrain
-            Whether to train the model at each iteration, for models that support it.
-            If False, the model is not trained at all. Default: True
+            Whether and/or on which condition to retrain the model before predicting.
+            This parameter supports 3 different types: ``bool``, (positive) ``int``, and ``Callable`` (returning a
+            ``bool``).
+            In the case of ``bool``: retrain the model at each step (`True`), or never retrain the model (`False`).
+            In the case of ``int``: the model is retrained every `retrain` iterations.
+            In the case of ``Callable``: the model is retrained whenever callable returns `True`.
+            The callable must have the following positional arguments:
+
+            - `counter` (int): current `retrain` iteration
+            - `pred_time` (pd.Timestamp or int): timestamp of forecast time (end of the training series)
+            - `train_series` (TimeSeries): train series up to `pred_time`
+            - `past_covariates` (TimeSeries): past_covariates series up to `pred_time`
+            - `future_covariates` (TimeSeries): future_covariates series up to `min(pred_time + series.freq *
+              forecast_horizon, series.end_time())`
+
+            Note: if any optional `*_covariates` are not passed to `historical_forecast`, ``None`` will be passed
+            to the corresponding retrain function argument.
+            Note: some models require being retrained every time and do not support anything other than
+            `retrain=True`.
+            Note: also controls the retraining of the `data_transformers`.
+        overlap_end
+            Whether the returned forecasts can go beyond the series' end or not.
+        last_points_only
+            Whether to return only the last point of each historical forecast. If set to ``True``, the method returns a
+            single ``TimeSeries`` (for each time series in `series`) containing the successive point forecasts.
+            Otherwise, returns a list of historical ``TimeSeries`` forecasts.
+        metric
+            Either one of Darts' "per time step" metrics (see `here
+            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that has an
+            identical signature as Darts' "per time step" metrics, uses decorators
+            :func:`~darts.metrics.metrics.multi_ts_support` and :func:`~darts.metrics.metrics.multi_ts_support`,
+            and returns one value per time step.
         verbose
-            Whether to print progress.
+            Whether to print the progress.
+        show_warnings
+            Whether to show warnings related to historical forecasts optimization, or parameters `start` and
+            `train_length`.
+        predict_likelihood_parameters
+            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``.
+        enable_optimization
+            Whether to use the optimized version of `historical_forecasts` when supported and available.
+            Default: ``True``.
+        data_transformers
+            Optionally, a dictionary of `BaseDataTransformer` or `Pipeline` to apply to the corresponding series
+            (possibles keys; "series", "past_covariates", "future_covariates"). If provided, all input series must be
+            in the un-transformed space. For fittable transformer / pipeline:
+
+            - if `retrain=True`, the data transformer re-fit on the training data at each historical forecast step.
+            - if `retrain=False`, the data transformer transforms the series once before all the forecasts.
+
+            The fitted transformer is used to transform the input during both training and prediction.
+            If the transformation is invertible, the forecasts will be inverse-transformed.
+            Only effective when `historical_forecasts=None`.
+        metric_kwargs
+            Additional arguments passed to `metric()`, such as `'n_jobs'` for parallelization, `'m'` for scaled
+            metrics, etc. Will pass arguments only if they are present in the corresponding metric signature. Ignores
+            reduction arguments `"series_reduction", "component_reduction", "time_reduction"`, and parameter
+            `'insample'` for scaled metrics (e.g. mase`, `rmsse`, ...), as they are handled internally.
+        fit_kwargs
+            Optionally, some additional arguments passed to the model `fit()` method.
+        predict_kwargs
+            Optionally, some additional arguments passed to the model `predict()` method.
+        sample_weight
+            Optionally, some sample weights to apply to the target `series` labels for training. Only effective when
+            `retrain` is not ``False``. They are applied per observation, per label (each step in
+            `output_chunk_length`), and per component.
+            If a series or sequence of series, then those weights are used. If the weight series only have a single
+            component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+            component-specific weights, the number of components must match those of `series`.
+            If a string, then the weights are generated using built-in weighting functions. The available options are
+            `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+            computed per time `series`.
+        values_only
+            Whether to return the residuals as `np.ndarray`. If `False`, returns residuals as `TimeSeries`.
+
         Returns
         -------
-        TimeSeries (or Sequence[TimeSeries])
-            The vector of residuals.
+        TimeSeries
+            Residual `TimeSeries` for a single `series` and `historical_forecasts` generated with
+            `last_points_only=True`.
+        List[TimeSeries]
+            A list of residual `TimeSeries` for a sequence (list) of `series` with `last_points_only=True`.
+            The residual list has length `len(series)`.
+        List[List[TimeSeries]]
+            A list of lists of residual `TimeSeries` for a sequence of `series` with `last_points_only=False`.
+            The outer residual list has length `len(series)`. The inner lists consist of the residuals from
+            all possible series-specific historical forecasts.
         """
+        # `residuals()` should return metrics per series, component and time step (no reduction)
+        metric_kwargs = copy.deepcopy(metric_kwargs) or {}
+        metric_kwargs["series_reduction"] = None
+        metric_kwargs["component_reduction"] = None
+        metric_kwargs["time_reduction"] = None
 
-        series = series2seq(series)
-        past_covariates = series2seq(past_covariates)
-        future_covariates = series2seq(future_covariates)
-
-        raise_if_not(
-            all([serie.is_univariate for serie in series]),
-            "Each series in the sequence must be univariate.",
-            logger,
+        historical_forecasts = historical_forecasts or self.historical_forecasts(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            train_length=train_length,
+            start=start,
+            start_format=start_format,
+            forecast_horizon=forecast_horizon,
+            stride=stride,
+            retrain=retrain,
+            last_points_only=last_points_only,
+            verbose=verbose,
+            show_warnings=show_warnings,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            enable_optimization=enable_optimization,
+            data_transformers=data_transformers,
+            fit_kwargs=fit_kwargs,
+            predict_kwargs=predict_kwargs,
+            overlap_end=overlap_end,
+            sample_weight=sample_weight,
         )
 
-        residuals_list = []
-        # compute residuals
-        for idx, target_ts in enumerate(series):
-            # get first index not contained in the first training set
-            first_index = target_ts.time_index[self.min_train_series_length]
+        # remember input series type
+        series_seq_type = get_series_seq_type(series)
+        # validate historical forecasts and convert to multiple series with multiple forecasts case
+        series, historical_forecasts = _process_historical_forecast_for_backtest(
+            series=series,
+            historical_forecasts=historical_forecasts,
+            last_points_only=last_points_only,
+        )
 
-            # compute fitted values
-            forecasts = self.historical_forecasts(
-                series=target_ts,
-                past_covariates=past_covariates[idx] if past_covariates else None,
-                future_covariates=future_covariates[idx] if future_covariates else None,
-                start=first_index,
-                forecast_horizon=forecast_horizon,
-                stride=1,
-                retrain=retrain,
-                last_points_only=True,
-                verbose=verbose,
+        # optionally, add nans to end of series to get residuals of same shape for each forecast
+        if overlap_end:
+            series = _extend_series_for_overlap_end(
+                series=series, historical_forecasts=historical_forecasts
             )
-            series_trimmed = target_ts.slice_intersect(forecasts)
-            residuals_list.append(
-                series_trimmed
-                - (
-                    forecasts.quantile_timeseries(quantile=0.5)
-                    if forecasts.is_stochastic
-                    else forecasts
+
+        residuals = self.backtest(
+            series=series,
+            historical_forecasts=historical_forecasts,
+            last_points_only=False,
+            metric=metric,
+            reduction=None,
+            data_transformers=data_transformers,
+            metric_kwargs=metric_kwargs,
+        )
+
+        # sanity check residual output
+        q, q_interval = metric_kwargs.get("q"), metric_kwargs.get("q_interval")
+        try:
+            series_, res, fc = series[0], residuals[0][0], historical_forecasts[0][0]
+            _ = np.reshape(res, (len(fc), -1, 1))
+        except Exception as err:
+            raise_log(
+                ValueError(
+                    f"`metric` function did not yield expected output. Make sure "
+                    f"to use one of Darts 'per time step' metrics, or a similar "
+                    f"custom metric. The following exception was raised: "
+                    f"{type(err).__name__}('{err}')"
+                ),
+                logger=logger,
+            )
+
+        # process residuals
+        residuals_out = []
+        for series_, fc_list, res_list in zip(series, historical_forecasts, residuals):
+            res_list_out = []
+            if q is not None:
+                q = [q] if isinstance(q, float) else q
+                # multi-quantile metrics yield more components
+                comp_names = likelihood_component_names(
+                    components=series_.components,
+                    parameter_names=quantile_names(q),
                 )
-            )
+            # `q` and `q_interval` are mutually exclusive
+            elif q_interval is not None:
+                # multi-quantile metrics yield more components
+                q_interval = (
+                    [q_interval] if isinstance(q_interval, tuple) else q_interval
+                )
+                comp_names = likelihood_component_names(
+                    components=series_.components,
+                    parameter_names=quantile_interval_names(q_interval),
+                )
+            else:
+                comp_names = None
+            for fc, res in zip(fc_list, res_list):
+                # make sure all residuals have shape (n time steps, n components * n quantiles, n samples=1)
+                if len(res.shape) != 3:
+                    res = np.reshape(res, (len(fc), -1, 1))
+                if values_only:
+                    res = res
+                elif (q is None and q_interval is None) and res.shape[
+                    1
+                ] == fc.n_components:
+                    res = fc.with_values(res)
+                else:
+                    # quantile (interval) metrics created different number of components;
+                    # create new series with unknown components
+                    res = TimeSeries.from_times_and_values(
+                        times=fc._time_index,
+                        values=res,
+                        columns=comp_names,
+                    )
+                res_list_out.append(res)
 
-        return residuals_list if len(residuals_list) > 1 else residuals_list[0]
+            residuals_out.append(res_list_out)
 
-    def initialize_encoders(self) -> SequentialEncoder:
+        # if required, reduce to `series` input type
+        if series_seq_type == SeriesType.SINGLE:
+            return residuals_out[0][0] if last_points_only else residuals_out[0]
+
+        return (
+            [res for res_list in residuals_out for res in res_list]
+            if last_points_only
+            else residuals_out
+        )
+
+    def initialize_encoders(self, default=False) -> SequentialEncoder:
         """instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter
         ``add_encoders`` used at model creation"""
+        if default:
+            return SequentialEncoder(add_encoders={})
+
         (
             input_chunk_length,
             output_chunk_length,
@@ -1395,7 +2336,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> Tuple[
+    ) -> tuple[
         Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
     ]:
         """Generates the covariate encodings that were used/generated for fitting the model and returns a tuple of
@@ -1436,7 +2377,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> Tuple[
+    ) -> tuple[
         Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
     ]:
         """Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future
@@ -1476,24 +2417,162 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             future_covariates=future_covariates,
         )
 
+    def generate_fit_predict_encodings(
+        self,
+        n: int,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    ) -> tuple[
+        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
+    ]:
+        """Generates covariate encodings for training and inference/prediction and returns a tuple of past, and future
+        covariates series with the original and encoded covariates stacked together. The encodings are generated by the
+        encoders defined at model creation with parameter `add_encoders`. Pass the same `series`, `past_covariates`,
+        and `future_covariates` that you intend to use for training and prediction.
+
+        Parameters
+        ----------
+        n
+            The number of prediction time steps after the end of `series` intended to be used for prediction.
+        series
+            The series or sequence of series with target values intended to be used for training and prediction.
+        past_covariates
+            Optionally, the past-observed covariates series intended to be used for training and prediction. The
+            dimensions must match those of the covariates used for training.
+        future_covariates
+            Optionally, the future-known covariates series intended to be used for prediction. The dimensions must
+            match those of the covariates used for training.
+
+        Returns
+        -------
+        Tuple[Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]]
+            A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
+            encoded covariates.
+        """
+        raise_if(
+            self.encoders is None or not self.encoders.encoding_available,
+            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
+            "model with `model.fit()` before.",
+            logger=logger,
+        )
+        return self.encoders.encode_train_inference(
+            n=n,
+            target=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+    def _process_validation_set(
+        self,
+        series: Sequence[TimeSeries],
+        past_covariates: Optional[Sequence[TimeSeries]],
+        future_covariates: Optional[Sequence[TimeSeries]],
+        val_series: Optional[Sequence[TimeSeries]],
+        val_past_covariates: Optional[Sequence[TimeSeries]],
+        val_future_covariates: Optional[Sequence[TimeSeries]],
+    ) -> tuple[
+        Optional[Sequence[TimeSeries]],
+        Optional[Sequence[TimeSeries]],
+        Optional[Sequence[TimeSeries]],
+    ]:
+        """Validates the validation set and generates/adds the required encodings."""
+        if val_series is None:
+            return None, None, None
+
+        # generate encodings for the val set covariates
+        if self.encoders.encoding_available:
+            (
+                val_past_covariates,
+                val_future_covariates,
+            ) = self.generate_fit_encodings(
+                series=val_series,
+                past_covariates=val_past_covariates,
+                future_covariates=val_future_covariates,
+            )
+
+        for idx in range(len(val_series)):
+            val_s = val_series[idx]
+            val_pc = (
+                val_past_covariates[idx] if val_past_covariates is not None else None
+            )
+            val_fc = (
+                val_future_covariates[idx]
+                if val_future_covariates is not None
+                else None
+            )
+
+            # check that val set has same number of features as train set
+            match_series = series[0].width == val_s.width
+            match_past_covariates = (
+                past_covariates[0].width if past_covariates is not None else None
+            ) == (val_pc.width if val_pc is not None else None)
+            match_future_covariates = (
+                future_covariates[0].width if future_covariates is not None else None
+            ) == (val_fc.width if val_fc is not None else None)
+
+            if self.uses_static_covariates:
+                self._verify_static_covariates(val_s.static_covariates)
+                match_static_covariates = (
+                    series[0].static_covariates.shape
+                    if series[0].static_covariates is not None
+                    else None
+                ) == (
+                    val_s.static_covariates.shape
+                    if val_s.static_covariates is not None
+                    else None
+                )
+            else:
+                match_static_covariates = True
+
+            matches = [
+                match_series,
+                match_past_covariates,
+                match_future_covariates,
+                match_static_covariates,
+            ]
+            if not all(matches):
+                invalid_series = [
+                    name
+                    for match, name in zip(
+                        matches,
+                        [
+                            "`series`",
+                            "`past_covariates`",
+                            "`future_covariates`",
+                            "`static_covariates`",
+                        ],
+                    )
+                    if not match
+                ]
+                raise_log(
+                    ValueError(
+                        f"The dimensions of the ({', '.join(invalid_series)}) between the training and "
+                        f"validation set "
+                        f"{'' if len(val_series) == 1 else 'at sequence/list index `' + str(idx) + '` '}"
+                        f"do not match."
+                    ),
+                    logger=logger,
+                )
+        return val_series, val_past_covariates, val_future_covariates
+
     @property
     @abstractmethod
     def _model_encoder_settings(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         bool,
         bool,
-        Optional[List[int]],
-        Optional[List[int]],
+        Optional[list[int]],
+        Optional[list[int]],
     ]:
         """Abstract property that returns model specific encoder settings that are used to initialize the encoders.
 
         Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates,
         lags_past_covariates, lags_future_covariates).
         """
-        pass
 
     @classmethod
     def _sample_params(model_class, params, n_random_samples):
@@ -1522,6 +2601,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return model_params
 
     def untrained_model(self):
+        """Returns a new (untrained) model instance created with the same parameters."""
         return self.__class__(**copy.deepcopy(self.model_params))
 
     @property
@@ -1532,9 +2612,18 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @classmethod
     def _default_save_path(cls) -> str:
-        return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}"
+        return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')}"
 
-    def save(self, path: Optional[Union[str, BinaryIO]] = None, **pkl_kwargs) -> None:
+    def _clean(self) -> Self:
+        """Returns a cleaned instance of the model. Has no effect for local forecasting models."""
+        return self
+
+    def save(
+        self,
+        path: Optional[Union[str, os.PathLike, BinaryIO]] = None,
+        clean: bool = False,
+        **pkl_kwargs,
+    ) -> None:
         """
         Saves the model under a given path or file handle.
 
@@ -1555,8 +2644,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         ----------
         path
             Path or file handle under which to save the model at its current state. If no path is specified, the model
-            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl"``.
-            E.g., ``"RegressionModel_2020-01-01_12:00:00.pkl"``.
+            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
+            E.g., ``"RegressionModel_2020-01-01_12_00_00.pkl"``.
+        clean
+            Whether to store a cleaned version of the model. Only effective for global forecasting models.
+            If `True`, the training series and covariates are removed.
+
+            Note: After loading a global forecasting model stored with `clean=True`, a `series` must be passed
+            'predict()', `historical_forecasts()` and other forecasting methods.
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """
@@ -1565,18 +2660,27 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # default path
             path = self._default_save_path() + ".pkl"
 
-        if isinstance(path, str):
+        model_to_save = self._clean() if clean else self
+        if isinstance(path, (str, os.PathLike)):
             # save the whole object using pickle
             with open(path, "wb") as handle:
-                pickle.dump(obj=self, file=handle, **pkl_kwargs)
-        else:
+                pickle.dump(obj=model_to_save, file=handle, **pkl_kwargs)
+        elif isinstance(path, io.BufferedWriter):
             # save the whole object using pickle
-            pickle.dump(obj=self, file=path, **pkl_kwargs)
+            pickle.dump(obj=model_to_save, file=path, **pkl_kwargs)
+        else:
+            raise_log(
+                ValueError(
+                    "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
+                    f"or 'BufferedWriter' (for an already opened file), but was '{path.__class__}'."
+                ),
+                logger=logger,
+            )
 
     @staticmethod
-    def load(path: Union[str, BinaryIO]) -> "ForecastingModel":
+    def load(path: Union[str, os.PathLike, BinaryIO]) -> "ForecastingModel":
         """
-        Loads the model from a given path or file handle.
+        Loads a model from a given path or file handle.
 
         Parameters
         ----------
@@ -1584,7 +2688,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Path or file handle from which to load the model.
         """
 
-        if isinstance(path, str):
+        if isinstance(path, (str, os.PathLike)):
             raise_if_not(
                 os.path.exists(path),
                 f"The file {path} doesn't exist",
@@ -1593,17 +2697,126 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             with open(path, "rb") as handle:
                 model = pickle.load(file=handle)
-        else:
-
+        elif isinstance(path, io.BufferedReader):
             model = pickle.load(file=path)
+        else:
+            raise_log(
+                ValueError(
+                    "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
+                    f"or 'BufferedReader' (for an already opened file), but was '{path.__class__}'."
+                ),
+                logger=logger,
+            )
 
         return model
 
     def _assert_univariate(self, series: TimeSeries):
         if not series.is_univariate:
             raise_log(
-                ValueError("This model only supports univariate TimeSeries instances")
+                ValueError(
+                    f"Model `{self.__class__.__name__}` only supports univariate TimeSeries instances"
+                ),
+                logger=logger,
             )
+
+    def _assert_multivariate(self, series: TimeSeries):
+        if series.is_univariate:
+            raise_log(
+                ValueError(
+                    f"Model `{self.__class__.__name__}` only supports multivariate TimeSeries instances"
+                ),
+                logger=logger,
+            )
+
+    def __repr__(self):
+        """
+        Get full description for this estimator (includes all params).
+        """
+        return self._get_model_description_string(True)
+
+    def __str__(self):
+        """
+        Get short description for this estimator (only includes params with non-default values).
+        """
+        return self._get_model_description_string(False)
+
+    def _get_model_description_string(self, include_default_params):
+        """
+        Get model description string of structure `model_name`(`model_param_key_value_pairs`).
+
+        Parameters
+        ----------
+        include_default_params : bool,
+            If True, will include params with default values in the description.
+
+        Returns
+        -------
+        description : String
+            Model description.
+        """
+        default_model_params = self._get_default_model_params()
+        changed_model_params = [
+            (k, v)
+            for k, v in self.model_params.items()
+            if include_default_params or np.any(v != default_model_params.get(k, None))
+        ]
+
+        model_name = self.__class__.__name__
+        params_string = ", ".join([f"{k}={str(v)}" for k, v in changed_model_params])
+        return f"{model_name}({params_string})"
+
+    @classmethod
+    def _get_default_model_params(cls):
+        """Get parameter key : default_value pairs for the estimator"""
+        init_signature = inspect.signature(cls.__init__)
+        # Consider the constructor parameters excluding 'self'
+        return {
+            p.name: p.default
+            for p in init_signature.parameters.values()
+            if p.name != "self"
+        }
+
+    def _verify_static_covariates(self, static_covariates: Optional[pd.DataFrame]):
+        """
+        Verify that all static covariates are numeric.
+        """
+        if static_covariates is not None:
+            numeric_mask = static_covariates.columns.isin(
+                static_covariates.select_dtypes(include=np.number)
+            )
+            if sum(~numeric_mask):
+                raise_log(
+                    ValueError(
+                        f"{self.__class__.__name__} can only interpret numeric static covariate data. Consider "
+                        "encoding/transforming categorical static covariates with "
+                        "`darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer` "
+                        "or set `use_static_covariates=False` at model creation to ignore static covariates."
+                    ),
+                    logger,
+                )
+
+    def _optimized_historical_forecasts(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        num_samples: int = 1,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        start_format: Literal["position", "value"] = "value",
+        forecast_horizon: int = 1,
+        stride: int = 1,
+        overlap_end: bool = False,
+        last_points_only: bool = True,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+        data_transformers: Optional[dict[str, BaseDataTransformer]] = None,
+        **kwargs,
+    ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
+        logger.warning(
+            "`optimized historical forecasts is not available for this model, use `historical_forecasts` instead."
+        )
+        return []
 
 
 class LocalForecastingModel(ForecastingModel, ABC):
@@ -1623,13 +2836,13 @@ class LocalForecastingModel(ForecastingModel, ABC):
     @property
     def _model_encoder_settings(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         bool,
         bool,
-        Optional[List[int]],
-        Optional[List[int]],
+        Optional[list[int]],
+        Optional[list[int]],
     ]:
         return None, None, False, False, None, None
 
@@ -1637,6 +2850,32 @@ class LocalForecastingModel(ForecastingModel, ABC):
     def fit(self, series: TimeSeries) -> "LocalForecastingModel":
         super().fit(series)
         series._assert_deterministic()
+
+    @property
+    def extreme_lags(
+        self,
+    ) -> tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        int,
+        Optional[int],
+    ]:
+        # TODO: LocalForecastingModels do not yet handle extreme lags properly. Especially
+        #  TransferableFutureCovariatesLocalForecastingModel, where there is a difference between fit and predict mode)
+        #  do not yet. In general, Local models train on the entire series (input=output), different to Global models
+        #  that use an input to predict an output.
+        return -self.min_train_series_length, -1, None, None, None, None, 0, None
+
+    @property
+    def supports_transferrable_series_prediction(self) -> bool:
+        """
+        Whether the model supports prediction for any input `series`.
+        """
+        return False
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):
@@ -1701,24 +2940,39 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         if isinstance(series, TimeSeries):
             # if only one series is provided, save it for prediction time (including covariates, if available)
             self.training_series = series
-            self.static_covariates = series.static_covariates
             if past_covariates is not None:
                 self.past_covariate_series = past_covariates
             if future_covariates is not None:
                 self.future_covariate_series = future_covariates
+            if (
+                series.static_covariates is not None
+                and self.supports_static_covariates
+                and self.considers_static_covariates
+            ):
+                self.static_covariates = series.static_covariates
         else:
-            self.static_covariates = series[0].static_covariates
-
             if past_covariates is not None:
                 self._expect_past_covariates = True
             if future_covariates is not None:
                 self._expect_future_covariates = True
+            if (
+                get_single_series(series).static_covariates is not None
+                and self.supports_static_covariates
+                and self.considers_static_covariates
+            ):
+                self.static_covariates = series[0].static_covariates
+                self._expect_static_covariates = True
 
         if past_covariates is not None:
             self._uses_past_covariates = True
         if future_covariates is not None:
             self._uses_future_covariates = True
-
+        if (
+            get_single_series(series).static_covariates is not None
+            and self.supports_static_covariates
+            and self.considers_static_covariates
+        ):
+            self._uses_static_covariates = True
         self._fit_called = True
 
     @abstractmethod
@@ -1730,6 +2984,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
+        show_warnings: bool = True,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
 
@@ -1760,8 +3016,15 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             One future-known covariate time series for every input time series in `series`. They must match the
             past covariates that have been used with the :func:`fit()` function for training in terms of dimension.
         num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
-            for deterministic models.
+            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
+        verbose
+            Whether to print the progress.
+        predict_likelihood_parameters
+            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``
+        show_warnings
+            Whether to show warnings related auto-regression and past covariates usage.
 
         Returns
         -------
@@ -1774,56 +3037,117 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             a sequence where each element contains the corresponding `n` points forecasts.
         """
         super().predict(n, num_samples)
-        if self._expect_past_covariates and past_covariates is None:
+        if predict_likelihood_parameters:
+            self._sanity_check_predict_likelihood_parameters(
+                n, self.output_chunk_length, num_samples
+            )
+
+        if self.uses_past_covariates and past_covariates is None:
             raise_log(
                 ValueError(
                     "The model has been trained with past covariates. Some matching past_covariates "
                     "have to be provided to `predict()`."
                 )
             )
-        if self._expect_future_covariates and future_covariates is None:
+        if self.uses_future_covariates and future_covariates is None:
             raise_log(
                 ValueError(
                     "The model has been trained with future covariates. Some matching future_covariates "
                     "have to be provided to `predict()`."
                 )
             )
+        if (
+            self.uses_static_covariates
+            and get_single_series(series).static_covariates is None
+        ):
+            raise_log(
+                ValueError(
+                    "The model has been trained with static covariates. Some matching static covariates "
+                    "must be embedded in the target `series` passed to `predict()`."
+                )
+            )
+        if (
+            show_warnings
+            and self.uses_past_covariates
+            and self.output_chunk_length is not None
+            and n > self.output_chunk_length
+        ):
+            logger.warning(
+                "`predict()` was called with `n > output_chunk_length`: using auto-regression to forecast "
+                "the values after `output_chunk_length` points. The model will access `(n - output_chunk_length)` "
+                "future values of your `past_covariates` (relative to the first predicted time step). "
+                "To hide this warning, set `show_warnings=False`."
+            )
 
-    def _predict_wrapper(
-        self,
-        n: int,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
-        num_samples: int,
-        verbose: bool = False,
-    ) -> TimeSeries:
-        return self.predict(
-            n,
-            series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            num_samples=num_samples,
-            verbose=verbose,
-        )
+    def _clean(self) -> Self:
+        """Returns a cleaned instance of the model by removing the training series and covariates."""
 
-    def _fit_wrapper(
-        self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
-    ):
-        self.fit(
-            series=series,
-            past_covariates=past_covariates if self.supports_past_covariates else None,
-            future_covariates=future_covariates
-            if self.supports_future_covariates
-            else None,
-        )
+        # a shallow copy is enough since we are only interested in removing pointers to the training data
+        cleaned_model = copy.copy(self)
+        cleaned_model.training_series = None
+        cleaned_model.past_covariate_series = None
+        cleaned_model.future_covariate_series = None
+        cleaned_model.static_covariates = None
+        return cleaned_model
 
+    @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         """GlobalForecastingModel supports historical forecasts without retraining the model"""
         return True
+
+    @property
+    def supports_optimized_historical_forecasts(self) -> bool:
+        """
+        Whether the model supports optimized historical forecasts
+        """
+        return True
+
+    @property
+    def supports_transferrable_series_prediction(self) -> bool:
+        """
+        Whether the model supports prediction for any input `series`.
+        """
+        return True
+
+    @property
+    def supports_sample_weight(self) -> bool:
+        """
+        Whether model supports sample weight for training.
+        """
+        return True
+
+    def _sanity_check_predict_likelihood_parameters(
+        self, n: int, output_chunk_length: Union[int, None], num_samples: int
+    ):
+        """Verify that the assumptions for likelihood parameters prediction are verified:
+        - Probabilistic models fitted with a likelihood
+        - `num_samples=1`
+        - `n <= output_chunk_length`
+        """
+        if not self.supports_likelihood_parameter_prediction:
+            raise_log(
+                ValueError(
+                    "`predict_likelihood_parameters=True` is only supported for probabilistic models fitted with "
+                    "a likelihood."
+                ),
+                logger,
+            )
+        if num_samples != 1:
+            raise_log(
+                ValueError(
+                    f"`predict_likelihood_parameters=True` is only supported for `num_samples=1`, "
+                    f"received {num_samples}."
+                ),
+                logger,
+            )
+        if output_chunk_length is not None and n > output_chunk_length:
+            raise_log(
+                ValueError(
+                    "`predict_likelihood_parameters=True` is only supported for `n` smaller than or equal to "
+                    "`output_chunk_length`."
+                ),
+                logger,
+            )
 
 
 class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
@@ -1872,6 +3196,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                 logger=logger,
             )
             self._expect_future_covariates = True
+            self._uses_future_covariates = True
 
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
@@ -1890,13 +3215,14 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         """Fits/trains the model on the provided series.
         DualCovariatesModels must implement the fit logic in this method.
         """
-        pass
 
     def predict(
         self,
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
         **kwargs,
     ) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
@@ -1912,8 +3238,11 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             the covariate time series that has been used with the :func:`fit()` method for training, and it must
             contain at least the next `n` time steps/indices after the end of the training target series.
         num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
-            for deterministic models.
+            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
+        verbose
+            Optionally, set the prediction verbosity. Not effective for all models.
+        show_warnings
+            Optionally, control whether warnings are shown. Not effective for all models.
 
         Returns
         -------
@@ -1978,42 +3307,17 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         """Forecasts values for a certain number of time steps after the end of the series.
         DualCovariatesModels must implement the predict logic in this method.
         """
-        pass
-
-    def _fit_wrapper(
-        self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
-    ):
-        self.fit(series, future_covariates=future_covariates)
-
-    def _predict_wrapper(
-        self,
-        n: int,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
-        num_samples: int,
-        verbose: bool = False,
-    ) -> TimeSeries:
-        return self.predict(
-            n,
-            future_covariates=future_covariates,
-            num_samples=num_samples,
-            verbose=verbose,
-        )
 
     @property
     def _model_encoder_settings(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[int],
         Optional[int],
         bool,
         bool,
-        Optional[List[int]],
-        Optional[List[int]],
+        Optional[list[int]],
+        Optional[list[int]],
     ]:
         return None, None, False, True, None, None
 
@@ -2036,8 +3340,27 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
 
     @property
     def _supress_generate_predict_encoding(self) -> bool:
-        """Controls wether encodings should be generated in :func:`FutureCovariatesLocalForecastingModel.predict()``"""
+        """Controls whether encodings should be generated in :func:`FutureCovariatesLocalForecastingModel.predict()``"""
         return False
+
+    @property
+    def extreme_lags(
+        self,
+    ) -> tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        int,
+        Optional[int],
+    ]:
+        # TODO: LocalForecastingModels do not yet handle extreme lags properly. Especially
+        #  TransferableFutureCovariatesLocalForecastingModel, where there is a difference between fit and predict mode)
+        #  do not yet. In general, Local models train on the entire series (input=output), different to Global models
+        #  that use an input to predict an output.
+        return -self.min_train_series_length, -1, None, None, 0, 0, 0, None
 
 
 class TransferableFutureCovariatesLocalForecastingModel(
@@ -2064,6 +3387,8 @@ class TransferableFutureCovariatesLocalForecastingModel(
         series: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
         **kwargs,
     ) -> TimeSeries:
         """If the `series` parameter is not set, forecasts values for `n` time steps after the end of the training
@@ -2087,8 +3412,11 @@ class TransferableFutureCovariatesLocalForecastingModel(
             training target series. If `series` is set, it must contain at least the time steps/indices corresponding
             to the new target series (historic future covariates), plus the next `n` time steps/indices after the end.
         num_samples
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
-            for deterministic models.
+            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
+        verbose
+            Optionally, set the prediction verbosity. Not effective for all models.
+        show_warnings
+            Optionally, control whether warnings are shown. Not effective for all models.
 
         Returns
         -------
@@ -2152,7 +3480,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> Tuple[
+    ) -> tuple[
         Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
     ]:
         raise_if(
@@ -2161,22 +3489,12 @@ class TransferableFutureCovariatesLocalForecastingModel(
             "model with `model.fit()` before.",
             logger=logger,
         )
-        _, future_covariates_future = self.encoders.encode_inference(
+        return self.generate_fit_predict_encodings(
             n=n,
-            target=series,
+            series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-
-        if future_covariates is not None:
-            return _, future_covariates_future
-
-        _, future_covariates_historic = self.encoders.encode_train(
-            target=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-        )
-        return _, future_covariates_historic.append(future_covariates_future)
 
     @abstractmethod
     def _predict(
@@ -2191,32 +3509,18 @@ class TransferableFutureCovariatesLocalForecastingModel(
         """Forecasts values for a certain number of time steps after the end of the series.
         TransferableFutureCovariatesLocalForecastingModel must implement the predict logic in this method.
         """
-        pass
 
-    def _predict_wrapper(
-        self,
-        n: int,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
-        num_samples: int,
-        verbose: bool = False,
-    ) -> TimeSeries:
-        return self.predict(
-            n=n,
-            series=series,
-            future_covariates=future_covariates,
-            num_samples=num_samples,
-            verbose=verbose,
-        )
+    @property
+    def supports_transferrable_series_prediction(self) -> bool:
+        """
+        Whether the model supports prediction for any input `series`.
+        """
+        return True
 
+    @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         return True
 
     @property
     def _supress_generate_predict_encoding(self) -> bool:
         return True
-
-    @property
-    def extreme_lags(self):
-        return (-1, 1, None, 0, 0)

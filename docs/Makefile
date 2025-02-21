@@ -7,6 +7,7 @@ SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = source
 USERGUIDEDIR  = userguide
+GENAPIDIR     = generated_api
 BUILDDIR      = build
 
 # Put it first so that "make" without argument is like "make help".
@@ -22,6 +23,7 @@ clean:
 	@rm -rf "./$(SOURCEDIR)/generated_api"
 	@rm -rf "./$(SOURCEDIR)/quickstart"
 	@rm -rf "./$(SOURCEDIR)/userguide"
+	@rm -rf "./$(SOURCEDIR)/release_notes"
 	@rm -rf "./$(SOURCEDIR)/README.rst"
 
 copy-examples:
@@ -40,6 +42,12 @@ generate-readme:
 	@m2r2 ../README.md
 	@mv ../README.rst "$(SOURCEDIR)"
 
+generate-release_notes:
+	@echo "[Makefile] generating RELEASE_NOTES rst file..."
+	@mkdir -p "$(SOURCEDIR)/release_notes"
+	@m2r2 ../CHANGELOG.md
+	@mv ../CHANGELOG.rst "$(SOURCEDIR)/release_notes/RELEASE_NOTES.rst"
+
 generate-userguide:
 	@echo "[Makefile] generating userguide rst files..."
 	@find $(USERGUIDEDIR)/*.md -exec m2r2 {} \;
@@ -50,13 +58,15 @@ generate-userguide:
 generate-api:
 	@echo "[Makefile] generating API using sphinx-apidoc..."
 	@sphinx-apidoc -e -f --templatedir templates -o "$(SOURCEDIR)/generated_api" ../darts ../darts/logging.py ../darts/tests/*
+	@cp -r $(GENAPIDIR)/*.rst "$(SOURCEDIR)/generated_api/"
 
 html:
 	# Note: this target has to be called "html" because its name is given as an argument to Sphinx
 	@echo "[Makefile] generating HTML pages using sphinx-build..."
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-build-all-docs: clean copy-examples copy-quickstart generate-readme generate-userguide generate-api html
+build-all-docs: clean copy-examples copy-quickstart generate-readme generate-release_notes generate-userguide generate-api html
+build-api: clean generate-api html
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).

@@ -1,4 +1,3 @@
-
 .. automodule:: {{ qualname }}
    :members:
    :undoc-members:

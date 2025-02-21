@@ -3,16 +3,21 @@ Inference Dataset
 -----------------
 """
 
+import bisect
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
+import pandas as pd
 from torch.utils.data import Dataset
 
 from darts import TimeSeries
-from darts.logging import raise_if_not
+from darts.logging import get_logger, raise_log
+from darts.utils.data.utils import CovariateType
+from darts.utils.historical_forecasts.utils import _process_predict_start_points_bounds
 
-from .utils import CovariateType
+logger = get_logger(__name__)
 
 
 class InferenceDataset(ABC, Dataset):
@@ -39,11 +44,13 @@ class InferenceDataset(ABC, Dataset):
     @staticmethod
     def _covariate_indexer(
         target_idx: int,
-        target_series: TimeSeries,
+        past_start: Union[pd.Timestamp, int],
+        past_end: Union[pd.Timestamp, int],
         covariate_series: TimeSeries,
         covariate_type: CovariateType,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int,
         n: int,
     ):
         """returns tuple of (past_start, past_end, future_start, future_end)"""
@@ -54,21 +61,31 @@ class InferenceDataset(ABC, Dataset):
             else CovariateType.FUTURE
         )
 
-        raise_if_not(
-            main_covariate_type in [CovariateType.PAST, CovariateType.FUTURE],
-            "`main_covariate_type` must be one of `(CovariateType.PAST, CovariateType.FUTURE)`",
-        )
+        if main_covariate_type not in [CovariateType.PAST, CovariateType.FUTURE]:
+            raise_log(
+                ValueError(
+                    "`main_covariate_type` must be one of `(CovariateType.PAST, CovariateType.FUTURE)`"
+                ),
+                logger=logger,
+            )
 
         # we need to use the time index (datetime or integer) here to match the index with the covariate series
-        past_start = target_series.time_index[-input_chunk_length]
-        past_end = target_series.time_index[-1]
         if main_covariate_type is CovariateType.PAST:
-            future_end = past_end + max(0, n - output_chunk_length) * target_series.freq
+            future_end = (
+                past_end + max(0, n - output_chunk_length) * covariate_series.freq
+            )
         else:  # CovariateType.FUTURE
-            future_end = past_end + max(n, output_chunk_length) * target_series.freq
+            # optionally, for future part of future covariates shift start and end by `output_chunk_shift`
+            future_end = (
+                past_end
+                + (max(n, output_chunk_length) + output_chunk_shift)
+                * covariate_series.freq
+            )
 
         future_start = (
-            past_end + target_series.freq if future_end != past_end else future_end
+            past_end + covariate_series.freq * (1 + output_chunk_shift)
+            if future_end != past_end
+            else future_end
         )
 
         if input_chunk_length == 0:  # for regression ensemble models
@@ -78,23 +95,29 @@ class InferenceDataset(ABC, Dataset):
         case_start = (
             future_start if covariate_type is CovariateType.FUTURE else past_start
         )
-        raise_if_not(
-            covariate_series.start_time() <= case_start,
-            f"For the given forecasting case, the provided {main_covariate_type.value} covariates at dataset index "
-            f"`{target_idx}` do not extend far enough into the past. The {main_covariate_type.value} covariates "
-            f"must start at time step `{case_start}`, whereas now they start at time step "
-            f"`{covariate_series.start_time()}`.",
-        )
-        raise_if_not(
-            covariate_series.end_time() >= future_end,
-            f"For the given forecasting horizon `n={n}`, the provided {main_covariate_type.value} covariates "
-            f"at dataset index `{target_idx}` do not extend far enough into the future. As `"
-            f"{'n > output_chunk_length' if n > output_chunk_length else 'n <= output_chunk_length'}"
-            f"` the {main_covariate_type.value} covariates must end at time step `{future_end}`, "
-            f"whereas now they end at time step `{covariate_series.end_time()}`.",
-        )
+        if not covariate_series.start_time() <= case_start:
+            raise_log(
+                ValueError(
+                    f"For the given forecasting case, the provided {main_covariate_type.value} covariates at "
+                    f"dataset index `{target_idx}` do not extend far enough into the past. The "
+                    f"{main_covariate_type.value} covariates must start at time step `{case_start}`, whereas now "
+                    f"they start at time step `{covariate_series.start_time()}`."
+                ),
+                logger=logger,
+            )
+        if not covariate_series.end_time() >= future_end:
+            raise_log(
+                ValueError(
+                    f"For the given forecasting horizon `n={n}`, the provided {main_covariate_type.value} covariates "
+                    f"at dataset index `{target_idx}` do not extend far enough into the future. As `"
+                    f"{'n > output_chunk_length' if n > output_chunk_length else 'n <= output_chunk_length'}"
+                    f"` the {main_covariate_type.value} covariates must end at time step `{future_end}`, "
+                    f"whereas now they end at time step `{covariate_series.end_time()}`."
+                ),
+                logger=logger,
+            )
 
-        # extract the index position (index) from time_index value
+        # extract the index position (integer index) from time_index value
         covariate_start = covariate_series.time_index.get_loc(past_start)
         covariate_end = covariate_series.time_index.get_loc(future_end) + 1
         return covariate_start, covariate_end
@@ -106,8 +129,11 @@ class GenericInferenceDataset(InferenceDataset):
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
+        stride: int = 0,
+        bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         covariate_type: CovariateType = CovariateType.PAST,
         use_static_covariates: bool = True,
     ):
@@ -130,10 +156,19 @@ class GenericInferenceDataset(InferenceDataset):
             were used during training, the same type of cavariates must be supplied at prediction.
         n
             Forecast horizon: The number of time steps to predict after the end of the target series.
+        stride
+            Optionally, the number of time steps between two consecutive predictions. Can only be used together
+            with `bounds`.
+        bounds
+            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
+            per series. The boundaries must represent the positional index of the series (0, len(series)).
+            If provided, `stride` must be `>=1`.
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emits in output.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
@@ -146,53 +181,123 @@ class GenericInferenceDataset(InferenceDataset):
             [covariates] if isinstance(covariates, TimeSeries) else covariates
         )
 
+        if not (covariates is None or len(self.target_series) == len(self.covariates)):
+            raise_log(
+                ValueError(
+                    "The number of target series must be equal to the number of covariates."
+                ),
+                logger=logger,
+            )
+
+        if (bounds is not None and stride == 0) or (bounds is None and stride > 0):
+            raise_log(
+                ValueError(
+                    "Must supply either both `stride` and `bounds`, or none of them."
+                ),
+                logger=logger,
+            )
+
+        if output_chunk_shift and n > output_chunk_length:
+            raise_log(
+                ValueError(
+                    "Cannot perform auto-regression `(n > output_chunk_length)` with a model that uses a "
+                    "shifted output chunk `(output_chunk_shift > 0)`."
+                ),
+                logger=logger,
+            )
+
         self.covariate_type = covariate_type
 
         self.n = n
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
+        self.output_chunk_shift = output_chunk_shift
         self.use_static_covariates = use_static_covariates
 
-        raise_if_not(
-            (covariates is None or len(self.target_series) == len(self.covariates)),
-            "The number of target series must be equal to the number of covariates.",
-        )
+        self.stride = stride
+        if bounds is None:
+            self.bounds = bounds
+            self.cum_lengths = None
+            self.len_preds = len(self.target_series)
+        else:
+            self.bounds, self.cum_lengths = _process_predict_start_points_bounds(
+                series=target_series,
+                bounds=bounds,
+                stride=stride,
+            )
+            self.len_preds = self.cum_lengths[-1]
 
     def __len__(self):
-        return len(self.target_series)
+        return self.len_preds
+
+    @staticmethod
+    def find_list_index(index, cumulative_lengths, bounds, stride):
+        list_index = bisect.bisect_right(cumulative_lengths, index)
+        bound_left = bounds[list_index, 0]
+        if list_index == 0:
+            stride_idx = index * stride
+        else:
+            stride_idx = (index - cumulative_lengths[list_index - 1]) * stride
+        return list_index, bound_left + stride_idx
 
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
         TimeSeries,
+        Union[pd.Timestamp, int],
     ]:
-        target_series = self.target_series[idx]
-        raise_if_not(
-            len(target_series) >= self.input_chunk_length,
-            f"All input series must have length >= `input_chunk_length` ({self.input_chunk_length}).",
-        )
+        if self.bounds is None:
+            series_idx, target_start_idx, target_end_idx = (
+                idx,
+                -self.input_chunk_length,
+                None,
+            )
+        else:
+            series_idx, target_end_idx = self.find_list_index(
+                idx,
+                self.cum_lengths,
+                self.bounds,
+                self.stride,
+            )
+            target_start_idx = target_end_idx - self.input_chunk_length
+
+        target_series = self.target_series[series_idx]
+        if not len(target_series) >= self.input_chunk_length:
+            raise_log(
+                ValueError(
+                    f"All input series must have length >= `input_chunk_length` ({self.input_chunk_length})."
+                ),
+                logger=logger,
+            )
 
         # extract past target values
+        past_end = target_series.time_index[
+            target_end_idx - 1 if target_end_idx is not None else -1
+        ]
         past_target = target_series.random_component_values(copy=False)[
-            -self.input_chunk_length :
+            target_start_idx:target_end_idx
         ]
 
         # optionally, extract covariates
         past_covariate, future_covariate = None, None
-        covariate_series = None if self.covariates is None else self.covariates[idx]
+        covariate_series = (
+            None if self.covariates is None else self.covariates[series_idx]
+        )
         if covariate_series is not None:
             # get start and end indices (integer) of the covariates including historic and future parts
             covariate_start, covariate_end = self._covariate_indexer(
-                target_idx=idx,
-                target_series=target_series,
+                target_idx=series_idx,
+                past_start=target_series.time_index[target_start_idx],
+                past_end=past_end,
                 covariate_series=covariate_series,
                 covariate_type=self.covariate_type,
                 input_chunk_length=self.input_chunk_length,
                 output_chunk_length=self.output_chunk_length,
+                output_chunk_shift=self.output_chunk_shift,
                 n=self.n,
             )
 
@@ -203,7 +308,7 @@ class GenericInferenceDataset(InferenceDataset):
             if self.input_chunk_length != 0:  # regular models
                 past_covariate, future_covariate = (
                     covariate[: self.input_chunk_length],
-                    covariate[self.input_chunk_length :],
+                    covariate[self.input_chunk_length + self.output_chunk_shift :],
                 )
             else:  # regression ensemble models have a input_chunk_length == 0 part for using predictions as input
                 past_covariate, future_covariate = covariate, covariate
@@ -231,6 +336,7 @@ class GenericInferenceDataset(InferenceDataset):
             future_covariate,
             static_covariate,
             target_series,
+            past_end + target_series.freq * (1 + self.output_chunk_shift),
         )
 
 
@@ -240,8 +346,11 @@ class PastCovariatesInferenceDataset(InferenceDataset):
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
+        stride: int = 0,
+        bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         covariate_type: CovariateType = CovariateType.PAST,
         use_static_covariates: bool = True,
     ):
@@ -262,10 +371,19 @@ class PastCovariatesInferenceDataset(InferenceDataset):
             if the model was trained with past-observed covariates.
         n
             Forecast horizon: The number of time steps to predict after the end of the target series.
+        stride
+            Optionally, the number of time steps between two consecutive predictions. Can only be used together
+            with `bounds`.
+        bounds
+            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
+            per series. The boundaries must represent the positional index of the series (0, len(series)).
+            If provided, `stride` must be `>=1`.
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emits in output.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
@@ -276,8 +394,11 @@ class PastCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             covariate_type=covariate_type,
             use_static_covariates=use_static_covariates,
         )
@@ -287,12 +408,13 @@ class PastCovariatesInferenceDataset(InferenceDataset):
 
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
         TimeSeries,
+        Union[pd.Timestamp, int],
     ]:
         return self.ds[idx]
 
@@ -303,7 +425,11 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
+        stride: int = 0,
+        bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
+        output_chunk_length: Optional[int] = None,
+        output_chunk_shift: int = 0,
         covariate_type: CovariateType = CovariateType.FUTURE,
         use_static_covariates: bool = True,
     ):
@@ -319,8 +445,20 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             if the model was trained with future-known covariates.
         n
             Forecast horizon: The number of time steps to predict after the end of the target series.
+        stride
+            Optionally, the number of time steps between two consecutive predictions. Can only be used together
+            with `bounds`.
+        bounds
+            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
+            per series. The boundaries must represent the positional index of the series (0, len(series)).
+            If provided, `stride` must be `>=1`.
         input_chunk_length
             The length of the target series the model takes as input.
+        output_chunk_length
+            Optionally, the length of the target series the model emits in output. If `None`, will use the same value
+            as `n`.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
@@ -330,8 +468,11 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
-            output_chunk_length=n,
+            output_chunk_length=output_chunk_length or n,
+            output_chunk_shift=output_chunk_shift,
             covariate_type=covariate_type,
             use_static_covariates=use_static_covariates,
         )
@@ -341,9 +482,28 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
 
     def __getitem__(
         self, idx: int
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], TimeSeries]:
-        past_target, _, future_covariate, static_covariate, target_series = self.ds[idx]
-        return past_target, future_covariate, static_covariate, target_series
+    ) -> tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        TimeSeries,
+        Union[pd.Timestamp, int],
+    ]:
+        (
+            past_target,
+            _,
+            future_covariate,
+            static_covariate,
+            target_series,
+            pred_point,
+        ) = self.ds[idx]
+        return (
+            past_target,
+            future_covariate,
+            static_covariate,
+            target_series,
+            pred_point,
+        )
 
 
 class DualCovariatesInferenceDataset(InferenceDataset):
@@ -352,8 +512,11 @@ class DualCovariatesInferenceDataset(InferenceDataset):
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
         covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
+        stride: int = 0,
+        bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         use_static_covariates: bool = True,
     ):
         """
@@ -368,10 +531,19 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             if the model was trained with future-known covariates.
         n
             Forecast horizon: The number of time steps to predict after the end of the target series.
+        stride
+            Optionally, the number of time steps between two consecutive predictions. Can only be used together
+            with `bounds`.
+        bounds
+            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
+            per series. The boundaries must represent the positional index of the series (0, len(series)).
+            If provided, `stride` must be `>=1`.
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emits in output.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
@@ -382,8 +554,11 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             covariate_type=CovariateType.HISTORIC_FUTURE,
             use_static_covariates=use_static_covariates,
         )
@@ -393,7 +568,11 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             covariate_type=CovariateType.FUTURE,
             use_static_covariates=use_static_covariates,
         )
@@ -403,12 +582,13 @@ class DualCovariatesInferenceDataset(InferenceDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
         TimeSeries,
+        Union[pd.Timestamp, int],
     ]:
         (
             past_target,
@@ -416,14 +596,16 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             _,
             static_covariate,
             ts_target,
+            pred_point,
         ) = self.ds_past[idx]
-        _, future_covariate, _, _ = self.ds_future[idx]
+        _, future_covariate, _, _, _ = self.ds_future[idx]
         return (
             past_target,
             historic_future_covariate,
             future_covariate,
             static_covariate,
             ts_target,
+            pred_point,
         )
 
 
@@ -434,8 +616,11 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
+        stride: int = 0,
+        bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         use_static_covariates: bool = True,
     ):
         """
@@ -456,10 +641,19 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             if the model was trained with future-known covariates.
         n
             Forecast horizon: The number of time steps to predict after the end of the target series.
+        stride
+            Optionally, the number of time steps between two consecutive predictions. Can only be used together
+            with `bounds`.
+        bounds
+            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
+            per series. The boundaries must represent the positional index of the series (0, len(series)).
+            If provided, `stride` must be `>=1`.
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emits in output.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
@@ -470,8 +664,11 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=past_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
         )
@@ -481,8 +678,11 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=future_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             use_static_covariates=use_static_covariates,
         )
 
@@ -491,7 +691,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
@@ -499,16 +699,17 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
         Optional[np.ndarray],
         Optional[np.ndarray],
         TimeSeries,
+        Union[pd.Timestamp, int],
     ]:
-
         (
             past_target,
             past_covariate,
             future_past_covariate,
             static_covariate,
             ts_target,
+            pred_point,
         ) = self.ds_past[idx]
-        _, historic_future_covariate, future_covariate, _, _ = self.ds_future[idx]
+        _, historic_future_covariate, future_covariate, _, _, _ = self.ds_future[idx]
         return (
             past_target,
             past_covariate,
@@ -517,6 +718,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             future_past_covariate,
             static_covariate,
             ts_target,
+            pred_point,
         )
 
 
@@ -527,8 +729,11 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
+        stride: int = 0,
+        bounds: Optional[np.ndarray] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
         use_static_covariates: bool = True,
     ):
         """
@@ -548,10 +753,19 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             if the model was trained with future-known covariates.
         n
             Forecast horizon: The number of time steps to predict after the end of the target series.
+        stride
+            Optionally, the number of time steps between two consecutive predictions. Can only be used together
+            with `bounds`.
+        bounds
+            Optionally, an array of shape `(n series, 2)`, with the left and right prediction start point boundaries
+            per series. The boundaries must represent the positional index of the series (0, len(series)).
+            If provided, `stride` must be `>=1`.
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emits in output.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
@@ -562,8 +776,11 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=past_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
         )
@@ -573,7 +790,11 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             target_series=target_series,
             covariates=future_covariates,
             n=n,
+            stride=stride,
+            bounds=bounds,
             input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             covariate_type=CovariateType.FUTURE,
             use_static_covariates=use_static_covariates,
         )
@@ -583,23 +804,24 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
+    ) -> tuple[
         np.ndarray,
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
         TimeSeries,
+        Union[pd.Timestamp, int],
     ]:
-
         (
             past_target,
             past_covariate,
             future_past_covariate,
             static_covariate,
             ts_target,
+            pred_point,
         ) = self.ds_past[idx]
-        _, future_covariate, _, _ = self.ds_future[idx]
+        _, future_covariate, _, _, _ = self.ds_future[idx]
         return (
             past_target,
             past_covariate,
@@ -607,4 +829,5 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             future_past_covariate,
             static_covariate,
             ts_target,
+            pred_point,
         )

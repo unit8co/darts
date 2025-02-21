@@ -4,7 +4,8 @@ Model selection utilities
 Utilities that help in model selection e.g. by splitting a dataset.
 """
 
-from typing import Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 from darts import TimeSeries
 
@@ -27,7 +28,6 @@ class SplitTimeSeriesSequence(Sequence):
         horizon: Optional[int] = None,
         vertical_split_type: Optional[str] = SIMPLE,
     ):
-
         if type not in ["train", "test"]:
             raise AttributeError(
                 "Value for type parameter should be either `train` or `test`"
@@ -74,7 +74,6 @@ class SplitTimeSeriesSequence(Sequence):
         return self._horizontal_split_index
 
     def _get_vertical_split_indices(self, ts_length):
-
         if self.vertical_split_type == SIMPLE:
             if 0 < self.test_size < 1:
                 test_size = int(ts_length * self.test_size)
@@ -167,9 +166,8 @@ class SplitTimeSeriesSequence(Sequence):
         vertical_split_type: Optional[str] = SIMPLE,
         lazy: bool = False,
     ) -> Union[
-        Tuple[TimeSeries, TimeSeries], Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
+        tuple[TimeSeries, TimeSeries], tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
     ]:
-
         if not isinstance(data, Sequence):
             axis = 1
             data = [data]  # convert to sequence for unified processing later
@@ -215,7 +213,7 @@ def train_test_split(
     vertical_split_type: Optional[str] = SIMPLE,
     lazy: bool = False,
 ) -> Union[
-    Tuple[TimeSeries, TimeSeries], Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
+    tuple[TimeSeries, TimeSeries], tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
 ]:
     """
     Splits the provided series into training and test series.
@@ -224,32 +222,32 @@ def train_test_split(
     If the input type is single TimeSeries, then only splitting over time axis is available, thus `input_size` and
     `horizon` have to be provided.
 
-    When splitting over the time axis, splitter tries to greedy satisfy the requested test set size, i.e. when one of
+    When splitting over the time axis, splitter tries to greedy satisfy the requested test set size, i.e., when one of
     the timeseries in the sequence is too small, all samples will go to the test set and the exception will be raised.
 
-    Time axis split with ``'model-aware'`` split type enabled tries to reclaim as much datapoints for training as
-    possible by partially overlapping test set with training set. This is possible because only the forecasted part of
-    the test set cannot be used for training. The formula to calculate last available timestep for training set is
-    following:
+    Time axis split with ``'model-aware'`` split type enabled tries to reclaim as many datapoints for training as
+    possible by partially overlapping test and training set. This is possible because only the forecasted part of
+    the test set cannot be used for training. The formula to calculate the last available timestep for the training
+    set is the following:
 
-        ``train end index = ts_length - self.horizon - test_size``
+        ``train end index = ts_length - horizon - test_size``
 
-    And the formula to calculate the first timestep of test dataset is following:
+    And the formula to calculate the first timestep of the test dataset is:
 
-        ``test start index = timeseries length - horizon - input_size - test_size + 1``
+        ``test start index = ts_length - horizon - test_size - input_size + 1``
 
     Parameters
     ----------
     data
         original dataset to split into training and test
     test_size
-        size of the test set. If the value is between 0 and 1, parameter is treated as a split proportion. Otherwise
-        it is treated as a absolute number of samples from each timeseries that will be in the test set.
+        size of the test set. If the value is between 0 and 1, parameter is treated as a split proportion. Otherwise,
+        it is treated as an absolute number of samples from each timeseries that will be in the test set.
         [default = 0.25]
     axis
-        Axis to split the dataset on. When 0 (default) it is split on samples. Otherwise, if `axis = 1`,
-        timeseries are split along time axis. Note that for single timeseries the default option is 1 (0 makes
-        no sense). [default: 0 for sequence of timeseries, 1 for timeseries]
+        Axis to split the dataset on. When 0 (default), it is split on samples. Otherwise, if `axis = 1`,
+        timeseries are split along the time axis. Note that for single timeseries the default option is 1
+        (0 makes no sense). [default: 0 for sequence of timeseries, 1 for timeseries]
     input_size
         size of the input. Only valid with ``vertical_split_type == 'model-aware'``. [default: None]
     horizon
@@ -257,11 +255,11 @@ def train_test_split(
     vertical_split_type
         can be either ``'simple'``, where the exact number from test size will be deducted from timeseries for test set
         and remaining will go to training set; or ``'model-aware'``, where you have to provide `input_size` and
-        `horizon` as well. Note, that second option is more efficient timestep-wise, since training and test sets will
-        be partially overlapping. [default: ``'simple'``]
+        `horizon` as well. Note, that the second option is more efficient timestep-wise, since training and test sets
+        will partially overlap. [default: ``'simple'``]
     lazy
         by default, train and test datasets are returned as a list of timeseries. This may be memory
-        inefficient if dataset is large, so setting this flag allows instead to return a ``Sequence`` object
+        inefficient if the dataset is large, so setting this flag instead allows to return a ``Sequence`` object
         loading the data lazily. Warning: turning ``lazy`` on disables some sanity checks for the datasets
         that may result in exceptions during sample generation. [default: False]
 

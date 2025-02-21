@@ -1,4 +1,8 @@
 import os
+import shutil
+import tempfile
+
+import pytest
 
 from darts import TimeSeries
 from darts.datasets import (
@@ -6,6 +10,7 @@ from darts.datasets import (
     AirPassengersDataset,
     AusBeerDataset,
     AustralianTourismDataset,
+    ElectricityConsumptionZurichDataset,
     ElectricityDataset,
     EnergyDataset,
     ETTh1Dataset,
@@ -20,6 +25,7 @@ from darts.datasets import (
     MonthlyMilkDataset,
     MonthlyMilkIncompleteDataset,
     SunspotsDataset,
+    TaxiNewYorkDataset,
     TaylorDataset,
     TemperatureDataset,
     TrafficDataset,
@@ -35,39 +41,38 @@ from darts.datasets.dataset_loaders import (
     DatasetLoaderMetadata,
     DatasetLoadingException,
 )
-from darts.tests.base_test_class import DartsBaseTestClass
-
-datasets = [
-    AirPassengersDataset,
-    AusBeerDataset,
-    AustralianTourismDataset,
-    EnergyDataset,
-    HeartRateDataset,
-    IceCreamHeaterDataset,
-    MonthlyMilkDataset,
-    SunspotsDataset,
-    TaylorDataset,
-    TemperatureDataset,
-    USGasolineDataset,
-    WineDataset,
-    WoolyDataset,
-    GasRateCO2Dataset,
-    MonthlyMilkIncompleteDataset,
-    ETTh1Dataset,
-    ETTh2Dataset,
-    ETTm1Dataset,
-    ETTm2Dataset,
-    ElectricityDataset,
-    UberTLCDataset,
-    ILINetDataset,
-    ExchangeRateDataset,
-    TrafficDataset,
-    WeatherDataset,
-]
 
 _DEFAULT_PATH_TEST = _DEFAULT_PATH + "/tests"
 
-width_datasets = [1, 1, 96, 28, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 7, 7, 7, 7, 370, 262]
+datasets_with_width = [
+    (AirPassengersDataset, 1),
+    (AusBeerDataset, 1),
+    (AustralianTourismDataset, 96),
+    (EnergyDataset, 28),
+    (HeartRateDataset, 1),
+    (IceCreamHeaterDataset, 2),
+    (MonthlyMilkDataset, 1),
+    (SunspotsDataset, 1),
+    (TaylorDataset, 1),
+    (TemperatureDataset, 1),
+    (USGasolineDataset, 1),
+    (WineDataset, 1),
+    (WoolyDataset, 1),
+    (GasRateCO2Dataset, 2),
+    (MonthlyMilkIncompleteDataset, 1),
+    (ETTh1Dataset, 7),
+    (ETTh2Dataset, 7),
+    (ETTm1Dataset, 7),
+    (ETTm2Dataset, 7),
+    (ElectricityDataset, 370),
+    (UberTLCDataset, 262),
+    (ILINetDataset, 11),
+    (ExchangeRateDataset, 8),
+    (TrafficDataset, 862),
+    (WeatherDataset, 21),
+    (ElectricityConsumptionZurichDataset, 10),
+    (TaxiNewYorkDataset, 1),
+]
 
 wrong_hash_dataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
@@ -120,43 +125,62 @@ ele_multi_series_dataset = DatasetLoaderCSV(
 )
 
 
-class DatasetLoaderTestCase(DartsBaseTestClass):
-    def tearDown(self):
-        # we need to remove the cached datasets between each test
-        default_directory = DatasetLoader._DEFAULT_DIRECTORY
-        for f in os.listdir(default_directory):
-            os.remove(os.path.join(default_directory, f))
-        os.rmdir(DatasetLoader._DEFAULT_DIRECTORY)
+@pytest.fixture(scope="module", autouse=True)
+def tmp_dir_dataset():
+    """Configures the DataLoaders to use a temporary directory for storing the datasets,
+    and removes the path at the end of all tests in this module."""
+    temp_work_dir = tempfile.mkdtemp(prefix="darts")
+    DatasetLoader._DEFAULT_DIRECTORY = temp_work_dir
+    yield temp_work_dir
+    shutil.rmtree(temp_work_dir)
 
-    def test_ok_dataset(self):
-        for width, dataset_cls in zip(width_datasets, datasets):
-            dataset = dataset_cls()
-            ts: TimeSeries = dataset.load()
-            self.assertEqual(ts.width, width)
 
-    def test_hash(self):
-        with self.assertRaises(DatasetLoadingException):
+class TestDatasetLoader:
+    @pytest.mark.slow
+    @pytest.mark.parametrize("dataset_config", datasets_with_width)
+    def test_ok_dataset(self, dataset_config, tmp_dir_dataset):
+        dataset_cls, width = dataset_config
+        dataset = dataset_cls()
+        assert dataset._DEFAULT_DIRECTORY == tmp_dir_dataset
+        ts: TimeSeries = dataset.load()
+        assert ts.width == width
+        assert os.path.exists(os.path.join(tmp_dir_dataset, dataset._metadata.name))
+
+    def test_hash(self, tmp_dir_dataset):
+        with pytest.raises(DatasetLoadingException):
             wrong_hash_dataset.load()
+        assert not os.path.exists(
+            os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name)
+        )
 
-    def test_uri(self):
-        with self.assertRaises(DatasetLoadingException):
+    def test_uri(self, tmp_dir_dataset):
+        with pytest.raises(DatasetLoadingException):
             wrong_url_dataset.load()
+        assert not os.path.exists(
+            os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name)
+        )
 
-    def test_zip_uri(self):
-        with self.assertRaises(DatasetLoadingException):
+    def test_zip_uri(self, tmp_dir_dataset):
+        with pytest.raises(DatasetLoadingException):
             wrong_zip_url_dataset.load()
+        assert not os.path.exists(
+            os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name)
+        )
 
-    def test_pre_process_fn(self):
-        with self.assertRaises(DatasetLoadingException):
+    def test_pre_process_fn(self, tmp_dir_dataset):
+        with pytest.raises(DatasetLoadingException):
             no_pre_process_fn_dataset.load()
+        assert not os.path.exists(
+            os.path.join(tmp_dir_dataset, wrong_hash_dataset._metadata.name)
+        )
 
     def test_multi_series_dataset(self):
         # processing _to_multi_series takes a long time. Test function with 5 cols.
         ts = ele_multi_series_dataset.load().pd_dataframe()
 
         ms = ElectricityDataset()._to_multi_series(ts)
-        self.assertEqual(len(ms), 5)
-        self.assertEqual(len(ms[0]), 105216)
+        assert len(ms) == 5
+        assert len(ms[0]) == 105216
 
         multi_series_datasets = [
             UberTLCDataset,
@@ -167,5 +191,5 @@ class DatasetLoaderTestCase(DartsBaseTestClass):
         ]
         for dataset in multi_series_datasets:
             ms = dataset()._to_multi_series(ts)
-            self.assertEqual(len(ms), 5)
-            self.assertEqual(len(ms[0]), len(ts.index))
+            assert len(ms) == 5
+            assert len(ms[0]) == len(ts.index)

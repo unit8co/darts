@@ -4,14 +4,18 @@ Temporal Convolutional Network
 """
 
 import math
-from typing import Optional, Sequence, Tuple
+from collections.abc import Sequence
+from typing import Optional
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from darts.logging import get_logger, raise_if_not
-from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLPastCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.timeseries import TimeSeries
 from darts.utils.data import PastCovariatesShiftedDataset
@@ -26,7 +30,7 @@ class _ResidualBlock(nn.Module):
         num_filters: int,
         kernel_size: int,
         dilation_base: int,
-        dropout_fn,
+        dropout: float,
         weight_norm: bool,
         nr_blocks_below: int,
         num_layers: int,
@@ -43,8 +47,8 @@ class _ResidualBlock(nn.Module):
             The size of every kernel in a convolutional layer.
         dilation_base
             The base of the exponent that will determine the dilation on every level.
-        dropout_fn
-            The dropout function to be applied to every convolutional layer.
+        dropout
+            The dropout to be applied to every convolutional layer.
         weight_norm
             Boolean value indicating whether to use weight normalization.
         nr_blocks_below
@@ -74,7 +78,8 @@ class _ResidualBlock(nn.Module):
 
         self.dilation_base = dilation_base
         self.kernel_size = kernel_size
-        self.dropout_fn = dropout_fn
+        self.dropout1 = MonteCarloDropout(dropout)
+        self.dropout2 = MonteCarloDropout(dropout)
         self.num_layers = num_layers
         self.nr_blocks_below = nr_blocks_below
 
@@ -93,9 +98,10 @@ class _ResidualBlock(nn.Module):
             dilation=(dilation_base**nr_blocks_below),
         )
         if weight_norm:
-            self.conv1, self.conv2 = nn.utils.weight_norm(
-                self.conv1
-            ), nn.utils.weight_norm(self.conv2)
+            self.conv1, self.conv2 = (
+                nn.utils.parametrizations.weight_norm(self.conv1),
+                nn.utils.parametrizations.weight_norm(self.conv2),
+            )
 
         if input_dim != output_dim:
             self.conv3 = nn.Conv1d(input_dim, output_dim, 1)
@@ -108,14 +114,14 @@ class _ResidualBlock(nn.Module):
             self.kernel_size - 1
         )
         x = F.pad(x, (left_padding, 0))
-        x = self.dropout_fn(F.relu(self.conv1(x)))
+        x = self.dropout1(F.relu(self.conv1(x)))
 
         # second step
         x = F.pad(x, (left_padding, 0))
         x = self.conv2(x)
         if self.nr_blocks_below < self.num_layers - 1:
             x = F.relu(x)
-        x = self.dropout_fn(x)
+        x = self.dropout2(x)
 
         # add residual
         if self.conv1.in_channels != self.conv2.out_channels:
@@ -138,9 +144,8 @@ class _TCNModule(PLPastCovariatesModule):
         nr_params: int,
         target_length: int,
         dropout: float,
-        **kwargs
+        **kwargs,
     ):
-
         """PyTorch module implementing a dilated TCN module used in `TCNModel`.
 
 
@@ -167,7 +172,8 @@ class _TCNModule(PLPastCovariatesModule):
         dropout
             The dropout rate for every convolutional layer.
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
 
         Inputs
         ------
@@ -192,7 +198,6 @@ class _TCNModule(PLPastCovariatesModule):
         self.target_size = target_size
         self.nr_params = nr_params
         self.dilation_base = dilation_base
-        self.dropout = MonteCarloDropout(p=dropout)
 
         # If num_layers is not passed, compute number of layers needed for full history coverage
         if num_layers is None and dilation_base > 1:
@@ -218,20 +223,21 @@ class _TCNModule(PLPastCovariatesModule):
         self.res_blocks_list = []
         for i in range(num_layers):
             res_block = _ResidualBlock(
-                num_filters,
-                kernel_size,
-                dilation_base,
-                self.dropout,
-                weight_norm,
-                i,
-                num_layers,
-                self.input_size,
-                target_size * nr_params,
+                num_filters=num_filters,
+                kernel_size=kernel_size,
+                dilation_base=dilation_base,
+                dropout=dropout,
+                weight_norm=weight_norm,
+                nr_blocks_below=i,
+                num_layers=num_layers,
+                input_size=self.input_size,
+                target_size=target_size * nr_params,
             )
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
-    def forward(self, x_in: Tuple):
+    @io_processor
+    def forward(self, x_in: tuple):
         x, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
@@ -257,15 +263,15 @@ class TCNModel(PastCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         kernel_size: int = 3,
         num_filters: int = 3,
         num_layers: Optional[int] = None,
         dilation_base: int = 2,
         weight_norm: bool = False,
         dropout: float = 0.2,
-        **kwargs
+        **kwargs,
     ):
-
         """Temporal Convolutional Network Model (TCN).
 
         This is an implementation of a dilated TCN used for forecasting, inspired from [1]_.
@@ -275,9 +281,22 @@ class TCNModel(PastCovariatesTorchModel):
         Parameters
         ----------
         input_chunk_length
-            Number of past time steps that are fed to the forecasting module.
+            Number of time steps in the past to take as a model input (per chunk). Applies to the target
+            series, and past and/or future covariates (if the model supports it).
         output_chunk_length
-            Number of time steps the torch module will predict into the future at once.
+            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
+            from future covariates to use as a model input (if the model supports future covariates). It is not the same
+            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
+            auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
+            the model from using future values of past and / or future covariates for prediction (depending on the
+            model's covariate support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         kernel_size
             The size of every kernel in a convolutional layer.
         num_filters
@@ -317,16 +336,19 @@ class TCNModel(PastCovariatesTorchModel):
             to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
+            It is only applied to the features of the target series and not the covariates.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
             Number of epochs over which to train the model. Default: ``100``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part
+            defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
             of the name is formatted with the local date and time, while PID is the processed ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
-            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
+            ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
             Default: current working directory.
@@ -340,7 +362,7 @@ class TCNModel(PastCovariatesTorchModel):
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded). Default: ``False``.
         save_checkpoints
-            Whether or not to automatically save the untrained model and checkpoints from training.
+            Whether to automatically save the untrained model and checkpoints from training.
             To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
@@ -357,12 +379,16 @@ class TCNModel(PastCovariatesTorchModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
-                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
-                    'transformer': Scaler()
+                    'custom': {'past': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
         random_state
@@ -381,7 +407,6 @@ class TCNModel(PastCovariatesTorchModel):
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
             dict:rgs``
             dict:
-
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
@@ -424,6 +449,37 @@ class TCNModel(PastCovariatesTorchModel):
         References
         ----------
         .. [1] https://arxiv.org/abs/1803.01271
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import TCNModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # `output_chunk_length` must be strictly smaller than `input_chunk_length`
+        >>> model = TCNModel(
+        >>>     input_chunk_length=12,
+        >>>     output_chunk_length=6,
+        >>>     n_epochs=20,
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[-80.48476824],
+               [-80.47896667],
+               [-41.77135603],
+               [-41.76158729],
+               [-41.76854107],
+               [-41.78166819]])
+
+        .. note::
+            `DeepTCN example notebook <https://unit8co.github.io/darts/examples/09-DeepTCN-examples.html>`_ presents
+            techniques that can be used to improve the forecasts quality compared to this simple usage example.
         """
 
         raise_if_not(
@@ -449,7 +505,11 @@ class TCNModel(PastCovariatesTorchModel):
         self.dropout = dropout
         self.weight_norm = weight_norm
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
+
+    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (
             train_sample[1].shape[1] if train_sample[1] is not None else 0
@@ -476,18 +536,15 @@ class TCNModel(PastCovariatesTorchModel):
         target: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
+        sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> PastCovariatesShiftedDataset:
-
         return PastCovariatesShiftedDataset(
             target_series=target,
             covariates=past_covariates,
             length=self.input_chunk_length,
-            shift=self.output_chunk_length,
+            shift=self.output_chunk_length + self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
-            use_static_covariates=self._supports_static_covariates(),
+            use_static_covariates=self.uses_static_covariates,
+            sample_weight=sample_weight,
         )
-
-    @staticmethod
-    def _supports_static_covariates() -> bool:
-        return False

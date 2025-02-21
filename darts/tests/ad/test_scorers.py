@@ -1,26 +1,34 @@
-from typing import Sequence
+from collections.abc import Sequence
+from itertools import product
 
 import numpy as np
+import pytest
+import sklearn
 from pyod.models.knn import KNN
 from scipy.stats import cauchy, expon, gamma, laplace, norm, poisson
 
-from darts import TimeSeries
-from darts.ad.scorers import CauchyNLLScorer
-from darts.ad.scorers import DifferenceScorer as Difference
+from darts import TimeSeries, metrics
 from darts.ad.scorers import (
+    CauchyNLLScorer,
     ExponentialNLLScorer,
+    FittableAnomalyScorer,
     GammaNLLScorer,
     GaussianNLLScorer,
     KMeansScorer,
     LaplaceNLLScorer,
+    PoissonNLLScorer,
+    PyODScorer,
+    WassersteinScorer,
 )
+from darts.ad.scorers import DifferenceScorer as Difference
 from darts.ad.scorers import NormScorer as Norm
-from darts.ad.scorers import PoissonNLLScorer, PyODScorer, WassersteinScorer
-from darts.models import MovingAverage
-from darts.tests.base_test_class import DartsBaseTestClass
+from darts.ad.scorers.scorers import NLLScorer
+from darts.models import MovingAverageFilter
+from darts.utils.timeseries_generation import linear_timeseries
 
 list_NonFittableAnomalyScorer = [
-    Norm(),
+    Norm(component_wise=False),
+    Norm(component_wise=True),
     Difference(),
     GaussianNLLScorer(),
     ExponentialNLLScorer(),
@@ -31,23 +39,67 @@ list_NonFittableAnomalyScorer = [
 ]
 
 list_FittableAnomalyScorer = [
-    PyODScorer(model=KNN()),
-    KMeansScorer(),
-    WassersteinScorer(),
+    (PyODScorer, {"model": KNN(), "component_wise": False}),
+    (KMeansScorer, {"component_wise": False}),
+    (WassersteinScorer, {"window_agg": False, "component_wise": False}),
 ]
 
+# (scorer_cls, values, distribution, distribution_kwargs, prob_density_func, prob_density_func)
 list_NLLScorer = [
-    GaussianNLLScorer(),
-    ExponentialNLLScorer(),
-    PoissonNLLScorer(),
-    LaplaceNLLScorer(),
-    CauchyNLLScorer(),
-    GammaNLLScorer(),
+    (
+        CauchyNLLScorer,
+        [3, 2, 0.5, 0.9],
+        np.random.standard_cauchy,
+        {},
+        cauchy.pdf,
+        None,
+    ),
+    (
+        ExponentialNLLScorer,
+        [3, 0.1, 2, 0.01],
+        np.random.exponential,
+        {"scale": 2.0},
+        expon.pdf,
+        None,
+    ),
+    (
+        GammaNLLScorer,
+        [3, 0.1, 2, 0.5],
+        np.random.gamma,
+        {"shape": 2, "scale": 2},
+        gamma.pdf,
+        {"a": 2, "scale": 2},
+    ),
+    (
+        GaussianNLLScorer,
+        [3, 0.1, -2, 0.01],
+        np.random.normal,
+        {"loc": 0, "scale": 2},
+        norm.pdf,
+        None,
+    ),
+    (
+        LaplaceNLLScorer,
+        [3, 10, -2, 0.01],
+        np.random.laplace,
+        {"loc": 0, "scale": 2},
+        laplace.pdf,
+        None,
+    ),
+    (
+        PoissonNLLScorer,
+        [3, 2, 10, 1],
+        np.random.poisson,
+        {"lam": 1},
+        poisson.pmf,
+        {"mu": 1},
+    ),
 ]
 
+delta = 1e-05
 
-class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
+class TestAnomalyDetectionScorer:
     np.random.seed(42)
 
     # univariate series
@@ -70,8 +122,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         train._time_index, np_only_0_anomalies
     )
 
-    modified_train = MovingAverage(window=10).filter(train)
-    modified_test = MovingAverage(window=10).filter(test)
+    modified_train = MovingAverageFilter(window=10).filter(train)
+    modified_test = MovingAverageFilter(window=10).filter(test)
 
     np_probabilistic = np.random.normal(loc=10, scale=2, size=[100, 1, 20])
     probabilistic = TimeSeries.from_times_and_values(
@@ -90,8 +142,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         mts_train._time_index, np_mts_anomalies
     )
 
-    modified_mts_train = MovingAverage(window=10).filter(mts_train)
-    modified_mts_test = MovingAverage(window=10).filter(mts_test)
+    modified_mts_train = MovingAverageFilter(window=10).filter(mts_train)
+    modified_mts_test = MovingAverageFilter(window=10).filter(mts_test)
 
     np_mts_probabilistic = np.random.normal(
         loc=[[10], [5]], scale=[[1], [1.5]], size=[100, 2, 20]
@@ -100,762 +152,716 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         mts_train._time_index, np_mts_probabilistic
     )
 
-    def test_ScoreNonFittableAnomalyScorer(self):
-        scorer = Norm()
+    @pytest.mark.parametrize("scorer", list_NonFittableAnomalyScorer)
+    def test_score_from_pred_non_fittable_scorer(self, scorer):
+        # NLLScorer require deterministic `series`
+        if isinstance(scorer, NLLScorer):
+            # series and pred_series are both deterministic
+            with pytest.raises(ValueError):
+                scorer.score_from_prediction(series=self.test, pred_series=self.test)
+            # series is probabilistic, pred_series is deterministic
+            with pytest.raises(ValueError):
+                scorer.score_from_prediction(
+                    series=self.probabilistic, pred_series=self.train
+                )
 
-        # Check return types for score_from_prediction()
-        # Check if return type is float when input is a series
-        self.assertTrue(
-            isinstance(
+            score = scorer.score_from_prediction(
+                series=self.train, pred_series=self.probabilistic
+            )
+            assert isinstance(score, TimeSeries)
+            assert score.all_values().shape == (len(self.train), 1, 1)
+        else:
+            # Check if return type is float when input is a series
+            assert isinstance(
                 scorer.score_from_prediction(self.test, self.modified_test), TimeSeries
             )
-        )
 
-        # Check if return type is Sequence when input is a Sequence of series
-        self.assertTrue(
-            isinstance(
+            # Check if return type is Sequence when input is a Sequence of series
+            assert isinstance(
                 scorer.score_from_prediction([self.test], [self.modified_test]),
                 Sequence,
             )
-        )
 
-        # Check if return type is Sequence when input is a multivariate series
-        self.assertTrue(
-            isinstance(
+            # Check if return type is Sequence when input is a multivariate series
+            assert isinstance(
                 scorer.score_from_prediction(self.mts_test, self.modified_mts_test),
                 TimeSeries,
             )
-        )
 
-        # Check if return type is Sequence when input is a multivariate series
-        self.assertTrue(
-            isinstance(
+            # Check if return type is Sequence when input is a multivariate series
+            assert isinstance(
                 scorer.score_from_prediction([self.mts_test], [self.modified_mts_test]),
                 Sequence,
             )
-        )
 
-    def test_ScoreFittableAnomalyScorer(self):
-        scorer = KMeansScorer()
+    @pytest.mark.parametrize("scorer_config", list_FittableAnomalyScorer)
+    def test_score_return_type(self, scorer_config):
+        scorer_cls, scorer_kwargs = scorer_config
+        scorer = scorer_cls(**scorer_kwargs)
 
-        # Check return types for score()
         scorer.fit(self.train)
         # Check if return type is float when input is a series
-        self.assertTrue(isinstance(scorer.score(self.test), TimeSeries))
+        assert isinstance(scorer.score(self.test), TimeSeries)
 
         # Check if return type is Sequence when input is a sequence of series
-        self.assertTrue(isinstance(scorer.score([self.test]), Sequence))
+        assert isinstance(scorer.score([self.test]), Sequence)
 
         scorer.fit(self.mts_train)
         # Check if return type is Sequence when input is a multivariate series
-        self.assertTrue(isinstance(scorer.score(self.mts_test), TimeSeries))
+        assert isinstance(scorer.score(self.mts_test), TimeSeries)
 
         # Check if return type is Sequence when input is a sequence of multivariate series
-        self.assertTrue(isinstance(scorer.score([self.mts_test]), Sequence))
+        assert isinstance(scorer.score([self.mts_test]), Sequence)
 
         # Check return types for score_from_prediction()
         scorer.fit_from_prediction(self.train, self.modified_train)
         # Check if return type is float when input is a series
-        self.assertTrue(
-            isinstance(
-                scorer.score_from_prediction(self.test, self.modified_test), TimeSeries
-            )
+        assert isinstance(
+            scorer.score_from_prediction(self.test, self.modified_test), TimeSeries
         )
 
         # Check if return type is Sequence when input is a Sequence of series
-        self.assertTrue(
-            isinstance(
-                scorer.score_from_prediction([self.test], [self.modified_test]),
-                Sequence,
-            )
+        assert isinstance(
+            scorer.score_from_prediction([self.test], [self.modified_test]),
+            Sequence,
         )
 
         scorer.fit_from_prediction(self.mts_train, self.modified_mts_train)
         # Check if return type is Sequence when input is a multivariate series
-        self.assertTrue(
-            isinstance(
-                scorer.score_from_prediction(self.mts_test, self.modified_mts_test),
-                TimeSeries,
-            )
+        assert isinstance(
+            scorer.score_from_prediction(self.mts_test, self.modified_mts_test),
+            TimeSeries,
         )
 
         # Check if return type is Sequence when input is a multivariate series
-        self.assertTrue(
-            isinstance(
-                scorer.score_from_prediction([self.mts_test], [self.modified_mts_test]),
-                Sequence,
-            )
+        assert isinstance(
+            scorer.score_from_prediction([self.mts_test], [self.modified_mts_test]),
+            Sequence,
         )
 
-    def test_eval_accuracy_from_prediction(self):
-
+    def test_eval_metric_from_prediction_return_type(self):
         scorer = Norm(component_wise=False)
-        # Check return types
         # Check if return type is float when input is a series
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.anomalies, self.test, self.modified_test
-                ),
-                float,
-            )
+        assert isinstance(
+            scorer.eval_metric_from_prediction(
+                self.anomalies, self.test, self.modified_test
+            ),
+            float,
         )
-
         # Check if return type is Sequence when input is a Sequence of series
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.anomalies, [self.test], self.modified_test
-                ),
-                Sequence,
-            )
+        assert isinstance(
+            scorer.eval_metric_from_prediction(
+                self.anomalies, [self.test], self.modified_test
+            ),
+            Sequence,
         )
-
-        # Check if return type is a float when input is a multivariate series and component_wise is set to False
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.anomalies, self.mts_test, self.modified_mts_test
-                ),
-                float,
-            )
+        # Check if return type is a float when input is a multivariate series and component_wise is set to `False`
+        assert isinstance(
+            scorer.eval_metric_from_prediction(
+                self.anomalies, self.mts_test, self.modified_mts_test
+            ),
+            float,
         )
-
-        # Check if return type is Sequence when input is a multivariate series and component_wise is set to False
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.anomalies, [self.mts_test], self.modified_mts_test
-                ),
-                Sequence,
-            )
+        # Check if return type is Sequence when input is a multivariate series and component_wise is set to `False`
+        assert isinstance(
+            scorer.eval_metric_from_prediction(
+                self.anomalies, [self.mts_test], self.modified_mts_test
+            ),
+            Sequence,
         )
 
         scorer = Norm(component_wise=True)
-        # Check return types
-        # Check if return type is float when input is a series
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.anomalies, self.test, self.modified_test
-                ),
-                float,
-            )
+        # Check if return type is a float when input is a multivariate series and component_wise is set to `True`
+        assert isinstance(
+            scorer.eval_metric_from_prediction(
+                self.mts_anomalies, self.mts_test, self.modified_mts_test
+            ),
+            Sequence,
+        )
+        # Check if return type is Sequence when input is a multivariate series and component_wise is set to `True`
+        assert isinstance(
+            scorer.eval_metric_from_prediction(
+                self.mts_anomalies, [self.mts_test], self.modified_mts_test
+            ),
+            Sequence,
         )
 
-        # Check if return type is Sequence when input is a Sequence of series
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.anomalies, [self.test], self.modified_test
-                ),
-                Sequence,
-            )
-        )
-
-        # Check if return type is a float when input is a multivariate series and component_wise is set to True
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.mts_anomalies, self.mts_test, self.modified_mts_test
-                ),
-                Sequence,
-            )
-        )
-
-        # Check if return type is Sequence when input is a multivariate series and component_wise is set to True
-        self.assertTrue(
-            isinstance(
-                scorer.eval_accuracy_from_prediction(
-                    self.mts_anomalies, [self.mts_test], self.modified_mts_test
-                ),
-                Sequence,
-            )
-        )
-
-        non_fittable_scorer = Norm(component_wise=False)
-        fittable_scorer = KMeansScorer(component_wise=False)
+    @pytest.mark.parametrize("scorer_config", list_FittableAnomalyScorer)
+    def test_eval_metric_fittable_scorer(self, scorer_config):
+        scorer_cls, scorer_kwargs = scorer_config
+        fittable_scorer = scorer_cls(**scorer_kwargs)
         fittable_scorer.fit(self.train)
 
-        # if component_wise set to False, 'actual_anomalies' must have widths of 1
-        with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
-                actual_anomalies=self.mts_anomalies, series=self.test
-            )
-        with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
-                actual_anomalies=[self.anomalies, self.mts_anomalies],
+        # if component_wise set to False, 'anomalies' must have widths of 1
+        with pytest.raises(ValueError):
+            fittable_scorer.eval_metric(anomalies=self.mts_anomalies, series=self.test)
+        with pytest.raises(ValueError):
+            fittable_scorer.eval_metric(
+                anomalies=[self.anomalies, self.mts_anomalies],
                 series=[self.test, self.test],
             )
 
         # 'metric' must be str and "AUC_ROC" or "AUC_PR"
-        with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
-                actual_anomalies=self.anomalies, series=self.test, metric=1
+        with pytest.raises(ValueError):
+            fittable_scorer.eval_metric(
+                anomalies=self.anomalies, series=self.test, metric=1
             )
-        with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
-                actual_anomalies=self.anomalies, series=self.test, metric="auc_roc"
+        with pytest.raises(ValueError):
+            fittable_scorer.eval_metric(
+                anomalies=self.anomalies,
+                series=self.test,
+                metric="auc_roc",
             )
-        with self.assertRaises(TypeError):
-            fittable_scorer.eval_accuracy(
-                actual_anomalies=self.anomalies, series=self.test, metric=["AUC_ROC"]
-            )
-
-        # 'actual_anomalies' must be binary
-        with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(actual_anomalies=self.test, series=self.test)
-
-        # 'actual_anomalies' must contain anomalies (at least one)
-        with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
-                actual_anomalies=self.only_0_anomalies, series=self.test
+        with pytest.raises(TypeError):
+            fittable_scorer.eval_metric(
+                anomalies=self.anomalies,
+                series=self.test,
+                metric=["AUC_ROC"],
             )
 
-        # 'actual_anomalies' cannot contain only anomalies
-        with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
-                actual_anomalies=self.only_1_anomalies, series=self.test
+        # 'anomalies' must be binary
+        with pytest.raises(ValueError):
+            fittable_scorer.eval_metric(anomalies=self.test, series=self.test)
+
+        # 'anomalies' must contain anomalies (at least one)
+        with pytest.raises(ValueError):
+            fittable_scorer.eval_metric(
+                anomalies=self.only_0_anomalies, series=self.test
             )
 
-        # 'actual_anomalies' must match the number of series if length higher than 1
-        with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
-                actual_anomalies=[self.anomalies, self.anomalies], series=self.test
+        # 'anomalies' cannot contain only anomalies
+        with pytest.raises(ValueError):
+            fittable_scorer.eval_metric(
+                anomalies=self.only_1_anomalies, series=self.test
             )
-        with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
-                actual_anomalies=[self.anomalies, self.anomalies],
+
+        # 'anomalies' must match the number of series if length higher than 1
+        with pytest.raises(ValueError):
+            fittable_scorer.eval_metric(
+                anomalies=[self.anomalies, self.anomalies],
+                series=self.test,
+            )
+        with pytest.raises(ValueError):
+            fittable_scorer.eval_metric(
+                anomalies=[self.anomalies, self.anomalies],
                 series=[self.test, self.test, self.test],
             )
 
-        # 'actual_anomalies' must have non empty intersection with 'series'
-        with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
-                actual_anomalies=self.anomalies[:20], series=self.test[30:]
+        # 'anomalies' must have non empty intersection with 'series'
+        with pytest.raises(ValueError):
+            fittable_scorer.eval_metric(
+                anomalies=self.anomalies[:20], series=self.test[30:]
             )
-        with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
-                actual_anomalies=[self.anomalies, self.anomalies[:20]],
+        with pytest.raises(ValueError):
+            fittable_scorer.eval_metric(
+                anomalies=[self.anomalies, self.anomalies[:20]],
                 series=[self.test, self.test[40:]],
             )
 
-        for scorer in [non_fittable_scorer, fittable_scorer]:
+    @pytest.mark.parametrize(
+        "scorer", [Norm(component_wise=False), KMeansScorer(component_wise=False)]
+    )
+    def test_eval_metric_from_prediction(self, scorer):
+        if isinstance(scorer, FittableAnomalyScorer):
+            scorer.fit(self.train)
 
-            # name must be of type str
-            self.assertEqual(
-                type(scorer.__str__()),
-                str,
+        # name must be of type str
+        assert isinstance(scorer.__str__(), str)
+
+        # 'metric' must be str and "AUC_ROC" or "AUC_PR"
+        with pytest.raises(ValueError):
+            scorer.eval_metric_from_prediction(
+                anomalies=self.anomalies,
+                series=self.test,
+                pred_series=self.modified_test,
+                metric=1,
+            )
+        with pytest.raises(ValueError):
+            scorer.eval_metric_from_prediction(
+                anomalies=self.anomalies,
+                series=self.test,
+                pred_series=self.modified_test,
+                metric="auc_roc",
+            )
+        with pytest.raises(TypeError):
+            scorer.eval_metric_from_prediction(
+                anomalies=self.anomalies,
+                series=self.test,
+                pred_series=self.modified_test,
+                metric=["AUC_ROC"],
             )
 
-            # 'metric' must be str and "AUC_ROC" or "AUC_PR"
-            with self.assertRaises(ValueError):
-                fittable_scorer.eval_accuracy_from_prediction(
-                    actual_anomalies=self.anomalies,
-                    actual_series=self.test,
-                    pred_series=self.modified_test,
-                    metric=1,
-                )
-            with self.assertRaises(ValueError):
-                fittable_scorer.eval_accuracy_from_prediction(
-                    actual_anomalies=self.anomalies,
-                    actual_series=self.test,
-                    pred_series=self.modified_test,
-                    metric="auc_roc",
-                )
-            with self.assertRaises(TypeError):
-                fittable_scorer.eval_accuracy_from_prediction(
-                    actual_anomalies=self.anomalies,
-                    actual_series=self.test,
-                    pred_series=self.modified_test,
-                    metric=["AUC_ROC"],
-                )
+        # 'anomalies' must be binary
+        with pytest.raises(ValueError):
+            scorer.eval_metric_from_prediction(
+                anomalies=self.test,
+                series=self.test,
+                pred_series=self.modified_test,
+            )
 
-            # 'actual_anomalies' must be binary
-            with self.assertRaises(ValueError):
-                scorer.eval_accuracy_from_prediction(
-                    actual_anomalies=self.test,
-                    actual_series=self.test,
-                    pred_series=self.modified_test,
-                )
+        # 'anomalies' must contain anomalies (at least one)
+        with pytest.raises(ValueError):
+            scorer.eval_metric_from_prediction(
+                anomalies=self.only_0_anomalies,
+                series=self.test,
+                pred_series=self.modified_test,
+            )
 
-            # 'actual_anomalies' must contain anomalies (at least one)
-            with self.assertRaises(ValueError):
-                scorer.eval_accuracy_from_prediction(
-                    actual_anomalies=self.only_0_anomalies,
-                    actual_series=self.test,
-                    pred_series=self.modified_test,
-                )
+        # 'anomalies' cannot contain only anomalies
+        with pytest.raises(ValueError):
+            scorer.eval_metric_from_prediction(
+                anomalies=self.only_1_anomalies,
+                series=self.test,
+                pred_series=self.modified_test,
+            )
 
-            # 'actual_anomalies' cannot contain only anomalies
-            with self.assertRaises(ValueError):
-                scorer.eval_accuracy_from_prediction(
-                    actual_anomalies=self.only_1_anomalies,
-                    actual_series=self.test,
-                    pred_series=self.modified_test,
-                )
+        # 'anomalies' must match the number of series if length higher than 1
+        with pytest.raises(ValueError):
+            scorer.eval_metric_from_prediction(
+                anomalies=[self.anomalies, self.anomalies],
+                series=[self.test, self.test, self.test],
+                pred_series=[
+                    self.modified_test,
+                    self.modified_test,
+                    self.modified_test,
+                ],
+            )
+        with pytest.raises(ValueError):
+            scorer.eval_metric_from_prediction(
+                anomalies=[self.anomalies, self.anomalies],
+                series=self.test,
+                pred_series=self.modified_test,
+            )
 
-            # 'actual_anomalies' must match the number of series if length higher than 1
-            with self.assertRaises(ValueError):
-                scorer.eval_accuracy_from_prediction(
-                    actual_anomalies=[self.anomalies, self.anomalies],
-                    actual_series=[self.test, self.test, self.test],
-                    pred_series=[
-                        self.modified_test,
-                        self.modified_test,
-                        self.modified_test,
-                    ],
-                )
-            with self.assertRaises(ValueError):
-                scorer.eval_accuracy_from_prediction(
-                    actual_anomalies=[self.anomalies, self.anomalies],
-                    actual_series=self.test,
-                    pred_series=self.modified_test,
-                )
+        # 'anomalies' must have non empty intersection with 'series' and 'pred_series'
+        with pytest.raises(ValueError):
+            scorer.eval_metric_from_prediction(
+                anomalies=self.anomalies[:20],
+                series=self.test[30:],
+                pred_series=self.modified_test[30:],
+            )
+        with pytest.raises(ValueError):
+            scorer.eval_metric_from_prediction(
+                anomalies=[self.anomalies, self.anomalies[:20]],
+                series=[self.test, self.test[40:]],
+                pred_series=[self.modified_test, self.modified_test[40:]],
+            )
 
-            # 'actual_anomalies' must have non empty intersection with 'actual_series' and 'pred_series'
-            with self.assertRaises(ValueError):
-                scorer.eval_accuracy_from_prediction(
-                    actual_anomalies=self.anomalies[:20],
-                    actual_series=self.test[30:],
-                    pred_series=self.modified_test[30:],
-                )
-            with self.assertRaises(ValueError):
-                scorer.eval_accuracy_from_prediction(
-                    actual_anomalies=[self.anomalies, self.anomalies[:20]],
-                    actual_series=[self.test, self.test[40:]],
-                    pred_series=[self.modified_test, self.modified_test[40:]],
-                )
+    @pytest.mark.parametrize("scorer", list_NonFittableAnomalyScorer)
+    def test_NonFittableAnomalyScorer(self, scorer):
+        # Check if trainable is False, being a NonFittableAnomalyScorer
+        assert not scorer.is_trainable
 
-    def test_NonFittableAnomalyScorer(self):
+        # checks for score_from_prediction()
+        # input must be Timeseries or sequence of Timeseries
+        with pytest.raises(ValueError):
+            scorer.score_from_prediction(self.train, "str")
+        with pytest.raises(ValueError):
+            scorer.score_from_prediction(
+                [self.train, self.train], [self.modified_train, "str"]
+            )
+        # score on sequence with series that have different width
+        with pytest.raises(ValueError):
+            scorer.score_from_prediction(self.train, self.modified_mts_train)
+        # input sequences have different length
+        with pytest.raises(ValueError):
+            scorer.score_from_prediction(
+                [self.train, self.train], [self.modified_train]
+            )
+        # two inputs must have a non zero intersection
+        with pytest.raises(ValueError):
+            scorer.score_from_prediction(self.train[:50], self.train[55:])
+        # every pairwise element must have a non zero intersection
+        with pytest.raises(ValueError):
+            scorer.score_from_prediction(
+                [self.train, self.train[:50]], [self.train, self.train[55:]]
+            )
 
-        for scorer in list_NonFittableAnomalyScorer:
-            # Check if trainable is False, being a NonFittableAnomalyScorer
-            self.assertTrue(not scorer.trainable)
+    @pytest.mark.parametrize("scorer_config", list_FittableAnomalyScorer)
+    def test_FittableAnomalyScorer(self, scorer_config):
+        scorer_cls, scorer_kwargs = scorer_config
+        fittable_scorer = scorer_cls(**scorer_kwargs)
 
-            # checks for score_from_prediction()
-            # input must be Timeseries or sequence of Timeseries
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction(self.train, "str")
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction(
-                    [self.train, self.train], [self.modified_train, "str"]
-                )
-            # score on sequence with series that have different width
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction(self.train, self.modified_mts_train)
-            # input sequences have different length
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction(
-                    [self.train, self.train], [self.modified_train]
-                )
-            # two inputs must have a non zero intersection
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction(self.train[:50], self.train[55:])
-            # every pairwise element must have a non zero intersection
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction(
-                    [self.train, self.train[:50]], [self.train, self.train[55:]]
-                )
+        # Need to call fit() before calling score()
+        with pytest.raises(ValueError):
+            fittable_scorer.score(self.test)
 
-    def test_FittableAnomalyScorer(self):
+        # Need to call fit() before calling score_from_prediction()
+        with pytest.raises(ValueError):
+            fittable_scorer.score_from_prediction(self.test, self.modified_test)
 
-        for scorer in list_FittableAnomalyScorer:
+        # Check if _fit_called is False
+        assert not fittable_scorer._fit_called
 
-            # Need to call fit() before calling score()
-            with self.assertRaises(ValueError):
-                scorer.score(self.test)
+        # fit on sequence with series that have different width
+        with pytest.raises(ValueError):
+            fittable_scorer.fit([self.train, self.mts_train])
 
-            # Need to call fit() before calling score_from_prediction()
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction(self.test, self.modified_test)
+        # fit on sequence with series that have different width
+        with pytest.raises(ValueError):
+            fittable_scorer.fit_from_prediction(
+                [self.train, self.mts_train],
+                [self.modified_train, self.modified_mts_train],
+            )
 
-            # Check if trainable is True, being a FittableAnomalyScorer
-            self.assertTrue(scorer.trainable)
+        # checks for fit_from_prediction()
+        # input must be Timeseries or sequence of Timeseries
+        with pytest.raises(ValueError):
+            fittable_scorer.score_from_prediction(self.train, "str")
+        with pytest.raises(ValueError):
+            fittable_scorer.score_from_prediction(
+                [self.train, self.train], [self.modified_train, "str"]
+            )
+        # two inputs must have the same length
+        with pytest.raises(ValueError):
+            fittable_scorer.fit_from_prediction(
+                [self.train, self.train], [self.modified_train]
+            )
+        # two inputs must have the same width
+        with pytest.raises(ValueError):
+            fittable_scorer.fit_from_prediction([self.train], [self.modified_mts_train])
+        # every element must have the same width
+        with pytest.raises(ValueError):
+            fittable_scorer.fit_from_prediction(
+                [self.train, self.mts_train],
+                [self.modified_train, self.modified_mts_train],
+            )
+        # two inputs must have a non zero intersection
+        with pytest.raises(ValueError):
+            fittable_scorer.fit_from_prediction(self.train[:50], self.train[55:])
+        # every pairwise element must have a non zero intersection
+        with pytest.raises(ValueError):
+            fittable_scorer.fit_from_prediction(
+                [self.train, self.train[:50]], [self.train, self.train[55:]]
+            )
 
-            # Check if _fit_called is False
-            self.assertTrue(not scorer._fit_called)
+        # checks for fit()
+        # input must be Timeseries or sequence of Timeseries
+        with pytest.raises(ValueError):
+            fittable_scorer.fit("str")
+        with pytest.raises(ValueError):
+            fittable_scorer.fit([self.modified_train, "str"])
 
-            # fit on sequence with series that have different width
-            with self.assertRaises(ValueError):
-                scorer.fit([self.train, self.mts_train])
+        # checks for score_from_prediction()
+        fittable_scorer.fit_from_prediction(self.train, self.modified_train)
+        # input must be Timeseries or sequence of Timeseries
+        with pytest.raises(ValueError):
+            fittable_scorer.score_from_prediction(self.train, "str")
+        with pytest.raises(ValueError):
+            fittable_scorer.score_from_prediction(
+                [self.train, self.train], [self.modified_train, "str"]
+            )
+        # two inputs must have the same length
+        with pytest.raises(ValueError):
+            fittable_scorer.score_from_prediction(
+                [self.train, self.train], [self.modified_train]
+            )
+        # two inputs must have the same width
+        with pytest.raises(ValueError):
+            fittable_scorer.score_from_prediction(
+                [self.train], [self.modified_mts_train]
+            )
+        # every element must have the same width
+        with pytest.raises(ValueError):
+            fittable_scorer.score_from_prediction(
+                [self.train, self.mts_train],
+                [self.modified_train, self.modified_mts_train],
+            )
+        # two inputs must have a non zero intersection
+        with pytest.raises(ValueError):
+            fittable_scorer.score_from_prediction(self.train[:50], self.train[55:])
+        # every pairwise element must have a non zero intersection
+        with pytest.raises(ValueError):
+            fittable_scorer.score_from_prediction(
+                [self.train, self.train[:50]], [self.train, self.train[55:]]
+            )
 
-            # fit on sequence with series that have different width
-            with self.assertRaises(ValueError):
-                scorer.fit_from_prediction(
-                    [self.train, self.mts_train],
-                    [self.modified_train, self.modified_mts_train],
-                )
+        # checks for score()
+        # input must be Timeseries or sequence of Timeseries
+        with pytest.raises(ValueError):
+            fittable_scorer.score("str")
+        with pytest.raises(ValueError):
+            fittable_scorer.score([self.modified_train, "str"])
 
-            # checks for fit_from_prediction()
-            # input must be Timeseries or sequence of Timeseries
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction(self.train, "str")
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction(
-                    [self.train, self.train], [self.modified_train, "str"]
-                )
-            # two inputs must have the same length
-            with self.assertRaises(ValueError):
-                scorer.fit_from_prediction(
-                    [self.train, self.train], [self.modified_train]
-                )
-            # two inputs must have the same width
-            with self.assertRaises(ValueError):
-                scorer.fit_from_prediction([self.train], [self.modified_mts_train])
-            # every element must have the same width
-            with self.assertRaises(ValueError):
-                scorer.fit_from_prediction(
-                    [self.train, self.mts_train],
-                    [self.modified_train, self.modified_mts_train],
-                )
-            # two inputs must have a non zero intersection
-            with self.assertRaises(ValueError):
-                scorer.fit_from_prediction(self.train[:50], self.train[55:])
-            # every pairwise element must have a non zero intersection
-            with self.assertRaises(ValueError):
-                scorer.fit_from_prediction(
-                    [self.train, self.train[:50]], [self.train, self.train[55:]]
-                )
+        # caseA: fit with fit()
+        # case1: fit on UTS
+        fittable_scorerA1 = fittable_scorer
+        fittable_scorerA1.fit(self.train)
+        # Check if _fit_called is True after being fitted
+        assert fittable_scorerA1._fit_called
+        with pytest.raises(ValueError):
+            # series must be same width as series used for training
+            fittable_scorerA1.score(self.mts_test)
+        # case2: fit on MTS
+        fittable_scorerA2 = fittable_scorer
+        fittable_scorerA2.fit(self.mts_train)
+        # Check if _fit_called is True after being fitted
+        assert fittable_scorerA2._fit_called
+        with pytest.raises(ValueError):
+            # series must be same width as series used for training
+            fittable_scorerA2.score(self.test)
 
-            # checks for fit()
-            # input must be Timeseries or sequence of Timeseries
-            with self.assertRaises(ValueError):
-                scorer.fit("str")
-            with self.assertRaises(ValueError):
-                scorer.fit([self.modified_train, "str"])
-
-            # checks for score_from_prediction()
-            scorer.fit_from_prediction(self.train, self.modified_train)
-            # input must be Timeseries or sequence of Timeseries
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction(self.train, "str")
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction(
-                    [self.train, self.train], [self.modified_train, "str"]
-                )
-            # two inputs must have the same length
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction(
-                    [self.train, self.train], [self.modified_train]
-                )
-            # two inputs must have the same width
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction([self.train], [self.modified_mts_train])
-            # every element must have the same width
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction(
-                    [self.train, self.mts_train],
-                    [self.modified_train, self.modified_mts_train],
-                )
-            # two inputs must have a non zero intersection
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction(self.train[:50], self.train[55:])
-            # every pairwise element must have a non zero intersection
-            with self.assertRaises(ValueError):
-                scorer.score_from_prediction(
-                    [self.train, self.train[:50]], [self.train, self.train[55:]]
-                )
-
-            # checks for score()
-            # input must be Timeseries or sequence of Timeseries
-            with self.assertRaises(ValueError):
-                scorer.score("str")
-            with self.assertRaises(ValueError):
-                scorer.score([self.modified_train, "str"])
-
-            # caseA: fit with fit()
-            # case1: fit on UTS
-            scorerA1 = scorer
-            scorerA1.fit(self.train)
-            # Check if _fit_called is True after being fitted
-            self.assertTrue(scorerA1._fit_called)
-            with self.assertRaises(ValueError):
-                # series must be same width as series used for training
-                scorerA1.score(self.mts_test)
-            # case2: fit on MTS
-            scorerA2 = scorer
-            scorerA2.fit(self.mts_train)
-            # Check if _fit_called is True after being fitted
-            self.assertTrue(scorerA2._fit_called)
-            with self.assertRaises(ValueError):
-                # series must be same width as series used for training
-                scorerA2.score(self.test)
-
-            # caseB: fit with fit_from_prediction()
-            # case1: fit on UTS
-            scorerB1 = scorer
-            scorerB1.fit_from_prediction(self.train, self.modified_train)
-            # Check if _fit_called is True after being fitted
-            self.assertTrue(scorerB1._fit_called)
-            with self.assertRaises(ValueError):
-                # series must be same width as series used for training
-                scorerB1.score_from_prediction(self.mts_test, self.modified_mts_test)
-            # case2: fit on MTS
-            scorerB2 = scorer
-            scorerB2.fit_from_prediction(self.mts_train, self.modified_mts_train)
-            # Check if _fit_called is True after being fitted
-            self.assertTrue(scorerB2._fit_called)
-            with self.assertRaises(ValueError):
-                # series must be same width as series used for training
-                scorerB2.score_from_prediction(self.test, self.modified_test)
+        # caseB: fit with fit_from_prediction()
+        # case1: fit on UTS
+        fittable_scorerB1 = fittable_scorer
+        fittable_scorerB1.fit_from_prediction(self.train, self.modified_train)
+        # Check if _fit_called is True after being fitted
+        assert fittable_scorerB1._fit_called
+        with pytest.raises(ValueError):
+            # series must be same width as series used for training
+            fittable_scorerB1.score_from_prediction(
+                self.mts_test, self.modified_mts_test
+            )
+        # case2: fit on MTS
+        fittable_scorerB2 = fittable_scorer
+        fittable_scorerB2.fit_from_prediction(self.mts_train, self.modified_mts_train)
+        # Check if _fit_called is True after being fitted
+        assert fittable_scorerB2._fit_called
+        with pytest.raises(ValueError):
+            # series must be same width as series used for training
+            fittable_scorerB2.score_from_prediction(self.test, self.modified_test)
 
     def test_Norm(self):
+        # Check parameters
+        self.expects_deterministic_input(Norm)
 
-        # component_wise must be bool
-        with self.assertRaises(ValueError):
-            Norm(component_wise=1)
-        with self.assertRaises(ValueError):
-            Norm(component_wise="string")
         # if component_wise=False must always return a univariate anomaly score
         scorer = Norm(component_wise=False)
-        self.assertTrue(
-            scorer.score_from_prediction(self.test, self.modified_test).width == 1
-        )
-        self.assertTrue(
+        assert scorer.score_from_prediction(self.test, self.modified_test).width == 1
+
+        assert (
             scorer.score_from_prediction(self.mts_test, self.modified_mts_test).width
             == 1
         )
+
         # if component_wise=True must always return the same width as the input
         scorer = Norm(component_wise=True)
-        self.assertTrue(
-            scorer.score_from_prediction(self.test, self.modified_test).width == 1
-        )
-        self.assertTrue(
+        assert scorer.score_from_prediction(self.test, self.modified_test).width == 1
+        assert (
             scorer.score_from_prediction(self.mts_test, self.modified_mts_test).width
             == self.mts_test.width
         )
 
         scorer = Norm(component_wise=True)
-        # always expects a deterministic input
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.train, self.probabilistic)
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.probabilistic, self.train)
-
         # univariate case (equivalent to abs diff)
-        self.assertEqual(
-            scorer.score_from_prediction(self.test, self.test + 1)
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0],
-            len(self.test),
-        )
-        self.assertEqual(
-            scorer.score_from_prediction(self.test + 1, self.test)
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0],
-            len(self.test),
-        )
+        assert scorer.score_from_prediction(self.test, self.test + 1).sum(
+            axis=0
+        ).all_values().flatten()[0] == len(self.test)
+        assert scorer.score_from_prediction(self.test + 1, self.test).sum(
+            axis=0
+        ).all_values().flatten()[0] == len(self.test)
 
         # multivariate case with component_wise set to True (equivalent to abs diff)
         # abs(a - 2a) =  a
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["0"],
-            self.mts_test["0"],
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["0"]
+            == self.mts_test["0"]
         )
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["1"],
-            self.mts_test["1"],
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["1"]
+            == self.mts_test["1"]
         )
+
         # abs(2a - a) =  a
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["0"],
-            self.mts_test["0"],
+        assert (
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["0"]
+            == self.mts_test["0"]
         )
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["1"],
-            self.mts_test["1"],
+        assert (
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["1"]
+            == self.mts_test["1"]
         )
 
         scorer = Norm(component_wise=False)
 
-        # always expects a deterministic input
-
         # univariate case (equivalent to abs diff)
-        self.assertEqual(
-            scorer.score_from_prediction(self.test, self.test + 1)
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0],
-            len(self.test),
-        )
-        self.assertEqual(
-            scorer.score_from_prediction(self.test + 1, self.test)
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0],
-            len(self.test),
-        )
+        assert scorer.score_from_prediction(self.test, self.test + 1).sum(
+            axis=0
+        ).all_values().flatten()[0] == len(self.test)
+        assert scorer.score_from_prediction(self.test + 1, self.test).sum(
+            axis=0
+        ).all_values().flatten()[0] == len(self.test)
 
         # multivariate case with component_wise set to False
         # norm(a - a + sqrt(2)) = 2 * len(a) with a being series of dim=2
-        self.assertAlmostEqual(
-            scorer.score_from_prediction(self.mts_test, self.mts_test + np.sqrt(2))
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0],
-            2 * len(self.mts_test),
-            delta=1e-05,
+        assert (
+            np.abs(
+                2 * len(self.mts_test)
+                - scorer.score_from_prediction(
+                    self.mts_test, self.mts_test + np.sqrt(2)
+                )
+                .sum(axis=0)
+                .all_values()
+                .flatten()[0]
+            )
+            < delta
         )
 
-        self.assertFalse(scorer.is_probabilistic)
+        assert not scorer.is_probabilistic
 
     def test_Difference(self):
+        self.expects_deterministic_input(Difference)
 
         scorer = Difference()
 
-        # always expects a deterministic input
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.train, self.probabilistic)
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.probabilistic, self.train)
-
         # univariate case
-        self.assertEqual(
-            scorer.score_from_prediction(self.test, self.test + 1)
-            .sum(axis=0)
-            .all_values()
-            .flatten()[0],
-            -len(self.test),
-        )
-        self.assertEqual(
+        assert scorer.score_from_prediction(self.test, self.test + 1).sum(
+            axis=0
+        ).all_values().flatten()[0] == -len(self.test)
+
+        assert (
             scorer.score_from_prediction(self.test + 1, self.test)
             .sum(axis=0)
             .all_values()
-            .flatten()[0],
-            len(self.test),
-        )
+            .flatten()[0]
+        ) == len(self.test)
 
         # multivariate case
         # output of score() must be the same width as the width of the input
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test, self.mts_test).width,
-            self.mts_test.width,
-        )
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.mts_test).width
+        ) == self.mts_test.width
 
         # a - 2a = - a
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["0"],
-            -self.mts_test["0"],
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["0"]
+            == -self.mts_test["0"]
         )
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["1"],
-            -self.mts_test["1"],
+        assert (
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["1"]
+            == -self.mts_test["1"]
         )
         # 2a - a =  a
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["0"],
-            self.mts_test["0"],
+        assert (
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["0"]
+            == self.mts_test["0"]
         )
-        self.assertEqual(
-            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["1"],
-            self.mts_test["1"],
+        assert (
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["1"]
+            == self.mts_test["1"]
         )
 
-        self.assertFalse(scorer.is_probabilistic)
+        assert not scorer.is_probabilistic
 
-    def test_WassersteinScorer(self):
-
-        # component_wise parameter
-        # component_wise must be bool
-        with self.assertRaises(ValueError):
-            WassersteinScorer(component_wise=1)
-        with self.assertRaises(ValueError):
-            WassersteinScorer(component_wise="string")
-        # if component_wise=False must always return a univariate anomaly score
-        scorer = WassersteinScorer(component_wise=False)
-        scorer.fit(self.train)
-        self.assertTrue(scorer.score(self.test).width == 1)
-        scorer.fit(self.mts_train)
-        self.assertTrue(scorer.score(self.mts_test).width == 1)
-        # if component_wise=True must always return the same width as the input
-        scorer = WassersteinScorer(component_wise=True)
-        scorer.fit(self.train)
-        self.assertTrue(scorer.score(self.test).width == 1)
-        scorer.fit(self.mts_train)
-        self.assertTrue(scorer.score(self.mts_test).width == self.mts_test.width)
-
-        # window parameter
-        # window must be int
-        with self.assertRaises(ValueError):
-            WassersteinScorer(window=True)
-        with self.assertRaises(ValueError):
-            WassersteinScorer(window="string")
-        # window must be non negative
-        with self.assertRaises(ValueError):
-            WassersteinScorer(window=-1)
+    @staticmethod
+    def helper_check_type_window(scorer, **kwargs):
+        # window must be non-negative
+        with pytest.raises(ValueError):
+            scorer(window=-1, **kwargs)
         # window must be different from 0
-        with self.assertRaises(ValueError):
-            WassersteinScorer(window=0)
+        with pytest.raises(ValueError):
+            scorer(window=0, **kwargs)
 
-        # diff_fn paramter
-        # must be None, 'diff' or 'abs_diff'
-        with self.assertRaises(ValueError):
-            WassersteinScorer(diff_fn="random")
-        with self.assertRaises(ValueError):
-            WassersteinScorer(diff_fn=1)
+    def helper_window_parameter(self, scorer_to_test, **kwargs):
+        self.helper_check_type_window(scorer_to_test, **kwargs)
 
-        # test _diff_series() directly
-        with self.assertRaises(ValueError):
-            s_tmp = WassersteinScorer()
+        if scorer_to_test(**kwargs).is_trainable:
+            # window must be smaller than the input of score()
+            scorer = scorer_to_test(window=len(self.train) + 1, **kwargs)
+            with pytest.raises(ValueError):
+                scorer.fit(self.train)
+
+            scorer = scorer_to_test(window=len(self.train) - 20, **kwargs)
+            scorer.fit(self.train)
+            with pytest.raises(ValueError):
+                scorer.score(self.test[: len(self.train) // 2])
+
+        else:
+            # case only NLL scorers for now
+
+            scorer = scorer_to_test(window=101)
+            # window must be smaller than the input of score_from_prediction()
+            with pytest.raises(ValueError):
+                scorer.score_from_prediction(
+                    series=self.test, pred_series=self.probabilistic
+                )  # len(self.test)=100
+
+    def diff_fn_parameter(self, scorer, **kwargs):
+        # must be one of Darts per time step metrics (e.g. ae, err, ...)
+        with pytest.raises(ValueError):
+            scorer(diff_fn="abs_diff", **kwargs)
+        # absolute error / absolute difference
+        s_tmp = scorer(diff_fn=metrics.ae, **kwargs)
+        diffs = s_tmp._diff_series([self.train], [self.test])
+        assert diffs == [abs(self.train - self.test)]
+        # error / difference
+        s_tmp = scorer(diff_fn=metrics.err, **kwargs)
+        diffs = s_tmp._diff_series([self.train], [self.test])
+        assert diffs == [self.train - self.test]
+
+    def component_wise_parameter(self, scorer_to_test, **kwargs):
+        # if component_wise=False must always return a univariate anomaly score
+        scorer = scorer_to_test(component_wise=False, **kwargs)
+        scorer.fit(self.train)
+        assert scorer.score(self.test).width == 1
+        scorer.fit(self.mts_train)
+        assert scorer.score(self.mts_test).width == 1
+
+        # if component_wise=True must always return the same width as the input
+        scorer = scorer_to_test(component_wise=True, **kwargs)
+        scorer.fit(self.train)
+        assert scorer.score(self.test).width == 1
+        scorer.fit(self.mts_train)
+        assert scorer.score(self.mts_test).width == self.mts_test.width
+
+    def check_diff_series(self, scorer, **kwargs):
+        # test _diff_series() directly: parameter must by "abs_diff" or "diff"
+        with pytest.raises(ValueError):
+            s_tmp = scorer(**kwargs)
             s_tmp.diff_fn = "random"
             s_tmp._diff_series(self.train, self.test)
-        WassersteinScorer(diff_fn="diff")._diff_series(self.train, self.test)
-        WassersteinScorer()._diff_series(self.train, self.test)
 
-        scorer = WassersteinScorer()
+    def expects_deterministic_input(self, scorer, **kwargs):
+        scorer = scorer(**kwargs)
+        if scorer.is_trainable:
+            scorer.fit(self.train)
+            np.testing.assert_warns(scorer.score(self.probabilistic))
 
         # always expects a deterministic input
-        with self.assertRaises(ValueError):
+        np.testing.assert_warns(
             scorer.score_from_prediction(self.train, self.probabilistic)
-        with self.assertRaises(ValueError):
+        )
+        np.testing.assert_warns(
             scorer.score_from_prediction(self.probabilistic, self.train)
-        with self.assertRaises(ValueError):
-            scorer.score(self.probabilistic)
+        )
 
-        # window must be smaller than the input of score()
-        scorer = WassersteinScorer(window=101)
-        with self.assertRaises(ValueError):
-            scorer.fit(self.train)  # len(self.train)=100
-
-        scorer = WassersteinScorer(window=80)
-        scorer.fit(self.train)
-        with self.assertRaises(ValueError):
-            scorer.score(self.test[:50])  # len(self.test)=100
+    def test_WassersteinScorer(self):
+        # Check parameters and inputs
+        self.component_wise_parameter(WassersteinScorer)
+        self.helper_window_parameter(WassersteinScorer)
+        self.diff_fn_parameter(WassersteinScorer)
+        self.expects_deterministic_input(WassersteinScorer)
 
         # test plotting (just call the functions)
-        scorer = WassersteinScorer(window=2)
+        scorer = WassersteinScorer(window=2, window_agg=False)
         scorer.fit(self.train)
         scorer.show_anomalies(self.test, self.anomalies)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             # should fail for a sequence of series
             scorer.show_anomalies([self.test, self.test], self.anomalies)
         scorer.show_anomalies_from_prediction(
-            actual_series=self.test,
+            series=self.test,
             pred_series=self.test + 1,
-            actual_anomalies=self.anomalies,
+            anomalies=self.anomalies,
         )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             # should fail for a sequence of series
             scorer.show_anomalies_from_prediction(
-                actual_series=[self.test, self.test],
+                series=[self.test, self.test],
                 pred_series=self.test + 1,
-                actual_anomalies=self.anomalies,
+                anomalies=self.anomalies,
             )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             # should fail for a sequence of series
             scorer.show_anomalies_from_prediction(
-                actual_series=self.test,
+                series=self.test,
                 pred_series=[self.test + 1, self.test + 2],
-                actual_anomalies=self.anomalies,
+                anomalies=self.anomalies,
             )
 
-        self.assertFalse(scorer.is_probabilistic)
+        assert not scorer.is_probabilistic
 
     def test_univariate_Wasserstein(self):
-
         # univariate example
         np.random.seed(42)
 
@@ -886,32 +892,31 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # test model with window of 10
-        scorer_10 = WassersteinScorer(window=10)
+        scorer_10 = WassersteinScorer(window=10, window_agg=False)
         scorer_10.fit(train_wasserstein)
-        auc_roc_w10 = scorer_10.eval_accuracy(
+        auc_roc_w10 = scorer_10.eval_metric(
             anomalies_wasserstein, test_wasserstein, metric="AUC_ROC"
         )
-        auc_pr_w10 = scorer_10.eval_accuracy(
+        auc_pr_w10 = scorer_10.eval_metric(
             anomalies_wasserstein, test_wasserstein, metric="AUC_PR"
         )
 
         # test model with window of 20
-        scorer_20 = WassersteinScorer(window=20)
+        scorer_20 = WassersteinScorer(window=20, window_agg=False)
         scorer_20.fit(train_wasserstein)
-        auc_roc_w20 = scorer_20.eval_accuracy(
+        auc_roc_w20 = scorer_20.eval_metric(
             anomalies_wasserstein, test_wasserstein, metric="AUC_ROC"
         )
-        auc_pr_w20 = scorer_20.eval_accuracy(
+        auc_pr_w20 = scorer_20.eval_metric(
             anomalies_wasserstein, test_wasserstein, metric="AUC_PR"
         )
 
-        self.assertAlmostEqual(auc_roc_w10, 0.80637, delta=1e-05)
-        self.assertAlmostEqual(auc_pr_w10, 0.83390, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_w20, 0.77828, delta=1e-05)
-        self.assertAlmostEqual(auc_pr_w20, 0.93934, delta=1e-05)
+        assert np.abs(0.80637 - auc_roc_w10) < delta
+        assert np.abs(0.83390 - auc_pr_w10) < delta
+        assert np.abs(0.77828 - auc_roc_w20) < delta
+        assert np.abs(0.93934 - auc_pr_w20) < delta
 
     def test_multivariate_componentwise_Wasserstein(self):
-
         # example multivariate WassersteinScorer component wise (True and False)
         np.random.seed(3)
         np_mts_train_wasserstein = np.abs(
@@ -964,90 +969,37 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # test scorer with component_wise=False
-        scorer_w10_cwfalse = WassersteinScorer(window=10, component_wise=False)
+        scorer_w10_cwfalse = WassersteinScorer(
+            window=10, component_wise=False, window_agg=False
+        )
         scorer_w10_cwfalse.fit(mts_train_wasserstein)
-        auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
+        auc_roc_cwfalse = scorer_w10_cwfalse.eval_metric(
             anomalies_common_wasserstein, mts_test_wasserstein, metric="AUC_ROC"
         )
 
         # test scorer with component_wise=True
-        scorer_w10_cwtrue = WassersteinScorer(window=10, component_wise=True)
+        scorer_w10_cwtrue = WassersteinScorer(
+            window=10, component_wise=True, window_agg=False
+        )
         scorer_w10_cwtrue.fit(mts_train_wasserstein)
-        auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
+        auc_roc_cwtrue = scorer_w10_cwtrue.eval_metric(
             anomalies_wasserstein_per_width, mts_test_wasserstein, metric="AUC_ROC"
         )
 
-        self.assertAlmostEqual(auc_roc_cwfalse, 0.94637, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[0], 0.98606, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[1], 0.96722, delta=1e-05)
+        assert np.abs(0.94637 - auc_roc_cwfalse) < delta
+        assert np.abs(0.98606 - auc_roc_cwtrue[0]) < delta
+        assert np.abs(0.96722 - auc_roc_cwtrue[1]) < delta
 
     def test_kmeansScorer(self):
-
-        # component_wise parameter
-        # component_wise must be bool
-        with self.assertRaises(ValueError):
-            KMeansScorer(component_wise=1)
-        with self.assertRaises(ValueError):
-            KMeansScorer(component_wise="string")
-        # if component_wise=False must always return a univariate anomaly score
-        scorer = KMeansScorer(component_wise=False)
-        scorer.fit(self.train)
-        self.assertTrue(scorer.score(self.test).width == 1)
-        scorer.fit(self.mts_train)
-        self.assertTrue(scorer.score(self.mts_test).width == 1)
-        # if component_wise=True must always return the same width as the input
-        scorer = KMeansScorer(component_wise=True)
-        scorer.fit(self.train)
-        self.assertTrue(scorer.score(self.test).width == 1)
-        scorer.fit(self.mts_train)
-        self.assertTrue(scorer.score(self.mts_test).width == self.mts_test.width)
-
-        # window parameter
-        # window must be int
-        with self.assertRaises(ValueError):
-            KMeansScorer(window=True)
-        with self.assertRaises(ValueError):
-            KMeansScorer(window="string")
-        # window must be non negative
-        with self.assertRaises(ValueError):
-            KMeansScorer(window=-1)
-        # window must be different from 0
-        with self.assertRaises(ValueError):
-            KMeansScorer(window=0)
-
-        # diff_fn paramter
-        # must be None, 'diff' or 'abs_diff'
-        with self.assertRaises(ValueError):
-            KMeansScorer(diff_fn="random")
-        with self.assertRaises(ValueError):
-            KMeansScorer(diff_fn=1)
-
-        scorer = KMeansScorer()
-
-        # always expects a deterministic input
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.train, self.probabilistic)
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.probabilistic, self.train)
-        with self.assertRaises(ValueError):
-            scorer.score(self.probabilistic)
-
-        # window must be smaller than the input of score()
-        scorer = KMeansScorer(window=101)
-        with self.assertRaises(ValueError):
-            scorer.fit(self.train)  # len(self.train)=100
-
-        scorer = KMeansScorer(window=80)
-        scorer.fit(self.train)
-        with self.assertRaises(ValueError):
-            scorer.score(self.test[:50])  # len(self.test)=100
-
-        self.assertFalse(scorer.is_probabilistic)
+        # Check parameters and inputs
+        self.component_wise_parameter(KMeansScorer)
+        self.helper_window_parameter(KMeansScorer)
+        self.diff_fn_parameter(KMeansScorer)
+        self.expects_deterministic_input(KMeansScorer)
+        assert not KMeansScorer().is_probabilistic
 
     def test_univariate_kmeans(self):
-
         # univariate example
-
         np.random.seed(40)
 
         # create the train set
@@ -1116,20 +1068,18 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         kmeans_scorer = KMeansScorer(k=2, window=1, component_wise=False)
         kmeans_scorer.fit(KMeans_mts_train)
 
-        metric_AUC_ROC = kmeans_scorer.eval_accuracy(
+        metric_AUC_ROC = kmeans_scorer.eval_metric(
             KMeans_mts_anomalies, KMeans_mts_test, metric="AUC_ROC"
         )
-        metric_AUC_PR = kmeans_scorer.eval_accuracy(
+        metric_AUC_PR = kmeans_scorer.eval_metric(
             KMeans_mts_anomalies, KMeans_mts_test, metric="AUC_PR"
         )
 
-        self.assertEqual(metric_AUC_ROC, 1.0)
-        self.assertEqual(metric_AUC_PR, 1.0)
+        assert metric_AUC_ROC == 1.0
+        assert metric_AUC_PR == 1.0
 
     def test_multivariate_window_kmeans(self):
-
         # multivariate example with different windows
-
         np.random.seed(1)
 
         # create the train set
@@ -1180,30 +1130,25 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         kmeans_scorer_w1 = KMeansScorer(k=4, window=1)
         kmeans_scorer_w1.fit(ts_train)
 
-        kmeans_scorer_w2 = KMeansScorer(k=8, window=2)
+        kmeans_scorer_w2 = KMeansScorer(k=8, window=2, window_agg=False)
         kmeans_scorer_w2.fit(ts_train)
 
-        auc_roc_w1 = kmeans_scorer_w1.eval_accuracy(
+        auc_roc_w1 = kmeans_scorer_w1.eval_metric(
             ts_anomalies, ts_test, metric="AUC_ROC"
         )
-        auc_pr_w1 = kmeans_scorer_w1.eval_accuracy(
-            ts_anomalies, ts_test, metric="AUC_PR"
-        )
+        auc_pr_w1 = kmeans_scorer_w1.eval_metric(ts_anomalies, ts_test, metric="AUC_PR")
 
-        auc_roc_w2 = kmeans_scorer_w2.eval_accuracy(
+        auc_roc_w2 = kmeans_scorer_w2.eval_metric(
             ts_anomalies, ts_test, metric="AUC_ROC"
         )
-        auc_pr_w2 = kmeans_scorer_w2.eval_accuracy(
-            ts_anomalies, ts_test, metric="AUC_PR"
-        )
+        auc_pr_w2 = kmeans_scorer_w2.eval_metric(ts_anomalies, ts_test, metric="AUC_PR")
 
-        self.assertAlmostEqual(auc_roc_w1, 0.41551, delta=1e-05)
-        self.assertAlmostEqual(auc_pr_w1, 0.064761, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_w2, 0.957513, delta=1e-05)
-        self.assertAlmostEqual(auc_pr_w2, 0.88584, delta=1e-05)
+        assert np.abs(0.41551 - auc_roc_w1) < delta
+        assert np.abs(0.064761 - auc_pr_w1) < delta
+        assert np.abs(0.957513 - auc_roc_w2) < delta
+        assert np.abs(0.88584 - auc_pr_w2) < delta
 
     def test_multivariate_componentwise_kmeans(self):
-
         # example multivariate KMeans component wise (True and False)
         np.random.seed(1)
 
@@ -1257,92 +1202,80 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # test scorer with component_wise=False
-        scorer_w10_cwfalse = KMeansScorer(window=10, component_wise=False, n_init=10)
+        scorer_w10_cwfalse = KMeansScorer(
+            window=10, component_wise=False, n_init=10, window_agg=False
+        )
         scorer_w10_cwfalse.fit(mts_train_kmeans)
-        auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
+        auc_roc_cwfalse = scorer_w10_cwfalse.eval_metric(
             anomalies_common_kmeans, mts_test_kmeans, metric="AUC_ROC"
         )
 
         # test scorer with component_wise=True
-        scorer_w10_cwtrue = KMeansScorer(window=10, component_wise=True, n_init=10)
+        scorer_w10_cwtrue = KMeansScorer(
+            window=10, component_wise=True, n_init=10, window_agg=False
+        )
         scorer_w10_cwtrue.fit(mts_train_kmeans)
-        auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
+        auc_roc_cwtrue = scorer_w10_cwtrue.eval_metric(
             anomalies_kmeans_per_width, mts_test_kmeans, metric="AUC_ROC"
         )
 
-        self.assertAlmostEqual(auc_roc_cwfalse, 0.9851, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[0], 1.0, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[1], 0.97666, delta=1e-05)
+        assert np.abs(1.0 - auc_roc_cwtrue[0]) < delta
+        assert np.abs(0.97666 - auc_roc_cwtrue[1]) < delta
+        # sklearn changed the centroid initialization in version 1.3.0
+        # so the results are slightly different for older versions
+        if sklearn.__version__ < "1.3.0":
+            assert np.abs(0.9851 - auc_roc_cwfalse) < delta
+        else:
+            assert np.abs(0.99007 - auc_roc_cwfalse) < delta
 
     def test_PyODScorer(self):
+        # Check parameters and inputs
+        self.component_wise_parameter(PyODScorer, model=KNN())
+        self.helper_window_parameter(PyODScorer, model=KNN())
+        self.diff_fn_parameter(PyODScorer, model=KNN())
+        self.expects_deterministic_input(PyODScorer, model=KNN())
+        assert not PyODScorer(model=KNN()).is_probabilistic
 
-        # model parameter must be pyod.models typy BaseDetector
-        with self.assertRaises(ValueError):
-            PyODScorer(model=MovingAverage(window=10))
+        # model parameter must be pyod.models type BaseDetector
+        with pytest.raises(ValueError):
+            PyODScorer(model=MovingAverageFilter(window=10))
 
         # component_wise parameter
-        # component_wise must be bool
-        with self.assertRaises(ValueError):
-            PyODScorer(model=KNN(), component_wise=1)
-        with self.assertRaises(ValueError):
-            PyODScorer(model=KNN(), component_wise="string")
         # if component_wise=False must always return a univariate anomaly score
         scorer = PyODScorer(model=KNN(), component_wise=False)
         scorer.fit(self.train)
-        self.assertTrue(scorer.score(self.test).width == 1)
+        assert scorer.score(self.test).width == 1
         scorer.fit(self.mts_train)
-        self.assertTrue(scorer.score(self.mts_test).width == 1)
+        assert scorer.score(self.mts_test).width == 1
         # if component_wise=True must always return the same width as the input
         scorer = PyODScorer(model=KNN(), component_wise=True)
         scorer.fit(self.train)
-        self.assertTrue(scorer.score(self.test).width == 1)
+        assert scorer.score(self.test).width == 1
         scorer.fit(self.mts_train)
-        self.assertTrue(scorer.score(self.mts_test).width == self.mts_test.width)
+        assert scorer.score(self.mts_test).width == self.mts_test.width
 
         # window parameter
-        # window must be int
-        with self.assertRaises(ValueError):
-            PyODScorer(model=KNN(), window=True)
-        with self.assertRaises(ValueError):
-            PyODScorer(model=KNN(), window="string")
-        # window must be non negative
-        with self.assertRaises(ValueError):
+        # window must be non-negative
+        with pytest.raises(ValueError):
             PyODScorer(model=KNN(), window=-1)
         # window must be different from 0
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyODScorer(model=KNN(), window=0)
 
-        # diff_fn paramter
+        # diff_fn parameter
         # must be None, 'diff' or 'abs_diff'
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyODScorer(model=KNN(), diff_fn="random")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             PyODScorer(model=KNN(), diff_fn=1)
 
         scorer = PyODScorer(model=KNN())
 
-        # always expects a deterministic input
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.train, self.probabilistic)
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.probabilistic, self.train)
-        with self.assertRaises(ValueError):
-            scorer.score(self.probabilistic)
-
-        # window must be smaller than the input of score()
-        scorer = PyODScorer(model=KNN(), window=101)
-        with self.assertRaises(ValueError):
-            scorer.fit(self.train)  # len(self.train)=100
-
-        scorer = PyODScorer(model=KNN(), window=80)
-        scorer.fit(self.train)
-        with self.assertRaises(ValueError):
-            scorer.score(self.test[:50])  # len(self.test)=100
-
-        self.assertFalse(scorer.is_probabilistic)
+        # model parameter must be pyod.models type BaseDetector
+        with pytest.raises(ValueError):
+            PyODScorer(model=MovingAverageFilter(window=10))
 
     def test_univariate_PyODScorer(self):
-
         # univariate test
         np.random.seed(40)
 
@@ -1414,20 +1347,18 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
         pyod_scorer.fit(pyod_mts_train)
 
-        metric_AUC_ROC = pyod_scorer.eval_accuracy(
+        metric_AUC_ROC = pyod_scorer.eval_metric(
             pyod_mts_anomalies, pyod_mts_test, metric="AUC_ROC"
         )
-        metric_AUC_PR = pyod_scorer.eval_accuracy(
+        metric_AUC_PR = pyod_scorer.eval_metric(
             pyod_mts_anomalies, pyod_mts_test, metric="AUC_PR"
         )
 
-        self.assertEqual(metric_AUC_ROC, 1.0)
-        self.assertEqual(metric_AUC_PR, 1.0)
+        assert metric_AUC_ROC == 1.0
+        assert metric_AUC_PR == 1.0
 
     def test_multivariate_window_PyODScorer(self):
-
         # multivariate example (with different window)
-
         np.random.seed(1)
 
         # create the train set
@@ -1481,29 +1412,26 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         pyod_scorer_w1.fit(ts_train)
 
         pyod_scorer_w2 = PyODScorer(
-            model=KNN(n_neighbors=10), component_wise=False, window=2
+            model=KNN(n_neighbors=10),
+            component_wise=False,
+            window=2,
+            window_agg=False,
         )
         pyod_scorer_w2.fit(ts_train)
 
-        auc_roc_w1 = pyod_scorer_w1.eval_accuracy(
-            ts_anomalies, ts_test, metric="AUC_ROC"
-        )
-        auc_pr_w1 = pyod_scorer_w1.eval_accuracy(ts_anomalies, ts_test, metric="AUC_PR")
+        auc_roc_w1 = pyod_scorer_w1.eval_metric(ts_anomalies, ts_test, metric="AUC_ROC")
+        auc_pr_w1 = pyod_scorer_w1.eval_metric(ts_anomalies, ts_test, metric="AUC_PR")
 
-        auc_roc_w2 = pyod_scorer_w2.eval_accuracy(
-            ts_anomalies, ts_test, metric="AUC_ROC"
-        )
-        auc_pr_w2 = pyod_scorer_w2.eval_accuracy(ts_anomalies, ts_test, metric="AUC_PR")
+        auc_roc_w2 = pyod_scorer_w2.eval_metric(ts_anomalies, ts_test, metric="AUC_ROC")
+        auc_pr_w2 = pyod_scorer_w2.eval_metric(ts_anomalies, ts_test, metric="AUC_PR")
 
-        self.assertAlmostEqual(auc_roc_w1, 0.5, delta=1e-05)
-        self.assertAlmostEqual(auc_pr_w1, 0.07, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_w2, 0.957513, delta=1e-05)
-        self.assertAlmostEqual(auc_pr_w2, 0.88584, delta=1e-05)
+        assert np.abs(0.5 - auc_roc_w1) < delta
+        assert np.abs(0.07 - auc_pr_w1) < delta
+        assert np.abs(0.957513 - auc_roc_w2) < delta
+        assert np.abs(0.88584 - auc_pr_w2) < delta
 
     def test_multivariate_componentwise_PyODScorer(self):
-
         # multivariate example with component wise (True and False)
-
         np.random.seed(1)
 
         np_mts_train_PyOD = np.abs(
@@ -1557,1077 +1485,249 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # test scorer with component_wise=False
         scorer_w10_cwfalse = PyODScorer(
-            model=KNN(n_neighbors=10), component_wise=False, window=10
+            model=KNN(n_neighbors=10),
+            component_wise=False,
+            window=10,
+            window_agg=False,
         )
         scorer_w10_cwfalse.fit(mts_train_PyOD)
-        auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
+        auc_roc_cwfalse = scorer_w10_cwfalse.eval_metric(
             anomalies_common_PyOD, mts_test_PyOD, metric="AUC_ROC"
         )
 
         # test scorer with component_wise=True
         scorer_w10_cwtrue = PyODScorer(
-            model=KNN(n_neighbors=10), component_wise=True, window=10
+            model=KNN(n_neighbors=10),
+            component_wise=True,
+            window=10,
+            window_agg=False,
         )
         scorer_w10_cwtrue.fit(mts_train_PyOD)
-        auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
+        auc_roc_cwtrue = scorer_w10_cwtrue.eval_metric(
             anomalies_pyod_per_width, mts_test_PyOD, metric="AUC_ROC"
         )
 
-        self.assertAlmostEqual(auc_roc_cwfalse, 0.990566, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[0], 1.0, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[1], 0.98311, delta=1e-05)
+        assert np.abs(0.990566 - auc_roc_cwfalse) < delta
+        assert np.abs(1.0 - auc_roc_cwtrue[0]) < delta
+        assert np.abs(0.98311 - auc_roc_cwtrue[1]) < delta
 
-    def test_NLLScorer(self):
+    @staticmethod
+    def helper_evaluate_nll_scorer(
+        NLLscorer_to_test,
+        distribution_arrays,
+        deterministic_values,
+        real_NLL_values,
+    ):
+        NLLscorer_w1 = NLLscorer_to_test(window=1)
+        NLLscorer_w2 = NLLscorer_to_test(window=2)
 
-        for s in list_NLLScorer:
-            # expects for 'actual_series' a deterministic input and for 'pred_series' a probabilistic input
-            with self.assertRaises(ValueError):
-                s.score_from_prediction(actual_series=self.test, pred_series=self.test)
-            with self.assertRaises(ValueError):
-                s.score_from_prediction(
-                    actual_series=self.probabilistic, pred_series=self.train
-                )
+        assert NLLscorer_w1.is_probabilistic
 
-    def test_GaussianNLLScorer(self):
-
-        # window parameter
-        # window must be int
-        with self.assertRaises(ValueError):
-            GaussianNLLScorer(window=True)
-        with self.assertRaises(ValueError):
-            GaussianNLLScorer(window="string")
-        # window must be non negative
-        with self.assertRaises(ValueError):
-            GaussianNLLScorer(window=-1)
-        # window must be different from 0
-        with self.assertRaises(ValueError):
-            GaussianNLLScorer(window=0)
-
-        scorer = GaussianNLLScorer(window=101)
-        # window must be smaller than the input of score_from_prediction()
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(
-                actual_series=self.test, pred_series=self.probabilistic
-            )  # len(self.test)=100
-
-        np.random.seed(4)
-        scorer = GaussianNLLScorer()
-
-        # test 1 univariate (len=1 and window=1)
-        gaussian_samples_1 = np.random.normal(loc=0, scale=2, size=10000)
+        # create timeseries
         distribution_series = TimeSeries.from_values(
-            gaussian_samples_1.reshape(1, 1, -1)
+            distribution_arrays.reshape(2, 2, -1)
         )
-        actual_series = TimeSeries.from_values(np.array([3]))
-        value_test1 = (
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0]
+        series = TimeSeries.from_values(
+            np.array(deterministic_values).reshape(2, 2, -1)
         )
 
-        # check if value_test1 is the - log likelihood
-        self.assertAlmostEqual(
-            value_test1, -np.log(norm.pdf(3, loc=0, scale=2)), delta=1e-01
+        # compute the NLL values with score_from_prediction for scorer with window=1 and 2
+        # t -> timestamp, c -> component and w -> window used in scorer
+        value_t1_c1_w1 = NLLscorer_w1.score_from_prediction(
+            series[0]["0"], distribution_series[0]["0"]
         )
-
-        # test 2 univariate (len=1 and window=1)
-        gaussian_samples_2 = np.random.normal(loc=0, scale=2, size=10000)
-        distribution_series = TimeSeries.from_values(
-            gaussian_samples_2.reshape(1, 1, -1)
+        value_t2_c1_w1 = NLLscorer_w1.score_from_prediction(
+            series[1]["0"], distribution_series[1]["0"]
         )
-        actual_series = TimeSeries.from_values(np.array([-2]))
-        value_test2 = (
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0]
+        value_t1_2_c1_w1 = NLLscorer_w1.score_from_prediction(
+            series["0"], distribution_series["0"]
         )
-
-        # check if value_test2 is the - log likelihood
-        self.assertAlmostEqual(
-            value_test2, -np.log(norm.pdf(-2, loc=0, scale=2)), delta=1e-01
+        value_t1_2_c1_w2 = NLLscorer_w2.score_from_prediction(
+            series["0"], distribution_series["0"]
         )
-
-        # test window univariate (len=2 and window=2)
-        distribution_series = TimeSeries.from_values(
-            np.array(
-                [gaussian_samples_1.reshape(1, -1), gaussian_samples_2.reshape(1, -1)]
-            )
-        )
-        actual_series = TimeSeries.from_values(np.array([3, -2]))
-        value_window = scorer.score_from_prediction(actual_series, distribution_series)
 
         # check length
-        self.assertEqual(len(value_window), 2)
+        assert len(value_t1_2_c1_w1) == 2
         # check width
-        self.assertEqual(value_window.width, 1)
+        assert value_t1_2_c1_w1.width == 1
 
         # check equal value_test1 and value_test2
-        self.assertEqual(value_window.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_window.all_values().flatten()[1], value_test2)
+        assert value_t1_2_c1_w1[0] == value_t1_c1_w1
+        assert value_t1_2_c1_w1[1] == value_t2_c1_w1
 
-        scorer = GaussianNLLScorer(window=2)
-        # check avg of two values
-        self.assertEqual(
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0],
-            (value_test1 + value_test2) / 2,
-        )
-
-        # test window multivariate (n_samples=2, len=1, window=1)
-        scorer = GaussianNLLScorer(window=1)
-        distribution_series = TimeSeries.from_values(
-            np.array([gaussian_samples_1, gaussian_samples_2]).reshape(1, 2, -1)
-        )
-        actual_series = TimeSeries.from_values(np.array([3, -2]).reshape(1, -1))
-        value_multivariate = scorer.score_from_prediction(
-            actual_series, distribution_series
-        )
-
-        # check length
-        self.assertEqual(len(value_multivariate), 1)
-        # check width
-        self.assertEqual(value_multivariate.width, 2)
-
-        # check equal value_test1 and value_test2
-        self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
-
-        # test window multivariate (n_samples=2, len=2, window=1 and 2)
-        scorer_w1 = GaussianNLLScorer(window=1)
-        scorer_w2 = GaussianNLLScorer(window=2)
-
-        gaussian_samples_3 = np.random.normal(loc=0, scale=2, size=10000)
-        gaussian_samples_4 = np.random.normal(loc=0, scale=2, size=10000)
-
-        distribution_series = TimeSeries.from_values(
-            np.array(
-                [
-                    gaussian_samples_1,
-                    gaussian_samples_2,
-                    gaussian_samples_3,
-                    gaussian_samples_4,
-                ]
-            ).reshape(2, 2, -1)
-        )
-
-        actual_series = TimeSeries.from_values(
-            np.array([1.5, 2.1, 0.1, 0.001]).reshape(2, -1)
-        )
-
-        score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
-        score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
-
-        # check length
-        self.assertEqual(len(score_w1), 2)
-        self.assertEqual(len(score_w2), 1)
-        # check width
-        self.assertEqual(score_w1.width, 2)
-        self.assertEqual(score_w2.width, 2)
-
-        # check values for window=1
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[0],
-            -np.log(norm.pdf(1.5, loc=0, scale=2)),
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[1],
-            -np.log(norm.pdf(2.1, loc=0, scale=2)),
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[2],
-            -np.log(norm.pdf(0.1, loc=0, scale=2)),
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[3],
-            -np.log(norm.pdf(0.001, loc=0, scale=2)),
-            delta=1e-01,
-        )
-
-        # check values for window=2 (must be equal to the mean of the past 2 values)
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[0],
-            (
-                -np.log(norm.pdf(1.5, loc=0, scale=2))
-                - np.log(norm.pdf(0.1, loc=0, scale=2))
-            )
-            / 2,
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[1],
-            (
-                -np.log(norm.pdf(2.1, loc=0, scale=2))
-                - np.log(norm.pdf(0.001, loc=0, scale=2))
-            )
-            / 2,
-            delta=1e-01,
-        )
-
-        self.assertTrue(scorer.is_probabilistic)
-
-    def test_LaplaceNLLScorer(self):
-
-        # window parameter
-        # window must be int
-        with self.assertRaises(ValueError):
-            LaplaceNLLScorer(window=True)
-        with self.assertRaises(ValueError):
-            LaplaceNLLScorer(window="string")
-        # window must be non negative
-        with self.assertRaises(ValueError):
-            LaplaceNLLScorer(window=-1)
-        # window must be different from 0
-        with self.assertRaises(ValueError):
-            LaplaceNLLScorer(window=0)
-
-        scorer = LaplaceNLLScorer(window=101)
-        # window must be smaller than the input of score_from_prediction()
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(
-                actual_series=self.test, pred_series=self.probabilistic
-            )  # len(self.test)=100
-
-        np.random.seed(4)
-
-        scorer = LaplaceNLLScorer()
-
-        # test 1 univariate (len=1 and window=1)
-        laplace_samples_1 = np.random.laplace(loc=0, scale=2, size=1000)
-        distribution_series = TimeSeries.from_values(
-            laplace_samples_1.reshape(1, 1, -1)
-        )
-        actual_series = TimeSeries.from_values(np.array([3]))
-        value_test1 = (
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0]
-        )
-
-        # check if value_test1 is the - log likelihood
-        self.assertAlmostEqual(
+        # check if value_t1_2_c1_w1 is the - log likelihood
+        np.testing.assert_array_almost_equal(
             # This is approximate because our NLL scorer is fit from samples
-            value_test1,
-            -np.log(laplace.pdf(3, loc=0, scale=2)),
-            delta=1e-01,
+            value_t1_2_c1_w1.all_values().reshape(-1),
+            real_NLL_values[::2],
+            decimal=1,
         )
 
-        # test 2 univariate (len=1 and window=1)
-        laplace_samples_2 = np.random.laplace(loc=0, scale=2, size=1000)
-        distribution_series = TimeSeries.from_values(
-            laplace_samples_2.reshape(1, 1, -1)
-        )
-        actual_series = TimeSeries.from_values(np.array([-2]))
-        value_test2 = (
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0]
+        # check if result is equal to avg of two values when window is equal to 2
+        assert (
+            value_t1_2_c1_w2.all_values().reshape(-1)[0]
+            == value_t1_2_c1_w1.mean(axis=0).all_values().reshape(-1)[0]
         )
 
-        # check if value_test2 is the - log likelihood
-        self.assertAlmostEqual(
+        # multivariate case
+        # compute the NLL values with score_from_prediction for scorer with window=1 and window=2
+        value_t1_2_c1_2_w1 = NLLscorer_w1.score_from_prediction(
+            series, distribution_series
+        )
+        value_t1_2_c1_2_w2 = NLLscorer_w2.score_from_prediction(
+            series, distribution_series
+        )
+
+        # check length
+        assert len(value_t1_2_c1_2_w1) == 2
+        assert len(value_t1_2_c1_2_w2) == 1
+        # check width
+        assert value_t1_2_c1_2_w1.width == 2
+        assert value_t1_2_c1_2_w2.width == 2
+
+        # check if value_t1_2_c1_2_w1 is the - log likelihood
+        np.testing.assert_array_almost_equal(
             # This is approximate because our NLL scorer is fit from samples
-            value_test2,
-            -np.log(laplace.pdf(-2, loc=0, scale=2)),
-            delta=1e-01,
+            value_t1_2_c1_2_w1.all_values().reshape(-1),
+            real_NLL_values,
+            decimal=1,
         )
 
-        # test window univariate (len=2 and window=2)
-        distribution_series = TimeSeries.from_values(
-            np.array(
-                [laplace_samples_1.reshape(1, -1), laplace_samples_2.reshape(1, -1)]
-            )
-        )
-        actual_series = TimeSeries.from_values(np.array([3, -2]))
-        value_window = scorer.score_from_prediction(actual_series, distribution_series)
+        # check if result is equal to avg of two values when window is equal to 2
+        assert value_t1_2_c1_w2.all_values().reshape(-1) == value_t1_2_c1_w1.mean(
+            axis=0
+        ).all_values().reshape(-1)
 
-        # check length
-        self.assertEqual(len(value_window), 2)
-        # check width
-        self.assertEqual(value_window.width, 1)
-
-        # check equal value_test1 and value_test2
-        self.assertAlmostEqual(value_window.all_values().flatten()[0], value_test1)
-        self.assertAlmostEqual(value_window.all_values().flatten()[1], value_test2)
-
-        scorer = LaplaceNLLScorer(window=2)
-        # check avg of two values
-        self.assertEqual(
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0],
-            (value_test1 + value_test2) / 2,
-        )
-
-        # test window multivariate (n_samples=2, len=1, window=1)
-        scorer = LaplaceNLLScorer(window=1)
-        distribution_series = TimeSeries.from_values(
-            np.array([laplace_samples_1, laplace_samples_2]).reshape(1, 2, -1)
-        )
-        actual_series = TimeSeries.from_values(np.array([3, -2]).reshape(1, -1))
-        value_multivariate = scorer.score_from_prediction(
-            actual_series, distribution_series
-        )
-
-        # check length
-        self.assertEqual(len(value_multivariate), 1)
-        # check width
-        self.assertEqual(value_multivariate.width, 2)
-
-        # check equal value_test1 and value_test2
-        self.assertAlmostEqual(
-            value_multivariate.all_values().flatten()[0], value_test1
-        )
-        self.assertAlmostEqual(
-            value_multivariate.all_values().flatten()[1], value_test2
-        )
-
-        # test window multivariate (n_samples=2, len=2, window=1 and 2)
-        scorer_w1 = LaplaceNLLScorer(window=1)
-        scorer_w2 = LaplaceNLLScorer(window=2)
-
-        laplace_samples_3 = np.random.laplace(loc=0, scale=2, size=1000)
-        laplace_samples_4 = np.random.laplace(loc=0, scale=2, size=1000)
-
-        distribution_series = TimeSeries.from_values(
-            np.array(
-                [
-                    laplace_samples_1,
-                    laplace_samples_2,
-                    laplace_samples_3,
-                    laplace_samples_4,
-                ]
-            ).reshape(2, 2, -1)
-        )
-
-        actual_series = TimeSeries.from_values(
-            np.array([1.5, 2, 0.1, 0.001]).reshape(2, -1)
-        )
-
-        score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
-        score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
-
-        # check length
-        self.assertEqual(len(score_w1), 2)
-        self.assertEqual(len(score_w2), 1)
-        # check width
-        self.assertEqual(score_w1.width, 2)
-        self.assertEqual(score_w2.width, 2)
-
-        # check values for window=1
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[0],
-            -np.log(laplace.pdf(1.5, loc=0, scale=2)),
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            # This is approximate because our NLL scorer is fit from samples
-            score_w1.all_values().flatten()[1],
-            -np.log(laplace.pdf(2, loc=0, scale=2)),
-            delta=0.5,
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[2],
-            -np.log(laplace.pdf(0.1, loc=0, scale=2)),
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[3],
-            -np.log(laplace.pdf(0.001, loc=0, scale=2)),
-            delta=1e-01,
-        )
-
-        # check values for window=2 (must be equal to the mean of the past 2 values)
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[0],
-            (
-                -np.log(laplace.pdf(1.5, loc=0, scale=2))
-                - np.log(laplace.pdf(0.1, loc=0, scale=2))
-            )
-            / 2,
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            # This is approximate because our NLL scorer is fit from samples
-            score_w2.all_values().flatten()[1],
-            (
-                -np.log(laplace.pdf(2, loc=0, scale=2))
-                - np.log(laplace.pdf(0.001, loc=0, scale=2))
-            )
-            / 2,
-            delta=0.5,
-        )
-
-        self.assertTrue(scorer.is_probabilistic)
-
-    def test_ExponentialNLLScorer(self):
-
-        # window parameter
-        # window must be int
-        with self.assertRaises(ValueError):
-            ExponentialNLLScorer(window=True)
-        with self.assertRaises(ValueError):
-            ExponentialNLLScorer(window="string")
-        # window must be non negative
-        with self.assertRaises(ValueError):
-            ExponentialNLLScorer(window=-1)
-        # window must be different from 0
-        with self.assertRaises(ValueError):
-            ExponentialNLLScorer(window=0)
-
-        scorer = ExponentialNLLScorer(window=101)
-        # window must be smaller than the input of score_from_prediction()
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(
-                actual_series=self.test, pred_series=self.probabilistic
-            )  # len(self.test)=100
-
+    @pytest.mark.parametrize("config", list_NLLScorer)
+    def test_nll_scorer(self, config):
         np.random.seed(4)
-        scorer = ExponentialNLLScorer()
 
-        # test 1 univariate (len=1 and window=1)
-        exponential_samples_1 = np.random.exponential(scale=2.0, size=1000)
-        distribution_series = TimeSeries.from_values(
-            exponential_samples_1.reshape(1, 1, -1)
+        (
+            scorer_cls,
+            values,
+            distribution,
+            dist_kwargs,
+            prob_dens_func,
+            pdf_kwargs,
+        ) = config
+        # some pdf don't have the same parameters as the corresponding distribution
+        if pdf_kwargs is None:
+            pdf_kwargs = dist_kwargs
+        self.helper_window_parameter(scorer_cls)
+
+        distribution = np.array([
+            distribution(size=10000, **dist_kwargs) for _ in range(len(values))
+        ])
+        real_values = [-np.log(prob_dens_func(value, **pdf_kwargs)) for value in values]
+
+        self.helper_evaluate_nll_scorer(scorer_cls, distribution, values, real_values)
+
+    @pytest.mark.parametrize(
+        "model,series",
+        product(
+            [(KMeansScorer, {"random_state": 42}), (PyODScorer, {"model": KNN()})],
+            [(train, test), (mts_train, mts_test)],
+        ),
+    )
+    def test_window_equal_one(self, model, series):
+        """Check that model, created with window=1 generate the same score regardless of window_agg value."""
+        ts_train, ts_test = series
+        model_cls, model_kwargs = model
+
+        scorer_T = model_cls(window=1, window_agg=True, **model_kwargs)
+        scorer_F = model_cls(window=1, window_agg=False, **model_kwargs)
+
+        scorer_T.fit(ts_train)
+        scorer_F.fit(ts_train)
+
+        auc_roc_T = scorer_T.eval_metric(anomalies=self.anomalies, series=ts_test)
+        auc_roc_F = scorer_F.eval_metric(anomalies=self.anomalies, series=ts_test)
+
+        assert auc_roc_T == auc_roc_F
+
+    @pytest.mark.parametrize(
+        "window,model,series",
+        product(
+            [2, 10, 39],
+            [
+                (KMeansScorer, {"random_state": 42}),
+                (WassersteinScorer, {}),
+                (PyODScorer, {"model": KNN()}),
+            ],
+            [(train, test), (mts_train, mts_test)],
+        ),
+    )
+    def test_window_greater_than_one(self, window, model, series):
+        """Check scorer with same window greater than 1 and different values of window_agg produce correct scores"""
+        ts_train, ts_test = series
+        model_cls, model_kwargs = model
+        scorer_T = model_cls(window=window, window_agg=True, **model_kwargs)
+        scorer_F = model_cls(window=window, window_agg=False, **model_kwargs)
+
+        scorer_T.fit(ts_train)
+        scorer_F.fit(ts_train)
+
+        score_T = scorer_T.score(ts_test)
+        score_F = scorer_F.score(ts_test)
+
+        # same length
+        assert len(score_T) == len(score_F)
+
+        # same width
+        assert score_T.width == score_F.width
+
+        # same first time index
+        assert score_T.time_index[0] == score_F.time_index[0]
+
+        # same last time index
+        assert score_T.time_index[-1] == score_F.time_index[-1]
+
+        # same last value (by definition)
+        assert score_T[-1] == score_F[-1]
+
+    def test_fun_window_agg(self):
+        """Verify that the anomaly score aggregation works as intended"""
+        # window = 2, alternating anomaly scores
+        window = 2
+        scorer = KMeansScorer(window=window)
+        anomaly_scores = TimeSeries.from_values(np.resize([1, -1], 10))
+        aggreg_scores = scorer._fun_window_agg([anomaly_scores], window=window)[0]
+        # in the last window, the score is not zeroed
+        np.testing.assert_array_almost_equal(
+            aggreg_scores.values(), np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, -1]]).T
         )
-        actual_series = TimeSeries.from_values(np.array([3]))
-        value_test1 = (
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0]
+        assert aggreg_scores.time_index.equals(anomaly_scores.time_index)
+
+        # window = 3, increment of 2 anomaly scores
+        window = 3
+        scorer = KMeansScorer(window=window)
+        anomaly_scores = linear_timeseries(length=10, start_value=2, end_value=20)
+        aggreg_scores = scorer._fun_window_agg([anomaly_scores], window=window)[0]
+        # on the last "window" values, difference of only 1 between consecutive aggregated scores
+        np.testing.assert_array_almost_equal(
+            aggreg_scores.values(), np.array([[4, 6, 8, 10, 12, 14, 16, 18, 19, 20]]).T
         )
+        assert aggreg_scores.time_index.equals(anomaly_scores.time_index)
 
-        # check if value_test1 is the - log likelihood
-        self.assertAlmostEqual(
-            # This is approximate because our NLL scorer is fit from samples and also uses loc
-            value_test1,
-            -np.log(expon.pdf(3, scale=2.0)),
-            delta=1e-01,
+        # window = 6, increment of 2 anomaly scores
+        window = 6
+        scorer = KMeansScorer(window=window)
+        anomaly_scores = linear_timeseries(length=10, start_value=2, end_value=20)
+        aggreg_scores = scorer._fun_window_agg([anomaly_scores], window=window)[0]
+        # on the last "window" values, difference of only 1 between consecutive aggregated scores
+        np.testing.assert_array_almost_equal(
+            aggreg_scores.values(), np.array([[7, 9, 11, 13, 15, 16, 17, 18, 19, 20]]).T
         )
+        assert aggreg_scores.time_index.equals(anomaly_scores.time_index)
 
-        # test 2 univariate (len=1 and window=1)
-        exponential_samples_2 = np.random.exponential(scale=2.0, size=1000)
-        distribution_series = TimeSeries.from_values(
-            exponential_samples_2.reshape(1, 1, -1)
+        # window = 7, increment of 2 anomaly scores
+        window = 7
+        scorer = KMeansScorer(window=window)
+        anomaly_scores = linear_timeseries(length=10, start_value=2, end_value=20)
+        aggreg_scores = scorer._fun_window_agg([anomaly_scores], window=window)[0]
+        # on the last "window" values, difference of only 1 between consecutive aggregated scores
+        np.testing.assert_array_almost_equal(
+            aggreg_scores.values(),
+            np.array([[8, 10, 12, 14, 15, 16, 17, 18, 19, 20]]).T,
         )
-        actual_series = TimeSeries.from_values(np.array([10]))
-        value_test2 = (
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0]
-        )
-
-        # check if value_test2 is the - log likelihood
-        self.assertAlmostEqual(
-            # This is approximate because our NLL scorer is fit from samples and also uses loc
-            value_test2,
-            -np.log(expon.pdf(10, scale=2)),
-            delta=1e-01,
-        )
-
-        # test window univariate (len=2 and window=2)
-        distribution_series = TimeSeries.from_values(
-            np.array(
-                [
-                    exponential_samples_1.reshape(1, -1),
-                    exponential_samples_2.reshape(1, -1),
-                ]
-            )
-        )
-        actual_series = TimeSeries.from_values(np.array([3, 10]))
-        value_window = scorer.score_from_prediction(actual_series, distribution_series)
-
-        # check length
-        self.assertEqual(len(value_window), 2)
-        # check width
-        self.assertEqual(value_window.width, 1)
-
-        # check equal value_test1 and value_test2
-        self.assertEqual(value_window.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_window.all_values().flatten()[1], value_test2)
-
-        scorer = ExponentialNLLScorer(window=2)
-        # check avg of two values
-        self.assertEqual(
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0],
-            (value_test1 + value_test2) / 2,
-        )
-
-        # test window multivariate (n_samples=2, len=1, window=1)
-        scorer = ExponentialNLLScorer(window=1)
-        distribution_series = TimeSeries.from_values(
-            np.array([exponential_samples_1, exponential_samples_2]).reshape(1, 2, -1)
-        )
-        actual_series = TimeSeries.from_values(np.array([3, 10]).reshape(1, -1))
-        value_multivariate = scorer.score_from_prediction(
-            actual_series, distribution_series
-        )
-
-        # check length
-        self.assertEqual(len(value_multivariate), 1)
-        # check width
-        self.assertEqual(value_multivariate.width, 2)
-
-        # check equal value_test1 and value_test2
-        self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
-
-        # test window multivariate (n_samples=2, len=2, window=1 and 2)
-        scorer_w1 = ExponentialNLLScorer(window=1)
-        scorer_w2 = ExponentialNLLScorer(window=2)
-
-        exponential_samples_3 = np.random.exponential(scale=2, size=1000)
-        exponential_samples_4 = np.random.exponential(scale=2, size=1000)
-
-        distribution_series = TimeSeries.from_values(
-            np.array(
-                [
-                    exponential_samples_1,
-                    exponential_samples_2,
-                    exponential_samples_3,
-                    exponential_samples_4,
-                ]
-            ).reshape(2, 2, -1)
-        )
-
-        actual_series = TimeSeries.from_values(
-            np.array([1.5, 2, 0.1, 0.001]).reshape(2, -1)
-        )
-
-        score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
-        score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
-
-        # check length
-        self.assertEqual(len(score_w1), 2)
-        self.assertEqual(len(score_w2), 1)
-        # check width
-        self.assertEqual(score_w1.width, 2)
-        self.assertEqual(score_w2.width, 2)
-
-        # check values for window=1
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[0],
-            -np.log(expon.pdf(1.5, scale=2)),
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[1],
-            -np.log(expon.pdf(2, scale=2)),
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[2],
-            -np.log(expon.pdf(0.1, scale=2)),
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[3],
-            -np.log(expon.pdf(0.001, scale=2)),
-            delta=1e-01,
-        )
-
-        # check values for window=2 (must be equal to the mean of the past 2 values)
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[0],
-            (-np.log(expon.pdf(1.5, scale=2)) - np.log(expon.pdf(0.1, scale=2))) / 2,
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[1],
-            (-np.log(expon.pdf(2, scale=2)) - np.log(expon.pdf(0.001, scale=2))) / 2,
-            delta=1e-01,
-        )
-
-        self.assertTrue(scorer.is_probabilistic)
-
-    def test_GammaNLLScorer(self):
-
-        # window parameter
-        # window must be int
-        with self.assertRaises(ValueError):
-            GammaNLLScorer(window=True)
-        with self.assertRaises(ValueError):
-            GammaNLLScorer(window="string")
-        # window must be non negative
-        with self.assertRaises(ValueError):
-            GammaNLLScorer(window=-1)
-        # window must be different from 0
-        with self.assertRaises(ValueError):
-            GammaNLLScorer(window=0)
-
-        scorer = GammaNLLScorer(window=101)
-        # window must be smaller than the input of score_from_prediction()
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(
-                actual_series=self.test, pred_series=self.probabilistic
-            )  # len(self.test)=100
-
-        np.random.seed(4)
-        scorer = GammaNLLScorer()
-
-        # test 1 univariate (len=1 and window=1)
-        gamma_samples_1 = np.random.gamma(shape=2, scale=2, size=10000)
-        distribution_series = TimeSeries.from_values(gamma_samples_1.reshape(1, 1, -1))
-        actual_series = TimeSeries.from_values(np.array([3]))
-        value_test1 = (
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0]
-        )
-
-        # check if value_test1 is the - log likelihood
-        self.assertAlmostEqual(
-            # This is approximate because our NLL scorer is fit from samples and also uses loc
-            value_test1,
-            -np.log(gamma.pdf(3, 2, scale=2)),
-            delta=1e-01,
-        )
-
-        # test 2 univariate (len=1 and window=1)
-        gamma_samples_2 = np.random.gamma(2, scale=2, size=10000)
-        distribution_series = TimeSeries.from_values(gamma_samples_2.reshape(1, 1, -1))
-        actual_series = TimeSeries.from_values(np.array([10]))
-        value_test2 = (
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0]
-        )
-
-        # check if value_test2 is the - log likelihood
-        self.assertAlmostEqual(
-            # This is approximate because our NLL scorer is fit from samples and also uses loc
-            value_test2,
-            -np.log(gamma.pdf(10, 2, scale=2)),
-            delta=1e-01,
-        )
-
-        # test window univariate (len=2 and window=2)
-        distribution_series = TimeSeries.from_values(
-            np.array([gamma_samples_1.reshape(1, -1), gamma_samples_2.reshape(1, -1)])
-        )
-        actual_series = TimeSeries.from_values(np.array([3, 10]))
-        value_window = scorer.score_from_prediction(actual_series, distribution_series)
-
-        # check length
-        self.assertEqual(len(value_window), 2)
-        # check width
-        self.assertEqual(value_window.width, 1)
-
-        # check equal value_test1 and value_test2
-        self.assertEqual(value_window.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_window.all_values().flatten()[1], value_test2)
-
-        scorer = GammaNLLScorer(window=2)
-        # check avg of two values
-        self.assertEqual(
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0],
-            (value_test1 + value_test2) / 2,
-        )
-
-        # test window multivariate (n_samples=2, len=1, window=1)
-        scorer = GammaNLLScorer(window=1)
-        distribution_series = TimeSeries.from_values(
-            np.array([gamma_samples_1, gamma_samples_2]).reshape(1, 2, -1)
-        )
-        actual_series = TimeSeries.from_values(np.array([3, 10]).reshape(1, -1))
-        value_multivariate = scorer.score_from_prediction(
-            actual_series, distribution_series
-        )
-
-        # check length
-        self.assertEqual(len(value_multivariate), 1)
-        # check width
-        self.assertEqual(value_multivariate.width, 2)
-
-        # check equal value_test1 and value_test2
-        self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
-
-        # test window multivariate (n_samples=2, len=2, window=1 and 2)
-        scorer_w1 = GammaNLLScorer(window=1)
-        scorer_w2 = GammaNLLScorer(window=2)
-
-        gamma_samples_3 = np.random.gamma(2, scale=2, size=10000)
-        gamma_samples_4 = np.random.gamma(2, scale=2, size=10000)
-
-        distribution_series = TimeSeries.from_values(
-            np.array(
-                [gamma_samples_1, gamma_samples_2, gamma_samples_3, gamma_samples_4]
-            ).reshape(2, 2, -1)
-        )
-
-        actual_series = TimeSeries.from_values(
-            np.array([1.5, 2, 0.5, 0.9]).reshape(2, -1)
-        )
-
-        score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
-        score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
-
-        # check length
-        self.assertEqual(len(score_w1), 2)
-        self.assertEqual(len(score_w2), 1)
-        # check width
-        self.assertEqual(score_w1.width, 2)
-        self.assertEqual(score_w2.width, 2)
-
-        # check values for window=1
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[0],
-            -np.log(gamma.pdf(1.5, 2, scale=2)),
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[1],
-            -np.log(gamma.pdf(2, 2, scale=2)),
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[2],
-            -np.log(gamma.pdf(0.5, 2, scale=2)),
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[3],
-            -np.log(gamma.pdf(0.9, 2, scale=2)),
-            delta=1e-01,
-        )
-
-        # check values for window=2 (must be equal to the mean of the past 2 values)
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[0],
-            (-np.log(gamma.pdf(1.5, 2, scale=2)) - np.log(gamma.pdf(0.5, 2, scale=2)))
-            / 2,
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[1],
-            (-np.log(gamma.pdf(2, 2, scale=2)) - np.log(gamma.pdf(0.9, 2, scale=2)))
-            / 2,
-            delta=1e-01,
-        )
-
-        self.assertTrue(scorer.is_probabilistic)
-
-    def test_CauchyNLLScorer(self):
-
-        # window parameter
-        # window must be int
-        with self.assertRaises(ValueError):
-            CauchyNLLScorer(window=True)
-        with self.assertRaises(ValueError):
-            CauchyNLLScorer(window="string")
-        # window must be non negative
-        with self.assertRaises(ValueError):
-            CauchyNLLScorer(window=-1)
-        # window must be different from 0
-        with self.assertRaises(ValueError):
-            CauchyNLLScorer(window=0)
-
-        scorer = CauchyNLLScorer(window=101)
-        # window must be smaller than the input of score_from_prediction()
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(
-                actual_series=self.test, pred_series=self.probabilistic
-            )  # len(self.test)=100
-
-        np.random.seed(4)
-        scorer = CauchyNLLScorer()
-
-        # test 1 univariate (len=1 and window=1)
-        cauchy_samples_1 = np.random.standard_cauchy(size=10000)
-        distribution_series = TimeSeries.from_values(cauchy_samples_1.reshape(1, 1, -1))
-        actual_series = TimeSeries.from_values(np.array([3]))
-        value_test1 = (
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0]
-        )
-
-        # check if value_test1 is the - log likelihood
-        self.assertAlmostEqual(value_test1, -np.log(cauchy.pdf(3)), delta=1e-01)
-
-        # test 2 univariate (len=1 and window=1)
-        cauchy_samples_2 = np.random.standard_cauchy(size=10000)
-        distribution_series = TimeSeries.from_values(cauchy_samples_2.reshape(1, 1, -1))
-        actual_series = TimeSeries.from_values(np.array([-2]))
-        value_test2 = (
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0]
-        )
-
-        # check if value_test2 is the - log likelihood
-        self.assertAlmostEqual(value_test2, -np.log(cauchy.pdf(-2)), delta=1e-01)
-
-        # test window univariate (len=2 and window=2)
-        distribution_series = TimeSeries.from_values(
-            np.array([cauchy_samples_1.reshape(1, -1), cauchy_samples_2.reshape(1, -1)])
-        )
-        actual_series = TimeSeries.from_values(np.array([3, -2]))
-        value_window = scorer.score_from_prediction(actual_series, distribution_series)
-
-        # check length
-        self.assertEqual(len(value_window), 2)
-        # check width
-        self.assertEqual(value_window.width, 1)
-
-        # check equal value_test1 and value_test2
-        self.assertEqual(value_window.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_window.all_values().flatten()[1], value_test2)
-
-        scorer = CauchyNLLScorer(window=2)
-        # check avg of two values
-        self.assertEqual(
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0],
-            (value_test1 + value_test2) / 2,
-        )
-
-        # test window multivariate (n_samples=2, len=1, window=1)
-        scorer = CauchyNLLScorer(window=1)
-        distribution_series = TimeSeries.from_values(
-            np.array([cauchy_samples_1, cauchy_samples_2]).reshape(1, 2, -1)
-        )
-        actual_series = TimeSeries.from_values(np.array([3, -2]).reshape(1, -1))
-        value_multivariate = scorer.score_from_prediction(
-            actual_series, distribution_series
-        )
-
-        # check length
-        self.assertEqual(len(value_multivariate), 1)
-        # check width
-        self.assertEqual(value_multivariate.width, 2)
-
-        # check equal value_test1 and value_test2
-        self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
-
-        # test window multivariate (n_samples=2, len=2, window=1 and 2)
-        scorer_w1 = CauchyNLLScorer(window=1)
-        scorer_w2 = CauchyNLLScorer(window=2)
-
-        cauchy_samples_3 = np.random.standard_cauchy(size=10000)
-        cauchy_samples_4 = np.random.standard_cauchy(size=10000)
-
-        distribution_series = TimeSeries.from_values(
-            np.array(
-                [cauchy_samples_1, cauchy_samples_2, cauchy_samples_3, cauchy_samples_4]
-            ).reshape(2, 2, -1)
-        )
-
-        actual_series = TimeSeries.from_values(
-            np.array([1.5, 2, 0.5, 0.9]).reshape(2, -1)
-        )
-
-        score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
-        score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
-
-        # check length
-        self.assertEqual(len(score_w1), 2)
-        self.assertEqual(len(score_w2), 1)
-        # check width
-        self.assertEqual(score_w1.width, 2)
-        self.assertEqual(score_w2.width, 2)
-
-        # check values for window=1
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[0], -np.log(cauchy.pdf(1.5)), delta=1e-01
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[1], -np.log(cauchy.pdf(2)), delta=1e-01
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[2], -np.log(cauchy.pdf(0.5)), delta=1e-01
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[3], -np.log(cauchy.pdf(0.9)), delta=1e-01
-        )
-
-        # check values for window=2 (must be equal to the mean of the past 2 values)
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[0],
-            (-np.log(cauchy.pdf(1.5)) - np.log(cauchy.pdf(0.5))) / 2,
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[1],
-            (-np.log(cauchy.pdf(2)) - np.log(cauchy.pdf(0.9))) / 2,
-            delta=1e-01,
-        )
-
-        self.assertTrue(scorer.is_probabilistic)
-
-    def test_PoissonNLLScorer(self):
-
-        # window parameter
-        # window must be int
-        with self.assertRaises(ValueError):
-            PoissonNLLScorer(window=True)
-        with self.assertRaises(ValueError):
-            PoissonNLLScorer(window="string")
-        # window must be non negative
-        with self.assertRaises(ValueError):
-            PoissonNLLScorer(window=-1)
-        # window must be different from 0
-        with self.assertRaises(ValueError):
-            PoissonNLLScorer(window=0)
-
-        scorer = PoissonNLLScorer(window=101)
-        # window must be smaller than the input of score_from_prediction()
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(
-                actual_series=self.test, pred_series=self.probabilistic
-            )  # len(self.test)=100
-
-        np.random.seed(4)
-        scorer = PoissonNLLScorer()
-
-        # test 1 univariate (len=1 and window=1)
-        poisson_samples_1 = np.random.poisson(size=10000, lam=1)
-        distribution_series = TimeSeries.from_values(
-            poisson_samples_1.reshape(1, 1, -1)
-        )
-        actual_series = TimeSeries.from_values(np.array([3]))
-        value_test1 = (
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0]
-        )
-
-        # check if value_test1 is the - log likelihood
-        self.assertAlmostEqual(value_test1, -np.log(poisson.pmf(3, mu=1)), delta=1e-02)
-
-        # test 2 univariate (len=1 and window=1)
-        poisson_samples_2 = np.random.poisson(size=10000, lam=1)
-        distribution_series = TimeSeries.from_values(
-            poisson_samples_2.reshape(1, 1, -1)
-        )
-        actual_series = TimeSeries.from_values(np.array([10]))
-        value_test2 = (
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0]
-        )
-
-        # check if value_test2 is the - log likelihood
-        self.assertAlmostEqual(value_test2, -np.log(poisson.pmf(10, mu=1)), delta=1e-01)
-
-        # test window univariate (len=2 and window=2)
-        distribution_series = TimeSeries.from_values(
-            np.array(
-                [poisson_samples_1.reshape(1, -1), poisson_samples_2.reshape(1, -1)]
-            )
-        )
-        actual_series = TimeSeries.from_values(np.array([3, 10]))
-        value_window = scorer.score_from_prediction(actual_series, distribution_series)
-
-        # check length
-        self.assertEqual(len(value_window), 2)
-        # check width
-        self.assertEqual(value_window.width, 1)
-
-        # check equal value_test1 and value_test2
-        self.assertEqual(value_window.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_window.all_values().flatten()[1], value_test2)
-
-        scorer = PoissonNLLScorer(window=2)
-        # check avg of two values
-        self.assertEqual(
-            scorer.score_from_prediction(actual_series, distribution_series)
-            .all_values()
-            .flatten()[0],
-            (value_test1 + value_test2) / 2,
-        )
-
-        # test window multivariate (n_samples=2, len=1, window=1)
-        scorer = PoissonNLLScorer(window=1)
-        distribution_series = TimeSeries.from_values(
-            np.array([poisson_samples_1, poisson_samples_2]).reshape(1, 2, -1)
-        )
-        actual_series = TimeSeries.from_values(np.array([3, 10]).reshape(1, -1))
-        value_multivariate = scorer.score_from_prediction(
-            actual_series, distribution_series
-        )
-
-        # check length
-        self.assertEqual(len(value_multivariate), 1)
-        # check width
-        self.assertEqual(value_multivariate.width, 2)
-
-        # check equal value_test1 and value_test2
-        self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
-        self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
-
-        # test window multivariate (n_samples=2, len=2, window=1 and 2)
-        scorer_w1 = PoissonNLLScorer(window=1)
-        scorer_w2 = PoissonNLLScorer(window=2)
-
-        poisson_samples_3 = np.random.poisson(size=10000, lam=1)
-        poisson_samples_4 = np.random.poisson(size=10000, lam=1)
-
-        distribution_series = TimeSeries.from_values(
-            np.array(
-                [
-                    poisson_samples_1,
-                    poisson_samples_2,
-                    poisson_samples_3,
-                    poisson_samples_4,
-                ]
-            ).reshape(2, 2, -1)
-        )
-
-        actual_series = TimeSeries.from_values(np.array([1, 2, 3, 4]).reshape(2, -1))
-
-        score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
-        score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
-
-        # check length
-        self.assertEqual(len(score_w1), 2)
-        self.assertEqual(len(score_w2), 1)
-        # check width
-        self.assertEqual(score_w1.width, 2)
-        self.assertEqual(score_w2.width, 2)
-
-        # check values for window=1
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[0],
-            -np.log(poisson.pmf(1, mu=1)),
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[1],
-            -np.log(poisson.pmf(2, mu=1)),
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[2],
-            -np.log(poisson.pmf(3, mu=1)),
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w1.all_values().flatten()[3],
-            -np.log(poisson.pmf(4, mu=1)),
-            delta=1e-01,
-        )
-
-        # check values for window=2 (must be equal to the mean of the past 2 values)
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[0],
-            (-np.log(poisson.pmf(1, mu=1)) - np.log(poisson.pmf(3, mu=1))) / 2,
-            delta=1e-01,
-        )
-        self.assertAlmostEqual(
-            score_w2.all_values().flatten()[1],
-            (-np.log(poisson.pmf(2, mu=1)) - np.log(poisson.pmf(4, mu=1))) / 2,
-            delta=1e-01,
-        )
-
-        self.assertTrue(scorer.is_probabilistic)
+        assert aggreg_scores.time_index.equals(anomaly_scores.time_index)

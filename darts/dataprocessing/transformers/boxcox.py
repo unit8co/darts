@@ -3,18 +3,22 @@ Box-Cox Transformer
 -------------------
 """
 
-from typing import Iterator, Optional, Sequence, Tuple, Union
+from collections.abc import Mapping, Sequence
+from typing import Any, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
 from scipy.special import inv_boxcox
 from scipy.stats import boxcox, boxcox_normmax
 
+from darts.dataprocessing.transformers.fittable_data_transformer import (
+    FittableDataTransformer,
+)
+from darts.dataprocessing.transformers.invertible_data_transformer import (
+    InvertibleDataTransformer,
+)
 from darts.logging import get_logger, raise_if
 from darts.timeseries import TimeSeries
-
-from .fittable_data_transformer import FittableDataTransformer
-from .invertible_data_transformer import InvertibleDataTransformer
 
 logger = get_logger(__name__)
 
@@ -26,7 +30,8 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         lmbda: Optional[
             Union[float, Sequence[float], Sequence[Sequence[float]]]
         ] = None,
-        optim_method="mle",
+        optim_method: Literal["mle", "pearsonr"] = "mle",
+        global_fit: bool = False,
         n_jobs: int = 1,
         verbose: bool = False,
     ):
@@ -60,6 +65,14 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         optim_method
             Specifies which method to use to find an optimal value for the lmbda parameter.
             Either 'mle' or 'pearsonr'. Ignored if `lmbda` is not `None`.
+        global_fit
+            Optionally, whether all `TimeSeries` passed to the `fit()` method should be used to fit
+            a *single* set of parameters, or if a different set of parameters should be independently fitted
+            to each provided `TimeSeries`. If `True`, then a `Sequence[TimeSeries]` is passed to `ts_fit`
+            and a single set of parameters is fitted using all provided `TimeSeries`. If `False`, then
+            each `TimeSeries` is individually passed to `ts_fit`, and a different set of fitted parameters
+            if yielded for each of these fitting operations. See `FittableDataTransformer` documentation for
+            further details.
         n_jobs
             The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
             passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -92,9 +105,6 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         ----------
         .. [1] https://otexts.com/fpp2/transformations.html#mathematical-transformations
         """
-
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
-
         raise_if(
             not isinstance(optim_method, str)
             or optim_method not in ["mle", "pearsonr"],
@@ -102,100 +112,77 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
             logger,
         )
 
+        # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self._lmbda = lmbda
         self._optim_method = optim_method
-
-    def _fit_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, Optional[Union[Sequence[float], float]]]]:
-
-        if isinstance(self._lmbda, Sequence) and isinstance(self._lmbda[0], Sequence):
-            # CASE 0: Sequence[Sequence[float]]
-            raise_if(
-                len(self._lmbda) != len(series),
-                "with multiple time series the number of lmbdas sequences must equal the number of time \
-                        series",
-                logger,
-            )
-            return zip(series, self._lmbda)
+        if isinstance(lmbda, Sequence) and isinstance(lmbda[0], Sequence):
+            parallel_params = ("_lmbda",)
         else:
-            # CASE 1: Sequence[float], float, None. Replicating the same value for each TS
-            lmbda_gen = (self._lmbda for _ in range(len(series)))
-            return zip(series, lmbda_gen)
+            parallel_params = False
 
-    def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple]:
-        return zip(series, self._fitted_params)
-
-    def _inverse_transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple]:
-        return zip(series, self._fitted_params)
+        super().__init__(
+            name=name,
+            n_jobs=n_jobs,
+            verbose=verbose,
+            parallel_params=parallel_params,
+            mask_components=True,
+            global_fit=global_fit,
+        )
 
     @staticmethod
     def ts_fit(
-        series: TimeSeries,
-        lmbda: Optional[Union[float, Sequence[float]]],
-        method,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        params: Mapping[str, Any],
         *args,
-        **kwargs
-    ) -> Union[Sequence[float], pd.core.series.Series]:
-        component_mask = kwargs.get("component_mask", None)
-
+        **kwargs,
+    ) -> Union[Sequence[float], pd.Series]:
+        lmbda, method = params["fixed"]["_lmbda"], params["fixed"]["_optim_method"]
+        # If `global_fit` is `True`, then `series` will be ` Sequence[TimeSeries]`;
+        # otherwise, `series` is a single `TimeSeries`:
+        if isinstance(series, TimeSeries):
+            series = [series]
         if lmbda is None:
             # Compute optimal lmbda for each dimension of the time series. In this case, the return type is
             # an ndarray and not a Sequence
-            vals = BoxCox._reshape_in(series, component_mask=component_mask)
+            vals = np.concatenate([BoxCox.stack_samples(ts) for ts in series], axis=0)
             lmbda = np.apply_along_axis(boxcox_normmax, axis=0, arr=vals, method=method)
 
         elif isinstance(lmbda, Sequence):
             raise_if(
-                len(lmbda) != series.width,
+                len(lmbda) != series[0].width,
                 "lmbda should have one value per dimension (ie. column or variable) of the time series",
                 logger,
             )
         else:
             # Replicate lmbda to match dimensions of the time series
-            lmbda = [lmbda] * series.width
+            lmbda = [lmbda] * series[0].width
 
         return lmbda
 
     @staticmethod
     def ts_transform(
-        series: TimeSeries,
-        lmbda: Union[Sequence[float], pd.core.series.Series],
-        **kwargs
+        series: TimeSeries, params: Mapping[str, Any], **kwargs
     ) -> TimeSeries:
-        component_mask = kwargs.get("component_mask", None)
+        lmbda = params["fitted"]
 
-        vals = BoxCox._reshape_in(series, component_mask=component_mask)
-        series_width = series.width if component_mask is None else sum(component_mask)
+        vals = BoxCox.stack_samples(series)
         transformed_vals = np.stack(
-            [boxcox(vals[:, i], lmbda=lmbda[i]) for i in range(series_width)], axis=1
+            [boxcox(vals[:, i], lmbda=lmbda[i]) for i in range(series.width)], axis=1
         )
-        return series.with_values(
-            BoxCox._reshape_out(series, transformed_vals, component_mask=component_mask)
-        )
+        transformed_vals = BoxCox.unstack_samples(transformed_vals, series=series)
+        return series.with_values(transformed_vals)
 
     @staticmethod
     def ts_inverse_transform(
-        series: TimeSeries,
-        lmbda: Union[Sequence[float], pd.core.series.Series],
-        **kwargs
+        series: TimeSeries, params: Mapping[str, Any], **kwargs
     ) -> TimeSeries:
-        component_mask = kwargs.get("component_mask", None)
+        lmbda = params["fitted"]
 
-        vals = BoxCox._reshape_in(series, component_mask=component_mask)
+        vals = BoxCox.stack_samples(series)
         inv_transformed_vals = np.stack(
             [inv_boxcox(vals[:, i], lmbda[i]) for i in range(series.width)], axis=1
         )
-        return series.with_values(
-            BoxCox._reshape_out(
-                series, inv_transformed_vals, component_mask=component_mask
-            )
+        inv_transformed_vals = BoxCox.unstack_samples(
+            inv_transformed_vals, series=series
         )
-
-    def fit(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]], **kwargs
-    ) -> "FittableDataTransformer":
-        # adding lmbda and optim_method params
-        return super().fit(series, method=self._optim_method, **kwargs)
+        return series.with_values(inv_transformed_vals)

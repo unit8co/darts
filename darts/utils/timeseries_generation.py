@@ -4,7 +4,8 @@ Utils for time series generation
 """
 
 import math
-from typing import List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import holidays
 import numpy as np
@@ -12,74 +13,20 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
-
-def generate_index(
-    start: Optional[Union[pd.Timestamp, int]] = None,
-    end: Optional[Union[pd.Timestamp, int]] = None,
-    length: Optional[int] = None,
-    freq: str = None,
-    name: str = None,
-) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
-    """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
-    or a pandas RangeIndex. The index starts at
-
-    Parameters
-    ----------
-    start
-        The start of the returned index. If a pandas Timestamp is passed, the index will be a pandas
-        DatetimeIndex. If an integer is passed, the index will be a pandas RangeIndex index. Works only with
-        either `length` or `end`.
-    end
-        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
-        set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
-    length
-        Optionally, the length of the returned index. Works only with either `start` or `end`.
-    freq
-        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
-        a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
-        By default, "D" (daily) is used.
-        If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
-        The freq is optional for generating an integer index (if not specified, 1 is used).
-    """
-    constructors = [
-        arg_name
-        for arg, arg_name in zip([start, end, length], ["start", "end", "length"])
-        if arg is not None
-    ]
-    raise_if(
-        len(constructors) != 2,
-        "index can only be generated with exactly two of the following parameters: [`start`, `end`, `length`]. "
-        f"Observed parameters: {constructors}. For generating an index with `end` and `length` consider setting "
-        f"`start` to None.",
-        logger,
-    )
-    raise_if(
-        end is not None and start is not None and type(start) != type(end),
-        "index generation with `start` and `end` requires equal object types of `start` and `end`",
-        logger,
-    )
-
-    if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
-        index = pd.date_range(
-            start=start,
-            end=end,
-            periods=length,
-            freq="D" if freq is None else freq,
-            name=name,
-        )
-    else:  # int
-        step = 1 if freq is None else freq
-        index = pd.RangeIndex(
-            start=start if start is not None else end - step * length + step,
-            stop=end + step if end is not None else start + step * length,
-            step=step,
-            name=name,
-        )
-    return index
+ONE_INDEXED_FREQS = {
+    "day",
+    "month",
+    "quarter",
+    "dayofyear",
+    "day_of_year",
+    "week",
+    "weekofyear",
+    "week_of_year",
+}
 
 
 def constant_timeseries(
@@ -87,7 +34,7 @@ def constant_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = None,
+    freq: Union[str, int] = None,
     column_name: Optional[str] = "constant",
     dtype: np.dtype = np.float64,
 ) -> TimeSeries:
@@ -139,7 +86,7 @@ def linear_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = None,
+    freq: Union[str, int] = None,
     column_name: Optional[str] = "linear",
     dtype: np.dtype = np.float64,
 ) -> TimeSeries:
@@ -197,7 +144,7 @@ def sine_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = None,
+    freq: Union[str, int] = None,
     column_name: Optional[str] = "sine",
     dtype: np.dtype = np.float64,
 ) -> TimeSeries:
@@ -262,7 +209,7 @@ def gaussian_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = None,
+    freq: Union[str, int] = None,
     column_name: Optional[str] = "gaussian",
     dtype: np.dtype = np.float64,
 ) -> TimeSeries:
@@ -309,14 +256,14 @@ def gaussian_timeseries(
         A white noise TimeSeries created as indicated above.
     """
 
-    if type(mean) == np.ndarray:
+    if isinstance(mean, np.ndarray):
         raise_if_not(
             mean.shape == (length,),
             "If a vector of means is provided, "
             "it requires the same length as the TimeSeries.",
             logger,
         )
-    if type(std) == np.ndarray:
+    if isinstance(std, np.ndarray):
         raise_if_not(
             std.shape == (length, length),
             "If a matrix of standard deviations is provided, "
@@ -338,7 +285,7 @@ def random_walk_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = None,
+    freq: Union[str, int] = None,
     column_name: Optional[str] = "random_walk",
     dtype: np.dtype = np.float64,
 ) -> TimeSeries:
@@ -393,7 +340,7 @@ def autoregressive_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = None,
+    freq: Union[str, int] = None,
     column_name: Optional[str] = "autoregressive",
 ) -> TimeSeries:
     """
@@ -461,7 +408,6 @@ def _extend_time_index_until(
     until: Optional[Union[int, str, pd.Timestamp]],
     add_length: int,
 ) -> pd.DatetimeIndex:
-
     if not add_length and not until:
         return time_index
 
@@ -526,7 +472,7 @@ def _extend_time_index_until(
 
 
 def holidays_timeseries(
-    time_index: pd.DatetimeIndex,
+    time_index: Union[TimeSeries, pd.DatetimeIndex],
     country_code: str,
     prov: str = None,
     state: str = None,
@@ -534,6 +480,7 @@ def holidays_timeseries(
     until: Optional[Union[int, str, pd.Timestamp]] = None,
     add_length: int = 0,
     dtype: np.dtype = np.float64,
+    tz: Optional[str] = None,
 ) -> TimeSeries:
     """
     Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within
@@ -544,13 +491,13 @@ def holidays_timeseries(
     Parameters
     ----------
     time_index
-        The time index over which to generate the holidays
+        Either a `pd.DatetimeIndex` or a `TimeSeries` for which to generate the holidays.
     country_code
-        The country ISO code
+        The country ISO code.
     prov
-        The province
+        The province.
     state
-        The state
+        The state.
     until
         Extend the time_index up until timestamp for datetime indexed series
         and int for range indexed series, should match or exceed forecasting window.
@@ -558,17 +505,24 @@ def holidays_timeseries(
         Extend the time_index by add_length, should match or exceed forecasting window.
         Set only one of until and add_length.
     column_name
-        Optionally, the name of the value column for the returned TimeSeries
+        Optionally, the name of the value column for the returned TimeSeries.
     dtype
-        The desired NumPy dtype (np.float32 or np.float64) for the resulting series
+        The desired NumPy dtype (np.float32 or np.float64) for the resulting series.
+    tz
+        Optionally, a time zone to convert the time index to before generating the holidays.
 
     Returns
     -------
     TimeSeries
         A new binary holiday TimeSeries instance.
     """
+    time_index_ts, time_index = _process_time_index(
+        time_index=time_index,
+        tz=tz,
+        until=until,
+        add_length=add_length,
+    )
 
-    time_index = _extend_time_index_until(time_index, until, add_length)
     scope = range(time_index[0].year, (time_index[-1] + pd.Timedelta(days=1)).year)
     country_holidays = holidays.country_holidays(
         country_code, prov=prov, state=state, years=scope
@@ -576,7 +530,7 @@ def holidays_timeseries(
     index_series = pd.Series(time_index, index=time_index)
     values = index_series.apply(lambda x: x in country_holidays).astype(dtype)
     return TimeSeries.from_times_and_values(
-        time_index, values, columns=pd.Index([column_name])
+        time_index_ts, values, columns=pd.Index([column_name])
     )
 
 
@@ -588,12 +542,14 @@ def datetime_attribute_timeseries(
     until: Optional[Union[int, str, pd.Timestamp]] = None,
     add_length: int = 0,
     dtype=np.float64,
-    with_columns: Optional[Union[List[str], str]] = None,
+    with_columns: Optional[Union[list[str], str]] = None,
+    tz: Optional[str] = None,
 ) -> TimeSeries:
     """
     Returns a new TimeSeries with index `time_index` and one or more dimensions containing
     (optionally one-hot encoded or cyclic encoded) pd.DatatimeIndex attribute information derived from the index.
 
+    1-indexed attributes are shifted to enforce 0-indexing across all the encodings.
 
     Parameters
     ----------
@@ -626,6 +582,8 @@ def datetime_attribute_timeseries(
             cosine component name.
         * If `one_hot` is ``True``, must be a list of strings of the same length as the generated one hot encoded
             features.
+    tz
+        Optionally, a time zone to convert the time index to before computing the attributes.
 
     Returns
     -------
@@ -633,10 +591,12 @@ def datetime_attribute_timeseries(
         New datetime attribute TimeSeries instance.
     """
 
-    if isinstance(time_index, TimeSeries):
-        time_index = time_index.time_index
-
-    time_index = _extend_time_index_until(time_index, until, add_length)
+    time_index_ts, time_index = _process_time_index(
+        time_index=time_index,
+        tz=tz,
+        until=until,
+        add_length=add_length,
+    )
 
     raise_if_not(
         hasattr(pd.DatetimeIndex, attribute)
@@ -678,6 +638,33 @@ def datetime_attribute_timeseries(
             .rename("time")
         )
 
+    # shift 1-indexed datetime attributes
+    if attribute in ONE_INDEXED_FREQS:
+        values -= 1
+
+    # leap years insert an additional day on the 29th of February
+    if attribute in {"dayofyear", "day_of_year"} and any(time_index.is_leap_year):
+        num_values_dict[attribute] += 1
+
+    # years contain an additional week if they are :
+    # - a regular year starting on a thursday
+    # - a leap year starting on a wednesday
+    if attribute in {"week", "weekofyear", "week_of_year"}:
+        years = time_index.year.unique()
+        # check if year respect properties
+        additional_week_year = any(
+            ((not first_day.is_leap_year) and first_day.day_name() == "Thursday")
+            or (first_day.is_leap_year and first_day.day_name() == "Wednesday")
+            for first_day in [pd.Timestamp(f"{year}-01-01") for year in years]
+        )
+        # check if time index actually include the additional week
+        additional_week_in_index = time_index[-1] - time_index[0] + pd.Timedelta(
+            days=1
+        ) >= pd.Timedelta(days=365)
+
+        if additional_week_year and additional_week_in_index:
+            num_values_dict[attribute] += 1
+
     if one_hot or cyclic:
         raise_if_not(
             attribute in num_values_dict,
@@ -689,10 +676,19 @@ def datetime_attribute_timeseries(
     if one_hot:
         values_df = pd.get_dummies(values)
         # fill missing columns (in case not all values appear in time_index)
-        for i in range(1, num_values_dict[attribute] + 1):
-            if not (i in values_df.columns):
-                values_df[i] = 0
-        values_df = values_df[range(1, num_values_dict[attribute] + 1)]
+        attribute_range = np.arange(num_values_dict[attribute])
+        is_missing = np.isin(attribute_range, values_df.columns.values, invert=True)
+        # if there are attribute_range columns that are
+        # not in values_df.columns.values
+        if is_missing.any():
+            dict_0 = {i: False for i in attribute_range[is_missing]}
+            # Make a dataframe from the dictionary and concatenate it
+            # to the values values_df  in which the existing columns
+            values_df = pd.concat(
+                [values_df, pd.DataFrame(dict_0, index=values_df.index)], axis=1
+            ).sort_index(axis=1)
+        else:
+            values_df = values_df[attribute_range]
 
         if with_columns is None:
             with_columns = [
@@ -725,12 +721,10 @@ def datetime_attribute_timeseries(
                 "The first string for the sine component name, the second for the cosine component name.",
                 logger=logger,
             )
-            values_df = pd.DataFrame(
-                {
-                    with_columns[0]: np.sin(freq * values),
-                    with_columns[1]: np.cos(freq * values),
-                }
-            )
+            values_df = pd.DataFrame({
+                with_columns[0]: np.sin(freq * values),
+                with_columns[1]: np.cos(freq * values),
+            })
         else:
             if with_columns is None:
                 with_columns = attribute
@@ -741,24 +735,56 @@ def datetime_attribute_timeseries(
             )
             values_df = pd.DataFrame({with_columns: values})
 
-    values_df.index = time_index
+    values_df.index = time_index_ts
     return TimeSeries.from_dataframe(values_df).astype(dtype)
 
 
 def _build_forecast_series(
     points_preds: Union[np.ndarray, Sequence[np.ndarray]],
     input_series: TimeSeries,
+    custom_columns: list[str] = None,
+    with_static_covs: bool = True,
+    with_hierarchy: bool = True,
+    pred_start: Optional[Union[pd.Timestamp, int]] = None,
+    time_index: Union[pd.DatetimeIndex, pd.RangeIndex] = None,
 ) -> TimeSeries:
     """
     Builds a forecast time series starting after the end of an input time series, with the
     correct time index (or after the end of the input series, if specified).
+
+    Parameters
+    ----------
+    points_preds
+        Forecasted values, can be either the target(s) or parameters of the likelihood model
+    input_series
+        TimeSeries used as input for the prediction
+    custom_columns
+        New names for the forecast TimeSeries, used when the number of components changes
+    with_static_covs
+        If set to `False`, do not copy the input_series `static_covariates` attribute
+    with_hierarchy
+        If set to `False`, do not copy the input_series `hierarchy` attribute
+    pred_start
+        Optionally, give a custom prediction start point. Only effective if `time_index` is `None`.
+    time_index
+        Optionally, the index to use for the forecast time series.
+
+    Returns
+    -------
+    TimeSeries
+        New TimeSeries instance starting after the input series
     """
-    time_index_length = (
-        len(points_preds)
-        if isinstance(points_preds, np.ndarray)
-        else len(points_preds[0])
-    )
-    time_index = _generate_new_dates(time_index_length, input_series=input_series)
+    if time_index is None:
+        time_index_length = (
+            len(points_preds)
+            if isinstance(points_preds, np.ndarray)
+            else len(points_preds[0])
+        )
+        time_index = _generate_new_dates(
+            time_index_length,
+            input_series=input_series,
+            start=pred_start,
+        )
     values = (
         points_preds
         if isinstance(points_preds, np.ndarray)
@@ -769,20 +795,60 @@ def _build_forecast_series(
         time_index,
         values,
         freq=input_series.freq_str,
-        columns=input_series.columns,
-        static_covariates=input_series.static_covariates,
-        hierarchy=input_series.hierarchy,
+        columns=input_series.columns if custom_columns is None else custom_columns,
+        static_covariates=input_series.static_covariates if with_static_covs else None,
+        hierarchy=input_series.hierarchy if with_hierarchy else None,
     )
 
 
 def _generate_new_dates(
-    n: int, input_series: TimeSeries
+    n: int, input_series: TimeSeries, start: Optional[Union[pd.Timestamp, int]] = None
 ) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
     """
     Generates `n` new dates after the end of the specified series
     """
-    last = input_series.end_time()
-    start = last + input_series.freq
+    if start is None:
+        last = input_series.end_time()
+        start = last + input_series.freq
     return generate_index(
         start=start, freq=input_series.freq, length=n, name=input_series.time_dim
     )
+
+
+def _process_time_index(
+    time_index: Union[TimeSeries, pd.DatetimeIndex],
+    tz: Optional[str] = None,
+    until: Optional[Union[int, str, pd.Timestamp]] = None,
+    add_length: int = 0,
+) -> tuple[pd.DatetimeIndex, pd.DatetimeIndex]:
+    """
+    Extracts the time index, and optionally adds some time steps after the end of the index, and/or converts the
+    index to another time zone.
+
+    Returns a tuple of pd.DatetimeIndex with the first being the naive time index for generating a new TimeSeries,
+    and the second being the one used for generating datetime attributes and holidays in a potentially different
+    time zone.
+    """
+    if isinstance(time_index, TimeSeries):
+        time_index = time_index.time_index
+
+    if not isinstance(time_index, pd.DatetimeIndex):
+        raise_log(
+            ValueError(
+                "`time_index` must be a pandas `DatetimeIndex` or a `TimeSeries` indexed with a `DatetimeIndex`."
+            ),
+            logger=logger,
+        )
+    if time_index.tz is not None:
+        raise_log(
+            ValueError("`time_index` must be time zone naive."),
+            logger=logger,
+        )
+    time_index = _extend_time_index_until(time_index, until, add_length)
+
+    # convert to another time zone
+    if tz is not None:
+        time_index_ = time_index.tz_localize("UTC").tz_convert(tz)
+    else:
+        time_index_ = time_index
+    return time_index, time_index_

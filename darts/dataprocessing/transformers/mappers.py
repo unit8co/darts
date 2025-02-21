@@ -3,18 +3,24 @@ Mapper and InvertibleMapper
 ---------------------------
 """
 
-from typing import Callable, List, Sequence, Union
+from collections.abc import Mapping
+from typing import Any, Callable, Union
 
 import numpy as np
 import pandas as pd
 
+from darts.dataprocessing.transformers.base_data_transformer import BaseDataTransformer
+from darts.dataprocessing.transformers.invertible_data_transformer import (
+    InvertibleDataTransformer,
+)
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 
-from .base_data_transformer import BaseDataTransformer
-from .invertible_data_transformer import InvertibleDataTransformer
-
 logger = get_logger(__name__)
+
+MapperFn = Union[
+    Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]
+]
 
 
 class Mapper(BaseDataTransformer):
@@ -70,18 +76,13 @@ class Mapper(BaseDataTransformer):
         * component  (component) <U1 '0'
         Dimensions without coordinates: sample
         """
-
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
+        # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self._fn = fn
+        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
 
     @staticmethod
-    def ts_transform(series: TimeSeries, fn) -> TimeSeries:
-        return series.map(fn)
-
-    def transform(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
-    ) -> Union[TimeSeries, List[TimeSeries]]:
-        return super().transform(series, *args, fn=self._fn)
+    def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
+        return series.map(params["fixed"]["_fn"])
 
 
 class InvertibleMapper(InvertibleDataTransformer):
@@ -154,40 +155,18 @@ class InvertibleMapper(InvertibleDataTransformer):
         Dimensions without coordinates: sample
         """
 
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
         self._fn = fn
         self._inverse_fn = inverse_fn
+        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
 
     @staticmethod
     def ts_transform(
-        series: TimeSeries,
-        fn: Union[
-            Callable[[np.number], np.number],
-            Callable[[pd.Timestamp, np.number], np.number],
-        ],
+        series: TimeSeries, params: Mapping[str, Mapping[str, MapperFn]]
     ) -> TimeSeries:
-        return series.map(fn)
+        return series.map(params["fixed"]["_fn"])
 
     @staticmethod
     def ts_inverse_transform(
-        series: TimeSeries,
-        inverse_fn: Union[
-            Callable[[np.number], np.number],
-            Callable[[pd.Timestamp, np.number], np.number],
-        ],
+        series: TimeSeries, params: Mapping[str, Mapping[str, MapperFn]]
     ) -> TimeSeries:
-        return series.map(inverse_fn)
-
-    def transform(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
-    ) -> Union[TimeSeries, List[TimeSeries]]:
-        # adding the fn param
-        return super().transform(series, self._fn, *args, **kwargs)
-
-    def inverse_transform(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
-    ) -> Union[TimeSeries, List[TimeSeries]]:
-        # adding the inverse_fn param
-        return super().inverse_transform(
-            series, inverse_fn=self._inverse_fn, *args, **kwargs
-        )
+        return series.map(params["fixed"]["_inverse_fn"])

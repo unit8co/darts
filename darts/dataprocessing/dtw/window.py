@@ -1,3 +1,8 @@
+"""
+DTW Windows
+-----------
+"""
+
 import array
 from abc import ABC, abstractmethod
 from math import atan, tan
@@ -18,9 +23,9 @@ class Window(ABC):
         Parameters
         ----------
         n
-            The width of the window, must be equal to the length of series1
+            The width of the window, must be equal to the length of `series1` used for DTW
         m
-            The height of the window, must be equal to the length of series2
+            The height of the window, must be equal to the length of `series2` used for DTW
         """
         self.n = n
         self.m = m
@@ -30,8 +35,9 @@ class Window(ABC):
         pass
 
     @abstractmethod
-    def column_index(self, elem: (int, int)) -> int:
-        """
+    def column_index(self, elem: tuple[int, int]) -> int:
+        """Gives the number of active grid cells before row element j, in column i.
+
         Parameters
         ----------
         elem
@@ -49,7 +55,8 @@ class Window(ABC):
 
     @abstractmethod
     def column_length(self, column: int) -> int:
-        """
+        """Gives the number of active grid cells in a column.
+
         Parameters
         ----------
         column
@@ -62,15 +69,12 @@ class Window(ABC):
         """
 
     def column_lengths(self) -> np.ndarray:
-        """
-        Parameters
-        ----------
-        self
+        """Gives the number of activate grid cells in each column.
 
         Returns
         -------
         np.ndarray of shape (n+1,)
-            Containing The number of active grid cells in each column.
+            The number of active grid cells in each column.
         """
 
         return np.array(self.column_length(i) for i in range(0, self.n + 1))
@@ -96,7 +100,7 @@ class NoWindow(Window):
     def __len__(self):
         return self.n * self.m + 1  # include (0,0) element
 
-    def column_index(self, elem: (int, int)):
+    def column_index(self, elem: tuple[int, int]):
         return elem[1] - 1
 
     def column_length(self, column: int) -> int:
@@ -106,6 +110,7 @@ class NoWindow(Window):
         result = np.empty(self.n + 1)
         result.fill(self.m)
         result[0] = 1
+        return result
 
     def __iter__(self):
         for i in range(1, self.n + 1):
@@ -117,11 +122,11 @@ def gtz(value):  # greater than zero
     return value if value > 0 else 0
 
 
-class CRWindow:
+class CRWindow(Window):
     """
     Compressed row representation window.
     Stores the range of active grid cells in each column.
-    Any window with contiguous columns can be expressed as an CRWindow.
+    Any window with contiguous columns can be expressed as a CRWindow.
     Supports efficient iterative construction and updates.
     """
 
@@ -137,7 +142,7 @@ class CRWindow:
         m
             The height of the window, must be equal to the length of series2
         ranges
-            Ranges of active cells within a column [[start_column0, end_column0], ...]
+            The ranges of active cells within a column [[start_column0, end_column0], ...]
             with shape (n, 2) and where start >= 0 and end <= m.
         """
 
@@ -175,8 +180,7 @@ class CRWindow:
         self.column_ranges = array.array("i", ranges)
 
     def add_range(self, column: int, start: int, end: int):
-        """
-        Extends the active cells in the column by the range (start,end).
+        """Extends the active cells in the column by the range (start,end).
         Ranges smaller than the current one are ignored.
         Note (1, m+1), not (0,m) corresponds to an entire column.
 
@@ -186,7 +190,7 @@ class CRWindow:
             Column int index
         start
             Row element int index where start >= 1 and start <= end
-        end:
+        end
             Row element int index where end >= 1 and end <= m+1
         """
 
@@ -210,9 +214,8 @@ class CRWindow:
         self.column_ranges[start_idx] = start
         self.column_ranges[end_idx] = end
 
-    def add(self, elem: (int, int)):
-        """
-        Mark grid cell as active.
+    def add(self, elem: tuple[int, int]):
+        """Marks a grid cell as active.
 
         Parameters
         ----------
@@ -226,7 +229,7 @@ class CRWindow:
         start, end = self.column_ranges[column]
         return gtz(end - start)
 
-    def column_index(self, elem: (int, int)) -> int:
+    def column_index(self, elem: tuple[int, int]) -> int:
         i, j = elem
 
         start, end = self.column_ranges[i]
@@ -235,7 +238,7 @@ class CRWindow:
         else:
             return j - start
 
-    def __contains__(self, elem: (int, int)) -> bool:
+    def __contains__(self, elem: tuple[int, int]) -> bool:
         i, j = elem
         start, end = self.column_ranges[i]
         return start <= j < end
@@ -263,29 +266,37 @@ class Itakura(CRWindow):
     """
     Forms the Itakura parallelogram, where max_slope determines the slope of the steeper side.
 
-                                         x
-                                     xxxx
-                      B           xxxxxx
-                            xxxxxxxxxxx
-                        xxxxxxxxxxxxxx
-                    xxxxxxxxxxxxxxxxx
-                 xxxxxxxxxxxxxxxxxxxx     C
-               xxxxxxxxxxxxxxxxxxxxx
-              xxxxxxxxxxxxxxxxxxxxx
-             xxxxxxxxxxxxxxxxxxxxx
-        A   xxxxxxxxxxxxxxxxxxxxx
-           xxxxxxxxxxxxxxxxxxxxx
-          xxxxxxxxxxxxxxxxxxxxx
-         xxxxxxxxxxxxxxxxxxxx
-        xxxxxxxxxxxxxxxx       D
-        xxxxxxxxxxxx
-       xxxxxxxxx
-      xxxxxx
-     xxx
-    x
+    Examples
+    --------
+    >>>                                      x
+    >>>                                  xxxx
+    >>>                   B           xxxxxx
+    >>>                         xxxxxxxxxxx
+    >>>                     xxxxxxxxxxxxxx
+    >>>                 xxxxxxxxxxxxxxxxx
+    >>>              xxxxxxxxxxxxxxxxxxxx     C
+    >>>            xxxxxxxxxxxxxxxxxxxxx
+    >>>           xxxxxxxxxxxxxxxxxxxxx
+    >>>          xxxxxxxxxxxxxxxxxxxxx
+    >>>     A   xxxxxxxxxxxxxxxxxxxxx
+    >>>        xxxxxxxxxxxxxxxxxxxxx
+    >>>       xxxxxxxxxxxxxxxxxxxxx
+    >>>      xxxxxxxxxxxxxxxxxxxx
+    >>>     xxxxxxxxxxxxxxxx       D
+    >>>     xxxxxxxxxxxx
+    >>>    xxxxxxxxx
+    >>>   xxxxxx
+    >>>  xxx
+    >>> x
     """
 
     def __init__(self, max_slope: float):
+        """
+        Parameters
+        ----------
+        max_slope
+            The slope of the steeper parallelogram side.
+        """
         self.max_slope = max_slope
 
     def init_size(self, n: int, m: int):
@@ -350,6 +361,12 @@ class SakoeChiba(CRWindow):
     """
 
     def __init__(self, window_size: int):
+        """
+        Parameters
+        ----------
+        window_size
+            The maximum allowed shift between the two series used in DTW.
+        """
         self.window_size = window_size
 
     def init_size(self, n: int, m: int):

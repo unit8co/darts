@@ -1,16 +1,20 @@
+"""
+Dynamic Time Warping (DTW)
+--------------------------
+"""
+
 import copy
-from typing import Callable, Union
+from typing import Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
 from darts import TimeSeries
+from darts.dataprocessing.dtw.cost_matrix import CostMatrix
+from darts.dataprocessing.dtw.window import CRWindow, NoWindow, Window
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.timeseries import DIMS
-
-from .cost_matrix import CostMatrix
-from .window import CRWindow, NoWindow, Window
 
 logger = get_logger(__name__)
 
@@ -21,8 +25,7 @@ DistanceFunc = Callable[[SeriesValue, SeriesValue], float]
 # CORE ALGORITHM
 def _dtw_cost_matrix(
     x: np.ndarray, y: np.ndarray, dist: DistanceFunc, window: Window
-) -> np.ndarray:
-
+) -> CostMatrix:
     dtw = CostMatrix._from_window(window)
 
     dtw.fill(np.inf)
@@ -138,8 +141,33 @@ def _fast_dtw(
     return cost
 
 
+def _default_distance_multi(x_values: np.ndarray, y_values: np.ndarray):
+    return np.sum(np.abs(x_values - y_values))
+
+
+def _default_distance_uni(x_value: float, y_value: float):
+    return abs(x_value - y_value)
+
+
 # Public API Functions
 class DTWAlignment:
+    """
+    Dynamic Time Warping (DTW) Alignment.
+
+    Attributes
+    ----------
+    n
+        The length of `series1`
+    m
+        The length of `series2`
+    series1
+        A `TimeSeries` to align with `series2`.
+    series2
+        A `TimeSeries` to align with `series1`.
+    cost
+        The `CostMatrix` for DTW.
+    """
+
     n: int
     m: int
     series1: TimeSeries
@@ -147,7 +175,6 @@ class DTWAlignment:
     cost: CostMatrix
 
     def __init__(self, series1: TimeSeries, series2: TimeSeries, cost: CostMatrix):
-
         self.n = len(series1)
         self.m = len(series2)
         self.series1 = series1
@@ -157,7 +184,8 @@ class DTWAlignment:
     from ._plot import plot, plot_alignment
 
     def path(self) -> np.ndarray:
-        """
+        """Gives the index paths from `series1` to `series2`.
+
         Returns
         -------
         np.ndarray of shape `(len(path), 2)`
@@ -172,7 +200,8 @@ class DTWAlignment:
         return self._path
 
     def distance(self) -> float:
-        """
+        """Gives the total distance between pair-wise elements in the two series after warping.
+
         Returns
         -------
         float
@@ -181,7 +210,8 @@ class DTWAlignment:
         return self.cost[(self.n, self.m)]
 
     def mean_distance(self) -> float:
-        """
+        """Gives the mean distance between pair-wise elements in the two series after warping.
+
         Returns
         -------
         float
@@ -195,9 +225,8 @@ class DTWAlignment:
         return self._mean_distance
 
     def warped(self) -> (TimeSeries, TimeSeries):
-        """
-        Warps the two time series according to the warp path returned by .path(), which minimizes
-        the pair-wise distance.
+        """Warps the two time series according to the warp path returned by `DTWAlignment.path()`, which minimizes the
+        pair-wise distance.
         This will bring two time series that are out-of-phase back into phase.
 
         Returns
@@ -254,24 +283,16 @@ class DTWAlignment:
         )
 
 
-def default_distance_multi(x_values: np.ndarray, y_values: np.ndarray):
-    return np.sum(np.abs(x_values - y_values))
-
-
-def default_distance_uni(x_value: float, y_value: float):
-    return abs(x_value - y_value)
-
-
 def dtw(
     series1: TimeSeries,
     series2: TimeSeries,
-    window: Window = NoWindow(),
+    window: Optional[Window] = None,
     distance: Union[DistanceFunc, None] = None,
     multi_grid_radius: int = -1,
 ) -> DTWAlignment:
     """
-    Determines the optimal alignment between two time series series1 and series2,
-    according to the Dynamic Time Warping algorithm.
+    Determines the optimal alignment between two time series `series1` and `series2`, according to the Dynamic Time
+    Warping algorithm.
     The alignment minimizes the distance between pair-wise elements after warping.
     All elements in the two series are matched and are in strictly monotonically increasing order.
     Considers only the values in the series, ignoring the time axis.
@@ -282,12 +303,12 @@ def dtw(
     Parameters
     ----------
     series1
-        `TimeSeries`
+        A `TimeSeries` to align with `series2`.
     series2
-        A `TimeSeries`
+        A `TimeSeries` to align with `series1`.
     window
-        Used to constrain the search for the optimal alignment: see SakoeChiba and Itakura.
-        Default considers all possible alignments.
+        Optionally, a `Window` used to constrain the search for the optimal alignment: see `SakoeChiba` and `Itakura`.
+        Default considers all possible alignments (`NoWindow`).
     distance
         Function taking as input either two `floats` for univariate series or two `np.ndarray`,
         and returning the distance between them.
@@ -295,11 +316,11 @@ def dtw(
         Defaults to the abs difference for univariate-data and the
         sum of the abs difference for multi-variate series.
     multi_grid_radius
-        Default radius of -1 results in an exact evaluation of the dynamic time warping algorithm.
+        Default radius of `-1` results in an exact evaluation of the dynamic time warping algorithm.
         Without constraints DTW runs in O(nxm) time where n,m are the size of the series.
         Exact evaluation with no constraints, will result in a performance warning on large datasets.
 
-        Setting multi_grid_radius to a value other than -1, will enable the approximate multi-grid solver,
+        Setting `multi_grid_radius` to a value other than `-1`, will enable the approximate multi-grid solver,
         which executes in linear time, vs quadratic time for exact evaluation.
         Increasing radius trades solution accuracy for performance.
 
@@ -308,6 +329,8 @@ def dtw(
     DTWAlignment
         Helper object for getting warp path, mean_distance, distance and warped time series
     """
+    if window is None:
+        window = NoWindow()
 
     if (
         multi_grid_radius == -1
@@ -328,7 +351,7 @@ def dtw(
             logger,
         )
 
-        distance = default_distance_uni if both_univariate else default_distance_multi
+        distance = _default_distance_uni if both_univariate else _default_distance_multi
 
     if both_univariate:
         values_x = series1.univariate_values(copy=False)

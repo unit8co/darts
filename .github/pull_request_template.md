@@ -1,3 +1,8 @@
+Checklist before merging this PR:
+- [ ] Mentioned all issues that this PR fixes or addresses.
+- [ ] Summarized the updates of this PR under **Summary**.
+- [ ] Added an entry under **Unreleased** in the [Changelog](../CHANGELOG.md).
+
 <!-- Please mention an issue this pull request addresses. -->
 Fixes #.
 

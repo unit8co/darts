@@ -1,5 +1,3 @@
-import unittest
-
 import numpy as np
 import pandas as pd
 
@@ -7,8 +5,7 @@ from darts.dataprocessing.transformers import MissingValuesFiller
 from darts.timeseries import TimeSeries
 
 
-class MissingValuesFillerTestCase(unittest.TestCase):
-
+class TestMissingValuesFiller:
     time = pd.date_range("20130101", "20130130")
     static_covariate = pd.DataFrame({"0": [1]})
 
@@ -30,22 +27,22 @@ class MissingValuesFillerTestCase(unittest.TestCase):
     def test_fill_const_series_with_const_value(self):
         const_transformer = MissingValuesFiller(fill=2.0)
         transformed = const_transformer.transform(self.const_series_with_holes)
-        self.assertEqual(self.const_series, transformed)
+        assert self.const_series == transformed
 
     def test_fill_const_series_with_auto_value(self):
         auto_transformer = MissingValuesFiller()
         transformed = auto_transformer.transform(self.const_series_with_holes)
-        self.assertEqual(self.const_series, transformed)
+        assert self.const_series == transformed
 
     def test_fill_lin_series_with_auto_value(self):
         auto_transformer = MissingValuesFiller()
         transformed = auto_transformer.transform(self.lin_series_with_holes)
-        self.assertEqual(self.lin_series, transformed)
+        assert self.lin_series == transformed
 
     def test_fill_static_covariates_preserved(self):
         const_transformer = MissingValuesFiller(fill=2.0)
         transformed = const_transformer.transform(self.const_series_with_holes)
-        self.assertEqual(
-            self.const_series.static_covariates.values,
-            transformed.static_covariates.values,
+        assert (
+            self.const_series.static_covariates.values
+            == transformed.static_covariates.values
         )

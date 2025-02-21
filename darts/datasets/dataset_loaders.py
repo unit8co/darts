@@ -5,7 +5,7 @@ import zipfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, List, Optional, Union
+from typing import Callable, Optional, Union
 
 import pandas as pd
 import requests
@@ -31,8 +31,10 @@ class DatasetLoaderMetadata:
     format_time: Optional[str] = None
     # used to indicate the freq when we already know it
     freq: Optional[str] = None
-    # a custom function to handling non-csv based datasets
+    # a custom function handling non-csv based datasets
     pre_process_zipped_csv_fn: Optional[Callable] = None
+    # a custom function handling csv based datasets
+    pre_process_csv_fn: Optional[Callable] = None
     # multivariate
     multivariate: Optional[bool] = None
 
@@ -49,7 +51,9 @@ class DatasetLoader(ABC):
 
     _DEFAULT_DIRECTORY = Path(os.path.join(Path.home(), Path(".darts/datasets/")))
 
-    def __init__(self, metadata: DatasetLoaderMetadata, root_path: Path = None):
+    def __init__(
+        self, metadata: DatasetLoaderMetadata, root_path: Optional[Path] = None
+    ):
         self._metadata: DatasetLoaderMetadata = metadata
         if root_path is None:
             self._root_path: Path = DatasetLoader._DEFAULT_DIRECTORY
@@ -131,7 +135,13 @@ class DatasetLoader(ABC):
                 "Could not download the dataset. Reason:" + e.__repr__()
             ) from None
 
+        if self._metadata.pre_process_csv_fn is not None:
+            self._metadata.pre_process_csv_fn(self._get_path_dataset())
+
     def _download_zip_dataset(self):
+        if self._metadata.pre_process_csv_fn:
+            logger.warning("Loading a ZIP file does not use the pre_process_csv_fn")
+
         os.makedirs(self._root_path, exist_ok=True)
         try:
             request = requests.get(self._metadata.uri)
@@ -186,13 +196,14 @@ class DatasetLoader(ABC):
 
 
 class DatasetLoaderCSV(DatasetLoader):
-    def __init__(self, metadata: DatasetLoaderMetadata, root_path: Path = None):
+    def __init__(
+        self, metadata: DatasetLoaderMetadata, root_path: Optional[Path] = None
+    ):
         super().__init__(metadata, root_path)
 
     def _load_from_disk(
         self, path_to_file: Path, metadata: DatasetLoaderMetadata
-    ) -> Union[TimeSeries, List[TimeSeries]]:
-
+    ) -> Union[TimeSeries, list[TimeSeries]]:
         df = pd.read_csv(path_to_file)
         if metadata.header_time is not None:
             df = self._format_time_column(df)

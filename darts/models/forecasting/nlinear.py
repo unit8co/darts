@@ -3,13 +3,16 @@ N-Linear
 ------
 """
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import torch
 import torch.nn as nn
 
 from darts.logging import raise_if
-from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLMixedCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 
 
@@ -20,14 +23,14 @@ class _NLinearModule(PLMixedCovariatesModule):
 
     def __init__(
         self,
-        input_dim,
-        output_dim,
-        future_cov_dim,
-        static_cov_dim,
-        nr_params,
-        shared_weights,
-        const_init,
-        normalize,
+        input_dim: int,
+        output_dim: int,
+        future_cov_dim: int,
+        static_cov_dim: int,
+        nr_params: int,
+        shared_weights: bool,
+        const_init: bool,
+        normalize: bool,
         **kwargs,
     ):
         """PyTorch module implementing the N-HiTS architecture.
@@ -41,19 +44,20 @@ class _NLinearModule(PLMixedCovariatesModule):
         future_cov_dim
             Number of components in the future covariates
         static_cov_dim
-            Dimensionality of the static covariates
+            Dimensionality of the static covariates (either component-specific or shared)
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used).
         shared_weights
             Whether to use shared weights for the components of the series.
             ** Ignores covariates when True. **
-        normalize
-            Whether to apply the "normalization" described in the paper.
         const_init
             Whether to initialize the weights to 1/in_len
+        normalize
+            Whether to apply the "normalization" described in the paper.
 
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
 
         Inputs
         ------
@@ -91,9 +95,6 @@ class _NLinearModule(PLMixedCovariatesModule):
             layer_in_dim = self.input_chunk_length * self.input_dim
             layer_out_dim = self.output_chunk_length * self.output_dim * self.nr_params
 
-            # for static cov, we take the number of components of the target, times static cov dim
-            layer_in_dim_static_cov = self.output_dim * self.static_cov_dim
-
         self.layer = _create_linear_layer(layer_in_dim, layer_out_dim)
 
         if self.future_cov_dim != 0:
@@ -103,11 +104,12 @@ class _NLinearModule(PLMixedCovariatesModule):
             )
         if self.static_cov_dim != 0:
             self.linear_static_cov = _create_linear_layer(
-                layer_in_dim_static_cov, layer_out_dim
+                self.static_cov_dim, layer_out_dim
             )
 
+    @io_processor
     def forward(
-        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
+        self, x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
     ):
         """
         x_in
@@ -138,16 +140,15 @@ class _NLinearModule(PLMixedCovariatesModule):
             x = x.permute(0, 2, 1, 3)
         else:
             if self.normalize:
-                seq_last = x[:, -1:, :].detach()  # (batch, 1, in_dim)
-                x = x - seq_last
+                # get last values only for target features
+                seq_last = x[:, -1:, : self.output_dim].detach()
+                # normalize the target features only (ignore the covariates)
+                x[:, :, : self.output_dim] = x[:, :, : self.output_dim] - seq_last
 
             x = self.layer(x.view(batch, -1))  # (batch, out_len * out_dim * nr_params)
             x = x.view(
                 batch, self.output_chunk_length, self.output_dim * self.nr_params
             )
-
-            if self.normalize:
-                x = x + seq_last  # Note: works only when nr_params == 1
 
             if self.future_cov_dim != 0:
                 # x_future might be shorter than output_chunk_length when n < output_chunk_length
@@ -171,7 +172,9 @@ class _NLinearModule(PLMixedCovariatesModule):
                 )
 
             x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
-
+            if self.normalize:
+                # model only forecasts target components, no need to slice
+                x = x + seq_last.view(seq_last.shape + (1,))
         return x
 
 
@@ -180,22 +183,38 @@ class NLinearModel(MixedCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         shared_weights: bool = False,
         const_init: bool = True,
         normalize: bool = False,
+        use_static_covariates: bool = True,
         **kwargs,
     ):
         """An implementation of the NLinear model, as presented in [1]_.
 
-        This implementation is improved by allowing the optional use of past covariates,
-        future covariates and static covariates, and by making the model optionally probabilistic.
+        This implementation is improved by allowing the optional use of past covariates (known for
+        `input_chunk_length` points before prediction time), future covariates (known for `output_chunk_length`
+        points after prediction time) and static covariates, as well as supporting probabilistic forecasting.
 
         Parameters
         ----------
         input_chunk_length
-            The length of the input sequence fed to the model.
+            Number of time steps in the past to take as a model input (per chunk). Applies to the target
+            series, and past and/or future covariates (if the model supports it).
         output_chunk_length
-            The length of the forecast of the model.
+            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
+            from future covariates to use as a model input (if the model supports future covariates). It is not the same
+            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
+            auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
+            the model from using future values of past and / or future covariates for prediction (depending on the
+            model's covariate support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         shared_weights
             Whether to use shared weights for all components of multivariate series.
 
@@ -216,7 +235,10 @@ class NLinearModel(MixedCovariatesTorchModel):
             .. note::
                 This cannot be applied to probabilistic models.
             ..
-
+        use_static_covariates
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -242,16 +264,19 @@ class NLinearModel(MixedCovariatesTorchModel):
             to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
+            It is only applied to the features of the target series and not the covariates.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
             Number of epochs over which to train the model. Default: ``100``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part
+            defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
             of the name is formatted with the local date and time, while PID is the processed ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
-            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
+            ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
             Default: current working directory.
@@ -265,7 +290,7 @@ class NLinearModel(MixedCovariatesTorchModel):
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded). Default: ``False``.
         save_checkpoints
-            Whether or not to automatically save the untrained model and checkpoints from training.
+            Whether to automatically save the untrained model and checkpoints from training.
             To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
@@ -282,12 +307,16 @@ class NLinearModel(MixedCovariatesTorchModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
-                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
-                    'transformer': Scaler()
+                    'custom': {'past': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
         random_state
@@ -347,6 +376,36 @@ class NLinearModel(MixedCovariatesTorchModel):
         ----------
         .. [1] Zeng, A., Chen, M., Zhang, L., & Xu, Q. (2022).
                Are Transformers Effective for Time Series Forecasting?. arXiv preprint arXiv:2205.13504.
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import NLinearModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # optionally, use future temperatures (pretending this component is a forecast)
+        >>> future_cov = series['T (degC)'][:106]
+        >>> # predict 6 pressure values using the 12 past values of pressure and rainfall, as well as the 6 temperature
+        >>> # values corresponding to the forecasted period
+        >>> model = NLinearModel(
+        >>>     input_chunk_length=6,
+        >>>     output_chunk_length=6,
+        >>>     n_epochs=20,
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[429.56117169],
+               [428.93264096],
+               [428.35210616],
+               [428.13154426],
+               [427.98781641],
+               [428.00325481]])
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
@@ -356,6 +415,7 @@ class NLinearModel(MixedCovariatesTorchModel):
         self.shared_weights = shared_weights
         self.const_init = const_init
         self.normalize = normalize
+        self._considers_static_covariates = use_static_covariates
 
         raise_if(
             "likelihood" in self.model_params
@@ -364,7 +424,7 @@ class NLinearModel(MixedCovariatesTorchModel):
             "normalize = True cannot be used with probabilistic NLinearModel",
         )
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of
         # (past_target, past_covariates, historic_future_covariates,
         #  future_covariates, static_covariates, future_target)
@@ -383,8 +443,11 @@ class NLinearModel(MixedCovariatesTorchModel):
         )
         future_cov_dim = train_sample[3].shape[1] if train_sample[3] is not None else 0
 
-        # dimension is (component, static_dim), we extract static_dim
-        static_cov_dim = train_sample[4].shape[1] if train_sample[4] is not None else 0
+        if train_sample[4] is None:
+            static_cov_dim = 0
+        else:
+            # account for component-specific or shared static covariates representation
+            static_cov_dim = train_sample[4].shape[0] * train_sample[4].shape[1]
 
         output_dim = train_sample[-1].shape[1]
 
@@ -402,6 +465,18 @@ class NLinearModel(MixedCovariatesTorchModel):
             **self.pl_module_params,
         )
 
-    @staticmethod
-    def _supports_static_covariates() -> bool:
+    @property
+    def supports_multivariate(self) -> bool:
         return True
+
+    @property
+    def supports_static_covariates(self) -> bool:
+        return True
+
+    @property
+    def supports_future_covariates(self) -> bool:
+        return not self.shared_weights
+
+    @property
+    def supports_past_covariates(self) -> bool:
+        return not self.shared_weights

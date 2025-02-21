@@ -5,13 +5,14 @@ Facebook Prophet
 
 import logging
 import re
-from typing import Callable, List, Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
 import prophet
 
-from darts.logging import execute_and_suppress_output, get_logger, raise_if
+from darts.logging import execute_and_suppress_output, get_logger, raise_if, raise_log
 from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
 )
@@ -24,15 +25,21 @@ logger.level = logging.WARNING  # set to warning to suppress prophet logs
 class Prophet(FutureCovariatesLocalForecastingModel):
     def __init__(
         self,
-        add_seasonalities: Optional[Union[dict, List[dict]]] = None,
+        add_seasonalities: Optional[Union[dict, list[dict]]] = None,
         country_holidays: Optional[str] = None,
         suppress_stdout_stderror: bool = True,
         add_encoders: Optional[dict] = None,
-        cap: Union[
-            float, Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]]
+        cap: Optional[
+            Union[
+                float,
+                Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]],
+            ]
         ] = None,
-        floor: Union[
-            float, Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]]
+        floor: Optional[
+            Union[
+                float,
+                Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]],
+            ]
         ] = None,
         **prophet_kwargs,
     ):
@@ -53,7 +60,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
                 dict({
                 'name': str  # (name of the seasonality component),
-                'seasonal_periods': int  # (nr of steps composing a season),
+                'seasonal_periods': Union[int, float]  # (nr of steps composing a season),
                 'fourier_order': int  # (number of Fourier components to use),
                 'prior_scale': Optional[float]  # (a prior scale for this component),
                 'mode': Optional[str]  # ('additive' or 'multiplicative')
@@ -61,7 +68,9 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             ..
 
             An example for `seasonal_periods`: If you have hourly data (frequency='H') and your seasonal cycle repeats
-            after 48 hours then set `seasonal_periods=48`.
+            after 48 hours then set `seasonal_periods=48`. Notice that this value will be multiplied by the inferred
+            number of days for the TimeSeries frequency (1 / 24 in this example) to be consistent with the
+            `add_seasonality()` method of Facebook Prophet, where the `period` parameter is specified in days.
 
             Apart from `seasonal_periods`, this is very similar to how you would call Facebook Prophet's
             `add_seasonality()` method.
@@ -90,16 +99,20 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'future': ['relative']},
-                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
-                    'transformer': Scaler()
+                    'custom': {'future': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
         cap
-            Parameter specifiying the maximum carrying capacity when predicting with logistic growth.
+            Parameter specifying the maximum carrying capacity when predicting with logistic growth.
             Mandatory when `growth = 'logistic'`, otherwise ignored.
             See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
             on logistic forecasts.
@@ -109,7 +122,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
             where each number indicates the carrying capacity at this index.
         floor
-            Parameter specifiying the minimum carrying capacity when predicting logistic growth.
+            Parameter specifying the minimum carrying capacity when predicting logistic growth.
             Optional when `growth = 'logistic'` (defaults to 0), otherwise ignored.
             See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
             on logistic forecasts.
@@ -122,6 +135,32 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             Some optional keyword arguments for Prophet.
             For information about the parameters see:
             `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`_.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import Prophet
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
+        >>> series = AirPassengersDataset().load()
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
+        >>> # adding a seasonality (daily, weekly and yearly are included by default) and holidays
+        >>> model = Prophet(
+        >>>     add_seasonalities={
+        >>>         'name':"quarterly_seasonality",
+        >>>         'seasonal_periods':4,
+        >>>         'fourier_order':5
+        >>>         },
+        >>> )
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[472.26891239],
+               [467.56955721],
+               [494.47230467],
+               [493.10568429],
+               [497.54686113],
+               [539.11716811]])
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -165,11 +204,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 # Use 0 as default value
                 self._floor = 0
 
-    def __str__(self):
-        return "Prophet"
-
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
         series = self.training_series
@@ -184,14 +219,20 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         # add user defined seasonalities (from model creation and/or pre-fit self.add_seasonalities())
         interval_length = self._freq_to_days(series.freq_str)
+        conditional_seasonality_covariates = self._check_seasonality_conditions(
+            future_covariates=future_covariates
+        )
         for seasonality_name, attributes in self._add_seasonalities.items():
             self.model.add_seasonality(
                 name=seasonality_name,
                 period=attributes["seasonal_periods"] * interval_length,
                 fourier_order=attributes["fourier_order"],
+                prior_scale=attributes["prior_scale"],
+                mode=attributes["mode"],
+                condition_name=attributes["condition_name"],
             )
 
-        # add covariates
+        # add covariates as additional regressors
         if future_covariates is not None:
             fit_df = fit_df.merge(
                 future_covariates.pd_dataframe(),
@@ -200,7 +241,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 how="left",
             )
             for covariate in future_covariates.columns:
-                self.model.add_regressor(covariate)
+                if covariate not in conditional_seasonality_covariates:
+                    self.model.add_regressor(covariate)
 
         # add built-in country holidays
         if self.country_holidays is not None:
@@ -222,6 +264,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
     ) -> TimeSeries:
+        _ = self._check_seasonality_conditions(future_covariates=future_covariates)
 
         super()._predict(n, future_covariates, num_samples)
 
@@ -270,7 +313,83 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             )
         return predict_df
 
-    def _is_probabilistic(self) -> bool:
+    def _check_seasonality_conditions(
+        self, future_covariates: Optional[TimeSeries] = None
+    ) -> list[str]:
+        """
+        Checks if the conditions for custom conditional seasonalities are met. Each custom seasonality that has a
+        `condition_name` other than None is checked. If the `condition_name` is not a column in the `future_covariates`
+        or if the values in the column are not all True or False, an error is raised.
+        Returns a list of the `condition_name`s of the conditional seasonalities that have been checked.
+
+        Parameters
+        ----------
+        future_covariates
+            optionally, a TimeSeries containing the future covariates and including the columns that are used as
+            conditions for the conditional seasonalities when necessary
+
+        Raises
+        ------
+        ValueError
+            if a seasonality has a `condition_name` and a column named `condition_name` is missing in
+            the `future_covariates`
+
+            if a seasonality has a `condition_name` and the values in the corresponding column in `future_covariates`
+            are not binary values (True or False, 1 or 0)
+        """
+
+        conditional_seasonality_covariates = []
+        invalid_conditional_seasonalities = []
+        if future_covariates is not None:
+            future_covariates_columns = future_covariates.columns
+        else:
+            future_covariates_columns = []
+
+        for seasonality_name, attributes in self._add_seasonalities.items():
+            condition_name = attributes["condition_name"]
+            if condition_name is not None:
+                if condition_name not in future_covariates_columns:
+                    invalid_conditional_seasonalities.append((
+                        seasonality_name,
+                        condition_name,
+                        "column missing",
+                    ))
+                    continue
+                if (
+                    not future_covariates[condition_name]
+                    .pd_series()
+                    .isin([True, False])
+                    .all()
+                ):
+                    invalid_conditional_seasonalities.append((
+                        seasonality_name,
+                        condition_name,
+                        "invalid values",
+                    ))
+                    continue
+                conditional_seasonality_covariates.append(condition_name)
+
+        if len(invalid_conditional_seasonalities) > 0:
+            formatted_issues_str = ", ".join(
+                f"'{name}' (condition_name: '{cond}'; issue: {reason})"
+                for name, cond, reason in invalid_conditional_seasonalities
+            )
+            raise_log(
+                ValueError(
+                    f"The following seasonalities have invalid conditions: {formatted_issues_str}. "
+                    f"Each conditional seasonality must be accompanied by a binary component/column in the "
+                    f"`future_covariates` with the same name as the `condition_name`"
+                ),
+                logger,
+            )
+        return conditional_seasonality_covariates
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
+
+    @property
+    def supports_probabilistic_prediction(self) -> bool:
         return True
 
     def _stochastic_samples(self, predict_df, n_samples) -> np.ndarray:
@@ -317,31 +436,46 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     def add_seasonality(
         self,
         name: str,
-        seasonal_periods: int,
+        seasonal_periods: Union[int, float],
         fourier_order: int,
         prior_scale: Optional[float] = None,
         mode: Optional[str] = None,
+        condition_name: Optional[str] = None,
     ) -> None:
         """Adds a custom seasonality to the model that repeats after every n `seasonal_periods` timesteps.
         An example for `seasonal_periods`: If you have hourly data (frequency='H') and your seasonal cycle repeats
         after 48 hours -> `seasonal_periods=48`.
 
         Apart from `seasonal_periods`, this is very similar to how you would call Facebook Prophet's
-        `add_seasonality()` method. For information about the parameters see:
-        `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`_.
+        `add_seasonality()` method.
+
+        To add conditional seasonalities, provide `condition_name` here, and add a boolean (binary) component/column
+        named `condition_name` to the `future_covariates` series passed to `fit()` and `predict()`.
+
+        For information about the parameters see:
+        `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`.
+        For more details on conditional seasonalities see:
+        https://facebook.github.io/prophet/docs/seasonality,_holiday_effects,_and_regressors.html#seasonalities-that-depend-on-other-factors
 
         Parameters
         ----------
         name
             name of the seasonality component
         seasonal_periods
-            number of timesteps after which the seasonal cycle repeats
+            number of timesteps after which the seasonal cycle repeats. This value will be multiplied by the inferred
+            number of days for the TimeSeries frequency (e.g. 365.25 for a yearly frequency) to be consistent with the
+            `add_seasonality()` method of Facebook Prophet. The inferred number of days can be obtained with
+            `model._freq_to_days(series.freq)`, where `model` is the `Prophet` model and `series` is the target series.
         fourier_order
             number of Fourier components to use
         prior_scale
             optionally, a prior scale for this component
         mode
             optionally, 'additive' or 'multiplicative'
+        condition_name
+            optionally, the name of the condition on which the seasonality depends. If not `None`, expects a
+            `future_covariates` time series with a component/column named `condition_name` to be passed to `fit()`
+            and `predict()`.
         """
         function_call = {
             "name": name,
@@ -349,6 +483,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             "fourier_order": fourier_order,
             "prior_scale": prior_scale,
             "mode": mode,
+            "condition_name": condition_name,
         }
         self._store_add_seasonality_call(seasonality_call=function_call)
 
@@ -376,10 +511,11 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         seasonality_properties = {
             "name": {"default": None, "dtype": str},
-            "seasonal_periods": {"default": None, "dtype": int},
+            "seasonal_periods": {"default": None, "dtype": (int, float)},
             "fourier_order": {"default": None, "dtype": int},
             "prior_scale": {"default": None, "dtype": float},
             "mode": {"default": None, "dtype": str},
+            "condition_name": {"default": None, "dtype": str},
         }
         seasonality_default = {
             kw: seasonality_properties[kw]["default"] for kw in seasonality_properties
@@ -394,7 +530,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         ]
         raise_if(
             len(missing_kws) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has missing mandatory keywords or empty arguments: '
+            f"Seasonality `{add_seasonality_call['name']}` has missing mandatory keywords or empty arguments: "
             f"{missing_kws}.",
             logger,
         )
@@ -412,7 +548,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         ]
         raise_if(
             len(invalid_kws) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has invalid keywords: {invalid_kws}. Only the '
+            f"Seasonality `{add_seasonality_call['name']}` has invalid keywords: {invalid_kws}. Only the "
             f"following arguments are supported: {list(seasonality_default)}",
             logger,
         )
@@ -425,10 +561,11 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         ]
         raise_if(
             len(invalid_types) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has invalid value dtypes: {invalid_types} must be '
-            f'of type {[seasonality_properties[kw]["dtype"] for kw in invalid_types]}.',
+            f"Seasonality `{add_seasonality_call['name']}` has invalid value dtypes: {invalid_types} must be "
+            f"of type {[seasonality_properties[kw]['dtype'] for kw in invalid_types]}.",
             logger,
         )
+
         self._add_seasonalities[seasonality_name] = add_seasonality_call
 
     @staticmethod
@@ -460,44 +597,62 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         freq = "".join(re.split("[^a-zA-Z-]*", freq)).split("-")[0]
 
         seconds_per_day = 86400
-        if freq in ["A", "BA", "Y", "BY", "RE"] or freq.startswith(
-            ("A", "BA", "Y", "BY", "RE")
-        ):  # year
+        days = 0
+        if freq in ["A", "BA", "Y", "BY", "RE"] or freq.startswith((
+            "A",
+            "BA",
+            "Y",
+            "BY",
+            "RE",
+        )):  # year
             days = 365.25
-        elif freq in ["Q", "BQ", "REQ"] or freq.startswith(
-            ("Q", "BQ", "REQ")
-        ):  # quarter
+        elif freq in ["Q", "BQ", "REQ"] or freq.startswith((
+            "Q",
+            "BQ",
+            "REQ",
+        )):  # quarter
             days = 3 * 30.4375
-        elif freq in ["M", "BM", "CBM", "SM"] or freq.startswith(
-            ("M", "BM", "BS", "CBM", "SM")
-        ):  # month
+        elif freq in [
+            "M",
+            "BM",
+            "CBM",
+            "SM",
+            "LWOM",
+            "WOM",
+        ] or freq.startswith(("M", "BME", "BS", "CBM", "SM", "LWOM", "WOM")):  # month
             days = 30.4375
-        elif freq in ["W"]:  # week
+        elif freq == "W" or freq.startswith("W-"):  # week
             days = 7.0
         elif freq in ["B", "C"]:  # business day
             days = 1 * 7 / 5
         elif freq in ["D"]:  # day
             days = 1.0
-        elif freq in ["H", "BH", "CBH"]:  # hour
-            days = 1 / 24
-        elif freq in ["T", "min"]:  # minute
-            days = 1 / (24 * 60)
-        elif freq in ["S"]:  # second
-            days = 1 / seconds_per_day
-        elif freq in ["L", "ms"]:  # millisecond
-            days = 1 / (seconds_per_day * 10**3)
-        elif freq in ["U", "us"]:  # microsecond
-            days = 1 / (seconds_per_day * 10**6)
-        elif freq in ["N"]:  # nanosecond
-            days = 1 / (seconds_per_day * 10**9)
         else:
-            raise ValueError(
-                "freq {} not understood. Please report if you think this is in error.".format(
-                    freq
-                )
+            # all freqs higher than "D" are lower case in pandas >= 2.2.0
+            freq_lower = freq.lower()
+            if freq_lower in ["h", "bh", "cbh"]:  # hour
+                days = 1 / 24
+            elif freq_lower in ["t", "min"]:  # minute
+                days = 1 / (24 * 60)
+            elif freq_lower in ["s"]:  # second
+                days = 1 / seconds_per_day
+            elif freq_lower in ["l", "ms"]:  # millisecond
+                days = 1 / (seconds_per_day * 10**3)
+            elif freq_lower in ["u", "us"]:  # microsecond
+                days = 1 / (seconds_per_day * 10**6)
+            elif freq_lower in ["n", "ns"]:  # nanosecond
+                days = 1 / (seconds_per_day * 10**9)
+
+        if not days:
+            raise_log(
+                ValueError(
+                    f"freq {freq} not understood. Please report if you think this is in error."
+                ),
+                logger=logger,
             )
         return freq_times * days
 
+    @property
     def _supports_range_index(self) -> bool:
         """Prophet does not support integer range index."""
         raise_if(

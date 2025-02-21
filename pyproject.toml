@@ -4,3 +4,51 @@ requires = [
     "wheel"
 ]
 build-backend = "setuptools.build_meta"
+
+
+[tool.pytest.ini_options]
+addopts = [
+    "--strict-markers",
+    "--color=yes"
+]
+markers = [
+    "slow: marks tests as slow (deselect with `-m 'not slow'`)",
+]
+
+
+[tool.ruff]
+target-version = "py39"
+line-length = 88
+
+[tool.ruff.format]
+preview = true
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W", # see: https://pypi.org/project/pycodestyle
+    "F", # see: https://pypi.org/project/pyflakes
+    "I", #see: https://pypi.org/project/isort/
+    "UP", # see: https://docs.astral.sh/ruff/rules/#pyupgrade-up
+#    "D", # see: https://pypi.org/project/pydocstyle
+]
+ignore = [
+    "E203",
+    "E402",  # todo: use noqa per line
+    "E731",  # Do not assign a `lambda` expression, use a `def`
+]
+unfixable = ["F401"]
+
+[tool.ruff.lint.pydocstyle]
+# Use Google-style docstrings.
+convention = "google"
+
+#[tool.ruff.pycodestyle]
+#ignore-overlong-task-comments = true
+
+[tool.ruff.lint.mccabe]
+# Unlike Flake8, default to a complexity level of 10.
+max-complexity = 10
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 120 # E501 reports lines that exceed the length of 100.

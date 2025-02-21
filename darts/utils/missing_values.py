@@ -3,7 +3,7 @@ Utils for filling missing values
 --------------------------------
 """
 
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.timeseries import TimeSeries
@@ -71,7 +71,7 @@ def fill_missing_values(
 
 def extract_subseries(
     series: TimeSeries, min_gap_size: Optional[int] = 1, mode: str = "all"
-) -> List[TimeSeries]:
+) -> list[TimeSeries]:
     """
     Partitions the series into a sequence of sub-series by using significant gaps of missing values
 

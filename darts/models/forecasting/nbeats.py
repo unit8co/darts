@@ -4,14 +4,17 @@ N-BEATS
 """
 
 from enum import Enum
-from typing import List, NewType, Tuple, Union
+from typing import NewType, Union
 
 import numpy as np
 import torch
 import torch.nn as nn
 
 from darts.logging import get_logger, raise_if_not, raise_log
-from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
+from darts.models.forecasting.pl_forecasting_module import (
+    PLPastCovariatesModule,
+    io_processor,
+)
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.utils.torch import MonteCarloDropout
 
@@ -365,7 +368,7 @@ class _NBEATSModule(PLPastCovariatesModule):
         num_stacks: int,
         num_blocks: int,
         num_layers: int,
-        layer_widths: List[int],
+        layer_widths: list[int],
         expansion_coefficient_dim: int,
         trend_polynomial_degree: int,
         batch_norm: bool,
@@ -409,7 +412,8 @@ class _NBEATSModule(PLPastCovariatesModule):
         activation
             The activation function of encoder/decoder intermediate layer.
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
 
         Inputs
         ------
@@ -490,7 +494,8 @@ class _NBEATSModule(PLPastCovariatesModule):
         self.stacks_list[-1].blocks[-1].backcast_linear_layer.requires_grad_(False)
         self.stacks_list[-1].blocks[-1].backcast_g.requires_grad_(False)
 
-    def forward(self, x_in: Tuple):
+    @io_processor
+    def forward(self, x_in: tuple):
         x, _ = x_in
 
         # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
@@ -534,11 +539,12 @@ class NBEATSModel(PastCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        output_chunk_shift: int = 0,
         generic_architecture: bool = True,
         num_stacks: int = 30,
         num_blocks: int = 1,
         num_layers: int = 4,
-        layer_widths: Union[int, List[int]] = 256,
+        layer_widths: Union[int, list[int]] = 256,
         expansion_coefficient_dim: int = 5,
         trend_polynomial_degree: int = 2,
         dropout: float = 0.0,
@@ -559,9 +565,22 @@ class NBEATSModel(PastCovariatesTorchModel):
         Parameters
         ----------
         input_chunk_length
-            The length of the input sequence fed to the model.
+            Number of time steps in the past to take as a model input (per chunk). Applies to the target
+            series, and past and/or future covariates (if the model supports it).
         output_chunk_length
-            The length of the forecast of the model.
+            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
+            from future covariates to use as a model input (if the model supports future covariates). It is not the same
+            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
+            auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
+            the model from using future values of past and / or future covariates for prediction (depending on the
+            model's covariate support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
         generic_architecture
             Boolean value indicating whether the generic architecture of N-BEATS is used.
             If not, the interpretable architecture outlined in the paper (consisting of one trend
@@ -616,16 +635,19 @@ class NBEATSModel(PastCovariatesTorchModel):
             to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
+            It is only applied to the features of the target series and not the covariates.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
             Number of epochs over which to train the model. Default: ``100``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part
+            defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
             of the name is formatted with the local date and time, while PID is the processed ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
-            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
+            ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
             Default: current working directory.
@@ -639,7 +661,7 @@ class NBEATSModel(PastCovariatesTorchModel):
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded). Default: ``False``.
         save_checkpoints
-            Whether or not to automatically save the untrained model and checkpoints from training.
+            Whether to automatically save the untrained model and checkpoints from training.
             To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
@@ -656,12 +678,16 @@ class NBEATSModel(PastCovariatesTorchModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['relative'], 'future': ['relative']},
-                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
-                    'transformer': Scaler()
+                    'custom': {'past': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
         random_state
@@ -679,7 +705,6 @@ class NBEATSModel(PastCovariatesTorchModel):
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
             dict:
-
 
             - ``{"accelerator": "cpu"}`` for CPU,
             - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
@@ -722,6 +747,39 @@ class NBEATSModel(PastCovariatesTorchModel):
         References
         ----------
         .. [1] https://openreview.net/forum?id=r1ecqn4YwB
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
+
+        Examples
+        --------
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import NBEATSModel
+        >>> series = WeatherDataset().load()
+        >>> # predicting atmospheric pressure
+        >>> target = series['p (mbar)'][:100]
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
+        >>> past_cov = series['rain (mm)'][:100]
+        >>> # changing the activation function of the encoder/decoder to LeakyReLU
+        >>> model = NBEATSModel(
+        >>>     input_chunk_length=6,
+        >>>     output_chunk_length=6,
+        >>>     n_epochs=5,
+        >>>     activation='LeakyReLU'
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[ 929.78509085],
+               [1013.66339481],
+               [ 999.8843893 ],
+               [ 892.66032082],
+               [ 921.09781534],
+               [ 950.37965429]])
+
+        .. note::
+            `NBEATS example notebook <https://unit8co.github.io/darts/examples/07-NBEATS-examples.html>`_
+            presents techniques that can be used to improve the forecasts quality compared to this simple usage
+            example.
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
@@ -755,11 +813,11 @@ class NBEATSModel(PastCovariatesTorchModel):
         if isinstance(layer_widths, int):
             self.layer_widths = [layer_widths] * self.num_stacks
 
-    @staticmethod
-    def _supports_static_covariates() -> bool:
-        return False
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (
             train_sample[1].shape[1] if train_sample[1] is not None else 0

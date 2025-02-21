@@ -7,22 +7,24 @@ between two series. If the two series are multivariate, it
 returns a multivariate series.
 """
 
-from darts.ad.scorers.scorers import NonFittableAnomalyScorer
-from darts.timeseries import TimeSeries
+import numpy as np
+
+from darts.ad.scorers.scorers import AnomalyScorer
 
 
-class DifferenceScorer(NonFittableAnomalyScorer):
+class DifferenceScorer(AnomalyScorer):
     def __init__(self) -> None:
-        super().__init__(univariate_scorer=False, window=1)
+        """Difference Scorer"""
+        super().__init__(is_univariate=False, window=1)
 
     def __str__(self):
         return "Difference"
 
     def _score_core_from_prediction(
         self,
-        actual_series: TimeSeries,
-        pred_series: TimeSeries,
-    ) -> TimeSeries:
-        self._assert_deterministic(actual_series, "actual_series")
-        self._assert_deterministic(pred_series, "pred_series")
-        return actual_series - pred_series
+        vals: np.ndarray,
+        pred_vals: np.ndarray,
+    ) -> np.ndarray:
+        vals = self._extract_deterministic_values(vals, "series")
+        pred_vals = self._extract_deterministic_values(pred_vals, "pred_series")
+        return vals - pred_vals

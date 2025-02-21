@@ -1,8 +1,3 @@
-"""
-StatsForecast utils
------------
-"""
-
 import numpy as np
 
 # In a normal distribution, 68.27 percentage of values lie within one standard deviation of the mean
@@ -14,7 +9,7 @@ def create_normal_samples(
     std: float,
     num_samples: int,
     n: int,
-) -> np.array:
+) -> np.ndarray:
     """Generate samples assuming a Normal distribution."""
     samples = np.random.normal(loc=mu, scale=std, size=(num_samples, n)).T
     samples = np.expand_dims(samples, axis=1)

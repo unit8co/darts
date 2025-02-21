@@ -12,34 +12,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "1. Clone repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
-          token: ${{ secrets.RELEASE_WORKFLOW_TOKEN }}
+          token: ${{ secrets.RELEASE_WORKFLOW_TOKEN_NEW_FINE_GRAINED }}
           fetch-depth: '1'
 
-      - name: "2. Set up Python 3.9"
-        uses: actions/setup-python@v1
+      - name: "2. Set up Python 3.10"
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.10'
 
-      - name: "3. Update pip"
+      - name: "Setup Pip"
         run: |
           python -m pip install --upgrade pip
 
-      - name: "4. Attach cache for pip"
-        uses: actions/cache@v1
-        id: cache
-        with:
-          path: ~/.cache/pip
-          key: release-${{ runner.os }}-pip-${{ hashFiles('requirements/release.txt') }}
-          restore-keys: |
-            release-${{ runner.os }}-pip-
-
-      - name: "5. Install release dependencies"
+      - name: "Install release dependencies"
         run: |
           pip install -q -r requirements/release.txt
 
-      - name: "6. Determine next version"
+      - name: "Determine next version"
         uses: hrzn/github-tag-action@master
         id: bump_dry
         env:
@@ -47,11 +38,11 @@ jobs:
           DRY_RUN: true
           BUMP_TYPE: ${{ github.event.inputs.bump_type}}
 
-      - name: "7. Bump version"
+      - name: "Bump version"
         run: |
           bump2version --new-version ${{ steps.bump_dry.outputs.new_tag }} patch
 
-      - name: "8. Commit new version"
+      - name: "Commit new version"
         uses: stefanzweifel/git-auto-commit-action@v4.1.6
         with:
           commit_message: Release ${{ steps.bump_dry.outputs.new_tag }}
@@ -60,7 +51,7 @@ jobs:
           commit_user_name: Unit8 Bot
           commit_user_email: info@unit8.co
 
-      - name: "9. Publish new tag"
+      - name: "Publish new tag"
         uses: hrzn/github-tag-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -73,15 +64,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.bump_dry.outputs.new_tag }}
-          release_name: Release ${{steps.bump_dry.outputs.part}} ${{ steps.bump_dry.outputs.new_tag }}
+          release_name: Darts ${{steps.bump_dry.outputs.part}} ${{ steps.bump_dry.outputs.new_tag }}
           draft: false
+          body_path: .github/RELEASE_TEMPLATE/release_body.md
 
   deploy-docker:
     needs: [release]
     runs-on: ubuntu-latest
     steps:
       - name: "1. Clone repository"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: "2. Determine current version"
         uses: hrzn/github-tag-action@master
@@ -91,83 +83,76 @@ jobs:
           DRY_RUN: true
           BUMP_TYPE: ${{ github.event.inputs.bump_type}}
 
-      - name: "3. Login to docker hub"
-        run: docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_TOKEN
-        env:
-          DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
-          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: "Set up QEMU"
+        uses: docker/setup-qemu-action@v3
 
-        # downloading gradle multiple times in parallel can yield to connection errors
-      - name: "4. Cache gradle distribution"
-        uses: actions/cache@v2
+      - name: "Set up Docker Buildx"
+        uses: docker/setup-buildx-action@v3
+
+      - name: "Login to Docker Hub"
+        uses: docker/login-action@v3
         with:
-          path: ~/.gradle/wrapper/dists
-          key: release-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: "4.1 Cache gradle packages"
-        uses: actions/cache@v2
+      - name: "Build and push"
+        uses: docker/build-push-action@v6
         with:
-          path: ~/.gradle/caches
-          key: release-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
-
-      #check build.gradle file for explanation of next steps
-      - name: "5. Publish image with tag corresponding to current version"
-        run: |
-          ./gradlew dockerPushVersion -P version=${{ steps.bump_dry.outputs.tag }}
-
-      - name: "6. Publish image with tag 'latest' if not hotfix"
-        if: ${{ !contains(github.event.head_commit.message, '#hotfix') }}
-        run: |
-          ./gradlew dockerPushLatest
-
+          push: true
+          tags: unit8/darts:${{ steps.bump_dry.outputs.tag }}, unit8/darts:latest
 
   deploy-docs:
     runs-on: ubuntu-latest
     needs: [release]
     steps:
-      - name: "1. Clone repository"
-        uses: actions/checkout@v2
+      - name: "Clone repository"
+        uses: actions/checkout@v4
 
-      - name: "2. Set up Python 3.9"
-        uses: actions/setup-python@v1
+      - name: "Set up Python 3.10"
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.10'
 
-      - name: "3. Install pandoc"
+      # use `uv` to retrieve the latest dependency versions
+      - name: "Compile Dependency Versions"
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv pip compile requirements/dev-all.txt > requirements-latest.txt
+
+      # only restore cache but do not upload
+      - name: "Restore cached python environment"
+        uses: actions/cache/restore@v4
+        id: pythonenv-cache
+        with:
+          path: ${{ env.pythonLocation }}
+          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt', 'requirements-latest.txt') }}
+
+      - name: "Install pandoc"
         run: |
           sudo apt-get install -y pandoc
 
-        # downloading gradle multiple times in parallel can yield to connection errors
-      - name: "4. Cache gradle distribution"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/wrapper/dists
-          key: release-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
-
-      - name: "4.1 Cache gradle packages"
-        uses: actions/cache@v2
-        with:
-          path: ~/.gradle/caches
-          key: release-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build.gradle') }}
-
-      - name: "5. Setup pip"
+      - name: "Setup Pip"
         run: |
-          ./gradlew setupPip
+          python -m pip install --upgrade pip
 
-      - name: "6. Attach cache for pip"
-        uses: actions/cache@v1
-        id: cache
-        with:
-          path: ~/.cache/pip
-          key: release-${{ runner.os }}-pip-${{ hashFiles('requirements/core.txt', 'requirements/release.txt') }}
-          restore-keys: |
-            release-${{ runner.os }}-pip-
-
-      - name: "7. Build docs"
+      - name: "Install Dependencies"
         run: |
-          ./gradlew buildDocs
+          # install latest dependencies (potentially updating cached dependencies)
+          pip install -U -r requirements/dev-all.txt
 
-      - name: "8. Publish documentation to gh-pages"
+      - name: "Install libomp (for LightGBM)"
+        run: |
+          ./.github/scripts/libomp-${{ runner.os }}.sh
+
+      - name: "Install Locally"
+        run: |
+          pip install .
+
+      - name: "Build docs"
+        run: |
+          make --directory ./docs build-all-docs
+
+      - name: "Publish documentation to gh-pages"
         uses: s0/git-publish-subdir-action@v2.2.0
         env:
           REPO: self

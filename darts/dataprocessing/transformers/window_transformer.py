@@ -3,12 +3,12 @@ Window Transformer
 ------------------
 """
 
-from typing import Iterator, List, Optional, Sequence, Tuple, Union
+from collections.abc import Mapping
+from typing import Any, Optional, Union
 
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
-from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -16,11 +16,12 @@ logger = get_logger(__name__)
 class WindowTransformer(BaseDataTransformer):
     def __init__(
         self,
-        transforms: Union[dict, List[dict]],
+        transforms: Union[dict, list[dict]],
         treat_na: Optional[Union[str, Union[int, float]]] = None,
         forecasting_safe: Optional[bool] = True,
         keep_non_transformed: Optional[bool] = False,
         include_current: Optional[bool] = True,
+        keep_names: Optional[bool] = False,
         name: str = "WindowTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
@@ -54,6 +55,14 @@ class WindowTransformer(BaseDataTransformer):
                                transformation should be applied. If not specified, the transformation will be
                                applied on all components.
 
+            :``"function_name"``: Optional. A string specifying the function name referenced as part of
+                                  the transformation output name. For example, given a user-provided function
+                                  transformation on rolling window size of 5 on the component "comp", the
+                                  default transformation output name is "rolling_udf_5_comp" whereby "udf"
+                                  refers to "user defined function". If specified, the ``"function_name"`` will
+                                  replace the default name "udf". Similarly, the ``"function_name"`` will replace
+                                  the name of the pandas builtin transformation function name in the output name.
+
             All other dictionary items provided will be treated as keyword arguments for the windowing mode
             (i.e., ``rolling/ewm/expanding``) or for the specific function
             in that mode (i.e., ``pandas.DataFrame.rolling.mean/std/max/min...`` or
@@ -63,7 +72,8 @@ class WindowTransformer(BaseDataTransformer):
 
             * :``"window"``: Size of the moving window for the "rolling" mode.
                             If an integer, the fixed number of observations used for each window.
-                            If an offset, the time period of each window.
+                            If an offset, the time period of each window with data type :class:`pandas.Timedelta`
+                            representing a fixed duration.
             * :``"min_periods"``: The minimum number of observations in the window required to have a value (otherwise
                 NaN). Darts reuses pandas defaults of 1 for "rolling" and "expanding" modes and of 0 for "ewm" mode.
             * :``"win_type"``: The type of weigthing to apply to the window elements.
@@ -115,10 +125,14 @@ class WindowTransformer(BaseDataTransformer):
 
         keep_non_transformed
             ``False`` to return the transformed components only, ``True`` to return all original components along
-            the transformed ones. Default is ``False``.
+            the transformed ones. Default is ``False``. If the series has a hierarchy, must be set to ``False``.
 
         include_current
             ``True`` to include the current time step in the window, ``False`` to exclude it. Default is ``True``.
+
+        keep_names
+            Whether the transformed components should keep the original component names or. Must be set to ``False``
+            if `keep_non_transformed = True` or the number of transformation is greater than 1.
 
         name
             A specific name for the transformer.
@@ -130,32 +144,18 @@ class WindowTransformer(BaseDataTransformer):
         verbose
             Whether to print operations progress.
         """
-        super().__init__(name, n_jobs, verbose)
 
         # dictionary checks are implemented in TimeSeries.window_transform()
 
+        # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self.transforms = transforms
         self.keep_non_transformed = keep_non_transformed
         self.treat_na = treat_na
         self.forecasting_safe = forecasting_safe
         self.include_current = include_current
-
-    def _transform_iterator(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]]
-    ) -> Iterator[Tuple]:
-
-        series = series2seq(series)
-
-        kwargs_dict = {
-            "transforms": self.transforms,
-            "keep_non_transformed": self.keep_non_transformed,
-            "treat_na": self.treat_na,
-            "forecasting_safe": self.forecasting_safe,
-            "include_current": self.include_current,
-        }
-        for s in series:
-            yield (s, kwargs_dict)
+        self.keep_names = keep_names
+        super().__init__(name, n_jobs, verbose)
 
     @staticmethod
-    def ts_transform(series: TimeSeries, kwargs_dict) -> TimeSeries:
-        return series.window_transform(**kwargs_dict)
+    def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
+        return series.window_transform(**params["fixed"])

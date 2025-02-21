@@ -1,7 +1,5 @@
 import copy
 import os
-import shutil
-import tempfile
 
 import numpy as np
 import pandas as pd
@@ -9,61 +7,50 @@ import pytest
 
 from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import BoxCox, Scaler
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME, STATIC_COV_TAG
-from darts.utils.timeseries_generation import generate_index, linear_timeseries
+from darts.utils.timeseries_generation import linear_timeseries
+from darts.utils.utils import generate_index
 
 
-class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-
-        n_groups = 5
-        len_ts = 10
-        times = (
-            pd.concat(
-                [
-                    pd.DataFrame(
-                        generate_index(start=pd.Timestamp(2010, 1, 1), length=len_ts)
-                    )
-                ]
-                * n_groups,
-                axis=0,
-            )
-            .reset_index(drop=True)
-            .rename(columns={0: "times"})
-        )
-
-        x = pd.DataFrame(np.random.randn(n_groups * len_ts, 3), columns=["a", "b", "c"])
-        static_multivar = pd.DataFrame(
+def setup_test_case():
+    n_groups = 5
+    len_ts = 10
+    times = (
+        pd.concat(
             [
-                [i, 0 if j < (len_ts // 2) else 1]
-                for i in range(n_groups)
-                for j in range(len_ts)
-            ],
-            columns=["st1", "st2"],
+                pd.DataFrame(
+                    generate_index(start=pd.Timestamp(2010, 1, 1), length=len_ts)
+                )
+            ]
+            * n_groups,
+            axis=0,
         )
+        .reset_index(drop=True)
+        .rename(columns={0: "times"})
+    )
 
-        df_long_multi = pd.DataFrame(
-            pd.concat([times, x, static_multivar], axis=1),
-        )
-        df_long_multi.loc[:, "constant"] = 1
-        df_long_uni = df_long_multi.drop(columns=["st2"])
+    x = pd.DataFrame(np.random.randn(n_groups * len_ts, 3), columns=["a", "b", "c"])
+    static_multivar = pd.DataFrame(
+        [
+            [i, 0 if j < (len_ts // 2) else 1]
+            for i in range(n_groups)
+            for j in range(len_ts)
+        ],
+        columns=["st1", "st2"],
+    )
 
-        cls.n_groups = n_groups
-        cls.len_ts = len_ts
-        cls.df_long_multi = df_long_multi
-        cls.df_long_uni = df_long_uni
+    df_long_multi = pd.DataFrame(
+        pd.concat([times, x, static_multivar], axis=1),
+    )
+    df_long_multi.loc[:, "constant"] = 1
+    df_long_uni = df_long_multi.drop(columns=["st2"])
+    return n_groups, len_ts, df_long_uni, df_long_multi
 
-    def setUp(self):
-        self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
 
-    def tearDown(self):
-        super().tearDown()
-        shutil.rmtree(self.temp_work_dir)
+class TestTimeSeriesStaticCovariate:
+    n_groups, len_ts, df_long_uni, df_long_multi = setup_test_case()
 
-    def test_ts_from_x(self):
+    def test_ts_from_x(self, tmpdir_module):
         ts = linear_timeseries(length=10).with_static_covariates(
             pd.Series([0.0, 1.0], index=["st1", "st2"])
         )
@@ -75,8 +62,7 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
                 ts.pd_dataframe(), static_covariates=ts.static_covariates
             ),
         )
-        # ts.pd_series() loses component names -> static covariates have different components names
-        self.helper_test_cov_transfer_values(
+        self.helper_test_cov_transfer(
             ts,
             TimeSeries.from_series(
                 ts.pd_series(), static_covariates=ts.static_covariates
@@ -101,8 +87,8 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
             ),
         )
 
-        f_csv = os.path.join(self.temp_work_dir, "temp_ts.csv")
-        f_pkl = os.path.join(self.temp_work_dir, "temp_ts.pkl")
+        f_csv = os.path.join(tmpdir_module, "temp_ts.csv")
+        f_pkl = os.path.join(tmpdir_module, "temp_ts.pkl")
         ts.to_csv(f_csv)
         ts.to_pickle(f_pkl)
         ts_json = ts.to_json()
@@ -117,6 +103,37 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
         self.helper_test_cov_transfer(
             ts, TimeSeries.from_json(ts_json, static_covariates=ts.static_covariates)
         )
+
+    @pytest.mark.parametrize("index_type", ["int", "dt", "str"])
+    def test_from_group_dataframe(self, index_type):
+        """Tests correct extract of TimeSeries groups from a long DataFrame with unsorted (time/integer) index"""
+        group = ["a", "a", "a", "b", "b", "b"]
+        values = np.arange(len(group))
+
+        if index_type == "int":
+            index_expected = pd.RangeIndex(3)
+            time = [2, 1, 0, 0, 1, 2]
+        else:
+            index_expected = pd.date_range("2024-01-01", periods=3)
+            time = index_expected[::-1].append(index_expected)
+            if index_type == "str":
+                time = time.astype(str)
+
+        # create a df with unsorted time
+        df = pd.DataFrame({
+            "group": group,
+            "time": time,
+            "x": values,
+        })
+        ts = TimeSeries.from_group_dataframe(df, group_cols="group", time_col="time")
+
+        # check the time index
+        assert ts[0].time_index.equals(index_expected)
+        assert ts[1].time_index.equals(index_expected)
+
+        # check the values
+        assert (ts[0].values().flatten() == [values[2], values[1], values[0]]).all()
+        assert (ts[1].values().flatten() == [values[3], values[4], values[5]]).all()
 
     def test_timeseries_from_longitudinal_df(self):
         # univariate static covs: only group by "st1", keep static covs "st1"
@@ -169,27 +186,102 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
             )
             assert (ts.static_covariates_values(copy=False) == [[i, j, 1]]).all()
 
+        # drop group columns gives same time series with dropped static covariates
+        # drop first column
+        ts_groups4 = TimeSeries.from_group_dataframe(
+            df=self.df_long_multi,
+            group_cols=["st1", "st2"],
+            static_cols=["constant"],
+            time_col="times",
+            value_cols=value_cols,
+            drop_group_cols=["st1"],
+        )
+        assert len(ts_groups4) == self.n_groups * 2
+        for idx, ts in enumerate(ts_groups4):
+            j = idx % 2
+            assert ts.static_covariates.shape == (1, 2)
+            assert ts.static_covariates.columns.equals(pd.Index(["st2", "constant"]))
+            assert (ts.static_covariates_values(copy=False) == [[j, 1]]).all()
+
+        # drop last column
+        ts_groups5 = TimeSeries.from_group_dataframe(
+            df=self.df_long_multi,
+            group_cols=["st1", "st2"],
+            static_cols=["constant"],
+            time_col="times",
+            value_cols=value_cols,
+            drop_group_cols=["st2"],
+        )
+        assert len(ts_groups5) == self.n_groups * 2
+        for idx, ts in enumerate(ts_groups5):
+            i = idx // 2
+            assert ts.static_covariates.shape == (1, 2)
+            assert ts.static_covariates.columns.equals(pd.Index(["st1", "constant"]))
+            assert (ts.static_covariates_values(copy=False) == [[i, 1]]).all()
+
+        # drop all columns
+        ts_groups6 = TimeSeries.from_group_dataframe(
+            df=self.df_long_multi,
+            group_cols=["st1", "st2"],
+            static_cols=["constant"],
+            time_col="times",
+            value_cols=value_cols,
+            drop_group_cols=["st1", "st2"],
+        )
+        assert len(ts_groups6) == self.n_groups * 2
+        for ts in ts_groups6:
+            assert ts.static_covariates.shape == (1, 1)
+            assert ts.static_covariates.columns.equals(pd.Index(["constant"]))
+            assert (ts.static_covariates_values(copy=False) == [[1]]).all()
+
+        # drop all static covariates (no `static_cols`, all `group_cols` dropped)
+        ts_groups7 = TimeSeries.from_group_dataframe(
+            df=self.df_long_multi,
+            group_cols=["st1", "st2"],
+            time_col="times",
+            value_cols=value_cols,
+            drop_group_cols=["st1", "st2"],
+        )
+        assert len(ts_groups7) == self.n_groups * 2
+        for ts in ts_groups7:
+            assert ts.static_covariates is None
+
+        ts_groups7_parallel = TimeSeries.from_group_dataframe(
+            df=self.df_long_multi,
+            group_cols=["st1", "st2"],
+            time_col="times",
+            value_cols=value_cols,
+            drop_group_cols=["st1", "st2"],
+            n_jobs=-1,
+        )
+        assert ts_groups7_parallel == ts_groups7
+
+    def test_from_group_dataframe_invalid_drop_cols(self):
+        # drop col is not part of `group_cols`
+        with pytest.raises(ValueError) as err:
+            _ = TimeSeries.from_group_dataframe(
+                df=self.df_long_multi,
+                group_cols=["st1"],
+                time_col="times",
+                value_cols="a",
+                drop_group_cols=["invalid"],
+            )
+        assert str(err.value).endswith("received: {'invalid'}.")
+
+    def test_from_group_dataframe_groups_too_short(self):
+        # groups that are too short for TimeSeries requirements should raise an error
         df = copy.deepcopy(self.df_long_multi)
         df.loc[:, "non_static"] = np.arange(len(df))
-        # non static columns as static columns should raise an error
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as err:
             _ = TimeSeries.from_group_dataframe(
                 df=df,
-                group_cols=["st1"],
-                static_cols=["non_static"],
+                group_cols="non_static",
                 time_col="times",
-                value_cols=value_cols,
+                value_cols="a",
             )
-
-        # groups that are too short for TimeSeries requirements should raise an error
-        with pytest.raises(ValueError):
-            _ = TimeSeries.from_group_dataframe(
-                df=df,
-                group_cols=["st1", "non_static"],
-                static_cols=None,
-                time_col="times",
-                value_cols=value_cols,
-            )
+        assert str(err.value).startswith(
+            "The time index of the provided DataArray is missing the freq attribute"
+        )
 
     def test_with_static_covariates_univariate(self):
         ts = linear_timeseries(length=10)
@@ -466,11 +558,11 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
             values=np.random.random((10, 2))
         ).with_static_covariates(static_covs)
         assert ts.static_covariates.dtypes["num"] == ts.dtype == "float64"
-        assert ts.static_covariates.dtypes["cat"] == object
+        assert isinstance(ts.static_covariates.dtypes["cat"], object)
 
         ts = ts.astype(np.float32)
         assert ts.static_covariates.dtypes["num"] == ts.dtype == "float32"
-        assert ts.static_covariates.dtypes["cat"] == object
+        assert isinstance(ts.static_covariates.dtypes["cat"], object)
 
     def test_get_item(self):
         # multi component static covariates
@@ -586,9 +678,9 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
         static_covs = pd.Series([0, 1], index=["st1", "st2"]).astype(int)
         ts = ts.with_static_covariates(static_covs)
 
-        assert ts.static_covariates.dtypes[0] == "float64"
+        assert ts.static_covariates.dtypes.iloc[0] == "float64"
         ts = ts.astype("float32")
-        assert ts.static_covariates.dtypes[0] == "float32"
+        assert ts.static_covariates.dtypes.iloc[0] == "float32"
 
         ts_stoch = ts.from_times_and_values(
             times=ts.time_index,

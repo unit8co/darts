@@ -48,31 +48,39 @@ and discuss it with some of the core team.
         * `refactor/`
         * …
     * Work on your update
-7. Check that your code passes all the tests and design new unit tests if needed: `./gradlew test_all`.
-8. Verify your tests coverage by running `./gradlew coverageTest`
-    * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested
-    lines with `./coverage.sh xml`
-9. If your contribution introduces a non-negligible change, add it to `CHANGELOG.md` under the "Unreleased" section.
+7. Check that your code passes all the tests and design new unit tests if needed: `pytest`.
+8. If your contribution introduces a non-negligible change, add it to `CHANGELOG.md` under the "Unreleased" section.
    You can already refer to the pull request. In addition, for tracking contributions we are happy if you provide
    your full name (if you want to) and link to your Github handle. Example:
    ```
    - Added new feature XYZ. [#001](https://https://github.com/unit8co/darts/pull/001)
      by [<Your Name>](https://github.com/<your-handle>).
    ```
-10. Create a pull request from your new branch into the **master** branch.
+9. Create a pull request from your new branch into the **master** branch.
+10. `Codecov` will add a test coverage report in the pull request. Make sure your test cover all changed lines.
 
+### Build the Documentation Locally
+
+You can build the documentation locally using `make`:
+
+```bash
+# make sure your latest changes are installed
+pip install .
+# build the docs
+make --directory=./docs build-all-docs
+```
+After that docs will be available in `./docs/build/html` directory. You can just open `./docs/build/html/index.html` using your favourite browser.
 
 ### Code Formatting and Linting
 
-Darts uses [Black](https://black.readthedocs.io/en/stable/index.html) with default values for automatic code formatting, along with [flake8](https://flake8.pycqa.org/en/latest/) and [isort](https://pycqa.github.io/isort/).
+Darts uses [Black via Ruff](https://docs.astral.sh/ruff/formatter/) with default values for automatic code formatting, along with [ruff](https://docs.astral.sh/ruff/).
 As part of the checks on pull requests, it is checked whether the code still adheres to the code style.
 To ensure you don't need to worry about formatting and linting when contributing, it is recommended to set up at least one of the following:
 - Integration in git (recommended):
     1. Install the pre-commit hook using `pre-commit install`
-    2. This will install Black, isort and pyupgrade formatting and flake8 linting hooks
-    3. The formatters will automatically fix all files and flake8 will highlight any potential problems before committing
+    2. This will install `ruff` linting hooks
+    3. The formatters will automatically fix all files and in case of some non-trivial case `ruff` will highlight any remaining problems before committing
 - Integration in your editor:
-    - For [Black](https://black.readthedocs.io/en/stable/integrations/editors.html)
     - For other integrations please look at the documentation for your editor
 
 ### Development environment on Mac with Apple Silicon M1 processor (arm64 architecture)
@@ -80,5 +88,5 @@ To ensure you don't need to worry about formatting and linting when contributing
 Please follow the procedure described in [INSTALL.md](https://github.com/unit8co/darts/blob/master/INSTALL.md#test-environment-appple-m1-processor)
 to set up a x_64 emulated environment. For the development environment, instead of installing Darts with
 `pip install darts`, instead go to the darts cloned repo location and install the packages with: `pip install -r requirements/dev-all.txt`.
-If necessary, follow the same steps to setup libomp for lightgbm. 
-Finally, verify your overall environment setup by successfully running all unitTests with gradlew or pytest.
+If necessary, follow the same steps to setup libomp for lightgbm.
+Finally, verify your overall environment setup by successfully running all unitTests with `pytest`.

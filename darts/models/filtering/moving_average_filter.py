@@ -7,7 +7,7 @@ from darts.models.filtering.filtering_model import FilteringModel
 from darts.timeseries import TimeSeries
 
 
-class MovingAverage(FilteringModel):
+class MovingAverageFilter(FilteringModel):
     """
     A simple moving average filter. Works on deterministic and stochastic series.
     """

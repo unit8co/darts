@@ -9,6 +9,7 @@ References
 ----------
 .. [1] https://en.wikipedia.org/wiki/Vector_autoregression
 """
+
 from typing import Optional
 
 import numpy as np
@@ -63,14 +64,40 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'future': ['relative']},
-                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
-                    'transformer': Scaler()
+                    'custom': {'future': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
+
+        Examples
+        --------
+        >>> from darts.datasets import ETTh2Dataset
+        >>> from darts.models import VARIMA
+        >>> from darts.utils.timeseries_generation import holidays_timeseries
+        >>> # forecasting the High UseFul Load ("HUFL") and Oil Temperature ("OT")
+        >>> series = ETTh2Dataset().load()[:500][["HUFL", "OT"]]
+        >>> # optionally, use some future covariates; e.g. encode each timestep whether it is on a holiday
+        >>> future_cov = holidays_timeseries(series.time_index, "CN", add_length=6)
+        >>> # no clear trend in the dataset
+        >>> model = VARIMA(trend="n")
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6, future_covariates=future_cov)
+        >>> # the two targets are predicted together
+        >>> pred.values()
+        array([[48.11846185, 47.94272629],
+               [49.85314633, 47.97713346],
+               [51.16145791, 47.99804203],
+               [52.14674087, 48.00872598],
+               [52.88729152, 48.01166578],
+               [53.44242919, 48.00874069]])
         """
         super().__init__(add_encoders=add_encoders)
         self.p = p
@@ -80,11 +107,6 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         self.model = None
 
         assert d <= 1, "d > 1 not supported."
-
-    def __str__(self):
-        if self.d == 0:
-            return f"VARMA({self.p},{self.q})"
-        return f"VARIMA({self.p},{self.d},{self.q})"
 
     def _differentiate_series(self, series: TimeSeries) -> TimeSeries:
         """Differentiate the series self.d times"""
@@ -114,6 +136,8 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
     ) -> None:
         super()._fit(series, future_covariates)
 
+        self._assert_multivariate(series)
+
         # storing to restore the statsmodels model results object
         self.training_historic_future_covariates = future_covariates
 
@@ -135,7 +159,6 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
     ) -> TimeSeries:
-
         if num_samples > 1 and self.trend:
             logger.warning(
                 "Trends are not well supported yet for getting probabilistic forecasts with ARIMA."
@@ -168,27 +191,29 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
             self.model = self.model.apply(
                 series.values(copy=False),
-                exog=historic_future_covariates.values(copy=False)
-                if historic_future_covariates
-                else None,
+                exog=(
+                    historic_future_covariates.values(copy=False)
+                    if historic_future_covariates
+                    else None
+                ),
             )
 
         # forecast before restoring the training state
         if num_samples == 1:
             forecast = self.model.forecast(
                 steps=n,
-                exog=future_covariates.values(copy=False)
-                if future_covariates
-                else None,
+                exog=(
+                    future_covariates.values(copy=False) if future_covariates else None
+                ),
             )
         else:
             forecast = self.model.simulate(
                 nsimulations=n,
                 repetitions=num_samples,
                 initial_state=self.model.states.predicted[-1, :],
-                exog=future_covariates.values(copy=False)
-                if future_covariates
-                else None,
+                exog=(
+                    future_covariates.values(copy=False) if future_covariates else None
+                ),
             )
 
         forecast = self._invert_transformation(forecast)
@@ -197,9 +222,11 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         if series is not None:
             self.model = self.model.apply(
                 self._orig_training_series.values(copy=False),
-                exog=self.training_historic_future_covariates.values(copy=False)
-                if self.training_historic_future_covariates
-                else None,
+                exog=(
+                    self.training_historic_future_covariates.values(copy=False)
+                    if self.training_historic_future_covariates
+                    else None
+                ),
             )
 
             self._last_values = self._training_last_values
@@ -218,12 +245,18 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         return series_df
 
     @property
+    def supports_multivariate(self) -> bool:
+        return True
+
+    @property
     def min_train_series_length(self) -> int:
         return 30
 
-    def _is_probabilistic(self) -> bool:
+    @property
+    def supports_probabilistic_prediction(self) -> bool:
         return True
 
+    @property
     def _supports_range_index(self) -> bool:
         raise_if(
             self.trend and self.trend != "c",

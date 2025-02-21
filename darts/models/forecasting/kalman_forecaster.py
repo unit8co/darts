@@ -67,25 +67,50 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
             .. highlight:: python
             .. code-block:: python
 
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'future': ['relative']},
-                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
-                    'transformer': Scaler()
+                    'custom': {'future': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
                 }
             ..
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import KalmanForecaster
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
+        >>> series = AirPassengersDataset().load()
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
+        >>> # increasing the size of the state vector
+        >>> model = KalmanForecaster(dim_x=12)
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6, future_covariates=future_cov)
+        >>> pred.values()
+        array([[474.40680728],
+               [440.51801726],
+               [461.94512461],
+               [494.42090089],
+               [528.6436328 ],
+               [590.30647185]])
+
+        .. note::
+            `Kalman example notebook <https://unit8co.github.io/darts/examples/10-Kalman-filter-examples.html>`_
+            presents techniques that can be used to improve the forecasts quality compared to this simple usage
+            example.
         """
         super().__init__(add_encoders=add_encoders)
         self.dim_x = dim_x
         self.kf = kf
         self.darts_kf = KalmanFilter(dim_x, kf)
 
-    def __str__(self):
-        return f"Kalman Filter Forecaster (dim_x={self.dim_x})"
-
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-
         super()._fit(series, future_covariates)
         if self.kf is None:
             self.darts_kf.fit(series=series, covariates=future_covariates)
@@ -98,6 +123,8 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         series: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        verbose: bool = False,
+        show_warnings: bool = True,
         **kwargs,
     ) -> TimeSeries:
         # we override `predict()` to pass a non-None `series`, so that historic_future_covariates
@@ -114,7 +141,6 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
     ) -> TimeSeries:
-
         super()._predict(
             n, series, historic_future_covariates, future_covariates, num_samples
         )
@@ -138,5 +164,10 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
 
         return filtered_series[-n:]
 
-    def _is_probabilistic(self) -> bool:
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
+
+    @property
+    def supports_probabilistic_prediction(self) -> bool:
         return True
