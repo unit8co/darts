@@ -4119,6 +4119,9 @@ class TimeSeries:
         label: Optional[Union[str, Sequence[str]]] = "",
         max_nr_components: int = 10,
         ax: Optional[matplotlib.axes.Axes] = None,
+        alpha: Optional[float] = None,
+        color: Optional[Union[str, tuple, Sequence[str, tuple]]] = None,
+        c: Optional[Union[str, tuple, Sequence[str, tuple]]] = None,
         *args,
         **kwargs,
     ) -> matplotlib.axes.Axes:
@@ -4158,8 +4161,16 @@ class TimeSeries:
             Optionally, an axis to plot on. If `None`, and `new_plot=False`, will use the current axis. If
             `new_plot=True`, will create a new axis.
         alpha
-             Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
+            Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
             probabilistic series.
+        color
+            Can either be a single color or list of colors. Any matplotlib color is accepted (string, hex string,
+            RGB/RGBA tuple). If a single color and the series only has a single component, it is used as the color
+            for that component. If a single color and the series has multiple components, it is used as the color
+            for each component. If a list of colors with length equal to the number of components in the series, the
+            colors will be mapped to the components in order.
+        c
+            An alias for `color`.
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -4186,40 +4197,63 @@ class TimeSeries:
                 logger,
             )
 
+        if max_nr_components == -1:
+            n_components_to_plot = self.n_components
+        else:
+            n_components_to_plot = min(self.n_components, max_nr_components)
+
+        if self.n_components > n_components_to_plot:
+            logger.warning(
+                f"Number of series components ({self.n_components}) is larger than the maximum number of "
+                f"components to plot ({max_nr_components}). Plotting only the first `{max_nr_components}` "
+                f"components. You can adjust the number of components to plot using `max_nr_components`."
+            )
+
+        if not isinstance(label, str) and isinstance(label, Sequence):
+            if len(label) != self.n_components and len(label) != n_components_to_plot:
+                raise_log(
+                    ValueError(
+                        f"The `label` sequence must have the same length as the number of series components "
+                        f"({self.n_components}) or as the number of plotted components ({n_components_to_plot}). "
+                        f"Received length `{len(label)}`."
+                    ),
+                    logger,
+                )
+            custom_labels = True
+        else:
+            custom_labels = False
+
+        if color and c:
+            raise_log(
+                ValueError(
+                    "`color` and `c` must not be used simultaneously, use one or the other."
+                ),
+                logger,
+            )
+        color = color or c
+        if not isinstance(color, (str, tuple)) and isinstance(color, Sequence):
+            if len(color) != self.n_components and len(color) != n_components_to_plot:
+                raise_log(
+                    ValueError(
+                        f"The `color` sequence must have the same length as the number of series components "
+                        f"({self.n_components}) or as the number of plotted components ({n_components_to_plot}). "
+                        f"Received length `{len(label)}`."
+                    ),
+                    logger,
+                )
+            custom_colors = True
+        else:
+            custom_colors = False
+
+        kwargs["alpha"] = alpha
+        if not any(lw in kwargs for lw in ["lw", "linewidth"]):
+            kwargs["lw"] = 2
+
         if new_plot:
             fig, ax = plt.subplots()
         else:
             if ax is None:
                 ax = plt.gca()
-
-        if not any(lw in kwargs for lw in ["lw", "linewidth"]):
-            kwargs["lw"] = 2
-
-        n_components_to_plot = max_nr_components
-        if n_components_to_plot == -1:
-            n_components_to_plot = self.n_components
-        elif self.n_components > max_nr_components:
-            logger.warning(
-                f"Number of components is larger than {max_nr_components} ({self.n_components}). "
-                f"Plotting only the first {max_nr_components} components."
-                f"You can overwrite this in the using the `plot_all_components` argument in plot()"
-                f"Beware that plotting a large number of components may cause performance issues."
-            )
-
-        if not isinstance(label, str) and isinstance(label, Sequence):
-            raise_if_not(
-                len(label) == self.n_components
-                or (
-                    self.n_components > n_components_to_plot
-                    and len(label) >= n_components_to_plot
-                ),
-                "The label argument should have the same length as the number of plotted components "
-                f"({min(self.n_components, n_components_to_plot)}), only {len(label)} labels were provided",
-                logger,
-            )
-            custom_labels = True
-        else:
-            custom_labels = False
 
         for i, c in enumerate(self._xa.component[:n_components_to_plot]):
             comp_name = str(c.values)
@@ -4233,7 +4267,6 @@ class TimeSeries:
             else:
                 central_series = comp.mean(dim=DIMS[2])
 
-            alpha = kwargs["alpha"] if "alpha" in kwargs else None
             if custom_labels:
                 label_to_use = label[i]
             else:
@@ -4244,6 +4277,7 @@ class TimeSeries:
                 else:
                     label_to_use = f"{label}_{comp_name}"
             kwargs["label"] = label_to_use
+            kwargs["c"] = color[i] if custom_colors else color
 
             kwargs_central = deepcopy(kwargs)
             if not self.is_deterministic:
