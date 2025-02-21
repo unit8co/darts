@@ -690,10 +690,10 @@ class TimeSeries:
                 # The integer conversion failed; try datetimes
                 try:
                     time_index = pd.DatetimeIndex(time_col_vals)
-                except Exception:
+                except ValueError:
                     raise_log(
                         AttributeError(
-                            "'time_col' is of 'Utf8' dtype but doesn't contain valid timestamps"
+                            "'time_col' is of 'String' dtype but doesn't contain valid timestamps"
                         )
                     )
             elif time_col_vals.dtype == nw.Datetime:
@@ -713,13 +713,20 @@ class TimeSeries:
             else:
                 raise_log(
                     AttributeError(
-                        "Invalid type of `time_col`: it needs to be of either 'Utf8', 'Datetime' or 'Int64' dtype."
+                        "Invalid type of `time_col`: it needs to be of either 'String', 'Datetime' or 'Int' dtype."
                     )
                 )
         else:
             time_col_vals = nw.maybe_get_index(df)
             if time_col_vals is None:
-                raise_log(ValueError("No time column or index found in the DataFrame."))
+                raise_log(
+                    ValueError(
+                        "No time column or index found in the DataFrame. `time_col=None` "
+                        "is only supported for pandas DataFrame which is indexed with one of the "
+                        "supported index types: a DatetimeIndex, a RangeIndex, or an integer "
+                        "Index that can be converted into a RangeIndex.",
+                    ),
+                )
             # if we are here, the dataframe was pandas
             raise_if_not(
                 isinstance(time_col_vals, VALID_INDEX_TYPES)
@@ -756,7 +763,7 @@ class TimeSeries:
             attrs={STATIC_COV_TAG: static_covariates, HIERARCHY_TAG: hierarchy},
         )
 
-        return cls.from_xarray(  # really slow
+        return cls.from_xarray(
             xa=xa,
             fill_missing_dates=fill_missing_dates,
             freq=freq,
@@ -984,7 +991,7 @@ class TimeSeries:
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
     ) -> Self:
         """
-        Build a univariate deterministic series from a pandas Series.
+        Build a univariate deterministic TimeSeries from a Series
 
         The series must contain an index that is either a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index
         that can be converted into a RangeIndex. It is better if the index has no holes; alternatively setting
