@@ -4188,12 +4188,11 @@ class TimeSeries:
         else:
             n_components_to_plot = min(self.n_components, max_nr_components)
 
-        if self.n_components > max_nr_components:
+        if self.n_components > n_components_to_plot:
             logger.warning(
-                f"Number of components is larger than {max_nr_components} ({self.n_components}). "
-                f"Plotting only the first {max_nr_components} components."
-                f"You can overwrite this in the using the `plot_all_components` argument in plot()"
-                f"Beware that plotting a large number of components may cause performance issues."
+                f"Number of series components ({self.n_components}) is larger than the maximum number of "
+                f"components to plot ({max_nr_components}). Plotting only the first `{max_nr_components}` "
+                f"components. You can adjust the number of components to plot using `max_nr_components`."
             )
 
         if not isinstance(label, str) and isinstance(label, Sequence):
@@ -4201,8 +4200,8 @@ class TimeSeries:
                 raise_log(
                     ValueError(
                         f"The `label` sequence must have the same length as the number of series components "
-                        f"({self.n_components}) or as the number of plotted components {n_components_to_plot}. "
-                        f"Received length {len(label)}."
+                        f"({self.n_components}) or as the number of plotted components ({n_components_to_plot}). "
+                        f"Received length `{len(label)}`."
                     ),
                     logger,
                 )
@@ -4223,8 +4222,8 @@ class TimeSeries:
                 raise_log(
                     ValueError(
                         f"The `color` sequence must have the same length as the number of series components "
-                        f"({self.n_components}) or as the number of plotted components {n_components_to_plot}. "
-                        f"Received length {len(label)}."
+                        f"({self.n_components}) or as the number of plotted components ({n_components_to_plot}). "
+                        f"Received length `{len(label)}`."
                     ),
                     logger,
                 )
