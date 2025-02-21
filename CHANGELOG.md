@@ -13,10 +13,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Added ONNX support for torch-based models with method `TorchForecastingModel.to_onnx()`. Check out [this example](https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html#exporting-model-to-onnx-format-for-inference) from the user guide on how to export and load a model for inference. [#2620](https://github.com/unit8co/darts/pull/2620) by [Antoine Madrona](https://github.com/madtoinou)
 - Made method `ForecastingModel.untrained_model()` public. Use this method to get a new (untrained) model instance created with the same parameters. [#2684](https://github.com/unit8co/darts/pull/2684) by [Timon Erhart](https://github.com/turbotimon)
+- Made it possbile to run the quickstart notebook `00-quickstart.ipynb` locally. [#2691](https://github.com/unit8co/darts/pull/2691) by [Jules Authier](https://github.com/authierj)
 
 **Fixed**
-
-- Fixed a bug when running `examples.00-quickstart.ipynb` locally. [#2691](https://github.com/unit8co/darts/pull/2691) by [Jules Authier](https://github.com/authierj)
 
 **Dependencies**
 
@@ -44,7 +43,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
-- Fixed a bug when running `examples.00-quickstart.ipynb` locally. [#2691](https://github.com/unit8co/darts/pull/2691) by [Jules Authier](https://github.com/authierj)
 - Fixed a bug which raised an error when loading a torch model with `torch>=2.6.0`. [#2658](https://github.com/unit8co/darts/pull/2658) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug when performing optimized historical forecasts with `stride=1` using a `RegressionModel` with `output_chunk_shift>=1` and `output_chunk_length=1`, where the forecast time index was not properly shifted. [#2634](https://github.com/unit8co/darts/pull/2634) by [Mattias De Charleroy](https://github.com/MattiasDC).
 - Fixed a bug where global naive models could not be used in ensemble models. [#2666](https://github.com/unit8co/darts/pull/2666) by [Dennis Bader](https://github.com/dennisbader).
