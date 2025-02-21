@@ -4146,10 +4146,6 @@ class TimeSeries:
         ax
             Optionally, an axis to plot on. If `None`, and `new_plot=False`, will use the current axis. If
             `new_plot=True`, will create a new axis.
-        args
-            some positional arguments for the `plot()` method
-        kwargs
-            some keyword arguments for the `plot()` method
         alpha
             Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
             probabilistic series.
@@ -4160,7 +4156,11 @@ class TimeSeries:
             for each component. If a list of colors with length equal to the number of components in the series, the
             colors will be mapped to the components in order.
         c
-            An alias for color
+            An alias for `color`.
+        args
+            some positional arguments for the `plot()` method
+        kwargs
+            some keyword arguments for the `plot()` method
 
         Returns
         -------
@@ -4183,19 +4183,12 @@ class TimeSeries:
                 logger,
             )
 
-        if new_plot:
-            fig, ax = plt.subplots()
-        else:
-            if ax is None:
-                ax = plt.gca()
-
-        if not any(lw in kwargs for lw in ["lw", "linewidth"]):
-            kwargs["lw"] = 2
-
-        n_components_to_plot = max_nr_components
-        if n_components_to_plot == -1:
+        if max_nr_components == -1:
             n_components_to_plot = self.n_components
-        elif self.n_components > max_nr_components:
+        else:
+            n_components_to_plot = min(self.n_components, max_nr_components)
+
+        if self.n_components > max_nr_components:
             logger.warning(
                 f"Number of components is larger than {max_nr_components} ({self.n_components}). "
                 f"Plotting only the first {max_nr_components} components."
@@ -4204,37 +4197,50 @@ class TimeSeries:
             )
 
         if not isinstance(label, str) and isinstance(label, Sequence):
-            raise_if_not(
-                len(label) == self.n_components
-                or (
-                    self.n_components > n_components_to_plot
-                    and len(label) >= n_components_to_plot
-                ),
-                "The label argument should have the same length as the number of plotted components "
-                f"({min(self.n_components, n_components_to_plot)}), only {len(label)} labels were provided",
-                logger,
-            )
+            if len(label) != self.n_components and len(label) != n_components_to_plot:
+                raise_log(
+                    ValueError(
+                        f"The `label` sequence must have the same length as the number of series components "
+                        f"({self.n_components}) or as the number of plotted components {n_components_to_plot}. "
+                        f"Received length {len(label)}."
+                    ),
+                    logger,
+                )
             custom_labels = True
         else:
             custom_labels = False
 
-        raise_if(
-            color and c,
-            "color and c should not be used simultaneously, use one or the other",
-            logger,
-        )
-        color = color or c
-
-        if not isinstance(color, (str, tuple)) and isinstance(color, Sequence):
-            raise_if_not(
-                len(color) == self.n_components,
-                "The color argument should have the same length as the number of plotted components "
-                f"({min(self.n_components, n_components_to_plot)}), only {len(color)} labels were provided",
+        if color and c:
+            raise_log(
+                ValueError(
+                    "`color` and `c` must not be used simultaneously, use one or the other."
+                ),
                 logger,
             )
+        color = color or c
+        if not isinstance(color, (str, tuple)) and isinstance(color, Sequence):
+            if len(color) != self.n_components and len(color) != n_components_to_plot:
+                raise_log(
+                    ValueError(
+                        f"The `color` sequence must have the same length as the number of series components "
+                        f"({self.n_components}) or as the number of plotted components {n_components_to_plot}. "
+                        f"Received length {len(label)}."
+                    ),
+                    logger,
+                )
             custom_colors = True
         else:
             custom_colors = False
+
+        kwargs["alpha"] = alpha
+        if not any(lw in kwargs for lw in ["lw", "linewidth"]):
+            kwargs["lw"] = 2
+
+        if new_plot:
+            fig, ax = plt.subplots()
+        else:
+            if ax is None:
+                ax = plt.gca()
 
         for i, c in enumerate(self._xa.component[:n_components_to_plot]):
             comp_name = str(c.values)
@@ -4248,9 +4254,6 @@ class TimeSeries:
             else:
                 central_series = comp.mean(dim=DIMS[2])
 
-            if alpha:
-                kwargs["alpha"] = alpha
-
             if custom_labels:
                 label_to_use = label[i]
             else:
@@ -4261,7 +4264,6 @@ class TimeSeries:
                 else:
                     label_to_use = f"{label}_{comp_name}"
             kwargs["label"] = label_to_use
-
             kwargs["c"] = color[i] if custom_colors else color
 
             kwargs_central = deepcopy(kwargs)
