@@ -184,6 +184,7 @@ def _optimized_historical_forecasts_last_points_only(
                 columns=forecast_components,
                 static_covariates=series_.static_covariates,
                 hierarchy=series_.hierarchy,
+                metadata=series_.metadata,
             )
         )
     return forecasts_list
@@ -367,6 +368,7 @@ def _optimized_historical_forecasts_all_points(
                     columns=forecast_components,
                     static_covariates=series_.static_covariates,
                     hierarchy=series_.hierarchy,
+                    metadata=series_.metadata,
                 )
             )
 

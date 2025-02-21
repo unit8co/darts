@@ -144,6 +144,7 @@ def _const_fill(series: TimeSeries, fill: float = 0) -> TimeSeries:
         columns=series.columns,
         static_covariates=series.static_covariates,
         hierarchy=series.hierarchy,
+        metadata=series.metadata,
     )
 
 
@@ -179,4 +180,5 @@ def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
         freq=series.freq,
         static_covariates=series.static_covariates,
         hierarchy=series.hierarchy,
+        metadata=series.metadata,
     )

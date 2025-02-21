@@ -141,6 +141,7 @@ def _optimized_historical_forecasts(
                 columns=preds[0].columns,
                 static_covariates=preds[0].static_covariates,
                 hierarchy=preds[0].hierarchy,
+                metadata=preds[0].metadata,
             )
         forecasts_list.append(preds)
     return forecasts_list
