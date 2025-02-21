@@ -1001,7 +1001,10 @@ class TimeSeries:
         Parameters
         ----------
         pd_series
-            A Series instance.
+            The Series, or anything which can be converted to a narwhals Series (e.g. pandas.Series, ...)
+            polars.DataFrame, ...). See the `narwhals documentation
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`_ for more
+            information.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
             with NaN values. This requires either a provided `freq` or the possibility to infer the frequency from the
