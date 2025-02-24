@@ -54,7 +54,7 @@ jobs:
           elif [ "${{ matrix.flavour }}" == "torch" ]; then
             pip install -r requirements/core.txt -r requirements/torch.txt -r requirements/dev.txt
           elif [ "${{ matrix.flavour }}" == "all" ]; then
-            pip install -r requirements/core.txt -r requirements/torch.txt -r requirements/notorch.txt -r requirements/dev.txt
+            pip install -r requirements/core.txt -r requirements/torch.txt -r requirements/notorch.txt -r requirements/optional.txt -r requirements/dev.txt
           fi
 
       - name: "Install libomp (for LightGBM)"

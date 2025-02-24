@@ -17,6 +17,15 @@ except ImportError:
     logger.warning("Torch not installed - Some tests will be skipped.")
     TORCH_AVAILABLE = False
 
+try:
+    import onnx  # noqa: F401
+    import onnxruntime  # noqa: F401
+
+    ONNX_AVAILABLE = True
+except ImportError:
+    logger.warning("Onnx not installed - Some tests will be skipped.")
+    ONNX_AVAILABLE = False
+
 tfm_kwargs = {
     "pl_trainer_kwargs": {
         "accelerator": "cpu",
