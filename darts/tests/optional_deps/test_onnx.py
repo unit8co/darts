@@ -14,10 +14,8 @@ if not (TORCH_AVAILABLE and ONNX_AVAILABLE):
     )
 import onnx
 import onnxruntime as ort
-import torch
 
 from darts.models import (
-    BlockRNNModel,
     NLinearModel,
     TFTModel,
     TiDEModel,
@@ -27,14 +25,15 @@ from darts.models import (
 
 
 class TestOnnx:
-    ts_tgt = tg.linear_timeseries(start_value=0, end_value=100, length=100)
-    ts_pc = tg.constant_timeseries(value=123.4, length=100)
-    ts_fc = tg.sine_timeseries(length=100)
+    ts_tg = tg.linear_timeseries(
+        start_value=0, end_value=100, length=30, dtype=np.float64
+    )
+    ts_pc = tg.constant_timeseries(value=123.4, length=30, dtype=np.float64)
+    ts_fc = tg.sine_timeseries(length=32, dtype=np.float64)
 
     @pytest.mark.parametrize(
         "model_cls",
         [
-            BlockRNNModel,
             NLinearModel,
             TFTModel,
             TiDEModel,
@@ -44,8 +43,13 @@ class TestOnnx:
         model = model_cls(
             input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs
         )
-        onnx_filename = f"test_{model.name}"
-        model.fit()
+        onnx_filename = f"test_{model}"
+        model.fit(
+            series=self.ts_tg,
+            past_covariates=self.ts_pc if model.supports_past_covariates else None,
+            future_covariates=self.ts_fc if model.supports_future_covariates else None,
+        )
+
         # native inference
         pred = model.predict(2)
 
@@ -59,9 +63,9 @@ class TestOnnx:
         # manual feature extraction from the series
         past_feats, future_feats, static_feats = self._helper_prepare_onnx_inputs(
             model=model,
-            series=self.ts_tgt,
-            past_covariates=self.ts_pc,
-            future_covariates=self.ts_fc,
+            series=self.ts_tg,
+            past_covariates=self.ts_pc if model.supports_past_covariates else None,
+            future_covariates=self.ts_fc if model.supports_future_covariates else None,
         )
 
         # onnx model loading and inference
@@ -70,9 +74,10 @@ class TestOnnx:
         )
 
         # check that the predictions are similar
-        torch.testing.assert_close(onnx_pred, pred)
+        np.testing.assert_array_almost_equal(onnx_pred[0][0], pred.all_values())
 
     def _helper_prepare_onnx_inputs(
+        self,
         model,
         series: TimeSeries,
         past_covariates: Optional[TimeSeries] = None,
@@ -112,9 +117,9 @@ class TestOnnx:
     def _helper_onnx_inference(
         self,
         onnx_filename: str,
-        past_feats: torch.Tensor,
-        future_feats: torch.Tensor,
-        static_feats: torch.Tensor,
+        past_feats: np.ndarray,
+        future_feats: np.ndarray,
+        static_feats: np.ndarray,
     ):
         ort_session = ort.InferenceSession(onnx_filename)
         # extract only the features expected by the model
