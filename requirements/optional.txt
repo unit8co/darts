@@ -1,4 +1,4 @@
 onnx
+onnxruntime
 optuna
 ray
-onnxruntime

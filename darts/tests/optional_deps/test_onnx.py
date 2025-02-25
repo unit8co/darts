@@ -16,20 +16,25 @@ import onnx
 import onnxruntime as ort
 
 from darts.models import (
+    NBEATSModel,
+    NHiTSModel,
     NLinearModel,
+    TCNModel,
     TFTModel,
     TiDEModel,
+    TransformerModel,
+    TSMixerModel,
 )
 
-# from darts.models.components.layer_norm_variants import RINorm
+# TODO: check how RINorm can be handled with respect to ONNX
 
 
 class TestOnnx:
-    ts_tg = tg.linear_timeseries(
-        start_value=0, end_value=100, length=30, dtype=np.float64
+    ts_tg = tg.linear_timeseries(start_value=0, end_value=100, length=30).astype(
+        "float32"
     )
-    ts_pc = tg.constant_timeseries(value=123.4, length=30, dtype=np.float64)
-    ts_fc = tg.sine_timeseries(length=32, dtype=np.float64)
+    ts_pc = tg.constant_timeseries(value=123.4, length=300).astype("float32")
+    ts_fc = tg.sine_timeseries(length=32).astype("float32")
 
     @pytest.mark.parametrize(
         "model_cls",
@@ -37,6 +42,11 @@ class TestOnnx:
             NLinearModel,
             TFTModel,
             TiDEModel,
+            TCNModel,
+            NBEATSModel,
+            NHiTSModel,
+            TransformerModel,
+            TSMixerModel,
         ],
     )
     def test_onnx_save_load(self, tmpdir_fn, model_cls):
@@ -44,16 +54,20 @@ class TestOnnx:
             input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs
         )
         onnx_filename = f"test_{model}"
+        # model.model = model.model.to(torch.float)
         model.fit(
             series=self.ts_tg,
             past_covariates=self.ts_pc if model.supports_past_covariates else None,
             future_covariates=self.ts_fc if model.supports_future_covariates else None,
         )
-
+        # model.model = model.model.float()
         # native inference
         pred = model.predict(2)
 
         # model export
+        # TODO: LSTM model should be exported with a batch size of 1, it seems to create prediction shape problems for
+        # for TFT and TCN.
+
         model.to_onnx(onnx_filename)
 
         # onnx model verification
@@ -71,10 +85,11 @@ class TestOnnx:
         # onnx model loading and inference
         onnx_pred = self._helper_onnx_inference(
             onnx_filename, past_feats, future_feats, static_feats
-        )
+        )[0][0]
 
         # check that the predictions are similar
-        np.testing.assert_array_almost_equal(onnx_pred[0][0], pred.all_values())
+        assert pred.shape == onnx_pred.shape, "forecasts don't have the same shape."
+        np.testing.assert_array_almost_equal(onnx_pred, pred.all_values(), decimal=4)
 
     def _helper_prepare_onnx_inputs(
         self,
@@ -112,6 +127,8 @@ class TestOnnx:
             static_feats = np.expand_dims(
                 series.static_covariates_values(), axis=0
             ).astype(series.dtype)
+
+        print(series.dtype)
         return past_feats, future_feats, static_feats
 
     def _helper_onnx_inference(
