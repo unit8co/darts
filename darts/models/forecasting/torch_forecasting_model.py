@@ -677,6 +677,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             ``input_sample``, ``input_name``). For more information, read the `official documentation
             <https://pytorch.org/docs/master/onnx.html#torch.onnx.export>`_.
         """
+        # TODO: LSTM model should be exported with a batch size of 1
+        # TODO: predictions with TFT and TCN models is incorrect, might be caused by helper function to process inputs
         if not self._fit_called:
             raise_log(
                 ValueError("`fit()` needs to be called before `to_onnx()`."), logger
@@ -1774,7 +1776,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             self.trainer.save_checkpoint(path_ptl_ckpt, weights_only=clean)
 
         # TODO: keep track of PyTorch Lightning to see if they implement model checkpoint saving
-        #  without having to call fit/predict/validate/test before
+        # without having to call fit/predict/validate/test before
         # try to recover original automatic PL checkpoint
         elif self.load_ckpt_path:
             if os.path.exists(self.load_ckpt_path):

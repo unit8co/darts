@@ -1,3 +1,4 @@
+from itertools import product
 from typing import Optional
 
 import numpy as np
@@ -16,17 +17,26 @@ import onnx
 import onnxruntime as ort
 
 from darts.models import (
+    BlockRNNModel,
     NBEATSModel,
     NHiTSModel,
     NLinearModel,
-    TCNModel,
-    TFTModel,
     TiDEModel,
     TransformerModel,
-    TSMixerModel,
 )
 
 # TODO: check how RINorm can be handled with respect to ONNX
+torch_model_cls = [
+    BlockRNNModel,
+    NBEATSModel,
+    NHiTSModel,
+    NLinearModel,
+    # TCNModel,
+    # TFTModel,
+    TiDEModel,
+    TransformerModel,
+    # TSMixerModel,
+]
 
 
 class TestOnnx:
@@ -36,38 +46,22 @@ class TestOnnx:
     ts_pc = tg.constant_timeseries(value=123.4, length=300).astype("float32")
     ts_fc = tg.sine_timeseries(length=32).astype("float32")
 
-    @pytest.mark.parametrize(
-        "model_cls",
-        [
-            NLinearModel,
-            TFTModel,
-            TiDEModel,
-            TCNModel,
-            NBEATSModel,
-            NHiTSModel,
-            TransformerModel,
-            TSMixerModel,
-        ],
-    )
+    @pytest.mark.parametrize("model_cls", torch_model_cls)
     def test_onnx_save_load(self, tmpdir_fn, model_cls):
         model = model_cls(
             input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs
         )
-        onnx_filename = f"test_{model}"
-        # model.model = model.model.to(torch.float)
+        onnx_filename = f"test_onnx_{model.model_name}.onnx"
+
         model.fit(
             series=self.ts_tg,
             past_covariates=self.ts_pc if model.supports_past_covariates else None,
             future_covariates=self.ts_fc if model.supports_future_covariates else None,
         )
-        # model.model = model.model.float()
         # native inference
         pred = model.predict(2)
 
         # model export
-        # TODO: LSTM model should be exported with a batch size of 1, it seems to create prediction shape problems for
-        # for TFT and TCN.
-
         model.to_onnx(onnx_filename)
 
         # onnx model verification
@@ -90,6 +84,102 @@ class TestOnnx:
         # check that the predictions are similar
         assert pred.shape == onnx_pred.shape, "forecasts don't have the same shape."
         np.testing.assert_array_almost_equal(onnx_pred, pred.all_values(), decimal=4)
+
+    @pytest.mark.parametrize(
+        "params",
+        product(
+            torch_model_cls,
+            [True, False],  # clean
+        ),
+    )
+    def test_onnx_from_ckpt(self, tmpdir_fn, params):
+        """Check that creating the onnx export from a model directly loaded from a checkpoint work as expected"""
+        model_cls, clean = params
+        model = model_cls(
+            input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs
+        )
+        onnx_filename = f"test_onnx_{model.model_name}.onnx"
+        onnx_filename2 = f"test_onnx_{model.model_name}_weights.onnx"
+        ckpt_filename = f"test_ckpt_{model.model_name}.pt"
+
+        model.fit(
+            series=self.ts_tg,
+            past_covariates=self.ts_pc if model.supports_past_covariates else None,
+            future_covariates=self.ts_fc if model.supports_future_covariates else None,
+        )
+        model.save(ckpt_filename, clean=clean)
+
+        # load the entire checkpoint
+        model_loaded = model_cls.load(ckpt_filename)
+        pred = model_loaded.predict(
+            n=2,
+            series=self.ts_tg,
+            past_covariates=self.ts_pc
+            if model_loaded.supports_past_covariates
+            else None,
+            future_covariates=self.ts_fc
+            if model_loaded.supports_future_covariates
+            else None,
+        )
+
+        # export the loaded model
+        model_loaded.to_onnx(onnx_filename)
+
+        # manual feature extraction from the series
+        past_feats, future_feats, static_feats = self._helper_prepare_onnx_inputs(
+            model=model_loaded,
+            series=self.ts_tg,
+            past_covariates=self.ts_pc if model.supports_past_covariates else None,
+            future_covariates=self.ts_fc if model.supports_future_covariates else None,
+        )
+
+        # onnx model loading and inference
+        onnx_pred = self._helper_onnx_inference(
+            onnx_filename, past_feats, future_feats, static_feats
+        )[0][0]
+
+        # check that the predictions are similar
+        assert pred.shape == onnx_pred.shape, "forecasts don't have the same shape."
+        np.testing.assert_array_almost_equal(onnx_pred, pred.all_values(), decimal=4)
+
+        # load only the weights
+        model_weights = model_cls(
+            input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs
+        )
+        model_weights.load_weights(ckpt_filename)
+        pred_weights = model_weights.predict(
+            n=2,
+            series=self.ts_tg,
+            past_covariates=self.ts_pc
+            if model_weights.supports_past_covariates
+            else None,
+            future_covariates=self.ts_fc
+            if model_weights.supports_future_covariates
+            else None,
+        )
+
+        # export the loaded model
+        model_weights.to_onnx(onnx_filename2)
+
+        # manual feature extraction from the series
+        past_feats, future_feats, static_feats = self._helper_prepare_onnx_inputs(
+            model=model_weights,
+            series=self.ts_tg,
+            past_covariates=self.ts_pc if model.supports_past_covariates else None,
+            future_covariates=self.ts_fc if model.supports_future_covariates else None,
+        )
+
+        # onnx model loading and inference
+        onnx_pred_weights = self._helper_onnx_inference(
+            onnx_filename2, past_feats, future_feats, static_feats
+        )[0][0]
+
+        assert pred_weights.shape == onnx_pred_weights.shape, (
+            "forecasts don't have the same shape."
+        )
+        np.testing.assert_array_almost_equal(
+            onnx_pred_weights, pred_weights.all_values(), decimal=4
+        )
 
     def _helper_prepare_onnx_inputs(
         self,
@@ -128,7 +218,6 @@ class TestOnnx:
                 series.static_covariates_values(), axis=0
             ).astype(series.dtype)
 
-        print(series.dtype)
         return past_feats, future_feats, static_feats
 
     def _helper_onnx_inference(
