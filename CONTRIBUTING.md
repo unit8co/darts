@@ -64,11 +64,14 @@ and discuss it with some of the core team.
 You can build the documentation locally using `make`:
 
 ```bash
-# make sure your latest changes are installed
-pip install .
+# ensure pandoc is available. If not, install it: https://pandoc.org/installing.html
+pandoc --version
+# install darts locally in editable mode
+pip install -e .
 # build the docs
 make --directory=./docs build-all-docs
 ```
+
 After that docs will be available in `./docs/build/html` directory. You can just open `./docs/build/html/index.html` using your favourite browser.
 
 ### Code Formatting and Linting
