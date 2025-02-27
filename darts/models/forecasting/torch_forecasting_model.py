@@ -2696,7 +2696,6 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _update_covariates_use(self):
         """The model is expected to rely on the `PastCovariatesTrainingDataset`"""
-        print(self.train_sample)
         _, past_covs, static_covs, _ = self.train_sample
         self._uses_past_covariates = past_covs is not None
         self._uses_future_covariates = False
@@ -2797,7 +2796,6 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _update_covariates_use(self):
         """The model is expected to rely on the `FutureCovariatesTrainingDataset`"""
-        print(self.train_sample)
         _, future_covs, static_covs, _ = self.train_sample
         self._uses_past_covariates = False
         self._uses_future_covariates = future_covs is not None
@@ -2899,7 +2897,6 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _update_covariates_use(self):
         """The model is expected to rely on the `DualCovariatesTrainingDataset`"""
-        print(self.train_sample)
         _, historic_future_covs, future_covs, static_covs, _ = self.train_sample
         self._uses_past_covariates = False
         self._uses_future_covariates = (
@@ -3003,7 +3000,6 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _update_covariates_use(self):
         """The model is expected to rely on the `MixedCovariatesTrainingDataset`"""
-        print(self.train_sample)
         _, past_covs, historic_future_covs, future_covs, static_covs, _ = (
             self.train_sample
         )
@@ -3110,7 +3106,6 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _update_covariates_use(self):
         """The model is expected to rely on the `SplitCovariatesTrainingDataset`"""
-        print(self.train_sample)
         _, past_covs, historic_future_covs, future_covs, static_covs, _ = (
             self.train_sample
         )

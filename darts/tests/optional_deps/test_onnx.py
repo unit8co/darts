@@ -72,8 +72,8 @@ class TestOnnx:
         past_feats, future_feats, static_feats = self._helper_prepare_onnx_inputs(
             model=model,
             series=self.ts_tg,
-            past_covariates=self.ts_pc if model.supports_past_covariates else None,
-            future_covariates=self.ts_fc if model.supports_future_covariates else None,
+            past_covariates=self.ts_pc if model.uses_past_covariates else None,
+            future_covariates=self.ts_fc if model.uses_future_covariates else None,
         )
 
         # onnx model loading and inference
@@ -114,11 +114,9 @@ class TestOnnx:
         pred = model_loaded.predict(
             n=2,
             series=self.ts_tg,
-            past_covariates=self.ts_pc
-            if model_loaded.supports_past_covariates
-            else None,
+            past_covariates=self.ts_pc if model_loaded.uses_past_covariates else None,
             future_covariates=self.ts_fc
-            if model_loaded.supports_future_covariates
+            if model_loaded.uses_future_covariates
             else None,
         )
 
@@ -129,8 +127,10 @@ class TestOnnx:
         past_feats, future_feats, static_feats = self._helper_prepare_onnx_inputs(
             model=model_loaded,
             series=self.ts_tg,
-            past_covariates=self.ts_pc if model.supports_past_covariates else None,
-            future_covariates=self.ts_fc if model.supports_future_covariates else None,
+            past_covariates=self.ts_pc if model_loaded.uses_past_covariates else None,
+            future_covariates=self.ts_fc
+            if model_loaded.uses_future_covariates
+            else None,
         )
 
         # onnx model loading and inference
@@ -150,11 +150,9 @@ class TestOnnx:
         pred_weights = model_weights.predict(
             n=2,
             series=self.ts_tg,
-            past_covariates=self.ts_pc
-            if model_weights.supports_past_covariates
-            else None,
+            past_covariates=self.ts_pc if model_weights.uses_past_covariates else None,
             future_covariates=self.ts_fc
-            if model_weights.supports_future_covariates
+            if model_weights.uses_future_covariates
             else None,
         )
 
