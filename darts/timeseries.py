@@ -651,7 +651,7 @@ class TimeSeries:
         TimeSeries
             A univariate or multivariate deterministic TimeSeries constructed from the inputs.
         """
-        df = nw.from_native(df)
+        df = nw.from_native(df, eager_only=True, pass_through=False)
 
         # get values
         if value_cols is None:
