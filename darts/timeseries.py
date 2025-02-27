@@ -1530,7 +1530,7 @@ class TimeSeries:
     ================
     """
 
-    def data_array(self, copy=True) -> xr.DataArray:
+    def data_array(self, copy: bool = True) -> xr.DataArray:
         """
         Return the ``xarray.DataArray`` representation underlying this series.
 
@@ -1606,7 +1606,7 @@ class TimeSeries:
         self,
         copy: bool = True,
         backend: Literal["pandas", "polars", "pyarrow"] = "pandas",
-        time_as_index: bool = True,
+        time_as_index: bool = False,
         suppress_warnings: bool = False,
     ):
         """
@@ -1823,7 +1823,7 @@ class TimeSeries:
         """
         return pd.concat(
             [
-                self.quantile_timeseries(quantile).pd_dataframe()
+                self.quantile_timeseries(quantile).to_dataframe(backend="pandas")
                 for quantile in quantiles
             ],
             axis=1,
@@ -2169,7 +2169,7 @@ class TimeSeries:
             by a DatetimeIndex).
         """
 
-        df = self.pd_dataframe()
+        df = self.to_dataframe(backend="pandas", time_as_index=True)
 
         if mode == "all":
             is_nan_series = df.isna().all(axis=1).astype(int)
@@ -3946,7 +3946,9 @@ class TimeSeries:
         )
 
         # read series dataframe
-        ts_df = self.pd_dataframe(copy=False, suppress_warnings=True)
+        ts_df = self.to_dataframe(
+            copy=False, backend="pandas", time_as_index=True, suppress_warnings=True
+        )
 
         # store some original attributes of the series
         original_components = self.components
@@ -4119,7 +4121,7 @@ class TimeSeries:
         str
             A JSON String representing the time series
         """
-        return self.to_dataframe(backend="pandas").to_json(
+        return self.to_dataframe(backend="pandas", time_as_index=True).to_json(
             orient="split", date_format="iso"
         )
 
@@ -4133,6 +4135,7 @@ class TimeSeries:
         .. [1] https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv
         """
         if not self.is_deterministic:
+            # TODO THAT'S NOT TRUE!
             raise_log(
                 AssertionError(
                     "The pd_dataframe() method can only return DataFrames of deterministic "
@@ -4141,7 +4144,7 @@ class TimeSeries:
                 )
             )
 
-        self.pd_dataframe().to_csv(*args, **kwargs)
+        self.to_dataframe(backend="pandas", time_as_index=True).to_csv(*args, **kwargs)
 
     def to_pickle(self, path: str, protocol: int = pickle.HIGHEST_PROTOCOL):
         """
