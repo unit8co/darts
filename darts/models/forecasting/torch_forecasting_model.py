@@ -1765,7 +1765,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             path = self._default_save_path() + ".pt"
 
         # save the TorchForecastingModel (does not save the PyTorch LightningModule, and Trainer)
-        super().save(path, clean=clean)
+        with open(path, "wb") as f_out:
+            torch.save(self if not clean else self._clean(), f_out)
 
         # save the LightningModule checkpoint (weights only with `clean=True`)
         path_ptl_ckpt = path + ".ckpt"
@@ -1802,7 +1803,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 model_loaded = RNNModel.load(path)
             ..
 
-        Example for loading an :class:`RNNModel` to GPU:
+        Example for loading an :class:`RNNModel` to GPU that was trained on CPU:
 
             .. highlight:: python
             .. code-block:: python
@@ -1810,6 +1811,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 from darts.models import RNNModel
 
                 model_loaded = RNNModel.load(path, pl_trainer_kwargs={"accelerator": "gpu"})
+            ..
+
+        Example for loading an :class:`RNNModel` to CPU that was saved on GPU:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RNNModel
+
+                model_loaded = RNNModel.load(path, map_location="cpu", pl_trainer_kwargs={"accelerator": "gpu"})
             ..
 
         Parameters
@@ -1825,11 +1836,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for more information about the supported kwargs.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
+            such as ``map_location`` to load the model onto a different device than the one on which it was saved.
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
             common/lightning_module.html#load-from-checkpoint>`_.
         """
         # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
-        model: TorchForecastingModel = ForecastingModel.load(path)
+        with open(path, "rb") as fin:
+            model: TorchForecastingModel = torch.load(
+                fin, weights_only=False, map_location=kwargs.get("map_location", None)
+            )
 
         # if a checkpoint was saved, we also load the PyTorch LightningModule from checkpoint
         path_ptl_ckpt = path + ".ckpt"
@@ -1927,7 +1942,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             f"Could not find base model save file `{INIT_MODEL_NAME}` in {model_dir}.",
             logger,
         )
-        model: TorchForecastingModel = ForecastingModel.load(base_model_path)
+        model: TorchForecastingModel = torch.load(
+            base_model_path, weights_only=False, map_location=kwargs.get("map_location")
+        )
 
         # load PyTorch LightningModule from checkpoint
         # if file_name is None, find the path of the best or most recent checkpoint in savepath
@@ -2093,7 +2110,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 )
 
             # updating model attributes before self._init_model() which create new tfm ckpt
-            tfm_save: TorchForecastingModel = ForecastingModel.load(tfm_save_file_path)
+            with open(tfm_save_file_path, "rb") as tfm_save_file:
+                tfm_save: TorchForecastingModel = torch.load(
+                    tfm_save_file,
+                    weights_only=False,
+                    map_location=kwargs.get("map_location", None),
+                )
 
             # encoders are necessary for direct inference
             self.encoders, self.add_encoders = self._load_encoders(
