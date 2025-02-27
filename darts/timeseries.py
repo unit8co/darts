@@ -711,6 +711,7 @@ class TimeSeries:
                         "Invalid type of `time_col`: it needs to be of either 'String', 'Datetime' or 'Int' dtype."
                     )
                 )
+            time_index.name = time_col
         else:
             time_index = nw.maybe_get_index(df)
             if time_index is None:
