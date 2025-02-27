@@ -46,6 +46,7 @@ from typing import Any, Callable, Literal, Optional, Union
 
 import matplotlib.axes
 import matplotlib.pyplot as plt
+import narwhals as nw
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -1545,7 +1546,44 @@ class TimeSeries:
         """
         return self._xa.copy() if copy else self._xa
 
-    def pd_series(self, copy=True) -> pd.Series:
+    def to_series(
+        self,
+        copy: bool = True,
+        backend: Literal["pandas", "polars", "pyarrow"] = "pandas",
+    ):
+        """
+        Return a Series representation of this univariate deterministic time series.
+
+        Works only for univariate series that are deterministic (i.e., made of 1 sample).
+
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the series. Leave it to True unless you know what you are doing.
+        backend
+            The library used for the Series.
+
+        Returns
+        -------
+            A Series representation of this univariate time series.
+        """
+        self._assert_univariate()
+        self._assert_deterministic()
+
+        if backend != "pandas":
+            return self.to_dataframe(copy=copy, backend=backend)
+
+        data = self._xa[:, 0, 0].values
+        index = self._time_index
+        name = self.components[0]
+
+        if copy:
+            data = data.copy()
+            index = index.copy()
+
+        return pd.Series(data=data, index=index, name=name)
+
+    def pd_series(self, copy: bool = True) -> pd.Series:
         """
         Return a Pandas Series representation of this univariate deterministic time series.
 
@@ -1561,20 +1599,83 @@ class TimeSeries:
         pandas.Series
             A Pandas Series representation of this univariate time series.
         """
-        self._assert_univariate()
-        self._assert_deterministic()
-        if copy:
-            return pd.Series(
-                self._xa[:, 0, 0].values.copy(),
-                index=self._time_index.copy(),
-                name=self.components[0],
+        logger.warning("`pd_series` is deprecated, please use `to_series` instead")
+        return self.to_series(copy=copy, backend="pandas")
+
+    def to_dataframe(
+        self,
+        copy: bool = True,
+        backend: Literal["pandas", "polars", "pyarrow"] = "pandas",
+        time_as_index: bool = True,
+        suppress_warnings: bool = False,
+    ):
+        """
+        Return a DataFrame representation of this time series.
+
+        Each of the series components will appear as a column in the DataFrame.
+        If the series is stochastic, the samples are returned as columns of the dataframe with column names
+        as 'component_s#' (e.g. with two components and two samples:
+        'comp0_s0', 'comp0_s1' 'comp1_s0' 'comp1_s1').
+
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
+        backend
+            Whether to return the dataframe in pandas, polars or pyarrows
+        time_as_index
+            Whether to set the time index as the index of the dataframe or in the left-most column.
+        Returns
+        -------
+        DataFrame
+            A DataFrame representation of this time series.
+        """
+
+        if time_as_index and backend != "pandas":
+            raise_log(
+                ValueError(
+                    "The `time_as_index` parameter is only supported for the pandas backend."
+                ),
+                logger,
             )
+
+        if not self.is_deterministic:
+            if not suppress_warnings:
+                logger.warning(
+                    "You are transforming a stochastic TimeSeries (i.e., contains several samples). "
+                    "The resulting DataFrame is a 2D object with all samples on the columns. "
+                    "If this is not the expected behavior consider calling a function "
+                    "adapted to stochastic TimeSeries like quantile_df()."
+                )
+
+            comp_name = list(self.components)
+            samples = range(self.n_samples)
+            columns = [
+                "_s".join((comp_name, str(sample_id)))
+                for comp_name, sample_id in itertools.product(comp_name, samples)
+            ]
+            data = self._xa.stack(data=(DIMS[1], DIMS[2]))
         else:
-            return pd.Series(
-                self._xa[:, 0, 0].values,
-                index=self._time_index,
-                name=self.components[0],
-            )
+            data = self._xa[:, :, 0].values
+            columns = self._xa.get_index(DIMS[1])
+
+        time_index = self._time_index
+
+        if time_as_index:
+            # special path for pandas with index
+            import pandas as pd
+
+            return pd.DataFrame(data=data, index=time_index, columns=columns)
+
+        data_ = {
+            time_index.name: time_index,  # set time_index as left-most column
+            **{col: data[:, idx] for idx, col in enumerate(columns)},
+        }
+
+        if copy:
+            data_ = data_.copy()
+
+        return nw.from_dict(data_, backend=backend).to_native()
 
     def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
         """
@@ -1595,47 +1696,16 @@ class TimeSeries:
         pandas.DataFrame
             The Pandas DataFrame representation of this time series
         """
-        if not self.is_deterministic:
-            if not suppress_warnings:
-                logger.warning(
-                    "You are transforming a stochastic TimeSeries (i.e., contains several samples). "
-                    "The resulting DataFrame is a 2D object with all samples on the columns. "
-                    "If this is not the expected behavior consider calling a function "
-                    "adapted to stochastic TimeSeries like quantile_df()."
-                )
 
-            comp_name = list(self.components)
-            samples = range(self.n_samples)
-            df_col_names = [
-                "_s".join((comp_name, str(sample_id)))
-                for comp_name, sample_id in itertools.product(comp_name, samples)
-            ]
-
-            if copy:
-                return pd.DataFrame(
-                    self._xa.stack(data=(DIMS[1], DIMS[2])).values.copy(),
-                    index=self._time_index.copy(),
-                    columns=df_col_names.copy(),
-                )
-            else:
-                return pd.DataFrame(
-                    self._xa.stack(data=(DIMS[1], DIMS[2])).values,
-                    index=self._time_index,
-                    columns=df_col_names,
-                )
-        else:
-            if copy:
-                return pd.DataFrame(
-                    self._xa[:, :, 0].values.copy(),
-                    index=self._time_index.copy(),
-                    columns=self._xa.get_index(DIMS[1]).copy(),
-                )
-            else:
-                return pd.DataFrame(
-                    self._xa[:, :, 0].values,
-                    index=self._time_index,
-                    columns=self._xa.get_index(DIMS[1]),
-                )
+        logger.warning(
+            "`pd_dataframe` is deprecated, please use `to_dataframe` instead"
+        )
+        return self.to_dataframe(
+            copy=copy,
+            backend="pandas",
+            time_as_index=True,
+            suppress_warnings=suppress_warnings,
+        )
 
     def quantile_df(self, quantile=0.5) -> pd.DataFrame:
         """
@@ -4049,7 +4119,9 @@ class TimeSeries:
         str
             A JSON String representing the time series
         """
-        return self.pd_dataframe().to_json(orient="split", date_format="iso")
+        return self.to_dataframe(backend="pandas").to_json(
+            orient="split", date_format="iso"
+        )
 
     def to_csv(self, *args, **kwargs):
         """
