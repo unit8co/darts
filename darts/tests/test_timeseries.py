@@ -2003,7 +2003,7 @@ class TestTimeSeries:
         with pytest.raises(AssertionError):
             ts.to_csv("blah.csv")
 
-    @patch("darts.timeseries.TimeSeries.pd_dataframe")
+    @patch("darts.timeseries.TimeSeries.to_dataframe")
     def test_to_csv_deterministic(self, pddf_mock):
         ts = TimeSeries(
             xr.DataArray(
