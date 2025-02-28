@@ -2,6 +2,7 @@ from itertools import product
 from typing import Optional
 
 import numpy as np
+import pandas as pd
 import pytest
 
 import darts.utils.timeseries_generation as tg
@@ -44,6 +45,9 @@ class TestOnnx:
     ts_tg = tg.linear_timeseries(start_value=0, end_value=100, length=30).astype(
         "float32"
     )
+    ts_tg_with_static = ts_tg.with_static_covariates(
+        pd.Series(data=[12], index=["loc"])
+    )
     ts_pc = tg.constant_timeseries(value=123.4, length=300).astype("float32")
     ts_fc = tg.sine_timeseries(length=32).astype("float32")
 
@@ -54,8 +58,14 @@ class TestOnnx:
         )
         onnx_filename = f"test_onnx_{model.model_name}.onnx"
 
+        # exporting without fitting the model fails
+        with pytest.raises(ValueError):
+            model.to_onnx("dummy_name.onnx")
+
         model.fit(
-            series=self.ts_tg,
+            series=self.ts_tg_with_static
+            if model.supports_static_covariates
+            else self.ts_tg,
             past_covariates=self.ts_pc if model.supports_past_covariates else None,
             future_covariates=self.ts_fc if model.supports_future_covariates else None,
         )
@@ -73,7 +83,9 @@ class TestOnnx:
         onnx_pred = self._helper_onnx_inference(
             model=model,
             onnx_filename=onnx_filename,
-            series=self.ts_tg,
+            series=self.ts_tg_with_static
+            if model.uses_static_covariates
+            else self.ts_tg,
             past_covariates=self.ts_pc if model.uses_past_covariates else None,
             future_covariates=self.ts_fc if model.uses_future_covariates else None,
         )[0][0]
@@ -100,7 +112,9 @@ class TestOnnx:
         ckpt_filename = f"test_ckpt_{model.model_name}.pt"
 
         model.fit(
-            series=self.ts_tg,
+            series=self.ts_tg_with_static
+            if model.supports_static_covariates
+            else self.ts_tg,
             past_covariates=self.ts_pc if model.supports_past_covariates else None,
             future_covariates=self.ts_fc if model.supports_future_covariates else None,
         )
@@ -110,7 +124,9 @@ class TestOnnx:
         model_loaded = model_cls.load(ckpt_filename)
         pred = model_loaded.predict(
             n=2,
-            series=self.ts_tg,
+            series=self.ts_tg_with_static
+            if model_loaded.uses_static_covariates
+            else self.ts_tg,
             past_covariates=self.ts_pc if model_loaded.uses_past_covariates else None,
             future_covariates=self.ts_fc
             if model_loaded.uses_future_covariates
@@ -124,7 +140,9 @@ class TestOnnx:
         onnx_pred = self._helper_onnx_inference(
             model=model_loaded,
             onnx_filename=onnx_filename,
-            series=self.ts_tg,
+            series=self.ts_tg_with_static
+            if model_loaded.uses_static_covariates
+            else self.ts_tg,
             past_covariates=self.ts_pc if model_loaded.uses_past_covariates else None,
             future_covariates=self.ts_fc
             if model_loaded.uses_future_covariates
@@ -142,7 +160,9 @@ class TestOnnx:
         model_weights.load_weights(ckpt_filename)
         pred_weights = model_weights.predict(
             n=2,
-            series=self.ts_tg,
+            series=self.ts_tg_with_static
+            if model_weights.uses_static_covariates
+            else self.ts_tg,
             past_covariates=self.ts_pc if model_weights.uses_past_covariates else None,
             future_covariates=self.ts_fc
             if model_weights.uses_future_covariates
@@ -156,9 +176,13 @@ class TestOnnx:
         onnx_pred_weights = self._helper_onnx_inference(
             model=model_weights,
             onnx_filename=onnx_filename2,
-            series=self.ts_tg,
-            past_covariates=self.ts_pc if model.supports_past_covariates else None,
-            future_covariates=self.ts_fc if model.supports_future_covariates else None,
+            series=self.ts_tg_with_static
+            if model_weights.uses_static_covariates
+            else self.ts_tg,
+            past_covariates=self.ts_pc if model_weights.uses_past_covariates else None,
+            future_covariates=self.ts_fc
+            if model_weights.uses_future_covariates
+            else None,
         )[0][0]
 
         assert pred_weights.shape == onnx_pred_weights.shape, (
