@@ -2756,7 +2756,16 @@ class TestTimeSeriesHeadTail:
 
 
 class TestTimeSeriesFromDataFrame:
-    def test_from_dataframe_sunny_day(self):
+    def pd_to_backend(self, df, backend, index=False):
+        if backend == "pandas":
+            return df
+        # elif backend == "polars":
+        #     if index:
+        #         return pl.from_pandas(df.reset_index())
+        #     return pl.from_pandas(df)
+
+    @pytest.mark.parametrize("backend", ["pandas"])
+    def test_from_dataframe_sunny_day(self, backend):
         data_dict = {"Time": pd.date_range(start="20180501", end="20200301", freq="MS")}
         data_dict["Values1"] = np.random.uniform(
             low=-10, high=10, size=len(data_dict["Time"])
@@ -2770,40 +2779,55 @@ class TestTimeSeriesFromDataFrame:
         data_pd2["Time"] = data_pd2["Time"].apply(lambda date: str(date))
         data_pd3 = data_pd1.set_index("Time")
 
-        data_darts1 = TimeSeries.from_dataframe(df=data_pd1, time_col="Time")
-        data_darts2 = TimeSeries.from_dataframe(df=data_pd2, time_col="Time")
-        data_darts3 = TimeSeries.from_dataframe(df=data_pd3)
+        data_darts1 = TimeSeries.from_dataframe(
+            df=self.pd_to_backend(data_pd1, backend), time_col="Time"
+        )
+        data_darts2 = TimeSeries.from_dataframe(
+            df=self.pd_to_backend(data_pd2, backend), time_col="Time"
+        )
+        data_darts3 = TimeSeries.from_dataframe(
+            df=self.pd_to_backend(data_pd3, backend, index=True),
+            time_col=None if backend == "pandas" else "Time",
+        )
 
         assert data_darts1 == data_darts2
         assert data_darts1 == data_darts3
 
-    def test_time_col_convert_string_integers(self):
+    @pytest.mark.parametrize("backend", ["pandas"])
+    def test_time_col_convert_string_integers(self, backend):
         expected = np.array(list(range(3, 10)))
         data_dict = {"Time": expected.astype(str)}
         data_dict["Values1"] = np.random.uniform(
             low=-10, high=10, size=len(data_dict["Time"])
         )
         df = pd.DataFrame(data_dict)
-        ts = TimeSeries.from_dataframe(df=df, time_col="Time")
+        ts = TimeSeries.from_dataframe(
+            df=self.pd_to_backend(df, backend), time_col="Time"
+        )
 
         assert set(ts.time_index.values.tolist()) == set(expected)
         assert ts.time_index.dtype == int
         assert ts.time_index.name == "Time"
 
-    def test_time_col_convert_integers(self):
+    @pytest.mark.parametrize("backend", ["pandas"])
+    def test_time_col_convert_integers(self, backend):
         expected = np.array(list(range(10)))
         data_dict = {"Time": expected}
         data_dict["Values1"] = np.random.uniform(
             low=-10, high=10, size=len(data_dict["Time"])
         )
+
         df = pd.DataFrame(data_dict)
-        ts = TimeSeries.from_dataframe(df=df, time_col="Time")
+        ts = TimeSeries.from_dataframe(
+            df=self.pd_to_backend(df, backend), time_col="Time"
+        )
 
         assert set(ts.time_index.values.tolist()) == set(expected)
         assert ts.time_index.dtype == int
         assert ts.time_index.name == "Time"
 
-    def test_fail_with_bad_integer_time_col(self):
+    @pytest.mark.parametrize("backend", ["pandas"])
+    def test_fail_with_bad_integer_time_col(self, backend):
         bad_time_col_vals = np.array([4, 0, 1, 2])
         data_dict = {"Time": bad_time_col_vals}
         data_dict["Values1"] = np.random.uniform(
@@ -2811,9 +2835,12 @@ class TestTimeSeriesFromDataFrame:
         )
         df = pd.DataFrame(data_dict)
         with pytest.raises(ValueError):
-            TimeSeries.from_dataframe(df=df, time_col="Time")
+            TimeSeries.from_dataframe(
+                df=self.pd_to_backend(df, backend), time_col="Time"
+            )
 
-    def test_time_col_convert_rangeindex(self):
+    @pytest.mark.parametrize("backend", ["pandas"])
+    def test_time_col_convert_rangeindex(self, backend):
         for expected_l, step in zip([[4, 0, 2, 3, 1], [8, 0, 4, 6, 2]], [1, 2]):
             expected = np.array(expected_l)
             data_dict = {"Time": expected}
@@ -2821,7 +2848,9 @@ class TestTimeSeriesFromDataFrame:
                 low=-10, high=10, size=len(data_dict["Time"])
             )
             df = pd.DataFrame(data_dict)
-            ts = TimeSeries.from_dataframe(df=df, time_col="Time")
+            ts = TimeSeries.from_dataframe(
+                df=self.pd_to_backend(df, backend), time_col="Time"
+            )
 
             # check type (should convert to RangeIndex):
             assert type(ts.time_index) is pd.RangeIndex
@@ -2836,31 +2865,38 @@ class TestTimeSeriesFromDataFrame:
             ]
             assert np.all(ar1 == ar2)
 
-    def test_time_col_convert_datetime(self):
+    @pytest.mark.parametrize("backend", ["pandas"])
+    def test_time_col_convert_datetime(self, backend):
         expected = pd.date_range(start="20180501", end="20200301", freq="MS")
         data_dict = {"Time": expected}
         data_dict["Values1"] = np.random.uniform(
             low=-10, high=10, size=len(data_dict["Time"])
         )
         df = pd.DataFrame(data_dict)
-        ts = TimeSeries.from_dataframe(df=df, time_col="Time")
+        ts = TimeSeries.from_dataframe(
+            df=self.pd_to_backend(df, backend), time_col="Time"
+        )
 
         assert ts.time_index.dtype == "datetime64[ns]"
         assert ts.time_index.name == "Time"
 
-    def test_time_col_convert_datetime_strings(self):
+    @pytest.mark.parametrize("backend", ["pandas"])
+    def test_time_col_convert_datetime_strings(self, backend):
         expected = pd.date_range(start="20180501", end="20200301", freq="MS")
         data_dict = {"Time": expected.values.astype(str)}
         data_dict["Values1"] = np.random.uniform(
             low=-10, high=10, size=len(data_dict["Time"])
         )
         df = pd.DataFrame(data_dict)
-        ts = TimeSeries.from_dataframe(df=df, time_col="Time")
+        ts = TimeSeries.from_dataframe(
+            df=self.pd_to_backend(df, backend), time_col="Time"
+        )
 
         assert ts.time_index.dtype == "datetime64[ns]"
         assert ts.time_index.name == "Time"
 
-    def test_time_col_with_tz(self):
+    @pytest.mark.parametrize("backend", ["pandas"])
+    def test_time_col_with_tz_df(self, backend):
         # numpy and xarray don't support "timezone aware" pd.DatetimeIndex
         # the BUGFIX removes timezone information without conversion
 
@@ -2871,13 +2907,10 @@ class TestTimeSeriesFromDataFrame:
         # pd.DataFrame loses the tz information unless it is contained in its index
         # (other columns are silently converted to UTC, with tz attribute set to None)
         df = pd.DataFrame(data=values, index=time_range_MS)
-        ts = TimeSeries.from_dataframe(df=df)
-        assert list(ts.time_index) == list(time_range_MS.tz_localize(None))
-        assert list(ts.time_index.tz_localize("CET")) == list(time_range_MS)
-        assert ts.time_index.tz is None
-
-        serie = pd.Series(data=values, index=time_range_MS)
-        ts = TimeSeries.from_series(pd_series=serie)
+        ts = TimeSeries.from_dataframe(
+            df=self.pd_to_backend(df, backend, index=True),
+            time_col=None if backend == "pandas" else "index",
+        )
         assert list(ts.time_index) == list(time_range_MS.tz_localize(None))
         assert list(ts.time_index.tz_localize("CET")) == list(time_range_MS)
         assert ts.time_index.tz is None
@@ -2893,13 +2926,10 @@ class TestTimeSeriesFromDataFrame:
         values = np.random.uniform(low=-10, high=10, size=len(time_range_H))
 
         df = pd.DataFrame(data=values, index=time_range_H)
-        ts = TimeSeries.from_dataframe(df=df)
-        assert list(ts.time_index) == list(time_range_H.tz_localize(None))
-        assert list(ts.time_index.tz_localize("CET")) == list(time_range_H)
-        assert ts.time_index.tz is None
-
-        series = pd.Series(data=values, index=time_range_H)
-        ts = TimeSeries.from_series(pd_series=series)
+        ts = TimeSeries.from_dataframe(
+            df=self.pd_to_backend(df, backend, index=True),
+            time_col=None if backend == "pandas" else "index",
+        )
         assert list(ts.time_index) == list(time_range_H.tz_localize(None))
         assert list(ts.time_index.tz_localize("CET")) == list(time_range_H)
         assert ts.time_index.tz is None
@@ -2909,7 +2939,29 @@ class TestTimeSeriesFromDataFrame:
         assert list(ts.time_index.tz_localize("CET")) == list(time_range_H)
         assert ts.time_index.tz is None
 
-    def test_time_col_convert_garbage(self):
+    def test_time_col_with_tz_series(self):
+        time_range_MS = pd.date_range(
+            start="20180501", end="20200301", freq="MS", tz="CET"
+        )
+        values = np.random.uniform(low=-10, high=10, size=len(time_range_MS))
+        serie = pd.Series(data=values, index=time_range_MS)
+        ts = TimeSeries.from_series(pd_series=serie)
+        assert list(ts.time_index) == list(time_range_MS.tz_localize(None))
+        assert list(ts.time_index.tz_localize("CET")) == list(time_range_MS)
+        assert ts.time_index.tz is None
+
+        time_range_H = pd.date_range(
+            start="20200518", end="20200521", freq=freqs["h"], tz="CET"
+        )
+        values = np.random.uniform(low=-10, high=10, size=len(time_range_H))
+        series = pd.Series(data=values, index=time_range_H)
+        ts = TimeSeries.from_series(pd_series=series)
+        assert list(ts.time_index) == list(time_range_H.tz_localize(None))
+        assert list(ts.time_index.tz_localize("CET")) == list(time_range_H)
+        assert ts.time_index.tz is None
+
+    @pytest.mark.parametrize("backend", ["pandas"])
+    def test_time_col_convert_garbage(self, backend):
         expected = [
             "2312312asdfdw",
             "asdfsdf432sdf",
@@ -2924,9 +2976,12 @@ class TestTimeSeriesFromDataFrame:
         df = pd.DataFrame(data_dict)
 
         with pytest.raises(AttributeError):
-            TimeSeries.from_dataframe(df=df, time_col="Time")
+            TimeSeries.from_dataframe(
+                df=self.pd_to_backend(df, backend), time_col="Time"
+            )
 
-    def test_df_named_columns_index(self):
+    @pytest.mark.parametrize("backend", ["pandas"])
+    def test_df_named_columns_index(self, backend):
         time_index = generate_index(
             start=pd.Timestamp("2000-01-01"), length=4, freq="D", name="index"
         )
@@ -2936,7 +2991,10 @@ class TestTimeSeriesFromDataFrame:
             columns=["y"],
         )
         df.columns.name = "id"
-        ts = TimeSeries.from_dataframe(df)
+        ts = TimeSeries.from_dataframe(
+            df=self.pd_to_backend(df, backend, index=True),
+            time_col=None if backend == "pandas" else "index",
+        )
 
         exp_ts = TimeSeries.from_times_and_values(
             times=time_index,
