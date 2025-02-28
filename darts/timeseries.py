@@ -1823,7 +1823,9 @@ class TimeSeries:
         """
         return pd.concat(
             [
-                self.quantile_timeseries(quantile).to_dataframe(backend="pandas")
+                self.quantile_timeseries(quantile).to_dataframe(
+                    backend="pandas", time_as_index=True
+                )
                 for quantile in quantiles
             ],
             axis=1,
