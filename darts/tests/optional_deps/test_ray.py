@@ -78,8 +78,7 @@ class TestRay:
 
         # set up ray tune callback
         class TuneReportCallback(TuneReportCheckpointCallback, Callback):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
+            pass
 
         tune_callback = TuneReportCallback(
             {
@@ -97,11 +96,8 @@ class TestRay:
             val=self.val,
         )
 
-        # Set the resources to be used for each trial (disable GPU, if you don't have one)
-        resources_per_trial = {"cpu": 2, "gpu": 0}
-
         # define the hyperparameter space
-        config = {
+        param_space = {
             "batch_size": tune.choice([8, 16]),
             "num_blocks": tune.choice([1, 2]),
             "num_stacks": tune.choice([2, 4]),
@@ -112,17 +108,14 @@ class TestRay:
 
         # Create the Tuner object and run the hyperparameter search
         tuner = Tuner(
-            trainable=tune.with_resources(
-                train_fn_with_parameters, resources=resources_per_trial
-            ),
-            param_space=config,
+            trainable=train_fn_with_parameters,
+            param_space=param_space,
             tune_config=tune.TuneConfig(
                 metric="MAPE", mode="min", num_samples=num_samples
             ),
             run_config=tune.RunConfig(name="tune_darts"),
         )
         tuner.fit()
-        return
 
     def test_ray_regression_model(self, tmpdir_fn):
         """Check that ray works as expected with a regression model"""
@@ -165,4 +158,3 @@ class TestRay:
 
         tuner = tune.Tuner(objective, param_space=search_space)
         tuner.fit()
-        return
