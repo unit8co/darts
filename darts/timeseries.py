@@ -715,16 +715,14 @@ class TimeSeries:
         else:
             time_index = nw.maybe_get_index(df)
             if time_index is None:
-                raise_log(
-                    ValueError(
-                        "No time column or index found in the DataFrame. `time_col=None` "
-                        "is only supported for pandas DataFrame which is indexed with one of the "
-                        "supported index types: a DatetimeIndex, a RangeIndex, or an integer "
-                        "Index that can be converted into a RangeIndex.",
-                    ),
+                time_index = pd.RangeIndex(len(df))
+                logger.info(
+                    "No time column specified (`time_col=None`) and no index found in the DataFrame. Defaulting to "
+                    "`pandas.RangeIndex(len(df))`. If this is not desired consider adding a time column "
+                    "to your dataframe and defining `time_col`."
                 )
             # if we are here, the dataframe was pandas
-            if not (
+            elif not (
                 isinstance(time_index, VALID_INDEX_TYPES)
                 or np.issubdtype(time_index.dtype, np.integer)
             ):
@@ -1000,9 +998,9 @@ class TimeSeries:
         Parameters
         ----------
         pd_series
-            The Series, or anything which can be converted to a narwhals Series (e.g. pandas.Series, ...). See the 
-            `narwhals documentation 
-            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`_ for more 
+            The Series, or anything which can be converted to a narwhals Series (e.g. pandas.Series, ...). See the
+            `narwhals documentation
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`_ for more
             information.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
