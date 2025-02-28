@@ -152,6 +152,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
             columns=self.training_series.columns,
             static_covariates=self.training_series.static_covariates,
             hierarchy=self.training_series.hierarchy,
+            metadata=self.training_series.metadata,
         )
 
         series = series.append(series_future)
