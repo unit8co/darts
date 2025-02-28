@@ -1634,7 +1634,7 @@ class TimeSeries:
         if time_as_index and backend != "pandas":
             raise_log(
                 ValueError(
-                    "The `time_as_index` parameter is only supported for the pandas backend."
+                    "`time_as_index=True` is only supported with `backend="pandas"`.
                 ),
                 logger,
             )
