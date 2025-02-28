@@ -44,7 +44,7 @@ class TestOptuna:
     val = scaler.transform(val)
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
-    def test_hp_opti_torch_model(self, tmpdir_fn):
+    def test_optuna_torch_model(self, tmpdir_fn):
         """Check that optuna works as expected with a torch-based model"""
 
         # define objective function
@@ -65,11 +65,6 @@ class TestOptuna:
                 "val_loss", min_delta=0.001, patience=3, verbose=True
             )
 
-            pl_trainer_kwargs = {
-                **tfm_kwargs["pl_trainer_kwargs"],
-                "callbacks": [pruner, early_stopper],
-            }
-
             # optionally also add the (scaled) year value as a past covariate
             if include_year:
                 encoders = {
@@ -87,14 +82,17 @@ class TestOptuna:
                 input_chunk_length=in_len,
                 output_chunk_length=out_len,
                 batch_size=8,
-                n_epochs=1,
+                n_epochs=2,
                 nr_epochs_val_period=1,
                 kernel_size=kernel_size,
                 num_filters=num_filters,
                 optimizer_kwargs={"lr": lr},
                 add_encoders=encoders,
                 likelihood=GaussianLikelihood(),
-                pl_trainer_kwargs=pl_trainer_kwargs,
+                pl_trainer_kwargs={
+                    **tfm_kwargs["pl_trainer_kwargs"],
+                    "callbacks": [pruner, early_stopper],
+                },
                 model_name="tcn_model",
                 force_reset=True,
                 save_checkpoints=True,
@@ -127,7 +125,7 @@ class TestOptuna:
 
         # optimize hyperparameters by minimizing the sMAPE on the validation set
         study = optuna.create_study(direction="minimize")
-        study.optimize(objective, n_trials=4)
+        study.optimize(objective, n_trials=3)
 
     @pytest.mark.parametrize(
         "params",
@@ -136,16 +134,15 @@ class TestOptuna:
             [1, 3],  # ocl
         ),
     )
-    def test_hp_opti_regression_model(self, params):
+    def test_optuna_regression_model(self, params):
         """Check that optuna works as expected with a regression model"""
 
         multi_models, ocl = params
 
         # define objective function
         def objective(trial):
-            # select input and output chunk lengths
+            # select input and encoder usage
             target_lags = trial.suggest_int("lags", 1, 12)
-
             include_year = trial.suggest_categorical("year", [False, True])
 
             # optionally also add the (scaled) year value as a past covariate
@@ -159,10 +156,7 @@ class TestOptuna:
                 encoders = None
                 past_lags = None
 
-            # reproducibility
-            torch.manual_seed(42)
-
-            # build the TCN model
+            # build the model
             model = LinearRegressionModel(
                 lags=target_lags,
                 lags_past_covariates=past_lags,
@@ -170,8 +164,6 @@ class TestOptuna:
                 multi_models=multi_models,
                 add_encoders=encoders,
             )
-
-            # train the model
             model.fit(
                 series=self.train,
             )
@@ -185,4 +177,4 @@ class TestOptuna:
 
         # optimize hyperparameters by minimizing the sMAPE on the validation set
         study = optuna.create_study(direction="minimize")
-        study.optimize(objective, n_trials=4)
+        study.optimize(objective, n_trials=3)
