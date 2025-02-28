@@ -1698,7 +1698,7 @@ class TimeSeries:
         """
 
         logger.warning(
-            "`pd_dataframe` is deprecated, please use `to_dataframe` instead"
+            "`TimeSeries.pd_dataframe()` is deprecated, and will be removed in a future version. Use `TimeSeries.to_dataframe()` instead"
         )
         return self.to_dataframe(
             copy=copy,
