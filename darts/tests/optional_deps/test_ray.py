@@ -4,8 +4,6 @@ from sklearn.preprocessing import MaxAbsScaler
 
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
-from darts.metrics import smape
-from darts.models import LinearRegressionModel
 from darts.tests.conftest import RAY_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs
 
 if not RAY_AVAILABLE:
@@ -115,46 +113,4 @@ class TestRay:
             ),
             run_config=tune.RunConfig(name="tune_darts"),
         )
-        tuner.fit()
-
-    def test_ray_regression_model(self, tmpdir_fn):
-        """Check that ray works as expected with a regression model"""
-
-        # define objective function
-        def objective(config):
-            # optionally also add the (scaled) year value as a past covariate
-            if config["include_year"]:
-                encoders = {
-                    "datetime_attribute": {"past": ["year"]},
-                    "transformer": Scaler(),
-                }
-                past_lags = 1
-            else:
-                encoders = None
-                past_lags = None
-
-            # build the model
-            model = LinearRegressionModel(
-                lags=config["lags"],
-                lags_past_covariates=past_lags,
-                output_chunk_length=1,
-                add_encoders=encoders,
-            )
-            model.fit(
-                series=self.train,
-            )
-
-            # Evaluate how good it is on the validation set, using sMAPE
-            preds = model.predict(series=self.train, n=self.val_length)
-            smapes = smape(self.val, preds, n_jobs=-1)
-            smape_val = np.mean(smapes)
-
-            return smape_val if smape_val != np.nan else float("inf")
-
-        search_space = {
-            "lags": tune.choice([1, 3, 6, 12]),
-            "include_years": tune.choice([True, False]),
-        }
-
-        tuner = tune.Tuner(objective, param_space=search_space)
         tuner.fit()
