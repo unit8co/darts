@@ -26,6 +26,22 @@ except ImportError:
     logger.warning("Onnx not installed - Some tests will be skipped.")
     ONNX_AVAILABLE = False
 
+try:
+    import optuna  # noqa: F401
+
+    OPTUNA_AVAILABLE = True
+except ImportError:
+    logger.warning("Optuna not installed - Some tests will be skipped.")
+    OPTUNA_AVAILABLE = False
+
+try:
+    import ray  # noqa: F401
+
+    RAY_AVAILABLE = True
+except ImportError:
+    logger.warning("Ray not installed - Some tests will be skipped.")
+    RAY_AVAILABLE = False
+
 tfm_kwargs = {
     "pl_trainer_kwargs": {
         "accelerator": "cpu",
