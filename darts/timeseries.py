@@ -1599,7 +1599,7 @@ class TimeSeries:
         pandas.Series
             A Pandas Series representation of this univariate time series.
         """
-        logger.warning("`pd_series` is deprecated, please use `to_series` instead")
+        logger.warning("`TimeSeries.pd_series()` is deprecated and will be removed in a future version. Use `TimeSeries.to_series()` instead")
         return self.to_series(copy=copy, backend="pandas")
 
     def to_dataframe(
