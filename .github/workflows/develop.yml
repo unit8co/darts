@@ -67,7 +67,7 @@ jobs:
       - name: "Install Dependencies"
         run: |
           # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/dev-all.txt requirements/optional.txt
+          pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
       - name: "Install libomp (for LightGBM)"
         run: |
