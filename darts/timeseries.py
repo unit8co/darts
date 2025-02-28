@@ -1599,14 +1599,17 @@ class TimeSeries:
         pandas.Series
             A Pandas Series representation of this univariate time series.
         """
-        logger.warning("`TimeSeries.pd_series()` is deprecated and will be removed in a future version. Use `TimeSeries.to_series()` instead")
+        logger.warning(
+            "`TimeSeries.pd_series()` is deprecated and will be removed in a future version. Use "
+            "`TimeSeries.to_series()` instead"
+        )
         return self.to_series(copy=copy, backend="pandas")
 
     def to_dataframe(
         self,
         copy: bool = True,
-        backend: Literal["pandas", "polars", "pyarrow"] = "pandas",
-        time_as_index: bool = False,
+        backend: Literal["pandas", "polars", "pyarrow", "modin", "cudf"] = "pandas",
+        time_as_index: bool = True,
         suppress_warnings: bool = False,
     ):
         """
@@ -1625,6 +1628,8 @@ class TimeSeries:
             Whether to return the dataframe in pandas, polars or pyarrows
         time_as_index
             Whether to set the time index as the index of the dataframe or in the left-most column.
+        suppress_warnings
+            Whether to suppress the warning about transforming a stochastic TimeSeries
         Returns
         -------
         DataFrame
@@ -1634,7 +1639,7 @@ class TimeSeries:
         if time_as_index and backend != "pandas":
             raise_log(
                 ValueError(
-                    "`time_as_index=True` is only supported with `backend="pandas"`.
+                    '`time_as_index=True` is only supported with `backend="pandas"`.'
                 ),
                 logger,
             )
@@ -1661,21 +1666,20 @@ class TimeSeries:
 
         time_index = self._time_index
 
+        if copy:
+            data = data.copy()
+            time_index = time_index.copy()
+
         if time_as_index:
             # special path for pandas with index
-            import pandas as pd
-
             return pd.DataFrame(data=data, index=time_index, columns=columns)
 
-        data_ = {
+        data = {
             time_index.name: time_index,  # set time_index as left-most column
             **{col: data[:, idx] for idx, col in enumerate(columns)},
         }
 
-        if copy:
-            data_ = data_.copy()
-
-        return nw.from_dict(data_, backend=backend).to_native()
+        return nw.from_dict(data, backend=backend).to_native()
 
     def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
         """
@@ -1690,7 +1694,8 @@ class TimeSeries:
         ----------
         copy
             Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
-
+        suppress_warnings
+            Whether to suppress the warning about transforming a stochastic TimeSeries
         Returns
         -------
         pandas.DataFrame
@@ -1698,7 +1703,8 @@ class TimeSeries:
         """
 
         logger.warning(
-            "`TimeSeries.pd_dataframe()` is deprecated, and will be removed in a future version. Use `TimeSeries.to_dataframe()` instead"
+            "`TimeSeries.pd_dataframe()` is deprecated, and will be removed in a future version. Use "
+            "`TimeSeries.to_dataframe()` instead"
         )
         return self.to_dataframe(
             copy=copy,
