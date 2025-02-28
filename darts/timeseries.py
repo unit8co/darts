@@ -1599,7 +1599,7 @@ class TimeSeries:
         pandas.Series
             A Pandas Series representation of this univariate time series.
         """
-        logger.warning("`pd_series` is deprecated, please use `to_series` instead")
+        logger.warning("`TimeSeries.pd_series()` is deprecated and will be removed in a future version. Use `TimeSeries.to_series()` instead")
         return self.to_series(copy=copy, backend="pandas")
 
     def to_dataframe(
@@ -1634,7 +1634,7 @@ class TimeSeries:
         if time_as_index and backend != "pandas":
             raise_log(
                 ValueError(
-                    "The `time_as_index` parameter is only supported for the pandas backend."
+                    "`time_as_index=True` is only supported with `backend="pandas"`.
                 ),
                 logger,
             )
@@ -1698,7 +1698,7 @@ class TimeSeries:
         """
 
         logger.warning(
-            "`pd_dataframe` is deprecated, please use `to_dataframe` instead"
+            "`TimeSeries.pd_dataframe()` is deprecated, and will be removed in a future version. Use `TimeSeries.to_dataframe()` instead"
         )
         return self.to_dataframe(
             copy=copy,
