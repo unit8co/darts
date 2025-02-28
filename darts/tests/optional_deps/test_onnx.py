@@ -7,6 +7,7 @@ import pytest
 import darts.utils.timeseries_generation as tg
 from darts import TimeSeries
 from darts.tests.conftest import ONNX_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs
+from darts.utils.onnx_utils import prepare_onnx_inputs
 
 if not (TORCH_AVAILABLE and ONNX_AVAILABLE):
     pytest.skip(
@@ -68,17 +69,13 @@ class TestOnnx:
         onnx_model = onnx.load(onnx_filename)
         onnx.checker.check_model(onnx_model)
 
-        # manual feature extraction from the series
-        past_feats, future_feats, static_feats = self._helper_prepare_onnx_inputs(
+        # onnx model loading and inference
+        onnx_pred = self._helper_onnx_inference(
             model=model,
+            onnx_filename=onnx_filename,
             series=self.ts_tg,
             past_covariates=self.ts_pc if model.uses_past_covariates else None,
             future_covariates=self.ts_fc if model.uses_future_covariates else None,
-        )
-
-        # onnx model loading and inference
-        onnx_pred = self._helper_onnx_inference(
-            onnx_filename, past_feats, future_feats, static_feats
         )[0][0]
 
         # check that the predictions are similar
@@ -123,19 +120,15 @@ class TestOnnx:
         # export the loaded model
         model_loaded.to_onnx(onnx_filename)
 
-        # manual feature extraction from the series
-        past_feats, future_feats, static_feats = self._helper_prepare_onnx_inputs(
+        # onnx model loading and inference
+        onnx_pred = self._helper_onnx_inference(
             model=model_loaded,
+            onnx_filename=onnx_filename,
             series=self.ts_tg,
             past_covariates=self.ts_pc if model_loaded.uses_past_covariates else None,
             future_covariates=self.ts_fc
             if model_loaded.uses_future_covariates
             else None,
-        )
-
-        # onnx model loading and inference
-        onnx_pred = self._helper_onnx_inference(
-            onnx_filename, past_feats, future_feats, static_feats
         )[0][0]
 
         # check that the predictions are similar
@@ -159,17 +152,13 @@ class TestOnnx:
         # export the loaded model
         model_weights.to_onnx(onnx_filename2)
 
-        # manual feature extraction from the series
-        past_feats, future_feats, static_feats = self._helper_prepare_onnx_inputs(
+        # onnx model loading and inference
+        onnx_pred_weights = self._helper_onnx_inference(
             model=model_weights,
+            onnx_filename=onnx_filename2,
             series=self.ts_tg,
             past_covariates=self.ts_pc if model.supports_past_covariates else None,
             future_covariates=self.ts_fc if model.supports_future_covariates else None,
-        )
-
-        # onnx model loading and inference
-        onnx_pred_weights = self._helper_onnx_inference(
-            onnx_filename2, past_feats, future_feats, static_feats
         )[0][0]
 
         assert pred_weights.shape == onnx_pred_weights.shape, (
@@ -179,53 +168,25 @@ class TestOnnx:
             onnx_pred_weights, pred_weights.all_values(), decimal=4
         )
 
-    def _helper_prepare_onnx_inputs(
-        self,
-        model,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
-    ) -> tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]:
-        """Helper function to slice and concatenate the input features"""
-        past_feats, future_feats, static_feats = None, None, None
-        # get input & output windows
-        past_start = series.end_time() - (model.input_chunk_length - 1) * series.freq
-        past_end = series.end_time()
-        future_start = past_end + 1 * series.freq
-        future_end = past_end + model.output_chunk_length * series.freq
-        # extract all historic and future features from target, past and future covariates
-        past_feats = series[past_start:past_end].values()
-        if past_covariates and model.uses_past_covariates:
-            # extract past covariates
-            past_feats = np.concatenate(
-                [past_feats, past_covariates[past_start:past_end].values()], axis=1
-            )
-        if future_covariates and model.uses_future_covariates:
-            # extract past part of future covariates
-            past_feats = np.concatenate(
-                [past_feats, future_covariates[past_start:past_end].values()], axis=1
-            )
-            # extract future part of future covariates
-            future_feats = future_covariates[future_start:future_end].values()
-        # add batch dimension -> (batch, n time steps, n components)
-        past_feats = np.expand_dims(past_feats, axis=0).astype(series.dtype)
-        future_feats = np.expand_dims(future_feats, axis=0).astype(series.dtype)
-        # extract static covariates
-        if series.has_static_covariates and model.uses_static_covariates:
-            static_feats = np.expand_dims(
-                series.static_covariates_values(), axis=0
-            ).astype(series.dtype)
-
-        return past_feats, future_feats, static_feats
-
     def _helper_onnx_inference(
         self,
+        model,
         onnx_filename: str,
-        past_feats: np.ndarray,
-        future_feats: np.ndarray,
-        static_feats: np.ndarray,
+        series: TimeSeries,
+        past_covariates: Optional[TimeSeries],
+        future_covariates: Optional[TimeSeries],
     ):
+        """Darts model is only used to detect which covariates are supported by the weights."""
         ort_session = ort.InferenceSession(onnx_filename)
+
+        # extract the input arrays from the series
+        past_feats, future_feats, static_feats = prepare_onnx_inputs(
+            model=model,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
         # extract only the features expected by the model
         ort_inputs = {}
         for name, arr in zip(
