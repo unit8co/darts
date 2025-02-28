@@ -990,7 +990,7 @@ class TimeSeries:
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
     ) -> Self:
         """
-        Build a univariate deterministic TimeSeries from a Series
+        Build a univariate deterministic TimeSeries from a Series.
 
         The series must contain an index that is either a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index
         that can be converted into a RangeIndex. It is better if the index has no holes; alternatively setting
