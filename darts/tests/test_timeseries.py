@@ -25,7 +25,9 @@ class TestTimeSeries:
 
     def test_creation(self):
         series_test = TimeSeries.from_series(self.pd_series1)
-        assert series_test.pd_series().equals(self.pd_series1.astype(float))
+        assert series_test.to_series(backend="pandas").equals(
+            self.pd_series1.astype(float)
+        )
 
         # Creation with a well-formed array:
         ar = xr.DataArray(
@@ -78,13 +80,13 @@ class TestTimeSeries:
     def test_pandas_creation(self):
         pd_series = pd.Series(range(10), name="test_name", dtype="float32")
         ts = TimeSeries.from_series(pd_series)
-        ts_pd_series = ts.pd_series()
+        ts_pd_series = ts.to_series(backend="pandas")
         assert ts_pd_series.equals(pd_series)
         assert ts_pd_series.name == pd_series.name
 
         pd_df = pd_series.to_frame()
         ts = TimeSeries.from_dataframe(pd_df)
-        ts_pd_df = ts.pd_dataframe()
+        ts_pd_df = ts.to_dataframe(backend="pandas", time_as_index=True)
         assert ts_pd_df.equals(pd_df)
 
     def test_integer_range_indexing(self):
@@ -345,7 +347,9 @@ class TestTimeSeries:
 
         assert series_test.start_time() == pd.to_datetime("20130101")
         assert series_test.end_time() == pd.to_datetime("20130110")
-        assert all(series_test.pd_series().values == self.pd_series1.values)
+        assert all(
+            series_test.to_series(backend="pandas").values == self.pd_series1.values
+        )
         assert series_test.freq == self.series1.freq
 
     # TODO test over to_dataframe when multiple features choice is decided
@@ -1002,11 +1006,11 @@ class TestTimeSeries:
 
     def test_cumsum(self):
         cumsum_expected = TimeSeries.from_dataframe(
-            self.series1.pd_dataframe().cumsum()
+            self.series1.to_dataframe(backend="pandas", time_as_index=True).cumsum()
         )
         # univariate deterministic
         assert self.series1.cumsum() == TimeSeries.from_dataframe(
-            self.series1.pd_dataframe().cumsum()
+            self.series1.to_dataframe(backend="pandas", time_as_index=True).cumsum()
         )
         # multivariate deterministic
         assert self.series1.stack(self.series1).cumsum() == cumsum_expected.stack(
@@ -1021,20 +1025,34 @@ class TestTimeSeries:
         )
 
     def test_diff(self):
-        diff1 = TimeSeries.from_dataframe(self.series1.pd_dataframe().diff())
-        diff2 = TimeSeries.from_dataframe(diff1.pd_dataframe().diff())
-        diff1_no_na = TimeSeries.from_dataframe(diff1.pd_dataframe().dropna())
-        diff2_no_na = TimeSeries.from_dataframe(diff2.pd_dataframe().dropna())
+        diff1 = TimeSeries.from_dataframe(
+            self.series1.to_dataframe(backend="pandas", time_as_index=True).diff()
+        )
+        diff2 = TimeSeries.from_dataframe(
+            diff1.to_dataframe(backend="pandas", time_as_index=True).diff()
+        )
+        diff1_no_na = TimeSeries.from_dataframe(
+            diff1.to_dataframe(backend="pandas", time_as_index=True).dropna()
+        )
+        diff2_no_na = TimeSeries.from_dataframe(
+            diff2.to_dataframe(backend="pandas", time_as_index=True).dropna()
+        )
 
         diff_shift2 = TimeSeries.from_dataframe(
-            self.series1.pd_dataframe().diff(periods=2)
+            self.series1.to_dataframe(backend="pandas", time_as_index=True).diff(
+                periods=2
+            )
         )
         diff_shift2_no_na = TimeSeries.from_dataframe(
-            self.series1.pd_dataframe().diff(periods=2).dropna()
+            self.series1.to_dataframe(backend="pandas", time_as_index=True)
+            .diff(periods=2)
+            .dropna()
         )
 
         diff2_shift2 = TimeSeries.from_dataframe(
-            diff_shift2.pd_dataframe().diff(periods=2)
+            diff_shift2.to_dataframe(backend="pandas", time_as_index=True).diff(
+                periods=2
+            )
         )
 
         with pytest.raises(ValueError):
@@ -1158,7 +1176,8 @@ class TestTimeSeries:
         # getitem from dates
         assert self.series1[pd.date_range("20130101", " 20130104")] == series_short
         assert self.series1[pd.Timestamp("20130101")] == TimeSeries.from_dataframe(
-            self.series1.pd_dataframe()[:1], freq=self.series1.freq
+            self.series1.to_dataframe(backend="pandas", time_as_index=True)[:1],
+            freq=self.series1.freq,
         )
         assert (
             self.series1[pd.Timestamp("20130101") : pd.Timestamp("20130104")]
@@ -1209,7 +1228,11 @@ class TestTimeSeries:
 
         idx_single = pd.RangeIndex(start=start + freq, stop=start + 2 * freq, step=freq)
         assert series[idx_single].time_index == idx_single
-        assert series[idx_single].pd_series().equals(series.pd_series()[1:2])
+        assert (
+            series[idx_single]
+            .to_series(backend="pandas")
+            .equals(series.to_series(backend="pandas")[1:2])
+        )
         assert series[idx_single] == series[1:2] == series[1]
 
         # cannot slice with two RangeIndex
@@ -1310,7 +1333,7 @@ class TestTimeSeries:
         assert series_test.freq_str == "2D"
         assert series_test.start_time() == range_[0]
         assert series_test.end_time() == range_[-1]
-        assert math.isnan(series_test.pd_series().get("20130105"))
+        assert math.isnan(series_test.to_series(backend="pandas").get("20130105"))
 
         # ------ test infer frequency for all offset aliases from ------
         # https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
@@ -1449,147 +1472,319 @@ class TestTimeSeries:
         resampled_timeseries = timeseries.resample(freqs["h"])
         assert resampled_timeseries.freq_str == freqs["h"]
         # day 1: -> 0
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101020000")] == 0
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101020000")
+            ]
+            == 0
+        )
         # day 2: -> 1
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130102020000")] == 1
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130102020000")
+            ]
+            == 1
+        )
         # day 9: -> 8
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130109090000")] == 8
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130109090000")
+            ]
+            == 8
+        )
 
         # down-sample with pad
         # one value per 2 days -> entries for every other days do not exist, value of the first day is kept
         resampled_timeseries = timeseries.resample("2D")
         assert resampled_timeseries.freq_str == "2D"
         # day 1: -> 0
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101")
+            ]
+            == 0
+        )
         # day 2: -> does not exist
         with pytest.raises(KeyError):
-            resampled_timeseries.pd_series().at[pd.Timestamp("20130102")]
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130102")
+            ]
         # day 9: -> 8
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130109")] == 8
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130109")
+            ]
+            == 8
+        )
 
         # down-sample with all
         # one value per 2 days -> if all scalar in group are > 0 then 1 else 0
         resampled_timeseries = timeseries.resample("2D", "all")
         # group: [0,1] -> 0
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101")
+            ]
+            == 0
+        )
         # group: [2,3] -> 1
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 1
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130103")
+            ]
+            == 1
+        )
 
         # down-sample with any
         # one value per 2 days -> if any scalar in group is > 0 then 1 else 0
         resampled_timeseries = timeseries.resample("2D", "any")
         # group: [0,1] -> 1
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 1
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101")
+            ]
+            == 1
+        )
         # group: [2,3] -> 1
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 1
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130103")
+            ]
+            == 1
+        )
 
         # up-sample with asfreq
         # two values per day -> holes are filled with nan
         resampled_timeseries = timeseries.resample("12h", "asfreq")
         # day 1, 0h -> 0
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101000000")] == 0
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101000000")
+            ]
+            == 0
+        )
         # day 1, 12h -> nan
         assert pd.isna(
-            resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")]
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101120000")
+            ]
         )
 
         # up-sample with backfill
         # two values per day -> holes are filled with next value
         resampled_timeseries = timeseries.resample("12h", "backfill")
         # hole in day 1 -> 1, from day 2
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 1
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101120000")
+            ]
+            == 1
+        )
         # day 2 -> 1
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130102000000")] == 1
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130102000000")
+            ]
+            == 1
+        )
 
         # up-sample with bfill (same as backfill)
         # two values per day -> holes are filled with next value
         resampled_timeseries = timeseries.resample("12h", "bfill")
         # hole in day 1 -> 1, from day 2
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 1
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101120000")
+            ]
+            == 1
+        )
         # day 2 -> 1
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130102000000")] == 1
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130102000000")
+            ]
+            == 1
+        )
 
         # down-sample with count
         # two values per day -> count number of values per group
         resampled_timeseries = timeseries.resample("2D", "count")
         # days 1,2 grouped -> 2
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 2
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101")
+            ]
+            == 2
+        )
         # days 3,4 grouped -> 2
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 2
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130103")
+            ]
+            == 2
+        )
 
         # up-sample with ffill
         # two values per day -> holes are filled with previous value
         resampled_timeseries = timeseries.resample("12h", "ffill")
         # day 1 -> 0
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101000000")] == 0
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101000000")
+            ]
+            == 0
+        )
         # hole in day 1 -> 0, from day 1
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 0
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101120000")
+            ]
+            == 0
+        )
 
         # down-sample with first
         # one value per 2 days -> keep first value of the group
         resampled_timeseries = timeseries.resample("2D", "first")
         # days 1,2 grouped -> 0, from day 1
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101")
+            ]
+            == 0
+        )
         # days 3,4 grouped -> 2, from day 3
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 2
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130103")
+            ]
+            == 2
+        )
 
         # up-sample with interpolate
         # two values per day -> holes are filled with linearly interpolated values
         resampled_timeseries = timeseries.resample("12h", "interpolate")
         # day 1, 0h -> 0
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101000000")] == 0
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101000000")
+            ]
+            == 0
+        )
         # between [0,1] -> 0.5
         assert (
-            resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 0.5
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101120000")
+            ]
+            == 0.5
         )
 
         # down-sample with last
         # one value per 2 days -> keep last value of the group
         resampled_timeseries = timeseries.resample("2D", "last")
         # days 1,2 grouped -> 1, from day 2
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 1
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101")
+            ]
+            == 1
+        )
         # days 3,4 grouped -> 3, from day 4
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 3
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130103")
+            ]
+            == 3
+        )
 
         # down-sample with max
         # one value per 2 days -> keep the max value of the group
         resampled_timeseries = timeseries.resample("2D", "max")
         # days 1,2 group: [0,1] -> 1
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 1
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101")
+            ]
+            == 1
+        )
         # days 3,4 group: [2,3] -> 3
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 3
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130103")
+            ]
+            == 3
+        )
 
         # down-sample with mean
         # one value per 2 days -> keep the mean of the values of the group
         resampled_timeseries = timeseries.resample("2D", "mean")
         # days 1,2 group: [0,1] -> 0.5
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0.5
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101")
+            ]
+            == 0.5
+        )
         # days 3,4 group: [2,3] -> 2.5
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 2.5
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130103")
+            ]
+            == 2.5
+        )
 
         # down-sample with median
         # one value per 3 days -> keep the median of the values of the group
         resampled_timeseries = timeseries.resample("3D", "median")
         # days 1,2,3 group: [0,1,2] -> 1
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 1
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101")
+            ]
+            == 1
+        )
         # days 4,5,6 group: [3,4,5] -> 4
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130104")] == 4
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130104")
+            ]
+            == 4
+        )
 
         # down-sample with min
         # one value per 2 days -> keep the min value of the group
         resampled_timeseries = timeseries.resample("2D", "min")
         # days 1,2 group: [0,1] -> 0
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101")
+            ]
+            == 0
+        )
         # days 3,4 group: [2,3] -> 2
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 2
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130103")
+            ]
+            == 2
+        )
 
         # up-sample with nearest (next is the nearest if equals)
         # two values per day -> holes are filled with nearest value
         resampled_timeseries = timeseries.resample("12h", "nearest")
         # days 1.5 -> 1 from day 2
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101120000")] == 1
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101120000")
+            ]
+            == 1
+        )
         # days 2 -> 1
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130102000000")] == 1
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130102000000")
+            ]
+            == 1
+        )
 
         # down-sample with quantile
         # one value per 2 days -> keep the quantile of the values of the group
@@ -1597,17 +1792,37 @@ class TestTimeSeries:
             "2D", "quantile", method_kwargs={"q": 0.05}
         )
         # days 1,2 group: [0,1] -> 0.05
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0.05
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101")
+            ]
+            == 0.05
+        )
         # days 3,4 group: [2,3] -> 2.05
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 2.05
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130103")
+            ]
+            == 2.05
+        )
 
         # down-sample with std
         # one value per 2 days -> keep the std of the values of the group
         resampled_timeseries = timeseries.resample("2D", "std")
         # days 1,2 group: [0,1] -> 0.5
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0.5
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101")
+            ]
+            == 0.5
+        )
         # days 3,4 group: [2,3] -> 0.5
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 0.5
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130103")
+            ]
+            == 0.5
+        )
 
         # down-sample with sum using reduce
         # one value per 2 days -> keep the sum of the values of the group
@@ -1615,25 +1830,55 @@ class TestTimeSeries:
             "2D", "reduce", method_kwargs={"func": np.sum}
         )
         # days 1,2 group: [0,1] -> 1
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 1
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101")
+            ]
+            == 1
+        )
         # days 3,4 group: [2,3] -> 5
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 5
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130103")
+            ]
+            == 5
+        )
 
         # down-sample with sum
         # one value per 2 days -> keep the sum of the values of the group
         resampled_timeseries = timeseries.resample("2D", "sum")
         # days 1,2 group: [0,1] -> 1
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 1
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101")
+            ]
+            == 1
+        )
         # days 3,4 group: [2,3] -> 5
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 5
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130103")
+            ]
+            == 5
+        )
 
         # down-sample with var
         # one value per 2 days -> keep the sum of the values of the group
         resampled_timeseries = timeseries.resample("2D", "var")
         # days 1,2 group: [0,1] -> 0.25
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130101")] == 0.25
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130101")
+            ]
+            == 0.25
+        )
         # days 3,4 group: [2,4] -> 0.25
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20130103")] == 0.25
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20130103")
+            ]
+            == 0.25
+        )
 
         # unsupported method: apply
         with pytest.raises(ValueError):
@@ -1648,7 +1893,12 @@ class TestTimeSeries:
         resampled_timeseries = timeseries.resample(
             freq="1" + freqs["h"], offset=pd.Timedelta("30" + freqs["min"])
         )
-        assert resampled_timeseries.pd_series().at[pd.Timestamp("20200101233000")] == 0
+        assert (
+            resampled_timeseries.to_series(backend="pandas").at[
+                pd.Timestamp("20200101233000")
+            ]
+            == 0
+        )
 
     def test_short_series_creation(self):
         # test missing freq argument error when filling missing dates on short time series
@@ -1792,10 +2042,10 @@ class TestTimeSeries:
             pd.date_range("20000101", "20000110"), np.random.randn(10, 3)
         )
 
-        df_0 = series.pd_dataframe()
-        df_2 = series.pd_dataframe()
-        df_01 = series.pd_dataframe()
-        df_012 = series.pd_dataframe()
+        df_0 = series.to_dataframe(backend="pandas", time_as_index=True)
+        df_2 = series.to_dataframe(backend="pandas", time_as_index=True)
+        df_01 = series.to_dataframe(backend="pandas", time_as_index=True)
+        df_012 = series.to_dataframe(backend="pandas", time_as_index=True)
 
         PANDAS_210 = pd.__version__ >= "2.1.0"
         select_map = "map"
