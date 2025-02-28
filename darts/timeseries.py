@@ -33,7 +33,6 @@ Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/co
 ``TimeSeries`` documentation for more information on covariates.
 """
 
-import contextlib
 import itertools
 import pickle
 import re
@@ -51,7 +50,6 @@ import narwhals as nw
 import numpy as np
 import pandas as pd
 import xarray as xr
-from narwhals.typing import IntoDataFrame, IntoSeries
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
@@ -572,7 +570,7 @@ class TimeSeries:
     @classmethod
     def from_dataframe(
         cls,
-        df: IntoDataFrame,
+        df: pd.DataFrame,
         time_col: Optional[str] = None,
         value_cols: Optional[Union[list[str], str]] = None,
         fill_missing_dates: Optional[bool] = False,
@@ -589,10 +587,7 @@ class TimeSeries:
         Parameters
         ----------
         df
-            The DataFrame, or anything which can be converted to a narwhals DataFrame (e.g. pandas.DataFrame,
-            polars.DataFrame, ...). See the `narwhals documentation
-            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`_ for more
-            information.
+            The DataFrame
         time_col
             The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
             timestamps) or a RangeIndex (if it contains integers).
@@ -655,14 +650,12 @@ class TimeSeries:
         TimeSeries
             A univariate or multivariate deterministic TimeSeries constructed from the inputs.
         """
-        df = nw.from_native(df, eager_only=True, pass_through=False)
-        time_zone = None
 
         # get values
         if value_cols is None:
-            series_df = df.drop(time_col) if time_col else df
+            series_df = df.loc[:, df.columns != time_col]
         else:
-            if isinstance(value_cols, (str, int)):
+            if isinstance(value_cols, str):
                 value_cols = [value_cols]
             series_df = df[value_cols]
 
@@ -671,90 +664,77 @@ class TimeSeries:
             if time_col not in df.columns:
                 raise_log(AttributeError(f"time_col='{time_col}' is not present."))
 
-            time_col_vals = df.get_column(time_col)
+            time_index = pd.Index([])
+            time_col_vals = df[time_col]
 
-            if time_col_vals.dtype == nw.String:
+            if np.issubdtype(time_col_vals.dtype, object):
                 # Try to convert to integers if needed
-                with contextlib.suppress(Exception):
-                    time_col_vals = time_col_vals.cast(nw.Int64)
+                try:
+                    time_col_vals = time_col_vals.astype(int)
+                except ValueError:
+                    pass
 
-            if time_col_vals.dtype.is_integer():
-                if time_col_vals.is_duplicated().any():
-                    raise_log(
-                        ValueError(
-                            "The provided integer time index column contains duplicate values."
-                        )
-                    )
+            if np.issubdtype(time_col_vals.dtype, np.integer):
+                # We have to check all integers appear only once to have a valid index
+                raise_if(
+                    time_col_vals.duplicated().any(),
+                    "The provided integer time index column contains duplicate values.",
+                )
+
                 # Temporarily use an integer Index to sort the values, and replace by a
                 # RangeIndex in `TimeSeries.from_xarray()`
                 time_index = pd.Index(time_col_vals)
 
-            elif isinstance(time_col_vals.dtype, nw.String):
+            elif np.issubdtype(time_col_vals.dtype, object):
                 # The integer conversion failed; try datetimes
                 try:
                     time_index = pd.DatetimeIndex(time_col_vals)
                 except ValueError:
                     raise_log(
                         AttributeError(
-                            "'time_col' is of 'String' dtype but doesn't contain valid timestamps"
+                            "'time_col' is of 'object' dtype but doesn't contain valid timestamps"
                         )
                     )
-            elif isinstance(time_col_vals.dtype, nw.Datetime):
-                # remember time zone here as polars converts to UTC
-                time_zone = time_col_vals.dtype.time_zone
-                if time_zone is not None:
-                    time_col_vals = time_col_vals.dt.replace_time_zone(None)
+            elif np.issubdtype(time_col_vals.dtype, np.datetime64):
                 time_index = pd.DatetimeIndex(time_col_vals)
             else:
                 raise_log(
                     AttributeError(
-                        "Invalid type of `time_col`: it needs to be of either 'String', 'Datetime' or 'Int' dtype."
+                        "Invalid type of `time_col`: it needs to be of either 'str', 'datetime' or 'int' dtype."
                     )
                 )
             time_index.name = time_col
         else:
-            time_index = nw.maybe_get_index(df)
-            if time_index is None:
-                time_index = pd.RangeIndex(len(df))
-                logger.info(
-                    "No time column specified (`time_col=None`) and no index found in the DataFrame. Defaulting to "
-                    "`pandas.RangeIndex(len(df))`. If this is not desired consider adding a time column "
-                    "to your dataframe and defining `time_col`."
-                )
-            # if we are here, the dataframe was pandas
-            elif not (
-                isinstance(time_index, VALID_INDEX_TYPES)
-                or np.issubdtype(time_index.dtype, np.integer)
-            ):
-                raise_log(
-                    ValueError(
-                        "If time_col is not specified, the DataFrame must be indexed either with "
-                        "a DatetimeIndex, a RangeIndex, or an integer Index that can be converted into a RangeIndex"
-                    ),
-                    logger,
-                )
-            if isinstance(time_index, pd.DatetimeIndex):
-                time_zone = time_index.tz
-                if time_zone is not None:
-                    # remove and remember time zone here as pandas converts to UTC
-                    time_index = time_index.tz_localize(None)
-
-        # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
-        if time_zone is not None:
-            logger.warning(
-                "The provided DatetimeIndex was associated with a timezone, which is currently not supported "
-                "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
-                f"`ts.time_index.tz_localize({time_zone})` when exporting the results."
-                "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
-                "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
-                "original timezone."
+            raise_if_not(
+                isinstance(df.index, VALID_INDEX_TYPES)
+                or np.issubdtype(df.index.dtype, np.integer),
+                "If time_col is not specified, the DataFrame must be indexed either with "
+                "a DatetimeIndex, a RangeIndex, or an integer Index that can be converted into a RangeIndex",
+                logger,
             )
+            # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
+            # pandas.DataFrame loses the tz information if it's not its index
+            if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
+                logger.warning(
+                    "The provided DatetimeIndex was associated with a timezone, which is currently not supported "
+                    "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                    f"`ts.time_index.tz_localize({df.index.tz})` when exporting the results."
+                    "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                    "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                    "original timezone."
+                )
+                time_index = df.index.tz_localize(None)
+            else:
+                time_index = df.index
 
         if not time_index.name:
             time_index.name = time_col if time_col else DIMS[0]
 
+        if series_df.columns.name:
+            series_df.columns.name = None
+
         xa = xr.DataArray(
-            series_df.to_numpy()[:, :, np.newaxis],
+            series_df.values[:, :, np.newaxis],
             dims=(time_index.name,) + DIMS[-2:],
             coords={time_index.name: time_index, DIMS[1]: series_df.columns},
             attrs={STATIC_COV_TAG: static_covariates, HIERARCHY_TAG: hierarchy},
@@ -981,14 +961,14 @@ class TimeSeries:
     @classmethod
     def from_series(
         cls,
-        pd_series: IntoSeries,
+        pd_series: pd.Series,
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
     ) -> Self:
         """
-        Build a univariate deterministic TimeSeries from a Series.
+        Build a univariate deterministic series from a pandas Series.
 
         The series must contain an index that is either a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index
         that can be converted into a RangeIndex. It is better if the index has no holes; alternatively setting
@@ -998,10 +978,7 @@ class TimeSeries:
         Parameters
         ----------
         pd_series
-            The Series, or anything which can be converted to a narwhals Series (e.g. pandas.Series, ...). See the
-            `narwhals documentation
-            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`_ for more
-            information.
+            The pandas Series instance.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
             with NaN values. This requires either a provided `freq` or the possibility to infer the frequency from the
@@ -1025,8 +1002,7 @@ class TimeSeries:
         TimeSeries
             A univariate and deterministic TimeSeries constructed from the inputs.
         """
-        nw_series = nw.from_native(pd_series, series_only=True, pass_through=False)
-        df = nw_series.to_frame()
+        df = pd.DataFrame(pd_series)
         return cls.from_dataframe(
             df,
             time_col=None,
@@ -1554,7 +1530,7 @@ class TimeSeries:
     ================
     """
 
-    def data_array(self, copy=True) -> xr.DataArray:
+    def data_array(self, copy: bool = True) -> xr.DataArray:
         """
         Return the ``xarray.DataArray`` representation underlying this series.
 
@@ -1570,7 +1546,44 @@ class TimeSeries:
         """
         return self._xa.copy() if copy else self._xa
 
-    def pd_series(self, copy=True) -> pd.Series:
+    def to_series(
+        self,
+        copy: bool = True,
+        backend: Literal["pandas", "polars", "pyarrow"] = "pandas",
+    ):
+        """
+        Return a Series representation of this univariate deterministic time series.
+
+        Works only for univariate series that are deterministic (i.e., made of 1 sample).
+
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the series. Leave it to True unless you know what you are doing.
+        backend
+            The library used for the Series.
+
+        Returns
+        -------
+            A Series representation of this univariate time series.
+        """
+        self._assert_univariate()
+        self._assert_deterministic()
+
+        if backend != "pandas":
+            return self.to_dataframe(copy=copy, backend=backend)
+
+        data = self._xa[:, 0, 0].values
+        index = self._time_index
+        name = self.components[0]
+
+        if copy:
+            data = data.copy()
+            index = index.copy()
+
+        return pd.Series(data=data, index=index, name=name)
+
+    def pd_series(self, copy: bool = True) -> pd.Series:
         """
         Return a Pandas Series representation of this univariate deterministic time series.
 
@@ -1586,22 +1599,21 @@ class TimeSeries:
         pandas.Series
             A Pandas Series representation of this univariate time series.
         """
-        self._assert_univariate()
-        self._assert_deterministic()
+        logger.warning(
+            "`TimeSeries.pd_series()` is deprecated and will be removed in a future version. Use "
+            "`TimeSeries.to_series()` instead"
+        )
+        return self.to_series(copy=copy, backend="pandas")
 
-        data = self._xa[:, 0, 0].values
-        index = self._time_index
-        name = self.components[0]
-
-        if copy:
-            data = data.copy()
-            index = index.copy()
-
-        return pd.Series(data=data, index=index, name=name)
-
-    def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
+    def to_dataframe(
+        self,
+        copy: bool = True,
+        backend: Literal["pandas", "polars", "pyarrow", "modin", "cudf"] = "pandas",
+        time_as_index: bool = True,
+        suppress_warnings: bool = False,
+    ):
         """
-        Return a Pandas DataFrame representation of this time series.
+        Return a DataFrame representation of this time series.
 
         Each of the series components will appear as a column in the DataFrame.
         If the series is stochastic, the samples are returned as columns of the dataframe with column names
@@ -1612,12 +1624,26 @@ class TimeSeries:
         ----------
         copy
             Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
-
+        backend
+            Whether to return the dataframe in pandas, polars or pyarrows
+        time_as_index
+            Whether to set the time index as the index of the dataframe or in the left-most column.
+        suppress_warnings
+            Whether to suppress the warning about transforming a stochastic TimeSeries
         Returns
         -------
-        pandas.DataFrame
-            The Pandas DataFrame representation of this time series
+        DataFrame
+            A DataFrame representation of this time series.
         """
+
+        if time_as_index and backend != "pandas":
+            raise_log(
+                ValueError(
+                    '`time_as_index=True` is only supported with `backend="pandas"`.'
+                ),
+                logger,
+            )
+
         if not self.is_deterministic:
             if not suppress_warnings:
                 logger.warning(
@@ -1633,18 +1659,59 @@ class TimeSeries:
                 "_s".join((comp_name, str(sample_id)))
                 for comp_name, sample_id in itertools.product(comp_name, samples)
             ]
-            data = self._xa.stack(data=(DIMS[1], DIMS[2])).values
+            data = self._xa.stack(data=(DIMS[1], DIMS[2]))
         else:
-            columns = self._xa.get_index(DIMS[1])
             data = self._xa[:, :, 0].values
-        index = self._time_index
+            columns = self._xa.get_index(DIMS[1])
+
+        time_index = self._time_index
 
         if copy:
-            columns = columns.copy()
             data = data.copy()
-            index = index.copy()
+            time_index = time_index.copy()
 
-        return pd.DataFrame(data=data, index=index, columns=columns)
+        if time_as_index:
+            # special path for pandas with index
+            return pd.DataFrame(data=data, index=time_index, columns=columns)
+
+        data = {
+            time_index.name: time_index,  # set time_index as left-most column
+            **{col: data[:, idx] for idx, col in enumerate(columns)},
+        }
+
+        return nw.from_dict(data, backend=backend).to_native()
+
+    def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
+        """
+        Return a Pandas DataFrame representation of this time series.
+
+        Each of the series components will appear as a column in the DataFrame.
+        If the series is stochastic, the samples are returned as columns of the dataframe with column names
+        as 'component_s#' (e.g. with two components and two samples:
+        'comp0_s0', 'comp0_s1' 'comp1_s0' 'comp1_s1').
+
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
+        suppress_warnings
+            Whether to suppress the warning about transforming a stochastic TimeSeries
+        Returns
+        -------
+        pandas.DataFrame
+            The Pandas DataFrame representation of this time series
+        """
+
+        logger.warning(
+            "`TimeSeries.pd_dataframe()` is deprecated, and will be removed in a future version. Use "
+            "`TimeSeries.to_dataframe()` instead"
+        )
+        return self.to_dataframe(
+            copy=copy,
+            backend="pandas",
+            time_as_index=True,
+            suppress_warnings=suppress_warnings,
+        )
 
     def quantile_df(self, quantile=0.5) -> pd.DataFrame:
         """
@@ -1762,7 +1829,9 @@ class TimeSeries:
         """
         return pd.concat(
             [
-                self.quantile_timeseries(quantile).pd_dataframe()
+                self.quantile_timeseries(quantile).to_dataframe(
+                    backend="pandas", time_as_index=True
+                )
                 for quantile in quantiles
             ],
             axis=1,
@@ -2108,7 +2177,7 @@ class TimeSeries:
             by a DatetimeIndex).
         """
 
-        df = self.pd_dataframe()
+        df = self.to_dataframe(backend="pandas", time_as_index=True)
 
         if mode == "all":
             is_nan_series = df.isna().all(axis=1).astype(int)
@@ -3885,7 +3954,9 @@ class TimeSeries:
         )
 
         # read series dataframe
-        ts_df = self.pd_dataframe(copy=False, suppress_warnings=True)
+        ts_df = self.to_dataframe(
+            copy=False, backend="pandas", time_as_index=True, suppress_warnings=True
+        )
 
         # store some original attributes of the series
         original_components = self.components
@@ -4058,7 +4129,9 @@ class TimeSeries:
         str
             A JSON String representing the time series
         """
-        return self.pd_dataframe().to_json(orient="split", date_format="iso")
+        return self.to_dataframe(backend="pandas", time_as_index=True).to_json(
+            orient="split", date_format="iso"
+        )
 
     def to_csv(self, *args, **kwargs):
         """
@@ -4070,6 +4143,7 @@ class TimeSeries:
         .. [1] https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv
         """
         if not self.is_deterministic:
+            # TODO THAT'S NOT TRUE!
             raise_log(
                 AssertionError(
                     "The pd_dataframe() method can only return DataFrames of deterministic "
@@ -4078,7 +4152,7 @@ class TimeSeries:
                 )
             )
 
-        self.pd_dataframe().to_csv(*args, **kwargs)
+        self.to_dataframe(backend="pandas", time_as_index=True).to_csv(*args, **kwargs)
 
     def to_pickle(self, path: str, protocol: int = pickle.HIGHEST_PROTOCOL):
         """
