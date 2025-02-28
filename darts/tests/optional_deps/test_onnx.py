@@ -83,11 +83,9 @@ class TestOnnx:
         onnx_pred = self._helper_onnx_inference(
             model=model,
             onnx_filename=onnx_filename,
-            series=self.ts_tg_with_static
-            if model.uses_static_covariates
-            else self.ts_tg,
-            past_covariates=self.ts_pc if model.uses_past_covariates else None,
-            future_covariates=self.ts_fc if model.uses_future_covariates else None,
+            series=self.ts_tg_with_static,
+            past_covariates=self.ts_pc,
+            future_covariates=self.ts_fc,
         )[0][0]
 
         # check that the predictions are similar
@@ -140,13 +138,9 @@ class TestOnnx:
         onnx_pred = self._helper_onnx_inference(
             model=model_loaded,
             onnx_filename=onnx_filename,
-            series=self.ts_tg_with_static
-            if model_loaded.uses_static_covariates
-            else self.ts_tg,
-            past_covariates=self.ts_pc if model_loaded.uses_past_covariates else None,
-            future_covariates=self.ts_fc
-            if model_loaded.uses_future_covariates
-            else None,
+            series=self.ts_tg_with_static,
+            past_covariates=self.ts_pc,
+            future_covariates=self.ts_fc,
         )[0][0]
 
         # check that the predictions are similar
@@ -176,13 +170,9 @@ class TestOnnx:
         onnx_pred_weights = self._helper_onnx_inference(
             model=model_weights,
             onnx_filename=onnx_filename2,
-            series=self.ts_tg_with_static
-            if model_weights.uses_static_covariates
-            else self.ts_tg,
-            past_covariates=self.ts_pc if model_weights.uses_past_covariates else None,
-            future_covariates=self.ts_fc
-            if model_weights.uses_future_covariates
-            else None,
+            series=self.ts_tg_with_static,
+            past_covariates=self.ts_pc,
+            future_covariates=self.ts_fc,
         )[0][0]
 
         assert pred_weights.shape == onnx_pred_weights.shape, (
