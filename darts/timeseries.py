@@ -1554,7 +1554,7 @@ class TimeSeries:
     ================
     """
 
-    def data_array(self, copy=True) -> xr.DataArray:
+    def data_array(self, copy: bool = True) -> xr.DataArray:
         """
         Return the ``xarray.DataArray`` representation underlying this series.
 
@@ -1570,7 +1570,44 @@ class TimeSeries:
         """
         return self._xa.copy() if copy else self._xa
 
-    def pd_series(self, copy=True) -> pd.Series:
+    def to_series(
+        self,
+        copy: bool = True,
+        backend: Literal["pandas", "polars", "pyarrow"] = "pandas",
+    ):
+        """
+        Return a Series representation of this univariate deterministic time series.
+
+        Works only for univariate series that are deterministic (i.e., made of 1 sample).
+
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the series. Leave it to True unless you know what you are doing.
+        backend
+            The library used for the Series.
+
+        Returns
+        -------
+            A Series representation of this univariate time series.
+        """
+        self._assert_univariate()
+        self._assert_deterministic()
+
+        if backend != "pandas":
+            return self.to_dataframe(copy=copy, backend=backend, time_as_index=False)
+
+        data = self._xa[:, 0, 0].values
+        index = self._time_index
+        name = self.components[0]
+
+        if copy:
+            data = data.copy()
+            index = index.copy()
+
+        return pd.Series(data=data, index=index, name=name)
+
+    def pd_series(self, copy: bool = True) -> pd.Series:
         """
         Return a Pandas Series representation of this univariate deterministic time series.
 
@@ -1586,22 +1623,21 @@ class TimeSeries:
         pandas.Series
             A Pandas Series representation of this univariate time series.
         """
-        self._assert_univariate()
-        self._assert_deterministic()
+        logger.warning(
+            "`TimeSeries.pd_series()` is deprecated and will be removed in a future version. Use "
+            "`TimeSeries.to_series()` instead"
+        )
+        return self.to_series(copy=copy, backend="pandas")
 
-        data = self._xa[:, 0, 0].values
-        index = self._time_index
-        name = self.components[0]
-
-        if copy:
-            data = data.copy()
-            index = index.copy()
-
-        return pd.Series(data=data, index=index, name=name)
-
-    def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
+    def to_dataframe(
+        self,
+        copy: bool = True,
+        backend: Literal["pandas", "polars", "pyarrow", "modin", "cudf"] = "pandas",
+        time_as_index: bool = True,
+        suppress_warnings: bool = False,
+    ):
         """
-        Return a Pandas DataFrame representation of this time series.
+        Return a DataFrame representation of this time series.
 
         Each of the series components will appear as a column in the DataFrame.
         If the series is stochastic, the samples are returned as columns of the dataframe with column names
@@ -1612,12 +1648,26 @@ class TimeSeries:
         ----------
         copy
             Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
-
+        backend
+            Whether to return the dataframe in pandas, polars or pyarrows
+        time_as_index
+            Whether to set the time index as the index of the dataframe or in the left-most column.
+        suppress_warnings
+            Whether to suppress the warning about transforming a stochastic TimeSeries
         Returns
         -------
-        pandas.DataFrame
-            The Pandas DataFrame representation of this time series
+        DataFrame
+            A DataFrame representation of this time series.
         """
+
+        if time_as_index and backend != "pandas":
+            raise_log(
+                ValueError(
+                    '`time_as_index=True` is only supported with `backend="pandas"`.'
+                ),
+                logger,
+            )
+
         if not self.is_deterministic:
             if not suppress_warnings:
                 logger.warning(
@@ -1633,18 +1683,59 @@ class TimeSeries:
                 "_s".join((comp_name, str(sample_id)))
                 for comp_name, sample_id in itertools.product(comp_name, samples)
             ]
-            data = self._xa.stack(data=(DIMS[1], DIMS[2])).values
+            data = self._xa.stack(data=(DIMS[1], DIMS[2]))
         else:
-            columns = self._xa.get_index(DIMS[1])
             data = self._xa[:, :, 0].values
-        index = self._time_index
+            columns = self._xa.get_index(DIMS[1])
+
+        time_index = self._time_index
 
         if copy:
-            columns = columns.copy()
             data = data.copy()
-            index = index.copy()
+            time_index = time_index.copy()
 
-        return pd.DataFrame(data=data, index=index, columns=columns)
+        if time_as_index:
+            # special path for pandas with index
+            return pd.DataFrame(data=data, index=time_index, columns=columns)
+
+        data = {
+            time_index.name: time_index,  # set time_index as left-most column
+            **{col: data[:, idx] for idx, col in enumerate(columns)},
+        }
+
+        return nw.from_dict(data, backend=backend).to_native()
+
+    def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
+        """
+        Return a Pandas DataFrame representation of this time series.
+
+        Each of the series components will appear as a column in the DataFrame.
+        If the series is stochastic, the samples are returned as columns of the dataframe with column names
+        as 'component_s#' (e.g. with two components and two samples:
+        'comp0_s0', 'comp0_s1' 'comp1_s0' 'comp1_s1').
+
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
+        suppress_warnings
+            Whether to suppress the warning about transforming a stochastic TimeSeries
+        Returns
+        -------
+        pandas.DataFrame
+            The Pandas DataFrame representation of this time series
+        """
+
+        logger.warning(
+            "`TimeSeries.pd_dataframe()` is deprecated, and will be removed in a future version. Use "
+            "`TimeSeries.to_dataframe()` instead"
+        )
+        return self.to_dataframe(
+            copy=copy,
+            backend="pandas",
+            time_as_index=True,
+            suppress_warnings=suppress_warnings,
+        )
 
     def quantile_df(self, quantile=0.5) -> pd.DataFrame:
         """
@@ -1762,7 +1853,9 @@ class TimeSeries:
         """
         return pd.concat(
             [
-                self.quantile_timeseries(quantile).pd_dataframe()
+                self.quantile_timeseries(quantile).to_dataframe(
+                    backend="pandas", time_as_index=True
+                )
                 for quantile in quantiles
             ],
             axis=1,
@@ -2108,7 +2201,7 @@ class TimeSeries:
             by a DatetimeIndex).
         """
 
-        df = self.pd_dataframe()
+        df = self.to_dataframe(backend="pandas", time_as_index=True)
 
         if mode == "all":
             is_nan_series = df.isna().all(axis=1).astype(int)
@@ -3885,7 +3978,9 @@ class TimeSeries:
         )
 
         # read series dataframe
-        ts_df = self.pd_dataframe(copy=False, suppress_warnings=True)
+        ts_df = self.to_dataframe(
+            copy=False, backend="pandas", time_as_index=True, suppress_warnings=True
+        )
 
         # store some original attributes of the series
         original_components = self.components
@@ -4058,7 +4153,9 @@ class TimeSeries:
         str
             A JSON String representing the time series
         """
-        return self.pd_dataframe().to_json(orient="split", date_format="iso")
+        return self.to_dataframe(backend="pandas", time_as_index=True).to_json(
+            orient="split", date_format="iso"
+        )
 
     def to_csv(self, *args, **kwargs):
         """
@@ -4070,6 +4167,7 @@ class TimeSeries:
         .. [1] https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv
         """
         if not self.is_deterministic:
+            # TODO THAT'S NOT TRUE!
             raise_log(
                 AssertionError(
                     "The pd_dataframe() method can only return DataFrames of deterministic "
@@ -4078,7 +4176,7 @@ class TimeSeries:
                 )
             )
 
-        self.pd_dataframe().to_csv(*args, **kwargs)
+        self.to_dataframe(backend="pandas", time_as_index=True).to_csv(*args, **kwargs)
 
     def to_pickle(self, path: str, protocol: int = pickle.HIGHEST_PROTOCOL):
         """
