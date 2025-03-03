@@ -572,6 +572,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Union[Sequence[TimeSeries], str]],
         max_samples_per_ts: Optional[int],
+        stride: int = 1,
     ) -> TrainingDataset:
         """
         Each model must specify the default training dataset to use.
@@ -724,6 +725,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         val_sample_weight: Optional[
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
+        stride: int = 1,
+        eval_stride: int = 1,
     ) -> "TorchForecastingModel":
         """Fit/train the model on one or multiple series.
 
@@ -797,7 +800,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
-
+        stride
+            The number of time steps between consecutive samples (windows of lagged values extracted from the target
+            series), applied starting from the end of the series. This should be used with caution as it might
+            introduce bias in the forecasts.
+        eval_stride
+            Same as for `stride` but for the evaluation dataset.
         Returns
         -------
         self
@@ -815,10 +823,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             sample_weight=sample_weight,
+            stride=stride,
             val_series=val_series,
             val_past_covariates=val_past_covariates,
             val_future_covariates=val_future_covariates,
             val_sample_weight=val_sample_weight,
+            eval_stride=eval_stride,
             trainer=trainer,
             verbose=verbose,
             epochs=epochs,
@@ -839,12 +849,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        stride: int = 1,
         val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_sample_weight: Optional[
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
+        eval_stride: int = 1,
         trainer: Optional[pl.Trainer] = None,
         verbose: Optional[bool] = None,
         epochs: int = 0,
@@ -920,6 +932,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             future_covariates=future_covariates,
             sample_weight=sample_weight,
             max_samples_per_ts=max_samples_per_ts,
+            stride=stride,
         )
 
         if val_series is not None:
@@ -929,6 +942,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 future_covariates=val_future_covariates,
                 sample_weight=val_sample_weight,
                 max_samples_per_ts=max_samples_per_ts,
+                stride=eval_stride,
             )
         else:
             val_dataset = None
@@ -2600,6 +2614,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Union[Sequence[TimeSeries], str]],
         max_samples_per_ts: Optional[int],
+        stride: int = 1,
     ) -> PastCovariatesTrainingDataset:
         return PastCovariatesSequentialDataset(
             target_series=target,
@@ -2610,6 +2625,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
             sample_weight=sample_weight,
+            stride=stride,
         )
 
     def _build_inference_dataset(
@@ -2694,6 +2710,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Union[Sequence[TimeSeries], str]],
         max_samples_per_ts: Optional[int],
+        stride: int = 1,
     ) -> FutureCovariatesTrainingDataset:
         return FutureCovariatesSequentialDataset(
             target_series=target,
@@ -2704,6 +2721,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
             sample_weight=sample_weight,
+            stride=stride,
         )
 
     def _build_inference_dataset(
@@ -2787,6 +2805,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Union[Sequence[TimeSeries], str]],
         max_samples_per_ts: Optional[int],
+        stride: int = 1,
     ) -> DualCovariatesTrainingDataset:
         return DualCovariatesSequentialDataset(
             target_series=target,
@@ -2797,6 +2816,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
             sample_weight=sample_weight,
+            stride=stride,
         )
 
     def _build_inference_dataset(
@@ -2879,6 +2899,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Union[Sequence[TimeSeries], str]],
         max_samples_per_ts: Optional[int],
+        stride: int = 1,
     ) -> MixedCovariatesTrainingDataset:
         return MixedCovariatesSequentialDataset(
             target_series=target,
@@ -2890,6 +2911,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
             sample_weight=sample_weight,
+            stride=stride,
         )
 
     def _build_inference_dataset(
@@ -2973,6 +2995,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Union[Sequence[TimeSeries], str]],
         max_samples_per_ts: Optional[int],
+        stride: int = 1,
     ) -> SplitCovariatesTrainingDataset:
         return SplitCovariatesSequentialDataset(
             target_series=target,
@@ -2984,6 +3007,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
             sample_weight=sample_weight,
+            stride=stride,
         )
 
     def _build_inference_dataset(
