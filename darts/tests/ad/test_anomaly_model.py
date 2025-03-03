@@ -1480,3 +1480,43 @@ class TestAnomalyDetectionModel:
                     pred_scores=[self.test, self.test],
                     names_of_scorers=["scorer1", "scorer2", "scorer3"],
                 )
+
+    def test_pred_series(self):
+        """Basics tests for the `pred_series` method for ForecastingAnomalyModel"""
+        model = ForecastingAnomalyModel(
+            model=RegressionModel(lags=10, output_chunk_length=2), scorer=Norm()
+        )
+        # cannot predict without training
+        with pytest.raises(ValueError) as err:
+            model.predict_series(self.test)
+        assert str(err.value).endswith("has not been trained yet. Call `fit()` before.")
+
+        # must set `allow_model_training=True` to fit the underlying model "in place"
+        model.fit(self.train, allow_model_training=True)
+
+        # stride must be equal to 1 or forecast_horizon
+        err_msg = "`stride` must be equal to either `1` or `forecast_horizon`, received"
+        with pytest.raises(ValueError) as err:
+            model.predict_series(self.test, stride=2, forecast_horizon=1)
+        assert str(err.value).startswith(err_msg)
+        with pytest.raises(ValueError) as err:
+            model.predict_series(self.test, stride=2, forecast_horizon=3)
+        assert str(err.value).startswith(err_msg)
+
+        # predict single series
+        pred_no_stride = model.predict_series(self.test, stride=1)
+        pred_no_stride_list = model.predict_series([self.test], stride=1)
+        assert pred_no_stride.time_index.equals(pred_no_stride_list[0].time_index)
+        np.testing.assert_almost_equal(
+            pred_no_stride.values(), pred_no_stride_list[0].values()
+        )
+
+        # stride == horizon
+        pred_strided = model.predict_series(self.test, forecast_horizon=3, stride=3)
+        pred_strided_list = model.predict_series(
+            [self.test], forecast_horizon=3, stride=3
+        )
+        assert pred_strided.time_index.equals(pred_strided_list[0].time_index)
+        np.testing.assert_almost_equal(
+            pred_strided.values(), pred_strided_list[0].values()
+        )

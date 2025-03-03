@@ -50,7 +50,7 @@ class AnomalyModel(ABC):
         if not allow_model_training and not self.scorers_are_trainable:
             return self
 
-        # check input series and covert to sequences
+        # check input series and convert to sequences
         series, kwargs = self._process_input_series(series, **kwargs)
         self._fit_core(
             series=series, allow_model_training=allow_model_training, **kwargs
