@@ -1595,7 +1595,7 @@ class TimeSeries:
         self._assert_deterministic()
 
         if backend != "pandas":
-            return self.to_dataframe(copy=copy, backend=backend)
+            return self.to_dataframe(copy=copy, backend=backend, time_as_index=False)
 
         data = self._xa[:, 0, 0].values
         index = self._time_index
