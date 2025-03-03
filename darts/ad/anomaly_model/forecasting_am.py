@@ -23,7 +23,7 @@ from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.timeseries import TimeSeries
+from darts.timeseries import TimeSeries, concatenate
 
 logger = get_logger(__name__)
 
@@ -248,6 +248,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         start: Union[pd.Timestamp, float, int] = None,
         start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
+        stride: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
         enable_optimization: bool = True,
@@ -288,6 +289,9 @@ class ForecastingAnomalyModel(AnomalyModel):
             an error if the value is not in `series`' index. Default: `'value'`
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
+        stride
+            The number of time steps between two consecutive predictions. Must be either `1` or
+            `forecast_horizon` (caution, the prediction will be faster but less accurate).
         verbose
             Whether to print the progress.
         show_warnings
@@ -300,7 +304,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         Returns
         -------
         Sequence[TimeSeries]
-            A sequence of `TimeSeries` with the historical forecasts for each series (with `last_points_only=True`).
+            A sequence of `TimeSeries`, with one historical forecasts for each series.
         """
         if not self.model._fit_called:
             raise_log(
@@ -309,14 +313,21 @@ class ForecastingAnomalyModel(AnomalyModel):
                 ),
                 logger=logger,
             )
-        return self.model.historical_forecasts(
+        if not (stride == 1 or stride == forecast_horizon):
+            raise_log(
+                ValueError(
+                    f"`stride` must be equal to either `1` or `forecast_horizon`, received {stride}."
+                ),
+                logger=logger,
+            )
+        forecasts = self.model.historical_forecasts(
             series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,
-            stride=1,
+            stride=stride,
             retrain=False,
-            last_points_only=True,
+            last_points_only=(stride == 1),
             start=start,
             start_format=start_format,
             num_samples=num_samples,
@@ -324,6 +335,13 @@ class ForecastingAnomalyModel(AnomalyModel):
             show_warnings=show_warnings,
             enable_optimization=enable_optimization,
         )
+        if stride == 1:
+            return forecasts
+        # concatenate the strided historical forecasts blocks (last_point_only=False)
+        if isinstance(series, Sequence):
+            return [concatenate(hist_fc) for hist_fc in forecasts]
+        else:
+            return concatenate(forecasts)
 
     def eval_metric(
         self,
