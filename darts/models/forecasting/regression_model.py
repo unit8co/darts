@@ -848,14 +848,18 @@ class RegressionModel(GlobalForecastingModel):
 
         # Check if multi-output regression is required
         requires_multioutput = not series[0].is_univariate or (
-            self.output_chunk_length > 1
-            and self.multi_models
-            and not isinstance(self.model, MultiOutputRegressor)
+            self.output_chunk_length > 1 and self.multi_models
         )
 
         # If multi-output required and model doesn't support it natively, wrap it in a MultiOutputRegressor
-        if requires_multioutput and (
-            not self._supports_native_multioutput or sample_weight is not None
+        if (
+            requires_multioutput
+            and not isinstance(self.model, MultiOutputRegressor)
+            and (
+                not self._supports_native_multioutput
+                or sample_weight
+                is not None  # we have 2D sample (and time) weights, only supported in Darts
+            )
         ):
             val_set_name, val_weight_name = self.val_set_params
             mor_kwargs = {
@@ -1376,11 +1380,21 @@ class RegressionModel(GlobalForecastingModel):
         """
         Returns True if the model supports multi-output regression natively.
         """
+        model = self.model
+        if isinstance(self.model, MultiOutputRegressor):
+            model = self.model.estimator
+
         return (
-            callable(getattr(self.model, "_get_tags", None))
-            and isinstance(self.model._get_tags(), dict)
-            and self.model._get_tags().get("multioutput")
+            callable(getattr(model, "_get_tags", None))
+            and isinstance(model._get_tags(), dict)
+            and model._get_tags().get("multioutput")
         )
+        # TODO Adpation for sklearn 1.6 and above once _get_tags is removed
+        # return  (
+        #     callable(getattr(model, "__sklearn_tags__", None))
+        #     and isinstance(model.__sklearn_tags__(), dict)
+        #     and model.__sklearn_tags__().target_tags.multi_output
+        # )
 
 
 class _LikelihoodMixin:
