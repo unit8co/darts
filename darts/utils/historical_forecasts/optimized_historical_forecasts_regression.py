@@ -82,6 +82,9 @@ def _optimized_historical_forecasts_last_points_only(
         )
 
         # TODO get target lags and adjust hist_fct_tgt_end
+        # lags = model._get_lags("target")
+        # if lags is not None and lags[-1] < -1:
+        #     hist_fct_tgt_end += (lags[-1] + 1) * freq
 
         # Additional shift, to account for the model output_chunk_length
         if model.output_chunk_length != forecast_horizon and not model.multi_models:
