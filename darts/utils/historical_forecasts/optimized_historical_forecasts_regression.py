@@ -81,6 +81,8 @@ def _optimized_historical_forecasts_last_points_only(
             show_warnings=show_warnings,
         )
 
+        # TODO get target lags and adjust hist_fct_tgt_end
+
         # Additional shift, to account for the model output_chunk_length
         if model.output_chunk_length != forecast_horizon and not model.multi_models:
             # used to convert the shift into the appropriate unit
