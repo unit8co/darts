@@ -646,6 +646,66 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 logger=logger,
             )
 
+    def to_onnx(self, path: Optional[str] = None, **kwargs):
+        """Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning's
+        :func:`torch.onnx.export` method (`official documentation <https://lightning.ai/docs/pytorch/
+        stable/common/lightning_module.html#to-onnx>`_).
+
+        Note: requires `onnx` library (optional dependency) to be installed.
+
+        Example for exporting a :class:`DLinearModel`:
+
+        .. highlight:: python
+        .. code-block:: python
+
+            from darts.datasets import AirPassengersDataset
+            from darts.models import DLinearModel
+
+            series = AirPassengersDataset().load()
+            model = DLinearModel(input_chunk_length=4, output_chunk_length=1)
+            model.fit(series, epochs=1)
+            model.to_onnx("my_model.onnx")
+        ..
+
+        Parameters
+        ----------
+        path
+            Path under which to save the model at its current state. If no path is specified, the model
+            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.onnx"``.
+        **kwargs
+            Additional kwargs for PyTorch's :func:`torch.onnx.export` method (except parameters ``file_path``,
+            ``input_sample``, ``input_name``). For more information, read the `official documentation
+            <https://pytorch.org/docs/master/onnx.html#torch.onnx.export>`_.
+        """
+        if not self._fit_called:
+            raise_log(
+                ValueError("`fit()` needs to be called before `to_onnx()`."), logger
+            )
+
+        if path is None:
+            path = self._default_save_path() + ".onnx"
+
+        # last dimension in train_sample_shape is the expected target
+        mock_batch = tuple(
+            torch.rand((1,) + shape, dtype=self.model.dtype) if shape else None
+            for shape in self.model.train_sample_shape[:-1]
+        )
+        input_sample = self.model._process_input_batch(mock_batch)
+
+        # torch models necessarily use historic target values as features in current implementation
+        input_names = ["x_past"]
+        if self.uses_future_covariates:
+            input_names.append("x_future")
+        if self.uses_static_covariates:
+            input_names.append("x_static")
+
+        self.model.to_onnx(
+            file_path=path,
+            input_sample=(input_sample,),
+            input_names=input_names,
+            **kwargs,
+        )
+
     @random_method
     def fit(
         self,
