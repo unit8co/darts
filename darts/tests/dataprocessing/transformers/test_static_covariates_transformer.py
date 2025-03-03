@@ -184,6 +184,32 @@ class TestStaticCovariatesTransformer:
             series_recovered_multi[1].static_covariates
         )
 
+    def test_zero_cardinality_multi_series(self):
+        """Check that inverse-transform works as expected when OneHotEncoder is used on several series with
+        identical static covariates categories and values.
+        """
+        ts1 = self.series.with_static_covariates(
+            pd.Series({
+                "cov_a": "foo",
+                "cov_b": "foo",
+                "cov_c": "foo",
+            })
+        )
+        ts2 = self.series.with_static_covariates(
+            pd.Series({
+                "cov_a": "foo",
+                "cov_b": "foo",
+                "cov_c": "bar",
+            })
+        )
+
+        transformer = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
+        transformer.fit([ts1, ts2])
+        ts1_enc, ts2_enc = transformer.transform([ts1, ts2])
+        ts1_inv, ts2_inv = transformer.inverse_transform([ts1_enc, ts2_enc])
+        pd.testing.assert_frame_equal(ts1_inv.static_covariates, ts1.static_covariates)
+        pd.testing.assert_frame_equal(ts2_inv.static_covariates, ts2.static_covariates)
+
     def helper_test_scaling(self, series, scaler, test_values):
         series_tr = scaler.fit_transform(series)
         assert all([
