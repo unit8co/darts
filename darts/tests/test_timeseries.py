@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
+import polars as pl
 import pytest
 import xarray as xr
 from scipy.stats import kurtosis, skew
@@ -88,6 +89,24 @@ class TestTimeSeries:
         ts = TimeSeries.from_dataframe(pd_df)
         ts_pd_df = ts.to_dataframe(backend="pandas", time_as_index=True)
         assert ts_pd_df.equals(pd_df)
+
+    def test_polars_creation(self):
+        pl_series = pl.Series("test_name", range(10), dtype=pl.Float32)
+
+        ts = TimeSeries.from_series(pl_series)
+        ts_pl_series = ts.to_series(backend="polars")
+        assert ts_pl_series[:, 1].equals(pl_series)
+        assert ts_pl_series.columns[1] == pl_series.name
+
+        pl_df = pl.DataFrame(
+            data={
+                "time": pd.RangeIndex(0, 10, 1),
+                "test_name": range(10),
+            }
+        )
+        ts = TimeSeries.from_dataframe(pl_df)
+        ts_pl_df = ts.to_dataframe(backend="polars", time_as_index=False)
+        assert ts_pl_df.equals(pl_df)
 
     def test_integer_range_indexing(self):
         # sanity checks for the integer-indexed series
