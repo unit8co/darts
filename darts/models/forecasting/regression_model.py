@@ -1384,17 +1384,7 @@ class RegressionModel(GlobalForecastingModel):
         if isinstance(self.model, MultiOutputRegressor):
             model = self.model.estimator
 
-        return (
-            callable(getattr(model, "_get_tags", None))
-            and isinstance(model._get_tags(), dict)
-            and model._get_tags().get("multioutput")
-        )
-        # TODO Adpation for sklearn 1.6 and above once _get_tags is removed
-        # return  (
-        #     callable(getattr(model, "__sklearn_tags__", None))
-        #     and isinstance(model.__sklearn_tags__(), dict)
-        #     and model.__sklearn_tags__().target_tags.multi_output
-        # )
+        return model.__sklearn_tags__().target_tags.multi_output
 
 
 class _LikelihoodMixin:
