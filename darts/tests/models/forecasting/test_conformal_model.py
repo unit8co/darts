@@ -318,6 +318,27 @@ class TestConformalModel:
             loaded_model = model_cls.load(p)
             assert model_prediction == loaded_model.predict(5, **pred_kwargs)
 
+            # test pl_trainer_kwargs (only for torch models)
+            loaded_model = model_cls.load(p, pl_trainer_kwargs={"accelerator": "cuda"})
+            if model_type == "torch":
+                assert loaded_model.model.trainer_params["accelerator"] == "cuda"
+
+        # test clean save
+        clean_model_path = os.path.join(tmpdir_fn, f"clean_{model_cls.__name__}.pkl")
+        model.save(clean_model_path, clean=True)
+        clean_model = model_cls.load(
+            clean_model_path, pl_trainer_kwargs={"accelerator": "cpu"}
+        )
+        assert clean_model.model.training_series is None
+        assert clean_model.model.past_covariate_series is None
+        assert clean_model.model.future_covariate_series is None
+
+        clean_model_prediction = clean_model.predict(
+            5, self.ts_pass_train, **pred_kwargs
+        )
+        # Need the same number of previous call to predict (for random state)
+        assert model.predict(5, **pred_kwargs) == clean_model_prediction
+
     def test_fit(self):
         model = ConformalNaiveModel(train_model(self.ts_pass_train), quantiles=q)
         assert model.model._fit_called
