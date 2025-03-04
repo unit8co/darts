@@ -341,7 +341,6 @@ def create_lagged_data(
                 logger,
             )
         if use_moving_windows and series_equal_freq:
-            # TODO look here
             X_i, y_i, times_i, weights_i = _create_lagged_data_by_moving_window(
                 target_series=target_i,
                 output_chunk_length=output_chunk_length,
@@ -989,7 +988,6 @@ def _create_lagged_data_by_moving_window(
 
     Assumes that all the lags are sorted in ascending order.
     """
-    # TODO look here
     feature_times, min_lags, max_lags = _get_feature_times(
         target_series=target_series,
         past_covariates=past_covariates,
@@ -1674,7 +1672,6 @@ def _get_feature_times(
             # Append times to end of series - see Step 1b for extracting features
             # times from `future_covariates`, or Step 1 for extracting features
             # from `target_series`/`past_covariates` in `Notes`:
-            # TODO look at this line
             new_end = (
                 times_i[-1] + series_i.freq * (min_lag_i) if min_lag_i > 0 else None
             )

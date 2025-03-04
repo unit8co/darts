@@ -1007,7 +1007,7 @@ def _get_historical_forecast_boundaries(
     # `max_target_lag_train` is redundant, since optimized hist fc is running in predict mode only
     (
         min_target_lag,
-        max_target_lag,
+        _,
         min_past_cov_lag,
         max_past_cov_lag,
         min_future_cov_lag,
@@ -1020,12 +1020,13 @@ def _get_historical_forecast_boundaries(
     hist_fct_tgt_start, hist_fct_tgt_end = historical_forecasts_time_index
     if min_target_lag is not None:
         hist_fct_tgt_start += min_target_lag * freq
-    # BUGFIX this is strange, why not
-    # hist_fct_tgt_end += 1 * freq * (max_target_lag - 1)
-    if hasattr(model, "lags") and "target" in model.lags:
-        hist_fct_tgt_end += 1 * freq * model.lags["target"][-1]
+
+    # target lag has a gap between the max lag and the present
+    if hasattr(model, "lags") and model._get_lags("target"):
+        hist_fct_tgt_end += 1 * freq * model._get_lags("target")[-1]
     else:
         hist_fct_tgt_end -= 1 * freq
+
     # past lags are <= 0
     hist_fct_pc_start, hist_fct_pc_end = historical_forecasts_time_index
     if min_past_cov_lag is not None:

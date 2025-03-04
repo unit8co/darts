@@ -72,6 +72,8 @@ models_reg_no_cov_cls_kwargs = [
         {},
         (5, 3),
     ),
+    (LinearRegressionModel, {"lags": [-5]}, {}, (5, 1)),
+    (LinearRegressionModel, {"lags": [-5], "output_chunk_shift": 1}, {}, (5, 2)),
 ]
 if not isinstance(CatBoostModel, NotImportedModule):
     models_reg_no_cov_cls_kwargs.append((
@@ -665,7 +667,7 @@ class TestHistoricalforecast:
     def test_historical_forecasts(self, config):
         """Tests historical forecasts with retraining for expected forecast lengths and times"""
         forecast_horizon = 8
-        # if no fit and retrain=false, should fit at fist iteration
+        # if no fit and retrain=false, should fit at first iteration
         model_cls, kwargs, model_kwarg, bounds = config
         model = model_cls(**kwargs, **model_kwarg)
         # set train length to be the minimum required training length
