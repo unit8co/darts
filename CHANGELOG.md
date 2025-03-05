@@ -20,6 +20,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - 🔴 / 🟢 Fixed a bug which raised an error when loading torch models that were saved with Darts versions < 0.33.0. This is a breaking change and models saved with version 0.33.0 will not be loadable anymore. [#2692](https://github.com/unit8co/darts/pull/2692) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug where the historical forecast target window was wrong when regression models had discrete lags < -1. [#2715](https://github.com/unit8co/darts/pull/2715) by [Jules Authier](https://github.com/authierj)
 
 **Dependencies**
 
