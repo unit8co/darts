@@ -71,9 +71,13 @@ class TestTimeSeriesStaticCovariate:
     @pytest.mark.parametrize("tag", [STATIC_COV_TAG, METADATA_TAG])
     def test_ts_from_x(self, tag, tmpdir_module):
         ts = linear_timeseries(length=10)
-        ts = with_static_covariates_or_metadata(
-            tag, ts, pd.Series([0.0, 1.0], index=["st1", "st2"])
-        )
+
+        if tag == METADATA_TAG:
+            x = {"st1": 0.0, "st2": 1.0}
+            ts = ts.with_metadata(x)
+        elif tag == STATIC_COV_TAG:
+            x = pd.Series([0.0, 1.0], index=["st1", "st2"])
+            ts = ts.with_static_covariates(x)
 
         self.helper_test_transfer(tag, ts, TimeSeries.from_xarray(ts.data_array()))
         self.helper_test_transfer(
@@ -202,8 +206,8 @@ class TestTimeSeriesStaticCovariate:
             assert ts.static_covariates.shape == (1, 1)
             assert ts.static_covariates.columns.equals(pd.Index(["st1"]))
             assert (ts.static_covariates_values(copy=False) == [[i]]).all()
-            assert ts.metadata.shape == (2,)
-            assert (ts.metadata.to_numpy(copy=False) == [i, 1]).all()
+            assert len(ts.metadata) == 2
+            assert (ts.metadata_values() == [i, 1]).all()
 
         # multivariate static covs: only group by "st1", keep static covs "st1", "constant"
         ts_groups2 = TimeSeries.from_group_dataframe(
@@ -219,8 +223,8 @@ class TestTimeSeriesStaticCovariate:
             assert ts.static_covariates.shape == (1, 2)
             assert ts.static_covariates.columns.equals(pd.Index(["st1", "constant"]))
             assert (ts.static_covariates_values(copy=False) == [[i, 1]]).all()
-            assert ts.metadata.shape == (2,)
-            assert (ts.metadata.to_numpy(copy=False) == [i, 1]).all()
+            assert len(ts.metadata) == 2
+            assert (ts.metadata_values() == [i, 1]).all()
 
         # multivariate static covs: group by "st1" and "st2", keep static covs "st1", "st2", "constant"
         ts_groups3 = TimeSeries.from_group_dataframe(
@@ -240,8 +244,8 @@ class TestTimeSeriesStaticCovariate:
                 pd.Index(["st1", "st2", "constant"])
             )
             assert (ts.static_covariates_values(copy=False) == [[i, j, 1]]).all()
-            assert ts.metadata.shape == (3,)
-            assert (ts.metadata.to_numpy(copy=False) == [i, j, 1]).all()
+            assert len(ts.metadata) == 3
+            assert (ts.metadata_values() == [i, j, 1]).all()
 
         # drop group columns gives same time series with dropped static covariates
         # drop first column
@@ -261,8 +265,8 @@ class TestTimeSeriesStaticCovariate:
             assert ts.static_covariates.shape == (1, 2)
             assert ts.static_covariates.columns.equals(pd.Index(["st2", "constant"]))
             assert (ts.static_covariates_values(copy=False) == [[j, 1]]).all()
-            assert ts.metadata.shape == (3,)
-            assert (ts.metadata.to_numpy(copy=False) == [i, j, 1]).all()
+            assert len(ts.metadata) == 3
+            assert (ts.metadata_values() == [i, j, 1]).all()
 
         # drop last column
         ts_groups5 = TimeSeries.from_group_dataframe(
@@ -281,8 +285,8 @@ class TestTimeSeriesStaticCovariate:
             assert ts.static_covariates.shape == (1, 2)
             assert ts.static_covariates.columns.equals(pd.Index(["st1", "constant"]))
             assert (ts.static_covariates_values(copy=False) == [[i, 1]]).all()
-            assert ts.metadata.shape == (3,)
-            assert (ts.metadata.to_numpy(copy=False) == [i, j, 1]).all()
+            assert len(ts.metadata) == 3
+            assert (ts.metadata_values() == [i, j, 1]).all()
 
         # drop all columns
         ts_groups6 = TimeSeries.from_group_dataframe(
@@ -299,7 +303,7 @@ class TestTimeSeriesStaticCovariate:
             assert ts.static_covariates.shape == (1, 1)
             assert ts.static_covariates.columns.equals(pd.Index(["constant"]))
             assert (ts.static_covariates_values(copy=False) == [[1]]).all()
-            assert (ts.metadata.to_numpy(copy=False) == [1]).all()
+            assert (ts.metadata_values() == [1]).all()
 
         # drop all static covariates (no `static_cols`, all `group_cols` dropped) and no metadata cols
         ts_groups7 = TimeSeries.from_group_dataframe(
@@ -364,71 +368,76 @@ class TestTimeSeriesStaticCovariate:
             )
         assert str(err.value).endswith("for given metadata columns: ['st2'].")
 
-    @pytest.mark.parametrize("tag", [STATIC_COV_TAG, METADATA_TAG])
-    def test_univariate(self, tag):
+    def test_with_static_covariates_univariate(self):
         ts = linear_timeseries(length=10)
-        s = pd.Series([0.0, 1.0], index=["st1", "st2"])
-        df = pd.DataFrame([[0.0, 1.0]], columns=["st1", "st2"])
+        static_covs_series = pd.Series([0.0, 1.0], index=["st1", "st2"])
+        static_covs_df = pd.DataFrame([[0.0, 1.0]], columns=["st1", "st2"])
 
         # check immutable
-        with_static_covariates_or_metadata(tag, ts, s)
-        assert return_static_covariates_or_metadata(tag, ts) is None
+        ts.with_static_covariates(static_covs_series)
+        assert not ts.has_static_covariates
 
         # from Series
-        ts = with_static_covariates_or_metadata(tag, ts, s)
-        assert return_static_covariates_or_metadata(tag, ts) is not None
+        ts = ts.with_static_covariates(static_covs_series)
+        assert ts.has_static_covariates
         np.testing.assert_almost_equal(
-            return_static_covariates_or_metadata(tag, ts).to_numpy(copy=False),
-            np.expand_dims(s.values, -1).T if tag == STATIC_COV_TAG else s.values,
+            ts.static_covariates_values(copy=False),
+            np.expand_dims(static_covs_series.values, -1).T,
         )
-        if tag == STATIC_COV_TAG:
-            assert ts.static_covariates.index.equals(ts.components)
+        assert ts.static_covariates.index.equals(ts.components)
 
         # from DataFrame
-        ts = with_static_covariates_or_metadata(tag, ts, df)
-        assert return_static_covariates_or_metadata(tag, ts) is not None
+        ts = ts.with_static_covariates(static_covs_df)
+        assert ts.has_static_covariates
         np.testing.assert_almost_equal(
-            return_static_covariates_or_metadata(tag, ts).to_numpy(copy=False),
-            df.values if tag == STATIC_COV_TAG else df.iloc[0].values,
+            ts.static_covariates_values(copy=False), static_covs_df.values
         )
-        if tag == STATIC_COV_TAG:
-            assert ts.static_covariates.index.equals(ts.components)
+        assert ts.static_covariates.index.equals(ts.components)
 
         # with None
-        ts = with_static_covariates_or_metadata(tag, ts, None)
-        assert return_static_covariates_or_metadata(tag, ts) is None
+        ts = ts.with_static_covariates(None)
+        assert ts.static_covariates is None
+        assert not ts.has_static_covariates
 
         # only pd.Series, pd.DataFrame or None
         with pytest.raises(ValueError):
-            _ = with_static_covariates_or_metadata(tag, ts, [1, 2, 3])
+            _ = ts.with_static_covariates([1, 2, 3])
 
         # multivariate does not work with univariate TimeSeries
         with pytest.raises(ValueError):
-            static_covs_multi = pd.concat([s] * 2, axis=1).T
+            static_covs_multi = pd.concat([static_covs_series] * 2, axis=1).T
             _ = ts.with_static_covariates(static_covs_multi)
 
-    @pytest.mark.parametrize("tag", [STATIC_COV_TAG, METADATA_TAG])
-    def test_values(self, tag):
+    def test_static_covariates_values(self):
         ts = linear_timeseries(length=10)
-        df = pd.DataFrame([[0.0, 1.0]], columns=["st1", "st2"])
-        ts = with_static_covariates_or_metadata(tag, ts, df)
+        static_covs = pd.DataFrame([[0.0, 1.0]], columns=["st1", "st2"])
+        ts = ts.with_static_covariates(static_covs)
 
         # changing values of copy should not change original DataFrame
-        vals = return_static_covariates_or_metadata(tag, ts).to_numpy(copy=True)
+        vals = ts.static_covariates_values(copy=True)
         vals[:] = -1.0
-        assert (
-            return_static_covariates_or_metadata(tag, ts).to_numpy(copy=False) != -1.0
-        ).all()
+        assert (ts.static_covariates_values(copy=False) != -1.0).all()
 
         # changing values of view should change original DataFrame
-        vals = return_static_covariates_or_metadata(tag, ts).to_numpy(copy=False)
+        vals = ts.static_covariates_values(copy=False)
         vals[:] = -1.0
-        assert (
-            return_static_covariates_or_metadata(tag, ts).to_numpy(copy=False) == -1.0
-        ).all()
+        assert (ts.static_covariates_values(copy=False) == -1.0).all()
 
-        ts = with_static_covariates_or_metadata(tag, ts, None)
-        assert return_static_covariates_or_metadata(tag, ts) is None
+        ts = ts.with_static_covariates(None)
+        assert ts.static_covariates is None
+
+    def test_metadata_values(self):
+        ts = linear_timeseries(length=10)
+        metadata = {"st1": 0, "st2": 1}
+        ts = ts.with_metadata(metadata)
+
+        # changing values of copy should not change original DataFrame
+        vals = ts.metadata_values()
+        vals[:] = -1.0
+        assert (ts.metadata_values() != -1.0).all()
+
+        ts = ts.with_metadata(None)
+        assert ts.metadata is None
 
     def test_with_static_covariates_multivariate(self):
         ts = linear_timeseries(length=10)
@@ -716,9 +725,13 @@ class TestTimeSeriesStaticCovariate:
 
     @pytest.mark.parametrize("tag", [STATIC_COV_TAG, METADATA_TAG])
     def test_operations(self, tag):
-        df = pd.DataFrame([[0, 1]], columns=["st1", "st2"])
         ts = TimeSeries.from_values(values=np.random.random((10, 2)))
-        ts = with_static_covariates_or_metadata(tag, ts, df)
+        if tag == METADATA_TAG:
+            x = {"st1": 0, "st2": 1}
+            ts = ts.with_metadata(x)
+        elif tag == STATIC_COV_TAG:
+            x = pd.DataFrame([[0, 1]], columns=["st1", "st2"])
+            ts = ts.with_static_covariates(x)
 
         # arithmetics with series (left) and non-series (right)
         self.helper_test_transfer(tag, ts, ts / 3)
@@ -765,8 +778,12 @@ class TestTimeSeriesStaticCovariate:
         ts = linear_timeseries(length=10, start_value=1.0, end_value=2.0).astype(
             "float64"
         )
-        s = pd.Series([0, 1], index=["st1", "st2"]).astype(int)
-        ts = with_static_covariates_or_metadata(tag, ts, s)
+        if tag == METADATA_TAG:
+            x = {"st1": 0, "st2": 1}
+            ts = ts.with_metadata(x)
+        elif tag == STATIC_COV_TAG:
+            x = pd.Series([0, 1], index=["st1", "st2"]).astype(int)
+            ts = ts.with_static_covariates(x)
 
         if tag == STATIC_COV_TAG:
             assert ts.static_covariates.dtypes.iloc[0] == "float64"
@@ -776,7 +793,7 @@ class TestTimeSeriesStaticCovariate:
             ts_stoch = ts.from_times_and_values(
                 times=ts.time_index,
                 values=np.random.randint(low=0, high=10, size=(10, 1, 3)),
-                static_covariates=s,
+                static_covariates=x,
             )
             assert ts_stoch.static_covariates.index.equals(ts_stoch.components)
 
@@ -837,14 +854,14 @@ class TestTimeSeriesStaticCovariate:
         if tag == STATIC_COV_TAG:
             assert ts_new.static_covariates.equals(ts.static_covariates)
         elif tag == METADATA_TAG:
-            assert ts_new.metadata.equals(ts.metadata)
+            assert ts_new.metadata == ts.metadata
 
     def helper_test_transfer_xa(self, tag, ts, xa_new):
         """static cov or metadata must be identical between xarray and TimeSeries"""
         if tag == STATIC_COV_TAG:
             assert xa_new.attrs[STATIC_COV_TAG].equals(ts.static_covariates)
         elif tag == METADATA_TAG:
-            assert xa_new.attrs[METADATA_TAG].equals(ts.metadata)
+            assert xa_new.attrs[METADATA_TAG] == ts.metadata
 
     def helper_test_transfer_values(self, tag, ts, ts_new):
         """values of static cov or metadata must match but not row index (component names).
