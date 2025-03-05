@@ -33,6 +33,7 @@ Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/co
 ``TimeSeries`` documentation for more information on covariates.
 """
 
+import contextlib
 import itertools
 import pickle
 import re
@@ -46,9 +47,11 @@ from typing import Any, Callable, Literal, Optional, Union
 
 import matplotlib.axes
 import matplotlib.pyplot as plt
+import narwhals as nw
 import numpy as np
 import pandas as pd
 import xarray as xr
+from narwhals.typing import IntoDataFrame, IntoSeries
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
@@ -569,7 +572,7 @@ class TimeSeries:
     @classmethod
     def from_dataframe(
         cls,
-        df: pd.DataFrame,
+        df: IntoDataFrame,
         time_col: Optional[str] = None,
         value_cols: Optional[Union[list[str], str]] = None,
         fill_missing_dates: Optional[bool] = False,
@@ -586,7 +589,10 @@ class TimeSeries:
         Parameters
         ----------
         df
-            The DataFrame
+            The DataFrame, or anything which can be converted to a narwhals DataFrame (e.g. pandas.DataFrame,
+            polars.DataFrame, ...). See the `narwhals documentation
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`_ for more
+            information.
         time_col
             The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
             timestamps) or a RangeIndex (if it contains integers).
@@ -649,12 +655,14 @@ class TimeSeries:
         TimeSeries
             A univariate or multivariate deterministic TimeSeries constructed from the inputs.
         """
+        df = nw.from_native(df, eager_only=True, pass_through=False)
+        time_zone = None
 
         # get values
         if value_cols is None:
-            series_df = df.loc[:, df.columns != time_col]
+            series_df = df.drop(time_col) if time_col else df
         else:
-            if isinstance(value_cols, str):
+            if isinstance(value_cols, (str, int)):
                 value_cols = [value_cols]
             series_df = df[value_cols]
 
@@ -663,77 +671,90 @@ class TimeSeries:
             if time_col not in df.columns:
                 raise_log(AttributeError(f"time_col='{time_col}' is not present."))
 
-            time_index = pd.Index([])
-            time_col_vals = df[time_col]
+            time_col_vals = df.get_column(time_col)
 
-            if np.issubdtype(time_col_vals.dtype, object):
+            if time_col_vals.dtype == nw.String:
                 # Try to convert to integers if needed
-                try:
-                    time_col_vals = time_col_vals.astype(int)
-                except ValueError:
-                    pass
+                with contextlib.suppress(Exception):
+                    time_col_vals = time_col_vals.cast(nw.Int64)
 
-            if np.issubdtype(time_col_vals.dtype, np.integer):
-                # We have to check all integers appear only once to have a valid index
-                raise_if(
-                    time_col_vals.duplicated().any(),
-                    "The provided integer time index column contains duplicate values.",
-                )
-
+            if time_col_vals.dtype.is_integer():
+                if time_col_vals.is_duplicated().any():
+                    raise_log(
+                        ValueError(
+                            "The provided integer time index column contains duplicate values."
+                        )
+                    )
                 # Temporarily use an integer Index to sort the values, and replace by a
                 # RangeIndex in `TimeSeries.from_xarray()`
                 time_index = pd.Index(time_col_vals)
 
-            elif np.issubdtype(time_col_vals.dtype, object):
+            elif isinstance(time_col_vals.dtype, nw.String):
                 # The integer conversion failed; try datetimes
                 try:
                     time_index = pd.DatetimeIndex(time_col_vals)
                 except ValueError:
                     raise_log(
                         AttributeError(
-                            "'time_col' is of 'object' dtype but doesn't contain valid timestamps"
+                            "'time_col' is of 'String' dtype but doesn't contain valid timestamps"
                         )
                     )
-            elif np.issubdtype(time_col_vals.dtype, np.datetime64):
+            elif isinstance(time_col_vals.dtype, nw.Datetime):
+                # remember time zone here as polars converts to UTC
+                time_zone = time_col_vals.dtype.time_zone
+                if time_zone is not None:
+                    time_col_vals = time_col_vals.dt.replace_time_zone(None)
                 time_index = pd.DatetimeIndex(time_col_vals)
             else:
                 raise_log(
                     AttributeError(
-                        "Invalid type of `time_col`: it needs to be of either 'str', 'datetime' or 'int' dtype."
+                        "Invalid type of `time_col`: it needs to be of either 'String', 'Datetime' or 'Int' dtype."
                     )
                 )
             time_index.name = time_col
         else:
-            raise_if_not(
-                isinstance(df.index, VALID_INDEX_TYPES)
-                or np.issubdtype(df.index.dtype, np.integer),
-                "If time_col is not specified, the DataFrame must be indexed either with "
-                "a DatetimeIndex, a RangeIndex, or an integer Index that can be converted into a RangeIndex",
-                logger,
-            )
-            # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
-            # pandas.DataFrame loses the tz information if it's not its index
-            if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
-                logger.warning(
-                    "The provided DatetimeIndex was associated with a timezone, which is currently not supported "
-                    "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
-                    f"`ts.time_index.tz_localize({df.index.tz})` when exporting the results."
-                    "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
-                    "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
-                    "original timezone."
+            time_index = nw.maybe_get_index(df)
+            if time_index is None:
+                time_index = pd.RangeIndex(len(df))
+                logger.info(
+                    "No time column specified (`time_col=None`) and no index found in the DataFrame. Defaulting to "
+                    "`pandas.RangeIndex(len(df))`. If this is not desired consider adding a time column "
+                    "to your dataframe and defining `time_col`."
                 )
-                time_index = df.index.tz_localize(None)
-            else:
-                time_index = df.index
+            # if we are here, the dataframe was pandas
+            elif not (
+                isinstance(time_index, VALID_INDEX_TYPES)
+                or np.issubdtype(time_index.dtype, np.integer)
+            ):
+                raise_log(
+                    ValueError(
+                        "If time_col is not specified, the DataFrame must be indexed either with "
+                        "a DatetimeIndex, a RangeIndex, or an integer Index that can be converted into a RangeIndex"
+                    ),
+                    logger,
+                )
+            if isinstance(time_index, pd.DatetimeIndex):
+                time_zone = time_index.tz
+                if time_zone is not None:
+                    # remove and remember time zone here as pandas converts to UTC
+                    time_index = time_index.tz_localize(None)
+
+        # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
+        if time_zone is not None:
+            logger.warning(
+                "The provided DatetimeIndex was associated with a timezone, which is currently not supported "
+                "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                f"`ts.time_index.tz_localize({time_zone})` when exporting the results."
+                "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                "original timezone."
+            )
 
         if not time_index.name:
             time_index.name = time_col if time_col else DIMS[0]
 
-        if series_df.columns.name:
-            series_df.columns.name = None
-
         xa = xr.DataArray(
-            series_df.values[:, :, np.newaxis],
+            series_df.to_numpy()[:, :, np.newaxis],
             dims=(time_index.name,) + DIMS[-2:],
             coords={time_index.name: time_index, DIMS[1]: series_df.columns},
             attrs={STATIC_COV_TAG: static_covariates, HIERARCHY_TAG: hierarchy},
@@ -960,14 +981,14 @@ class TimeSeries:
     @classmethod
     def from_series(
         cls,
-        pd_series: pd.Series,
+        pd_series: IntoSeries,
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
     ) -> Self:
         """
-        Build a univariate deterministic series from a pandas Series.
+        Build a univariate deterministic TimeSeries from a Series.
 
         The series must contain an index that is either a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index
         that can be converted into a RangeIndex. It is better if the index has no holes; alternatively setting
@@ -977,7 +998,10 @@ class TimeSeries:
         Parameters
         ----------
         pd_series
-            The pandas Series instance.
+            The Series, or anything which can be converted to a narwhals Series (e.g. pandas.Series, ...). See the
+            `narwhals documentation
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`_ for more
+            information.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
             with NaN values. This requires either a provided `freq` or the possibility to infer the frequency from the
@@ -1001,7 +1025,8 @@ class TimeSeries:
         TimeSeries
             A univariate and deterministic TimeSeries constructed from the inputs.
         """
-        df = pd.DataFrame(pd_series)
+        nw_series = nw.from_native(pd_series, series_only=True, pass_through=False)
+        df = nw_series.to_frame()
         return cls.from_dataframe(
             df,
             time_col=None,
@@ -1563,18 +1588,16 @@ class TimeSeries:
         """
         self._assert_univariate()
         self._assert_deterministic()
+
+        data = self._xa[:, 0, 0].values
+        index = self._time_index
+        name = self.components[0]
+
         if copy:
-            return pd.Series(
-                self._xa[:, 0, 0].values.copy(),
-                index=self._time_index.copy(),
-                name=self.components[0],
-            )
-        else:
-            return pd.Series(
-                self._xa[:, 0, 0].values,
-                index=self._time_index,
-                name=self.components[0],
-            )
+            data = data.copy()
+            index = index.copy()
+
+        return pd.Series(data=data, index=index, name=name)
 
     def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
         """
@@ -1606,36 +1629,22 @@ class TimeSeries:
 
             comp_name = list(self.components)
             samples = range(self.n_samples)
-            df_col_names = [
+            columns = [
                 "_s".join((comp_name, str(sample_id)))
                 for comp_name, sample_id in itertools.product(comp_name, samples)
             ]
-
-            if copy:
-                return pd.DataFrame(
-                    self._xa.stack(data=(DIMS[1], DIMS[2])).values.copy(),
-                    index=self._time_index.copy(),
-                    columns=df_col_names.copy(),
-                )
-            else:
-                return pd.DataFrame(
-                    self._xa.stack(data=(DIMS[1], DIMS[2])).values,
-                    index=self._time_index,
-                    columns=df_col_names,
-                )
+            data = self._xa.stack(data=(DIMS[1], DIMS[2])).values
         else:
-            if copy:
-                return pd.DataFrame(
-                    self._xa[:, :, 0].values.copy(),
-                    index=self._time_index.copy(),
-                    columns=self._xa.get_index(DIMS[1]).copy(),
-                )
-            else:
-                return pd.DataFrame(
-                    self._xa[:, :, 0].values,
-                    index=self._time_index,
-                    columns=self._xa.get_index(DIMS[1]),
-                )
+            columns = self._xa.get_index(DIMS[1])
+            data = self._xa[:, :, 0].values
+        index = self._time_index
+
+        if copy:
+            columns = columns.copy()
+            data = data.copy()
+            index = index.copy()
+
+        return pd.DataFrame(data=data, index=index, columns=columns)
 
     def quantile_df(self, quantile=0.5) -> pd.DataFrame:
         """
@@ -4105,6 +4114,9 @@ class TimeSeries:
         label: Optional[Union[str, Sequence[str]]] = "",
         max_nr_components: int = 10,
         ax: Optional[matplotlib.axes.Axes] = None,
+        alpha: Optional[float] = None,
+        color: Optional[Union[str, tuple, Sequence[str, tuple]]] = None,
+        c: Optional[Union[str, tuple, Sequence[str, tuple]]] = None,
         *args,
         **kwargs,
     ) -> matplotlib.axes.Axes:
@@ -4144,8 +4156,16 @@ class TimeSeries:
             Optionally, an axis to plot on. If `None`, and `new_plot=False`, will use the current axis. If
             `new_plot=True`, will create a new axis.
         alpha
-             Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
+            Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
             probabilistic series.
+        color
+            Can either be a single color or list of colors. Any matplotlib color is accepted (string, hex string,
+            RGB/RGBA tuple). If a single color and the series only has a single component, it is used as the color
+            for that component. If a single color and the series has multiple components, it is used as the color
+            for each component. If a list of colors with length equal to the number of components in the series, the
+            colors will be mapped to the components in order.
+        c
+            An alias for `color`.
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -4172,40 +4192,63 @@ class TimeSeries:
                 logger,
             )
 
+        if max_nr_components == -1:
+            n_components_to_plot = self.n_components
+        else:
+            n_components_to_plot = min(self.n_components, max_nr_components)
+
+        if self.n_components > n_components_to_plot:
+            logger.warning(
+                f"Number of series components ({self.n_components}) is larger than the maximum number of "
+                f"components to plot ({max_nr_components}). Plotting only the first `{max_nr_components}` "
+                f"components. You can adjust the number of components to plot using `max_nr_components`."
+            )
+
+        if not isinstance(label, str) and isinstance(label, Sequence):
+            if len(label) != self.n_components and len(label) != n_components_to_plot:
+                raise_log(
+                    ValueError(
+                        f"The `label` sequence must have the same length as the number of series components "
+                        f"({self.n_components}) or as the number of plotted components ({n_components_to_plot}). "
+                        f"Received length `{len(label)}`."
+                    ),
+                    logger,
+                )
+            custom_labels = True
+        else:
+            custom_labels = False
+
+        if color and c:
+            raise_log(
+                ValueError(
+                    "`color` and `c` must not be used simultaneously, use one or the other."
+                ),
+                logger,
+            )
+        color = color or c
+        if not isinstance(color, (str, tuple)) and isinstance(color, Sequence):
+            if len(color) != self.n_components and len(color) != n_components_to_plot:
+                raise_log(
+                    ValueError(
+                        f"The `color` sequence must have the same length as the number of series components "
+                        f"({self.n_components}) or as the number of plotted components ({n_components_to_plot}). "
+                        f"Received length `{len(label)}`."
+                    ),
+                    logger,
+                )
+            custom_colors = True
+        else:
+            custom_colors = False
+
+        kwargs["alpha"] = alpha
+        if not any(lw in kwargs for lw in ["lw", "linewidth"]):
+            kwargs["lw"] = 2
+
         if new_plot:
             fig, ax = plt.subplots()
         else:
             if ax is None:
                 ax = plt.gca()
-
-        if not any(lw in kwargs for lw in ["lw", "linewidth"]):
-            kwargs["lw"] = 2
-
-        n_components_to_plot = max_nr_components
-        if n_components_to_plot == -1:
-            n_components_to_plot = self.n_components
-        elif self.n_components > max_nr_components:
-            logger.warning(
-                f"Number of components is larger than {max_nr_components} ({self.n_components}). "
-                f"Plotting only the first {max_nr_components} components."
-                f"You can overwrite this in the using the `plot_all_components` argument in plot()"
-                f"Beware that plotting a large number of components may cause performance issues."
-            )
-
-        if not isinstance(label, str) and isinstance(label, Sequence):
-            raise_if_not(
-                len(label) == self.n_components
-                or (
-                    self.n_components > n_components_to_plot
-                    and len(label) >= n_components_to_plot
-                ),
-                "The label argument should have the same length as the number of plotted components "
-                f"({min(self.n_components, n_components_to_plot)}), only {len(label)} labels were provided",
-                logger,
-            )
-            custom_labels = True
-        else:
-            custom_labels = False
 
         for i, c in enumerate(self._xa.component[:n_components_to_plot]):
             comp_name = str(c.values)
@@ -4219,7 +4262,6 @@ class TimeSeries:
             else:
                 central_series = comp.mean(dim=DIMS[2])
 
-            alpha = kwargs["alpha"] if "alpha" in kwargs else None
             if custom_labels:
                 label_to_use = label[i]
             else:
@@ -4230,6 +4272,7 @@ class TimeSeries:
                 else:
                     label_to_use = f"{label}_{comp_name}"
             kwargs["label"] = label_to_use
+            kwargs["c"] = color[i] if custom_colors else color
 
             kwargs_central = deepcopy(kwargs)
             if not self.is_deterministic:
