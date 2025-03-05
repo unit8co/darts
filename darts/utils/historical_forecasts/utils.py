@@ -782,8 +782,7 @@ def _adjust_historical_forecasts_time_index(
     show_warnings: bool,
 ) -> TimeIndex:
     """
-    Shrink the beginning and end of the historical forecasts time index based on the values of `start`,
-    `forecast_horizon` and `overlap_end`.
+    Shrink the beginning and end of the historical forecasts time index based on the value of `start`.
     """
     # retrieve actual start
     # when applicable, shift the start of the forecastable index based on `start`

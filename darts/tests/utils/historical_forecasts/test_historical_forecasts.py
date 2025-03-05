@@ -134,12 +134,6 @@ models_reg_cov_cls_kwargs = [
         {},
         (6, 2),
     ),
-    (
-        LinearRegressionModel,
-        {"lags": [-3], "lags_past_covariates": 6, "lags_future_covariates": [0, 1]},
-        {},
-        (6, 2),
-    ),
 ]
 
 if TORCH_AVAILABLE:
