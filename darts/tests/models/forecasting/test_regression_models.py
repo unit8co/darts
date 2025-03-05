@@ -1337,7 +1337,7 @@ class TestRegressionModels:
         ],
     )
     def test_multioutput_wrapper(self, config):
-        """Check that with input_chunk_length=1, wrapping in MultiOutputRegressor is not happening"""
+        """Check that with input_chunk_length=1, wrapping in MultiOutputRegressor occurs only when necessary"""
         model, supports_multioutput_natively = config
         model.fit(series=self.sine_multivariate1)
         if supports_multioutput_natively:
@@ -1468,6 +1468,137 @@ class TestRegressionModels:
                 pred = sub_model.predict(dummy_feats)[0]
                 # sub-model forecast only depend on the target_dim
                 assert np.abs(j + 1 - pred) < 1e-2
+
+    @pytest.mark.parametrize("multi_models", [True, False])
+    def test_get_multioutput_estimator_quantile(self, multi_models):
+        """Check estimator getter when using quantile value"""
+        ocl = 3
+        lags = 3
+        quantiles = [0.01, 0.5, 0.99]
+        ts = tg.gaussian_timeseries(
+            mean=0, std=1, length=100, column_name="normal"
+        ).stack(
+            tg.gaussian_timeseries(mean=10, std=1, length=100, column_name="gaussian"),
+        )
+
+        m = XGBModel(
+            lags=lags,
+            output_chunk_length=ocl,
+            multi_models=multi_models,
+            likelihood="quantile",
+            quantiles=quantiles,
+            random_state=1,
+        )
+        m.fit(ts)
+
+        assert len(m._model_container) == len(quantiles)
+        for quantile_container in m._model_container.values():
+            # one sub-model per quantile, per component, per horizon
+            if multi_models:
+                assert len(quantile_container.estimators_) == ocl * ts.width
+            # one sub-model per quantile, per component
+            else:
+                assert len(quantile_container.estimators_) == ts.width
+
+        # check that retrieve sub-models prediction match the "wrapper" model predictions
+        pred = m.predict(
+            n=ocl,
+            series=ts[-lags:] if multi_models else ts[-lags - ocl + 1 :],
+            num_samples=1,
+            predict_likelihood_parameters=True,
+        )
+        for j in range(ts.width):
+            dummy_feats = np.array([[0, 0.1, -0.1] * ts.width]) + 10 * j
+            for i in range(ocl):
+                for q in quantiles:
+                    sub_model = m.get_multioutput_estimator(
+                        horizon=i, target_dim=j, quantile=q
+                    )
+                    pred_sub_model = sub_model.predict(dummy_feats)[0]
+                    # due to the difference in inputs, the predictions are not exactly identical
+                    assert (
+                        np.abs(
+                            pred[f"{ts.components[j]}_q{q:.2f}"].values()[i][0]
+                            - pred_sub_model
+                        )
+                        < 3
+                    )
+
+    def test_get_multioutput_estimator_exceptions(self):
+        """Check that all the corner-cases are properly covered by the method"""
+        ts = TimeSeries.from_values(
+            values=np.array([
+                [0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 2],
+            ]).T,
+            columns=["a", "b"],
+        )
+        m = LinearRegressionModel(
+            lags=2,
+            output_chunk_length=2,
+            random_state=1,
+        )
+        m.fit(ts["a"])
+        # not wrapped in MultiOutputRegressor because of native multi-output support
+        with pytest.raises(ValueError) as err:
+            m.get_multioutput_estimator(horizon=0, target_dim=0)
+        assert str(err.value).startswith(
+            "The sklearn model is not a MultiOutputRegressor object."
+        )
+
+        # univariate, deterministic, ocl > 2
+        m = RegressionModel(
+            model=HistGradientBoostingRegressor(),
+            lags=2,
+            output_chunk_length=2,
+        )
+        m.fit(ts["a"])
+        # horizon > ocl
+        with pytest.raises(ValueError) as err:
+            m.get_multioutput_estimator(horizon=3, target_dim=0)
+        assert str(err.value).startswith(
+            "`horizon` must be `>= 0` and `< output_chunk_length"
+        )
+        # target dim > training series width
+        with pytest.raises(ValueError) as err:
+            m.get_multioutput_estimator(horizon=0, target_dim=1)
+        assert str(err.value).startswith(
+            "`target_dim` must be `>= 0`, and `< n_target_components="
+        )
+
+        # univariate, probabilistic
+        # using the quantiles argument to force wrapping in MultiOutputRegressor
+        m = XGBModel(
+            lags=2,
+            output_chunk_length=2,
+            random_state=1,
+            likelihood="poisson",
+            quantiles=[0.5],
+        )
+        m.fit(ts["a"])
+        # incorrect likelihood
+        with pytest.raises(ValueError) as err:
+            m.get_multioutput_estimator(horizon=0, target_dim=0, quantile=0.1)
+        assert str(err.value).startswith(
+            "`quantile` is supported only when the `RegressionModel` is probabilistic "
+            "and using the 'quantile' likelihood."
+        )
+
+        # univariate, probabilistic
+        m = XGBModel(
+            lags=2,
+            output_chunk_length=2,
+            random_state=1,
+            likelihood="quantile",
+            quantiles=[0.01, 0.5, 0.99],
+        )
+        m.fit(ts["a"])
+        # retrieving a non-defined quantile
+        with pytest.raises(ValueError) as err:
+            m.get_multioutput_estimator(horizon=0, target_dim=0, quantile=0.1)
+        assert str(err.value).startswith(
+            "The fitted quantiles are [0.01, 0.5, 0.99], received quantile=0.1"
+        )
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_regression_model(self, mode):

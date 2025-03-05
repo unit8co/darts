@@ -505,10 +505,15 @@ class RegressionModel(GlobalForecastingModel):
     def output_chunk_shift(self) -> int:
         return self._output_chunk_shift
 
-    def get_multioutput_estimator(self, horizon: int, target_dim: int):
+    def get_multioutput_estimator(
+        self, horizon: int, target_dim: int, quantile: Optional[float] = None
+    ):
         """Returns the estimator that forecasts the `horizon`th step of the `target_dim`th target component.
 
         Internally, estimators are grouped by `output_chunk_length` position, then by component.
+
+        Note: for probabilistic models fitting quantiles, there is an additional abstraction layer,
+        grouping the estimators by `quantile`.
 
         Parameters
         ----------
@@ -516,31 +521,60 @@ class RegressionModel(GlobalForecastingModel):
             The index of the forecasting point within `output_chunk_length`.
         target_dim
             The index of the target component.
+        quantile
+            Optionaly, for probabilistic model fitting quantiles, the quantile value
         """
-        raise_if_not(
-            isinstance(self.model, MultiOutputRegressor),
-            "The sklearn model is not a MultiOutputRegressor object.",
-            logger,
-        )
-        raise_if_not(
-            0 <= horizon < self.output_chunk_length,
-            f"`horizon` must be `>= 0` and `< output_chunk_length={self.output_chunk_length}`.",
-            logger,
-        )
-        raise_if_not(
-            0 <= target_dim < self.input_dim["target"],
-            f"`target_dim` must be `>= 0`, and `< n_target_components={self.input_dim['target']}`.",
-            logger,
-        )
+        if not isinstance(self.model, MultiOutputRegressor):
+            raise_log(
+                ValueError("The sklearn model is not a MultiOutputRegressor object."),
+                logger,
+            )
+        if not 0 <= horizon < self.output_chunk_length:
+            raise_log(
+                ValueError(
+                    f"`horizon` must be `>= 0` and `< output_chunk_length={self.output_chunk_length}`."
+                ),
+                logger,
+            )
+        if not 0 <= target_dim < self.input_dim["target"]:
+            raise_log(
+                ValueError(
+                    f"`target_dim` must be `>= 0`, and `< n_target_components={self.input_dim['target']}`."
+                ),
+                logger,
+            )
 
         # when multi_models=True, one model per horizon and target component
         idx_estimator = (
             self.multi_models * self.input_dim["target"] * horizon + target_dim
         )
-        return self.model.estimators_[idx_estimator]
+        if quantile is None:
+            return self.model.estimators_[idx_estimator]
+        # for quantile-models, the estimators are also grouped by quantiles
+        else:
+            if self.likelihood != "quantile":
+                raise_log(
+                    ValueError(
+                        "`quantile` is supported only when the `RegressionModel` is probabilistic and using the "
+                        "'quantile' likelihood."
+                    ),
+                    logger,
+                )
+            if quantile not in self._model_container.keys():
+                raise_log(
+                    ValueError(
+                        f"The fitted quantiles are {list(self._model_container.keys())}, received quantile={quantile}."
+                    ),
+                    logger,
+                )
+            return self._model_container[quantile].estimators_[idx_estimator]
 
-    def get_estimator(self, horizon: int, target_dim: int):
+    def get_estimator(
+        self, horizon: int, target_dim: int, quantile: Optional[float] = None
+    ):
         """Returns the estimator that forecasts the `horizon`th step of the `target_dim`th target component.
+
+        For probabilistic models fitting quantiles, it is possible to also specify the quantile.
 
         The model is returned directly if it supports multi-output natively.
 
@@ -550,8 +584,9 @@ class RegressionModel(GlobalForecastingModel):
             The index of the forecasting point within `output_chunk_length`.
         target_dim
             The index of the target component.
+        quantile
+            Optionaly, for probabilistic model fitting quantiles, the quantile value
         """
-
         if isinstance(self.model, MultiOutputRegressor):
             return self.get_multioutput_estimator(
                 horizon=horizon, target_dim=target_dim
