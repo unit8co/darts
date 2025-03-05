@@ -260,14 +260,10 @@ class TimeSeries:
 
         # prepare metadata
         metadata = self._xa.attrs.get(METADATA_TAG, None)
-        if metadata is None or isinstance(metadata, pd.Series):
-            pass
-        elif isinstance(metadata, pd.DataFrame) and len(metadata) == 1:
-            metadata = metadata.iloc[0]
-        else:
+        if metadata is not None and not isinstance(metadata, dict):
             raise_log(
                 ValueError(
-                    "`metadata` must be either a pandas Series, 1-rowed DataFrame or None"
+                    "`metadata` must be a dict mapping metadata attributes to their values."
                 ),
                 logger,
             )
@@ -496,7 +492,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
-        metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        metadata: Optional[dict] = None,
         **kwargs,
     ) -> Self:
         """
@@ -561,7 +557,7 @@ class TimeSeries:
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
-            Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
+            Optionally, a dictionary defining properties for metadata attributes.
 
         **kwargs
             Optional arguments to be passed to `pandas.read_csv` function
@@ -664,7 +660,7 @@ class TimeSeries:
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
-            Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
+            Optionally, a dictionary defining properties for metadata attributes.
 
         Returns
         -------
@@ -1020,9 +1016,7 @@ class TimeSeries:
                     else None
                 ),
                 metadata=(
-                    pd.DataFrame([metadata_vals], columns=metadata_cols)
-                    if metadata_cols
-                    else None
+                    dict(zip(metadata_cols, metadata_vals)) if metadata_cols else None
                 ),
             )
 
@@ -1042,7 +1036,7 @@ class TimeSeries:
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
-        metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        metadata: Optional[dict] = None,
     ) -> Self:
         """
         Build a univariate deterministic series from a pandas Series.
@@ -1074,7 +1068,7 @@ class TimeSeries:
             single-row pandas DataFrame. If a Series, the index represents the static variables. If a DataFrame, the
             columns represent the static variables and the single row represents the univariate TimeSeries component.
         metadata
-            Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
+            Optionally, a dictionary defining properties for metadata attributes.
 
         Returns
         -------
@@ -1104,7 +1098,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
-        metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        metadata: Optional[dict] = None,
     ) -> Self:
         """
         Build a series from a time index and value array.
@@ -1168,7 +1162,7 @@ class TimeSeries:
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
-            Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
+            Optionally, a dictionary defining properties for metadata attributes.
 
         Returns
         -------
@@ -1228,7 +1222,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
-        metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        metadata: Optional[dict] = None,
     ) -> Self:
         """
         Build an integer-indexed series from an array of values.
@@ -1277,7 +1271,7 @@ class TimeSeries:
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
-            Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
+            Optionally, a dictionary defining properties for metadata attributes.
 
         Returns
         -------
@@ -1307,7 +1301,7 @@ class TimeSeries:
         json_str: str,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
-        metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        metadata: Optional[dict] = None,
     ) -> Self:
         """
         Build a series from the JSON String representation of a ``TimeSeries``
@@ -1352,7 +1346,7 @@ class TimeSeries:
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
-            Optionally, a pandas Series or 1-rowed DataFrame defining properties for metadata attributes.
+            Optionally, a dictionary defining properties for metadata attributes.
 
         Returns
         -------
@@ -1417,7 +1411,7 @@ class TimeSeries:
         return self._xa.attrs.get(HIERARCHY_TAG, None)
 
     @property
-    def metadata(self) -> Optional[pd.Series]:
+    def metadata(self) -> Optional[dict]:
         """
         The metadata of this TimeSeries, if any.
         If set, the metadata is encoded as a pandas Series which defines properties
@@ -1563,6 +1557,11 @@ class TimeSeries:
     def has_static_covariates(self) -> bool:
         """Whether this series contains static covariates."""
         return self.static_covariates is not None
+
+    @property
+    def has_metadata(self) -> bool:
+        """Whether this series contains metadata."""
+        return self.metadata is not None
 
     @property
     def duration(self) -> Union[pd.Timedelta, int]:
@@ -2072,6 +2071,22 @@ class TimeSeries:
             self.static_covariates.to_numpy(copy=copy)
             if self.has_static_covariates
             else self.static_covariates
+        )
+
+    def metadata_values(self) -> Optional[np.ndarray]:
+        """
+        Return a 1-D array of dimension (metadata variable),
+        containing the metadata values of the TimeSeries.
+
+        Returns
+        -------
+        Optional[numpy.ndarray]
+            The metadata values if the series has metadata, else `None`.
+        """
+        return (
+            np.array(list(self.metadata.values()))
+            if self.has_metadata
+            else self.metadata
         )
 
     def head(
@@ -3311,16 +3326,16 @@ class TimeSeries:
             )
         )
 
-    def with_metadata(self, metadata: Optional[Union[pd.Series, pd.DataFrame]]):
+    def with_metadata(self, metadata: dict):
         """
         Adds metadata to the TimeSeries.
 
         Parameters
         ----------
         metadata
-            A pandas Series or 1-rowed DataFrame defining properties for identifying and describing
+            A dictionary defining properties for identifying and describing
             the underlying data of the TimeSeries. The types of the values can be different. For example:
-            ``metadata = pd.Series({'source_file': 'woolyrnq.csv', 'has_wool': True, 'start_year': 1965})``
+            ``metadata = {'source_file': 'woolyrnq.csv', 'has_wool': True, 'start_year': 1965}``
         """
 
         return self.__class__(
