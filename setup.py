@@ -30,7 +30,7 @@ PROJECT_URLS = {
 
 setup(
     name="darts",
-    version="0.32.0",
+    version="0.33.0",
     description="A python library for easy manipulation and forecasting of time series.",
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",

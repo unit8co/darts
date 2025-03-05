@@ -22,6 +22,7 @@ We assume that you already know about covariates in Darts. If you're new to the 
       - [Manual saving / loading](#manual-saving--loading)
       - [Train & save on GPU, load on CPU](#trainingsaving-on-gpu-and-loading-on-cpu)
       - [Load pre-trained model for fine-tuning](#re-training-or-fine-tuning-a-pre-trained-model)
+      - [Exporting model to ONNX format for inference](#exporting-model-to-ONNX-format-for-inference)
     - [Callbacks](#callbacks)
       - [Early Stopping](#example-with-early-stopping)
       - [Custom Callback](#example-of-custom-callback-to-store-losses)
@@ -348,6 +349,93 @@ model_finetune = SomeTorchForecastingModel(...,  # use identical parameters & va
 
 # load the weights from a manual save
 model_finetune.load_weights("/your/path/to/save/model.pt")
+```
+
+#### Exporting model to ONNX format for inference
+
+It is also possible to export the model weights to the ONNX format to run inference in a lightweight environment. The example below works for any `TorchForecastingModel` except `RNNModel` and for optional usage of past, future and / or static covariates. Note that all series and covariates must extend far enough into the past (`input_chunk_length)` and future (`output_chunk_length`) relative to the end of the target `series`. It will not be possible to forecast a horizon `n > output_chunk_length` without implementing the auto-regression logic.
+
+```python
+model = SomeTorchForecastingModel(...)
+model.fit(...)
+
+# make sure to have `onnx` and `onnxruntime` installed
+onnx_filename = "example_onnx.onnx"
+model.to_onnx(onnx_filename, export_params=True)
+```
+
+Now, to load the model and predict steps after the end of the series:
+
+```python
+from typing import Optional
+import onnx
+import onnxruntime as ort
+import numpy as np
+from darts import TimeSeries
+
+def prepare_onnx_inputs(
+    model,
+    series: TimeSeries,
+    past_covariates : Optional[TimeSeries] = None,
+    future_covariates : Optional[TimeSeries] = None,
+) -> tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]:
+    """Helper function to slice and concatenate the input features"""
+    past_feats, future_feats, static_feats = None, None, None
+    # get input & output windows
+    past_start = series.end_time() - (model.input_chunk_length - 1) * series.freq
+    past_end = series.end_time()
+    future_start = past_end + 1 * series.freq
+    future_end = past_end + model.output_chunk_length * series.freq
+    # extract all historic and future features from target, past and future covariates
+    past_feats = series[past_start:past_end].values()
+    if past_covariates and model.uses_past_covariates:
+        # extract past covariates
+        past_feats = np.concatenate(
+            [
+                past_feats,
+                past_covariates[past_start:past_end].values()
+            ],
+            axis=1
+        )
+    if future_covariates and model.uses_future_covariates:
+        # extract past part of future covariates
+        past_feats = np.concatenate(
+            [
+                past_feats,
+                future_covariates[past_start:past_end].values()
+            ],
+            axis=1
+        )
+        # extract future part of future covariates
+        future_feats = future_covariates[future_start:future_end].values()
+    # add batch dimension -> (batch, n time steps, n components)
+    past_feats = np.expand_dims(past_feats, axis=0).astype(series.dtype)
+    future_feats = np.expand_dims(future_feats, axis=0).astype(series.dtype)
+    # extract static covariates
+    if series.has_static_covariates and model.uses_static_covariates:
+        static_feats = np.expand_dims(series.static_covariates_values(), axis=0).astype(series.dtype)
+    return past_feats, future_feats, static_feats
+
+onnx_model = onnx.load(onnx_filename)
+onnx.checker.check_model(onnx_model)
+ort_session = ort.InferenceSession(onnx_filename)
+
+# use helper function to extract the features from the series
+past_feats, future_feats, static_feats = prepare_onnx_inputs(
+    model=model,
+    series=series,
+    past_covariates=ts_past,
+    future_covariates=ts_future,
+)
+
+# extract only the features expected by the model
+ort_inputs = {}
+for name, arr in zip(['x_past', 'x_future', 'x_static'], [past_feats, future_feats, static_feats]):
+    if name in [inp.name for inp in list(ort_session.get_inputs())]:
+        ort_inputs[name] = arr
+
+# output has shape (batch, output_chunk_length, n components, 1 or n likelihood params)
+ort_out = ort_session.run(None, ort_inputs)
 ```
 
 ### Callbacks

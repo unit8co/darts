@@ -646,6 +646,66 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 logger=logger,
             )
 
+    def to_onnx(self, path: Optional[str] = None, **kwargs):
+        """Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning's
+        :func:`torch.onnx.export` method (`official documentation <https://lightning.ai/docs/pytorch/
+        stable/common/lightning_module.html#to-onnx>`_).
+
+        Note: requires `onnx` library (optional dependency) to be installed.
+
+        Example for exporting a :class:`DLinearModel`:
+
+        .. highlight:: python
+        .. code-block:: python
+
+            from darts.datasets import AirPassengersDataset
+            from darts.models import DLinearModel
+
+            series = AirPassengersDataset().load()
+            model = DLinearModel(input_chunk_length=4, output_chunk_length=1)
+            model.fit(series, epochs=1)
+            model.to_onnx("my_model.onnx")
+        ..
+
+        Parameters
+        ----------
+        path
+            Path under which to save the model at its current state. If no path is specified, the model
+            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.onnx"``.
+        **kwargs
+            Additional kwargs for PyTorch's :func:`torch.onnx.export` method (except parameters ``file_path``,
+            ``input_sample``, ``input_name``). For more information, read the `official documentation
+            <https://pytorch.org/docs/master/onnx.html#torch.onnx.export>`_.
+        """
+        if not self._fit_called:
+            raise_log(
+                ValueError("`fit()` needs to be called before `to_onnx()`."), logger
+            )
+
+        if path is None:
+            path = self._default_save_path() + ".onnx"
+
+        # last dimension in train_sample_shape is the expected target
+        mock_batch = tuple(
+            torch.rand((1,) + shape, dtype=self.model.dtype) if shape else None
+            for shape in self.model.train_sample_shape[:-1]
+        )
+        input_sample = self.model._process_input_batch(mock_batch)
+
+        # torch models necessarily use historic target values as features in current implementation
+        input_names = ["x_past"]
+        if self.uses_future_covariates:
+            input_names.append("x_future")
+        if self.uses_static_covariates:
+            input_names.append("x_static")
+
+        self.model.to_onnx(
+            file_path=path,
+            input_sample=(input_sample,),
+            input_names=input_names,
+            **kwargs,
+        )
+
     @random_method
     def fit(
         self,
@@ -1705,7 +1765,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             path = self._default_save_path() + ".pt"
 
         # save the TorchForecastingModel (does not save the PyTorch LightningModule, and Trainer)
-        super().save(path, clean=clean)
+        with open(path, "wb") as f_out:
+            torch.save(self if not clean else self._clean(), f_out)
 
         # save the LightningModule checkpoint (weights only with `clean=True`)
         path_ptl_ckpt = path + ".ckpt"
@@ -1742,7 +1803,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 model_loaded = RNNModel.load(path)
             ..
 
-        Example for loading an :class:`RNNModel` to GPU:
+        Example for loading an :class:`RNNModel` to GPU that was trained on CPU:
 
             .. highlight:: python
             .. code-block:: python
@@ -1750,6 +1811,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 from darts.models import RNNModel
 
                 model_loaded = RNNModel.load(path, pl_trainer_kwargs={"accelerator": "gpu"})
+            ..
+
+        Example for loading an :class:`RNNModel` to CPU that was saved on GPU:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RNNModel
+
+                model_loaded = RNNModel.load(path, map_location="cpu", pl_trainer_kwargs={"accelerator": "gpu"})
             ..
 
         Parameters
@@ -1765,11 +1836,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for more information about the supported kwargs.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
+            such as ``map_location`` to load the model onto a different device than the one on which it was saved.
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
             common/lightning_module.html#load-from-checkpoint>`_.
         """
         # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
-        model: TorchForecastingModel = ForecastingModel.load(path)
+        with open(path, "rb") as fin:
+            model: TorchForecastingModel = torch.load(
+                fin, weights_only=False, map_location=kwargs.get("map_location", None)
+            )
 
         # if a checkpoint was saved, we also load the PyTorch LightningModule from checkpoint
         path_ptl_ckpt = path + ".ckpt"
@@ -1867,7 +1942,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             f"Could not find base model save file `{INIT_MODEL_NAME}` in {model_dir}.",
             logger,
         )
-        model: TorchForecastingModel = ForecastingModel.load(base_model_path)
+        model: TorchForecastingModel = torch.load(
+            base_model_path, weights_only=False, map_location=kwargs.get("map_location")
+        )
 
         # load PyTorch LightningModule from checkpoint
         # if file_name is None, find the path of the best or most recent checkpoint in savepath
@@ -2033,7 +2110,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 )
 
             # updating model attributes before self._init_model() which create new tfm ckpt
-            tfm_save: TorchForecastingModel = ForecastingModel.load(tfm_save_file_path)
+            with open(tfm_save_file_path, "rb") as tfm_save_file:
+                tfm_save: TorchForecastingModel = torch.load(
+                    tfm_save_file,
+                    weights_only=False,
+                    map_location=kwargs.get("map_location", None),
+                )
 
             # encoders are necessary for direct inference
             self.encoders, self.add_encoders = self._load_encoders(

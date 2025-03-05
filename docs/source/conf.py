@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath("../../.."))
 project = "darts"
 copyright = f"2020 - {datetime.now().year}, Unit8 SA (Apache 2.0 License)"
 author = "Unit8 SA"
-version = "0.32.0"
+version = "0.33.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -54,7 +54,7 @@ autodoc_default_options = {
     + "PastCovariatesTorchModel,FutureCovariatesTorchModel,DualCovariatesTorchModel,MixedCovariatesTorchModel,"
     + "SplitCovariatesTorchModel,"
     + "min_train_series_length,"
-    + "untrained_model,first_prediction_index,future_covariate_series,past_covariate_series,"
+    + "first_prediction_index,future_covariate_series,past_covariate_series,"
     + "initialize_encoders,register_datapipe_as_function,register_function,functions,"
     + "SplitTimeSeriesSequence,randint,AnomalyModel",
 }

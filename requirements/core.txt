@@ -1,13 +1,14 @@
 holidays>=0.11.1
 joblib>=0.16.0
 matplotlib>=3.3.0
+narwhals>=1.25.1
 nfoursid>=1.0.0
 numpy>=1.19.0,<2.0.0
 pandas>=1.0.5
 pmdarima>=1.8.0
 pyod>=0.9.5
 requests>=2.22.0
-scikit-learn>=1.0.1,<1.6.0
+scikit-learn>=1.0.1
 scipy>=1.3.2
 shap>=0.40.0
 statsforecast>=1.4
