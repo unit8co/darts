@@ -21,6 +21,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - 🔴 / 🟢 Fixed a bug which raised an error when loading torch models that were saved with Darts versions < 0.33.0. This is a breaking change and models saved with version 0.33.0 will not be loadable anymore. [#2692](https://github.com/unit8co/darts/pull/2692) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug in `13-TFT-examples.ipynb` where two calls to `TimeSeries.from_series()` were not providing `series` but `pd.Index`. The method calls were changed to `TimeSeries.from_values()`. [#2719](https://github.com/unit8co/darts/pull/2719) by [Jules Authier](https://github.com/authierj)
 
 **Dependencies**
 
