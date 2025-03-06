@@ -1380,10 +1380,11 @@ class RegressionModel(GlobalForecastingModel):
         """
         Returns True if the model supports multi-output regression natively.
         """
-        model = self.model
-        if isinstance(self.model, MultiOutputRegressor):
-            model = self.model.estimator
-
+        model = (
+            self.model.estimator
+            if isinstance(self.model, MultiOutputRegressor)
+            else self.model
+        )
         return model.__sklearn_tags__().target_tags.multi_output
 
 
