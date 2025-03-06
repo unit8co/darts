@@ -28,6 +28,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Switched from sklearn `_get_tags` to `__sklearn_tags__` as it will be required by sklearn 1.7. This leads to increasing both sklearn and XGBoost minimum supported version to 1.6 and 2.1.4 respectively. [#2659](https://github.com/unit8co/darts/pull/2659) by [Jonas Blanc](https://github.com/jonasblanc)
 - Refactored and improved the multi-output support handling for RegressionModels. [#2659](https://github.com/unit8co/darts/pull/2659) by [Jonas Blanc](https://github.com/jonasblanc)
 
 ## [0.33.0](https://github.com/unit8co/darts/tree/0.33.0) (2025-02-14)
