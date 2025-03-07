@@ -3,7 +3,6 @@ from itertools import product
 
 import numpy as np
 import pytest
-import sklearn
 from pyod.models.knn import KNN
 from scipy.stats import cauchy, expon, gamma, laplace, norm, poisson
 
@@ -1221,12 +1220,7 @@ class TestAnomalyDetectionScorer:
 
         assert np.abs(1.0 - auc_roc_cwtrue[0]) < delta
         assert np.abs(0.97666 - auc_roc_cwtrue[1]) < delta
-        # sklearn changed the centroid initialization in version 1.3.0
-        # so the results are slightly different for older versions
-        if sklearn.__version__ < "1.3.0":
-            assert np.abs(0.9851 - auc_roc_cwfalse) < delta
-        else:
-            assert np.abs(0.99007 - auc_roc_cwfalse) < delta
+        assert np.abs(0.99007 - auc_roc_cwfalse) < delta
 
     def test_PyODScorer(self):
         # Check parameters and inputs
