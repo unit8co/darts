@@ -59,13 +59,13 @@ class TestTimeSeriesStaticCovariate:
         self.helper_test_cov_transfer(
             ts,
             TimeSeries.from_dataframe(
-                ts.pd_dataframe(), static_covariates=ts.static_covariates
+                ts.to_dataframe(), static_covariates=ts.static_covariates
             ),
         )
         self.helper_test_cov_transfer(
             ts,
             TimeSeries.from_series(
-                ts.pd_series(), static_covariates=ts.static_covariates
+                ts.to_series(), static_covariates=ts.static_covariates
             ),
         )
         self.helper_test_cov_transfer(

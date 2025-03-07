@@ -219,7 +219,7 @@ class DatasetLoaderCSV(DatasetLoader):
             and self._metadata.multivariate is False
         ):
             try:
-                series = self._to_multi_series(series.pd_dataframe())
+                series = self._to_multi_series(series.to_dataframe())
             except Exception as e:
                 raise DatasetLoadingException(
                     "Could not convert to multi-series. Reason:" + e.__repr__()

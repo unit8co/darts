@@ -109,12 +109,12 @@ class KalmanFilter(FilteringModel, ABC):
 
         # TODO: Handle multiple timeseries. Needs reimplementation of NFourSID?
         self.dim_y = series.width
-        outputs = series.pd_dataframe(copy=False)
+        outputs = series.to_dataframe(copy=False)
         outputs.columns = [f"y_{i}" for i in outputs.columns]
 
         if covariates is not None:
             self.dim_u = covariates.width
-            inputs = covariates.pd_dataframe(copy=False)
+            inputs = covariates.to_dataframe(copy=False)
             inputs.columns = [f"u_{i}" for i in inputs.columns]
             input_columns = list(inputs.columns)
             measurements = pd.concat([outputs, inputs], axis=1)

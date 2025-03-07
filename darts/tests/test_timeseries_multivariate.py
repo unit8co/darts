@@ -41,7 +41,7 @@ class TestTimeSeriesMultivariate:
 
     def test_creation(self):
         series_test = TimeSeries.from_dataframe(self.dataframe1)
-        assert np.all(series_test.pd_dataframe().values == self.dataframe1.values)
+        assert np.all(series_test.to_dataframe().values == self.dataframe1.values)
 
         # Series cannot be lower than three without passing frequency as argument to constructor
         with pytest.raises(ValueError):
@@ -145,7 +145,7 @@ class TestTimeSeriesMultivariate:
             "1_1",
             "2_1",
         ]  # the names to expect after stacking
-        assert (seriesA.pd_dataframe() == dataframeA).all().all()
+        assert (seriesA.to_dataframe() == dataframeA).all().all()
         assert seriesA.values().shape == (
             len(self.dataframe1),
             len(self.dataframe1.columns) + len(self.dataframe2.columns),
@@ -172,12 +172,12 @@ class TestTimeSeriesMultivariate:
         seriesA = self.series1.add_datetime_attribute("day")
         assert seriesA.width == self.series1.width + 1
         assert set(
-            seriesA.pd_dataframe().iloc[:, seriesA.width - 1].values.flatten()
+            seriesA.to_dataframe().iloc[:, seriesA.width - 1].values.flatten()
         ) == set(range(0, 10))
         seriesB = self.series3.add_datetime_attribute("day", True)
         assert seriesB.width == self.series3.width + 31
         assert set(
-            seriesB.pd_dataframe().iloc[:, self.series3.width :].values.flatten()
+            seriesB.to_dataframe().iloc[:, self.series3.width :].values.flatten()
         ) == {0, 1}
         seriesC = self.series1.add_datetime_attribute("month", True)
         assert seriesC.width == self.series1.width + 12
@@ -203,7 +203,7 @@ class TestTimeSeriesMultivariate:
 
         assert np.allclose(np.add(np.square(values_sin), np.square(values_cos)), 1)
 
-        df = seriesF.pd_dataframe()
+        df = seriesF.to_dataframe()
         # first day is equivalent to t=0
         df = df[df.index.day == 1]
         assert np.allclose(df["day_sin"].values, 0, atol=0.03)
@@ -220,14 +220,14 @@ class TestTimeSeriesMultivariate:
 
         # testing for christmas and non-holiday in US
         seriesA = seriesA.add_holidays("US")
-        last_column = seriesA.pd_dataframe().iloc[:, seriesA.width - 1]
+        last_column = seriesA.to_dataframe().iloc[:, seriesA.width - 1]
         assert last_column.at[pd.Timestamp("20201225")] == 1
         assert last_column.at[pd.Timestamp("20201210")] == 0
         assert last_column.at[pd.Timestamp("20201226")] == 0
 
         # testing for christmas and non-holiday in PL
         seriesA = seriesA.add_holidays("PL")
-        last_column = seriesA.pd_dataframe().iloc[:, seriesA.width - 1]
+        last_column = seriesA.to_dataframe().iloc[:, seriesA.width - 1]
         assert last_column.at[pd.Timestamp("20201225")] == 1
         assert last_column.at[pd.Timestamp("20201210")] == 0
         assert last_column.at[pd.Timestamp("20201226")] == 1
@@ -239,7 +239,7 @@ class TestTimeSeriesMultivariate:
         )
         seriesB = TimeSeries.from_times_and_values(times, range(len(times)))
         seriesB = seriesB.add_holidays("US")
-        last_column = seriesB.pd_dataframe().iloc[:, seriesB.width - 1]
+        last_column = seriesB.to_dataframe().iloc[:, seriesB.width - 1]
         assert last_column.at[pd.Timestamp("2020-12-25 01:00:00")] == 1
         assert last_column.at[pd.Timestamp("2020-12-24 23:00:00")] == 0
 
