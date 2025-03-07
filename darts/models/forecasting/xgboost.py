@@ -8,7 +8,6 @@ This implementation comes with the ability to produce probabilistic forecasts.
 """
 
 from collections.abc import Sequence
-from functools import partial
 from typing import Optional, Union
 
 import numpy as np
@@ -24,10 +23,6 @@ from darts.models.forecasting.regression_model import (
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
-
-# Check whether we are running xgboost >= 2.0.0 for quantile regression
-tokens = xgb.__version__.split(".")
-xgb_200_or_above = int(tokens[0]) >= 2
 
 
 def xgb_quantile_loss(labels: np.ndarray, preds: np.ndarray, quantile: float):
@@ -205,9 +200,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             if likelihood in {"poisson"}:
                 self.kwargs["objective"] = f"count:{likelihood}"
             elif likelihood == "quantile":
-                if xgb_200_or_above:
-                    # leverage built-in Quantile Regression
-                    self.kwargs["objective"] = "reg:quantileerror"
+                self.kwargs["objective"] = "reg:quantileerror"
                 self.quantiles, self._median_idx = self._prepare_quantiles(quantiles)
                 self._model_container = self._get_model_container()
 
@@ -289,11 +282,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
             for quantile in self.quantiles:
-                if xgb_200_or_above:
-                    self.kwargs["quantile_alpha"] = quantile
-                else:
-                    objective = partial(xgb_quantile_loss, quantile=quantile)
-                    self.kwargs["objective"] = objective
+                self.kwargs["quantile_alpha"] = quantile
                 self.model = xgb.XGBRegressor(**self.kwargs)
                 super().fit(
                     series=series,
@@ -368,3 +357,8 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
                 else self.output_chunk_length
             ),
         )
+
+    @property
+    def _supports_native_multioutput(self):
+        # since xgboost==2.1.0, likelihoods do not support native multi output regression
+        return super()._supports_native_multioutput and self.likelihood is None
