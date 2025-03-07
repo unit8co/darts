@@ -182,11 +182,7 @@ cb_test_params = {
 class TestRegressionModels:
     np.random.seed(42)
     # default regression models
-    models = [
-        RandomForest,
-        LinearRegressionModel,
-        RegressionModel,
-    ]
+    models = [RandomForest, LinearRegressionModel, RegressionModel]
 
     # register likelihood regression models
     QuantileLinearRegressionModel = partialclass(
@@ -1354,6 +1350,31 @@ class TestRegressionModels:
             assert model.get_estimator(horizon=0, target_dim=0) != model.get_estimator(
                 horizon=0, target_dim=1
             )
+
+    model_configs_multioutput = [
+        (
+            RegressionModel,
+            {"lags": 4, "model": LinearRegression()},
+            True,
+        ),
+        (LinearRegressionModel, {"lags": 4}, True),
+        (XGBModel, {"lags": 4}, True),
+        (XGBModel, {"lags": 4, "likelihood": "poisson"}, False),
+    ]
+    if lgbm_available:
+        model_configs_multioutput += [(LightGBMModel, {"lags": 4}, False)]
+    if cb_available:
+        model_configs_multioutput += [
+            (CatBoostModel, {"lags": 4, "loss_function": "RMSE"}, False),
+            (CatBoostModel, {"lags": 4, "loss_function": "MultiRMSE"}, True),
+            (CatBoostModel, {"lags": 4, "loss_function": "RMSEWithUncertainty"}, False),
+        ]
+
+    @pytest.mark.parametrize("config", model_configs_multioutput)
+    def test_supports_native_multioutput(self, config):
+        model_cls, model_config, supports_native_multioutput = config
+        model = model_cls(**model_config)
+        assert model._supports_native_multioutput == supports_native_multioutput
 
     model_configs = [(XGBModel, dict({"likelihood": "poisson"}, **xgb_test_params))]
     if lgbm_available:
