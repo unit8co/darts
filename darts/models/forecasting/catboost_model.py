@@ -132,8 +132,9 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         **kwargs
             Additional keyword arguments passed to `catboost.CatBoostRegressor`.
-            By setting `loss_function` to 'MultiRMSE', the model will natively support multioutput regression.
-            Darts' `MultiOutputRegressor` wrapper will handle multioutput regression if default 'RMSE' loss is used.
+            Native multi-output support can be achieved by using an appropriate `loss_function` ('MultiRMSE',
+            'MultiRMSEWithMissingValues'). Otherwise, Darts uses its `MultiOutputRegressor` wrapper to add multi-output
+            support.
 
         Examples
         --------
@@ -412,7 +413,8 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
 
     @property
     def _supports_native_multioutput(self):
-        # CatBoostRegressor supports multioutput natively, but only with the "MultiRMSE" loss function
+        # CatBoostRegressor supports multi-output natively, but only with selected loss functions
+        # ("MultiRMSE", "MultiRMSEWithMissingValues", ...)
         return CatBoostRegressor._is_multiregression_objective(
             self.kwargs.get("loss_function")
         )
