@@ -1496,10 +1496,8 @@ class TestRegressionModels:
         ocl = 3
         lags = 3
         quantiles = [0.01, 0.5, 0.99]
-        ts = tg.gaussian_timeseries(
-            mean=0, std=1, length=100, column_name="normal"
-        ).stack(
-            tg.gaussian_timeseries(mean=10, std=1, length=100, column_name="gaussian"),
+        ts = tg.sine_timeseries(length=100, column_name="sine").stack(
+            tg.linear_timeseries(length=100, column_name="linear"),
         )
 
         m = XGBModel(
@@ -1513,6 +1511,7 @@ class TestRegressionModels:
         m.fit(ts)
 
         assert len(m._model_container) == len(quantiles)
+        assert sorted(list(m._model_container.keys())) == sorted(quantiles)
         for quantile_container in m._model_container.values():
             # one sub-model per quantile, per component, per horizon
             if multi_models:
@@ -1522,27 +1521,28 @@ class TestRegressionModels:
                 assert len(quantile_container.estimators_) == ts.width
 
         # check that retrieve sub-models prediction match the "wrapper" model predictions
+        pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
         pred = m.predict(
             n=ocl,
-            series=ts[-lags:] if multi_models else ts[-lags - ocl + 1 :],
+            series=pred_input,
             num_samples=1,
             predict_likelihood_parameters=True,
         )
         for j in range(ts.width):
-            dummy_feats = np.array([[0, 0.1, -0.1] * ts.width]) + 10 * j
             for i in range(ocl):
+                if multi_models:
+                    dummy_feats = pred_input.values()[:lags]
+                else:
+                    dummy_feats = pred_input.values()[i : +i + lags]
+                dummy_feats = np.expand_dims(dummy_feats.flatten(), 0)
                 for q in quantiles:
                     sub_model = m.get_multioutput_estimator(
                         horizon=i, target_dim=j, quantile=q
                     )
                     pred_sub_model = sub_model.predict(dummy_feats)[0]
-                    # due to the difference in inputs, the predictions are not exactly identical
                     assert (
-                        np.abs(
-                            pred[f"{ts.components[j]}_q{q:.2f}"].values()[i][0]
-                            - pred_sub_model
-                        )
-                        < 3
+                        pred_sub_model
+                        == pred[f"{ts.components[j]}_q{q:.2f}"].values()[i][0]
                     )
 
     def test_get_multioutput_estimator_exceptions(self):
@@ -1601,8 +1601,8 @@ class TestRegressionModels:
         with pytest.raises(ValueError) as err:
             m.get_multioutput_estimator(horizon=0, target_dim=0, quantile=0.1)
         assert str(err.value).startswith(
-            "`quantile` is supported only when the `RegressionModel` is probabilistic "
-            "and using the 'quantile' likelihood."
+            "`quantile` is only supported for probabilistic models that "
+            "use `likelihood='quantile'`."
         )
 
         # univariate, probabilistic
@@ -1618,7 +1618,8 @@ class TestRegressionModels:
         with pytest.raises(ValueError) as err:
             m.get_multioutput_estimator(horizon=0, target_dim=0, quantile=0.1)
         assert str(err.value).startswith(
-            "The fitted quantiles are [0.01, 0.5, 0.99], received quantile=0.1"
+            "Invalid `quantile=0.1`. Must be one of the fitted quantiles "
+            "`[0.01, 0.5, 0.99]`."
         )
 
     @pytest.mark.parametrize("mode", [True, False])

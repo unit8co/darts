@@ -522,7 +522,7 @@ class RegressionModel(GlobalForecastingModel):
         target_dim
             The index of the target component.
         quantile
-            Optionaly, for probabilistic model fitting quantiles, the quantile value
+            Optionally, for probabilistic model with `likelihood="quantile"`, a quantile value.
         """
         if not isinstance(self.model, MultiOutputRegressor):
             raise_log(
@@ -550,24 +550,25 @@ class RegressionModel(GlobalForecastingModel):
         )
         if quantile is None:
             return self.model.estimators_[idx_estimator]
+
         # for quantile-models, the estimators are also grouped by quantiles
-        else:
-            if self.likelihood != "quantile":
-                raise_log(
-                    ValueError(
-                        "`quantile` is supported only when the `RegressionModel` is probabilistic and using the "
-                        "'quantile' likelihood."
-                    ),
-                    logger,
-                )
-            if quantile not in self._model_container.keys():
-                raise_log(
-                    ValueError(
-                        f"The fitted quantiles are {list(self._model_container.keys())}, received quantile={quantile}."
-                    ),
-                    logger,
-                )
-            return self._model_container[quantile].estimators_[idx_estimator]
+        if self.likelihood != "quantile":
+            raise_log(
+                ValueError(
+                    "`quantile` is only supported for probabilistic models that "
+                    "use `likelihood='quantile'`."
+                ),
+                logger,
+            )
+        if quantile not in self._model_container:
+            raise_log(
+                ValueError(
+                    f"Invalid `quantile={quantile}`. Must be one of the fitted quantiles "
+                    f"`{list(self._model_container.keys())}`."
+                ),
+                logger,
+            )
+        return self._model_container[quantile].estimators_[idx_estimator]
 
     def get_estimator(
         self, horizon: int, target_dim: int, quantile: Optional[float] = None
@@ -585,7 +586,7 @@ class RegressionModel(GlobalForecastingModel):
         target_dim
             The index of the target component.
         quantile
-            Optionaly, for probabilistic model fitting quantiles, the quantile value
+            Optionally, for probabilistic model with `likelihood="quantile"`, a quantile value.
         """
         if isinstance(self.model, MultiOutputRegressor):
             return self.get_multioutput_estimator(
