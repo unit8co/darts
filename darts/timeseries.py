@@ -43,6 +43,7 @@ from collections.abc import Sequence
 from copy import deepcopy
 from inspect import signature
 from io import StringIO
+from types import ModuleType
 from typing import Any, Callable, Literal, Optional, Union
 
 import matplotlib.axes
@@ -52,6 +53,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from narwhals.typing import IntoDataFrame, IntoSeries
+from narwhals.utils import Implementation
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
@@ -1579,7 +1581,9 @@ class TimeSeries:
     def to_series(
         self,
         copy: bool = True,
-        backend: Literal["pandas", "polars", "pyarrow"] = "pandas",
+        backend: ModuleType
+        | Implementation
+        | Literal["pandas", "polars", "pyarrow", "modin", "cudf"] = "pandas",
     ):
         """
         Return a Series representation of this univariate deterministic time series.
@@ -1641,7 +1645,9 @@ class TimeSeries:
     def to_dataframe(
         self,
         copy: bool = True,
-        backend: Literal["pandas", "polars", "pyarrow", "modin", "cudf"] = "pandas",
+        backend: ModuleType
+        | Implementation
+        | Literal["pandas", "polars", "pyarrow", "modin", "cudf"] = "pandas",
         time_as_index: bool = True,
         suppress_warnings: bool = False,
     ):
