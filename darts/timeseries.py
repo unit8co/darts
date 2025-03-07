@@ -1581,9 +1581,7 @@ class TimeSeries:
     def to_series(
         self,
         copy: bool = True,
-        backend: ModuleType
-        | Implementation
-        | Literal["pandas", "polars", "pyarrow", "modin", "cudf"] = "pandas",
+        backend: Union[ModuleType, Implementation, str] = "pandas",
     ):
         """
         Return a Series representation of this univariate deterministic time series.
@@ -1640,14 +1638,12 @@ class TimeSeries:
             "`TimeSeries.to_series()` instead",
             logger,
         )
-        return self.to_series(copy=copy, backend="pandas")
+        return self.to_series(copy=copy)
 
     def to_dataframe(
         self,
         copy: bool = True,
-        backend: ModuleType
-        | Implementation
-        | Literal["pandas", "polars", "pyarrow", "modin", "cudf"] = "pandas",
+        backend: Union[ModuleType, Implementation, str] = "pandas",
         time_as_index: bool = True,
         suppress_warnings: bool = False,
     ):
@@ -1679,13 +1675,9 @@ class TimeSeries:
         """
 
         if time_as_index and backend != "pandas":
-            raise_log(
-                Warning(
-                    '`time_as_index=True` is only supported with `backend="pandas"`.'
-                ),
-                logger,
-            )
-            time_index = False
+            logger.warning('`time_as_index=True` is only supported with `backend="pandas"`.')
+            time_as_index = False
+            time_as_index = False
 
         if not self.is_deterministic:
             if not suppress_warnings:
@@ -1752,9 +1744,7 @@ class TimeSeries:
         )
         return self.to_dataframe(
             copy=copy,
-            backend="pandas",
-            time_as_index=True,
-            suppress_warnings=suppress_warnings,
+            suppress_warnings=suppress_warnings
         )
 
     def quantile_df(self, quantile=0.5) -> pd.DataFrame:

@@ -88,6 +88,7 @@ class TestTimeSeries:
         ts_pd_df = ts.to_dataframe()
         assert ts_pd_df.equals(pd_df)
 
+    @pytest.mark.skipif(not POLARS_AVAILABLE, reason="requires polars")
     def test_polars_creation(self):
         pl_series = pl.Series("test_name", range(10), dtype=pl.Float32)
 
