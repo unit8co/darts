@@ -1250,11 +1250,12 @@ class TestHistoricalforecast:
             [ts_univariate, ts_multivariate],
             models_reg_no_cov_cls_kwargs + models_reg_cov_cls_kwargs,
             [True, False],
+            [True, False],
             [1, 5],
         ),
     )
     def test_optimized_historical_forecasts_regression(self, config):
-        ts, model_config, multi_models, forecast_horizon = config
+        ts, model_config, multi_models, overlap_end, forecast_horizon = config
         # slightly longer to not affect the last predictable timestamp
         ts_covs = self.ts_covs
         start = 14
@@ -1303,6 +1304,7 @@ class TestHistoricalforecast:
                         last_points_only=last_points_only,
                         stride=stride,
                         forecast_horizon=forecast_horizon,
+                        overlap_end=overlap_end,
                         enable_optimization=False,
                     )
 
@@ -1319,6 +1321,7 @@ class TestHistoricalforecast:
                         last_points_only=last_points_only,
                         stride=stride,
                         forecast_horizon=forecast_horizon,
+                        overlap_end=overlap_end,
                     )
 
                     self.helper_compare_hf(hist_fct, opti_hist_fct)

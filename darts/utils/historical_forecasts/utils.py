@@ -1021,7 +1021,7 @@ def _get_historical_forecast_boundaries(
         hist_fct_tgt_start += min_target_lag * freq
 
     # target lag has a gap between the max lag and the present
-    if hasattr(model, "lags") and model._get_lags("target") and not overlap_end:
+    if hasattr(model, "lags") and model._get_lags("target"):
         hist_fct_tgt_end += 1 * freq * model._get_lags("target")[-1]
     else:
         hist_fct_tgt_end -= 1 * freq
