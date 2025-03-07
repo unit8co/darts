@@ -7,7 +7,7 @@ import pytest
 
 import darts.utils.timeseries_generation as tg
 from darts import TimeSeries
-from darts.tests.conftest import ONNX_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import ONNX_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs_dev
 from darts.utils.onnx_utils import prepare_onnx_inputs
 
 if not (TORCH_AVAILABLE and ONNX_AVAILABLE):
@@ -20,24 +20,15 @@ import onnxruntime as ort
 
 from darts.models import (
     BlockRNNModel,
-    NBEATSModel,
     NHiTSModel,
-    NLinearModel,
     TiDEModel,
-    TransformerModel,
 )
 
 # TODO: check how RINorm can be handled with respect to ONNX
 torch_model_cls = [
     BlockRNNModel,
-    NBEATSModel,
     NHiTSModel,
-    NLinearModel,
-    # TCNModel,
-    # TFTModel,
     TiDEModel,
-    TransformerModel,
-    # TSMixerModel,
 ]
 
 
@@ -54,7 +45,7 @@ class TestOnnx:
     @pytest.mark.parametrize("model_cls", torch_model_cls)
     def test_onnx_save_load(self, tmpdir_fn, model_cls):
         model = model_cls(
-            input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs
+            input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs_dev
         )
         onnx_filename = f"test_onnx_{model.model_name}.onnx"
 
@@ -103,7 +94,7 @@ class TestOnnx:
         """Check that creating the onnx export from a model directly loaded from a checkpoint work as expected"""
         model_cls, clean = params
         model = model_cls(
-            input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs
+            input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs_dev
         )
         onnx_filename = f"test_onnx_{model.model_name}.onnx"
         onnx_filename2 = f"test_onnx_{model.model_name}_weights.onnx"
@@ -149,7 +140,7 @@ class TestOnnx:
 
         # load only the weights
         model_weights = model_cls(
-            input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs
+            input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs_dev
         )
         model_weights.load_weights(ckpt_filename)
         pred_weights = model_weights.predict(

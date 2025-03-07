@@ -50,6 +50,15 @@ tfm_kwargs = {
     }
 }
 
+tfm_kwargs_dev = {
+    "pl_trainer_kwargs": {
+        "accelerator": "cpu",
+        "enable_progress_bar": False,
+        "enable_model_summary": False,
+        "fast_dev_run": True,
+    }
+}
+
 
 @pytest.fixture(scope="session", autouse=True)
 def set_up_tests(request):

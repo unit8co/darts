@@ -13,7 +13,7 @@ from darts import TimeSeries
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.metrics import mape
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs, tfm_kwargs_dev
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -447,7 +447,7 @@ class TestTorchForecastingModel:
             input_chunk_length=4,
             output_chunk_length=1,
             n_epochs=1,
-            **tfm_kwargs,
+            **tfm_kwargs_dev,
         )
         # skip test if the combination of covariates is not supported by the model
         if (

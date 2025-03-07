@@ -1782,7 +1782,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             self.trainer.save_checkpoint(path_ptl_ckpt, weights_only=clean)
 
         # TODO: keep track of PyTorch Lightning to see if they implement model checkpoint saving
-        # without having to call fit/predict/validate/test before
+        #  without having to call fit/predict/validate/test before
         # try to recover original automatic PL checkpoint
         elif self.load_ckpt_path:
             if os.path.exists(self.load_ckpt_path):
@@ -2141,7 +2141,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.model.load_state_dict(ckpt["state_dict"], strict=strict)
         # update the fit_called attribute to allow for direct inference
         self._fit_called = True
-        # based on the shape of train_sample, figure out with covariates are used by the model
+        # based on the shape of train_sample, figure out which covariates are used by the model
         # (usually set in the Darts model prior to fitting it)
         self._update_covariates_use()
 
