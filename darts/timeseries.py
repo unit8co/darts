@@ -1688,7 +1688,7 @@ class TimeSeries:
                 "_s".join((comp_name, str(sample_id)))
                 for comp_name, sample_id in itertools.product(comp_name, samples)
             ]
-            data = self._xa.stack(data=(DIMS[1], DIMS[2]))
+            data = self._xa.stack(data=(DIMS[1], DIMS[2])).values
         else:
             data = self._xa[:, :, 0].values
             columns = self._xa.get_index(DIMS[1])
