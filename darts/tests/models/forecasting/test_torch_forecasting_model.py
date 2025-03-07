@@ -470,7 +470,7 @@ class TestTorchForecastingModel:
         model_loaded = model_cls(
             input_chunk_length=4,
             output_chunk_length=1,
-            **tfm_kwargs,
+            **tfm_kwargs_dev,
         )
         model_loaded.load_weights(filename_ckpt)
 
