@@ -991,7 +991,7 @@ def _get_historical_forecast_boundaries(
         overlap_end,
     )
 
-    # adjust boundaries based on start, forecast_horizon and overlap_end
+    # adjust boundaries based on start
     historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
         series=series,
         series_idx=series_idx,
