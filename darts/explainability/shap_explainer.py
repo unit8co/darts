@@ -611,7 +611,7 @@ class _RegressionShapExplainers:
                 self.explainers[i] = {}
                 for j in range(self.target_dim):
                     self.explainers[i][j] = self._build_explainer_sklearn(
-                        self.model.get_multioutput_estimator(horizon=i, target_dim=j),
+                        self.model.get_estimator(horizon=i, target_dim=j),
                         self.background_X,
                         self.shap_method,
                         **kwargs,
