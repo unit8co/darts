@@ -1396,7 +1396,7 @@ class TestRegressionModels:
         else:
             assert not isinstance(model.model, MultiOutputRegressor)
 
-    def test_get_multioutput_estimator_multi_models(self):
+    def test_get_estimator_multi_models(self):
         """Craft training data so that estimator_[i].predict(X) == i + 1"""
 
         def helper_check_overfitted_estimators(ts: TimeSeries, ocl: int):
@@ -1417,7 +1417,7 @@ class TestRegressionModels:
             estimator_counter = 0
             for i in range(ocl):
                 for j in range(ts.width):
-                    sub_model = m.get_multioutput_estimator(horizon=i, target_dim=j)
+                    sub_model = m.get_estimator(horizon=i, target_dim=j)
                     pred = sub_model.predict(dummy_feats)[0]
                     # sub-model is overfitted on the training series
                     assert np.abs(estimator_counter - pred) < 1e-2
@@ -1455,7 +1455,7 @@ class TestRegressionModels:
         # estimators_[3] labels : [3]
         helper_check_overfitted_estimators(ts, ocl)
 
-    def test_get_multioutput_estimator_single_model(self):
+    def test_get_estimator_single_model(self):
         """Check estimator getter when multi_models=False"""
         # multivariate, one sub-model per component
         ocl = 2
@@ -1485,13 +1485,13 @@ class TestRegressionModels:
         dummy_feats = np.array([[0, 0, 0] * ts.width])
         for i in range(ocl):
             for j in range(ts.width):
-                sub_model = m.get_multioutput_estimator(horizon=i, target_dim=j)
+                sub_model = m.get_estimator(horizon=i, target_dim=j)
                 pred = sub_model.predict(dummy_feats)[0]
                 # sub-model forecast only depend on the target_dim
                 assert np.abs(j + 1 - pred) < 1e-2
 
     @pytest.mark.parametrize("multi_models", [True, False])
-    def test_get_multioutput_estimator_quantile(self, multi_models):
+    def test_get_estimator_quantile(self, multi_models):
         """Check estimator getter when using quantile value"""
         ocl = 3
         lags = 3
@@ -1536,16 +1536,14 @@ class TestRegressionModels:
                     dummy_feats = pred_input.values()[i : +i + lags]
                 dummy_feats = np.expand_dims(dummy_feats.flatten(), 0)
                 for q in quantiles:
-                    sub_model = m.get_multioutput_estimator(
-                        horizon=i, target_dim=j, quantile=q
-                    )
+                    sub_model = m.get_estimator(horizon=i, target_dim=j, quantile=q)
                     pred_sub_model = sub_model.predict(dummy_feats)[0]
                     assert (
                         pred_sub_model
                         == pred[f"{ts.components[j]}_q{q:.2f}"].values()[i][0]
                     )
 
-    def test_get_multioutput_estimator_exceptions(self):
+    def test_get_estimator_exceptions(self):
         """Check that all the corner-cases are properly covered by the method"""
         ts = TimeSeries.from_values(
             values=np.array([
@@ -1562,7 +1560,7 @@ class TestRegressionModels:
         m.fit(ts["a"])
         # not wrapped in MultiOutputRegressor because of native multi-output support
         with pytest.raises(ValueError) as err:
-            m.get_multioutput_estimator(horizon=0, target_dim=0)
+            m.get_estimator(horizon=0, target_dim=0)
         assert str(err.value).startswith(
             "The sklearn model is not a MultiOutputRegressor object."
         )
@@ -1576,13 +1574,13 @@ class TestRegressionModels:
         m.fit(ts["a"])
         # horizon > ocl
         with pytest.raises(ValueError) as err:
-            m.get_multioutput_estimator(horizon=3, target_dim=0)
+            m.get_estimator(horizon=3, target_dim=0)
         assert str(err.value).startswith(
             "`horizon` must be `>= 0` and `< output_chunk_length"
         )
         # target dim > training series width
         with pytest.raises(ValueError) as err:
-            m.get_multioutput_estimator(horizon=0, target_dim=1)
+            m.get_estimator(horizon=0, target_dim=1)
         assert str(err.value).startswith(
             "`target_dim` must be `>= 0`, and `< n_target_components="
         )
@@ -1599,7 +1597,7 @@ class TestRegressionModels:
         m.fit(ts["a"])
         # incorrect likelihood
         with pytest.raises(ValueError) as err:
-            m.get_multioutput_estimator(horizon=0, target_dim=0, quantile=0.1)
+            m.get_estimator(horizon=0, target_dim=0, quantile=0.1)
         assert str(err.value).startswith(
             "`quantile` is only supported for probabilistic models that "
             "use `likelihood='quantile'`."
@@ -1616,7 +1614,7 @@ class TestRegressionModels:
         m.fit(ts["a"])
         # retrieving a non-defined quantile
         with pytest.raises(ValueError) as err:
-            m.get_multioutput_estimator(horizon=0, target_dim=0, quantile=0.1)
+            m.get_estimator(horizon=0, target_dim=0, quantile=0.1)
         assert str(err.value).startswith(
             "Invalid `quantile=0.1`. Must be one of the fitted quantiles "
             "`[0.01, 0.5, 0.99]`."
