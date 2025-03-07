@@ -881,36 +881,21 @@ class RegressionModel(GlobalForecastingModel):
             "future": future_covariates[0].width if future_covariates else None,
         }
 
-        # if multi-output regression
-        use_mor = False
-        if not series[0].is_univariate or (
-            self.output_chunk_length > 1
-            and self.multi_models
-            and not isinstance(self.model, MultiOutputRegressor)
-        ):
-            if sample_weight is not None:
-                # we have 2D sample (and time) weights, only supported in Darts
-                use_mor = True
-            elif not (
-                callable(getattr(self.model, "_get_tags", None))
-                and isinstance(self.model._get_tags(), dict)
-                and self.model._get_tags().get("multioutput")
-            ):
-                # model does not support multi-output regression natively
-                use_mor = True
-            elif (
-                self.model.__class__.__name__ == "CatBoostRegressor"
-                and self.model.get_params()["loss_function"] == "RMSEWithUncertainty"
-            ):
-                use_mor = True
-            elif (
-                self.model.__class__.__name__ == "XGBRegressor"
-                and self.likelihood is not None
-            ):
-                # since xgboost==2.1.0, likelihoods do not support native multi output regression
-                use_mor = True
+        # Check if multi-output regression is required
+        requires_multioutput = not series[0].is_univariate or (
+            self.output_chunk_length > 1 and self.multi_models
+        )
 
-        if use_mor:
+        # If multi-output required and model doesn't support it natively, wrap it in a MultiOutputRegressor
+        if (
+            requires_multioutput
+            and not isinstance(self.model, MultiOutputRegressor)
+            and (
+                not self._supports_native_multioutput
+                or sample_weight
+                is not None  # we have 2D sample (and time) weights, only supported in Darts
+            )
+        ):
             val_set_name, val_weight_name = self.val_set_params
             mor_kwargs = {
                 "eval_set_name": val_set_name,
@@ -919,7 +904,6 @@ class RegressionModel(GlobalForecastingModel):
             }
             self.model = MultiOutputRegressor(self.model, **mor_kwargs)
 
-        # warn if n_jobs_multioutput_wrapper was provided but not used
         if (
             not isinstance(self.model, MultiOutputRegressor)
             and n_jobs_multioutput_wrapper is not None
@@ -1425,6 +1409,18 @@ class RegressionModel(GlobalForecastingModel):
                 **kwargs,
             )
         return series2seq(hfc, seq_type_out=series_seq_type)
+
+    @property
+    def _supports_native_multioutput(self) -> bool:
+        """
+        Returns True if the model supports multi-output regression natively.
+        """
+        model = (
+            self.model.estimator
+            if isinstance(self.model, MultiOutputRegressor)
+            else self.model
+        )
+        return model.__sklearn_tags__().target_tags.multi_output
 
 
 class _LikelihoodMixin:
