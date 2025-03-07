@@ -19,6 +19,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Made it possible to run the quickstart notebook `00-quickstart.ipynb` locally. [#2691](https://github.com/unit8co/darts/pull/2691) by [Jules Authier](https://github.com/authierj)
 - Added `quantile` parameter to `RegressionModel.get_estimator()` to get the specific quantile estimator for probabilistic regression models using the `quantile` likelihood. [#2716](https://github.com/unit8co/darts/pull/2716) by [Antoine Madrona](https://github.com/madtoinou)
 
+**Removed**
+
+- 🔴 Removed method `RegressionModel.get_multioutput_estimator()`. Use `RegressionModel.get_estimator()` instead. [#2716](https://github.com/unit8co/darts/pull/2716) by [Antoine Madrona](https://github.com/madtoinou)
+
 **Fixed**
 
 - 🔴 / 🟢 Fixed a bug which raised an error when loading torch models that were saved with Darts versions < 0.33.0. This is a breaking change and models saved with version 0.33.0 will not be loadable anymore. [#2692](https://github.com/unit8co/darts/pull/2692) by [Dennis Bader](https://github.com/dennisbader).
@@ -35,7 +39,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 - Refactored and improved the multi-output support handling for `RegressionModel`. [#2659](https://github.com/unit8co/darts/pull/2659) by [Jonas Blanc](https://github.com/jonasblanc)
-- 🔴 The `RegressionModel.get_multioutput_estimator()` method was removed, all the logic is now contained in `RegressionModel.get_estimator()`. [#2716](https://github.com/unit8co/darts/pull/2716) by [Antoine Madrona](https://github.com/madtoinou)
 
 ## [0.33.0](https://github.com/unit8co/darts/tree/0.33.0) (2025-02-14)
 
