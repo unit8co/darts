@@ -782,8 +782,7 @@ def _adjust_historical_forecasts_time_index(
     show_warnings: bool,
 ) -> TimeIndex:
     """
-    Shrink the beginning and end of the historical forecasts time index based on the values of `start`,
-    `forecast_horizon` and `overlap_end`.
+    Shrink the beginning and end of the historical forecasts time index based on the value of `start`.
     """
     # retrieve actual start
     # when applicable, shift the start of the forecastable index based on `start`
@@ -992,7 +991,7 @@ def _get_historical_forecast_boundaries(
         overlap_end,
     )
 
-    # adjust boundaries based on start, forecast_horizon and overlap_end
+    # adjust boundaries based on start
     historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
         series=series,
         series_idx=series_idx,
@@ -1020,7 +1019,13 @@ def _get_historical_forecast_boundaries(
     hist_fct_tgt_start, hist_fct_tgt_end = historical_forecasts_time_index
     if min_target_lag is not None:
         hist_fct_tgt_start += min_target_lag * freq
-    hist_fct_tgt_end -= 1 * freq
+
+    # target lag has a gap between the max lag and the present
+    if hasattr(model, "lags") and model._get_lags("target"):
+        hist_fct_tgt_end += 1 * freq * model._get_lags("target")[-1]
+    else:
+        hist_fct_tgt_end -= 1 * freq
+
     # past lags are <= 0
     hist_fct_pc_start, hist_fct_pc_end = historical_forecasts_time_index
     if min_past_cov_lag is not None:

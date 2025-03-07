@@ -300,12 +300,8 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
                 for col, categories in zip(cols_cat, transformer_cat.categories_):
                     col_map_cat_i = []
                     for cat in categories:
-                        col_map_cat_i.append(cat)
-                        if len(categories) > 1:
-                            cat_col_name = str(col) + "_" + str(cat)
-                            inv_col_map_cat[cat_col_name] = [col]
-                        else:
-                            inv_col_map_cat[cat] = [col]
+                        col_map_cat_i.append(str(col) + "_" + str(cat))
+                        inv_col_map_cat[str(col) + "_" + str(cat)] = [col]
                     col_map_cat[col] = col_map_cat_i
         # If we don't have any categorical static covariates, don't need to generate mapping:
         else:
@@ -393,16 +389,6 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
             series, mask_num, mask_cat
         )
 
-        # Transform static covs:
-        tr_out_num, tr_out_cat = None, None
-        if mask_num.any():
-            tr_out_num = getattr(transformer_num, method)(vals_num)
-        if mask_cat.any():
-            tr_out_cat = getattr(transformer_cat, method)(vals_cat)
-            # sparse one hot encoding to dense array
-            if isinstance(tr_out_cat, csr_matrix):
-                tr_out_cat = tr_out_cat.toarray()
-
         # quick check if everything is in order
         n_vals_cat_cols = 0 if vals_cat is None else vals_cat.shape[1]
         if (method == "inverse_transform") and (n_vals_cat_cols != n_cat_cols):
@@ -412,6 +398,16 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
                 ),
                 logger,
             )
+
+        # Transform static covs:
+        tr_out_num, tr_out_cat = None, None
+        if mask_num.any():
+            tr_out_num = getattr(transformer_num, method)(vals_num)
+        if mask_cat.any():
+            tr_out_cat = getattr(transformer_cat, method)(vals_cat)
+            # sparse one hot encoding to dense array
+            if isinstance(tr_out_cat, csr_matrix):
+                tr_out_cat = tr_out_cat.toarray()
 
         series = StaticCovariatesTransformer._add_back_static_covs(
             series, tr_out_num, tr_out_cat, mask_num, mask_cat, col_map_cat
@@ -458,8 +454,6 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
             elif is_cat:  # categorical transformed column
                 # covers one to one feature map (ordinal/label encoding) and one to multi feature (one hot encoding)
                 for col_name in col_map_cat[col]:
-                    if len(col_map_cat[col]) > 1:
-                        col_name = str(col) + "_" + str(col_name)
                     if col_name not in static_cov_columns:
                         data[col_name] = vals_cat[:, idx_cat]
                         static_cov_columns.append(col_name)
