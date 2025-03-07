@@ -1585,7 +1585,9 @@ class TimeSeries:
         copy
             Whether to return a copy of the series. Leave it to True unless you know what you are doing.
         backend
-            The library used for the Series.
+            The backend to which to export the `TimeSeries`. See the `narwhals documentation
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`_ for all supported
+            backends.
 
         Returns
         -------
@@ -1649,11 +1651,14 @@ class TimeSeries:
         copy
             Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
         backend
-            Whether to return the dataframe in pandas, polars or pyarrows
+            The backend to which to export the `TimeSeries`. See the `narwhals documentation
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`_ for all supported
+            backends.
         time_as_index
             Whether to set the time index as the index of the dataframe or in the left-most column.
         suppress_warnings
             Whether to suppress the warning about transforming a stochastic TimeSeries
+
         Returns
         -------
         DataFrame
