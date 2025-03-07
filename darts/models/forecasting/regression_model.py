@@ -571,7 +571,7 @@ class RegressionModel(GlobalForecastingModel):
                 ),
                 logger,
             )
-            return self._model_container[quantile].estimators_[idx_estimator]
+        return self._model_container[quantile].estimators_[idx_estimator]
 
     def _add_val_set_to_kwargs(
         self,

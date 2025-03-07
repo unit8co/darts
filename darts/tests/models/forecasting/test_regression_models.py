@@ -1,6 +1,7 @@
 import functools
 import importlib
 import inspect
+import logging
 import math
 from copy import deepcopy
 from itertools import product
@@ -1543,7 +1544,7 @@ class TestRegressionModels:
                         == pred[f"{ts.components[j]}_q{q:.2f}"].values()[i][0]
                     )
 
-    def test_get_estimator_exceptions(self):
+    def test_get_estimator_exceptions(self, caplog):
         """Check that all the corner-cases are properly covered by the method"""
         ts = TimeSeries.from_values(
             values=np.array([
@@ -1559,10 +1560,13 @@ class TestRegressionModels:
         )
         m.fit(ts["a"])
         # not wrapped in MultiOutputRegressor because of native multi-output support
-        with pytest.raises(ValueError) as err:
+        with caplog.at_level(logging.WARNING):
             m.get_estimator(horizon=0, target_dim=0)
-        assert str(err.value).startswith(
-            "The sklearn model is not a MultiOutputRegressor object."
+        assert len(caplog.records) == 1
+        assert caplog.records[0].levelname == "WARNING"
+        assert caplog.records[0].message == (
+            "Model supports multi-output; a single estimator "
+            "forecasts all the horizons and components."
         )
 
         # univariate, deterministic, ocl > 2
