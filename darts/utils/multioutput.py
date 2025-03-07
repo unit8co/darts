@@ -1,26 +1,17 @@
 from typing import Optional
 
-from sklearn import __version__ as sklearn_version
 from sklearn.base import is_classifier
 from sklearn.multioutput import MultiOutputRegressor as sk_MultiOutputRegressor
 from sklearn.multioutput import _fit_estimator
 from sklearn.utils.multiclass import check_classification_targets
-from sklearn.utils.validation import has_fit_parameter
+from sklearn.utils.parallel import Parallel, delayed
+from sklearn.utils.validation import (
+    _check_method_params,
+    has_fit_parameter,
+    validate_data,
+)
 
 from darts.logging import get_logger, raise_log
-
-if sklearn_version >= "1.4":
-    # sklearn renamed `_check_fit_params` to `_check_method_params` in v1.4
-    from sklearn.utils.validation import _check_method_params
-else:
-    from sklearn.utils.validation import _check_fit_params as _check_method_params
-
-if sklearn_version >= "1.3":
-    # delayed was moved from sklearn.utils.fixes to sklearn.utils.parallel in v1.3
-    from sklearn.utils.parallel import Parallel, delayed
-else:
-    from joblib import Parallel
-    from sklearn.utils.fixes import delayed
 
 logger = get_logger(__name__)
 
@@ -78,8 +69,7 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
                 ValueError("The base estimator should implement a fit method"),
                 logger=logger,
             )
-
-        y = self._validate_data(X="no_validation", y=y, multi_output=True)
+        y = validate_data(self.estimator, X="no_validation", y=y, multi_output=True)
 
         if is_classifier(self):
             check_classification_targets(y)
