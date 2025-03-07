@@ -1858,9 +1858,7 @@ class TimeSeries:
         """
         return pd.concat(
             [
-                self.quantile_timeseries(quantile).to_dataframe(
-                    backend="pandas", time_as_index=True
-                )
+                self.quantile_timeseries(quantile).to_dataframe()
                 for quantile in quantiles
             ],
             axis=1,
@@ -2206,7 +2204,7 @@ class TimeSeries:
             by a DatetimeIndex).
         """
 
-        df = self.to_dataframe(backend="pandas", time_as_index=True)
+        df = self.to_dataframe()
 
         if mode == "all":
             is_nan_series = df.isna().all(axis=1).astype(int)
@@ -3983,9 +3981,7 @@ class TimeSeries:
         )
 
         # read series dataframe
-        ts_df = self.to_dataframe(
-            copy=False, backend="pandas", time_as_index=True, suppress_warnings=True
-        )
+        ts_df = self.to_dataframe(copy=False, suppress_warnings=True)
 
         # store some original attributes of the series
         original_components = self.components
@@ -4158,7 +4154,7 @@ class TimeSeries:
         str
             A JSON String representing the time series
         """
-        return self.to_dataframe(backend="pandas", time_as_index=True).to_json(
+        return self.to_dataframe().to_json(
             orient="split", date_format="iso"
         )
 
@@ -4181,7 +4177,7 @@ class TimeSeries:
                 )
             )
 
-        self.to_dataframe(backend="pandas", time_as_index=True).to_csv(*args, **kwargs)
+        self.to_dataframe().to_csv(*args, **kwargs)
 
     def to_pickle(self, path: str, protocol: int = pickle.HIGHEST_PROTOCOL):
         """
