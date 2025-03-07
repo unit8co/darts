@@ -5,7 +5,6 @@ from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
-import polars as pl
 import pytest
 import xarray as xr
 from scipy.stats import kurtosis, skew
@@ -13,6 +12,14 @@ from scipy.stats import kurtosis, skew
 from darts import TimeSeries, concatenate, slice_intersect
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
 from darts.utils.utils import expand_arr, freqs, generate_index
+
+try:
+    import polars as pl
+
+    POLARS_AVAILABLE = False
+except ModuleNotFoundError:
+    pl = None
+    POLARS_AVAILABLE = False
 
 
 class TestTimeSeries:
@@ -88,6 +95,9 @@ class TestTimeSeries:
         ts_pd_df = ts.to_dataframe()
         assert ts_pd_df.equals(pd_df)
 
+        ts_pd_df = ts.to_dataframe(time_as_index=False)
+        assert ts_pd_df.equals(pd_df.reset_index())
+
     @pytest.mark.skipif(not POLARS_AVAILABLE, reason="requires polars")
     def test_polars_creation(self):
         pl_series = pl.Series("test_name", range(10), dtype=pl.Float32)
@@ -99,11 +109,15 @@ class TestTimeSeries:
 
         pl_df = pl.DataFrame(
             data={
-                "time": pd.RangeIndex(0, 10, 1),
+                "time": pd.date_range(start="2023-01-01", periods=10, freq="D"),
                 "test_name": range(10),
             }
         )
         ts = TimeSeries.from_dataframe(pl_df)
+        ts_pl_df = ts.to_dataframe(backend="polars", time_as_index=False)
+        assert ts_pl_df.equals(pl_df)
+
+        ts = TimeSeries.from_dataframe(pl_df, time_col="time")
         ts_pl_df = ts.to_dataframe(backend="polars", time_as_index=False)
         assert ts_pl_df.equals(pl_df)
 

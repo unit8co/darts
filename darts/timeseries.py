@@ -1675,8 +1675,9 @@ class TimeSeries:
         """
 
         if time_as_index and backend != "pandas":
-            logger.warning('`time_as_index=True` is only supported with `backend="pandas"`.')
-            time_as_index = False
+            logger.warning(
+                '`time_as_index=True` is only supported with `backend="pandas"`.'
+            )
             time_as_index = False
 
         if not self.is_deterministic:
@@ -1742,10 +1743,7 @@ class TimeSeries:
             "`TimeSeries.to_dataframe()` instead",
             logger,
         )
-        return self.to_dataframe(
-            copy=copy,
-            suppress_warnings=suppress_warnings
-        )
+        return self.to_dataframe(copy=copy, suppress_warnings=suppress_warnings)
 
     def quantile_df(self, quantile=0.5) -> pd.DataFrame:
         """
@@ -4174,7 +4172,7 @@ class TimeSeries:
             # TODO THAT'S NOT TRUE!
             raise_log(
                 AssertionError(
-                    "The pd_dataframe() method can only return DataFrames of deterministic "
+                    "The to_dataframe() method can only return DataFrames of deterministic "
                     "time series, and this series is not deterministic (it contains several samples). "
                     "Consider calling quantile_df() instead."
                 )
