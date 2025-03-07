@@ -55,7 +55,13 @@ from narwhals.typing import IntoDataFrame, IntoSeries
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import (
+    get_logger,
+    raise_deprecation_warning,
+    raise_if,
+    raise_if_not,
+    raise_log,
+)
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils.utils import (
     SUPPORTED_RESAMPLE_METHODS,
@@ -1625,9 +1631,10 @@ class TimeSeries:
         pandas.Series
             A Pandas Series representation of this univariate time series.
         """
-        logger.warning(
+        raise_deprecation_warning(
             "`TimeSeries.pd_series()` is deprecated and will be removed in a future version. Use "
-            "`TimeSeries.to_series()` instead"
+            "`TimeSeries.to_series()` instead",
+            logger,
         )
         return self.to_series(copy=copy, backend="pandas")
 
@@ -1667,11 +1674,12 @@ class TimeSeries:
 
         if time_as_index and backend != "pandas":
             raise_log(
-                ValueError(
+                Warning(
                     '`time_as_index=True` is only supported with `backend="pandas"`.'
                 ),
                 logger,
             )
+            time_index = False
 
         if not self.is_deterministic:
             if not suppress_warnings:
@@ -1731,9 +1739,10 @@ class TimeSeries:
             The Pandas DataFrame representation of this time series
         """
 
-        logger.warning(
+        raise_deprecation_warning(
             "`TimeSeries.pd_dataframe()` is deprecated, and will be removed in a future version. Use "
-            "`TimeSeries.to_dataframe()` instead"
+            "`TimeSeries.to_dataframe()` instead",
+            logger,
         )
         return self.to_dataframe(
             copy=copy,
@@ -4154,9 +4163,7 @@ class TimeSeries:
         str
             A JSON String representing the time series
         """
-        return self.to_dataframe().to_json(
-            orient="split", date_format="iso"
-        )
+        return self.to_dataframe().to_json(orient="split", date_format="iso")
 
     def to_csv(self, *args, **kwargs):
         """
