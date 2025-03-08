@@ -39,7 +39,7 @@ import pickle
 import re
 import sys
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from inspect import signature
 from io import StringIO
@@ -273,10 +273,11 @@ class TimeSeries:
 
         # prepare metadata
         metadata = self._xa.attrs.get(METADATA_TAG, None)
-        if metadata is not None and not isinstance(metadata, dict):
+        if metadata is not None and not isinstance(metadata, Mapping):
             raise_log(
                 ValueError(
-                    "`metadata` must be a dict mapping metadata attributes to their values."
+                    "`metadata` must be of type `collections.abc.Mapping` (`dict`, or others) "
+                    "mapping metadata attributes to their values."
                 ),
                 logger,
             )
@@ -505,7 +506,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
-        metadata: Optional[dict] = None,
+        metadata: Optional[Mapping] = None,
         **kwargs,
     ) -> Self:
         """
@@ -570,7 +571,7 @@ class TimeSeries:
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
-            Optionally, a dictionary defining properties for metadata attributes.
+            Optionally, a mapping (dictionary or other) defining properties for metadata attributes.
 
         **kwargs
             Optional arguments to be passed to `pandas.read_csv` function
@@ -605,7 +606,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
-        metadata: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        metadata: Optional[Mapping] = None,
     ) -> Self:
         """
         Build a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
@@ -676,7 +677,7 @@ class TimeSeries:
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
-            Optionally, a dictionary defining properties for metadata attributes.
+            Optionally, a mapping (dictionary or other) defining properties for metadata attributes.
 
         Returns
         -------
@@ -1067,7 +1068,7 @@ class TimeSeries:
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
-        metadata: Optional[dict] = None,
+        metadata: Optional[Mapping] = None,
     ) -> Self:
         """
         Build a univariate deterministic TimeSeries from a Series.
@@ -1102,7 +1103,7 @@ class TimeSeries:
             single-row pandas DataFrame. If a Series, the index represents the static variables. If a DataFrame, the
             columns represent the static variables and the single row represents the univariate TimeSeries component.
         metadata
-            Optionally, a dictionary defining properties for metadata attributes.
+            Optionally, a mapping (dictionary or other) defining properties for metadata attributes.
 
         Returns
         -------
@@ -1133,7 +1134,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
-        metadata: Optional[dict] = None,
+        metadata: Optional[Mapping] = None,
     ) -> Self:
         """
         Build a series from a time index and value array.
@@ -1197,7 +1198,7 @@ class TimeSeries:
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
-            Optionally, a dictionary defining properties for metadata attributes.
+            Optionally, a mapping (dictionary or other) defining properties for metadata attributes.
 
         Returns
         -------
@@ -1257,7 +1258,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
-        metadata: Optional[dict] = None,
+        metadata: Optional[Mapping] = None,
     ) -> Self:
         """
         Build an integer-indexed series from an array of values.
@@ -1306,7 +1307,7 @@ class TimeSeries:
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
-            Optionally, a dictionary defining properties for metadata attributes.
+            Optionally, a mapping (dictionary or other) defining properties for metadata attributes.
 
         Returns
         -------
@@ -1336,7 +1337,7 @@ class TimeSeries:
         json_str: str,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
-        metadata: Optional[dict] = None,
+        metadata: Optional[Mapping] = None,
     ) -> Self:
         """
         Build a series from the JSON String representation of a ``TimeSeries``
@@ -1381,7 +1382,7 @@ class TimeSeries:
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
-            Optionally, a dictionary defining properties for metadata attributes.
+            Optionally, a mapping (dictionary or other) defining properties for metadata attributes.
 
         Returns
         -------
@@ -1446,11 +1447,9 @@ class TimeSeries:
         return self._xa.attrs.get(HIERARCHY_TAG, None)
 
     @property
-    def metadata(self) -> Optional[dict]:
+    def metadata(self) -> Optional[Mapping]:
         """
         The metadata of this TimeSeries, if any.
-        If set, the metadata is encoded as a pandas Series which defines properties
-        for identifying and describing the nature of the TimeSeries.
         """
         return self._xa.attrs.get(METADATA_TAG, None)
 
@@ -2280,7 +2279,7 @@ class TimeSeries:
             Ignore errors when time axis varies for some timeseries. Note that this may yield unexpected results
         ignore_static_covariates : bool
             whether to ignore all requirements for static covariate concatenation and only transfer the
-            static covariates of the first TimeSeries element in `series` to the concatenated TimeSeries.
+            static covariates of the current (`self`) timeseries to the concatenated timeseries.
             Only effective when `axis=1`.
         drop_hierarchy : bool
             When `axis=1`, whether to drop hierarchy information. True by default.
@@ -2289,8 +2288,8 @@ class TimeSeries:
             names of the resulting series and that of the merged hierarchy do not match.
             When `axis=0` or `axis=2`, the hierarchy of the first series is always kept.
         drop_metadata : bool
-            Whether to drop the metadata information of the concatenated series. True by default.
-            When False, the concatenated series will inherit the metadata from the current timeseries.
+            Whether to drop the metadata information of the concatenated timeseries. True by default.
+            When False, the concatenated series will inherit the metadata from the current (`self`) timeseries.
 
         Returns
         -------
@@ -3339,7 +3338,7 @@ class TimeSeries:
 
     def with_static_covariates(
         self, covariates: Optional[Union[pd.Series, pd.DataFrame]]
-    ):
+    ) -> Self:
         """Returns a new TimeSeries object with added static covariates.
 
         Static covariates contain data attached to the time series, but which are not varying with time.
@@ -3383,6 +3382,11 @@ class TimeSeries:
         component
         linear              0.0           1.0
         linear_1            2.0           3.0
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with the given static covariates.
         """
 
         return self.__class__(
@@ -3398,7 +3402,7 @@ class TimeSeries:
             )
         )
 
-    def with_hierarchy(self, hierarchy: dict[str, Union[str, list[str]]]):
+    def with_hierarchy(self, hierarchy: dict[str, Union[str, list[str]]]) -> Self:
         """
         Adds a hierarchy to the TimeSeries.
 
@@ -3425,7 +3429,10 @@ class TimeSeries:
                              'y': 'total'}
             ..
 
-
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with the given hierarchy.
         """
 
         return self.__class__(
@@ -3441,16 +3448,29 @@ class TimeSeries:
             )
         )
 
-    def with_metadata(self, metadata: dict):
+    def with_metadata(self, metadata: Optional[Mapping]) -> Self:
         """
         Adds metadata to the TimeSeries.
 
         Parameters
         ----------
         metadata
-            A dictionary defining properties for identifying and describing
-            the underlying data of the TimeSeries. The types of the values can be different. For example:
-            ``metadata = {'source_file': 'woolyrnq.csv', 'has_wool': True, 'start_year': 1965}``
+            A mapping (dictionary or other) mapping attributes to their values.
+
+        Examples
+        --------
+        >>> from darts.utils.timeseries_generation import linear_timeseries
+        >>> series = linear_timeseries(length=3)
+        >>> # add metadata
+        >>> metadata = {'name': 'my_series'}
+        >>> series = series.with_metadata(metadata)
+        >>> series.metadata
+        {'name': 'my_series'}
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with the given metadata.
         """
 
         return self.__class__(
@@ -4301,6 +4321,7 @@ class TimeSeries:
             columns=new_columns,
             static_covariates=self.static_covariates,
             hierarchy=new_hierarchy,
+            metadata=self.metadata,
         )
 
         return transformed_time_series
@@ -5859,9 +5880,9 @@ def concatenate(
     Parameters
     ----------
     series : Sequence[TimeSeries]
-        sequence of ``TimeSeries`` to concatenate
+        Sequence of ``TimeSeries`` to concatenate
     axis : Union[str, int]
-        axis along which the series will be concatenated.
+        Axis along which the series will be concatenated.
     ignore_time_axis : bool
         Allow concatenation even when some series do not have matching time axes.
         When done along component or sample dimensions, concatenation will work as long as the series
@@ -5870,7 +5891,7 @@ def concatenate(
         are not contiguous (in this case, the resulting series will have a start time matching the start time
         of the first provided series). Default: False.
     ignore_static_covariates : bool
-        whether to ignore all requirements for static covariate concatenation and only transfer the static covariates
+        Whether to ignore all requirements for static covariate concatenation and only transfer the static covariates
         of the first TimeSeries element in `series` to the concatenated TimeSeries. Only effective when `axis=1`.
     drop_hierarchy : bool
         When `axis=1`, whether to drop hierarchy information. True by default. When False, the hierarchies will be
