@@ -1581,7 +1581,7 @@ class TimeSeries:
     def to_series(
         self,
         copy: bool = True,
-        backend: Union[ModuleType, Implementation, str] = "pandas",
+        backend: Union[ModuleType, Implementation, str] = Implementation.PANDAS,
     ):
         """
         Return a Series representation of this univariate deterministic time series.
@@ -1604,7 +1604,8 @@ class TimeSeries:
         self._assert_univariate()
         self._assert_deterministic()
 
-        if backend != "pandas":
+        backend = Implementation.from_backend(backend)
+        if not backend.is_pandas():
             return self.to_dataframe(copy=copy, backend=backend, time_as_index=False)
 
         data = self._xa[:, 0, 0].values
@@ -1643,7 +1644,7 @@ class TimeSeries:
     def to_dataframe(
         self,
         copy: bool = True,
-        backend: Union[ModuleType, Implementation, str] = "pandas",
+        backend: Union[ModuleType, Implementation, str] = Implementation.PANDAS,
         time_as_index: bool = True,
         suppress_warnings: bool = False,
     ):
@@ -1674,7 +1675,8 @@ class TimeSeries:
             A DataFrame representation of this time series.
         """
 
-        if time_as_index and backend != "pandas":
+        backend = Implementation.from_backend(backend)
+        if time_as_index and not backend.is_pandas():
             logger.warning(
                 '`time_as_index=True` is only supported with `backend="pandas"`, and will be ignored.'
             )
