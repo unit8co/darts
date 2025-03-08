@@ -20,6 +20,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - `TimeSeries.plot()` now supports setting the color for each component in the series. Simply pass a list / sequence of colors with length matching the number of components as parameters "c" or "colors". [#2680](https://github.com/unit8co/darts/pull/2680) by [Jules Authier](https://github.com/authierj)
 - Made it possible to run the quickstart notebook `00-quickstart.ipynb` locally. [#2691](https://github.com/unit8co/darts/pull/2691) by [Jules Authier](https://github.com/authierj)
 - Added `quantile` parameter to `RegressionModel.get_estimator()` to get the specific quantile estimator for probabilistic regression models using the `quantile` likelihood. [#2716](https://github.com/unit8co/darts/pull/2716) by [Antoine Madrona](https://github.com/madtoinou)
+- Exposed the `stride` argument of the `ForecastingAnomalyModel.predict_series` method, allowing for faster inference when `stride=forecast_horizon` at the cost of accuracy. [#2709](https://github.com/unit8co/darts/pull/2709) by [Antoine Madrona](https://github.com/madtoinou)
 
 **Removed**
 
