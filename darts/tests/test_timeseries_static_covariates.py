@@ -84,7 +84,7 @@ class TestTimeSeriesStaticCovariate:
             tag,
             ts,
             TimeSeries.from_dataframe(
-                ts.pd_dataframe(), static_covariates=ts.static_covariates
+                ts.to_dataframe(), static_covariates=ts.static_covariates
             )
             if tag == STATIC_COV_TAG
             else TimeSeries.from_dataframe(ts.pd_dataframe(), metadata=ts.metadata),
@@ -93,7 +93,7 @@ class TestTimeSeriesStaticCovariate:
             tag,
             ts,
             TimeSeries.from_series(
-                ts.pd_series(), static_covariates=ts.static_covariates
+                ts.to_series(), static_covariates=ts.static_covariates
             )
             if tag == STATIC_COV_TAG
             else TimeSeries.from_series(ts.pd_series(), metadata=ts.metadata),

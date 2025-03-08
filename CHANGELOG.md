@@ -12,19 +12,38 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 - Added a metadata attribute to `TimeSeries`. [#2656](https://github.com/unit8co/darts/pull/2656) by [Yoav Matzkevich](https://github.com/ymatzkevich).
+- Improved `CatBoostModel` documentation by describing how to use native multi-output regression. [#2659](https://github.com/unit8co/darts/pull/2659) by [Jonas Blanc](https://github.com/jonasblanc)
 - `TimeSeries.from_dataframe()` and `from_series()` now support creating `TimeSeries` from additional backends (Polars, PyArrow, ...). We leverage `narwhals` as the compatibility layer between dataframe libraries. See the `narwhals` [documentation](https://narwhals-dev.github.io/narwhals/) for all supported backends. [#2661](https://github.com/unit8co/darts/pull/2661) by [Jules Authier](https://github.com/authierj)
+- Added new export methods: `TimeSeries.to_dataframe()` and `TimeSeries.to_series()`. These methods support exporting `TimeSeries` to DataFrames and Series for all backends supported by `narwhals`. See the `narwhals` documentation [documentation](https://narwhals-dev.github.io/narwhals/extending/) for all supported backends. [#2701](https://github.com/unit8co/darts/pull/2701) by [Jules Authier](https://github.com/authierj)
+- 🟠 `TimeSeries.pd_dataframe()` and `TimeSeries.pd_series()` are deprecated and will be removed in Darts version 0.35.0. Use `to_dataframe()` and `to_series()` instead. [#2701](https://github.com/unit8co/darts/pull/2701) by [Jules Authier](https://github.com/authierj)
 - Added ONNX support for torch-based models with method `TorchForecastingModel.to_onnx()`. Check out [this example](https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html#exporting-model-to-onnx-format-for-inference) from the user guide on how to export and load a model for inference. [#2620](https://github.com/unit8co/darts/pull/2620) by [Antoine Madrona](https://github.com/madtoinou)
 - Made method `ForecastingModel.untrained_model()` public. Use this method to get a new (untrained) model instance created with the same parameters. [#2684](https://github.com/unit8co/darts/pull/2684) by [Timon Erhart](https://github.com/turbotimon)
 - `TimeSeries.plot()` now supports setting the color for each component in the series. Simply pass a list / sequence of colors with length matching the number of components as parameters "c" or "colors". [#2680](https://github.com/unit8co/darts/pull/2680) by [Jules Authier](https://github.com/authierj)
 - Made it possible to run the quickstart notebook `00-quickstart.ipynb` locally. [#2691](https://github.com/unit8co/darts/pull/2691) by [Jules Authier](https://github.com/authierj)
+- Added `quantile` parameter to `RegressionModel.get_estimator()` to get the specific quantile estimator for probabilistic regression models using the `quantile` likelihood. [#2716](https://github.com/unit8co/darts/pull/2716) by [Antoine Madrona](https://github.com/madtoinou)
+
+**Removed**
+
+- 🔴 Removed method `RegressionModel.get_multioutput_estimator()`. Use `RegressionModel.get_estimator()` instead. [#2716](https://github.com/unit8co/darts/pull/2716) by [Antoine Madrona](https://github.com/madtoinou)
 
 **Fixed**
 
 - 🔴 / 🟢 Fixed a bug which raised an error when loading torch models that were saved with Darts versions < 0.33.0. This is a breaking change and models saved with version 0.33.0 will not be loadable anymore. [#2692](https://github.com/unit8co/darts/pull/2692) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug in `StaticCovariatesTransformer` which raised an error when trying to inverse transform one-hot encoded categorical static covariates with identical values across time-series. Each categorical static covariates is now referred to by `{covariate_name}_{category_name}`, regardless of the number of categories. [#2710](https://github.com/unit8co/darts/pull/2710) by [Antoine Madrona](https://github.com/madtoinou)
+- Fixed a bug in `13-TFT-examples.ipynb` where two calls to `TimeSeries.from_series()` were not providing `series` but `pd.Index`. The method calls were changed to `TimeSeries.from_values()`. [#2719](https://github.com/unit8co/darts/pull/2719) by [Jules Authier](https://github.com/authierj)
+- Fixed a bug in `RegressionModel` where performing optimized historical forecasts with `max(lags) < -1` resulted in forecasts that extended too far into the future. [#2715](https://github.com/unit8co/darts/pull/2715) by [Jules Authier](https://github.com/authierj)
 
 **Dependencies**
 
+- Bumped minimum scikit-learn version from `1.0.1` to `1.6.0`. This was required due to sklearn deprecating `_get_tags` in favor of `BaseEstimator.__sklearn_tags__` in version 1.7. This leads to increasing both sklearn and XGBoost minimum supported version to 1.6 and 2.1.4 respectively. [#2659](https://github.com/unit8co/darts/pull/2659) by [Jonas Blanc](https://github.com/jonasblanc)
+- Bumped minimum xgboost version from `1.6.0` to `2.1.4` for the same reason as bumping the minimum sklearn version. [#2659](https://github.com/unit8co/darts/pull/2659) by [Jonas Blanc](https://github.com/jonasblanc)
+- Various code changes to reflect the updated dependencies versions (sklearn, statsmodel) and eliminate various warnings. [#2722](https://github.com/unit8co/darts/pull/2722) by [Antoine Madrona](https://github.com/madtoinou)
+
 ### For developers of the library:
+
+**Improved**
+
+- Refactored and improved the multi-output support handling for `RegressionModel`. [#2659](https://github.com/unit8co/darts/pull/2659) by [Jonas Blanc](https://github.com/jonasblanc)
 
 ## [0.33.0](https://github.com/unit8co/darts/tree/0.33.0) (2025-02-14)
 
