@@ -724,10 +724,10 @@ class TimeSeries:
             time_index = nw.maybe_get_index(df)
             if time_index is None:
                 time_index = pd.RangeIndex(len(df))
-                logger.info(
-                    "No time column specified (`time_col=None`) and no index found in the DataFrame. Defaulting to "
+                logger.warning(
+                    "No time column specified (`time_col=None`) and no index found in the `DataFrame`. Defaulting to "
                     "`pandas.RangeIndex(len(df))`. If this is not desired consider adding a time column "
-                    "to your dataframe and defining `time_col`."
+                    "to your `DataFrame` and defining `time_col`."
                 )
             # if we are here, the dataframe was pandas
             elif not (
@@ -1676,7 +1676,7 @@ class TimeSeries:
 
         if time_as_index and backend != "pandas":
             logger.warning(
-                '`time_as_index=True` is only supported with `backend="pandas"`.'
+                '`time_as_index=True` is only supported with `backend="pandas"`, and will be ignored.'
             )
             time_as_index = False
 

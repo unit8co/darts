@@ -1,4 +1,5 @@
 import itertools
+import logging
 import math
 from tempfile import NamedTemporaryFile
 from unittest.mock import patch
@@ -16,7 +17,7 @@ from darts.utils.utils import expand_arr, freqs, generate_index
 try:
     import polars as pl
 
-    POLARS_AVAILABLE = False
+    POLARS_AVAILABLE = True
 except ModuleNotFoundError:
     pl = None
     POLARS_AVAILABLE = False
@@ -99,27 +100,52 @@ class TestTimeSeries:
         assert ts_pd_df.equals(pd_df.reset_index())
 
     @pytest.mark.skipif(not POLARS_AVAILABLE, reason="requires polars")
-    def test_polars_creation(self):
-        pl_series = pl.Series("test_name", range(10), dtype=pl.Float32)
+    def test_polars_creation(self, caplog):
+        expected_idx = pl.Series("time", range(10))
+        pl_series = pl.Series("test_name", range(1, 11), dtype=pl.Float32)
 
-        ts = TimeSeries.from_series(pl_series)
+        # without time_col, Darts generates a RangeIndex and raises a warning
+        warning_expected = "No time column specified (`time_col=None`) and no index found in the `DataFrame`."
+        with caplog.at_level(logging.WARNING):
+            ts = TimeSeries.from_series(pl_series)
+            assert warning_expected in caplog.text
+        caplog.clear()
+
         ts_pl_series = ts.to_series(backend="polars")
+        assert ts_pl_series[:, 0].equals(expected_idx)
+        assert ts_pl_series.columns[0] == expected_idx.name
         assert ts_pl_series[:, 1].equals(pl_series)
         assert ts_pl_series.columns[1] == pl_series.name
 
         pl_df = pl.DataFrame(
             data={
                 "time": pd.date_range(start="2023-01-01", periods=10, freq="D"),
-                "test_name": range(10),
+                "test_float": [float(i) for i in range(10)],
+                "test_int": range(10),
             }
         )
-        ts = TimeSeries.from_dataframe(pl_df)
+        # with a `time_col` no warning is raised
+        with caplog.at_level(logging.WARNING):
+            ts = TimeSeries.from_dataframe(pl_df, time_col="time")
+            assert caplog.text == ""
+        caplog.clear()
         ts_pl_df = ts.to_dataframe(backend="polars", time_as_index=False)
         assert ts_pl_df.equals(pl_df)
 
-        ts = TimeSeries.from_dataframe(pl_df, time_col="time")
-        ts_pl_df = ts.to_dataframe(backend="polars", time_as_index=False)
-        assert ts_pl_df.equals(pl_df)
+        # darts converts everything to float (test_int)
+        assert ts_pl_df.dtypes != pl_df.dtypes
+        dtypes_expected = pl_df.dtypes[:2] + [pl_df.dtypes[1]]
+        assert ts_pl_df.dtypes == dtypes_expected
+
+        # setting time_as_index=True has no effect but raises a warning
+        # with a `time_col` no warning is raised
+        warning_expected = '`time_as_index=True` is only supported with `backend="pandas"`, and will be ignored.'
+        with caplog.at_level(logging.WARNING):
+            ts_pl_df_2 = ts.to_dataframe(backend="polars", time_as_index=True)
+            assert warning_expected in caplog.text
+        caplog.clear()
+        assert ts_pl_df_2.equals(pl_df)
+        assert ts_pl_df_2.dtypes == dtypes_expected
 
     def test_integer_range_indexing(self):
         # sanity checks for the integer-indexed series
