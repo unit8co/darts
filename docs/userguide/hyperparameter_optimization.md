@@ -20,7 +20,7 @@ import numpy as np
 import optuna
 import torch
 from optuna.integration import PyTorchLightningPruningCallback
-from pytorch_lightning.callbacks import EarlyStopping
+from pytorch_lightning.callbacks import Callback, EarlyStopping
 from sklearn.preprocessing import MaxAbsScaler
 
 from darts.dataprocessing.transformers import Scaler
@@ -41,6 +41,11 @@ scaler = Scaler(MaxAbsScaler())
 train = scaler.fit_transform(train)
 val = scaler.transform(val)
 
+#  workaround found in https://github.com/Lightning-AI/pytorch-lightning/issues/17485
+# to avoid import of both lightning and pytorch_lightning
+class PatchedPruningCallback(optuna.integration.PyTorchLightningPruningCallback, Callback):
+    pass
+
 # define objective function
 def objective(trial):
     # select input and output chunk lengths
@@ -57,7 +62,7 @@ def objective(trial):
     include_year = trial.suggest_categorical("year", [False, True])
 
     # throughout training we'll monitor the validation loss for both pruning and early stopping
-    pruner = PyTorchLightningPruningCallback(trial, monitor="val_loss")
+    pruner = PatchedPruningCallback(trial, monitor="val_loss")
     early_stopper = EarlyStopping("val_loss", min_delta=0.001, patience=3, verbose=True)
     callbacks = [pruner, early_stopper]
 
@@ -112,7 +117,6 @@ def objective(trial):
     model.fit(
         series=train,
         val_series=model_val_set,
-        num_loader_workers=num_workers,
     )
 
     # reload best model over course of training
