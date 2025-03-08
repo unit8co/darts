@@ -110,6 +110,15 @@ class TestTimeSeriesStaticCovariate:
         self.helper_test_transfer(tag, ts, TimeSeries.from_pickle(f_pkl))
         self.helper_test_transfer(tag, ts, TimeSeries.from_json(ts_json, **kwargs))
 
+    def test_invalid_metadata(self):
+        ts = linear_timeseries(length=10)
+        with pytest.raises(ValueError) as exc:
+            _ = ts.with_metadata(0.0)
+        assert (
+            str(exc.value)
+            == "`metadata` must be of type `dict` mapping metadata attributes to their values."
+        )
+
     @pytest.mark.parametrize("index_type", ["int", "dt", "str"])
     def test_from_group_dataframe(self, index_type):
         """Tests correct extract of TimeSeries groups from a long DataFrame with unsorted (time/integer) index"""
@@ -384,9 +393,12 @@ class TestTimeSeriesStaticCovariate:
 
     def test_metadata_values(self):
         ts = linear_timeseries(length=10)
+        assert not ts.has_metadata
+
         metadata = {"st1": 0, "st2": 1}
         ts = ts.with_metadata(metadata)
 
+        assert ts.has_metadata
         assert ts.metadata == metadata
         # changing values of metadata is allowed
         ts.metadata["st1"] = 2
