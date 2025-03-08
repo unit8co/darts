@@ -160,7 +160,7 @@ class TestTimeSeriesGeneration:
                 time_index, country_code, until=until, add_length=add_length
             )
             assert all(
-                ts.pd_dataframe().groupby(pd.Grouper(freq=freqs["YE"])).sum().values
+                ts.to_dataframe().groupby(pd.Grouper(freq=freqs["YE"])).sum().values
             )
 
         for time_index in [time_index_1, time_index_2, time_index_3]:

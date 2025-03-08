@@ -652,10 +652,10 @@ class TestShapExplainer:
         shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
         df = pd.merge(
-            self.target_ts.pd_dataframe(),
+            self.target_ts.to_dataframe(),
             explanation_results.get_feature_values(
                 horizon=1, component="price"
-            ).pd_dataframe(),
+            ).to_dataframe(),
             how="left",
             left_index=True,
             right_index=True,

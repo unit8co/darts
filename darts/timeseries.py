@@ -43,6 +43,7 @@ from collections.abc import Sequence
 from copy import deepcopy
 from inspect import signature
 from io import StringIO
+from types import ModuleType
 from typing import Any, Callable, Literal, Optional, Union
 
 import matplotlib.axes
@@ -52,10 +53,17 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from narwhals.typing import IntoDataFrame, IntoSeries
+from narwhals.utils import Implementation
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import (
+    get_logger,
+    raise_deprecation_warning,
+    raise_if,
+    raise_if_not,
+    raise_log,
+)
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils.utils import (
     SUPPORTED_RESAMPLE_METHODS,
@@ -85,16 +93,18 @@ HIERARCHY_TAG = "hierarchy"
 class TimeSeries:
     def __init__(self, xa: xr.DataArray, copy=True):
         """
-        Create a TimeSeries from a (well formed) DataArray.
+        Create a TimeSeries from a (well-formed) DataArray.
         It is recommended to use the factory methods to create TimeSeries instead.
 
         See Also
         --------
-        TimeSeries.from_dataframe : Create from a :class:`pandas.DataFrame`.
+        TimeSeries.from_dataframe : Create from a `DataFrame` (:class:`pandas.DataFrame`, :class:`polars.DataFrame`,
+            and other backends).
         TimeSeries.from_group_dataframe : Create multiple TimeSeries by groups from a :class:`pandas.DataFrame`.
-        TimeSeries.from_series : Create from a :class:`pandas.Series`.
-        TimeSeries.from_values : Create from a NumPy :class:`ndarray`.
-        TimeSeries.from_times_and_values : Create from a time index and a Numpy :class:`ndarray`.
+        TimeSeries.from_series : Create from a `Series` (:class:`pandas.Series`, :class:`polars.Series`, and other
+            backends).
+        TimeSeries.from_values : Create from a :class:`numpy.ndarray`.
+        TimeSeries.from_times_and_values : Create from a time index and a :class:`numpy.ndarray`.
         TimeSeries.from_csv : Create from a CSV file.
         TimeSeries.from_json : Create from a JSON file.
         TimeSeries.from_xarray : Create from an :class:`xarray.DataArray`.
@@ -716,10 +726,10 @@ class TimeSeries:
             time_index = nw.maybe_get_index(df)
             if time_index is None:
                 time_index = pd.RangeIndex(len(df))
-                logger.info(
-                    "No time column specified (`time_col=None`) and no index found in the DataFrame. Defaulting to "
+                logger.warning(
+                    "No time column specified (`time_col=None`) and no index found in the `DataFrame`. Defaulting to "
                     "`pandas.RangeIndex(len(df))`. If this is not desired consider adding a time column "
-                    "to your dataframe and defining `time_col`."
+                    "to your `DataFrame` and defining `time_col`."
                 )
             # if we are here, the dataframe was pandas
             elif not (
@@ -1554,7 +1564,7 @@ class TimeSeries:
     ================
     """
 
-    def data_array(self, copy=True) -> xr.DataArray:
+    def data_array(self, copy: bool = True) -> xr.DataArray:
         """
         Return the ``xarray.DataArray`` representation underlying this series.
 
@@ -1570,9 +1580,49 @@ class TimeSeries:
         """
         return self._xa.copy() if copy else self._xa
 
-    def pd_series(self, copy=True) -> pd.Series:
+    def to_series(
+        self,
+        copy: bool = True,
+        backend: Union[ModuleType, Implementation, str] = Implementation.PANDAS,
+    ):
         """
-        Return a Pandas Series representation of this univariate deterministic time series.
+        Return a Series representation of this time series in a given `backend`.
+
+        Works only for univariate series that are deterministic (i.e., made of 1 sample).
+
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the series. Leave it to True unless you know what you are doing.
+        backend
+            The backend to which to export the `TimeSeries`. See the `narwhals documentation
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`_ for all supported
+            backends.
+
+        Returns
+        -------
+            A Series representation of this univariate time series in a given `backend`.
+        """
+        self._assert_univariate()
+        self._assert_deterministic()
+
+        backend = Implementation.from_backend(backend)
+        if not backend.is_pandas():
+            return self.to_dataframe(copy=copy, backend=backend, time_as_index=False)
+
+        data = self._xa[:, 0, 0].values
+        index = self._time_index
+        name = self.components[0]
+
+        if copy:
+            data = data.copy()
+            index = index.copy()
+
+        return pd.Series(data=data, index=index, name=name)
+
+    def pd_series(self, copy: bool = True) -> pd.Series:
+        """
+        Return a Pandas Series representation of this time series.
 
         Works only for univariate series that are deterministic (i.e., made of 1 sample).
 
@@ -1586,22 +1636,22 @@ class TimeSeries:
         pandas.Series
             A Pandas Series representation of this univariate time series.
         """
-        self._assert_univariate()
-        self._assert_deterministic()
+        raise_deprecation_warning(
+            "`TimeSeries.pd_series()` is deprecated and will be removed in Darts version 0.35.0. Use "
+            "`TimeSeries.to_series()` instead",
+            logger,
+        )
+        return self.to_series(copy=copy)
 
-        data = self._xa[:, 0, 0].values
-        index = self._time_index
-        name = self.components[0]
-
-        if copy:
-            data = data.copy()
-            index = index.copy()
-
-        return pd.Series(data=data, index=index, name=name)
-
-    def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
+    def to_dataframe(
+        self,
+        copy: bool = True,
+        backend: Union[ModuleType, Implementation, str] = Implementation.PANDAS,
+        time_as_index: bool = True,
+        suppress_warnings: bool = False,
+    ):
         """
-        Return a Pandas DataFrame representation of this time series.
+        Return a DataFrame representation of this time series in a given `backend`.
 
         Each of the series components will appear as a column in the DataFrame.
         If the series is stochastic, the samples are returned as columns of the dataframe with column names
@@ -1612,12 +1662,30 @@ class TimeSeries:
         ----------
         copy
             Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
+        backend
+            The backend to which to export the `TimeSeries`. See the `narwhals documentation
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`_ for all supported
+            backends.
+        time_as_index
+            Whether to set the time index as the index of the dataframe or in the left-most column.
+            Only effective with the pandas `backend`.
+        suppress_warnings
+            Whether to suppress the warnings for the `DataFrame` creation.
 
         Returns
         -------
-        pandas.DataFrame
-            The Pandas DataFrame representation of this time series
+        DataFrame
+            A DataFrame representation of this time series in the given `backend`.
         """
+
+        backend = Implementation.from_backend(backend)
+        if time_as_index and not backend.is_pandas():
+            if not suppress_warnings:
+                logger.warning(
+                    '`time_as_index=True` is only supported with `backend="pandas"`, and will be ignored.'
+                )
+            time_as_index = False
+
         if not self.is_deterministic:
             if not suppress_warnings:
                 logger.warning(
@@ -1637,14 +1705,52 @@ class TimeSeries:
         else:
             columns = self._xa.get_index(DIMS[1])
             data = self._xa[:, :, 0].values
-        index = self._time_index
+
+        time_index = self._time_index
 
         if copy:
-            columns = columns.copy()
             data = data.copy()
-            index = index.copy()
+            time_index = time_index.copy()
 
-        return pd.DataFrame(data=data, index=index, columns=columns)
+        if time_as_index:
+            # special path for pandas with index
+            return pd.DataFrame(data=data, index=time_index, columns=columns)
+
+        data = {
+            time_index.name: time_index,  # set time_index as left-most column
+            **{col: data[:, idx] for idx, col in enumerate(columns)},
+        }
+
+        return nw.from_dict(data, backend=backend).to_native()
+
+    def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
+        """
+        Return a Pandas DataFrame representation of this time series.
+
+        Each of the series components will appear as a column in the DataFrame.
+        If the series is stochastic, the samples are returned as columns of the dataframe with column names
+        as 'component_s#' (e.g. with two components and two samples:
+        'comp0_s0', 'comp0_s1' 'comp1_s0' 'comp1_s1').
+
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
+        suppress_warnings
+            Whether to suppress the warnings for the `DataFrame` creation.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The Pandas DataFrame representation of this time series
+        """
+
+        raise_deprecation_warning(
+            "`TimeSeries.pd_dataframe()` is deprecated, and will be removed in Darts version 0.35.0. Use "
+            "`TimeSeries.to_dataframe()` instead",
+            logger,
+        )
+        return self.to_dataframe(copy=copy, suppress_warnings=suppress_warnings)
 
     def quantile_df(self, quantile=0.5) -> pd.DataFrame:
         """
@@ -1762,7 +1868,7 @@ class TimeSeries:
         """
         return pd.concat(
             [
-                self.quantile_timeseries(quantile).pd_dataframe()
+                self.quantile_timeseries(quantile).to_dataframe()
                 for quantile in quantiles
             ],
             axis=1,
@@ -2108,7 +2214,7 @@ class TimeSeries:
             by a DatetimeIndex).
         """
 
-        df = self.pd_dataframe()
+        df = self.to_dataframe()
 
         if mode == "all":
             is_nan_series = df.isna().all(axis=1).astype(int)
@@ -3885,7 +3991,7 @@ class TimeSeries:
         )
 
         # read series dataframe
-        ts_df = self.pd_dataframe(copy=False, suppress_warnings=True)
+        ts_df = self.to_dataframe(copy=False, suppress_warnings=True)
 
         # store some original attributes of the series
         original_components = self.components
@@ -4058,7 +4164,7 @@ class TimeSeries:
         str
             A JSON String representing the time series
         """
-        return self.pd_dataframe().to_json(orient="split", date_format="iso")
+        return self.to_dataframe().to_json(orient="split", date_format="iso")
 
     def to_csv(self, *args, **kwargs):
         """
@@ -4071,14 +4177,13 @@ class TimeSeries:
         """
         if not self.is_deterministic:
             raise_log(
-                AssertionError(
-                    "The pd_dataframe() method can only return DataFrames of deterministic "
-                    "time series, and this series is not deterministic (it contains several samples). "
-                    "Consider calling quantile_df() instead."
+                ValueError(
+                    "Writing to csv is only supported for deterministic time series "
+                    "(a series with only one sample per time and component)."
                 )
             )
 
-        self.pd_dataframe().to_csv(*args, **kwargs)
+        self.to_dataframe().to_csv(*args, **kwargs)
 
     def to_pickle(self, path: str, protocol: int = pickle.HIGHEST_PROTOCOL):
         """

@@ -42,6 +42,14 @@ except ImportError:
     logger.warning("Ray not installed - Some tests will be skipped.")
     RAY_AVAILABLE = False
 
+try:
+    import polars  # noqa: F401
+
+    POLARS_AVAILABLE = True
+except ImportError:
+    logger.warning("Polars not installed - Some tests will be skipped.")
+    POLARS_AVAILABLE = False
+
 tfm_kwargs = {
     "pl_trainer_kwargs": {
         "accelerator": "cpu",

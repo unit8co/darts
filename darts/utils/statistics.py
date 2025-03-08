@@ -190,7 +190,7 @@ def extract_trend_and_seasonality(
 
     if method == "naive":
         decomp = seasonal_decompose(
-            ts.pd_series(), period=freq, model=model.value, extrapolate_trend="freq"
+            ts.to_series(), period=freq, model=model.value, extrapolate_trend="freq"
         )
 
     elif method == "STL":
@@ -201,7 +201,7 @@ def extract_trend_and_seasonality(
         )
 
         decomp = STL(
-            endog=ts.pd_series(),
+            endog=ts.to_series(),
             period=freq,
             **kwargs,
         ).fit()
@@ -214,7 +214,7 @@ def extract_trend_and_seasonality(
         )
 
         decomp = MSTL(
-            endog=ts.pd_series(),
+            endog=ts.to_series(),
             periods=freq,
             **kwargs,
         ).fit()

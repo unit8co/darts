@@ -72,7 +72,7 @@ Behind the scenes, `TimeSeries` is wrapping around a 3-dimensional `xarray.DataA
 ## Exporting data from a `TimeSeries`
 `TimeSeries` objects offer a few ways to export the data, for example:
 
-* [TimeSeries.pd_dataframe()](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.pd_dataframe) to export a Pandas Dataframe (for deterministic series)
+* [TimeSeries.to_dataframe()](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.pd_dataframe) to export a Dataframe (for deterministic series)
 
 * [TimeSeries.data_array()](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.data_array) to export the `xarray` `DataArray` holding this series' data (and indexes).
 
