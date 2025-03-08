@@ -227,12 +227,14 @@ def extract_trend_and_seasonality(
         decomp.seasonal,
         static_covariates=ts.static_covariates,
         hierarchy=ts.hierarchy,
+        metadata=ts.metadata,
     )
     trend = TimeSeries.from_times_and_values(
         ts.time_index,
         decomp.trend,
         static_covariates=ts.static_covariates,
         hierarchy=ts.hierarchy,
+        metadata=ts.metadata,
     )
 
     return trend, season
