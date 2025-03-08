@@ -1584,7 +1584,7 @@ class TimeSeries:
         backend: Union[ModuleType, Implementation, str] = Implementation.PANDAS,
     ):
         """
-        Return a Series representation of this univariate deterministic time series.
+        Return a Series representation of this time series in a given `backend`.
 
         Works only for univariate series that are deterministic (i.e., made of 1 sample).
 
@@ -1599,7 +1599,7 @@ class TimeSeries:
 
         Returns
         -------
-            A Series representation of this univariate time series.
+            A Series representation of this univariate time series in a given `backend`.
         """
         self._assert_univariate()
         self._assert_deterministic()
@@ -1620,7 +1620,7 @@ class TimeSeries:
 
     def pd_series(self, copy: bool = True) -> pd.Series:
         """
-        Return a Pandas Series representation of this univariate deterministic time series.
+        Return a Pandas Series representation of this time series.
 
         Works only for univariate series that are deterministic (i.e., made of 1 sample).
 
@@ -1635,7 +1635,7 @@ class TimeSeries:
             A Pandas Series representation of this univariate time series.
         """
         raise_deprecation_warning(
-            "`TimeSeries.pd_series()` is deprecated and will be removed in a future version. Use "
+            "`TimeSeries.pd_series()` is deprecated and will be removed in Darts version 0.35.0. Use "
             "`TimeSeries.to_series()` instead",
             logger,
         )
@@ -1649,7 +1649,7 @@ class TimeSeries:
         suppress_warnings: bool = False,
     ):
         """
-        Return a DataFrame representation of this time series.
+        Return a DataFrame representation of this time series in a given `backend`.
 
         Each of the series components will appear as a column in the DataFrame.
         If the series is stochastic, the samples are returned as columns of the dataframe with column names
@@ -1666,20 +1666,22 @@ class TimeSeries:
             backends.
         time_as_index
             Whether to set the time index as the index of the dataframe or in the left-most column.
+            Only effective with the pandas `backend`.
         suppress_warnings
-            Whether to suppress the warning about transforming a stochastic TimeSeries
+            Whether to suppress the warnings for the `DataFrame` creation.
 
         Returns
         -------
         DataFrame
-            A DataFrame representation of this time series.
+            A DataFrame representation of this time series in the given `backend`.
         """
 
         backend = Implementation.from_backend(backend)
         if time_as_index and not backend.is_pandas():
-            logger.warning(
-                '`time_as_index=True` is only supported with `backend="pandas"`, and will be ignored.'
-            )
+            if not suppress_warnings:
+                logger.warning(
+                    '`time_as_index=True` is only supported with `backend="pandas"`, and will be ignored.'
+                )
             time_as_index = False
 
         if not self.is_deterministic:
@@ -1733,7 +1735,8 @@ class TimeSeries:
         copy
             Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
         suppress_warnings
-            Whether to suppress the warning about transforming a stochastic TimeSeries
+            Whether to suppress the warnings for the `DataFrame` creation.
+
         Returns
         -------
         pandas.DataFrame
@@ -1741,7 +1744,7 @@ class TimeSeries:
         """
 
         raise_deprecation_warning(
-            "`TimeSeries.pd_dataframe()` is deprecated, and will be removed in a future version. Use "
+            "`TimeSeries.pd_dataframe()` is deprecated, and will be removed in Darts version 0.35.0. Use "
             "`TimeSeries.to_dataframe()` instead",
             logger,
         )
@@ -4171,12 +4174,10 @@ class TimeSeries:
         .. [1] https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv
         """
         if not self.is_deterministic:
-            # TODO THAT'S NOT TRUE!
             raise_log(
-                AssertionError(
-                    "The to_dataframe() method can only return DataFrames of deterministic "
-                    "time series, and this series is not deterministic (it contains several samples). "
-                    "Consider calling quantile_df() instead."
+                ValueError(
+                    "Writing to csv is only supported for deterministic time series "
+                    "(a series with only one sample per time and component)."
                 )
             )
 

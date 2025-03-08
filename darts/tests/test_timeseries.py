@@ -2061,7 +2061,7 @@ class TestTimeSeries:
             linear_timeseries(start_value=val, length=10) for val in [10, 20, 30]
         ]
         ts = concatenate(samples, axis=2)
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             ts.to_csv("blah.csv")
 
     @patch("darts.timeseries.TimeSeries.to_dataframe")
@@ -2093,7 +2093,7 @@ class TestTimeSeries:
             )
         )
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             ts.to_csv("test.csv")
 
 
