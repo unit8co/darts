@@ -94,7 +94,7 @@ jobs:
       - name: "Compile Dependency Versions"
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv pip compile requirements/dev-all.txt requirements/optional.txt -o requirements-latest.txt
+          uv pip compile requirements/dev-all.txt requirements/optional.txt > requirements-latest.txt
 
       # only restore cache but do not upload
       - name: "Restore cached python environment"
@@ -141,7 +141,7 @@ jobs:
       - name: "Compile Dependency Versions"
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv pip compile requirements/dev-all.txt requirements/optional.txt -o requirements-latest.txt
+          uv pip compile requirements/dev-all.txt requirements/optional.txt > requirements-latest.txt
 
       # only restore cache but do not upload
       - name: "Restore cached python environment"
