@@ -93,16 +93,18 @@ HIERARCHY_TAG = "hierarchy"
 class TimeSeries:
     def __init__(self, xa: xr.DataArray, copy=True):
         """
-        Create a TimeSeries from a (well formed) DataArray.
+        Create a TimeSeries from a (well-formed) DataArray.
         It is recommended to use the factory methods to create TimeSeries instead.
 
         See Also
         --------
-        TimeSeries.from_dataframe : Create from a :class:`pandas.DataFrame`.
+        TimeSeries.from_dataframe : Create from a `DataFrame` (:class:`pandas.DataFrame`, :class:`polars.DataFrame`,
+            and other backends).
         TimeSeries.from_group_dataframe : Create multiple TimeSeries by groups from a :class:`pandas.DataFrame`.
-        TimeSeries.from_series : Create from a :class:`pandas.Series`.
-        TimeSeries.from_values : Create from a NumPy :class:`ndarray`.
-        TimeSeries.from_times_and_values : Create from a time index and a Numpy :class:`ndarray`.
+        TimeSeries.from_series : Create from a `Series` (:class:`pandas.Series`, :class:`polars.Series`, and other
+            backends).
+        TimeSeries.from_values : Create from a :class:`numpy.ndarray`.
+        TimeSeries.from_times_and_values : Create from a time index and a :class:`numpy.ndarray`.
         TimeSeries.from_csv : Create from a CSV file.
         TimeSeries.from_json : Create from a JSON file.
         TimeSeries.from_xarray : Create from an :class:`xarray.DataArray`.

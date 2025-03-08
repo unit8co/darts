@@ -5,8 +5,14 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
+from darts.tests.conftest import POLARS_AVAILABLE
 from darts.tests.test_timeseries import TestTimeSeries
 from darts.utils.utils import freqs
+
+if POLARS_AVAILABLE:
+    import polars as pl
+else:
+    pl = None
 
 
 class TestTimeSeriesMultivariate:
@@ -47,6 +53,25 @@ class TestTimeSeriesMultivariate:
         with pytest.raises(ValueError):
             TimeSeries(self.dataframe1.iloc[:2, :])
         TimeSeries.from_dataframe(self.dataframe1.iloc[:2, :], freq="D")
+
+    @pytest.mark.skipif(not POLARS_AVAILABLE, reason="requires polars")
+    def test_polars_creation(self):
+        pl_df = pl.DataFrame(
+            data={
+                "time": pd.date_range(start="2023-01-01", periods=10, freq="D"),
+                "test_float": [float(i) for i in range(10)],
+                "test_int": range(10),
+            }
+        )
+        # with a `time_col` no warning is raised
+        ts = TimeSeries.from_dataframe(pl_df, time_col="time")
+        ts_pl_df = ts.to_dataframe(backend="polars", time_as_index=False)
+        assert ts_pl_df.equals(pl_df)
+
+        # darts converts everything to float (test_int)
+        assert ts_pl_df.dtypes != pl_df.dtypes
+        dtypes_expected = pl_df.dtypes[:2] + [pl_df.dtypes[1]]
+        assert ts_pl_df.dtypes == dtypes_expected
 
     def test_eq(self):
         seriesA = TimeSeries.from_dataframe(self.dataframe1)

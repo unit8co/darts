@@ -2,4 +2,5 @@ onnx
 onnxruntime
 optuna
 optuna-integration[pytorch_lightning]
+polars
 ray
