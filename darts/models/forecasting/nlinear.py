@@ -141,7 +141,7 @@ class _NLinearModule(PLMixedCovariatesModule):
         else:
             if self.normalize:
                 # get last values only for target features
-                seq_last = x[:, -1:, : self.output_dim].detach()
+                seq_last = x[:, -1:, : self.output_dim].detach().clone()
                 # normalize the target features only (ignore the covariates)
                 x[:, :, : self.output_dim] = x[:, :, : self.output_dim] - seq_last
 
