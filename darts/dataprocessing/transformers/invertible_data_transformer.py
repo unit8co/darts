@@ -326,16 +326,17 @@ class InvertibleDataTransformer(BaseDataTransformer):
         # Take note of original input for unmasking purposes:
         called_with_single_series = False
         called_with_sequence_series = False
+        series_specified = series_idx is not None
         if isinstance(series, TimeSeries):
             data = [series]
-            if series_idx:
+            if series_specified:
                 transformer_selector = self._process_series_idx(series_idx)
             else:
                 transformer_selector = [0]
             called_with_single_series = True
         elif isinstance(series[0], TimeSeries):  # Sequence[TimeSeries]
             data = series
-            if series_idx:
+            if series_specified:
                 transformer_selector = self._process_series_idx(series_idx)
             else:
                 transformer_selector = range(len(series))
@@ -343,7 +344,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         else:  # Sequence[Sequence[TimeSeries]]
             data = []
             transformer_selector = []
-            if series_idx:
+            if series_specified:
                 iterator_ = zip(self._process_series_idx(series_idx), series)
             else:
                 iterator_ = enumerate(series)
@@ -352,7 +353,13 @@ class InvertibleDataTransformer(BaseDataTransformer):
                 transformer_selector += [idx] * len(series_list)
 
         input_iterator = _build_tqdm_iterator(
-            zip(data, self._get_params(transformer_selector=transformer_selector)),
+            zip(
+                data,
+                self._get_params(
+                    transformer_selector=transformer_selector,
+                    series_specified=series_specified,
+                ),
+            ),
             verbose=self._verbose,
             desc=desc,
             total=len(transformer_selector),

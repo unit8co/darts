@@ -340,7 +340,10 @@ class FittableDataTransformer(BaseDataTransformer):
         ).transform(series, *args, component_mask=component_mask, **kwargs)
 
     def _get_params(
-        self, transformer_selector: Iterable, calling_fit: bool = False
+        self,
+        transformer_selector: Iterable,
+        calling_fit: bool = False,
+        series_specified: bool = False,
     ) -> Generator[Mapping[str, Any], None, None]:
         """
         Overrides `_get_params` of `BaseDataTransformer`. Creates generator of dictionaries containing
@@ -353,7 +356,9 @@ class FittableDataTransformer(BaseDataTransformer):
         """
         # Call `_check_fixed_params` of `BaseDataTransformer`:
         self._check_fixed_params(transformer_selector)
-        fitted_params = self._get_fitted_params(transformer_selector, calling_fit)
+        fitted_params = self._get_fitted_params(
+            transformer_selector, calling_fit, series_specified=series_specified
+        )
 
         def params_generator(
             transformer_selector_,
@@ -390,7 +395,10 @@ class FittableDataTransformer(BaseDataTransformer):
         )
 
     def _get_fitted_params(
-        self, transformer_selector: Iterable, calling_fit: bool
+        self,
+        transformer_selector: Iterable,
+        calling_fit: bool,
+        series_specified: bool = False,
     ) -> Sequence[Any]:
         """
         Returns `self._fitted_params` if `calling_fit = False`, otherwise returns an empty
@@ -419,7 +427,7 @@ class FittableDataTransformer(BaseDataTransformer):
                     ),
                     logger=logger,
                 )
-            elif n_timeseries_ < len(fitted_params):
+            elif n_timeseries_ < len(fitted_params) and not series_specified:
                 logger.warning(
                     f"Only {n_timeseries_} TimeSeries (lists) were provided "
                     f"which is lower than the number of series (n={len(fitted_params)}) "
