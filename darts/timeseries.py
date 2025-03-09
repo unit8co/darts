@@ -398,6 +398,30 @@ class TimeSeries:
         -------
         TimeSeries
             A univariate or multivariate deterministic TimeSeries constructed from the inputs.
+
+        Examples
+        --------
+        >>> import xarray as xr
+        >>> import numpy as np
+        >>> from darts.timeseries import DIMS
+        >>> from darts import TimeSeries
+        >>> from darts.utils.utils import generate_index
+        >>>
+        >>> # create values with the required dimensions (time, component, sample)
+        >>> vals = np.random.random((3, 1, 1))
+        >>> # create time index with daily frequency
+        >>> times = generate_index("2020-01-01", length=3, freq="D")
+        >>> columns = ["vals"]
+        >>>
+        >>> # create xarray with the required dimensions and coordinates
+        >>> xa = xr.DataArray(
+        >>>     vals,
+        >>>     dims=DIMS,
+        >>>     coords={DIMS[0]: times, DIMS[1]: columns}
+        >>> )
+        >>> series = TimeSeries.from_xarray(xa)
+        >>> series.shape
+        (3, 1, 1)
         """
         xa_index = xa.get_index(xa.dims[0])
 
@@ -579,6 +603,11 @@ class TimeSeries:
         -------
         TimeSeries
             A univariate or multivariate deterministic TimeSeries constructed from the inputs.
+
+        Examples
+        --------
+        >>> from darts import TimeSeries
+        >>> TimeSeries.from_csv("data.csv", time_col="time")
         """
 
         df = pd.read_csv(filepath_or_buffer=filepath_or_buffer, **kwargs)
@@ -682,6 +711,27 @@ class TimeSeries:
         -------
         TimeSeries
             A univariate or multivariate deterministic TimeSeries constructed from the inputs.
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> from darts import TimeSeries
+        >>> from darts.utils.utils import generate_index
+        >>> # create values and times with daily frequency
+        >>> data = {"vals": range(3), "time": generate_index("2020-01-01", length=3, freq="D")}
+        >>> # create from `pandas.DataFrame`
+        >>> df = pd.DataFrame(data)
+        >>> series = TimeSeries.from_dataframe(df, time_col="time")
+        >>> # shape (n time steps, n components, n samples)
+        >>> series.shape
+        (3, 1, 1)
+
+        >>> # or from `polars.DataFrame` (make sure Polars is installed)
+        >>> import polars as pl
+        >>> df = pl.DataFrame(data)
+        >>> series = TimeSeries.from_dataframe(df, time_col="time")
+        >>> series.shape
+        (3, 1, 1)
         """
         df = nw.from_native(df, eager_only=True, pass_through=False)
         time_zone = None
@@ -877,6 +927,35 @@ class TimeSeries:
         -------
         List[TimeSeries]
             A list containing a univariate or multivariate deterministic TimeSeries per group in the DataFrame.
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> from darts import TimeSeries
+        >>> from darts.utils.utils import generate_index
+        >>>
+        >>> # create a DataFrame with two series that have different ids,
+        >>> # values, and frequencies
+        >>> df_1 = pd.DataFrame({
+        >>>     "ID": [0] * 3,
+        >>>     "vals": range(3),
+        >>>     "time": generate_index("2020-01-01", length=3, freq="D")}
+        >>> )
+        >>> df_2 = pd.DataFrame({
+        >>>     "ID": [1] * 6,
+        >>>     "vals": range(6),
+        >>>     "time": generate_index("2020-01-01", length=6, freq="h")}
+        >>> )
+        >>> df = pd.concat([df_1, df_2], axis=0)
+        >>>
+        >>> # extract the series by "ID" groups from the DataFrame
+        >>> series_multi = TimeSeries.from_group_dataframe(
+        >>>     df,
+        >>>     group_cols="ID",
+        >>>     time_col="time"
+        >>> )
+        >>> len(series_multi), series_multi[0].shape, series_multi[1].shape
+        (2, (3, 1, 1), (6, 1, 1))
         """
         if time_col is None and df.index.is_monotonic_increasing:
             logger.warning(
@@ -1083,6 +1162,20 @@ class TimeSeries:
         -------
         TimeSeries
             A univariate and deterministic TimeSeries constructed from the inputs.
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> from darts import TimeSeries
+        >>> from darts.utils.utils import generate_index
+        >>> # create values and times with daily frequency
+        >>> vals, times = range(3), generate_index("2020-01-01", length=3, freq="D")
+        >>>
+        >>> # create from `pandas.Series`
+        >>> pd_series = pd.Series(vals, index=times)
+        >>> series = TimeSeries.from_series(pd_series)
+        >>> series.shape
+        (3, 1, 1)
         """
         nw_series = nw.from_native(pd_series, series_only=True, pass_through=False)
         df = nw_series.to_frame()
@@ -1178,6 +1271,17 @@ class TimeSeries:
         -------
         TimeSeries
             A TimeSeries constructed from the inputs.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from darts import TimeSeries
+        >>> from darts.utils.utils import generate_index
+        >>> # create values and times with daily frequency
+        >>> vals, times = np.arange(3), generate_index("2020-01-01", length=3, freq="D")
+        >>> series = TimeSeries.from_times_and_values(times=times, values=vals)
+        >>> series.shape
+        (3, 1, 1)
         """
         raise_if_not(
             isinstance(times, VALID_INDEX_TYPES)
@@ -1287,6 +1391,16 @@ class TimeSeries:
         -------
         TimeSeries
             A TimeSeries constructed from the inputs.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from darts import TimeSeries
+        >>> from darts.utils.utils import generate_index
+        >>> vals = np.arange(3)
+        >>> series = TimeSeries.from_times_and_values(times=times, values=vals)
+        >>> series.shape
+        (3, 1, 1)
         """
         time_index = pd.RangeIndex(0, len(values), 1)
         values_ = (
@@ -1362,6 +1476,16 @@ class TimeSeries:
         -------
         TimeSeries
             The time series object converted from the JSON String
+
+        Examples
+        --------
+        >>> from darts import TimeSeries
+        >>> json_str = (
+        >>>     '{"columns":["vals"],"index":["2020-01-01","2020-01-02","2020-01-03"],"data":[[0.0],[1.0],[2.0]]}'
+        >>> )
+        >>> series = TimeSeries.from_json("data.csv")
+        >>> series.shape
+        (3, 1, 1)
         """
         df = pd.read_json(StringIO(json_str), orient="split")
         return cls.from_dataframe(
@@ -3312,6 +3436,11 @@ class TimeSeries:
             'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of rows must match the
             number of components of the TimeSeries. This adds component-specific static covariates.
 
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with the given static covariates.
+
         Notes
         -----
         If there are a large number of static covariates variables (i.e., the static covariates have a very large
@@ -3340,11 +3469,6 @@ class TimeSeries:
         component
         linear              0.0           1.0
         linear_1            2.0           3.0
-
-        Returns
-        -------
-        TimeSeries
-            A new TimeSeries with the given static covariates.
         """
 
         return self.__class__(
@@ -3415,6 +3539,11 @@ class TimeSeries:
         metadata
             A dictionary with metadata to be added to the TimeSeries.
 
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with the given metadata.
+
         Examples
         --------
         >>> from darts.utils.timeseries_generation import linear_timeseries
@@ -3424,11 +3553,6 @@ class TimeSeries:
         >>> series = series.with_metadata(metadata)
         >>> series.metadata
         {'name': 'my_series'}
-
-        Returns
-        -------
-        TimeSeries
-            A new TimeSeries with the given metadata.
         """
 
         return self.__class__(
@@ -3645,6 +3769,11 @@ class TimeSeries:
             For more information, see the `xarray resample() documentation
             <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html>`_.
 
+        Returns
+        -------
+        TimeSeries
+            A reindexed TimeSeries with given frequency.
+
         Examples
         --------
         >>> times = pd.date_range(start=pd.Timestamp("20200101233000"), periods=6, freq="15min")
@@ -3680,11 +3809,6 @@ class TimeSeries:
         [[0.5]
         [2.5]
         [4.5]]
-
-        Returns
-        -------
-        TimeSeries
-            A reindexed TimeSeries with given frequency.
         """
         method_kwargs = method_kwargs or {}
         if isinstance(freq, pd.DateOffset):
