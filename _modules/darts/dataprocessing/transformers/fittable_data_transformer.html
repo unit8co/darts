@@ -515,7 +515,10 @@
         <span class="p">)</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">component_mask</span><span class="o">=</span><span class="n">component_mask</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_params</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">transformer_selector</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">calling_fit</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">transformer_selector</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span>
+        <span class="n">calling_fit</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">series_specified</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Overrides `_get_params` of `BaseDataTransformer`. Creates generator of dictionaries containing</span>
@@ -528,7 +531,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Call `_check_fixed_params` of `BaseDataTransformer`:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_check_fixed_params</span><span class="p">(</span><span class="n">transformer_selector</span><span class="p">)</span>
-        <span class="n">fitted_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_fitted_params</span><span class="p">(</span><span class="n">transformer_selector</span><span class="p">,</span> <span class="n">calling_fit</span><span class="p">)</span>
+        <span class="n">fitted_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_fitted_params</span><span class="p">(</span>
+            <span class="n">transformer_selector</span><span class="p">,</span> <span class="n">calling_fit</span><span class="p">,</span> <span class="n">series_specified</span><span class="o">=</span><span class="n">series_specified</span>
+        <span class="p">)</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">params_generator</span><span class="p">(</span>
             <span class="n">transformer_selector_</span><span class="p">,</span>
@@ -565,7 +570,10 @@
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_fitted_params</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">transformer_selector</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">calling_fit</span><span class="p">:</span> <span class="nb">bool</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">transformer_selector</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span>
+        <span class="n">calling_fit</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">series_specified</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns `self._fitted_params` if `calling_fit = False`, otherwise returns an empty</span>
@@ -594,7 +602,7 @@
                     <span class="p">),</span>
                     <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
                 <span class="p">)</span>
-            <span class="k">elif</span> <span class="n">n_timeseries_</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">fitted_params</span><span class="p">):</span>
+            <span class="k">elif</span> <span class="n">n_timeseries_</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">fitted_params</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">series_specified</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Only </span><span class="si">{</span><span class="n">n_timeseries_</span><span class="si">}</span><span class="s2"> TimeSeries (lists) were provided &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;which is lower than the number of series (n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">fitted_params</span><span class="p">)</span><span class="si">}</span><span class="s2">) &quot;</span>

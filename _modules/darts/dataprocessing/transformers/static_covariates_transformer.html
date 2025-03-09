@@ -475,12 +475,8 @@
                 <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">categories</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">cols_cat</span><span class="p">,</span> <span class="n">transformer_cat</span><span class="o">.</span><span class="n">categories_</span><span class="p">):</span>
                     <span class="n">col_map_cat_i</span> <span class="o">=</span> <span class="p">[]</span>
                     <span class="k">for</span> <span class="n">cat</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">:</span>
-                        <span class="n">col_map_cat_i</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
-                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">categories</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                            <span class="n">cat_col_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
-                            <span class="n">inv_col_map_cat</span><span class="p">[</span><span class="n">cat_col_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="p">]</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="n">inv_col_map_cat</span><span class="p">[</span><span class="n">cat</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="p">]</span>
+                        <span class="n">col_map_cat_i</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="p">))</span>
+                        <span class="n">inv_col_map_cat</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="p">]</span>
                     <span class="n">col_map_cat</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">col_map_cat_i</span>
         <span class="c1"># If we don&#39;t have any categorical static covariates, don&#39;t need to generate mapping:</span>
         <span class="k">else</span><span class="p">:</span>
@@ -568,16 +564,6 @@
             <span class="n">series</span><span class="p">,</span> <span class="n">mask_num</span><span class="p">,</span> <span class="n">mask_cat</span>
         <span class="p">)</span>
 
-        <span class="c1"># Transform static covs:</span>
-        <span class="n">tr_out_num</span><span class="p">,</span> <span class="n">tr_out_cat</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="n">mask_num</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-            <span class="n">tr_out_num</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">transformer_num</span><span class="p">,</span> <span class="n">method</span><span class="p">)(</span><span class="n">vals_num</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">mask_cat</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-            <span class="n">tr_out_cat</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">transformer_cat</span><span class="p">,</span> <span class="n">method</span><span class="p">)(</span><span class="n">vals_cat</span><span class="p">)</span>
-            <span class="c1"># sparse one hot encoding to dense array</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tr_out_cat</span><span class="p">,</span> <span class="n">csr_matrix</span><span class="p">):</span>
-                <span class="n">tr_out_cat</span> <span class="o">=</span> <span class="n">tr_out_cat</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
-
         <span class="c1"># quick check if everything is in order</span>
         <span class="n">n_vals_cat_cols</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">vals_cat</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">vals_cat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;inverse_transform&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">n_vals_cat_cols</span> <span class="o">!=</span> <span class="n">n_cat_cols</span><span class="p">):</span>
@@ -587,6 +573,16 @@
                 <span class="p">),</span>
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
+
+        <span class="c1"># Transform static covs:</span>
+        <span class="n">tr_out_num</span><span class="p">,</span> <span class="n">tr_out_cat</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">mask_num</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">tr_out_num</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">transformer_num</span><span class="p">,</span> <span class="n">method</span><span class="p">)(</span><span class="n">vals_num</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mask_cat</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">tr_out_cat</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">transformer_cat</span><span class="p">,</span> <span class="n">method</span><span class="p">)(</span><span class="n">vals_cat</span><span class="p">)</span>
+            <span class="c1"># sparse one hot encoding to dense array</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tr_out_cat</span><span class="p">,</span> <span class="n">csr_matrix</span><span class="p">):</span>
+                <span class="n">tr_out_cat</span> <span class="o">=</span> <span class="n">tr_out_cat</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
 
         <span class="n">series</span> <span class="o">=</span> <span class="n">StaticCovariatesTransformer</span><span class="o">.</span><span class="n">_add_back_static_covs</span><span class="p">(</span>
             <span class="n">series</span><span class="p">,</span> <span class="n">tr_out_num</span><span class="p">,</span> <span class="n">tr_out_cat</span><span class="p">,</span> <span class="n">mask_num</span><span class="p">,</span> <span class="n">mask_cat</span><span class="p">,</span> <span class="n">col_map_cat</span>
@@ -633,8 +629,6 @@
             <span class="k">elif</span> <span class="n">is_cat</span><span class="p">:</span>  <span class="c1"># categorical transformed column</span>
                 <span class="c1"># covers one to one feature map (ordinal/label encoding) and one to multi feature (one hot encoding)</span>
                 <span class="k">for</span> <span class="n">col_name</span> <span class="ow">in</span> <span class="n">col_map_cat</span><span class="p">[</span><span class="n">col</span><span class="p">]:</span>
-                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">col_map_cat</span><span class="p">[</span><span class="n">col</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                        <span class="n">col_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">col_name</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">col_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">static_cov_columns</span><span class="p">:</span>
                         <span class="n">data</span><span class="p">[</span><span class="n">col_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">vals_cat</span><span class="p">[:,</span> <span class="n">idx_cat</span><span class="p">]</span>
                         <span class="n">static_cov_columns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col_name</span><span class="p">)</span>

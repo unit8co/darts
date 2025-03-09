@@ -1038,6 +1038,9 @@ implementation of the algorithm, which can potentially be slower.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.select_best_model" title="darts.models.forecasting.theta.FourTheta.select_best_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">select_best_model</span></code></a>(ts[, thetas, m, ...])</p></td>
 <td><p>Performs a grid search over all hyper parameters to select the best model, using the fitted values on the training series <cite>ts</cite>.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.untrained_model" title="darts.models.forecasting.theta.FourTheta.untrained_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">untrained_model</span></code></a>()</p></td>
+<td><p>Returns a new (untrained) model instance created with the same parameters.</p></td>
+</tr>
 </tbody>
 </table>
 <dl class="py method">
@@ -2059,6 +2062,12 @@ probabilistic predictions.</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.untrained_model">
+<span class="sig-name descname"><span class="pre">untrained_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.untrained_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a new (untrained) model instance created with the same parameters.</p>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.uses_future_covariates">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_future_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.uses_future_covariates" title="Permalink to this definition">¶</a></dt>
@@ -2249,6 +2258,9 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">Seasona
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.save" title="darts.models.forecasting.theta.Theta.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
 <td><p>Saves the model under a given path or file handle.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.untrained_model" title="darts.models.forecasting.theta.Theta.untrained_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">untrained_model</span></code></a>()</p></td>
+<td><p>Returns a new (untrained) model instance created with the same parameters.</p></td>
 </tr>
 </tbody>
 </table>
@@ -3243,6 +3255,12 @@ probabilistic predictions.</p>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.untrained_model">
+<span class="sig-name descname"><span class="pre">untrained_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.Theta.untrained_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a new (untrained) model instance created with the same parameters.</p>
 </dd></dl>
 
 <dl class="py property">

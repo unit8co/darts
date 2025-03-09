@@ -268,6 +268,7 @@
 <span class="sd">        When subclassing this class, please make sure to add the following methods with the given signatures:</span>
 <span class="sd">            - :func:`PLForecastingModule.__init__()`</span>
 <span class="sd">            - :func:`PLForecastingModule.forward()`</span>
+<span class="sd">            - :func:`PLForecastingModule._process_input_batch()`</span>
 <span class="sd">            - :func:`PLForecastingModule._produce_train_output()`</span>
 <span class="sd">            - :func:`PLForecastingModule._get_batch_prediction()`</span>
 
@@ -807,9 +808,41 @@
 <span class="sd">        input_batch</span>
 <span class="sd">            ``(past_target, past_covariates, static_covariates)``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">static_covariates</span> <span class="o">=</span> <span class="n">input_batch</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_process_input_batch</span><span class="p">(</span><span class="n">input_batch</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_input_batch</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">input_batch</span><span class="p">:</span> <span class="nb">tuple</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts output of PastCovariatesDataset (training dataset) into an input/past- and</span>
+<span class="sd">        output/future chunk.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_batch</span>
+<span class="sd">            ``(past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates)``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple</span>
+<span class="sd">            ``(x_past, x_static)`` the input/past and output/future chunks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># because of future past covariates, the batch shape is different during training and prediction</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">input_batch</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="p">(</span>
+                <span class="n">past_target</span><span class="p">,</span>
+                <span class="n">past_covariates</span><span class="p">,</span>
+                <span class="n">static_covariates</span><span class="p">,</span>
+            <span class="p">)</span> <span class="o">=</span> <span class="n">input_batch</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="p">(</span>
+                <span class="n">past_target</span><span class="p">,</span>
+                <span class="n">past_covariates</span><span class="p">,</span>
+                <span class="n">future_past_covariates</span><span class="p">,</span>
+                <span class="n">static_covariates</span><span class="p">,</span>
+            <span class="p">)</span> <span class="o">=</span> <span class="n">input_batch</span>
         <span class="c1"># Currently all our PastCovariates models require past target and covariates concatenated</span>
-        <span class="n">inpt</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="k">return</span> <span class="p">(</span>
             <span class="p">(</span>
                 <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -817,7 +850,6 @@
             <span class="p">),</span>
             <span class="n">static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="p">(</span><span class="n">inpt</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_batch_prediction</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">input_batch</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">roll_size</span><span class="p">:</span> <span class="nb">int</span>
@@ -849,12 +881,9 @@
             <span class="n">past_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">dim_component</span><span class="p">]</span> <span class="k">if</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
         <span class="p">)</span>
 
-        <span class="n">input_past</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">ds</span> <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="p">[</span><span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">]</span> <span class="k">if</span> <span class="n">ds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">],</span>
-            <span class="n">dim</span><span class="o">=</span><span class="n">dim_component</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="n">input_past</span><span class="p">,</span> <span class="n">input_static</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_input_batch</span><span class="p">(</span><span class="n">input_batch</span><span class="p">)</span>
 
-        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="p">(</span><span class="n">input_past</span><span class="p">,</span> <span class="n">static_covariates</span><span class="p">))[</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="p">(</span><span class="n">input_past</span><span class="p">,</span> <span class="n">input_static</span><span class="p">))[</span>
             <span class="p">:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_prediction_index</span> <span class="p">:,</span> <span class="p">:</span>
         <span class="p">]</span>
 
@@ -971,7 +1000,7 @@
             <span class="n">future_covariates</span><span class="p">,</span>
             <span class="n">static_covariates</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">=</span> <span class="n">input_batch</span>
-        <span class="n">dim_variable</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">dim_comp</span> <span class="o">=</span> <span class="mi">2</span>
 
         <span class="n">x_past</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
             <span class="p">[</span>
@@ -983,7 +1012,7 @@
                 <span class="p">]</span>
                 <span class="k">if</span> <span class="n">tensor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
             <span class="p">],</span>
-            <span class="n">dim</span><span class="o">=</span><span class="n">dim_variable</span><span class="p">,</span>
+            <span class="n">dim</span><span class="o">=</span><span class="n">dim_comp</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">x_past</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">static_covariates</span>
 

@@ -501,16 +501,17 @@
         <span class="c1"># Take note of original input for unmasking purposes:</span>
         <span class="n">called_with_single_series</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">called_with_sequence_series</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">series_specified</span> <span class="o">=</span> <span class="n">series_idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
             <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">series_idx</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">series_specified</span><span class="p">:</span>
                 <span class="n">transformer_selector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_series_idx</span><span class="p">(</span><span class="n">series_idx</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">transformer_selector</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">called_with_single_series</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">TimeSeries</span><span class="p">):</span>  <span class="c1"># Sequence[TimeSeries]</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">series</span>
-            <span class="k">if</span> <span class="n">series_idx</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">series_specified</span><span class="p">:</span>
                 <span class="n">transformer_selector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_series_idx</span><span class="p">(</span><span class="n">series_idx</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">transformer_selector</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
@@ -518,7 +519,7 @@
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># Sequence[Sequence[TimeSeries]]</span>
             <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">transformer_selector</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">if</span> <span class="n">series_idx</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">series_specified</span><span class="p">:</span>
                 <span class="n">iterator_</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_process_series_idx</span><span class="p">(</span><span class="n">series_idx</span><span class="p">),</span> <span class="n">series</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">iterator_</span> <span class="o">=</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
@@ -527,7 +528,13 @@
                 <span class="n">transformer_selector</span> <span class="o">+=</span> <span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series_list</span><span class="p">)</span>
 
         <span class="n">input_iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span>
-            <span class="nb">zip</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_params</span><span class="p">(</span><span class="n">transformer_selector</span><span class="o">=</span><span class="n">transformer_selector</span><span class="p">)),</span>
+            <span class="nb">zip</span><span class="p">(</span>
+                <span class="n">data</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_get_params</span><span class="p">(</span>
+                    <span class="n">transformer_selector</span><span class="o">=</span><span class="n">transformer_selector</span><span class="p">,</span>
+                    <span class="n">series_specified</span><span class="o">=</span><span class="n">series_specified</span><span class="p">,</span>
+                <span class="p">),</span>
+            <span class="p">),</span>
             <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">,</span>
             <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span>
             <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">transformer_selector</span><span class="p">),</span>

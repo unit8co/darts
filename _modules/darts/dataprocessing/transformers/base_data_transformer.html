@@ -537,21 +537,28 @@
         <span class="n">desc</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Transform (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">)&quot;</span>
 
         <span class="c1"># Take note of original input for unmasking purposes:</span>
+        <span class="n">series_specified</span> <span class="o">=</span> <span class="n">series_idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
             <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">series_idx</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">series_specified</span><span class="p">:</span>
                 <span class="n">transformer_selector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_series_idx</span><span class="p">(</span><span class="n">series_idx</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">transformer_selector</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">series</span>
-            <span class="k">if</span> <span class="n">series_idx</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">series_specified</span><span class="p">:</span>
                 <span class="n">transformer_selector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_series_idx</span><span class="p">(</span><span class="n">series_idx</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">transformer_selector</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
 
         <span class="n">input_iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span>
-            <span class="nb">zip</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_params</span><span class="p">(</span><span class="n">transformer_selector</span><span class="o">=</span><span class="n">transformer_selector</span><span class="p">)),</span>
+            <span class="nb">zip</span><span class="p">(</span>
+                <span class="n">data</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_get_params</span><span class="p">(</span>
+                    <span class="n">transformer_selector</span><span class="o">=</span><span class="n">transformer_selector</span><span class="p">,</span>
+                    <span class="n">series_specified</span><span class="o">=</span><span class="n">series_specified</span><span class="p">,</span>
+                <span class="p">),</span>
+            <span class="p">),</span>
             <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">,</span>
             <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span>
             <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
@@ -570,7 +577,9 @@
         <span class="p">)</span></div>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_params</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">transformer_selector</span><span class="p">:</span> <span class="n">Iterable</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">transformer_selector</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span>
+        <span class="n">series_specified</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates generator of dictionaries containing fixed parameter values</span>

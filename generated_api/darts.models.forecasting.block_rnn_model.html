@@ -1211,8 +1211,11 @@ that can be used to improve the forecasts quality compared to this simple usage 
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.to_cpu" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.to_cpu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_cpu</span></code></a>()</p></td>
 <td><p>Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time <a href="#id2"><span class="problematic" id="id3">:fun:`fit()`</span></a> or <a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.predict" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> is called.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.untrained_model" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.untrained_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">untrained_model</span></code></a>()</p></td>
-<td><p>Returns a new (untrained) model instance create with the same parameters.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.to_onnx" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.to_onnx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_onnx</span></code></a>([path])</p></td>
+<td><p>Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning's <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.onnx.export()</span></code> method (<a class="reference external" href="https://lightning.ai/docs/pytorch/stable/common/lightning_module.html#to-onnx">official documentation</a>).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.untrained_model" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.untrained_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">untrained_model</span></code></a>()</p></td>
+<td><p>Returns a new (untrained) model instance created with the same parameters.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1958,11 +1961,19 @@ each series.</p></li>
 </pre></div>
 </div>
 </div></blockquote>
-<p>Example for loading an <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> to GPU:</p>
+<p>Example for loading an <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> to GPU that was trained on CPU:</p>
 <blockquote>
 <div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 
 <span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;accelerator&quot;</span><span class="p">:</span> <span class="s2">&quot;gpu&quot;</span><span class="p">})</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Example for loading an <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> to CPU that was saved on GPU:</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
+
+<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">,</span> <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;accelerator&quot;</span><span class="p">:</span> <span class="s2">&quot;gpu&quot;</span><span class="p">})</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -1976,8 +1987,10 @@ tasks (e.g. prediction).
 Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
 <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">Lightning Trainer documentation</a>
 for more information about the supported kwargs.</p></li>
-<li><p><strong>**kwargs</strong> – Additional kwargs for PyTorch Lightning’s <code class="xref py py-func docutils literal notranslate"><span class="pre">LightningModule.load_from_checkpoint()</span></code> method,
-For more information, read the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_module.html#load-from-checkpoint">official documentation</a>.</p></li>
+<li><p><strong>**kwargs</strong> – <p>Additional kwargs for PyTorch Lightning’s <code class="xref py py-func docutils literal notranslate"><span class="pre">LightningModule.load_from_checkpoint()</span></code> method,
+such as <code class="docutils literal notranslate"><span class="pre">map_location</span></code> to load the model onto a different device than the one on which it was saved.
+For more information, read the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_module.html#load-from-checkpoint">official documentation</a>.</p>
+</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -2655,14 +2668,43 @@ probabilistic predictions.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.block_rnn_model.BlockRNNModel.to_cpu">
 <span class="sig-name descname"><span class="pre">to_cpu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.to_cpu" title="Permalink to this definition">¶</a></dt>
-<dd><p>Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time <a href="#id27"><span class="problematic" id="id28">:fun:`fit()`</span></a> or
+<dd><p>Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time <a href="#id28"><span class="problematic" id="id29">:fun:`fit()`</span></a> or
 <a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.predict" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> is called.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.block_rnn_model.BlockRNNModel.to_onnx">
+<span class="sig-name descname"><span class="pre">to_onnx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.to_onnx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning’s
+<code class="xref py py-func docutils literal notranslate"><span class="pre">torch.onnx.export()</span></code> method (<a class="reference external" href="https://lightning.ai/docs/pytorch/stable/common/lightning_module.html#to-onnx">official documentation</a>).</p>
+<p>Note: requires <cite>onnx</cite> library (optional dependency) to be installed.</p>
+<p>Example for exporting a <code class="xref py py-class docutils literal notranslate"><span class="pre">DLinearModel</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DLinearModel</span>
+
+<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">DLinearModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">to_onnx</span><span class="p">(</span><span class="s2">&quot;my_model.onnx&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path under which to save the model at its current state. If no path is specified, the model
+is automatically saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.onnx&quot;</span></code>.</p></li>
+<li><p><strong>**kwargs</strong> – <p>Additional kwargs for PyTorch’s <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.onnx.export()</span></code> method (except parameters <code class="docutils literal notranslate"><span class="pre">file_path</span></code>,
+<code class="docutils literal notranslate"><span class="pre">input_sample</span></code>, <code class="docutils literal notranslate"><span class="pre">input_name</span></code>). For more information, read the <a class="reference external" href="https://pytorch.org/docs/master/onnx.html#torch.onnx.export">official documentation</a>.</p>
+</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.block_rnn_model.BlockRNNModel.untrained_model">
 <span class="sig-name descname"><span class="pre">untrained_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.untrained_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns a new (untrained) model instance create with the same parameters.</p>
+<dd><p>Returns a new (untrained) model instance created with the same parameters.</p>
 </dd></dl>
 
 <dl class="py property">

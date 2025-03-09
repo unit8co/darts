@@ -275,7 +275,7 @@ for a more complete example.</p>
 <span class="kn">import</span><span class="w"> </span><span class="nn">optuna</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">optuna.integration</span><span class="w"> </span><span class="kn">import</span> <span class="n">PyTorchLightningPruningCallback</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pytorch_lightning.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">EarlyStopping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pytorch_lightning.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callback</span><span class="p">,</span> <span class="n">EarlyStopping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">MaxAbsScaler</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
@@ -296,6 +296,11 @@ for a more complete example.</p>
 <span class="n">train</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
 <span class="n">val</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
 
+<span class="c1">#  workaround found in https://github.com/Lightning-AI/pytorch-lightning/issues/17485</span>
+<span class="c1"># to avoid import of both lightning and pytorch_lightning</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PatchedPruningCallback</span><span class="p">(</span><span class="n">optuna</span><span class="o">.</span><span class="n">integration</span><span class="o">.</span><span class="n">PyTorchLightningPruningCallback</span><span class="p">,</span> <span class="n">Callback</span><span class="p">):</span>
+    <span class="k">pass</span>
+
 <span class="c1"># define objective function</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">objective</span><span class="p">(</span><span class="n">trial</span><span class="p">):</span>
     <span class="c1"># select input and output chunk lengths</span>
@@ -312,7 +317,7 @@ for a more complete example.</p>
     <span class="n">include_year</span> <span class="o">=</span> <span class="n">trial</span><span class="o">.</span><span class="n">suggest_categorical</span><span class="p">(</span><span class="s2">&quot;year&quot;</span><span class="p">,</span> <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">])</span>
 
     <span class="c1"># throughout training we&#39;ll monitor the validation loss for both pruning and early stopping</span>
-    <span class="n">pruner</span> <span class="o">=</span> <span class="n">PyTorchLightningPruningCallback</span><span class="p">(</span><span class="n">trial</span><span class="p">,</span> <span class="n">monitor</span><span class="o">=</span><span class="s2">&quot;val_loss&quot;</span><span class="p">)</span>
+    <span class="n">pruner</span> <span class="o">=</span> <span class="n">PatchedPruningCallback</span><span class="p">(</span><span class="n">trial</span><span class="p">,</span> <span class="n">monitor</span><span class="o">=</span><span class="s2">&quot;val_loss&quot;</span><span class="p">)</span>
     <span class="n">early_stopper</span> <span class="o">=</span> <span class="n">EarlyStopping</span><span class="p">(</span><span class="s2">&quot;val_loss&quot;</span><span class="p">,</span> <span class="n">min_delta</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">patience</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">callbacks</span> <span class="o">=</span> <span class="p">[</span><span class="n">pruner</span><span class="p">,</span> <span class="n">early_stopper</span><span class="p">]</span>
 
@@ -367,7 +372,6 @@ for a more complete example.</p>
     <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
         <span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
         <span class="n">val_series</span><span class="o">=</span><span class="n">model_val_set</span><span class="p">,</span>
-        <span class="n">num_loader_workers</span><span class="o">=</span><span class="n">num_workers</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># reload best model over course of training</span>

@@ -307,6 +307,9 @@
 <span class="sd">            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Additional keyword arguments passed to `catboost.CatBoostRegressor`.</span>
+<span class="sd">            Native multi-output support can be achieved by using an appropriate `loss_function` (&#39;MultiRMSE&#39;,</span>
+<span class="sd">            &#39;MultiRMSEWithMissingValues&#39;). Otherwise, Darts uses its `MultiOutputRegressor` wrapper to add multi-output</span>
+<span class="sd">            support.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
@@ -382,6 +385,9 @@
             <span class="n">model</span><span class="o">=</span><span class="n">CatBoostRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
+
+        <span class="c1"># if no loss provided, get the default loss from the model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;loss_function&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_params</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;loss_function&quot;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="CatBoostModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -578,6 +584,14 @@
                 <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span>
                 <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
             <span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_supports_native_multioutput</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># CatBoostRegressor supports multi-output natively, but only with selected loss functions</span>
+        <span class="c1"># (&quot;MultiRMSE&quot;, &quot;MultiRMSEWithMissingValues&quot;, ...)</span>
+        <span class="k">return</span> <span class="n">CatBoostRegressor</span><span class="o">.</span><span class="n">_is_multiregression_objective</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;loss_function&quot;</span><span class="p">)</span>
         <span class="p">)</span></div>
 </pre></div>
 

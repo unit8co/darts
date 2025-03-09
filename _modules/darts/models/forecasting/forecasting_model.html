@@ -768,12 +768,12 @@
             <span class="n">input_series</span> <span class="k">if</span> <span class="n">input_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">_build_forecast_series</span><span class="p">(</span>
-            <span class="n">points_preds</span><span class="p">,</span>
-            <span class="n">input_series</span><span class="p">,</span>
-            <span class="n">custom_components</span><span class="p">,</span>
-            <span class="n">with_static_covs</span><span class="p">,</span>
-            <span class="n">with_hierarchy</span><span class="p">,</span>
-            <span class="n">pred_start</span><span class="p">,</span>
+            <span class="n">points_preds</span><span class="o">=</span><span class="n">points_preds</span><span class="p">,</span>
+            <span class="n">input_series</span><span class="o">=</span><span class="n">input_series</span><span class="p">,</span>
+            <span class="n">custom_columns</span><span class="o">=</span><span class="n">custom_components</span><span class="p">,</span>
+            <span class="n">with_static_covs</span><span class="o">=</span><span class="n">with_static_covs</span><span class="p">,</span>
+            <span class="n">with_hierarchy</span><span class="o">=</span><span class="n">with_hierarchy</span><span class="p">,</span>
+            <span class="n">pred_start</span><span class="o">=</span><span class="n">pred_start</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_historical_forecasts_sanity_checks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1441,6 +1441,7 @@
                             <span class="k">if</span> <span class="ow">not</span> <span class="n">predict_likelihood_parameters</span>
                             <span class="k">else</span> <span class="kc">None</span>
                         <span class="p">),</span>
+                        <span class="n">metadata</span><span class="o">=</span><span class="n">series_</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
@@ -2775,9 +2776,9 @@
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">_model_call</span>
         <span class="k">return</span> <span class="n">model_params</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">untrained_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a new (untrained) model instance create with the same parameters.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="o">**</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_params</span><span class="p">))</span>
+<div class="viewcode-block" id="ForecastingModel.untrained_model"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.forecasting_model.html#darts.models.forecasting.forecasting_model.ForecastingModel.untrained_model">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">untrained_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a new (untrained) model instance created with the same parameters.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="o">**</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_params</span><span class="p">))</span></div>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">model_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>

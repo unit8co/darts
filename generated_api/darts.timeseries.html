@@ -912,20 +912,20 @@ Read our <a class="reference external" href="https://unit8co.github.io/darts/use
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.timeseries.</span></span><span class="sig-name descname"><span class="pre">TimeSeries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xa</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Create a TimeSeries from a (well formed) DataArray.
+<p>Create a TimeSeries from a (well-formed) DataArray.
 It is recommended to use the factory methods to create TimeSeries instead.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><a class="reference internal" href="#darts.timeseries.TimeSeries.from_dataframe" title="darts.timeseries.TimeSeries.from_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TimeSeries.from_dataframe</span></code></a></dt><dd><p>Create from a <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>.</p>
+<dt><a class="reference internal" href="#darts.timeseries.TimeSeries.from_dataframe" title="darts.timeseries.TimeSeries.from_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TimeSeries.from_dataframe</span></code></a></dt><dd><p>Create from a <cite>DataFrame</cite> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">polars.DataFrame</span></code>, and other backends).</p>
 </dd>
 <dt><a class="reference internal" href="#darts.timeseries.TimeSeries.from_group_dataframe" title="darts.timeseries.TimeSeries.from_group_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TimeSeries.from_group_dataframe</span></code></a></dt><dd><p>Create multiple TimeSeries by groups from a <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>.</p>
 </dd>
-<dt><a class="reference internal" href="#darts.timeseries.TimeSeries.from_series" title="darts.timeseries.TimeSeries.from_series"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TimeSeries.from_series</span></code></a></dt><dd><p>Create from a <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code>.</p>
+<dt><a class="reference internal" href="#darts.timeseries.TimeSeries.from_series" title="darts.timeseries.TimeSeries.from_series"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TimeSeries.from_series</span></code></a></dt><dd><p>Create from a <cite>Series</cite> (<code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Series</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">polars.Series</span></code>, and other backends).</p>
 </dd>
-<dt><a class="reference internal" href="#darts.timeseries.TimeSeries.from_values" title="darts.timeseries.TimeSeries.from_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TimeSeries.from_values</span></code></a></dt><dd><p>Create from a NumPy <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>.</p>
+<dt><a class="reference internal" href="#darts.timeseries.TimeSeries.from_values" title="darts.timeseries.TimeSeries.from_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TimeSeries.from_values</span></code></a></dt><dd><p>Create from a <code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>.</p>
 </dd>
-<dt><a class="reference internal" href="#darts.timeseries.TimeSeries.from_times_and_values" title="darts.timeseries.TimeSeries.from_times_and_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TimeSeries.from_times_and_values</span></code></a></dt><dd><p>Create from a time index and a Numpy <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>.</p>
+<dt><a class="reference internal" href="#darts.timeseries.TimeSeries.from_times_and_values" title="darts.timeseries.TimeSeries.from_times_and_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TimeSeries.from_times_and_values</span></code></a></dt><dd><p>Create from a time index and a <code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>.</p>
 </dd>
 <dt><a class="reference internal" href="#darts.timeseries.TimeSeries.from_csv" title="darts.timeseries.TimeSeries.from_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TimeSeries.from_csv</span></code></a></dt><dd><p>Create from a CSV file.</p>
 </dd>
@@ -972,26 +972,32 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.has_hierarchy" title="darts.timeseries.TimeSeries.has_hierarchy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_hierarchy</span></code></a></p></td>
 <td><p>Whether this series is hierarchical or not.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.has_range_index" title="darts.timeseries.TimeSeries.has_range_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_range_index</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.has_metadata" title="darts.timeseries.TimeSeries.has_metadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_metadata</span></code></a></p></td>
+<td><p>Whether this series contains metadata.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.has_range_index" title="darts.timeseries.TimeSeries.has_range_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_range_index</span></code></a></p></td>
 <td><p>Whether this series is indexed with an RangeIndex (otherwise it is indexed with a DatetimeIndex).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.has_static_covariates" title="darts.timeseries.TimeSeries.has_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_static_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.has_static_covariates" title="darts.timeseries.TimeSeries.has_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_static_covariates</span></code></a></p></td>
 <td><p>Whether this series contains static covariates.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.hierarchy" title="darts.timeseries.TimeSeries.hierarchy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hierarchy</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.hierarchy" title="darts.timeseries.TimeSeries.hierarchy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hierarchy</span></code></a></p></td>
 <td><p>The hierarchy of this TimeSeries, if any.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.is_deterministic" title="darts.timeseries.TimeSeries.is_deterministic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_deterministic</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.is_deterministic" title="darts.timeseries.TimeSeries.is_deterministic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_deterministic</span></code></a></p></td>
 <td><p>Whether this series is deterministic.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.is_probabilistic" title="darts.timeseries.TimeSeries.is_probabilistic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_probabilistic</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.is_probabilistic" title="darts.timeseries.TimeSeries.is_probabilistic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_probabilistic</span></code></a></p></td>
 <td><p>Whether this series is stochastic (= probabilistic).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.is_stochastic" title="darts.timeseries.TimeSeries.is_stochastic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_stochastic</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.is_stochastic" title="darts.timeseries.TimeSeries.is_stochastic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_stochastic</span></code></a></p></td>
 <td><p>Whether this series is stochastic.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.is_univariate" title="darts.timeseries.TimeSeries.is_univariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_univariate</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.is_univariate" title="darts.timeseries.TimeSeries.is_univariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_univariate</span></code></a></p></td>
 <td><p>Whether this series is univariate.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.metadata" title="darts.timeseries.TimeSeries.metadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">metadata</span></code></a></p></td>
+<td><p>The metadata of this TimeSeries, if any.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.n_components" title="darts.timeseries.TimeSeries.n_components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">n_components</span></code></a></p></td>
 <td><p>Number of components (dimensions) contained in the series.</p></td>
@@ -1099,7 +1105,7 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 <td><p>Read a pickled <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_series" title="darts.timeseries.TimeSeries.from_series"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_series</span></code></a>(pd_series[, fill_missing_dates, ...])</p></td>
-<td><p>Build a univariate deterministic series from a pandas Series.</p></td>
+<td><p>Build a univariate deterministic TimeSeries from a Series.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_times_and_values" title="darts.timeseries.TimeSeries.from_times_and_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_times_and_values</span></code></a>(times, values[, ...])</p></td>
 <td><p>Build a series from a time index and value array.</p></td>
@@ -1159,7 +1165,7 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 <td><p>Return a Pandas DataFrame representation of this time series.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.pd_series" title="darts.timeseries.TimeSeries.pd_series"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pd_series</span></code></a>([copy])</p></td>
-<td><p>Return a Pandas Series representation of this univariate deterministic time series.</p></td>
+<td><p>Return a Pandas Series representation of this time series.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.plot" title="darts.timeseries.TimeSeries.plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot</span></code></a>([new_plot, central_quantile, ...])</p></td>
 <td><p>Plot the series.</p></td>
@@ -1245,11 +1251,17 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.to_csv" title="darts.timeseries.TimeSeries.to_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_csv</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Writes this deterministic series to a CSV file.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.to_json" title="darts.timeseries.TimeSeries.to_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_json</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.to_dataframe" title="darts.timeseries.TimeSeries.to_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_dataframe</span></code></a>([copy, backend, time_as_index, ...])</p></td>
+<td><p>Return a DataFrame representation of this time series in a given <cite>backend</cite>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.to_json" title="darts.timeseries.TimeSeries.to_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_json</span></code></a>()</p></td>
 <td><p>Return a JSON string representation of this deterministic series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.to_pickle" title="darts.timeseries.TimeSeries.to_pickle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_pickle</span></code></a>(path[, protocol])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.to_pickle" title="darts.timeseries.TimeSeries.to_pickle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_pickle</span></code></a>(path[, protocol])</p></td>
 <td><p>Save this series in pickle format.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.to_series" title="darts.timeseries.TimeSeries.to_series"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_series</span></code></a>([copy, backend])</p></td>
+<td><p>Return a Series representation of this time series in a given <cite>backend</cite>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.univariate_component" title="darts.timeseries.TimeSeries.univariate_component"><code class="xref py py-obj docutils literal notranslate"><span class="pre">univariate_component</span></code></a>(index)</p></td>
 <td><p>Retrieve one of the components of the series and return it as new univariate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instance.</p></td>
@@ -1272,13 +1284,16 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_hierarchy" title="darts.timeseries.TimeSeries.with_hierarchy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_hierarchy</span></code></a>(hierarchy)</p></td>
 <td><p>Adds a hierarchy to the TimeSeries.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_static_covariates" title="darts.timeseries.TimeSeries.with_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_static_covariates</span></code></a>(covariates)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_metadata" title="darts.timeseries.TimeSeries.with_metadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_metadata</span></code></a>(metadata)</p></td>
+<td><p>Adds metadata to the TimeSeries.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_static_covariates" title="darts.timeseries.TimeSeries.with_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_static_covariates</span></code></a>(covariates)</p></td>
 <td><p>Returns a new TimeSeries object with added static covariates.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_times_and_values" title="darts.timeseries.TimeSeries.with_times_and_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_times_and_values</span></code></a>(times, values[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_times_and_values" title="darts.timeseries.TimeSeries.with_times_and_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_times_and_values</span></code></a>(times, values[, ...])</p></td>
 <td><p>Return a new <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> similar to this one but with new specified values.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_values" title="darts.timeseries.TimeSeries.with_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_values</span></code></a>(values)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_values" title="darts.timeseries.TimeSeries.with_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_values</span></code></a>(values)</p></td>
 <td><p>Return a new <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> similar to this one but with new specified values.</p></td>
 </tr>
 </tbody>
@@ -1468,7 +1483,7 @@ order as they appear in the series, or None if the series has no hierarchy.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.concatenate">
-<span class="sig-name descname"><span class="pre">concatenate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_time_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.concatenate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.concatenate" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">concatenate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_time_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.concatenate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.concatenate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Concatenate another timeseries to the current one along given axis.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1477,13 +1492,15 @@ order as they appear in the series, or None if the series has no hierarchy.</p>
 <li><p><strong>axis</strong> (<em>str</em><em> or </em><em>int</em>) – axis along which timeseries will be concatenated. [‘time’, ‘component’ or ‘sample’; Default: 0 (time)]</p></li>
 <li><p><strong>ignore_time_axis</strong> (<em>bool</em><em>, </em><em>default False</em>) – Ignore errors when time axis varies for some timeseries. Note that this may yield unexpected results</p></li>
 <li><p><strong>ignore_static_covariates</strong> (<em>bool</em>) – whether to ignore all requirements for static covariate concatenation and only transfer the
-static covariates of the first TimeSeries element in <cite>series</cite> to the concatenated TimeSeries.
+static covariates of the current (<cite>self</cite>) timeseries to the concatenated timeseries.
 Only effective when <cite>axis=1</cite>.</p></li>
 <li><p><strong>drop_hierarchy</strong> (<em>bool</em>) – When <cite>axis=1</cite>, whether to drop hierarchy information. True by default.
 When False, the hierarchies will be “concatenated” as well
 (by merging the hierarchy dictionaries), which may cause issues if the component
 names of the resulting series and that of the merged hierarchy do not match.
 When <cite>axis=0</cite> or <cite>axis=2</cite>, the hierarchy of the first series is always kept.</p></li>
+<li><p><strong>drop_metadata</strong> (<em>bool</em>) – Whether to drop the metadata information of the concatenated timeseries. False by default.
+When False, the concatenated series will inherit the metadata from the current (<cite>self</cite>) timeseries.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1539,7 +1556,7 @@ the resulting series, and the other series will have its time index ignored.</p>
 <dd><p>Return the <code class="docutils literal notranslate"><span class="pre">xarray.DataArray</span></code> representation underlying this series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>copy</strong> – Whether to return a copy of the series. Leave it to True unless you know what you are doing.</p>
+<dd class="field-odd"><p><strong>copy</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to return a copy of the series. Leave it to True unless you know what you are doing.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The xarray DataArray underlying this time series.</p>
@@ -1713,7 +1730,7 @@ An integer (step size) if series is indexed with a <cite>pd.RangeIndex</cite>.</
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.from_csv">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath_or_buffer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_missing_dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillna_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_csv" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath_or_buffer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_missing_dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillna_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_csv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build a deterministic TimeSeries instance built from a single CSV file.
 One column can be used to represent the time (if not present, the time index will be a RangeIndex)
 and a list of columns <cite>value_cols</cite> can be used to indicate the values for this time series.</p>
@@ -1762,6 +1779,7 @@ be encoded as follows.</p>
 <p>The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
 different levels are consistent), see <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html">hierarchical reconciliation</a>.</p>
 </p></li>
+<li><p><strong>metadata</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a dictionary with metadata to be added to the TimeSeries.</p></li>
 <li><p><strong>**kwargs</strong> – Optional arguments to be passed to <cite>pandas.read_csv</cite> function</p></li>
 </ul>
 </dd>
@@ -1772,18 +1790,25 @@ different levels are consistent), see <a class="reference external" href="https:
 <dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_csv</span><span class="p">(</span><span class="s2">&quot;data.csv&quot;</span><span class="p">,</span> <span class="n">time_col</span><span class="o">=</span><span class="s2">&quot;time&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.from_dataframe">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_missing_dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillna_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_dataframe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_dataframe" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_missing_dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillna_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_dataframe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_dataframe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
 One column (or the DataFrame index) has to represent the time,
 and a list of columns <cite>value_cols</cite> has to represent the values for this time series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>df</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>) – The DataFrame</p></li>
+<li><p><strong>df</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>]) – The DataFrame, or anything which can be converted to a narwhals DataFrame (e.g. pandas.DataFrame,
+polars.DataFrame, …). See the <a class="reference external" href="https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native">narwhals documentation</a> for more
+information.</p></li>
 <li><p><strong>time_col</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
 timestamps) or a RangeIndex (if it contains integers).
 If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
@@ -1791,7 +1816,7 @@ either a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index that can b
 RangeIndex. It is better if the index has no holes; alternatively setting <cite>fill_missing_dates</cite> can in some
 cases solve these issues (filling holes with NaN, or with the provided <cite>fillna_value</cite> numeric value, if
 any).</p></li>
-<li><p><strong>value_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
+<li><p><strong>value_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
 <cite>None</cite>, the whole DataFrame will be used.</p></li>
 <li><p><strong>fill_missing_dates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
 with NaN values. This requires either a provided <cite>freq</cite> or the possibility to infer the frequency from the
@@ -1830,6 +1855,7 @@ be encoded as follows.</p>
 <p>The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
 different levels are consistent), see <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html">hierarchical reconciliation</a>.</p>
 </p></li>
+<li><p><strong>metadata</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a dictionary with metadata to be added to the TimeSeries.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1839,11 +1865,33 @@ different levels are consistent), see <a class="reference external" href="https:
 <dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_index</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># create values and times with daily frequency</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;vals&quot;</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">generate_index</span><span class="p">(</span><span class="s2">&quot;2020-01-01&quot;</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;D&quot;</span><span class="p">)}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># create from `pandas.DataFrame`</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">time_col</span><span class="o">=</span><span class="s2">&quot;time&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># shape (n time steps, n components, n samples)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(3, 1, 1)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># or from `polars.DataFrame` (make sure Polars is installed)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">time_col</span><span class="o">=</span><span class="s2">&quot;time&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(3, 1, 1)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.from_group_dataframe">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_group_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group_cols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_missing_dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillna_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_group_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_group_dataframe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_group_dataframe" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_group_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group_cols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_missing_dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillna_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_group_cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_group_dataframe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_group_dataframe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build a list of TimeSeries instances grouped by a selection of columns from a DataFrame.
 One column (or the DataFrame index) has to represent the time,
 a list of columns <cite>group_cols</cite> must be used for extracting the individual TimeSeries by groups,
@@ -1869,8 +1917,11 @@ RangeIndex. Be aware that the index must represents the actual index of each ind
 <cite>None</cite>, the whole DataFrame will be used.</p></li>
 <li><p><strong>static_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A string or list of strings representing static variable columns from the DataFrame that should be
 appended as static covariates to the resulting TimeSeries groups. Different to <cite>group_cols</cite>, the
-DataFrame is not grouped by these columns. Note that for every group, there must be exactly one
-unique value.</p></li>
+DataFrame is not grouped by these columns. Uses the first encountered value per group and column
+(assumes that there is only one unique value). Static covariates can be used as input features to all
+Darts models that support it.</p></li>
+<li><p><strong>metadata_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Same as <cite>static_cols</cite> but appended as metadata to the resulting TimeSeries groups. Metadata will never be
+used by the underlying Darts models.</p></li>
 <li><p><strong>fill_missing_dates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
 with NaN values. This requires either a provided <cite>freq</cite> or the possibility to infer the frequency from the
 provided timestamps. See <code class="xref py py-meth docutils literal notranslate"><span class="pre">_fill_missing_dates()</span></code> for more info.</p></li>
@@ -1894,11 +1945,40 @@ If an integer, represents the step size of the pandas Index or pandas RangeIndex
 <dd class="field-odd"><p>List[<a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]</p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_index</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># create a DataFrame with two series that have different ids,</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># values, and frequencies</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df_1</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="s2">&quot;vals&quot;</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">generate_index</span><span class="p">(</span><span class="s2">&quot;2020-01-01&quot;</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;D&quot;</span><span class="p">)}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df_2</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">6</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="s2">&quot;vals&quot;</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="mi">6</span><span class="p">),</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">generate_index</span><span class="p">(</span><span class="s2">&quot;2020-01-01&quot;</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">)}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df_1</span><span class="p">,</span> <span class="n">df_2</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># extract the series by &quot;ID&quot; groups from the DataFrame</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series_multi</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_group_dataframe</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">df</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">group_cols</span><span class="o">=</span><span class="s2">&quot;ID&quot;</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">time_col</span><span class="o">=</span><span class="s2">&quot;time&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">len</span><span class="p">(</span><span class="n">series_multi</span><span class="p">),</span> <span class="n">series_multi</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">series_multi</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(2, (3, 1, 1), (6, 1, 1))</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.from_json">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json_str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_json" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json_str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_json" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build a series from the JSON String representation of a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>
 (produced using <a class="reference internal" href="#darts.timeseries.TimeSeries.to_json" title="darts.timeseries.TimeSeries.to_json"><code class="xref py py-func docutils literal notranslate"><span class="pre">TimeSeries.to_json()</span></code></a>).</p>
 <p>At the moment this only supports deterministic time series (i.e., made of 1 sample).</p>
@@ -1933,6 +2013,7 @@ be encoded as follows.</p>
 <p>The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
 different levels are consistent), see <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html">hierarchical reconciliation</a>.</p>
 </p></li>
+<li><p><strong>metadata</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a dictionary with metadata to be added to the TimeSeries.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1942,6 +2023,16 @@ different levels are consistent), see <a class="reference external" href="https:
 <dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">json_str</span> <span class="o">=</span> <span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="s1">&#39;{&quot;columns&quot;:[&quot;vals&quot;],&quot;index&quot;:[&quot;2020-01-01&quot;,&quot;2020-01-02&quot;,&quot;2020-01-03&quot;],&quot;data&quot;:[[0.0],[1.0],[2.0]]}&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="s2">&quot;data.csv&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(3, 1, 1)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -1971,8 +2062,8 @@ different levels are consistent), see <a class="reference external" href="https:
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.from_series">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pd_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_missing_dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillna_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_series" title="Permalink to this definition">¶</a></dt>
-<dd><p>Build a univariate deterministic series from a pandas Series.</p>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pd_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_missing_dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillna_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build a univariate deterministic TimeSeries from a Series.</p>
 <p>The series must contain an index that is either a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index
 that can be converted into a RangeIndex. It is better if the index has no holes; alternatively setting
 <cite>fill_missing_dates</cite> can in some cases solve these issues (filling holes with NaN, or with the provided
@@ -1980,7 +2071,10 @@ that can be converted into a RangeIndex. It is better if the index has no holes;
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>pd_series</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>) – The pandas Series instance.</p></li>
+<li><p><strong>pd_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>]) – <p>The Series, or anything which can be converted to a narwhals Series (e.g. pandas.Series, …). See the
+<a class="reference external" href="https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native">narwhals documentation</a> for more
+information.</p>
+</p></li>
 <li><p><strong>fill_missing_dates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
 with NaN values. This requires either a provided <cite>freq</cite> or the possibility to infer the frequency from the
 provided timestamps. See <code class="xref py py-meth docutils literal notranslate"><span class="pre">_fill_missing_dates()</span></code> for more info.</p></li>
@@ -1994,6 +2088,7 @@ If an integer, represents the step size of the pandas Index or pandas RangeIndex
 <li><p><strong>static_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a
 single-row pandas DataFrame. If a Series, the index represents the static variables. If a DataFrame, the
 columns represent the static variables and the single row represents the univariate TimeSeries component.</p></li>
+<li><p><strong>metadata</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a dictionary with metadata to be added to the TimeSeries.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -2003,11 +2098,25 @@ columns represent the static variables and the single row represents the univari
 <dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_index</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># create values and times with daily frequency</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vals</span><span class="p">,</span> <span class="n">times</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">generate_index</span><span class="p">(</span><span class="s2">&quot;2020-01-01&quot;</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;D&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># create from `pandas.Series`</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pd_series</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">times</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_series</span><span class="p">(</span><span class="n">pd_series</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(3, 1, 1)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.from_times_and_values">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_times_and_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">times</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_missing_dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillna_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_times_and_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_times_and_values" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_times_and_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">times</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_missing_dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillna_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_times_and_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_times_and_values" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build a series from a time index and value array.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -2057,6 +2166,7 @@ be encoded as follows.</p>
 <p>The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
 different levels are consistent), see <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html">hierarchical reconciliation</a>.</p>
 </p></li>
+<li><p><strong>metadata</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a dictionary with metadata to be added to the TimeSeries.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -2066,11 +2176,22 @@ different levels are consistent), see <a class="reference external" href="https:
 <dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_index</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># create values and times with daily frequency</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vals</span><span class="p">,</span> <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">generate_index</span><span class="p">(</span><span class="s2">&quot;2020-01-01&quot;</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;D&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">vals</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(3, 1, 1)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.from_values">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillna_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_values" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillna_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_values" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build an integer-indexed series from an array of values.
 The series will have an integer index (RangeIndex).</p>
 <dl class="field-list simple">
@@ -2108,6 +2229,7 @@ be encoded as follows.</p>
 <p>The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
 different levels are consistent), see <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html">hierarchical reconciliation</a>.</p>
 </p></li>
+<li><p><strong>metadata</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a dictionary with metadata to be added to the TimeSeries.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -2117,6 +2239,16 @@ different levels are consistent), see <a class="reference external" href="https:
 <dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_index</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">vals</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(3, 1, 1)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -2157,6 +2289,30 @@ If an integer, represents the step size of the pandas Index or pandas RangeIndex
 <dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">DIMS</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_index</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># create values with the required dimensions (time, component, sample)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># create time index with daily frequency</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">times</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span><span class="s2">&quot;2020-01-01&quot;</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;D&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;vals&quot;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># create xarray with the required dimensions and coordinates</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">xa</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">vals</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">dims</span><span class="o">=</span><span class="n">DIMS</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">times</span><span class="p">,</span> <span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">columns</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_xarray</span><span class="p">(</span><span class="n">xa</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(3, 1, 1)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -2245,6 +2401,17 @@ is present in the series time index, otherwise will raise a ValueError.</p>
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.has_hierarchy">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">has_hierarchy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.has_hierarchy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether this series is hierarchical or not.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.timeseries.TimeSeries.has_metadata">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">has_metadata</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.has_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether this series contains metadata.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
@@ -2557,6 +2724,17 @@ a deterministic <code class="docutils literal notranslate"><span class="pre">Tim
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.timeseries.TimeSeries.metadata">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">metadata</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>The metadata of this TimeSeries, if any.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.min">
 <span class="sig-name descname"><span class="pre">min</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.min"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.min" title="Permalink to this definition">¶</a></dt>
@@ -2622,7 +2800,10 @@ as ‘component_s#’ (e.g. with two components and two samples:
 ‘comp0_s0’, ‘comp0_s1’ ‘comp1_s0’ ‘comp1_s1’).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>copy</strong> – Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>copy</strong> – Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.</p></li>
+<li><p><strong>suppress_warnings</strong> – Whether to suppress the warnings for the <cite>DataFrame</cite> creation.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>The Pandas DataFrame representation of this time series</p>
@@ -2636,11 +2817,11 @@ as ‘component_s#’ (e.g. with two components and two samples:
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.pd_series">
 <span class="sig-name descname"><span class="pre">pd_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.pd_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.pd_series" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a Pandas Series representation of this univariate deterministic time series.</p>
+<dd><p>Return a Pandas Series representation of this time series.</p>
 <p>Works only for univariate series that are deterministic (i.e., made of 1 sample).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>copy</strong> – Whether to return a copy of the series. Leave it to True unless you know what you are doing.</p>
+<dd class="field-odd"><p><strong>copy</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to return a copy of the series. Leave it to True unless you know what you are doing.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>A Pandas Series representation of this univariate time series.</p>
@@ -2653,7 +2834,7 @@ as ‘component_s#’ (e.g. with two components and two samples:
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.plot">
-<span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">central_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_formatting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_nr_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.plot" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">central_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_formatting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_nr_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the series.</p>
 <p>This is a wrapper method around <code class="xref py py-func docutils literal notranslate"><span class="pre">xarray.DataArray.plot()</span></code>.</p>
 <dl class="field-list simple">
@@ -2679,8 +2860,14 @@ the series, the labels will be mapped to the components in order.</p></li>
 <li><p><strong>max_nr_components</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximum number of components of a series to plot. -1 means all components will be plotted.</p></li>
 <li><p><strong>ax</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an axis to plot on. If <cite>None</cite>, and <cite>new_plot=False</cite>, will use the current axis. If
 <cite>new_plot=True</cite>, will create a new axis.</p></li>
-<li><p><strong>alpha</strong> – Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
+<li><p><strong>alpha</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
 probabilistic series.</p></li>
+<li><p><strong>color</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Can either be a single color or list of colors. Any matplotlib color is accepted (string, hex string,
+RGB/RGBA tuple). If a single color and the series only has a single component, it is used as the color
+for that component. If a single color and the series has multiple components, it is used as the color
+for each component. If a list of colors with length equal to the number of components in the series, the
+colors will be mapped to the components in order.</p></li>
+<li><p><strong>c</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – An alias for <cite>color</cite>.</p></li>
 <li><p><strong>args</strong> – some positional arguments for the <cite>plot()</cite> method</p></li>
 <li><p><strong>kwargs</strong> – some keyword arguments for the <cite>plot()</cite> method</p></li>
 </ul>
@@ -2880,6 +3067,12 @@ to start the resampling and avoid nan at the first value of the resampled TimeSe
 For more information, see the <a class="reference external" href="https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html">xarray resample() documentation</a>.</p></li>
 </ul>
 </dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A reindexed TimeSeries with given frequency.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
 </dl>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">times</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;20200101233000&quot;</span><span class="p">),</span> <span class="n">periods</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;15min&quot;</span><span class="p">)</span>
@@ -2917,14 +3110,6 @@ For more information, see the <a class="reference external" href="https://docs.x
 <span class="go">[4.5]]</span>
 </pre></div>
 </div>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>A reindexed TimeSeries with given frequency.</p>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -3349,11 +3534,40 @@ a deterministic <code class="docutils literal notranslate"><span class="pre">Tim
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.to_csv">
 <span class="sig-name descname"><span class="pre">to_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.to_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.to_csv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Writes this deterministic series to a CSV file.
-For a list of parameters, refer to the documentation of <code class="xref py py-func docutils literal notranslate"><span class="pre">pandas.DataFrame.to_csv()</span></code> <a class="reference internal" href="#r27685d4f6729-1" id="id11">[1]</a>.</p>
+For a list of parameters, refer to the documentation of <code class="xref py py-func docutils literal notranslate"><span class="pre">pandas.DataFrame.to_csv()</span></code> <a class="reference internal" href="#r27685d4f6729-1" id="id12">[1]</a>.</p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r27685d4f6729-1"><span class="brackets"><a class="fn-backref" href="#id11">1</a></span></dt>
+<dt class="label" id="r27685d4f6729-1"><span class="brackets"><a class="fn-backref" href="#id12">1</a></span></dt>
 <dd><p><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.timeseries.TimeSeries.to_dataframe">
+<span class="sig-name descname"><span class="pre">to_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Implementation.PANDAS</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_as_index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suppress_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.to_dataframe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.to_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a DataFrame representation of this time series in a given <cite>backend</cite>.</p>
+<p>Each of the series components will appear as a column in the DataFrame.
+If the series is stochastic, the samples are returned as columns of the dataframe with column names
+as ‘component_s#’ (e.g. with two components and two samples:
+‘comp0_s0’, ‘comp0_s1’ ‘comp1_s0’ ‘comp1_s1’).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>copy</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.</p></li>
+<li><p><strong>backend</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">module</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Implementation</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – <p>The backend to which to export the <cite>TimeSeries</cite>. See the <a class="reference external" href="https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict">narwhals documentation</a> for all supported
+backends.</p>
+</p></li>
+<li><p><strong>time_as_index</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to set the time index as the index of the dataframe or in the left-most column.
+Only effective with the pandas <cite>backend</cite>.</p></li>
+<li><p><strong>suppress_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to suppress the warnings for the <cite>DataFrame</cite> creation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A DataFrame representation of this time series in the given <cite>backend</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>DataFrame</p>
 </dd>
 </dl>
 </dd></dl>
@@ -3389,11 +3603,31 @@ covariates can be added with input argument <cite>static_covariates</cite>.</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>Xarray docs <a class="reference internal" href="#r49f1ae5c3069-1" id="id12">[1]</a> suggest not using pickle as a long-term data storage.</p>
+<p>Xarray docs <a class="reference internal" href="#r49f1ae5c3069-1" id="id14">[1]</a> suggest not using pickle as a long-term data storage.</p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r49f1ae5c3069-1"><span class="brackets"><a class="fn-backref" href="#id12">1</a></span></dt>
+<dt class="label" id="r49f1ae5c3069-1"><span class="brackets"><a class="fn-backref" href="#id14">1</a></span></dt>
 <dd><p><a class="reference external" href="http://xarray.pydata.org/en/stable/user-guide/io.html#pickle">http://xarray.pydata.org/en/stable/user-guide/io.html#pickle</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.timeseries.TimeSeries.to_series">
+<span class="sig-name descname"><span class="pre">to_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Implementation.PANDAS</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.to_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.to_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a Series representation of this time series in a given <cite>backend</cite>.</p>
+<p>Works only for univariate series that are deterministic (i.e., made of 1 sample).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>copy</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to return a copy of the series. Leave it to True unless you know what you are doing.</p></li>
+<li><p><strong>backend</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">module</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Implementation</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – <p>The backend to which to export the <cite>TimeSeries</cite>. See the <a class="reference external" href="https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict">narwhals documentation</a> for all supported
+backends.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>A Series representation of this univariate time series in a given <cite>backend</cite>.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -3718,7 +3952,40 @@ the following dictionary would encode the groupings shown on
 </div>
 </p>
 </dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A new TimeSeries with the given hierarchy.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.timeseries.TimeSeries.with_metadata">
+<span class="sig-name descname"><span class="pre">with_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metadata</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.with_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.with_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds metadata to the TimeSeries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>metadata</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A dictionary with metadata to be added to the TimeSeries.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A new TimeSeries with the given metadata.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.timeseries_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">linear_timeseries</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">linear_timeseries</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># add metadata</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">metadata</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;my_series&#39;</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">with_metadata</span><span class="p">(</span><span class="n">metadata</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span><span class="o">.</span><span class="n">metadata</span>
+<span class="go">{&#39;name&#39;: &#39;my_series&#39;}</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -3735,6 +4002,12 @@ TimeSeries. If a DataFrame, the columns represent the static variables and the r
 components of the uni/multivariate TimeSeries. If a single-row DataFrame, the covariates are globally
 ‘applied’ to all components of the TimeSeries. If a multi-row DataFrame, the number of rows must match the
 number of components of the TimeSeries. This adds component-specific static covariates.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A new TimeSeries with the given static covariates.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
@@ -3823,27 +4096,29 @@ and componentns, but may contain a different number of samples.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.timeseries.concatenate">
-<span class="sig-prename descclassname"><span class="pre">darts.timeseries.</span></span><span class="sig-name descname"><span class="pre">concatenate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_time_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#concatenate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.concatenate" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.timeseries.</span></span><span class="sig-name descname"><span class="pre">concatenate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_time_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#concatenate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.concatenate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Concatenates multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> along a given axis.</p>
 <p><code class="docutils literal notranslate"><span class="pre">axis</span></code> can be an integer in (0, 1, 2) to denote (time, component, sample) or, alternatively,
 a string denoting the corresponding dimension of the underlying <code class="docutils literal notranslate"><span class="pre">DataArray</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> (<em>Sequence</em><em>[</em><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a><em>]</em>) – sequence of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> to concatenate</p></li>
-<li><p><strong>axis</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>int</em><em>]</em>) – axis along which the series will be concatenated.</p></li>
+<li><p><strong>series</strong> (<em>Sequence</em><em>[</em><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a><em>]</em>) – Sequence of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> to concatenate</p></li>
+<li><p><strong>axis</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>int</em><em>]</em>) – Axis along which the series will be concatenated.</p></li>
 <li><p><strong>ignore_time_axis</strong> (<em>bool</em>) – Allow concatenation even when some series do not have matching time axes.
 When done along component or sample dimensions, concatenation will work as long as the series
 have the same lengths (in this case the resulting series will have the time axis of the first
 provided series). When done along time dimension, concatenation will work even if the time axes
 are not contiguous (in this case, the resulting series will have a start time matching the start time
 of the first provided series). Default: False.</p></li>
-<li><p><strong>ignore_static_covariates</strong> (<em>bool</em>) – whether to ignore all requirements for static covariate concatenation and only transfer the static covariates
+<li><p><strong>ignore_static_covariates</strong> (<em>bool</em>) – Whether to ignore all requirements for static covariate concatenation and only transfer the static covariates
 of the first TimeSeries element in <cite>series</cite> to the concatenated TimeSeries. Only effective when <cite>axis=1</cite>.</p></li>
 <li><p><strong>drop_hierarchy</strong> (<em>bool</em>) – When <cite>axis=1</cite>, whether to drop hierarchy information. True by default. When False, the hierarchies will be
 “concatenated” as well (by merging the hierarchy dictionaries), which may cause issues if the component
 names of the resulting series and that of the merged hierarchy do not match.
 When <cite>axis=0</cite> or <cite>axis=2</cite>, the hierarchy of the first series is always kept.</p></li>
+<li><p><strong>drop_metadata</strong> (<em>bool</em>) – Whether to drop the metadata information of the concatenated series. False by default.
+When False, the concatenated series will inherit the metadata from the first TimeSeries element in <cite>series</cite>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>

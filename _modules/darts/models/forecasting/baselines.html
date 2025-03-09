@@ -584,6 +584,7 @@
             <span class="n">columns</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
             <span class="n">static_covariates</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
             <span class="n">hierarchy</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">prediction</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_average</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prediction</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
@@ -619,6 +620,7 @@
             <span class="n">columns</span><span class="o">=</span><span class="n">prediction</span><span class="o">.</span><span class="n">components</span><span class="p">[:</span> <span class="n">likelihood_n_params</span> <span class="o">*</span> <span class="n">n_components</span><span class="p">],</span>
             <span class="n">static_covariates</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">hierarchy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">prediction</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
         <span class="p">)</span></div>
 </pre></div>
 

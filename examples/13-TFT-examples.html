@@ -842,7 +842,7 @@ model.predict(*args, **kwargs, num_samples=1)
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
 <span class="c1"># we convert monthly number of passengers to average daily number of passengers per month</span>
-<span class="n">series</span> <span class="o">=</span> <span class="n">series</span> <span class="o">/</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_series</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">days_in_month</span><span class="p">)</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">series</span> <span class="o">/</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">days_in_month</span><span class="p">)</span>
 <span class="n">series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
 <span class="c1"># Create training and validation sets:</span>
@@ -1164,7 +1164,7 @@ MAPE: 4.90%
 <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ice cream&quot;</span><span class="p">,</span> <span class="s2">&quot;heater&quot;</span><span class="p">]:</span>
     <span class="n">converted_series</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
         <span class="n">series_ice_heater</span><span class="p">[</span><span class="n">col</span><span class="p">]</span>
-        <span class="o">/</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_series</span><span class="p">(</span><span class="n">series_ice_heater</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">days_in_month</span><span class="p">)</span>
+        <span class="o">/</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">series_ice_heater</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">days_in_month</span><span class="p">)</span>
     <span class="p">)</span>
 <span class="n">converted_series</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">(</span><span class="n">converted_series</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">converted_series</span> <span class="o">=</span> <span class="n">converted_series</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;20100101&quot;</span><span class="p">)</span> <span class="p">:]</span>

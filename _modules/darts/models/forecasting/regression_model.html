@@ -680,10 +680,17 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">output_chunk_shift</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_chunk_shift</span>
 
-<div class="viewcode-block" id="RegressionModel.get_multioutput_estimator"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel.get_multioutput_estimator">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_multioutput_estimator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">target_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<div class="viewcode-block" id="RegressionModel.get_estimator"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel.get_estimator">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_estimator</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">target_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">quantile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the estimator that forecasts the `horizon`th step of the `target_dim`th target component.</span>
 
-<span class="sd">        Internally, estimators are grouped by `output_chunk_length` position, then by component.</span>
+<span class="sd">        For probabilistic models fitting quantiles, it is possible to also specify the quantile.</span>
+
+<span class="sd">        The model is returned directly if it supports multi-output natively.</span>
+
+<span class="sd">        Note: Internally, estimators are grouped by `output_chunk_length` position, then by component. For probabilistic</span>
+<span class="sd">        models fitting quantiles, there is an additional abstraction layer, grouping the estimators by `quantile`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -691,51 +698,55 @@
 <span class="sd">            The index of the forecasting point within `output_chunk_length`.</span>
 <span class="sd">        target_dim</span>
 <span class="sd">            The index of the target component.</span>
+<span class="sd">        quantile</span>
+<span class="sd">            Optionally, for probabilistic model with `likelihood=&quot;quantile&quot;`, a quantile value.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">MultiOutputRegressor</span><span class="p">),</span>
-            <span class="s2">&quot;The sklearn model is not a MultiOutputRegressor object.&quot;</span><span class="p">,</span>
-            <span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">horizon</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">&quot;`horizon` must be `&gt;= 0` and `&lt; output_chunk_length=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="si">}</span><span class="s2">`.&quot;</span><span class="p">,</span>
-            <span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">target_dim</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">],</span>
-            <span class="sa">f</span><span class="s2">&quot;`target_dim` must be `&gt;= 0`, and `&lt; n_target_components=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">[</span><span class="s1">&#39;target&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">`.&quot;</span><span class="p">,</span>
-            <span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">MultiOutputRegressor</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Model supports multi-output; a single estimator forecasts all the horizons and components.&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">horizon</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;`horizon` must be `&gt;= 0` and `&lt; output_chunk_length=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="si">}</span><span class="s2">`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">target_dim</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">]:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;`target_dim` must be `&gt;= 0`, and `&lt; n_target_components=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">[</span><span class="s1">&#39;target&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="c1"># when multi_models=True, one model per horizon and target component</span>
         <span class="n">idx_estimator</span> <span class="o">=</span> <span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">multi_models</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">horizon</span> <span class="o">+</span> <span class="n">target_dim</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">estimators_</span><span class="p">[</span><span class="n">idx_estimator</span><span class="p">]</span></div>
+        <span class="k">if</span> <span class="n">quantile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">estimators_</span><span class="p">[</span><span class="n">idx_estimator</span><span class="p">]</span>
 
-<div class="viewcode-block" id="RegressionModel.get_estimator"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel.get_estimator">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_estimator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">target_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the estimator that forecasts the `horizon`th step of the `target_dim`th target component.</span>
-
-<span class="sd">        The model is returned directly if it supports multi-output natively.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        horizon</span>
-<span class="sd">            The index of the forecasting point within `output_chunk_length`.</span>
-<span class="sd">        target_dim</span>
-<span class="sd">            The index of the target component.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">MultiOutputRegressor</span><span class="p">):</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_multioutput_estimator</span><span class="p">(</span>
-                <span class="n">horizon</span><span class="o">=</span><span class="n">horizon</span><span class="p">,</span> <span class="n">target_dim</span><span class="o">=</span><span class="n">target_dim</span>
+        <span class="c1"># for quantile-models, the estimators are also grouped by quantiles</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">!=</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;`quantile` is only supported for probabilistic models that &quot;</span>
+                    <span class="s2">&quot;use `likelihood=&#39;quantile&#39;`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="s2">&quot;Model supports multi-output; a single estimator forecasts all the horizons and components.&quot;</span>
+        <span class="k">if</span> <span class="n">quantile</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Invalid `quantile=</span><span class="si">{</span><span class="n">quantile</span><span class="si">}</span><span class="s2">`. Must be one of the fitted quantiles &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="p">[</span><span class="n">quantile</span><span class="p">]</span><span class="o">.</span><span class="n">estimators_</span><span class="p">[</span><span class="n">idx_estimator</span><span class="p">]</span></div>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_add_val_set_to_kwargs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1021,36 +1032,21 @@
             <span class="s2">&quot;future&quot;</span><span class="p">:</span> <span class="n">future_covariates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span> <span class="k">if</span> <span class="n">future_covariates</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">}</span>
 
-        <span class="c1"># if multi-output regression</span>
-        <span class="n">use_mor</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">is_univariate</span> <span class="ow">or</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">&gt;</span> <span class="mi">1</span>
-            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">multi_models</span>
-            <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">MultiOutputRegressor</span><span class="p">)</span>
-        <span class="p">):</span>
-            <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="c1"># we have 2D sample (and time) weights, only supported in Darts</span>
-                <span class="n">use_mor</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">elif</span> <span class="ow">not</span> <span class="p">(</span>
-                <span class="nb">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;_get_tags&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
-                <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_get_tags</span><span class="p">(),</span> <span class="nb">dict</span><span class="p">)</span>
-                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_get_tags</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;multioutput&quot;</span><span class="p">)</span>
-            <span class="p">):</span>
-                <span class="c1"># model does not support multi-output regression natively</span>
-                <span class="n">use_mor</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">elif</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;CatBoostRegressor&quot;</span>
-                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_params</span><span class="p">()[</span><span class="s2">&quot;loss_function&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;RMSEWithUncertainty&quot;</span>
-            <span class="p">):</span>
-                <span class="n">use_mor</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">elif</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;XGBRegressor&quot;</span>
-                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="p">):</span>
-                <span class="c1"># since xgboost==2.1.0, likelihoods do not support native multi output regression</span>
-                <span class="n">use_mor</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1"># Check if multi-output regression is required</span>
+        <span class="n">requires_multioutput</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">is_univariate</span> <span class="ow">or</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">multi_models</span>
+        <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">use_mor</span><span class="p">:</span>
+        <span class="c1"># If multi-output required and model doesn&#39;t support it natively, wrap it in a MultiOutputRegressor</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">requires_multioutput</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">MultiOutputRegressor</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="p">(</span>
+                <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_supports_native_multioutput</span>
+                <span class="ow">or</span> <span class="n">sample_weight</span>
+                <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>  <span class="c1"># we have 2D sample (and time) weights, only supported in Darts</span>
+            <span class="p">)</span>
+        <span class="p">):</span>
             <span class="n">val_set_name</span><span class="p">,</span> <span class="n">val_weight_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">val_set_params</span>
             <span class="n">mor_kwargs</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s2">&quot;eval_set_name&quot;</span><span class="p">:</span> <span class="n">val_set_name</span><span class="p">,</span>
@@ -1059,7 +1055,6 @@
             <span class="p">}</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">MultiOutputRegressor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">mor_kwargs</span><span class="p">)</span>
 
-        <span class="c1"># warn if n_jobs_multioutput_wrapper was provided but not used</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">MultiOutputRegressor</span><span class="p">)</span>
             <span class="ow">and</span> <span class="n">n_jobs_multioutput_wrapper</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -1564,7 +1559,19 @@
                 <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="k">return</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">hfc</span><span class="p">,</span> <span class="n">seq_type_out</span><span class="o">=</span><span class="n">series_seq_type</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">hfc</span><span class="p">,</span> <span class="n">seq_type_out</span><span class="o">=</span><span class="n">series_seq_type</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_supports_native_multioutput</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns True if the model supports multi-output regression natively.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">estimator</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">MultiOutputRegressor</span><span class="p">)</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">__sklearn_tags__</span><span class="p">()</span><span class="o">.</span><span class="n">target_tags</span><span class="o">.</span><span class="n">multi_output</span></div>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_LikelihoodMixin</span><span class="p">:</span>

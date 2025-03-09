@@ -183,7 +183,6 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -199,10 +198,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
-
-<span class="c1"># Check whether we are running xgboost &gt;= 2.0.0 for quantile regression</span>
-<span class="n">tokens</span> <span class="o">=</span> <span class="n">xgb</span><span class="o">.</span><span class="n">__version__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
-<span class="n">xgb_200_or_above</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">2</span>
 
 
 <div class="viewcode-block" id="xgb_quantile_loss"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.xgb_quantile_loss">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">xgb_quantile_loss</span><span class="p">(</span><span class="n">labels</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">preds</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">quantile</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
@@ -380,9 +375,7 @@
             <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;poisson&quot;</span><span class="p">}:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;objective&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;count:</span><span class="si">{</span><span class="n">likelihood</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="k">elif</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">xgb_200_or_above</span><span class="p">:</span>
-                    <span class="c1"># leverage built-in Quantile Regression</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;objective&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;reg:quantileerror&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;objective&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;reg:quantileerror&quot;</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_quantiles</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_model_container</span><span class="p">()</span>
 
@@ -464,11 +457,7 @@
             <span class="c1"># empty model container in case of multiple calls to fit, e.g. when backtesting</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">quantile</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">xgb_200_or_above</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;quantile_alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">quantile</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">objective</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">xgb_quantile_loss</span><span class="p">,</span> <span class="n">quantile</span><span class="o">=</span><span class="n">quantile</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;objective&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">objective</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;quantile_alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">quantile</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">xgb</span><span class="o">.</span><span class="n">XGBRegressor</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
                 <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
                     <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
@@ -542,7 +531,12 @@
                 <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span>
                 <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
             <span class="p">),</span>
-        <span class="p">)</span></div>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_supports_native_multioutput</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># since xgboost==2.1.0, likelihoods do not support native multi output regression</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_supports_native_multioutput</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span></div>
 </pre></div>
 
               </div>

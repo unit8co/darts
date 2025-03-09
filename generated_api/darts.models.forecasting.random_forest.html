@@ -1104,29 +1104,29 @@ that all target <cite>series</cite> have the same static covariate dimensionalit
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.generate_predict_encodings" title="darts.models.forecasting.random_forest.RandomForest.generate_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_predict_encodings</span></code></a>(n, series[, ...])</p></td>
 <td><p>Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.get_estimator" title="darts.models.forecasting.random_forest.RandomForest.get_estimator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_estimator</span></code></a>(horizon, target_dim)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.get_estimator" title="darts.models.forecasting.random_forest.RandomForest.get_estimator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_estimator</span></code></a>(horizon, target_dim[, quantile])</p></td>
 <td><p>Returns the estimator that forecasts the <a href="#id2"><span class="problematic" id="id3">`</span></a>horizon`th step of the <a href="#id4"><span class="problematic" id="id5">`</span></a>target_dim`th target component.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.get_multioutput_estimator" title="darts.models.forecasting.random_forest.RandomForest.get_multioutput_estimator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_multioutput_estimator</span></code></a>(horizon, target_dim)</p></td>
-<td><p>Returns the estimator that forecasts the <a href="#id6"><span class="problematic" id="id7">`</span></a>horizon`th step of the <a href="#id8"><span class="problematic" id="id9">`</span></a>target_dim`th target component.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.gridsearch" title="darts.models.forecasting.random_forest.RandomForest.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.gridsearch" title="darts.models.forecasting.random_forest.RandomForest.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
 <td><p>Find the best hyper-parameters among a given set using a grid search.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.historical_forecasts" title="darts.models.forecasting.random_forest.RandomForest.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.historical_forecasts" title="darts.models.forecasting.random_forest.RandomForest.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Generates historical forecasts by simulating predictions at various points in time throughout the history of the provided (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.load" title="darts.models.forecasting.random_forest.RandomForest.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.load" title="darts.models.forecasting.random_forest.RandomForest.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
 <td><p>Loads a model from a given path or file handle.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.predict" title="darts.models.forecasting.random_forest.RandomForest.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, series, past_covariates, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.predict" title="darts.models.forecasting.random_forest.RandomForest.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, series, past_covariates, ...])</p></td>
 <td><p>Forecasts values for <cite>n</cite> time steps after the end of the series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.residuals" title="darts.models.forecasting.random_forest.RandomForest.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.residuals" title="darts.models.forecasting.random_forest.RandomForest.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.save" title="darts.models.forecasting.random_forest.RandomForest.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.save" title="darts.models.forecasting.random_forest.RandomForest.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
 <td><p>Saves the model under a given path or file handle.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.random_forest.RandomForest.untrained_model" title="darts.models.forecasting.random_forest.RandomForest.untrained_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">untrained_model</span></code></a>()</p></td>
+<td><p>Returns a new (untrained) model instance created with the same parameters.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1277,9 +1277,9 @@ computed per time <cite>series</cite>.</p></li>
 <li><p><em>np.ndarray</em> – An numpy array of backtest scores. For single series and one of:</p>
 <ul>
 <li><p>a single <cite>metric</cite> function, <cite>historical_forecasts</cite> generated with <cite>last_points_only=False</cite>
-and backtest <cite>reduction=None</cite>. The output has shape (n forecasts, <a href="#id10"><span class="problematic" id="id11">*</span></a>).</p></li>
+and backtest <cite>reduction=None</cite>. The output has shape (n forecasts, <a href="#id6"><span class="problematic" id="id7">*</span></a>).</p></li>
 <li><p>multiple <cite>metric</cite> functions and <cite>historical_forecasts</cite> generated with <cite>last_points_only=False</cite>.
-The output has shape (<a href="#id12"><span class="problematic" id="id13">*</span></a>, n metrics) when using a backtest <cite>reduction</cite>, and (n forecasts, <a href="#id14"><span class="problematic" id="id15">*</span></a>, n metrics)
+The output has shape (<a href="#id8"><span class="problematic" id="id9">*</span></a>, n metrics) when using a backtest <cite>reduction</cite>, and (n forecasts, <a href="#id10"><span class="problematic" id="id11">*</span></a>, n metrics)
 when <cite>reduction=None</cite></p></li>
 <li><p>multiple uni/multivariate series including <cite>series_reduction</cite> and at least one of
 <cite>component_reduction=None</cite> or <cite>time_reduction=None</cite> for “per time step metrics”</p></li>
@@ -1476,29 +1476,18 @@ encoded covariates.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.random_forest.RandomForest.get_estimator">
-<span class="sig-name descname"><span class="pre">get_estimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_dim</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.random_forest.RandomForest.get_estimator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the estimator that forecasts the <a href="#id16"><span class="problematic" id="id17">`</span></a>horizon`th step of the <a href="#id18"><span class="problematic" id="id19">`</span></a>target_dim`th target component.</p>
+<span class="sig-name descname"><span class="pre">get_estimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.random_forest.RandomForest.get_estimator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the estimator that forecasts the <a href="#id12"><span class="problematic" id="id13">`</span></a>horizon`th step of the <a href="#id14"><span class="problematic" id="id15">`</span></a>target_dim`th target component.</p>
+<p>For probabilistic models fitting quantiles, it is possible to also specify the quantile.</p>
 <p>The model is returned directly if it supports multi-output natively.</p>
+<p>Note: Internally, estimators are grouped by <cite>output_chunk_length</cite> position, then by component. For probabilistic
+models fitting quantiles, there is an additional abstraction layer, grouping the estimators by <cite>quantile</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>horizon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The index of the forecasting point within <cite>output_chunk_length</cite>.</p></li>
 <li><p><strong>target_dim</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The index of the target component.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.random_forest.RandomForest.get_multioutput_estimator">
-<span class="sig-name descname"><span class="pre">get_multioutput_estimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_dim</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.random_forest.RandomForest.get_multioutput_estimator" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the estimator that forecasts the <a href="#id20"><span class="problematic" id="id21">`</span></a>horizon`th step of the <a href="#id22"><span class="problematic" id="id23">`</span></a>target_dim`th target component.</p>
-<p>Internally, estimators are grouped by <cite>output_chunk_length</cite> position, then by component.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>horizon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The index of the forecasting point within <cite>output_chunk_length</cite>.</p></li>
-<li><p><strong>target_dim</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The index of the target component.</p></li>
+<li><p><strong>quantile</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, for probabilistic model with <cite>likelihood=”quantile”</cite>, a quantile value.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2246,6 +2235,12 @@ probabilistic predictions.</p>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.random_forest.RandomForest.untrained_model">
+<span class="sig-name descname"><span class="pre">untrained_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.random_forest.RandomForest.untrained_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a new (untrained) model instance created with the same parameters.</p>
 </dd></dl>
 
 <dl class="py property">

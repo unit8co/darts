@@ -291,10 +291,15 @@
        Re-training or fine-tuning a pre-trained model
       </a>
      </li>
+     <li class="toc-h4 nav-item toc-entry">
+      <a class="reference internal nav-link" href="#id10">
+       Exporting model to ONNX format for inference
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#id10">
+    <a class="reference internal nav-link" href="#id11">
      Callbacks
     </a>
     <ul class="nav section-nav flex-column">
@@ -425,6 +430,7 @@
 <li><p><a class="reference external" href="#manual-saving--loading">Manual saving / loading</a></p></li>
 <li><p><a class="reference external" href="#trainingsaving-on-gpu-and-loading-on-cpu">Train &amp; save on GPU, load on CPU</a></p></li>
 <li><p><a class="reference external" href="#re-training-or-fine-tuning-a-pre-trained-model">Load pre-trained model for fine-tuning</a></p></li>
+<li><p><a class="reference external" href="#exporting-model-to-ONNX-format-for-inference">Exporting model to ONNX format for inference</a></p></li>
 </ul>
 </li>
 <li><p><a class="reference external" href="#callbacks">Callbacks</a></p>
@@ -835,9 +841,51 @@ from <a class="reference external" href="#required-target-time-spans-for-trainin
 </pre></div>
 </div>
 </section>
-</section>
 <section id="id10">
-<h3>Callbacks<a class="headerlink" href="#id10" title="Permalink to this heading">¶</a></h3>
+<h4>Exporting model to ONNX format for inference<a class="headerlink" href="#id10" title="Permalink to this heading">¶</a></h4>
+<p>It is also possible to export the model weights to the ONNX format to run inference in a lightweight environment. The example below works for any <code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> except <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> and for optional usage of past, future and / or static covariates. Note that all series and covariates must extend far enough into the past (<code class="docutils literal notranslate"><span class="pre">input_chunk_length)</span></code> and future (<code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>) relative to the end of the target <code class="docutils literal notranslate"><span class="pre">series</span></code>. It will not be possible to forecast a horizon <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code> without implementing the auto-regression logic.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">SomeTorchForecastingModel</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="c1"># make sure to have `onnx` and `onnxruntime` installed</span>
+<span class="n">onnx_filename</span> <span class="o">=</span> <span class="s2">&quot;example_onnx.onnx&quot;</span>
+<span class="n">model</span><span class="o">.</span><span class="n">to_onnx</span><span class="p">(</span><span class="n">onnx_filename</span><span class="p">,</span> <span class="n">export_params</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Now, to load the model and predict steps after the end of the series:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">onnx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">onnxruntime</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ort</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.onnx_utils.py</span><span class="w"> </span><span class="kn">import</span> <span class="n">prepare_onnx_inputs</span>
+
+<span class="n">onnx_model</span> <span class="o">=</span> <span class="n">onnx</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">onnx_filename</span><span class="p">)</span>
+<span class="n">onnx</span><span class="o">.</span><span class="n">checker</span><span class="o">.</span><span class="n">check_model</span><span class="p">(</span><span class="n">onnx_model</span><span class="p">)</span>
+<span class="n">ort_session</span> <span class="o">=</span> <span class="n">ort</span><span class="o">.</span><span class="n">InferenceSession</span><span class="p">(</span><span class="n">onnx_filename</span><span class="p">)</span>
+
+<span class="c1"># use helper function to extract the features from the series</span>
+<span class="n">past_feats</span><span class="p">,</span> <span class="n">future_feats</span><span class="p">,</span> <span class="n">static_feats</span> <span class="o">=</span> <span class="n">prepare_onnx_inputs</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+    <span class="n">past_covariates</span><span class="o">=</span><span class="n">ts_past</span><span class="p">,</span>
+    <span class="n">future_covariates</span><span class="o">=</span><span class="n">ts_future</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># extract only the features expected by the model</span>
+<span class="n">ort_inputs</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">arr</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="s1">&#39;x_past&#39;</span><span class="p">,</span> <span class="s1">&#39;x_future&#39;</span><span class="p">,</span> <span class="s1">&#39;x_static&#39;</span><span class="p">],</span> <span class="p">[</span><span class="n">past_feats</span><span class="p">,</span> <span class="n">future_feats</span><span class="p">,</span> <span class="n">static_feats</span><span class="p">]):</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="n">inp</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">inp</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">ort_session</span><span class="o">.</span><span class="n">get_inputs</span><span class="p">())]:</span>
+        <span class="n">ort_inputs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">arr</span>
+
+<span class="c1"># output has shape (batch, output_chunk_length, n components, 1 or n likelihood params)</span>
+<span class="n">ort_out</span> <span class="o">=</span> <span class="n">ort_session</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">ort_inputs</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id11">
+<h3>Callbacks<a class="headerlink" href="#id11" title="Permalink to this heading">¶</a></h3>
 <p>Callbacks are a powerful way to monitor or control the behavior of the model during the training process. Some examples:</p>
 <ul class="simple">
 <li><p>Performance Monitoring: compute additional metrics (in addition of the default losses)</p></li>

@@ -365,7 +365,7 @@
 
     <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;naive&quot;</span><span class="p">:</span>
         <span class="n">decomp</span> <span class="o">=</span> <span class="n">seasonal_decompose</span><span class="p">(</span>
-            <span class="n">ts</span><span class="o">.</span><span class="n">pd_series</span><span class="p">(),</span> <span class="n">period</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">extrapolate_trend</span><span class="o">=</span><span class="s2">&quot;freq&quot;</span>
+            <span class="n">ts</span><span class="o">.</span><span class="n">to_series</span><span class="p">(),</span> <span class="n">period</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">extrapolate_trend</span><span class="o">=</span><span class="s2">&quot;freq&quot;</span>
         <span class="p">)</span>
 
     <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;STL&quot;</span><span class="p">:</span>
@@ -376,7 +376,7 @@
         <span class="p">)</span>
 
         <span class="n">decomp</span> <span class="o">=</span> <span class="n">STL</span><span class="p">(</span>
-            <span class="n">endog</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">pd_series</span><span class="p">(),</span>
+            <span class="n">endog</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">to_series</span><span class="p">(),</span>
             <span class="n">period</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
@@ -389,7 +389,7 @@
         <span class="p">)</span>
 
         <span class="n">decomp</span> <span class="o">=</span> <span class="n">MSTL</span><span class="p">(</span>
-            <span class="n">endog</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">pd_series</span><span class="p">(),</span>
+            <span class="n">endog</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">to_series</span><span class="p">(),</span>
             <span class="n">periods</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
@@ -402,12 +402,14 @@
         <span class="n">decomp</span><span class="o">.</span><span class="n">seasonal</span><span class="p">,</span>
         <span class="n">static_covariates</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
         <span class="n">hierarchy</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">trend</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
         <span class="n">ts</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
         <span class="n">decomp</span><span class="o">.</span><span class="n">trend</span><span class="p">,</span>
         <span class="n">static_covariates</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
         <span class="n">hierarchy</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">trend</span><span class="p">,</span> <span class="n">season</span></div>

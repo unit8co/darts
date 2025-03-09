@@ -394,7 +394,7 @@
             <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">multivariate</span> <span class="ow">is</span> <span class="kc">False</span>
         <span class="p">):</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_to_multi_series</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">())</span>
+                <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_to_multi_series</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">())</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">DatasetLoadingException</span><span class="p">(</span>
                     <span class="s2">&quot;Could not convert to multi-series. Reason:&quot;</span> <span class="o">+</span> <span class="n">e</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>

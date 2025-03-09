@@ -201,7 +201,7 @@
 <span class="sd">        The ratio of missing values</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="fill_missing_values"><a class="viewcode-back" href="../../../generated_api/darts.utils.missing_values.html#darts.utils.missing_values.fill_missing_values">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">fill_missing_values</span><span class="p">(</span>
@@ -276,7 +276,7 @@
     <span class="n">series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
     <span class="n">freq</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span>
 
-    <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
 
     <span class="c1"># Get start/end times of sub-series without gaps of missing values</span>
@@ -314,11 +314,12 @@
 
     <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
         <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
-        <span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">),</span>
+        <span class="n">series</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">),</span>
         <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
         <span class="n">columns</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
         <span class="n">static_covariates</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
         <span class="n">hierarchy</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
     <span class="p">)</span>
 
 
@@ -342,7 +343,7 @@
 <span class="sd">        A new TimeSeries with all missing values filled according to the rules above.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">series_temp</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span>
+    <span class="n">series_temp</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
 
     <span class="c1"># pandas interpolate wrapper, with chosen `method`</span>
     <span class="k">if</span> <span class="s2">&quot;limit_direction&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">interpolate_kwargs</span><span class="p">:</span>
@@ -354,6 +355,7 @@
         <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
         <span class="n">static_covariates</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
         <span class="n">hierarchy</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
     <span class="p">)</span>
 </pre></div>
 
