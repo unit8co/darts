@@ -13,7 +13,7 @@ from darts import TimeSeries
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.metrics import mape
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs, tfm_kwargs_dev
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -428,6 +428,63 @@ class TestTorchForecastingModel:
         for kwargs_ in kwargs_valid:
             model_new = create_model(**kwargs_)
             model_new.load_weights(model_path_manual)
+
+    @pytest.mark.parametrize(
+        "params",
+        itertools.product(
+            [DLinearModel, NBEATSModel, RNNModel],  # model_cls
+            [True, False],  # past_covs
+            [True, False],  # future_covs
+            [True, False],  # static covs
+        ),
+    )
+    def test_save_and_load_weights_covs_usage_attributes(self, tmpdir_fn, params):
+        """
+        Verify that save/load correctly preserve the use_[past/future/static]_covariates attribute.
+        """
+        model_cls, use_pc, use_fc, use_sc = params
+        model = model_cls(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            n_epochs=1,
+            **tfm_kwargs_dev,
+        )
+        # skip test if the combination of covariates is not supported by the model
+        if (
+            (use_pc and not model.supports_past_covariates)
+            or (use_fc and not model.supports_future_covariates)
+            or (use_sc and not model.supports_static_covariates)
+        ):
+            return
+
+        model.fit(
+            series=self.series
+            if not use_sc
+            else self.series.with_static_covariates(pd.Series([12], ["loc"])),
+            past_covariates=self.series + 10 if use_pc else None,
+            future_covariates=self.series - 5 if use_fc else None,
+        )
+        # save and load the model
+        filename_ckpt = f"{model.model_name}.pt"
+        model.save(filename_ckpt)
+        model_loaded = model_cls(
+            input_chunk_length=4,
+            output_chunk_length=1,
+            **tfm_kwargs_dev,
+        )
+        model_loaded.load_weights(filename_ckpt)
+
+        assert model.uses_past_covariates == model_loaded.uses_past_covariates == use_pc
+        assert (
+            model.uses_future_covariates
+            == model_loaded.uses_future_covariates
+            == use_fc
+        )
+        assert (
+            model.uses_static_covariates
+            == model_loaded.uses_static_covariates
+            == use_sc
+        )
 
     def test_save_and_load_weights_w_encoders(self, tmpdir_fn):
         """

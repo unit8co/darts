@@ -235,7 +235,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         # add covariates as additional regressors
         if future_covariates is not None:
             fit_df = fit_df.merge(
-                future_covariates.pd_dataframe(),
+                future_covariates.to_dataframe(),
                 left_on="ds",
                 right_index=True,
                 how="left",
@@ -306,7 +306,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             predict_df = self._add_capacities_to_df(predict_df)
         if future_covariates is not None:
             predict_df = predict_df.merge(
-                future_covariates.pd_dataframe(),
+                future_covariates.to_dataframe(),
                 left_on="ds",
                 right_index=True,
                 how="left",
@@ -357,7 +357,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     continue
                 if (
                     not future_covariates[condition_name]
-                    .pd_series()
+                    .to_series()
                     .isin([True, False])
                     .all()
                 ):

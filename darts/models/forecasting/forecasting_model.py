@@ -593,12 +593,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             input_series if input_series is not None else self.training_series
         )
         return _build_forecast_series(
-            points_preds,
-            input_series,
-            custom_components,
-            with_static_covs,
-            with_hierarchy,
-            pred_start,
+            points_preds=points_preds,
+            input_series=input_series,
+            custom_columns=custom_components,
+            with_static_covs=with_static_covs,
+            with_hierarchy=with_hierarchy,
+            pred_start=pred_start,
         )
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
@@ -1266,6 +1266,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             if not predict_likelihood_parameters
                             else None
                         ),
+                        metadata=series_.metadata,
                     )
                 )
             else:

@@ -216,6 +216,8 @@ series.plot()
 * **Datasets** The `darts.datasets` submodule contains some popular time series datasets for rapid
   and reproducible experimentation.
 
+* **Compatibility with Multiple Backends:** `TimeSeries` objects can be created from and exported to various backends such as pandas, polars, numpy, pyarrow, xarray, and more, facilitating seamless integration with different data processing libraries.
+
 ## Forecasting Models
 Here's a breakdown of the forecasting models currently implemented in Darts. We are constantly working
 on bringing more models and features.

@@ -362,21 +362,28 @@ class BaseDataTransformer(ABC):
         desc = f"Transform ({self._name})"
 
         # Take note of original input for unmasking purposes:
+        series_specified = series_idx is not None
         if isinstance(series, TimeSeries):
             data = [series]
-            if series_idx:
+            if series_specified:
                 transformer_selector = self._process_series_idx(series_idx)
             else:
                 transformer_selector = [0]
         else:
             data = series
-            if series_idx:
+            if series_specified:
                 transformer_selector = self._process_series_idx(series_idx)
             else:
                 transformer_selector = range(len(series))
 
         input_iterator = _build_tqdm_iterator(
-            zip(data, self._get_params(transformer_selector=transformer_selector)),
+            zip(
+                data,
+                self._get_params(
+                    transformer_selector=transformer_selector,
+                    series_specified=series_specified,
+                ),
+            ),
             verbose=self._verbose,
             desc=desc,
             total=len(data),
@@ -395,7 +402,9 @@ class BaseDataTransformer(ABC):
         )
 
     def _get_params(
-        self, transformer_selector: Iterable
+        self,
+        transformer_selector: Iterable,
+        series_specified: bool = False,
     ) -> Generator[Mapping[str, Any], None, None]:
         """
         Creates generator of dictionaries containing fixed parameter values

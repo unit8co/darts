@@ -17,11 +17,53 @@ except ImportError:
     logger.warning("Torch not installed - Some tests will be skipped.")
     TORCH_AVAILABLE = False
 
+try:
+    import onnx  # noqa: F401
+    import onnxruntime  # noqa: F401
+
+    ONNX_AVAILABLE = True
+except ImportError:
+    logger.warning("Onnx not installed - Some tests will be skipped.")
+    ONNX_AVAILABLE = False
+
+try:
+    import optuna  # noqa: F401
+
+    OPTUNA_AVAILABLE = True
+except ImportError:
+    logger.warning("Optuna not installed - Some tests will be skipped.")
+    OPTUNA_AVAILABLE = False
+
+try:
+    import ray  # noqa: F401
+
+    RAY_AVAILABLE = True
+except ImportError:
+    logger.warning("Ray not installed - Some tests will be skipped.")
+    RAY_AVAILABLE = False
+
+try:
+    import polars  # noqa: F401
+
+    POLARS_AVAILABLE = True
+except ImportError:
+    logger.warning("Polars not installed - Some tests will be skipped.")
+    POLARS_AVAILABLE = False
+
 tfm_kwargs = {
     "pl_trainer_kwargs": {
         "accelerator": "cpu",
         "enable_progress_bar": False,
         "enable_model_summary": False,
+    }
+}
+
+tfm_kwargs_dev = {
+    "pl_trainer_kwargs": {
+        "accelerator": "cpu",
+        "enable_progress_bar": False,
+        "enable_model_summary": False,
+        "fast_dev_run": True,
     }
 }
 

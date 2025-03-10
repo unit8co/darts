@@ -56,7 +56,7 @@ class TestBoxCox:
         transformed = boxcox.fit_transform(self.multi_series)
         back = boxcox.inverse_transform(transformed)
         pd.testing.assert_frame_equal(
-            self.multi_series.pd_dataframe(), back.pd_dataframe(), check_exact=False
+            self.multi_series.to_dataframe(), back.to_dataframe(), check_exact=False
         )
 
     def test_boxcox_multi_ts(self):
@@ -71,13 +71,13 @@ class TestBoxCox:
             transformed = box_cox.fit_transform([self.multi_series, self.multi_series])
             back = box_cox.inverse_transform(transformed)
             pd.testing.assert_frame_equal(
-                self.multi_series.pd_dataframe(),
-                back[0].pd_dataframe(),
+                self.multi_series.to_dataframe(),
+                back[0].to_dataframe(),
                 check_exact=False,
             )
             pd.testing.assert_frame_equal(
-                self.multi_series.pd_dataframe(),
-                back[1].pd_dataframe(),
+                self.multi_series.to_dataframe(),
+                back[1].to_dataframe(),
                 check_exact=False,
             )
 

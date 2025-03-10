@@ -54,7 +54,7 @@ jobs:
           elif [ "${{ matrix.flavour }}" == "torch" ]; then
             pip install -r requirements/core.txt -r requirements/torch.txt -r requirements/dev.txt
           elif [ "${{ matrix.flavour }}" == "all" ]; then
-            pip install -r requirements/core.txt -r requirements/torch.txt -r requirements/notorch.txt -r requirements/dev.txt
+            pip install -r requirements/core.txt -r requirements/torch.txt -r requirements/notorch.txt -r requirements/optional.txt -r requirements/dev.txt
           fi
 
       - name: "Install libomp (for LightGBM)"
@@ -94,7 +94,7 @@ jobs:
       - name: "Compile Dependency Versions"
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv pip compile requirements/dev-all.txt > requirements-latest.txt
+          uv pip compile requirements/dev-all.txt requirements/optional.txt > requirements-latest.txt
 
       # only restore cache but do not upload
       - name: "Restore cached python environment"
@@ -111,7 +111,7 @@ jobs:
       - name: "Install Dependencies"
         run: |
           # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/dev-all.txt
+          pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
       - name: "Install libomp (for LightGBM)"
         run: |
@@ -141,7 +141,7 @@ jobs:
       - name: "Compile Dependency Versions"
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv pip compile requirements/dev-all.txt > requirements-latest.txt
+          uv pip compile requirements/dev-all.txt requirements/optional.txt > requirements-latest.txt
 
       # only restore cache but do not upload
       - name: "Restore cached python environment"
@@ -162,7 +162,7 @@ jobs:
       - name: "Install Dependencies"
         run: |
           # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/dev-all.txt
+          pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
       - name: "Install libomp (for LightGBM)"
         run: |

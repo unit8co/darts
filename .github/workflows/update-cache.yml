@@ -31,7 +31,7 @@ jobs:
           if [ "${{ matrix.os }}" == "macos-13" ]; then
             source $HOME/.local/bin/env
           fi
-          uv pip compile requirements/dev-all.txt > requirements-latest.txt
+          uv pip compile requirements/dev-all.txt requirements/optional.txt > requirements-latest.txt
 
       - name: "Cache python environment"
         uses: actions/cache@v4
@@ -47,4 +47,4 @@ jobs:
       - name: "Install Latest Dependencies"
         run: |
           # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/dev-all.txt
+          pip install -U -r requirements/dev-all.txt -r requirements/optional.txt

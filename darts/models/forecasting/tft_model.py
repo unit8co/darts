@@ -726,7 +726,7 @@ class TFTModel(MixedCovariatesTorchModel):
             If ``False``, only attends to previous time steps in the decoder. If ``True`` attends to previous,
             current, and future time steps. Defaults to ``False``.
         feed_forward
-            A feedforward network is a fully-connected layer with an activation. TFT Can be one of the glu variant's
+            A feedforward network is a fully-connected layer with an activation. Can be one of the glu variant's
             FeedForward Network (FFN)[2]. The glu variant's FeedForward Network are a series of FFNs designed to work
             better with Transformer based models. Defaults to ``"GatedResidualNetwork"``. ["GLU", "Bilinear", "ReGLU",
             "GEGLU", "SwiGLU", "ReLU", "GELU"] or the TFT original FeedForward Network ["GatedResidualNetwork"].

@@ -50,7 +50,7 @@ class TestRegressionEnsembleModels:
     ts_random_walk = tg.random_walk_timeseries(length=500)
 
     ts_cov1 = ts_periodic.stack(ts_gaussian)
-    ts_cov1 = ts_cov1.pd_dataframe()
+    ts_cov1 = ts_cov1.to_dataframe()
     ts_cov1.columns = ["Periodic", "Gaussian"]
     ts_cov1 = TimeSeries.from_dataframe(ts_cov1)
     ts_sum1: TimeSeries = ts_periodic + ts_gaussian
@@ -466,7 +466,7 @@ class TestRegressionEnsembleModels:
         ts_random_walk = tg.random_walk_timeseries(length=500)
 
         ts_cov1 = ts_periodic.stack(ts_gaussian)
-        ts_cov1 = ts_cov1.pd_dataframe()
+        ts_cov1 = ts_cov1.to_dataframe()
         ts_cov1.columns = ["Periodic", "Gaussian"]
         ts_cov1 = TimeSeries.from_dataframe(ts_cov1)
         ts_sum1 = ts_periodic + ts_gaussian

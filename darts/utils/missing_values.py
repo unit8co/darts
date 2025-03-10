@@ -26,7 +26,7 @@ def missing_values_ratio(series: TimeSeries) -> float:
         The ratio of missing values
     """
 
-    return series.pd_dataframe().isnull().sum().mean() / len(series)
+    return series.to_dataframe().isnull().sum().mean() / len(series)
 
 
 def fill_missing_values(
@@ -101,7 +101,7 @@ def extract_subseries(
     series = series.strip()
     freq = series.freq
 
-    if series.pd_dataframe().isna().sum().sum() == 0:
+    if series.to_dataframe().isna().sum().sum() == 0:
         return [series]
 
     # Get start/end times of sub-series without gaps of missing values
@@ -139,11 +139,12 @@ def _const_fill(series: TimeSeries, fill: float = 0) -> TimeSeries:
 
     return TimeSeries.from_times_and_values(
         series.time_index,
-        series.pd_dataframe().fillna(value=fill),
+        series.to_dataframe().fillna(value=fill),
         freq=series.freq,
         columns=series.columns,
         static_covariates=series.static_covariates,
         hierarchy=series.hierarchy,
+        metadata=series.metadata,
     )
 
 
@@ -167,7 +168,7 @@ def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
         A new TimeSeries with all missing values filled according to the rules above.
     """
 
-    series_temp = series.pd_dataframe()
+    series_temp = series.to_dataframe()
 
     # pandas interpolate wrapper, with chosen `method`
     if "limit_direction" not in interpolate_kwargs:
@@ -179,4 +180,5 @@ def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
         freq=series.freq,
         static_covariates=series.static_covariates,
         hierarchy=series.hierarchy,
+        metadata=series.metadata,
     )

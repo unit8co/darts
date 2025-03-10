@@ -199,8 +199,8 @@ class TestMetrics:
     def test_ope_zero(self):
         with pytest.raises(ValueError):
             metrics.ope(
-                self.series1 - self.series1.pd_series().mean(),
-                self.series1 - self.series1.pd_series().mean(),
+                self.series1 - self.series1.to_series().mean(),
+                self.series1 - self.series1.to_series().mean(),
             )
 
     @pytest.mark.parametrize(
