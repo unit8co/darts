@@ -11,6 +11,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+**Removed**
+- 🔴 Removed deprecated method `TimeSeries.pd_dataframe()`. Use `TimeSeries.to_dataframe()` instead. [#2733](https://github.com/unit8co/darts/pull/2733) by [Dennis Bader](https://github.com/dennisbader).
+- 🔴 Removed deprecated method `TimeSeries.pd_serise()`. Use `TimeSeries.to_series()` instead. [#2733](https://github.com/unit8co/darts/pull/2733) by [Dennis Bader](https://github.com/dennisbader).
+
 **Fixed**
 
 **Dependencies**
