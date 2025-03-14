@@ -13,6 +13,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+**Removed**
+
+- Removed model `AutoARIMA`. To support `numpy>=2.0.0`, we unfortunately had to remove the `pmdarima` dependency. Use `StatsForecastAutoARIMA` instead. [#2734](https://github.com/unit8co/darts/pull/2734) by [Dennis Bader](https://github.com/dennisbader).
+
 **Dependencies**
 
 ### For developers of the library:
