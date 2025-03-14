@@ -1,4 +1,5 @@
 from sklearn.base import is_classifier
+from sklearn.linear_model import LogisticRegression
 
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.regression_model import (
@@ -22,7 +23,10 @@ class CategoricalModel(RegressionModel, CategoricalForecastingMixin):
         """
         TODO explain categorical input not supported yet
         supposed to use covariates as input and target as output
+
         """
+        if model is None:
+            model = LogisticRegression(n_jobs=-1)
         if not is_classifier(model):
             raise ValueError(
                 "CategoricalModel must be initialized with a classifier model"
