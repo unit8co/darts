@@ -14,6 +14,7 @@ import numpy as np
 import xgboost as xgb
 
 from darts.logging import get_logger, raise_if_not
+from darts.models.forecasting.categorical_model import CategoricalForecastingMixin
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -214,9 +215,12 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             multi_models=multi_models,
-            model=xgb.XGBRegressor(**self.kwargs),
+            model=self._create_model(**self.kwargs),
             use_static_covariates=use_static_covariates,
         )
+
+    def _create_model(self, **kwargs):
+        return xgb.XGBRegressor(**kwargs)
 
     def fit(
         self,
@@ -362,3 +366,8 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
     def _supports_native_multioutput(self):
         # since xgboost==2.1.0, likelihoods do not support native multi output regression
         return super()._supports_native_multioutput and self.likelihood is None
+
+
+class XGBClassifierModel(XGBModel, CategoricalForecastingMixin):
+    def _create_model(self, **kwargs):
+        return xgb.XGBClassifier(**kwargs)
