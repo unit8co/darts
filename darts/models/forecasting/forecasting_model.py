@@ -68,6 +68,7 @@ from darts.utils.ts_utils import (
 )
 from darts.utils.utils import (
     generate_index,
+    get_simplified_likelihood_name,
     likelihood_component_names,
     quantile_interval_names,
     quantile_names,
@@ -3141,7 +3142,14 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 ),
                 logger,
             )
-        if output_chunk_length is not None and n > output_chunk_length:
+        lkl_simplified_name = get_simplified_likelihood_name(
+            getattr(self, "likelihood")
+        )
+        if (
+            output_chunk_length is not None
+            and n > output_chunk_length
+            and lkl_simplified_name != "quantile"
+        ):
             raise_log(
                 ValueError(
                     "`predict_likelihood_parameters=True` is only supported for `n` smaller than or equal to "

@@ -118,6 +118,14 @@ def likelihood_component_names(
     ]
 
 
+def get_simplified_likelihood_name(likelihood: Optional[str, object]) -> str:
+    # no likelihood or regression model likelihood
+    if likelihood is None or isinstance(likelihood, str):
+        return None
+    # torch likelihood
+    return likelihood.simplified_name()
+
+
 def quantile_names(q: Union[float, list[float]], component: Optional[str] = None):
     """Generates formatted quantile names, optionally added to a component name.
 

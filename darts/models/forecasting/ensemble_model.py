@@ -8,6 +8,8 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from typing import BinaryIO, Optional, Union
 
+from darts.utils.utils import get_simplified_likelihood_name
+
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
@@ -566,9 +568,7 @@ class EnsembleModel(GlobalForecastingModel):
             # regression model likelihood is a string, torch-based model likelihoods is an object
             likelihood = getattr(m, "likelihood")
             is_obj_lkl = not isinstance(likelihood, str)
-            lkl_simplified_name = (
-                likelihood.simplified_name() if is_obj_lkl else likelihood
-            )
+            lkl_simplified_name = get_simplified_likelihood_name(likelihood)
             models_likelihood.add(lkl_simplified_name)
 
             # check the quantiles

@@ -56,13 +56,12 @@ from torch.distributions import Poisson as _Poisson
 from torch.distributions import Weibull as _Weibull
 from torch.distributions.kl import kl_divergence
 
-from darts import TimeSeries
 from darts.logging import raise_if_not
+from darts.utils.likelihood_utils import BaseLikelihood, LikelihoodType
 
 # TODO: Table on README listing distribution, possible priors and wiki article
 from darts.utils.utils import (
     _check_quantiles,
-    likelihood_component_names,
     quantile_names,
 )
 
@@ -93,11 +92,19 @@ def _check_in_open_0_1_intvl(param, param_name=""):
     _check(param, lambda p: 0 < p < 1, param_name, "in the open interval (0, 1)")
 
 
-class Likelihood(ABC):
-    def __init__(self, prior_strength=1.0):
+class Likelihood(BaseLikelihood, ABC):
+    def __init__(
+        self,
+        likelihood_type: LikelihoodType,
+        parameter_names: list[str],
+        prior_strength=1.0,
+    ):
         """
-        Abstract class for a likelihood model.
+        Abstract class for torch likelihood models.
         """
+        super().__init__(
+            likelihood_type=likelihood_type, parameter_names=parameter_names
+        )
         self.prior_strength = prior_strength
         # used for equality operator between likelihood objects
         self.ignore_attrs_equality = []
@@ -200,36 +207,6 @@ class Likelihood(ABC):
                 n_components * n_params,
             ))
 
-    @abstractmethod
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        """
-        Generates names for the parameters of the Likelihood.
-        """
-        pass
-
-    def _likelihood_generate_components_names(
-        self, input_series: TimeSeries, parameter_names: list[str]
-    ) -> list[str]:
-        return [
-            f"{tgt_name}_{param_n}"
-            for tgt_name in input_series.components
-            for param_n in parameter_names
-        ]
-
-    @property
-    @abstractmethod
-    def num_parameters(self) -> int:
-        """
-        Returns the number of parameters that define the probability distribution for one single
-        target value.
-        """
-        pass
-
-    @abstractmethod
-    def simplified_name(self) -> str:
-        """Returns a simplified name, used to compare Likelihood and LikelihoodMixin_ instances"""
-        pass
-
     def __eq__(self, other) -> bool:
         """
         Defines (in)equality between two likelihood objects, ignore the attributes listed in
@@ -308,7 +285,11 @@ class GaussianLikelihood(Likelihood):
         self.nllloss = nn.GaussianNLLLoss(full=True, reduction="none")
         self.softplus = nn.Softplus()
 
-        super().__init__(prior_strength)
+        super().__init__(
+            likelihood_type=LikelihoodType.Gaussian,
+            parameter_names=["mu", "sigma"],
+            prior_strength=prior_strength,
+        )
 
     def _nllloss(self, params_out, target, sample_weight):
         means_out, sigmas_out = params_out
@@ -335,20 +316,10 @@ class GaussianLikelihood(Likelihood):
         mu, sigma = self._params_from_output(model_output)
         return torch.normal(mu, sigma)
 
-    @property
-    def num_parameters(self) -> int:
-        return 2
-
     def _params_from_output(self, model_output):
         mu = model_output[:, :, :, 0]
         sigma = self.softplus(model_output[:, :, :, 1])
         return mu, sigma
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        return self._likelihood_generate_components_names(input_series, ["mu", "sigma"])
-
-    def simplified_name(self) -> str:
-        return "gaussian"
 
 
 class PoissonLikelihood(Likelihood):
@@ -375,7 +346,11 @@ class PoissonLikelihood(Likelihood):
 
         self.nllloss = nn.PoissonNLLLoss(log_input=False, full=True, reduction="none")
         self.softplus = nn.Softplus()
-        super().__init__(prior_strength)
+        super().__init__(
+            likelihood_type=LikelihoodType.Poisson,
+            parameter_names=["lambda"],
+            prior_strength=prior_strength,
+        )
 
     def _nllloss(self, params_out, target, sample_weight):
         lambda_out = params_out
@@ -396,19 +371,9 @@ class PoissonLikelihood(Likelihood):
         model_lambda = self._params_from_output(model_output)
         return torch.poisson(model_lambda)
 
-    @property
-    def num_parameters(self) -> int:
-        return 1
-
     def _params_from_output(self, model_output):
         lmbda = self.softplus(model_output.squeeze(dim=-1))
         return lmbda
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        return self._likelihood_generate_components_names(input_series, ["lambda"])
-
-    def simplified_name(self) -> str:
-        return "poisson"
 
 
 class NegativeBinomialLikelihood(Likelihood):
@@ -428,7 +393,11 @@ class NegativeBinomialLikelihood(Likelihood):
         network are in terms of the mean :math:`\\mu` and shape :math:`\\alpha`.
         """
         self.softplus = nn.Softplus()
-        super().__init__()
+        super().__init__(
+            likelihood_type=LikelihoodType.NegativeBinomial,
+            parameter_names=["r", "p"],
+            prior_strength=1.0,
+        )
 
     @property
     def _prior_params(self):
@@ -463,16 +432,6 @@ class NegativeBinomialLikelihood(Likelihood):
         alpha = self.softplus(model_output[:, :, :, 1])
         return mu, alpha
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        return self._likelihood_generate_components_names(input_series, ["r", "p"])
-
-    @property
-    def num_parameters(self) -> int:
-        return 2
-
-    def simplified_name(self) -> str:
-        return "negativebinomial"
-
 
 class BernoulliLikelihood(Likelihood):
     def __init__(self, prior_p=None, prior_strength=1.0):
@@ -496,7 +455,11 @@ class BernoulliLikelihood(Likelihood):
         _check_in_open_0_1_intvl(self.prior_p, "p")
 
         self.sigmoid = nn.Sigmoid()
-        super().__init__(prior_strength)
+        super().__init__(
+            likelihood_type=LikelihoodType.Bernoulli,
+            parameter_names=["p"],
+            prior_strength=prior_strength,
+        )
 
     @property
     def _prior_params(self):
@@ -510,19 +473,9 @@ class BernoulliLikelihood(Likelihood):
         model_p = self._params_from_output(model_output)
         return torch.bernoulli(model_p)
 
-    @property
-    def num_parameters(self) -> int:
-        return 1
-
     def _params_from_output(self, model_output: torch.Tensor):
         p = self.sigmoid(model_output.squeeze(dim=-1))
         return p
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        return self._likelihood_generate_components_names(input_series, ["p"])
-
-    def simplified_name(self) -> str:
-        return "bernoulli"
 
 
 class BetaLikelihood(Likelihood):
@@ -551,7 +504,11 @@ class BetaLikelihood(Likelihood):
         _check_strict_positive(self.prior_beta, "beta")
 
         self.softplus = nn.Softplus()
-        super().__init__(prior_strength)
+        super().__init__(
+            likelihood_type=LikelihoodType.Beta,
+            parameter_names=["alpha", "beta"],
+            prior_strength=prior_strength,
+        )
 
     @property
     def _prior_params(self):
@@ -566,22 +523,10 @@ class BetaLikelihood(Likelihood):
         distr = _Beta(alpha, beta)
         return distr.sample()
 
-    @property
-    def num_parameters(self) -> int:
-        return 2
-
     def _params_from_output(self, model_output):
         alpha = self.softplus(model_output[:, :, :, 0])
         beta = self.softplus(model_output[:, :, :, 1])
         return alpha, beta
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        return self._likelihood_generate_components_names(
-            input_series, ["alpha", "beta"]
-        )
-
-    def simplified_name(self) -> str:
-        return "beta"
 
 
 class CauchyLikelihood(Likelihood):
@@ -613,7 +558,11 @@ class CauchyLikelihood(Likelihood):
         _check_strict_positive(self.prior_gamma, "gamma")
 
         self.softplus = nn.Softplus()
-        super().__init__(prior_strength)
+        super().__init__(
+            likelihood_type=LikelihoodType.Cauchy,
+            parameter_names=["xzero", "gamma"],
+            prior_strength=prior_strength,
+        )
 
     @property
     def _prior_params(self):
@@ -628,24 +577,12 @@ class CauchyLikelihood(Likelihood):
         distr = _Cauchy(xzero, gamma)
         return distr.sample()
 
-    @property
-    def num_parameters(self) -> int:
-        return 2
-
     def _params_from_output(self, model_output):
         xzero = model_output[:, :, :, 0]
         gamma = self.softplus(model_output[:, :, :, 1])
         # We need this hack as sometimes the output of the softplus is 0 in practice for Cauchy...
         gamma[gamma < MIN_CAUCHY_GAMMA_SAMPLING] = MIN_CAUCHY_GAMMA_SAMPLING
         return xzero, gamma
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        return self._likelihood_generate_components_names(
-            input_series, ["xzero", "gamma"]
-        )
-
-    def simplified_name(self) -> str:
-        return "cauchy"
 
 
 class ContinuousBernoulliLikelihood(Likelihood):
@@ -670,7 +607,11 @@ class ContinuousBernoulliLikelihood(Likelihood):
         _check_in_open_0_1_intvl(self.prior_lambda, "lambda")
 
         self.sigmoid = nn.Sigmoid()
-        super().__init__(prior_strength)
+        super().__init__(
+            likelihood_type=LikelihoodType.ContinuousBernoulli,
+            parameter_names=["lambda"],
+            prior_strength=prior_strength,
+        )
 
     @property
     def _prior_params(self):
@@ -685,19 +626,9 @@ class ContinuousBernoulliLikelihood(Likelihood):
         distr = _ContinuousBernoulli(model_lmbda)
         return distr.sample()
 
-    @property
-    def num_parameters(self) -> int:
-        return 1
-
     def _params_from_output(self, model_output: torch.Tensor):
         lmbda = self.sigmoid(model_output.squeeze(dim=-1))
         return lmbda
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        return self._likelihood_generate_components_names(input_series, ["lambda"])
-
-    def simplified_name(self) -> str:
-        return "continuousbernoulli"
 
 
 class DirichletLikelihood(Likelihood):
@@ -722,7 +653,11 @@ class DirichletLikelihood(Likelihood):
         self.prior_alphas = prior_alphas
         _check_strict_positive(self.prior_alphas)
         self.softmax = nn.Softmax(dim=2)
-        super().__init__(prior_strength)
+        super().__init__(
+            likelihood_type=LikelihoodType.Dirichlet,
+            parameter_names=["alpha"],
+            prior_strength=prior_strength,
+        )
 
     @property
     def _prior_params(self):
@@ -741,22 +676,11 @@ class DirichletLikelihood(Likelihood):
         alphas = self._params_from_output(model_output)
         return alphas
 
-    @property
-    def num_parameters(self) -> int:
-        return 1  # 1 parameter per component
-
     def _params_from_output(self, model_output):
         alphas = self.softmax(
             model_output.squeeze(dim=-1)
         )  # take softmax over components
         return alphas
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        # one alpha per component
-        return self._likelihood_generate_components_names(input_series, ["alpha"])
-
-    def simplified_name(self) -> str:
-        return "dirichlet"
 
 
 class ExponentialLikelihood(Likelihood):
@@ -780,7 +704,11 @@ class ExponentialLikelihood(Likelihood):
         self.prior_lambda = prior_lambda
         _check_strict_positive(self.prior_lambda, "lambda")
         self.softplus = nn.Softplus()
-        super().__init__(prior_strength)
+        super().__init__(
+            likelihood_type=LikelihoodType.Exponential,
+            parameter_names=["lambda"],
+            prior_strength=prior_strength,
+        )
 
     @property
     def _prior_params(self):
@@ -795,19 +723,9 @@ class ExponentialLikelihood(Likelihood):
         distr = _Exponential(lmbda)
         return distr.sample()
 
-    @property
-    def num_parameters(self) -> int:
-        return 1
-
     def _params_from_output(self, model_output: torch.Tensor):
         lmbda = self.softplus(model_output.squeeze(dim=-1))
         return lmbda
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        return self._likelihood_generate_components_names(input_series, ["lambda"])
-
-    def simplified_name(self) -> str:
-        return "exponential"
 
 
 class GammaLikelihood(Likelihood):
@@ -835,7 +753,11 @@ class GammaLikelihood(Likelihood):
         _check_strict_positive(self.prior_alpha, "alpha")
         _check_strict_positive(self.prior_beta, "beta")
         self.softplus = nn.Softplus()
-        super().__init__(prior_strength)
+        super().__init__(
+            likelihood_type=LikelihoodType.Gamma,
+            parameter_names=["alpha", "beta"],
+            prior_strength=prior_strength,
+        )
 
     @property
     def _prior_params(self):
@@ -850,22 +772,10 @@ class GammaLikelihood(Likelihood):
         distr = _Gamma(alpha, beta)
         return distr.sample()
 
-    @property
-    def num_parameters(self) -> int:
-        return 2
-
     def _params_from_output(self, model_output: torch.Tensor):
         alpha = self.softplus(model_output[:, :, :, 0])
         beta = self.softplus(model_output[:, :, :, 1])
         return alpha, beta
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        return self._likelihood_generate_components_names(
-            input_series, ["alpha", "beta"]
-        )
-
-    def simplified_name(self) -> str:
-        return "gamma"
 
 
 class GeometricLikelihood(Likelihood):
@@ -889,7 +799,11 @@ class GeometricLikelihood(Likelihood):
         self.prior_p = prior_p
         _check_in_open_0_1_intvl(self.prior_p, "p")
         self.sigmoid = nn.Sigmoid()
-        super().__init__(prior_strength)
+        super().__init__(
+            likelihood_type=LikelihoodType.Geometric,
+            parameter_names=["p"],
+            prior_strength=prior_strength,
+        )
 
     @property
     def _prior_params(self):
@@ -904,19 +818,9 @@ class GeometricLikelihood(Likelihood):
         distr = _Geometric(p)
         return distr.sample()
 
-    @property
-    def num_parameters(self) -> int:
-        return 1
-
     def _params_from_output(self, model_output: torch.Tensor):
         p = self.sigmoid(model_output.squeeze(dim=-1))
         return p
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        return self._likelihood_generate_components_names(input_series, ["p"])
-
-    def simplified_name(self) -> str:
-        return "geometric"
 
 
 class GumbelLikelihood(Likelihood):
@@ -943,7 +847,11 @@ class GumbelLikelihood(Likelihood):
         self.prior_beta = prior_beta
         _check_strict_positive(self.prior_beta)
         self.softplus = nn.Softplus()
-        super().__init__(prior_strength)
+        super().__init__(
+            likelihood_type=LikelihoodType.Gumbel,
+            parameter_names=["mu", "beta"],
+            prior_strength=prior_strength,
+        )
 
     @property
     def _prior_params(self):
@@ -958,20 +866,10 @@ class GumbelLikelihood(Likelihood):
         distr = _Gumbel(mu, beta)
         return distr.sample()
 
-    @property
-    def num_parameters(self) -> int:
-        return 2
-
     def _params_from_output(self, model_output: torch.Tensor):
         mu = model_output[:, :, :, 0]
         beta = self.softplus(model_output[:, :, :, 1])
         return mu, beta
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        return self._likelihood_generate_components_names(input_series, ["mu", "beta"])
-
-    def simplified_name(self) -> str:
-        return "gumbel"
 
 
 class HalfNormalLikelihood(Likelihood):
@@ -995,7 +893,11 @@ class HalfNormalLikelihood(Likelihood):
         self.prior_sigma = prior_sigma
         _check_strict_positive(self.prior_sigma, "sigma")
         self.softplus = nn.Softplus()
-        super().__init__(prior_strength)
+        super().__init__(
+            likelihood_type=LikelihoodType.HalfNormal,
+            parameter_names=["sigma"],
+            prior_strength=prior_strength,
+        )
 
     @property
     def _prior_params(self):
@@ -1010,19 +912,9 @@ class HalfNormalLikelihood(Likelihood):
         distr = _HalfNormal(sigma)
         return distr.sample()
 
-    @property
-    def num_parameters(self) -> int:
-        return 1
-
     def _params_from_output(self, model_output: torch.Tensor):
         sigma = self.softplus(model_output.squeeze(dim=-1))
         return sigma
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        return self._likelihood_generate_components_names(input_series, ["sigma"])
-
-    def simplified_name(self) -> str:
-        return "halfnormal"
 
 
 class LaplaceLikelihood(Likelihood):
@@ -1049,7 +941,11 @@ class LaplaceLikelihood(Likelihood):
         self.prior_b = prior_b
         _check_strict_positive(self.prior_b)
         self.softplus = nn.Softplus()
-        super().__init__(prior_strength)
+        super().__init__(
+            likelihood_type=LikelihoodType.Laplace,
+            parameter_names=["mu", "b"],
+            prior_strength=prior_strength,
+        )
 
     @property
     def _prior_params(self):
@@ -1064,20 +960,10 @@ class LaplaceLikelihood(Likelihood):
         distr = _Laplace(mu, b)
         return distr.sample()
 
-    @property
-    def num_parameters(self) -> int:
-        return 2
-
     def _params_from_output(self, model_output: torch.Tensor):
         mu = model_output[:, :, :, 0]
         b = self.softplus(model_output[:, :, :, 1])
         return mu, b
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        return self._likelihood_generate_components_names(input_series, ["mu", "b"])
-
-    def simplified_name(self) -> str:
-        return "laplace"
 
 
 class LogNormalLikelihood(Likelihood):
@@ -1104,7 +990,11 @@ class LogNormalLikelihood(Likelihood):
         self.prior_sigma = prior_sigma
         _check_strict_positive(self.prior_sigma, "sigma")
         self.softplus = nn.Softplus()
-        super().__init__(prior_strength)
+        super().__init__(
+            likelihood_type=LikelihoodType.LogNormal,
+            parameter_names=["mu", "sigma"],
+            prior_strength=prior_strength,
+        )
 
     @property
     def _prior_params(self):
@@ -1119,20 +1009,10 @@ class LogNormalLikelihood(Likelihood):
         distr = _LogNormal(mu, sigma)
         return distr.sample()
 
-    @property
-    def num_parameters(self) -> int:
-        return 2
-
     def _params_from_output(self, model_output):
         mu = model_output[:, :, :, 0]
         sigma = self.softplus(model_output[:, :, :, 1])
         return mu, sigma
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        return self._likelihood_generate_components_names(input_series, ["mu", "sigma"])
-
-    def simplified_name(self) -> str:
-        return "lognormal"
 
 
 class WeibullLikelihood(Likelihood):
@@ -1154,7 +1034,11 @@ class WeibullLikelihood(Likelihood):
             strength of the loss regularisation induced by the prior
         """
         self.softplus = nn.Softplus()
-        super().__init__(prior_strength)
+        super().__init__(
+            likelihood_type=LikelihoodType.Weibull,
+            parameter_names=["lambda", "k"],
+            prior_strength=prior_strength,
+        )
 
     @property
     def _prior_params(self):
@@ -1169,20 +1053,10 @@ class WeibullLikelihood(Likelihood):
         distr = _Weibull(lmbda, k)
         return distr.sample()
 
-    @property
-    def num_parameters(self) -> int:
-        return 2
-
     def _params_from_output(self, model_output: torch.Tensor):
         lmbda = self.softplus(model_output[:, :, :, 0])
         k = self.softplus(model_output[:, :, :, 1])
         return lmbda, k
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        return self._likelihood_generate_components_names(input_series, ["lambda", "k"])
-
-    def simplified_name(self) -> str:
-        return "weibull"
 
 
 class QuantileRegression(Likelihood):
@@ -1199,8 +1073,6 @@ class QuantileRegression(Likelihood):
         quantiles
             list of quantiles
         """
-
-        super().__init__()
         if quantiles is None:
             self.quantiles = [
                 0.01,
@@ -1230,6 +1102,12 @@ class QuantileRegression(Likelihood):
 
         # overwrite the attributes of Likelihood parent class
         self.ignore_attrs_equality = ["first", "quantiles_tensor"]
+
+        super().__init__(
+            likelihood_type=LikelihoodType.Quantile,
+            parameter_names=quantile_names(self.quantiles),
+            prior_strength=1.0,
+        )
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         """
@@ -1299,10 +1177,6 @@ class QuantileRegression(Likelihood):
         )
         return params
 
-    @property
-    def num_parameters(self) -> int:
-        return len(self.quantiles)
-
     def compute_loss(
         self,
         model_output: torch.Tensor,
@@ -1355,16 +1229,6 @@ class QuantileRegression(Likelihood):
     def _params_from_output(self, model_output: torch.Tensor) -> None:
         # This should not be called in this class (we are abusing Likelihood)
         return None
-
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
-        """Each component have their own quantiles"""
-        return likelihood_component_names(
-            components=input_series.components,
-            parameter_names=quantile_names(self.quantiles),
-        )
-
-    def simplified_name(self) -> str:
-        return "quantile"
 
 
 """ TODO
