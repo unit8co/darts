@@ -17,7 +17,6 @@ except ModuleNotFoundError:
 
 # Forecasting
 from darts.models.forecasting.arima import ARIMA
-from darts.models.forecasting.auto_arima import AutoARIMA
 from darts.models.forecasting.baselines import (
     NaiveDrift,
     NaiveEnsembleModel,
@@ -124,7 +123,6 @@ from darts.models.filtering.moving_average_filter import MovingAverageFilter
 __all__ = [
     "LightGBMModel",
     "ARIMA",
-    "AutoARIMA",
     "NaiveDrift",
     "NaiveMean",
     "NaiveMovingAverage",
