@@ -59,7 +59,6 @@ from scipy.stats import kurtosis, skew
 
 from darts.logging import (
     get_logger,
-    raise_deprecation_warning,
     raise_if,
     raise_if_not,
     raise_log,
@@ -1823,29 +1822,6 @@ class TimeSeries:
 
         return pd.Series(data=data, index=index, name=name)
 
-    def pd_series(self, copy: bool = True) -> pd.Series:
-        """
-        Return a Pandas Series representation of this time series.
-
-        Works only for univariate series that are deterministic (i.e., made of 1 sample).
-
-        Parameters
-        ----------
-        copy
-            Whether to return a copy of the series. Leave it to True unless you know what you are doing.
-
-        Returns
-        -------
-        pandas.Series
-            A Pandas Series representation of this univariate time series.
-        """
-        raise_deprecation_warning(
-            "`TimeSeries.pd_series()` is deprecated and will be removed in Darts version 0.35.0. Use "
-            "`TimeSeries.to_series()` instead",
-            logger,
-        )
-        return self.to_series(copy=copy)
-
     def to_dataframe(
         self,
         copy: bool = True,
@@ -1925,35 +1901,6 @@ class TimeSeries:
         }
 
         return nw.from_dict(data, backend=backend).to_native()
-
-    def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
-        """
-        Return a Pandas DataFrame representation of this time series.
-
-        Each of the series components will appear as a column in the DataFrame.
-        If the series is stochastic, the samples are returned as columns of the dataframe with column names
-        as 'component_s#' (e.g. with two components and two samples:
-        'comp0_s0', 'comp0_s1' 'comp1_s0' 'comp1_s1').
-
-        Parameters
-        ----------
-        copy
-            Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
-        suppress_warnings
-            Whether to suppress the warnings for the `DataFrame` creation.
-
-        Returns
-        -------
-        pandas.DataFrame
-            The Pandas DataFrame representation of this time series
-        """
-
-        raise_deprecation_warning(
-            "`TimeSeries.pd_dataframe()` is deprecated, and will be removed in Darts version 0.35.0. Use "
-            "`TimeSeries.to_dataframe()` instead",
-            logger,
-        )
-        return self.to_dataframe(copy=copy, suppress_warnings=suppress_warnings)
 
     def quantile_df(self, quantile=0.5) -> pd.DataFrame:
         """
