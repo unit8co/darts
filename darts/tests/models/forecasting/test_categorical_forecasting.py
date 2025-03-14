@@ -10,8 +10,10 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
+from torch import nn
 
 from darts.models.forecasting.categorical_model import CategoricalModel
+from darts.models.forecasting.nlinear import NLinearClassifierModel
 from darts.models.forecasting.xgboost import XGBClassifierModel
 from darts.utils import timeseries_generation as tg
 
@@ -25,6 +27,10 @@ def init_models(classifiers, extra_models):
         clf(lags_past_covariates=5, **kwargs) for clf, kwargs in extra_models
     ])
     return models
+
+
+def init_torch_models(torch_models):
+    return [clf(**kwargs) for clf, kwargs in torch_models]
 
 
 class TestCategoricalForecasting:
@@ -52,6 +58,17 @@ class TestCategoricalForecasting:
     ]
 
     extra_models = [(XGBClassifierModel, {})]
+    torch_models = [
+        (
+            NLinearClassifierModel,
+            {
+                "input_chunk_length": 10,
+                "output_chunk_length": 1,
+                "output_chunk_shift": 0,
+                "loss_fn": nn.CrossEntropyLoss(),
+            },
+        )
+    ]
 
     @pytest.mark.parametrize("model", init_models(classifiers, extra_models))
     def test_classifier_specific_behavior(self, model):
@@ -73,6 +90,14 @@ class TestCategoricalForecasting:
         pred = model.predict(
             n=len(self.s1_test_y), past_covariates=self.sine_univariate1
         )
+        assert (
+            sum(pred.values() == self.sine1_target_test.values())[0] / len(pred)
+        ) >= 1
+
+    @pytest.mark.parametrize("model", init_torch_models(torch_models))
+    def test_torch_classifier_accuracy(self, model):
+        model.fit(self.sine1_target_train.astype(np.float32), epochs=500, verbose=True)
+        pred = model.predict(n=len(self.sine1_target_test))
         assert (
             sum(pred.values() == self.sine1_target_test.values())[0] / len(pred)
         ) >= 1
