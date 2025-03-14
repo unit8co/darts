@@ -28,6 +28,7 @@ from darts.models import (
     NaiveDrift,
     NaiveSeasonal,
     NotImportedModule,
+    StatsForecastAutoARIMA,
 )
 from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
@@ -572,7 +573,7 @@ class TestHistoricalforecast:
         )
 
     def test_historical_forecasts_future_cov_local_models(self):
-        model = ARIMA()
+        model = StatsForecastAutoARIMA()
         assert model.min_train_series_length == 10
         series = tg.sine_timeseries(length=11)
         res = model.historical_forecasts(
