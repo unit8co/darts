@@ -14,7 +14,6 @@ Global Baseline Models (`GlobalForecastingModel <https://unit8co.github.io/darts
 Statistical Models (`LocalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms>`_)
     - :class:`~darts.models.forecasting.arima.ARIMA`
     - :class:`~darts.models.forecasting.varima.VARIMA`
-    - :class:`~darts.models.forecasting.auto_arima.AutoARIMA`
     - :class:`~darts.models.forecasting.sf_auto_arima.StatsForecastAutoARIMA`
     - :class:`~darts.models.forecasting.exponential_smoothing.ExponentialSmoothing`
     - :class:`~darts.models.forecasting.sf_auto_ets.StatsForecastAutoETS`
