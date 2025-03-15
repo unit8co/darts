@@ -13,6 +13,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import Any, BinaryIO, Callable, Optional, Union
 
+from darts.utils.likelihood.likelihood import BaseLikelihood, LikelihoodType
+
 try:
     from typing import Literal
 except ImportError:
@@ -180,7 +182,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
         self.cal_num_samples = (
             cal_num_samples if model.supports_probabilistic_prediction else 1
         )
-        self._likelihood = "quantile"
+        self._likelihood = BaseLikelihood(
+            likelihood_type=LikelihoodType.Quantile,
+            parameter_names=quantile_names(quantiles),
+        )
         self._fit_called = True
 
     def fit(
@@ -1516,7 +1521,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         return self.model.considers_static_covariates
 
     @property
-    def likelihood(self) -> str:
+    def likelihood(self) -> BaseLikelihood:
         return self._likelihood
 
 

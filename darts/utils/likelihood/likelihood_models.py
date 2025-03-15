@@ -99,8 +99,16 @@ class Likelihood(BaseLikelihood, ABC):
         parameter_names: list[str],
         prior_strength=1.0,
     ):
-        """
-        Abstract class for torch likelihood models.
+        """Abstract class for torch likelihood models.
+
+        Parameters
+        ----------
+        likelihood_type
+            A pre-defined `LikelihoodType`.
+        parameter_names
+            The likelihood (distribution) parameter names.
+        prior_strength
+            strength of the loss regularisation induced by the prior
         """
         super().__init__(
             likelihood_type=likelihood_type, parameter_names=parameter_names
@@ -186,8 +194,7 @@ class Likelihood(BaseLikelihood, ABC):
     @abstractmethod
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         """
-        Samples a prediction from the probability distributions defined by the specific likelihood model
-        and the parameters given in `model_output`.
+        Samples a prediction from the likelihood distribution and the predicted parameters.
         """
         pass
 
@@ -208,9 +215,9 @@ class Likelihood(BaseLikelihood, ABC):
             ))
 
     def __eq__(self, other) -> bool:
-        """
-        Defines (in)equality between two likelihood objects, ignore the attributes listed in
-        self.ignore_attrs_equality or inheriting from torch.nn.Module.
+        """Defines (in)equality between two likelihood objects.
+
+        Ignores the attributes listed in `ignore_attrs_equality` or inheriting from `torch.nn.Module`.
         """
         if type(other) is type(self):
             other_state = {

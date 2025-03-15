@@ -27,6 +27,8 @@ from itertools import product
 from random import sample
 from typing import Any, BinaryIO, Callable, Literal, Optional, Union
 
+from darts.utils.likelihood.likelihood import BaseLikelihood
+
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
@@ -205,6 +207,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         range indexing and raise meaningful exception.
         """
         return True
+
+    @property
+    def likelihood(self) -> Optional[BaseLikelihood]:
+        """Returns the likelihood (if any) that the model for probabilistic forecasts."""
+        return None
 
     @property
     def supports_probabilistic_prediction(self) -> bool:

@@ -1,3 +1,4 @@
+import inspect
 from enum import Enum
 
 from darts import TimeSeries
@@ -34,6 +35,13 @@ class BaseLikelihood:
 
         * torch `Likelihood`
         * simple likelihoods (e.g. for regression)
+
+        Parameters
+        ----------
+        likelihood_type
+            A pre-defined `LikelihoodType`.
+        parameter_names
+            The likelihood (distribution) parameter names.
         """
         self._likelihood_type = likelihood_type
         self._parameter_names = parameter_names
@@ -69,3 +77,15 @@ class BaseLikelihood:
     @property
     def supports_parameter_autoregression(self) -> bool:
         return self.likelihood_type is LikelihoodType.Quantile
+
+    def __repr__(self) -> str:
+        """Return the class and parameters of the instance in a nice format"""
+        cls_name = self.__class__.__name__
+        # only display the constructor parameters as user cannot change the other attributes
+        init_signature = inspect.signature(self.__class__.__init__)
+        params_string = ", ".join([
+            f"{str(v)}"
+            for _, v in init_signature.parameters.items()
+            if str(v) != "self"
+        ])
+        return f"{cls_name}({params_string})"
