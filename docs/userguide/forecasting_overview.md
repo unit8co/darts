@@ -191,7 +191,7 @@ from darts.datasets import AirPassengersDataset
 from darts import TimeSeries
 from darts.models import TCNModel
 from darts.dataprocessing.transformers import Scaler
-from darts.utils.likelihood_models import LaplaceLikelihood
+from darts.utils.likelihood.likelihood_models import LaplaceLikelihood
 
 series = AirPassengersDataset().load()
 train, val = series[:-36], series[-36:]
@@ -222,7 +222,7 @@ from darts.datasets import AirPassengersDataset
 from darts import TimeSeries
 from darts.models import TCNModel
 from darts.dataprocessing.transformers import Scaler
-from darts.utils.likelihood_models import QuantileRegression
+from darts.utils.likelihood.likelihood_models import QuantileRegression
 
 series = AirPassengersDataset().load()
 train, val = series[:-36], series[-36:]
@@ -254,7 +254,7 @@ from darts.datasets import AirPassengersDataset
 from darts import TimeSeries
 from darts.models import TCNModel
 from darts.dataprocessing.transformers import Scaler
-from darts.utils.likelihood_models import QuantileRegression
+from darts.utils.likelihood.likelihood_models import QuantileRegression
 
 series = AirPassengersDataset().load()
 train, val = series[:-36], series[-36:]

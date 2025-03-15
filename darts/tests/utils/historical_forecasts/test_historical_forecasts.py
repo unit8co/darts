@@ -56,7 +56,10 @@ if TORCH_AVAILABLE:
         TransformerModel,
         TSMixerModel,
     )
-    from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
+    from darts.utils.likelihood.likelihood_models import (
+        GaussianLikelihood,
+        QuantileRegression,
+    )
 
 models = [LinearRegressionModel, NaiveDrift]
 models_reg_no_cov_cls_kwargs = [

@@ -9,7 +9,7 @@ if not TORCH_AVAILABLE:
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
-from darts.utils.likelihood_models import (
+from darts.utils.likelihood.likelihood_models import (
     BetaLikelihood,
     CauchyLikelihood,
     ExponentialLikelihood,

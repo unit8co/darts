@@ -34,7 +34,7 @@ from darts.utils.data import (
     MixedCovariatesTrainingDataset,
     TrainingDataset,
 )
-from darts.utils.likelihood_models import Likelihood, QuantileRegression
+from darts.utils.likelihood.likelihood_models import Likelihood, QuantileRegression
 
 logger = get_logger(__name__)
 

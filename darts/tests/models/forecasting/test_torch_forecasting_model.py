@@ -50,7 +50,7 @@ from darts.models import (
 )
 from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
-from darts.utils.likelihood_models import (
+from darts.utils.likelihood.likelihood_models import (
     CauchyLikelihood,
     GaussianLikelihood,
     LaplaceLikelihood,
