@@ -8,7 +8,7 @@ pandas>=1.0.5
 pmdarima>=1.8.0
 pyod>=0.9.5
 requests>=2.22.0
-scikit-learn>=1.0.1
+scikit-learn>=1.6.0
 scipy>=1.3.2
 shap>=0.40.0
 statsforecast>=1.4
@@ -17,4 +17,4 @@ tbats>=1.1.0
 tqdm>=4.60.0
 typing-extensions
 xarray>=0.17.0
-xgboost>=1.6.0
+xgboost>=2.1.4

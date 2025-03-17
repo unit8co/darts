@@ -798,6 +798,7 @@ def _build_forecast_series(
         columns=input_series.columns if custom_columns is None else custom_columns,
         static_covariates=input_series.static_covariates if with_static_covs else None,
         hierarchy=input_series.hierarchy if with_hierarchy else None,
+        metadata=input_series.metadata,
     )
 
 

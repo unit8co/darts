@@ -205,8 +205,9 @@ class TestShapExplainer:
 
         # Good type of explainers
         shap_explain = ShapExplainer(m)
-        if isinstance(m, XGBModel):
-            # since xgboost > 2.1.0, model supports native multi output regression
+        if m._supports_native_multioutput:
+            # since xgboost > 2.1.0, model supports native multi-output regression
+            # CatBoostModel supports multi-output for certain loss functions
             assert isinstance(shap_explain.explainers.explainers, shap.explainers.Tree)
         else:
             assert isinstance(
@@ -270,7 +271,7 @@ class TestShapExplainer:
             future_covariates=self.fut_cov_ts,
         )
         shap_explain = ShapExplainer(m)
-        if isinstance(m, XGBModel):
+        if m._supports_native_multioutput:
             assert isinstance(shap_explain.explainers.explainers, shap.explainers.Tree)
         else:
             assert isinstance(
@@ -651,10 +652,10 @@ class TestShapExplainer:
         shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
         df = pd.merge(
-            self.target_ts.pd_dataframe(),
+            self.target_ts.to_dataframe(),
             explanation_results.get_feature_values(
                 horizon=1, component="price"
-            ).pd_dataframe(),
+            ).to_dataframe(),
             how="left",
             left_index=True,
             right_index=True,

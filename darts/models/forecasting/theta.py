@@ -175,7 +175,7 @@ class Theta(LocalForecastingModel):
         # Re-apply the seasonal trend of the TimeSeries
         if self.is_seasonal:
             replicated_seasonality = np.tile(
-                self.seasonality.pd_series()[-self.season_period :],
+                self.seasonality.to_series()[-self.season_period :],
                 math.ceil(n / self.season_period),
             )[:n]
             if self.season_mode is SeasonalityMode.MULTIPLICATIVE:
@@ -313,7 +313,7 @@ class FourTheta(LocalForecastingModel):
         self.length = len(series)
         # normalization of data
         if self.normalization:
-            self.mean = series.pd_dataframe(copy=False).mean().mean()
+            self.mean = series.to_dataframe(copy=False).mean().mean()
             raise_if_not(
                 not np.isclose(self.mean, 0),
                 "The mean value of the provided series is too close to zero to perform normalization",
@@ -424,7 +424,7 @@ class FourTheta(LocalForecastingModel):
         # Re-apply the seasonal trend of the TimeSeries
         if self.is_seasonal:
             replicated_seasonality = np.tile(
-                self.seasonality.pd_series()[-self.season_period :],
+                self.seasonality.to_series()[-self.season_period :],
                 math.ceil(n / self.season_period),
             )[:n]
             if self.season_mode is SeasonalityMode.MULTIPLICATIVE:

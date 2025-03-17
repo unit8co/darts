@@ -112,9 +112,10 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         """Differentiate the series self.d times"""
         for _ in range(self.d):
             series = TimeSeries.from_dataframe(
-                df=series.pd_dataframe(copy=False).diff().dropna(),
+                df=series.to_dataframe(copy=False).diff().dropna(),
                 static_covariates=series.static_covariates,
                 hierarchy=series.hierarchy,
+                metadata=series.metadata,
             )
         return series
 

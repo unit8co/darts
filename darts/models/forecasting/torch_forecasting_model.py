@@ -647,6 +647,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 logger=logger,
             )
 
+    @abstractmethod
+    def _update_covariates_use(self):
+        """Based on the Forecasting class and the training_sample attribute, update the
+        uses_[past/future/static]_covariates attributes."""
+        pass
+
     def to_onnx(self, path: Optional[str] = None, **kwargs):
         """Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning's
         :func:`torch.onnx.export` method (`official documentation <https://lightning.ai/docs/pytorch/
@@ -678,6 +684,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             ``input_sample``, ``input_name``). For more information, read the `official documentation
             <https://pytorch.org/docs/master/onnx.html#torch.onnx.export>`_.
         """
+        # TODO: LSTM model should be exported with a batch size of 1
+        # TODO: predictions with TFT and TCN models is incorrect, might be caused by helper function to process inputs
         if not self._fit_called:
             raise_log(
                 ValueError("`fit()` needs to be called before `to_onnx()`."), logger
@@ -2147,6 +2155,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.model.load_state_dict(ckpt["state_dict"], strict=strict)
         # update the fit_called attribute to allow for direct inference
         self._fit_called = True
+        # based on the shape of train_sample, figure out which covariates are used by the model
+        # (usually set in the Darts model prior to fitting it)
+        self._update_covariates_use()
 
     def load_weights(
         self, path: str, load_encoders: bool = True, skip_checks: bool = False, **kwargs
@@ -2699,6 +2710,13 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             None,
         )
 
+    def _update_covariates_use(self):
+        """The model is expected to rely on the `PastCovariatesTrainingDataset`"""
+        _, past_covs, static_covs, _ = self.train_sample
+        self._uses_past_covariates = past_covs is not None
+        self._uses_future_covariates = False
+        self._uses_static_covariates = static_covs is not None
+
 
 class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
     supports_past_covariates = False
@@ -2793,6 +2811,13 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             None,
         )
+
+    def _update_covariates_use(self):
+        """The model is expected to rely on the `FutureCovariatesTrainingDataset`"""
+        _, future_covs, static_covs, _ = self.train_sample
+        self._uses_past_covariates = False
+        self._uses_future_covariates = future_covs is not None
+        self._uses_static_covariates = static_covs is not None
 
 
 class DualCovariatesTorchModel(TorchForecastingModel, ABC):
@@ -2890,6 +2915,15 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             None,
         )
 
+    def _update_covariates_use(self):
+        """The model is expected to rely on the `DualCovariatesTrainingDataset`"""
+        _, historic_future_covs, future_covs, static_covs, _ = self.train_sample
+        self._uses_past_covariates = False
+        self._uses_future_covariates = (
+            historic_future_covs is not None or future_covs is not None
+        )
+        self._uses_static_covariates = static_covs is not None
+
 
 class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(
@@ -2985,6 +3019,17 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             None,
         )
+
+    def _update_covariates_use(self):
+        """The model is expected to rely on the `MixedCovariatesTrainingDataset`"""
+        _, past_covs, historic_future_covs, future_covs, static_covs, _ = (
+            self.train_sample
+        )
+        self._uses_past_covariates = past_covs is not None
+        self._uses_future_covariates = (
+            historic_future_covs is not None or future_covs is not None
+        )
+        self._uses_static_covariates = static_covs is not None
 
 
 class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
@@ -3082,3 +3127,12 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             None,
         )
+
+    def _update_covariates_use(self):
+        """The model is expected to rely on the `SplitCovariatesTrainingDataset`"""
+        _, past_covs, historic_future_covs, future_covs, static_covs, _ = (
+            self.train_sample
+        )
+        self._uses_past_covariates = past_covs is not None
+        self._uses_future_covariates = future_covs is not None
+        self._uses_static_covariates = static_covs is not None
