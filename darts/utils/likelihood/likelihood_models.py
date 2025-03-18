@@ -57,12 +57,15 @@ from torch.distributions import Weibull as _Weibull
 from torch.distributions.kl import kl_divergence
 
 from darts.logging import raise_if_not
-from darts.utils.likelihood.likelihood import BaseLikelihood, LikelihoodType
+from darts.utils.likelihood.likelihood import (
+    BaseLikelihood,
+    LikelihoodType,
+    quantile_names,
+)
 
 # TODO: Table on README listing distribution, possible priors and wiki article
 from darts.utils.utils import (
     _check_quantiles,
-    quantile_names,
 )
 
 MIN_CAUCHY_GAMMA_SAMPLING = 1e-100

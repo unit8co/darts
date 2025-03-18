@@ -9,8 +9,12 @@ from typing import Optional
 import numpy as np
 
 from darts.logging import get_logger, raise_log
-from darts.utils.likelihood.likelihood import BaseLikelihood, LikelihoodType
-from darts.utils.utils import _check_quantiles, quantile_names
+from darts.utils.likelihood.likelihood import (
+    BaseLikelihood,
+    LikelihoodType,
+    quantile_names,
+)
+from darts.utils.utils import _check_quantiles
 
 logger = get_logger(__name__)
 

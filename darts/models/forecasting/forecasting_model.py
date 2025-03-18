@@ -27,7 +27,12 @@ from itertools import product
 from random import sample
 from typing import Any, BinaryIO, Callable, Literal, Optional, Union
 
-from darts.utils.likelihood.likelihood import BaseLikelihood
+from darts.utils.likelihood.likelihood import (
+    BaseLikelihood,
+    likelihood_component_names,
+    quantile_interval_names,
+    quantile_names,
+)
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -70,9 +75,6 @@ from darts.utils.ts_utils import (
 )
 from darts.utils.utils import (
     generate_index,
-    likelihood_component_names,
-    quantile_interval_names,
-    quantile_names,
 )
 
 logger = get_logger(__name__)
