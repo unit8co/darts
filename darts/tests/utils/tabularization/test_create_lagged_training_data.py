@@ -2939,13 +2939,18 @@ class TestCreateLaggedTrainingData:
         expected_weights = []
         len_y_single = len(y) if single_series else len(y) // 2
         for i in range(ocl):
-            # shifted by the steps required to create the first set of features
-            first_label_idx = -min(lags) + ocs + i
-            # make enough room for all the strided labels
-            last_label_idx = first_label_idx + len_y_single * stride
+            # Shift by (len_y_single - 1) * stride to have the right amount of values
+            # Shift by i to account for the target shift due to multi_models=True
+            # Shift by 1 to include the last element
+            first_label_idx = len(weights_exact) - (len_y_single - 1) * stride - 1 - i
+            # Shift by i to account for the target shift due to multi_models=True
+            # Shift by i to have the correct amount of values
+            # Shift by 1 to include the last element
+            last_label_idx = len(weights_exact) - i * 2 + 1
             mask = slice(first_label_idx, last_label_idx, stride)
             expected_weights.append(weights_exact[mask])
-        expected_weights = np.concatenate(expected_weights, axis=1)
+        # ocl=0 is the last set of weights, without target shift
+        expected_weights = np.concatenate(expected_weights[::-1], axis=1)
         if not single_series:
             expected_weights = np.concatenate([expected_weights] * 2, axis=0)
         np.testing.assert_array_almost_equal(weights[:, :, 0], expected_weights)
