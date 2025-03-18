@@ -276,7 +276,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         Whether model instance supports direct prediction of likelihood parameters
         """
-        return getattr(self, "likelihood", None) is not None
+        return self.likelihood is not None
 
     @property
     @abstractmethod
