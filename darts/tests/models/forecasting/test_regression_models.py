@@ -1142,7 +1142,9 @@ class TestRegressionModels:
         )
         model_instance.fit(series=train_series, past_covariates=train_past_covariates)
         prediction = model_instance.predict(
-            n=len(test_series),
+            n=len(test_series)
+            if type(test_series) is TimeSeries
+            else len(test_series[0]),
             series=train_series,
             past_covariates=past_covariates,
         )
