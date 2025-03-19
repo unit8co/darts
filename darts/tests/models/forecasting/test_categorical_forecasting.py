@@ -17,10 +17,14 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
 from darts.models.forecasting.categorical_model import CategoricalModel
+from darts.models.forecasting.lgbm import LightGBMCategoricalModel
 from darts.models.forecasting.xgboost import XGBClassifierModel
+from darts.models.utils import NotImportedModule
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
 from darts.utils.multioutput import MultiOutputRegressor
+
+lgbm_available = not isinstance(LightGBMCategoricalModel, NotImportedModule)
 
 
 def process_model_list(classifiers):
@@ -124,6 +128,11 @@ class TestCategoricalForecasting:
         False,  # QuadraticDiscriminantAnalysis
         False,  # XGBClassifierModel
     ]
+
+    if lgbm_available:
+        classifiers.append((LightGBMCategoricalModel, {}))
+        models_accuracies.append(1)
+        models_multioutput.append(False)
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
     def test_init_classifier(self, clf_params):

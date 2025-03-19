@@ -17,6 +17,7 @@ import lightgbm as lgb
 import numpy as np
 
 from darts.logging import get_logger
+from darts.models.forecasting.categorical_model import CategoricalForecastingMixin
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -212,12 +213,15 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             multi_models=multi_models,
-            model=lgb.LGBMRegressor(**self.kwargs),
+            model=self._create_model(**self.kwargs),
             use_static_covariates=use_static_covariates,
             categorical_past_covariates=categorical_past_covariates,
             categorical_future_covariates=categorical_future_covariates,
             categorical_static_covariates=categorical_static_covariates,
         )
+
+    def _create_model(self, **kwargs) -> lgb.LGBMRegressor:
+        return lgb.LGBMRegressor(**kwargs)
 
     def fit(
         self,
@@ -355,3 +359,8 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
                 else self.output_chunk_length
             ),
         )
+
+
+class LightGBMCategoricalModel(LightGBMModel, CategoricalForecastingMixin):
+    def _create_model(self, **kwargs) -> lgb.LGBMClassifier:
+        return lgb.LGBMClassifier(**kwargs)
