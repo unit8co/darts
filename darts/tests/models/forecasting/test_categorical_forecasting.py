@@ -20,6 +20,7 @@ from darts.models.forecasting.categorical_model import CategoricalModel
 from darts.models.forecasting.xgboost import XGBClassifierModel
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
+from darts.utils.multioutput import MultiOutputRegressor
 
 
 def process_model_list(classifiers):
@@ -57,13 +58,27 @@ def train_test_split(series, split_ts):
 class TestCategoricalForecasting:
     np.random.seed(42)
 
+    # shift sines to positive values so that they can be used as target for classification with classes [0, 1, 2]
     sine_univariate1 = tg.sine_timeseries(length=100) + 1
-    sine_univariate2 = tg.sine_timeseries(length=100, value_phase=1.5705) + 1.5
+    sine_univariate2 = tg.sine_timeseries(length=100, value_phase=1.5705) + 1
+    sine_univariate3 = tg.sine_timeseries(length=100, value_phase=0.78525) + 1
+    sine_univariate4 = tg.sine_timeseries(length=100, value_phase=0.392625) + 1
+    sine_univariate5 = tg.sine_timeseries(length=100, value_phase=0.1963125) + 1
+    sine_univariate6 = tg.sine_timeseries(length=100, value_phase=0.09815625) + 1
 
-    sine1_target = sine_univariate1.map(lambda x: np.round(x))
+    sine_univariate1_cat = sine_univariate1.map(lambda x: np.round(x))
+    sine_univariate2_cat = sine_univariate2.map(lambda x: np.round(x))
+    sine_univariate3_cat = sine_univariate3.map(lambda x: np.round(x))
 
-    s1_train_y, s1_test_y = sine_univariate1.split_before(0.7)
-    sine1_target_train, sine1_target_test = sine1_target.split_before(0.7)
+    sine_multivariate1_cat = sine_univariate1_cat.stack(sine_univariate2_cat)
+    sine_multivariate2 = sine_univariate2.stack(sine_univariate3)
+
+    sine_multiseries1_cat = [
+        sine_univariate1_cat,
+        sine_univariate2_cat,
+        sine_univariate3_cat,
+    ]
+    sine_multiseries2 = [sine_univariate4, sine_univariate5, sine_univariate6]
 
     classifiers = [
         (CategoricalModel, {}),
@@ -82,7 +97,7 @@ class TestCategoricalForecasting:
         (XGBClassifierModel, {}),
     ]
 
-    univariate_accuracies = [
+    models_accuracies = [
         1,  # CategoricalModel
         1,  # KNeighborsClassifier
         1,  # SVC
@@ -94,6 +109,20 @@ class TestCategoricalForecasting:
         1,  # GaussianNB
         1,  # QuadraticDiscriminantAnalysis
         1,  # XGBClassifierModel
+    ]
+
+    models_multioutput = [
+        False,  # CategoricalModel
+        True,  # KNeighborsClassifier
+        False,  # SVC
+        False,  # GaussianProcessClassifier
+        True,  # DecisionTreeClassifier
+        True,  # RandomForestClassifier
+        False,  # MLPClassifier
+        False,  # AdaBoostClassifier
+        False,  # GaussianNB
+        False,  # QuadraticDiscriminantAnalysis
+        False,  # XGBClassifierModel
     ]
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
@@ -116,7 +145,9 @@ class TestCategoricalForecasting:
             model.class_labels
 
         # training the model
-        model.fit(series=self.sine1_target, past_covariates=self.sine_univariate1)
+        model.fit(
+            series=self.sine_univariate1_cat, past_covariates=self.sine_univariate1
+        )
         assert [0, 1, 2] == list(model.class_labels)
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
@@ -124,7 +155,7 @@ class TestCategoricalForecasting:
         """adding static covariates to lagged data logic is tested in
         `darts.tests.utils.data.tabularization.test_add_static_covariates`
         """
-        series = self.sine1_target.with_static_covariates(
+        series = self.sine_univariate1_cat.with_static_covariates(
             pd.DataFrame({"a": [1]})
         ).astype(np.int32)
 
@@ -175,16 +206,26 @@ class TestCategoricalForecasting:
             **kwargs,
         )
         model_instance.fit(series=train_series, past_covariates=train_past_covariates)
+        print(type(test_series))
         prediction = model_instance.predict(
-            n=len(test_series),
+            n=len(test_series)
+            if type(test_series) is TimeSeries
+            else len(test_series[0]),
             series=train_series,
             past_covariates=past_covariates,
         )
 
-        current_f1 = f1_score(
-            prediction.values(), test_series.values(), average=None
-        ).mean()
-        # in case of multi-series take mean rmse
+        # flatten in case of multivariate prediction
+        if type(prediction) is list:
+            prediction = np.array([p.values().flatten() for p in prediction]).flatten()
+            test_series = np.array([
+                ts.values().flatten() for ts in test_series
+            ]).flatten()
+        else:
+            prediction = prediction.values().flatten()
+            test_series = test_series.values().flatten()
+
+        current_f1 = f1_score(test_series, prediction, average=None).mean()
         mean_f1 = np.mean(current_f1)
         assert mean_f1 <= min_f1_model[idx], (
             f"{str(model_instance)} model was not able to predict data as well as expected. "
@@ -207,11 +248,168 @@ class TestCategoricalForecasting:
         # for every model, and different output_chunk_lengths test whether it predicts the univariate time series
         # as well as expected, accuracies are defined at the top of the class
         self.helper_test_models_accuracy(
-            self.sine1_target,
+            self.sine_univariate1_cat,
             self.sine_univariate2,
-            self.univariate_accuracies,
+            self.models_accuracies,
             model,
             idx,
             mode,
             ocl,
         )
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            zip(
+                process_model_list(classifiers),
+                range(len(list(process_model_list(classifiers)))),
+            ),
+            [True, False],
+            [1, 5],
+        ),
+    )
+    def test_models_accuracy_multivariate(self, config):
+        (model, idx), mode, ocl = config
+        # for every model, and different output_chunk_lengths test whether it predicts the multivariate time series
+        # as well as expected, accuracies are defined at the top of the class
+        self.helper_test_models_accuracy(
+            self.sine_multivariate1_cat,
+            self.sine_multivariate2,
+            self.models_accuracies,
+            model,
+            idx,
+            mode,
+            ocl,
+        )
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            zip(
+                process_model_list(classifiers),
+                range(len(list(process_model_list(classifiers)))),
+            ),
+            [True, False],
+            [1, 5],
+        ),
+    )
+    def test_models_accuracy_multiseries_multivariate(self, config):
+        (model, idx), mode, ocl = config
+        # for every model, and different output_chunk_lengths test whether it predicts the multiseries, multivariate
+        # time series as well as expected, accuracies are defined at the top of the class
+        self.helper_test_models_accuracy(
+            self.sine_multiseries1_cat,
+            self.sine_multiseries2,
+            self.models_accuracies,
+            model,
+            idx,
+            mode,
+            ocl,
+        )
+
+    @pytest.mark.parametrize(
+        "model_params",
+        zip(process_model_list(classifiers), models_multioutput),
+    )
+    def test_multioutput_wrapper(self, model_params):
+        """Check that with input_chunk_length=1, wrapping in MultiOutputRegressor occurs only when necessary"""
+        (model_cls, kwargs), support_multioutput = model_params
+        model = model_cls(
+            lags_past_covariates=1,
+            **kwargs,
+        )
+        model.fit(
+            series=self.sine_multivariate1_cat, past_covariates=self.sine_multivariate2
+        )
+        if support_multioutput:
+            assert not isinstance(model.model, MultiOutputRegressor)
+            # single estimator is responsible for both components
+            assert (
+                model.model
+                == model.get_estimator(horizon=0, target_dim=0)
+                == model.get_estimator(horizon=0, target_dim=1)
+            )
+        else:
+            assert isinstance(model.model, MultiOutputRegressor)
+            # one estimator (sub-model) per component
+            assert model.get_estimator(horizon=0, target_dim=0) != model.get_estimator(
+                horizon=0, target_dim=1
+            )
+
+    @pytest.mark.parametrize(
+        "config", product(process_model_list(classifiers), [True, False])
+    )
+    def test_models_runnability(self, config):
+        (model_cls, kwargs), mode = config
+
+        train_y, test_y = self.sine_univariate1_cat.split_before(0.7)
+
+        # TODO settings lags should either raise an error or a warning
+
+        # testing past covariates
+        model_instance = model_cls(
+            lags_future_covariates=(0, 3),
+            lags_past_covariates=None,
+            multi_models=mode,
+            **kwargs,
+        )
+        with pytest.raises(ValueError):
+            # testing lags_past_covariates None but past_covariates during training
+            model_instance.fit(
+                series=self.sine_univariate1_cat,
+                past_covariates=self.sine_multivariate2,
+                future_covariates=self.sine_multivariate2,
+            )
+
+        model_instance = model_cls(lags_past_covariates=3, multi_models=mode, **kwargs)
+        with pytest.raises(ValueError):
+            # testing lags_past_covariates but no past_covariates during fit
+            model_instance.fit(series=self.sine_univariate1_cat)
+
+        # testing future_covariates
+        model_instance = model_cls(
+            lags_past_covariates=4,
+            lags_future_covariates=None,
+            multi_models=mode,
+            **kwargs,
+        )
+        with pytest.raises(ValueError):
+            # testing lags_future_covariates None but future_covariates during training
+            model_instance.fit(
+                series=self.sine_univariate1_cat,
+                past_covariates=self.sine_multivariate2,
+                future_covariates=self.sine_multivariate2,
+            )
+
+        model_instance = model_cls(
+            lags_past_covariates=4,
+            lags_future_covariates=(0, 3),
+            multi_models=mode,
+            **kwargs,
+        )
+        with pytest.raises(ValueError):
+            # testing lags_future_covariates but no future_covariates during fit
+            model_instance.fit(
+                series=self.sine_univariate1_cat,
+                past_covariates=self.sine_multivariate2,
+            )
+
+        # testing input_dim
+        model_instance = model_cls(lags_past_covariates=2, multi_models=mode, **kwargs)
+        model_instance.fit(
+            series=train_y,
+            past_covariates=self.sine_univariate1.stack(self.sine_univariate1),
+        )
+
+        assert model_instance.input_dim == {
+            "target": 1,
+            "past": 2,
+            "future": None,
+        }
+
+        with pytest.raises(ValueError):
+            prediction = model_instance.predict(n=len(test_y) + 2)
+
+        # while it should work with n = 1
+        prediction = model_instance.predict(n=1)
+        assert len(prediction) == 1
