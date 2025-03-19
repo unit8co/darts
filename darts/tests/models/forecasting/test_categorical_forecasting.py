@@ -16,6 +16,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
+from darts.models.forecasting.catboost_model import CatBoostCategoricalModel
 from darts.models.forecasting.categorical_model import CategoricalModel
 from darts.models.forecasting.lgbm import LightGBMCategoricalModel
 from darts.models.forecasting.xgboost import XGBClassifierModel
@@ -25,6 +26,7 @@ from darts.utils import timeseries_generation as tg
 from darts.utils.multioutput import MultiOutputRegressor
 
 lgbm_available = not isinstance(LightGBMCategoricalModel, NotImportedModule)
+cb_available = not isinstance(CatBoostCategoricalModel, NotImportedModule)
 
 
 def process_model_list(classifiers):
@@ -131,6 +133,11 @@ class TestCategoricalForecasting:
 
     if lgbm_available:
         classifiers.append((LightGBMCategoricalModel, {}))
+        models_accuracies.append(1)
+        models_multioutput.append(False)
+
+    if cb_available:
+        classifiers.append((CatBoostCategoricalModel, {}))
         models_accuracies.append(1)
         models_multioutput.append(False)
 
@@ -422,3 +429,8 @@ class TestCategoricalForecasting:
         # while it should work with n = 1
         prediction = model_instance.predict(n=1)
         assert len(prediction) == 1
+
+
+# TODO test what label are supported (contious -> error, start from 0, negative, etc)
+# TODO test what happens if we have missing labels
+# TODO test what happens if we have a single label
