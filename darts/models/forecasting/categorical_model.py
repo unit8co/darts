@@ -13,17 +13,16 @@ class CategoricalForecastingMixin:
     @property
     def class_labels(self):
         """Returns the classes of the classifier model if the model was previously trained."""
-        if not hasattr(self.model, "classes_"):
+        if not hasattr(self.model, "classes_") or self.model.classes_ is None:
             raise AttributeError("Model is not trained")
         return self.model.classes_
 
 
 class CategoricalModel(RegressionModel, CategoricalForecastingMixin):
     def __init__(self, model=None, **kwargs):
-        """
-        TODO explain categorical input not supported yet
-        supposed to use covariates as input and target as output
-
+        """Categorical Model
+        Can be used to fit any scikit-learn-like classifier class to predict
+        categorical target time series from lagged values."
         """
         if model is None:
             model = LogisticRegression(n_jobs=-1)
@@ -33,3 +32,5 @@ class CategoricalModel(RegressionModel, CategoricalForecastingMixin):
             )
 
         super().__init__(model=model, **kwargs)
+
+    # TODO settings lags should either probably raise a warning about how lags will be assumed to have ordinal meaning
