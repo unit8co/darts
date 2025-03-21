@@ -17,7 +17,7 @@ from torch.nn import MSELoss
 
 from darts.models.forecasting.tft_model import TFTModel
 from darts.models.forecasting.tft_submodels import get_embedding_size
-from darts.utils.likelihood_models import QuantileRegression
+from darts.utils.likelihood_models.torch import QuantileRegression
 
 
 class TestTFTModel:

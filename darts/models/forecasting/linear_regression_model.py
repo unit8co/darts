@@ -9,7 +9,6 @@ covariate series lags in order to obtain a forecast.
 from collections.abc import Sequence
 from typing import Optional, Union
 
-import numpy as np
 from scipy.optimize import linprog
 from sklearn.linear_model import LinearRegression, PoissonRegressor, QuantileRegressor
 
@@ -18,14 +17,19 @@ from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
     RegressionModel,
-    _LikelihoodMixin,
+    _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
+from darts.utils.likelihood_models.sklearn import (
+    QuantileRegression,
+    _check_likelihood,
+    _get_likelihood,
+)
 
 logger = get_logger(__name__)
 
 
-class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
+class LinearRegressionModel(RegressionModel):
     def __init__(
         self,
         lags: Optional[LAGS_TYPE] = None,
@@ -173,26 +177,25 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
                [1005.81830675]])
         """
         self.kwargs = kwargs
-        self._median_idx = None
         self._model_container = None
-        self.quantiles = None
-        self._likelihood = likelihood
-        self._rng = None
 
         # parse likelihood
-        available_likelihoods = ["quantile", "poisson"]  # to be extended
         if likelihood is not None:
-            self._check_likelihood(likelihood, available_likelihoods)
-            self._rng = np.random.default_rng(seed=random_state)
-
+            _check_likelihood(likelihood, ["quantile", "poisson"])
             if likelihood == "poisson":
                 model = PoissonRegressor(**kwargs)
             if likelihood == "quantile":
                 model = QuantileRegressor(**kwargs)
-                self.quantiles, self._median_idx = self._prepare_quantiles(quantiles)
-                self._model_container = self._get_model_container()
+                self._model_container = _QuantileModelContainer()
         else:
             model = LinearRegression(**kwargs)
+
+        self._likelihood = _get_likelihood(
+            likelihood=likelihood,
+            n_outputs=output_chunk_length if multi_models else 1,
+            random_state=random_state,
+            quantiles=quantiles,
+        )
 
         super().__init__(
             lags=lags,
@@ -216,7 +219,8 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         **kwargs,
     ):
-        if self.likelihood == "quantile":
+        likelihood = self.likelihood
+        if isinstance(likelihood, QuantileRegression):
             # set solver for linear program
             if "solver" not in self.kwargs:
                 # set default fast solver
@@ -236,7 +240,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
 
-            for quantile in self.quantiles:
+            for quantile in likelihood.quantiles:
                 self.kwargs["quantile"] = quantile
                 # assign the Quantile regressor to self.model to leverage existing logic
                 self.model = QuantileRegressor(**self.kwargs)
@@ -269,23 +273,3 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             )
 
             return self
-
-    def _predict_and_sample(
-        self,
-        x: np.ndarray,
-        num_samples: int,
-        predict_likelihood_parameters: bool,
-        **kwargs,
-    ) -> np.ndarray:
-        if self.likelihood is not None:
-            return self._predict_and_sample_likelihood(
-                x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
-            )
-        else:
-            return super()._predict_and_sample(
-                x, num_samples, predict_likelihood_parameters, **kwargs
-            )
-
-    @property
-    def supports_probabilistic_prediction(self) -> bool:
-        return self.likelihood is not None

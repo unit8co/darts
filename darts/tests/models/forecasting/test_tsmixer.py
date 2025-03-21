@@ -16,7 +16,7 @@ from darts import concatenate
 from darts.models.forecasting.tsmixer_model import TimeBatchNorm2d, TSMixerModel
 from darts.tests.conftest import tfm_kwargs
 from darts.utils import timeseries_generation as tg
-from darts.utils.likelihood_models import GaussianLikelihood
+from darts.utils.likelihood_models.torch import GaussianLikelihood
 
 
 class TestTSMixerModel:

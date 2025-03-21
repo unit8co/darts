@@ -18,7 +18,7 @@ import torch
 
 from darts.models.forecasting.dlinear import DLinearModel
 from darts.models.forecasting.nlinear import NLinearModel
-from darts.utils.likelihood_models import GaussianLikelihood
+from darts.utils.likelihood_models.torch import GaussianLikelihood
 
 
 class TestDlinearNlinearModels:
