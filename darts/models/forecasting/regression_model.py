@@ -29,7 +29,7 @@ if their static covariates do not have the same size, the shorter ones are padde
 
 from collections import OrderedDict
 from collections.abc import Sequence
-from typing import Any, Callable, Literal, Optional, Union
+from typing import Callable, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -1883,12 +1883,12 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         )
 
     @property
-    def _categorical_fit_param(self) -> tuple[str, Any]:
+    def _categorical_fit_param(self) -> tuple[Optional[str], Optional[str]]:
         """
         Returns the name, and default value of the categorical features parameter from model's `fit` method .
-        Can be overridden in subclasses.
+        Should be overridden in subclasses.
         """
-        return "categorical_feature", "auto"
+        return None, None
 
     def _validate_categorical_covariates(
         self,
@@ -2049,13 +2049,17 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         )
 
         self._categorical_features = None
+        # cat_param_name is None if no flag is available in the model's fit method
+        # cat_param_default is None if no default value is available in the model's fit method
         cat_param_name, cat_param_default = self._categorical_fit_param
         if cat_col_indices:
-            kwargs[cat_param_name] = cat_col_indices
+            if cat_param_name is not None:
+                kwargs[cat_param_name] = cat_col_indices
             self._categorical_features = cat_col_indices
         else:
             if cat_param_default is not None:
-                kwargs[cat_param_name] = cat_param_default
+                if cat_param_name is not None:
+                    kwargs[cat_param_name] = cat_param_default
                 self._categorical_features = cat_param_default
 
         super()._fit_model(

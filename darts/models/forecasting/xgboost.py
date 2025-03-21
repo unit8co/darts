@@ -11,6 +11,7 @@ from collections.abc import Sequence
 from typing import Optional, Union
 
 import numpy as np
+import pandas as pd
 import xgboost as xgb
 
 from darts.logging import get_logger, raise_if_not
@@ -18,7 +19,7 @@ from darts.models.forecasting.categorical_model import CategoricalForecastingMix
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
-    RegressionModel,
+    RegressionModelWithCategoricalCovariates,
     _LikelihoodMixin,
 )
 from darts.timeseries import TimeSeries
@@ -45,7 +46,7 @@ def xgb_quantile_loss(labels: np.ndarray, preds: np.ndarray, quantile: float):
     return grad, hess
 
 
-class XGBModel(RegressionModel, _LikelihoodMixin):
+class XGBModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
     def __init__(
         self,
         lags: Optional[LAGS_TYPE] = None,
@@ -59,6 +60,9 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        categorical_past_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_future_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_static_covariates: Optional[Union[str, list[str]]] = None,
         **kwargs,
     ):
         """XGBoost Model
@@ -152,6 +156,20 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        categorical_past_covariates
+            Optionally, component name or list of component names specifying the past covariates that should be treated
+            as categorical by the underlying `xgb.XGBRegressor`. It's recommended that the components that
+            are treated as categorical are integer-encoded. For more information on how CatBoost handles categorical
+            features, visit: `Categorical feature support documentation
+            <https://xgboost.readthedocs.io/en/stable/tutorials/categorical.html>`_
+        categorical_future_covariates
+            Optionally, component name or list of component names specifying the future covariates that should be
+            treated as categorical by the underlying `xgb.XGBRegressor`. It's recommended that the components
+            that are treated as categorical are integer-encoded.
+        categorical_static_covariates
+            Optionally, string or list of strings specifying the static covariates that should be treated as categorical
+            by the underlying `xgb.XGBRegressor`. It's recommended that the static covariates that are
+            treated as categorical are integer-encoded.
         **kwargs
             Additional keyword arguments passed to `xgb.XGBRegressor`.
 
@@ -193,6 +211,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         self.quantiles = None
         self._likelihood = likelihood
         self._rng = None
+        self._categorical_features = None
 
         # parse likelihood
         available_likelihoods = ["poisson", "quantile"]  # to be extended
@@ -207,6 +226,13 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
 
             self._rng = np.random.default_rng(seed=random_state)  # seed for sampling
 
+        # Only enable categorical when necessary since fewer features are supported when enabled
+        enable_categorical = (
+            categorical_past_covariates is not None
+            or categorical_future_covariates is not None
+            or categorical_static_covariates is not None
+        )
+
         super().__init__(
             lags=lags,
             lags_past_covariates=lags_past_covariates,
@@ -215,12 +241,17 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             multi_models=multi_models,
-            model=self._create_model(**self.kwargs),
+            model=self._create_model(
+                enable_categorical=enable_categorical, **self.kwargs
+            ),
             use_static_covariates=use_static_covariates,
+            categorical_past_covariates=categorical_past_covariates,
+            categorical_future_covariates=categorical_future_covariates,
+            categorical_static_covariates=categorical_static_covariates,
         )
 
-    def _create_model(self, **kwargs):
-        return xgb.XGBRegressor(**kwargs)
+    def _create_model(self, enable_categorical=False, **kwargs):
+        return xgb.XGBRegressor(enable_categorical=enable_categorical, **kwargs)
 
     def fit(
         self,
@@ -328,6 +359,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
     ) -> np.ndarray:
         """Override of RegressionModel's predict method to allow for the probabilistic case"""
         if self.likelihood is not None:
+            x = self._format_samples(x)
             return self._predict_and_sample_likelihood(
                 x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
             )
@@ -335,6 +367,23 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             return super()._predict_and_sample(
                 x, num_samples, predict_likelihood_parameters, **kwargs
             )
+
+    def _format_samples(self, samples, labels=None):
+        """
+        CatBoost does not support categorical features to be typed as float.
+        If categorical features are specified, pandas DataFrame is used to cast the categorical columns to category.
+        """
+        _, cat_param = self._categorical_fit_param
+
+        # Tranforms into pandas df and cast specific columns to categorical
+        if cat_param is not None:
+            pd_samples = pd.DataFrame(samples)
+            pd_samples[cat_param] = pd_samples[cat_param].apply(
+                lambda x: x.astype("category")
+            )
+            samples = pd_samples
+
+        return (samples, labels) if labels is not None else samples
 
     @property
     def supports_probabilistic_prediction(self) -> bool:
@@ -367,7 +416,14 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         # since xgboost==2.1.0, likelihoods do not support native multi output regression
         return super()._supports_native_multioutput and self.likelihood is None
 
+    @property
+    def _categorical_fit_param(self) -> tuple[Optional[str], Optional[str]]:
+        """
+        Returns the name, and default value of the categorical features parameter from model's `fit` method .
+        """
+        return None, self._categorical_features
+
 
 class XGBClassifierModel(XGBModel, CategoricalForecastingMixin):
     def _create_model(self, **kwargs):
-        return xgb.XGBClassifier(**kwargs)
+        return xgb.XGBClassifier(enable_categorical=True, **kwargs)

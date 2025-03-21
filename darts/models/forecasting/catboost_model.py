@@ -8,7 +8,7 @@ This implementation comes with the ability to produce probabilistic forecasts.
 """
 
 from collections.abc import Sequence
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -424,7 +424,7 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
     def _format_samples(self, samples, labels=None):
         """
         CatBoost does not support categorical features to be typed as float (yet).
-        If categorical features are specified samples
+        If categorical features are specified, pandas DataFrame is used to cast the categorical columns to integer.
         """
         _, cat_param = self._categorical_fit_param
 
@@ -476,7 +476,7 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         )
 
     @property
-    def _categorical_fit_param(self) -> tuple[str, Any]:
+    def _categorical_fit_param(self) -> tuple[Optional[str], Optional[str]]:
         """
         Returns the name, and default value of the categorical features parameter from model's `fit` method .
         """
