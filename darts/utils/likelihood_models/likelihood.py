@@ -1,4 +1,3 @@
-import inspect
 from collections.abc import Sequence
 from enum import Enum
 from typing import Optional, Union
@@ -28,17 +27,23 @@ class LikelihoodType(Enum):
     Quantile = "quantile"
 
 
+class LikelihoodBackend(Enum):
+    SKLearn = "sklearn"
+    Torch = "torch"
+
+
 class BaseLikelihood:
     def __init__(
         self,
         likelihood_type: LikelihoodType,
         parameter_names: list[str],
+        backend: LikelihoodBackend,
     ):
         """
         Base class for all likelihoods.
 
-        * torch `Likelihood`
-        * simple likelihoods (e.g. for regression)
+        * likelihoods for torch models
+        * likelihoods for sklearn-like models (e.g. RegressionModel subclasses)
 
         Parameters
         ----------
@@ -46,9 +51,15 @@ class BaseLikelihood:
             A pre-defined `LikelihoodType`.
         parameter_names
             The likelihood (distribution) parameter names.
+        backend
+            The `LikelihoodBackend` that the likelihood can be used with.
         """
         self._likelihood_type = likelihood_type
         self._parameter_names = parameter_names
+        self._backend = backend
+
+        # used for equality operator between likelihood objects
+        self._attrs_for_equality = ["_likelihood_type", "_parameter_names", "_backend"]
 
     def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         """Generates names for the parameters of the Likelihood."""
@@ -72,25 +83,28 @@ class BaseLikelihood:
         return len(self.parameter_names)
 
     @property
-    def simplified_name(self) -> str:
-        """Returns the simplified likelihood name."""
-        return self._likelihood_type.value
+    def backend(self) -> LikelihoodBackend:
+        """Returns the backend type that the likelihood can be used with."""
+        return self._backend
 
-    @property
-    def supports_parameter_autoregression(self) -> bool:
-        return self.likelihood_type is LikelihoodType.Quantile
+    def __eq__(self, other) -> bool:
+        """Defines (in)equality between two likelihood objects."""
+        if type(other) is type(self):
+            other_state = {
+                k: v for k, v in other.__dict__.items() if k in self._attrs_for_equality
+            }
+            self_state = {
+                k: v for k, v in self.__dict__.items() if k in self._attrs_for_equality
+            }
+            return other_state == self_state
+        else:
+            return False
 
-    def __repr__(self) -> str:
-        """Return the class and parameters of the instance in a nice format"""
-        cls_name = self.__class__.__name__
-        # only display the constructor parameters as user cannot change the other attributes
-        init_signature = inspect.signature(self.__class__.__init__)
-        params_string = ", ".join([
-            f"{str(v)}"
-            for _, v in init_signature.parameters.items()
-            if str(v) != "self"
-        ])
-        return f"{cls_name}({params_string})"
+    def __repr__(self):
+        name = self.__class__.__name__
+        params = self.__dict__
+        params = ", ".join([f"{k}={params[k]}" for k in self._attrs_for_equality])
+        return f"{name}({params})"
 
 
 def likelihood_component_names(

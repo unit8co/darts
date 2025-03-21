@@ -1224,7 +1224,7 @@ class RegressionModel(GlobalForecastingModel):
 
         Generates deterministic predictions if no `Likelihood` was used.
         Otherwise, generates probabilistic predictions. Either sampled from the predicted distribution,
-        or the predicted distribution parameters directly
+        or the predicted distribution parameters directly.
         """
         if self.likelihood is not None:
             return self.likelihood.predict(

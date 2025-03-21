@@ -19,6 +19,7 @@ from darts.utils.likelihood_models.torch import (
     WeibullLikelihood,
 )
 
+# equality between likelihoods is only dependent on the main distribution parameters
 likelihood_models = {
     "quantile": [QuantileRegression(), QuantileRegression([0.25, 0.5, 0.75])],
     "gaussian": [

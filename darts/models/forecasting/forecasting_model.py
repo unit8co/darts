@@ -212,7 +212,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @property
     def likelihood(self) -> Optional[BaseLikelihood]:
-        """Returns the likelihood (if any) that the model for probabilistic forecasts."""
+        """Returns the likelihood (if any) that the model uses for probabilistic forecasts."""
         return None
 
     @property

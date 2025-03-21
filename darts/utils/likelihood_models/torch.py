@@ -31,7 +31,6 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 """
 
 import collections.abc
-import inspect
 from abc import ABC, abstractmethod
 from typing import Optional, Union
 
@@ -59,6 +58,7 @@ from torch.distributions.kl import kl_divergence
 from darts.logging import raise_if_not
 from darts.utils.likelihood_models.likelihood import (
     BaseLikelihood,
+    LikelihoodBackend,
     LikelihoodType,
     quantile_names,
 )
@@ -113,12 +113,13 @@ class Likelihood(BaseLikelihood, ABC):
         prior_strength
             strength of the loss regularisation induced by the prior
         """
-        super().__init__(
-            likelihood_type=likelihood_type, parameter_names=parameter_names
-        )
         self.prior_strength = prior_strength
-        # used for equality operator between likelihood objects
-        self.ignore_attrs_equality = []
+        super().__init__(
+            likelihood_type=likelihood_type,
+            parameter_names=parameter_names,
+            backend=LikelihoodBackend.Torch,
+        )
+        self._attrs_for_equality += ["prior_strength"]
 
     def compute_loss(
         self,
@@ -182,7 +183,6 @@ class Likelihood(BaseLikelihood, ABC):
         """
         Returns a torch distribution built with the specified params
         """
-        pass
 
     @abstractmethod
     def _params_from_output(
@@ -192,14 +192,12 @@ class Likelihood(BaseLikelihood, ABC):
         Returns the distribution parameters, obtained from the raw model outputs
         (e.g. applies softplus or sigmoids to get parameters in the expected domains).
         """
-        pass
 
     @abstractmethod
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         """
         Samples a prediction from the likelihood distribution and the predicted parameters.
         """
-        pass
 
     def predict_likelihood_parameters(self, model_output: torch.Tensor) -> torch.Tensor:
         """
@@ -216,38 +214,6 @@ class Likelihood(BaseLikelihood, ABC):
                 n_times,
                 n_components * n_params,
             ))
-
-    def __eq__(self, other) -> bool:
-        """Defines (in)equality between two likelihood objects.
-
-        Ignores the attributes listed in `ignore_attrs_equality` or inheriting from `torch.nn.Module`.
-        """
-        if type(other) is type(self):
-            other_state = {
-                k: v
-                for k, v in other.__dict__.items()
-                if k not in self.ignore_attrs_equality and not isinstance(v, nn.Module)
-            }
-            self_state = {
-                k: v
-                for k, v in self.__dict__.items()
-                if k not in self.ignore_attrs_equality and not isinstance(v, nn.Module)
-            }
-            return other_state == self_state
-        else:
-            return False
-
-    def __repr__(self) -> str:
-        """Return the class and parameters of the instance in a nice format"""
-        cls_name = self.__class__.__name__
-        # only display the constructor parameters as user cannot change the other attributes
-        init_signature = inspect.signature(self.__class__.__init__)
-        params_string = ", ".join([
-            f"{str(v)}"
-            for _, v in init_signature.parameters.items()
-            if str(v) != "self"
-        ])
-        return f"{cls_name}({params_string})"
 
 
 class GaussianLikelihood(Likelihood):
@@ -300,6 +266,7 @@ class GaussianLikelihood(Likelihood):
             parameter_names=["mu", "sigma"],
             prior_strength=prior_strength,
         )
+        self._attrs_for_equality += ["prior_mu", "prior_sigma", "beta_nll"]
 
     def _nllloss(self, params_out, target, sample_weight):
         means_out, sigmas_out = params_out
@@ -361,6 +328,7 @@ class PoissonLikelihood(Likelihood):
             parameter_names=["lambda"],
             prior_strength=prior_strength,
         )
+        self._attrs_for_equality += ["prior_lambda"]
 
     def _nllloss(self, params_out, target, sample_weight):
         lambda_out = params_out
@@ -470,6 +438,7 @@ class BernoulliLikelihood(Likelihood):
             parameter_names=["p"],
             prior_strength=prior_strength,
         )
+        self._attrs_for_equality += ["prior_p"]
 
     @property
     def _prior_params(self):
@@ -519,6 +488,7 @@ class BetaLikelihood(Likelihood):
             parameter_names=["alpha", "beta"],
             prior_strength=prior_strength,
         )
+        self._attrs_for_equality += ["prior_alpha", "prior_beta"]
 
     @property
     def _prior_params(self):
@@ -573,6 +543,7 @@ class CauchyLikelihood(Likelihood):
             parameter_names=["xzero", "gamma"],
             prior_strength=prior_strength,
         )
+        self._attrs_for_equality += ["prior_xzero", "prior_gamma"]
 
     @property
     def _prior_params(self):
@@ -622,6 +593,7 @@ class ContinuousBernoulliLikelihood(Likelihood):
             parameter_names=["lambda"],
             prior_strength=prior_strength,
         )
+        self._attrs_for_equality += ["prior_lambda"]
 
     @property
     def _prior_params(self):
@@ -668,6 +640,7 @@ class DirichletLikelihood(Likelihood):
             parameter_names=["alpha"],
             prior_strength=prior_strength,
         )
+        self._attrs_for_equality += ["prior_alphas"]
 
     @property
     def _prior_params(self):
@@ -719,6 +692,7 @@ class ExponentialLikelihood(Likelihood):
             parameter_names=["lambda"],
             prior_strength=prior_strength,
         )
+        self._attrs_for_equality += ["prior_lambda"]
 
     @property
     def _prior_params(self):
@@ -768,6 +742,7 @@ class GammaLikelihood(Likelihood):
             parameter_names=["alpha", "beta"],
             prior_strength=prior_strength,
         )
+        self._attrs_for_equality += ["prior_alpha", "prior_beta"]
 
     @property
     def _prior_params(self):
@@ -814,6 +789,7 @@ class GeometricLikelihood(Likelihood):
             parameter_names=["p"],
             prior_strength=prior_strength,
         )
+        self._attrs_for_equality += ["prior_p"]
 
     @property
     def _prior_params(self):
@@ -862,6 +838,7 @@ class GumbelLikelihood(Likelihood):
             parameter_names=["mu", "beta"],
             prior_strength=prior_strength,
         )
+        self._attrs_for_equality += ["prior_mu", "prior_beta"]
 
     @property
     def _prior_params(self):
@@ -908,6 +885,7 @@ class HalfNormalLikelihood(Likelihood):
             parameter_names=["sigma"],
             prior_strength=prior_strength,
         )
+        self._attrs_for_equality += ["prior_sigma"]
 
     @property
     def _prior_params(self):
@@ -956,6 +934,7 @@ class LaplaceLikelihood(Likelihood):
             parameter_names=["mu", "b"],
             prior_strength=prior_strength,
         )
+        self._attrs_for_equality += ["prior_mu", "prior_b"]
 
     @property
     def _prior_params(self):
@@ -1005,6 +984,7 @@ class LogNormalLikelihood(Likelihood):
             parameter_names=["mu", "sigma"],
             prior_strength=prior_strength,
         )
+        self._attrs_for_equality += ["prior_mu", "prior_sigma"]
 
     @property
     def _prior_params(self):
@@ -1109,9 +1089,6 @@ class QuantileRegression(Likelihood):
         self._median_idx = self.quantiles.index(0.5)
         self.first = True
         self.quantiles_tensor = None
-
-        # overwrite the attributes of Likelihood parent class
-        self.ignore_attrs_equality = ["first", "quantiles_tensor"]
 
         super().__init__(
             likelihood_type=LikelihoodType.Quantile,

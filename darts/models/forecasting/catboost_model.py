@@ -185,10 +185,11 @@ class CatBoostModel(RegressionModel):
                 "RMSEWithUncertainty": "RMSEWithUncertainty",
             }
             _check_likelihood(likelihood, list(likelihood_map.keys()))
+            if likelihood == "RMSEWithUncertainty":
+                likelihood = "gaussian"
+
             if likelihood == "quantile":
                 self._model_container = _QuantileModelContainer()
-            elif likelihood == "RMSEWithUncertainty":
-                likelihood = "gaussian"
             else:
                 self.kwargs["loss_function"] = likelihood_map[likelihood]
 

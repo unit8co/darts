@@ -11,6 +11,7 @@ import numpy as np
 from darts.logging import get_logger, raise_log
 from darts.utils.likelihood_models.likelihood import (
     BaseLikelihood,
+    LikelihoodBackend,
     LikelihoodType,
     quantile_names,
 )
@@ -41,10 +42,12 @@ class Likelihood(BaseLikelihood, ABC):
         random_state
             Optionally, control the randomness of the sampling.
         """
-        self.n_outputs = n_outputs
+        self._n_outputs = n_outputs
         self._rng = np.random.default_rng(seed=random_state)
         super().__init__(
-            likelihood_type=likelihood_type, parameter_names=parameter_names
+            likelihood_type=likelihood_type,
+            parameter_names=parameter_names,
+            backend=LikelihoodBackend.SKLearn,
         )
 
     def predict(
@@ -120,15 +123,6 @@ class Likelihood(BaseLikelihood, ABC):
         Gets the median prediction per component extracted from the model output.
         """
 
-    def __eq__(self, other) -> bool:
-        """Defines (in)equality between two likelihood objects."""
-        if type(other) is type(self):
-            other_state = {k: v for k, v in other.__dict__.items()}
-            self_state = {k: v for k, v in self.__dict__.items()}
-            return other_state == self_state
-        else:
-            return False
-
 
 class GaussianLikelihood(Likelihood):
     def __init__(
@@ -175,7 +169,7 @@ class GaussianLikelihood(Likelihood):
         ]
 
         samples_transposed = np.array(list_of_samples).transpose()
-        samples_reshaped = samples_transposed.reshape(n_samples, self.n_outputs, -1)
+        samples_reshaped = samples_transposed.reshape(n_samples, self._n_outputs, -1)
 
         return samples_reshaped
 
@@ -189,7 +183,7 @@ class GaussianLikelihood(Likelihood):
 
         # reshape to (n_samples, output_chunk_length, 2)
         params_transposed = np.array(mu_sigma_list).transpose()
-        params_reshaped = params_transposed.reshape(n_samples, self.n_outputs, -1)
+        params_reshaped = params_transposed.reshape(n_samples, self._n_outputs, -1)
         return params_reshaped
 
     def _estimator_predict(
@@ -226,7 +220,7 @@ class GaussianLikelihood(Likelihood):
         # extract mu (mean) per component
         component_medians = slice(0, None, self.num_parameters)
         # shape (n_series * n_samples, output_chunk_length, n_components)
-        return model_output[:, :, component_medians].reshape(k, self.n_outputs, -1)
+        return model_output[:, :, component_medians].reshape(k, self._n_outputs, -1)
 
 
 class PoissonLikelihood(Likelihood):
@@ -273,7 +267,7 @@ class PoissonLikelihood(Likelihood):
     ) -> np.ndarray:
         k = x.shape[0]
         # shape (n_series * n_samples, output_chunk_length, n_components)
-        return model.model.predict(x, **kwargs).reshape(k, self.n_outputs, -1)
+        return model.model.predict(x, **kwargs).reshape(k, self._n_outputs, -1)
 
     def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
         # shape (n_series * n_samples, output_chunk_length, n_components)
@@ -405,7 +399,7 @@ class QuantileRegression(Likelihood):
         for quantile, fitted in model._model_container.items():
             model.model = fitted
             # model output has shape (n_series * n_samples, output_chunk_length, n_components)
-            model_output = fitted.predict(x, **kwargs).reshape(k, self.n_outputs, -1)
+            model_output = fitted.predict(x, **kwargs).reshape(k, self._n_outputs, -1)
             model_outputs.append(model_output)
         model_outputs = np.stack(model_outputs, axis=-1)
         # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
