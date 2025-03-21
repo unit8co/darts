@@ -11,6 +11,7 @@ from collections.abc import Sequence
 from typing import Any, Optional, Union
 
 import numpy as np
+import pandas as pd
 from catboost import CatBoostClassifier, CatBoostRegressor, Pool
 
 from darts.logging import get_logger
@@ -193,6 +194,7 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         self._rng = None
         self._likelihood = likelihood
         self.quantiles = None
+        self._categorical_features = None
 
         self._output_chunk_length = output_chunk_length
 
@@ -351,18 +353,24 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         **kwargs,
     ) -> np.ndarray:
         """Override of RegressionModel's method to allow for the probabilistic case"""
-        if self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
-            return self._predict_and_sample_likelihood(
-                x, num_samples, "normal", predict_likelihood_parameters, **kwargs
-            )
-        elif self.likelihood is not None:
-            return self._predict_and_sample_likelihood(
-                x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
-            )
-        else:
+        if self.likelihood is None:
             return super()._predict_and_sample(
                 x, num_samples, predict_likelihood_parameters, **kwargs
             )
+        else:
+            x = self._format_samples(x)
+            if self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
+                return self._predict_and_sample_likelihood(
+                    x, num_samples, "normal", predict_likelihood_parameters, **kwargs
+                )
+            else:
+                return self._predict_and_sample_likelihood(
+                    x,
+                    num_samples,
+                    self.likelihood,
+                    predict_likelihood_parameters,
+                    **kwargs,
+                )
 
     def _likelihood_components_names(
         self, input_series: TimeSeries
@@ -413,6 +421,27 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         kwargs[val_set_name] = val_pools
         return kwargs
 
+    def _format_samples(self, samples, labels=None):
+        """
+        CatBoost does not support categorical features to be typed as float (yet).
+        If categorical features are specified samples
+        """
+        _, cat_param = self._categorical_fit_param
+
+        # Tranforms into pandas df and cast specific columns to categorical
+        if cat_param is not None:
+            pd_samples = pd.DataFrame(samples)
+            is_not_round = np.any(pd_samples[cat_param] % 1 != 0)
+            if is_not_round:
+                logger.warning(
+                    "CatBoost expects categorical features to be integer-encoded. "
+                    "Float values will be cast to integers."
+                )
+            pd_samples[cat_param] = pd_samples[cat_param].apply(lambda x: x.astype(int))
+            samples = pd_samples
+
+        return (samples, labels) if labels is not None else samples
+
     @property
     def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None
@@ -451,8 +480,7 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         """
         Returns the name, and default value of the categorical features parameter from model's `fit` method .
         """
-        print("cat_features")
-        return "cat_features", None
+        return "cat_features", self._categorical_features
 
 
 class CatBoostCategoricalModel(CatBoostModel, CategoricalForecastingMixin):

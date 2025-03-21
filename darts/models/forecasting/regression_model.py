@@ -682,6 +682,11 @@ class RegressionModel(GlobalForecastingModel):
 
         return features, labels, sample_weights
 
+    def _format_samples(self, samples, labels=None):
+        if labels is None:
+            return samples
+        return samples, labels
+
     def _fit_model(
         self,
         series: Sequence[TimeSeries],
@@ -728,6 +733,11 @@ class RegressionModel(GlobalForecastingModel):
                     "`sample_weight` was ignored since underlying regression model's "
                     "`fit()` method does not support it."
                 )
+
+        training_samples, training_labels = self._format_samples(
+            training_samples, training_labels
+        )
+
         self.model.fit(
             training_samples, training_labels, **sample_weight_kwargs, **kwargs
         )
@@ -1223,6 +1233,8 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs,
     ) -> np.ndarray:
         """By default, the regression model returns a single sample."""
+
+        x = self._format_samples(x)
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
         return prediction.reshape(k, self.pred_dim, -1)
@@ -2036,10 +2048,16 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             future_covariates=future_covariates,
         )
 
+        self._categorical_features = None
         cat_param_name, cat_param_default = self._categorical_fit_param
-        kwargs[cat_param_name] = (
-            cat_col_indices if cat_col_indices else cat_param_default
-        )
+        if cat_col_indices:
+            kwargs[cat_param_name] = cat_col_indices
+            self._categorical_features = cat_col_indices
+        else:
+            if cat_param_default is not None:
+                kwargs[cat_param_name] = cat_param_default
+                self._categorical_features = cat_param_default
+
         super()._fit_model(
             series=series,
             past_covariates=past_covariates,
