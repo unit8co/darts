@@ -2729,7 +2729,7 @@ class TimeSeries:
         Returns
         -------
         TimeSeries
-            A new TimeSeries, with length at most `n`, ending at `start_ts`
+            A new TimeSeries, with length at most `n`, ending at `end_ts`
         """
 
         raise_if_not(n > 0, "n should be a positive integer.", logger)

@@ -29,7 +29,7 @@ if their static covariates do not have the same size, the shorter ones are padde
 
 from collections import OrderedDict
 from collections.abc import Sequence
-from typing import Any, Callable, Literal, Optional, Union
+from typing import Callable, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -682,6 +682,11 @@ class RegressionModel(GlobalForecastingModel):
 
         return features, labels, sample_weights
 
+    def _format_samples(self, samples, labels=None):
+        if labels is None:
+            return samples
+        return samples, labels
+
     def _fit_model(
         self,
         series: Sequence[TimeSeries],
@@ -728,6 +733,11 @@ class RegressionModel(GlobalForecastingModel):
                     "`sample_weight` was ignored since underlying regression model's "
                     "`fit()` method does not support it."
                 )
+
+        training_samples, training_labels = self._format_samples(
+            training_samples, training_labels
+        )
+
         self.model.fit(
             training_samples, training_labels, **sample_weight_kwargs, **kwargs
         )
@@ -1223,6 +1233,8 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs,
     ) -> np.ndarray:
         """By default, the regression model returns a single sample."""
+
+        x = self._format_samples(x)
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
         return prediction.reshape(k, self.pred_dim, -1)
@@ -1871,12 +1883,12 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         )
 
     @property
-    def _categorical_fit_param(self) -> tuple[str, Any]:
+    def _categorical_fit_param(self) -> tuple[Optional[str], Optional[str]]:
         """
         Returns the name, and default value of the categorical features parameter from model's `fit` method .
-        Can be overridden in subclasses.
+        Should be overridden in subclasses.
         """
-        return "categorical_feature", "auto"
+        return None, None
 
     def _validate_categorical_covariates(
         self,
@@ -2036,10 +2048,20 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             future_covariates=future_covariates,
         )
 
+        self._categorical_features = None
+        # cat_param_name is None if no flag is available in the model's fit method
+        # cat_param_default is None if no default value is available in the model's fit method
         cat_param_name, cat_param_default = self._categorical_fit_param
-        kwargs[cat_param_name] = (
-            cat_col_indices if cat_col_indices else cat_param_default
-        )
+        if cat_col_indices:
+            if cat_param_name is not None:
+                kwargs[cat_param_name] = cat_col_indices
+            self._categorical_features = cat_col_indices
+        else:
+            if cat_param_default is not None:
+                if cat_param_name is not None:
+                    kwargs[cat_param_name] = cat_param_default
+                self._categorical_features = cat_param_default
+
         super()._fit_model(
             series=series,
             past_covariates=past_covariates,

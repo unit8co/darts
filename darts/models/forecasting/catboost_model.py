@@ -11,16 +11,21 @@ from collections.abc import Sequence
 from typing import Optional, Union
 
 import numpy as np
-from catboost import CatBoostRegressor, Pool
+import pandas as pd
+from catboost import CatBoostClassifier, CatBoostRegressor, Pool
 
 from darts.logging import get_logger
-from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
+from darts.models.forecasting.categorical_model import CategoricalForecastingMixin
+from darts.models.forecasting.regression_model import (
+    RegressionModelWithCategoricalCovariates,
+    _LikelihoodMixin,
+)
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class CatBoostModel(RegressionModel, _LikelihoodMixin):
+class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -34,6 +39,9 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        categorical_past_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_future_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_static_covariates: Optional[Union[str, list[str]]] = None,
         **kwargs,
     ):
         """CatBoost Model
@@ -130,6 +138,20 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        categorical_past_covariates
+            Optionally, component name or list of component names specifying the past covariates that should be treated
+            as categorical by the underlying `CatBoostRegressor`. It's recommended that the components that
+            are treated as categorical are integer-encoded. For more information on how CatBoost handles categorical
+            features, visit: `Categorical feature support documentation
+            <https://catboost.ai/docs/en/features/categorical-features>`_
+        categorical_future_covariates
+            Optionally, component name or list of component names specifying the future covariates that should be
+            treated as categorical by the underlying `CatBoostRegressor`. It's recommended that the components
+            that are treated as categorical are integer-encoded.
+        categorical_static_covariates
+            Optionally, string or list of strings specifying the static covariates that should be treated as categorical
+            by the underlying `CatBoostRegressor`. It's recommended that the static covariates that are
+            treated as categorical are integer-encoded.
         **kwargs
             Additional keyword arguments passed to `catboost.CatBoostRegressor`.
             Native multi-output support can be achieved by using an appropriate `loss_function` ('MultiRMSE',
@@ -172,6 +194,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         self._rng = None
         self._likelihood = likelihood
         self.quantiles = None
+        self._categorical_features = None
 
         self._output_chunk_length = output_chunk_length
 
@@ -207,12 +230,18 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             multi_models=multi_models,
-            model=CatBoostRegressor(**kwargs),
+            model=self._create_model(**kwargs),
             use_static_covariates=use_static_covariates,
+            categorical_past_covariates=categorical_past_covariates,
+            categorical_future_covariates=categorical_future_covariates,
+            categorical_static_covariates=categorical_static_covariates,
         )
 
         # if no loss provided, get the default loss from the model
         self.kwargs["loss_function"] = self.model.get_params().get("loss_function")
+
+    def _create_model(self, **kwargs):
+        return CatBoostRegressor(**kwargs)
 
     def fit(
         self,
@@ -324,18 +353,24 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         **kwargs,
     ) -> np.ndarray:
         """Override of RegressionModel's method to allow for the probabilistic case"""
-        if self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
-            return self._predict_and_sample_likelihood(
-                x, num_samples, "normal", predict_likelihood_parameters, **kwargs
-            )
-        elif self.likelihood is not None:
-            return self._predict_and_sample_likelihood(
-                x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
-            )
-        else:
+        if self.likelihood is None:
             return super()._predict_and_sample(
                 x, num_samples, predict_likelihood_parameters, **kwargs
             )
+        else:
+            x = self._format_samples(x)
+            if self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
+                return self._predict_and_sample_likelihood(
+                    x, num_samples, "normal", predict_likelihood_parameters, **kwargs
+                )
+            else:
+                return self._predict_and_sample_likelihood(
+                    x,
+                    num_samples,
+                    self.likelihood,
+                    predict_likelihood_parameters,
+                    **kwargs,
+                )
 
     def _likelihood_components_names(
         self, input_series: TimeSeries
@@ -386,6 +421,27 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         kwargs[val_set_name] = val_pools
         return kwargs
 
+    def _format_samples(self, samples, labels=None):
+        """
+        CatBoost does not support categorical features to be typed as float (yet).
+        If categorical features are specified, pandas DataFrame is used to cast the categorical columns to integer.
+        """
+        _, cat_param = self._categorical_fit_param
+
+        # Tranforms into pandas df and cast specific columns to categorical
+        if cat_param is not None:
+            pd_samples = pd.DataFrame(samples)
+            is_not_round = np.any(pd_samples[cat_param] % 1 != 0)
+            if is_not_round:
+                logger.warning(
+                    "CatBoost expects categorical features to be integer-encoded. "
+                    "Float values will be cast to integers."
+                )
+            pd_samples[cat_param] = pd_samples[cat_param].apply(lambda x: x.astype(int))
+            samples = pd_samples
+
+        return (samples, labels) if labels is not None else samples
+
     @property
     def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None
@@ -418,3 +474,15 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         return CatBoostRegressor._is_multiregression_objective(
             self.kwargs.get("loss_function")
         )
+
+    @property
+    def _categorical_fit_param(self) -> tuple[Optional[str], Optional[str]]:
+        """
+        Returns the name, and default value of the categorical features parameter from model's `fit` method .
+        """
+        return "cat_features", self._categorical_features
+
+
+class CatBoostCategoricalModel(CatBoostModel, CategoricalForecastingMixin):
+    def _create_model(self, **kwargs):
+        return CatBoostClassifier(**kwargs)
