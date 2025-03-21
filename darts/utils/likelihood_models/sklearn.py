@@ -11,7 +11,6 @@ import numpy as np
 from darts.logging import get_logger, raise_log
 from darts.utils.likelihood_models.likelihood import (
     BaseLikelihood,
-    LikelihoodBackend,
     LikelihoodType,
     quantile_names,
 )
@@ -47,8 +46,9 @@ class Likelihood(BaseLikelihood, ABC):
         super().__init__(
             likelihood_type=likelihood_type,
             parameter_names=parameter_names,
-            backend=LikelihoodBackend.SKLearn,
         )
+        # ignore additional attrs for equality tests
+        self.ignore_attrs_equality += ["_n_outputs", "_rng"]
 
     def predict(
         self,

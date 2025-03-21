@@ -27,17 +27,11 @@ class LikelihoodType(Enum):
     Quantile = "quantile"
 
 
-class LikelihoodBackend(Enum):
-    SKLearn = "sklearn"
-    Torch = "torch"
-
-
 class BaseLikelihood:
     def __init__(
         self,
         likelihood_type: LikelihoodType,
         parameter_names: list[str],
-        backend: LikelihoodBackend,
     ):
         """
         Base class for all likelihoods.
@@ -51,15 +45,16 @@ class BaseLikelihood:
             A pre-defined `LikelihoodType`.
         parameter_names
             The likelihood (distribution) parameter names.
-        backend
-            The `LikelihoodBackend` that the likelihood can be used with.
         """
         self._likelihood_type = likelihood_type
         self._parameter_names = parameter_names
-        self._backend = backend
 
         # used for equality operator between likelihood objects
-        self._attrs_for_equality = ["_likelihood_type", "_parameter_names", "_backend"]
+        self.ignore_attrs_equality = [
+            "_likelihood_type",
+            "_parameter_names",
+            "ignore_attrs_equality",
+        ]
 
     def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
         """Generates names for the parameters of the Likelihood."""
@@ -82,29 +77,29 @@ class BaseLikelihood:
         """Returns the number of distribution parameters for a single target value."""
         return len(self.parameter_names)
 
-    @property
-    def backend(self) -> LikelihoodBackend:
-        """Returns the backend type that the likelihood can be used with."""
-        return self._backend
+    @staticmethod
+    def _get_equality_attrs(likelihood, ignore_attrs):
+        # ignore the attributes listed in `ignore_attrs_equality`
+        return {k: v for k, v in likelihood.__dict__.items() if k not in ignore_attrs}
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: "BaseLikelihood") -> bool:
         """Defines (in)equality between two likelihood objects."""
+        # ignore the attributes listed in `ignore_attrs_equality`
         if type(other) is type(self):
-            other_state = {
-                k: v for k, v in other.__dict__.items() if k in self._attrs_for_equality
-            }
-            self_state = {
-                k: v for k, v in self.__dict__.items() if k in self._attrs_for_equality
-            }
+            other_state = self._get_equality_attrs(other, self.ignore_attrs_equality)
+            self_state = self._get_equality_attrs(self, self.ignore_attrs_equality)
             return other_state == self_state
         else:
             return False
 
     def __repr__(self):
-        name = self.__class__.__name__
-        params = self.__dict__
-        params = ", ".join([f"{k}={params[k]}" for k in self._attrs_for_equality])
-        return f"{name}({params})"
+        attrs = ", ".join(
+            f"{k}={v}"
+            for k, v in self._get_equality_attrs(
+                self, self.ignore_attrs_equality
+            ).items()
+        )
+        return f"{self.__class__.__name__}({attrs})"
 
 
 def likelihood_component_names(
