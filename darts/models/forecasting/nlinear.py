@@ -3,17 +3,21 @@ N-Linear
 ------
 """
 
-from typing import Optional
+from collections.abc import Sequence
+from typing import Optional, Union
 
+import numpy as np
 import torch
 import torch.nn as nn
 
 from darts.logging import raise_if
+from darts.models.forecasting.categorical_model import CategoricalForecastingMixin
 from darts.models.forecasting.pl_forecasting_module import (
     PLMixedCovariatesModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.timeseries import TimeSeries
 
 
 class _NLinearModule(PLMixedCovariatesModule):
@@ -480,3 +484,99 @@ class NLinearModel(MixedCovariatesTorchModel):
     @property
     def supports_past_covariates(self) -> bool:
         return not self.shared_weights
+
+
+# UPDATED:
+# Classifier module for predicting classes instead of logits
+# Reformat target/logit for CrossEntropyLoss
+class _NLinearClassifierModule(_NLinearModule):
+    """
+    NLinear module
+    """
+
+    def __init__(self, classes: list, **kwargs):
+        super().__init__(**kwargs)
+        self.classes = torch.tensor(classes)
+
+    def _produce_predict_output(self, x: tuple) -> torch.Tensor:
+        output = super()._produce_predict_output(x)
+        if not self.likelihood:
+            self.classes = self.classes.to(output.device)
+            output = torch.nn.functional.softmax(output, dim=-1)
+            output = self.classes[torch.argmax(output, dim=-1)]
+        return output
+
+    def _compute_loss(self, output, target, criterion, sample_weight):
+        # output is of shape (batch_size, n_timesteps, n_components, n_params)
+        if self.likelihood:
+            loss = self.likelihood.compute_loss(output, target, sample_weight)
+        else:
+            loss = criterion(output.squeeze(), target.squeeze())
+            if sample_weight is not None:
+                loss = (loss * sample_weight).mean()
+        return loss
+
+
+# UPDATED:
+# override fit to obtain the classes from the training series
+# override _create_model to use the classifier module and define nr_params as the number of classes
+class NLinearClassifierModel(NLinearModel, CategoricalForecastingMixin):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def fit(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]], **kwargs
+    ) -> "NLinearClassifierModel":
+        if isinstance(series, TimeSeries):
+            series = [series]
+        self.classes = sorted({
+            classes for serie in series for classes in list(np.unique(serie.values()))
+        })
+        return super().fit(series, **kwargs)
+
+    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
+        # samples are made of
+        # (past_target, past_covariates, historic_future_covariates,
+        #  future_covariates, static_covariates, future_target)
+
+        raise_if(
+            self.shared_weights
+            and (train_sample[1] is not None or train_sample[2] is not None),
+            "Covariates have been provided, but the model has been built with shared_weights=True."
+            + "Please set shared_weights=False to use covariates.",
+        )
+
+        input_dim = train_sample[0].shape[1] + sum(
+            # add past covariates dim and historic future covariates dim, if present
+            train_sample[i].shape[1] if train_sample[i] is not None else 0
+            for i in (1, 2)
+        )
+        future_cov_dim = train_sample[3].shape[1] if train_sample[3] is not None else 0
+
+        if train_sample[4] is None:
+            static_cov_dim = 0
+        else:
+            # account for component-specific or shared static covariates representation
+            static_cov_dim = train_sample[4].shape[0] * train_sample[4].shape[1]
+
+        output_dim = train_sample[-1].shape[1]
+
+        nr_params = len(self.classes)
+        # nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
+
+        return _NLinearClassifierModule(
+            classes=self.classes,
+            input_dim=input_dim,
+            output_dim=output_dim,
+            future_cov_dim=future_cov_dim,
+            static_cov_dim=static_cov_dim,
+            nr_params=nr_params,
+            shared_weights=self.shared_weights,
+            const_init=self.const_init,
+            normalize=self.normalize,
+            **self.pl_module_params,
+        )
+
+    @property
+    def class_labels(self):
+        return self.classes
