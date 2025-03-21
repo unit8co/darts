@@ -247,6 +247,16 @@ class TestRegressionModels:
         0.65,  # QuantileXGBModel
     ]
 
+    xgb_w_categorical_covariates = XGBModel(
+        lags=1,
+        lags_past_covariates=1,
+        lags_future_covariates=[1],
+        output_chunk_length=1,
+        categorical_future_covariates=["fut_cov_promo_mechanism"],
+        categorical_past_covariates=["past_cov_cat_dummy"],
+        categorical_static_covariates=["product_id"],
+    )
+
     lgbm_w_categorical_covariates = NotImportedModule
     if lgbm_available:
         RegularLightGBMModel = partialclass(LightGBMModel, **lgbm_test_params)
@@ -292,6 +302,8 @@ class TestRegressionModels:
             0.7,  # QuantileLightGBMModel
             0.75,  # PoissonLightGBMModel
         ]
+
+    catboost_w_categorical_covariates = NotImportedModule
     if cb_available:
         RegularCatBoostModel = partialclass(
             CatBoostModel,
@@ -3280,13 +3292,21 @@ class TestRegressionModels:
             assert len(model.encoders.future_encoders) == 1
             assert isinstance(model.encoders.future_encoders[0], FutureCyclicEncoder)
 
-    @pytest.mark.skipif(
-        not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
-    )
     @pytest.mark.parametrize(
         "models",
         (
-            (
+            ([
+                (
+                    XGBModel(lags=10, output_chunk_length=10, verbose=-1),
+                    XGBModel(
+                        categorical_static_covariates=["curve_type"],
+                        lags=10,
+                        output_chunk_length=10,
+                        verbose=-1,
+                    ),
+                )
+            ])
+            + (
                 [
                     (
                         LightGBMModel(lags=10, output_chunk_length=10, verbose=-1),
@@ -3379,13 +3399,40 @@ class TestRegressionModels:
             for rmse_no_cat, rmse_cat in zip(rmses_no_cat, rmses_cat)
         ])
 
-    @pytest.mark.skipif(
-        not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
-    )
     @pytest.mark.parametrize(
         "model",
         (
-            (
+            ([
+                XGBModel(
+                    lags=1,
+                    lags_past_covariates=1,
+                    output_chunk_length=1,
+                    categorical_past_covariates=[
+                        "does_not_exist",
+                        "past_cov_cat_dummy",
+                    ],
+                    categorical_static_covariates=["product_id"],
+                    **lgbm_test_params,
+                ),
+                XGBModel(
+                    lags=1,
+                    lags_past_covariates=1,
+                    output_chunk_length=1,
+                    categorical_past_covariates=[
+                        "past_cov_cat_dummy",
+                    ],
+                    categorical_static_covariates=["does_not_exist"],
+                    **lgbm_test_params,
+                ),
+                XGBModel(
+                    lags=1,
+                    lags_past_covariates=1,
+                    output_chunk_length=1,
+                    categorical_future_covariates=["does_not_exist"],
+                    **lgbm_test_params,
+                ),
+            ])
+            + (
                 [
                     LightGBMModel(
                         lags=1,
@@ -3468,12 +3515,10 @@ class TestRegressionModels:
                 future_covariates=future_covariates,
             )
 
-    @pytest.mark.skipif(
-        not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
-    )
     @pytest.mark.parametrize(
         "model",
-        ([catboost_w_categorical_covariates] if cb_available else [])
+        [xgb_w_categorical_covariates]
+        + ([catboost_w_categorical_covariates] if cb_available else [])
         + ([lgbm_w_categorical_covariates] if lgbm_available else []),
     )
     def test_get_categorical_features_helper(self, model):
