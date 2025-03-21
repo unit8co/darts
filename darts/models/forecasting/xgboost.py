@@ -21,7 +21,7 @@ from darts.models.forecasting.regression_model import (
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
-from darts.utils.likelihood.regression import (
+from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
     _check_likelihood,
     _get_likelihood,

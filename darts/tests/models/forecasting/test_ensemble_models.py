@@ -31,7 +31,7 @@ logger = get_logger(__name__)
 
 if TORCH_AVAILABLE:
     from darts.models import DLinearModel, NBEATSModel, RNNModel, TCNModel
-    from darts.utils.likelihood.likelihood_models import QuantileRegression
+    from darts.utils.likelihood_models.torch import QuantileRegression
 
 
 def _make_ts(start_value=0, n=100):

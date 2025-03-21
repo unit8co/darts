@@ -57,7 +57,7 @@ from torch.distributions import Weibull as _Weibull
 from torch.distributions.kl import kl_divergence
 
 from darts.logging import raise_if_not
-from darts.utils.likelihood.likelihood import (
+from darts.utils.likelihood_models.likelihood import (
     BaseLikelihood,
     LikelihoodType,
     quantile_names,

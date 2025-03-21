@@ -39,7 +39,7 @@ if TORCH_AVAILABLE:
         TSMixerModel,
     )
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
-    from darts.utils.likelihood.likelihood_models import (
+    from darts.utils.likelihood_models.torch import (
         BernoulliLikelihood,
         BetaLikelihood,
         CauchyLikelihood,

@@ -85,7 +85,7 @@ from darts.utils.historical_forecasts import (
 from darts.utils.historical_forecasts.optimized_historical_forecasts_torch import (
     _optimized_historical_forecasts,
 )
-from darts.utils.likelihood.likelihood_models import Likelihood
+from darts.utils.likelihood_models.torch import Likelihood
 from darts.utils.torch import random_method
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
 

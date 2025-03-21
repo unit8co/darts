@@ -17,7 +17,7 @@ from joblib import Parallel, delayed
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.components.layer_norm_variants import RINorm
 from darts.timeseries import TimeSeries
-from darts.utils.likelihood.likelihood_models import Likelihood
+from darts.utils.likelihood_models.torch import Likelihood
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.torch import MonteCarloDropout
 
@@ -124,7 +124,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
             at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
-            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
+            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.torch.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
         optimizer_cls
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.

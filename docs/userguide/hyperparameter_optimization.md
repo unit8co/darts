@@ -27,7 +27,7 @@ from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
 from darts.metrics import smape
 from darts.models import TCNModel
-from darts.utils.likelihood.likelihood_models import GaussianLikelihood
+from darts.utils.likelihood_models.torch import GaussianLikelihood
 
 # load data
 series = AirPassengersDataset().load().astype(np.float32)

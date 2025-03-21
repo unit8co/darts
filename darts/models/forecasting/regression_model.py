@@ -50,7 +50,7 @@ from darts.utils.historical_forecasts import (
     _optimized_historical_forecasts_last_points_only,
     _process_historical_forecast_input,
 )
-from darts.utils.likelihood.regression import Likelihood, QuantileRegression
+from darts.utils.likelihood_models.sklearn import Likelihood, QuantileRegression
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
 

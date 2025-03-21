@@ -31,7 +31,7 @@ if TORCH_AVAILABLE:
         pass
 
     from darts.models import TCNModel
-    from darts.utils.likelihood.likelihood_models import GaussianLikelihood
+    from darts.utils.likelihood_models.torch import GaussianLikelihood
 
 
 class TestOptuna:

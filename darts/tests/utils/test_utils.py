@@ -7,7 +7,7 @@ from pandas.tseries.offsets import CustomBusinessDay
 
 from darts import TimeSeries
 from darts.utils import _with_sanity_checks
-from darts.utils.likelihood.likelihood import (
+from darts.utils.likelihood_models.likelihood import (
     likelihood_component_names,
     quantile_interval_names,
     quantile_names,
