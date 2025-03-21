@@ -18,7 +18,6 @@ from darts.models import (
     FFT,
     TBATS,
     VARIMA,
-    AutoARIMA,
     Croston,
     ExponentialSmoothing,
     FourTheta,
@@ -73,7 +72,6 @@ models = [
     (KalmanForecaster(dim_x=3), 20),
     (LinearRegressionModel(lags=12), 13),
     (RandomForest(lags=12, n_estimators=5, max_depth=3), 14),
-    (AutoARIMA(), 12),
     (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.5),
     (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 11),
 ]
@@ -93,14 +91,12 @@ dual_models = [
     ARIMA(),
     StatsForecastAutoARIMA(season_length=12),
     StatsForecastAutoETS(season_length=12),
-    AutoARIMA(),
 ]
 
 # test only a few models for encoder support reduce time
 encoder_support_models = [
     VARIMA(1, 0, 0),
     ARIMA(),
-    AutoARIMA(),
     KalmanForecaster(dim_x=30),
 ]
 if not isinstance(Prophet, NotImportedModule):
@@ -351,10 +347,6 @@ class TestLocalForecastingModels:
         varima = VARIMA(trend="t")
         with pytest.raises(ValueError):
             varima.fit(series=ts)
-
-        autoarima = AutoARIMA(trend="t")
-        with pytest.raises(ValueError):
-            autoarima.fit(series=ts)
 
     def test_forecast_time_index(self):
         # the forecast time index should follow that of the train series
