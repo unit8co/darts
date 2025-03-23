@@ -323,6 +323,7 @@ class QuantileRegression(Likelihood):
             n_outputs=n_outputs,
             random_state=random_state,
         )
+        self.ignore_attrs_equality += ["_median_idx"]
 
     def sample(self, model_output: np.ndarray) -> np.ndarray:
         # model_output is of shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
