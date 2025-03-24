@@ -19,7 +19,7 @@ from sklearn.tree import DecisionTreeClassifier
 from darts.models.forecasting.catboost_model import CatBoostCategoricalModel
 from darts.models.forecasting.categorical_model import CategoricalModel
 from darts.models.forecasting.lgbm import LightGBMCategoricalModel
-from darts.models.forecasting.xgboost import XGBClassifierModel
+from darts.models.forecasting.xgboost import XGBCategoricalModel
 from darts.models.utils import NotImportedModule
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
@@ -100,7 +100,7 @@ class TestCategoricalForecasting:
         (AdaBoostClassifier, {"random_state": 42}),
         (GaussianNB, {}),
         (QuadraticDiscriminantAnalysis, {}),
-        (XGBClassifierModel, {}),
+        (XGBCategoricalModel, {}),
     ]
 
     models_accuracies = [
@@ -114,7 +114,7 @@ class TestCategoricalForecasting:
         1,  # AdaBoostClassifier
         1,  # GaussianNB
         1,  # QuadraticDiscriminantAnalysis
-        1,  # XGBClassifierModel
+        1,  # XGBCategoricalModel
     ]
 
     models_multioutput = [
@@ -128,7 +128,7 @@ class TestCategoricalForecasting:
         False,  # AdaBoostClassifier
         False,  # GaussianNB
         False,  # QuadraticDiscriminantAnalysis
-        False,  # XGBClassifierModel
+        False,  # XGBCategoricalModel
     ]
 
     if lgbm_available:
@@ -210,7 +210,7 @@ class TestCategoricalForecasting:
         mode,
         output_chunk_length,
     ):
-        # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
+        # for every model, test whether it predicts the target with a minimum f1 score
         train_series, test_series = train_test_split(series, 70)
         train_past_covariates, _ = train_test_split(past_covariates, 70)
         model, kwargs = model_params
@@ -222,7 +222,6 @@ class TestCategoricalForecasting:
             **kwargs,
         )
         model_instance.fit(series=train_series, past_covariates=train_past_covariates)
-        print(type(test_series))
         prediction = model_instance.predict(
             n=len(test_series)
             if type(test_series) is TimeSeries
@@ -429,8 +428,3 @@ class TestCategoricalForecasting:
         # while it should work with n = 1
         prediction = model_instance.predict(n=1)
         assert len(prediction) == 1
-
-
-# TODO test what label are supported (contious -> error, start from 0, negative, etc)
-# TODO test what happens if we have missing labels
-# TODO test what happens if we have a single label

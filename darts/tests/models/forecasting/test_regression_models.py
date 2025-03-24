@@ -3400,114 +3400,74 @@ class TestRegressionModels:
         ])
 
     @pytest.mark.parametrize(
-        "model",
+        "model_cls",
         (
-            ([
-                XGBModel(
-                    lags=1,
-                    lags_past_covariates=1,
-                    output_chunk_length=1,
-                    categorical_past_covariates=[
-                        "does_not_exist",
-                        "past_cov_cat_dummy",
-                    ],
-                    categorical_static_covariates=["product_id"],
-                    **lgbm_test_params,
-                ),
-                XGBModel(
-                    lags=1,
-                    lags_past_covariates=1,
-                    output_chunk_length=1,
-                    categorical_past_covariates=[
-                        "past_cov_cat_dummy",
-                    ],
-                    categorical_static_covariates=["does_not_exist"],
-                    **lgbm_test_params,
-                ),
-                XGBModel(
-                    lags=1,
-                    lags_past_covariates=1,
-                    output_chunk_length=1,
-                    categorical_future_covariates=["does_not_exist"],
-                    **lgbm_test_params,
-                ),
-            ])
-            + (
-                [
-                    LightGBMModel(
-                        lags=1,
-                        lags_past_covariates=1,
-                        output_chunk_length=1,
-                        categorical_past_covariates=[
-                            "does_not_exist",
-                            "past_cov_cat_dummy",
-                        ],
-                        categorical_static_covariates=["product_id"],
-                        **lgbm_test_params,
-                    ),
-                    LightGBMModel(
-                        lags=1,
-                        lags_past_covariates=1,
-                        output_chunk_length=1,
-                        categorical_past_covariates=[
-                            "past_cov_cat_dummy",
-                        ],
-                        categorical_static_covariates=["does_not_exist"],
-                        **lgbm_test_params,
-                    ),
-                    LightGBMModel(
-                        lags=1,
-                        lags_past_covariates=1,
-                        output_chunk_length=1,
-                        categorical_future_covariates=["does_not_exist"],
-                        **lgbm_test_params,
-                    ),
-                ]
-                if lgbm_available
-                else []
-            )
-            + (
-                [
-                    CatBoostModel(
-                        lags=1,
-                        lags_past_covariates=1,
-                        output_chunk_length=1,
-                        categorical_past_covariates=[
-                            "does_not_exist",
-                            "past_cov_cat_dummy",
-                        ],
-                        categorical_static_covariates=["product_id"],
-                        **cb_test_params,
-                    ),
-                    CatBoostModel(
-                        lags=1,
-                        lags_past_covariates=1,
-                        output_chunk_length=1,
-                        categorical_past_covariates=[
-                            "past_cov_cat_dummy",
-                        ],
-                        categorical_static_covariates=["does_not_exist"],
-                        **cb_test_params,
-                    ),
-                    CatBoostModel(
-                        lags=1,
-                        lags_past_covariates=1,
-                        output_chunk_length=1,
-                        categorical_future_covariates=["does_not_exist"],
-                        **cb_test_params,
-                    ),
-                ]
-                if cb_available
-                else []
-            )
+            [XGBModel]
+            + ([LightGBMModel] if lgbm_available else [])
+            + ([CatBoostModel] if cb_available else [])
         ),
     )
-    def test_fit_with_categorical_features_raises_error(self, model):
+    def test_fit_with_categorical_features_raises_error(self, model_cls):
+        # test case: categorical static covariate specified but use_static_covariates is False
+        with pytest.raises(ValueError):
+            model_cls(
+                lags=1,
+                output_chunk_length=1,
+                categorical_static_covariates=["curve_type"],
+                use_static_covariates=False,
+            )
+
+        # test case: categorical past covariate specified but no lags_past_covariates
+        with pytest.raises(ValueError):
+            model_cls(
+                lags=1,
+                output_chunk_length=1,
+                categorical_past_covariates=["does_not_exist"],
+            )
+
+        # test case: categorical future covariate specified but no lags_future_covariates
+        with pytest.raises(ValueError):
+            model_cls(
+                lags=1,
+                lags_past_covariates=1,
+                output_chunk_length=1,
+                categorical_future_covariates=["does_not_exist"],
+            )
+
         (
             series,
             past_covariates,
             future_covariates,
         ) = self.inputs_for_tests_categorical_covariates
+
+        # test case: categorical past covariate does not exist in past covariates
+        model = model_cls(
+            lags=1,
+            lags_past_covariates=1,
+            output_chunk_length=1,
+            categorical_past_covariates=[
+                "does_not_exist",
+                "past_cov_cat_dummy",
+            ],
+            categorical_static_covariates=["product_id"],
+        )
+        with pytest.raises(ValueError):
+            model.fit(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
+
+        # categorical static covariate does not exist in static covariates
+        model = model_cls(
+            lags=1,
+            lags_past_covariates=1,
+            output_chunk_length=1,
+            categorical_past_covariates=[
+                "past_cov_cat_dummy",
+            ],
+            categorical_static_covariates=["does_not_exist"],
+        )
         with pytest.raises(ValueError):
             model.fit(
                 series=series,
@@ -3540,7 +3500,7 @@ class TestRegressionModels:
         assert column_names == [
             "past_cov_past_cov_cat_dummy_lag-1",
             "fut_cov_fut_cov_promo_mechanism_lag1",
-            "product_id",
+            "static_cov_product_id_lag0",
         ]
 
     @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")

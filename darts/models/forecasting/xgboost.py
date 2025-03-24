@@ -19,7 +19,7 @@ from darts.models.forecasting.categorical_model import CategoricalForecastingMix
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
-    RegressionModelWithCategoricalCovariates,
+    RegressionModelWithCategoricalFeatures,
     _LikelihoodMixin,
 )
 from darts.timeseries import TimeSeries
@@ -46,7 +46,7 @@ def xgb_quantile_loss(labels: np.ndarray, preds: np.ndarray, quantile: float):
     return grad, hess
 
 
-class XGBModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
+class XGBModel(RegressionModelWithCategoricalFeatures, _LikelihoodMixin):
     def __init__(
         self,
         lags: Optional[LAGS_TYPE] = None,
@@ -226,11 +226,18 @@ class XGBModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
 
             self._rng = np.random.default_rng(seed=random_state)  # seed for sampling
 
-        # Only enable categorical when necessary since fewer features are supported when enabled
+        # Only enable categorical when necessary as fewer features are supported when enabled
         enable_categorical = (
-            categorical_past_covariates is not None
-            or categorical_future_covariates is not None
-            or categorical_static_covariates is not None
+            (self._is_categorical_forecasting and lags is not None)
+            or (
+                categorical_past_covariates is not None
+                and lags_past_covariates is not None
+            )
+            or (
+                categorical_future_covariates is not None
+                and lags_future_covariates is not None
+            )
+            or (categorical_static_covariates is not None and use_static_covariates)
         )
 
         super().__init__(
@@ -423,7 +430,21 @@ class XGBModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         """
         return None, self._categorical_features
 
+    @property
+    def _is_categorical_forecasting(self) -> bool:
+        """
+        Returns True if the model forecasts categorical values.
+        """
+        return False
 
-class XGBClassifierModel(XGBModel, CategoricalForecastingMixin):
+
+class XGBCategoricalModel(XGBModel, CategoricalForecastingMixin):
     def _create_model(self, enable_categorical=False, **kwargs):
         return xgb.XGBClassifier(enable_categorical=enable_categorical, **kwargs)
+
+    @property
+    def _is_categorical_forecasting(self) -> bool:
+        """
+        Returns True if the model forecasts categorical values.
+        """
+        return True

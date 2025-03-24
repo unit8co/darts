@@ -21,7 +21,7 @@ from darts.models.forecasting.categorical_model import CategoricalForecastingMix
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
-    RegressionModelWithCategoricalCovariates,
+    RegressionModelWithCategoricalFeatures,
     _LikelihoodMixin,
 )
 from darts.timeseries import TimeSeries
@@ -29,7 +29,7 @@ from darts.timeseries import TimeSeries
 logger = get_logger(__name__)
 
 
-class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
+class LightGBMModel(RegressionModelWithCategoricalFeatures, _LikelihoodMixin):
     def __init__(
         self,
         lags: Optional[LAGS_TYPE] = None,
@@ -367,7 +367,21 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         """
         return "categorical_feature", "auto"
 
+    @property
+    def _is_categorical_forecasting(self) -> bool:
+        """
+        Returns True if the model forecasts categorical values.
+        """
+        return False
+
 
 class LightGBMCategoricalModel(LightGBMModel, CategoricalForecastingMixin):
     def _create_model(self, **kwargs) -> lgb.LGBMClassifier:
         return lgb.LGBMClassifier(**kwargs)
+
+    @property
+    def _is_categorical_forecasting(self) -> bool:
+        """
+        Returns True if the model forecasts categorical values.
+        """
+        return True

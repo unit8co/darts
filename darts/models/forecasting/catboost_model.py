@@ -17,7 +17,7 @@ from catboost import CatBoostClassifier, CatBoostRegressor, Pool
 from darts.logging import get_logger
 from darts.models.forecasting.categorical_model import CategoricalForecastingMixin
 from darts.models.forecasting.regression_model import (
-    RegressionModelWithCategoricalCovariates,
+    RegressionModelWithCategoricalFeatures,
     _LikelihoodMixin,
 )
 from darts.timeseries import TimeSeries
@@ -25,7 +25,7 @@ from darts.timeseries import TimeSeries
 logger = get_logger(__name__)
 
 
-class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
+class CatBoostModel(RegressionModelWithCategoricalFeatures, _LikelihoodMixin):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -482,7 +482,21 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         """
         return "cat_features", self._categorical_features
 
+    @property
+    def _is_categorical_forecasting(self) -> bool:
+        """
+        Returns True if the model forecasts categorical values.
+        """
+        return False
+
 
 class CatBoostCategoricalModel(CatBoostModel, CategoricalForecastingMixin):
     def _create_model(self, **kwargs):
         return CatBoostClassifier(**kwargs)
+
+    @property
+    def _is_categorical_forecasting(self) -> bool:
+        """
+        Returns True if the model forecasts categorical values.
+        """
+        return True
