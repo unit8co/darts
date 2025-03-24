@@ -14,9 +14,10 @@ import numpy as np
 import pandas as pd
 from catboost import CatBoostClassifier, CatBoostRegressor, Pool
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.categorical_model import CategoricalForecastingMixin
 from darts.models.forecasting.regression_model import (
+    ForecastingType,
     RegressionModelWithCategoricalFeatures,
     _LikelihoodMixin,
 )
@@ -433,9 +434,10 @@ class CatBoostModel(RegressionModelWithCategoricalFeatures, _LikelihoodMixin):
             pd_samples = pd.DataFrame(samples)
             is_not_round = np.any(pd_samples[cat_param] % 1 != 0)
             if is_not_round:
-                logger.warning(
-                    "CatBoost expects categorical features to be integer-encoded. "
-                    "Float values will be cast to integers."
+                raise_log(
+                    ValueError(
+                        "CatBoost expects categorical features to be integer-encoded, decimal values found instead."
+                    )
                 )
             pd_samples[cat_param] = pd_samples[cat_param].apply(lambda x: x.astype(int))
             samples = pd_samples
@@ -483,11 +485,11 @@ class CatBoostModel(RegressionModelWithCategoricalFeatures, _LikelihoodMixin):
         return "cat_features", self._categorical_features
 
     @property
-    def _is_categorical_forecasting(self) -> bool:
+    def _forecasting_type(self) -> ForecastingType:
         """
-        Returns True if the model forecasts categorical values.
+        Returns the model's type of forecasting.
         """
-        return False
+        return ForecastingType.REGRESSION
 
 
 class CatBoostCategoricalModel(CatBoostModel, CategoricalForecastingMixin):
@@ -495,8 +497,8 @@ class CatBoostCategoricalModel(CatBoostModel, CategoricalForecastingMixin):
         return CatBoostClassifier(**kwargs)
 
     @property
-    def _is_categorical_forecasting(self) -> bool:
+    def _forecasting_type(self) -> ForecastingType:
         """
-        Returns True if the model forecasts categorical values.
+        Returns the model's type of forecasting.
         """
-        return True
+        return ForecastingType.CATEGORICAL

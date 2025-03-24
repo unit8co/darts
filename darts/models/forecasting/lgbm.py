@@ -21,6 +21,7 @@ from darts.models.forecasting.categorical_model import CategoricalForecastingMix
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
+    ForecastingType,
     RegressionModelWithCategoricalFeatures,
     _LikelihoodMixin,
 )
@@ -368,11 +369,11 @@ class LightGBMModel(RegressionModelWithCategoricalFeatures, _LikelihoodMixin):
         return "categorical_feature", "auto"
 
     @property
-    def _is_categorical_forecasting(self) -> bool:
+    def _forecasting_type(self) -> ForecastingType:
         """
-        Returns True if the model forecasts categorical values.
+        Returns the model's type of forecasting.
         """
-        return False
+        return ForecastingType.REGRESSION
 
 
 class LightGBMCategoricalModel(LightGBMModel, CategoricalForecastingMixin):
@@ -380,8 +381,8 @@ class LightGBMCategoricalModel(LightGBMModel, CategoricalForecastingMixin):
         return lgb.LGBMClassifier(**kwargs)
 
     @property
-    def _is_categorical_forecasting(self) -> bool:
+    def _forecasting_type(self) -> ForecastingType:
         """
-        Returns True if the model forecasts categorical values.
+        Returns the model's type of forecasting.
         """
-        return True
+        return ForecastingType.CATEGORICAL

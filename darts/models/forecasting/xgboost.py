@@ -19,6 +19,7 @@ from darts.models.forecasting.categorical_model import CategoricalForecastingMix
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
+    ForecastingType,
     RegressionModelWithCategoricalFeatures,
     _LikelihoodMixin,
 )
@@ -431,11 +432,11 @@ class XGBModel(RegressionModelWithCategoricalFeatures, _LikelihoodMixin):
         return None, self._categorical_features
 
     @property
-    def _is_categorical_forecasting(self) -> bool:
+    def _forecasting_type(self) -> ForecastingType:
         """
-        Returns True if the model forecasts categorical values.
+        Returns the model's type of forecasting.
         """
-        return False
+        return ForecastingType.REGRESSION
 
 
 class XGBCategoricalModel(XGBModel, CategoricalForecastingMixin):
@@ -443,8 +444,8 @@ class XGBCategoricalModel(XGBModel, CategoricalForecastingMixin):
         return xgb.XGBClassifier(enable_categorical=enable_categorical, **kwargs)
 
     @property
-    def _is_categorical_forecasting(self) -> bool:
+    def _forecasting_type(self) -> ForecastingType:
         """
-        Returns True if the model forecasts categorical values.
+        Returns the model's type of forecasting.
         """
-        return True
+        return ForecastingType.CATEGORICAL

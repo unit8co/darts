@@ -29,6 +29,7 @@ if their static covariates do not have the same size, the shorter ones are padde
 
 from collections import OrderedDict
 from collections.abc import Sequence
+from enum import Enum
 from typing import Callable, Literal, Optional, Union
 
 import numpy as np
@@ -1716,6 +1717,18 @@ class _QuantileModelContainer(OrderedDict):
         super().__init__()
 
 
+class ForecastingType(Enum):
+    """
+    Enum class for the forecasting type of a regression model.
+    Enum values:
+        - REGRESSION: for continuous forecasts
+        - CATEGORICAL: for classes forecasts
+    """
+
+    REGRESSION = "regression"
+    CATEGORICAL = "categorical"
+
+
 class RegressionModelWithCategoricalFeatures(RegressionModel):
     def __init__(
         self,
@@ -1903,12 +1916,12 @@ class RegressionModelWithCategoricalFeatures(RegressionModel):
         )
 
     @property
-    def _is_categorical_forecasting(self) -> bool:
+    def _forecasting_type(self) -> ForecastingType:
         """
-        Returns True if the model forecasts categorical values.
+        Returns the model's type of forecasting.
         Should be overridden in subclasses.
         """
-        return False
+        return ForecastingType.REGRESSION
 
     @property
     def _categorical_fit_param(self) -> tuple[Optional[str], Optional[str]]:
@@ -1999,7 +2012,8 @@ class RegressionModelWithCategoricalFeatures(RegressionModel):
         target_ts = get_single_series(series)
         categorical_covariates = [
             list(target_ts.components)
-            if self._is_categorical_forecasting and self.lags.get("target") is not None
+            if self._forecasting_type == ForecastingType.CATEGORICAL
+            and self.lags.get("target") is not None
             else [],
             self.categorical_past_covariates
             if self.categorical_past_covariates
@@ -2068,6 +2082,9 @@ class RegressionModelWithCategoricalFeatures(RegressionModel):
         """
         Custom fit function for `RegressionModelWithCategoricalFeatures` models, adding logic to let the model
         handle categorical features directly.
+
+        Sub-classes should override `_format_samples` to format the columns listed in self._categorical_features
+        accordingly to the model's requirements.
         """
         cat_col_indices, _ = self._get_categorical_features(
             series=series,
