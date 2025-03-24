@@ -229,7 +229,7 @@ class XGBModel(RegressionModelWithCategoricalFeatures, _LikelihoodMixin):
 
         # Only enable categorical when necessary as fewer features are supported when enabled
         enable_categorical = (
-            (self._is_categorical_forecasting and lags is not None)
+            (self._forecasting_type == ForecastingType.CATEGORICAL and lags is not None)
             or (
                 categorical_past_covariates is not None
                 and lags_past_covariates is not None
