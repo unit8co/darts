@@ -425,5 +425,5 @@ class XGBModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
 
 
 class XGBClassifierModel(XGBModel, CategoricalForecastingMixin):
-    def _create_model(self, **kwargs):
-        return xgb.XGBClassifier(enable_categorical=True, **kwargs)
+    def _create_model(self, enable_categorical=False, **kwargs):
+        return xgb.XGBClassifier(enable_categorical=enable_categorical, **kwargs)
