@@ -8,7 +8,7 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import f1_score
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
@@ -428,3 +428,42 @@ class TestCategoricalForecasting:
         # while it should work with n = 1
         prediction = model_instance.predict(n=1)
         assert len(prediction) == 1
+
+    @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
+    def test_labels_constraints(self, clf_params):
+        clf, kwargs = clf_params
+        model = clf(lags_past_covariates=2, **kwargs)
+
+        # Categorical forecasting models do not accept continuous labels
+        with pytest.raises(ValueError):
+            model.fit(
+                series=self.sine_univariate1, past_covariates=self.sine_univariate1
+            )
+
+        # XGBCategoricalModel require labels to be integers between 0 and n_classes
+        if type(clf) is XGBCategoricalModel:
+            # negative labels
+            with pytest.raises(ValueError):
+                model.fit(
+                    series=self.sine_univariate1_cat - 5,
+                    past_covariates=self.sine_univariate1,
+                )
+
+            # labels not between 0 and n_classes
+            with pytest.raises(ValueError):
+                model.fit(
+                    series=self.sine_univariate1_cat + 1,
+                    past_covariates=self.sine_univariate1,
+                )
+
+        # Single label
+        if type(clf) in [
+            SVC,
+            GaussianProcessClassifier,
+            QuadraticDiscriminantAnalysis,
+        ] or type(model.model) in [LogisticRegression]:
+            with pytest.raises(ValueError):
+                model.fit(
+                    series=self.sine_univariate1_cat - self.sine_univariate1_cat,
+                    past_covariates=self.sine_univariate1,
+                )

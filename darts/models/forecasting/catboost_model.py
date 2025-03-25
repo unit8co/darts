@@ -502,3 +502,15 @@ class CatBoostCategoricalModel(CatBoostModel, CategoricalForecastingMixin):
         Returns the model's type of forecasting.
         """
         return ForecastingType.CATEGORICAL
+
+    def _format_samples(self, samples, labels=None):
+        """
+        CatBoost classifier
+        """
+        if labels is not None and np.any(labels % 1 != 0):
+            raise_log(
+                ValueError(
+                    "CatBoostCategoricalModel expects categorical labels, float are not supported."
+                )
+            )
+        return super()._format_samples(samples, labels)
