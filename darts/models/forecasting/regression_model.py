@@ -29,7 +29,8 @@ if their static covariates do not have the same size, the shorter ones are padde
 
 from collections import OrderedDict
 from collections.abc import Sequence
-from typing import Any, Callable, Literal, Optional, Union
+from enum import Enum
+from typing import Callable, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -682,6 +683,11 @@ class RegressionModel(GlobalForecastingModel):
 
         return features, labels, sample_weights
 
+    def _format_samples(self, samples, labels=None):
+        if labels is None:
+            return samples
+        return samples, labels
+
     def _fit_model(
         self,
         series: Sequence[TimeSeries],
@@ -728,6 +734,11 @@ class RegressionModel(GlobalForecastingModel):
                     "`sample_weight` was ignored since underlying regression model's "
                     "`fit()` method does not support it."
                 )
+
+        training_samples, training_labels = self._format_samples(
+            training_samples, training_labels
+        )
+
         self.model.fit(
             training_samples, training_labels, **sample_weight_kwargs, **kwargs
         )
@@ -1223,6 +1234,8 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs,
     ) -> np.ndarray:
         """By default, the regression model returns a single sample."""
+
+        x = self._format_samples(x)
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
         return prediction.reshape(k, self.pred_dim, -1)
@@ -1704,7 +1717,19 @@ class _QuantileModelContainer(OrderedDict):
         super().__init__()
 
 
-class RegressionModelWithCategoricalCovariates(RegressionModel):
+class ForecastingType(Enum):
+    """
+    Enum class for the forecasting type of a regression model.
+    Enum values:
+        - REGRESSION: for continuous forecasts
+        - CATEGORICAL: for classes forecasts
+    """
+
+    REGRESSION = "regression"
+    CATEGORICAL = "categorical"
+
+
+class RegressionModelWithCategoricalFeatures(RegressionModel):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -1829,6 +1854,26 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
         )
+
+        if categorical_static_covariates is not None and not use_static_covariates:
+            raise_log(
+                ValueError(
+                    "`categorical_static_covariates` is declared but `use_static_covariates` is set to False. "
+                )
+            )
+        if categorical_past_covariates is not None and lags_past_covariates is None:
+            raise_log(
+                ValueError(
+                    "`categorical_past_covariates` is declared but `lags_past_covariates` is not set. "
+                )
+            )
+        if categorical_future_covariates is not None and lags_future_covariates is None:
+            raise_log(
+                ValueError(
+                    "`categorical_future_covariates` is declared but `lags_future_covariates` is not set. "
+                )
+            )
+
         self.categorical_past_covariates = (
             [categorical_past_covariates]
             if isinstance(categorical_past_covariates, str)
@@ -1871,12 +1916,20 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         )
 
     @property
-    def _categorical_fit_param(self) -> tuple[str, Any]:
+    def _forecasting_type(self) -> ForecastingType:
+        """
+        Returns the model's type of forecasting.
+        Should be overridden in subclasses.
+        """
+        return ForecastingType.REGRESSION
+
+    @property
+    def _categorical_fit_param(self) -> tuple[Optional[str], Optional[str]]:
         """
         Returns the name, and default value of the categorical features parameter from model's `fit` method .
-        Can be overridden in subclasses.
+        Should be overridden in subclasses.
         """
-        return "categorical_feature", "auto"
+        return None, None
 
     def _validate_categorical_covariates(
         self,
@@ -1956,66 +2009,66 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             in create_lagged_data.
         2. Get the indices of the categorical features in the list of features.
         """
+        target_ts = get_single_series(series)
+        categorical_covariates = [
+            list(target_ts.components)
+            if self._forecasting_type == ForecastingType.CATEGORICAL
+            and self.lags.get("target") is not None
+            else [],
+            self.categorical_past_covariates
+            if self.categorical_past_covariates
+            else [],
+            self.categorical_future_covariates
+            if self.categorical_future_covariates
+            else [],
+            self.categorical_static_covariates
+            if self.categorical_static_covariates
+            else [],
+        ]
 
-        categorical_covariates = (
-            (
-                self.categorical_past_covariates
-                if self.categorical_past_covariates
-                else []
-            )
-            + (
-                self.categorical_future_covariates
-                if self.categorical_future_covariates
-                else []
-            )
-            + (
-                self.categorical_static_covariates
-                if self.categorical_static_covariates
-                else []
-            )
-        )
-
-        if not categorical_covariates:
+        # If no categorical covariates are declared, return empty lists
+        if sum(map(len, categorical_covariates)) == 0:
             return [], []
-        else:
-            target_ts = get_single_series(series)
-            past_covs_ts = get_single_series(past_covariates)
-            fut_covs_ts = get_single_series(future_covariates)
 
-            # We keep the creation order of the different lags/features in create_lagged_data
-            feature_list = (
+        past_covs_ts = get_single_series(past_covariates)
+        fut_covs_ts = get_single_series(future_covariates)
+        feature_list = [
+            [
+                ("target", component, lag)
+                for lag in self.lags.get("target", [])
+                for component in target_ts.components
+            ],
+            [
+                ("past_cov", component, lag)
+                for lag in self.lags.get("past", [])
+                for component in past_covs_ts.components
+            ],
+            [
+                ("fut_cov", component, lag)
+                for lag in self.lags.get("future", [])
+                for component in fut_covs_ts.components
+            ],
+            (
                 [
-                    f"target_{component}_lag{lag}"
-                    for lag in self.lags.get("target", [])
-                    for component in target_ts.components
+                    ("static_cov", component, 0)
+                    for component in list(target_ts.static_covariates.columns)
                 ]
-                + [
-                    f"past_cov_{component}_lag{lag}"
-                    for lag in self.lags.get("past", [])
-                    for component in past_covs_ts.components
-                ]
-                + [
-                    f"fut_cov_{component}_lag{lag}"
-                    for lag in self.lags.get("future", [])
-                    for component in fut_covs_ts.components
-                ]
-                + (
-                    list(target_ts.static_covariates.columns)
-                    if target_ts.has_static_covariates
-                    # if isinstance(target_ts.static_covariates, pd.DataFrame)
-                    else []
-                )
-            )
+                if target_ts.has_static_covariates
+                else []
+            ),
+        ]
 
-            indices = [
-                i
-                for i, col in enumerate(feature_list)
-                for cat in categorical_covariates
-                if cat and cat in col
-            ]
-            col_names = [feature_list[i] for i in indices]
+        indices = []
+        col_names = []
+        index = 0
+        for cat_covs, features in zip(categorical_covariates, feature_list):
+            for i, (prefix, component, lag) in enumerate(features):
+                if component in cat_covs:
+                    indices.append(index + i)
+                    col_names.append(f"{prefix}_{component}_lag{lag}")
+            index += len(features)
 
-            return indices, col_names
+        return indices, col_names
 
     def _fit_model(
         self,
@@ -2027,8 +2080,11 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         **kwargs,
     ):
         """
-        Custom fit function for `RegressionModelWithCategoricalCovariates` models, adding logic to let the model
+        Custom fit function for `RegressionModelWithCategoricalFeatures` models, adding logic to let the model
         handle categorical features directly.
+
+        Sub-classes should override `_format_samples` to format the columns listed in self._categorical_features
+        accordingly to the model's requirements.
         """
         cat_col_indices, _ = self._get_categorical_features(
             series=series,
@@ -2036,10 +2092,20 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             future_covariates=future_covariates,
         )
 
+        self._categorical_features = None
+        # cat_param_name is None if no flag is available in the model's fit method
+        # cat_param_default is None if no default value is available in the model's fit method
         cat_param_name, cat_param_default = self._categorical_fit_param
-        kwargs[cat_param_name] = (
-            cat_col_indices if cat_col_indices else cat_param_default
-        )
+        if cat_col_indices:
+            if cat_param_name is not None:
+                kwargs[cat_param_name] = cat_col_indices
+            self._categorical_features = cat_col_indices
+        else:
+            if cat_param_default is not None:
+                if cat_param_name is not None:
+                    kwargs[cat_param_name] = cat_param_default
+                self._categorical_features = cat_param_default
+
         super()._fit_model(
             series=series,
             past_covariates=past_covariates,

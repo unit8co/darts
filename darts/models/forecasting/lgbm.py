@@ -17,10 +17,12 @@ import lightgbm as lgb
 import numpy as np
 
 from darts.logging import get_logger
+from darts.models.forecasting.categorical_model import CategoricalForecastingMixin
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
-    RegressionModelWithCategoricalCovariates,
+    ForecastingType,
+    RegressionModelWithCategoricalFeatures,
     _LikelihoodMixin,
 )
 from darts.timeseries import TimeSeries
@@ -28,7 +30,7 @@ from darts.timeseries import TimeSeries
 logger = get_logger(__name__)
 
 
-class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
+class LightGBMModel(RegressionModelWithCategoricalFeatures, _LikelihoodMixin):
     def __init__(
         self,
         lags: Optional[LAGS_TYPE] = None,
@@ -212,12 +214,15 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             multi_models=multi_models,
-            model=lgb.LGBMRegressor(**self.kwargs),
+            model=self._create_model(**self.kwargs),
             use_static_covariates=use_static_covariates,
             categorical_past_covariates=categorical_past_covariates,
             categorical_future_covariates=categorical_future_covariates,
             categorical_static_covariates=categorical_static_covariates,
         )
+
+    def _create_model(self, **kwargs) -> lgb.LGBMRegressor:
+        return lgb.LGBMRegressor(**kwargs)
 
     def fit(
         self,
@@ -355,3 +360,29 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
                 else self.output_chunk_length
             ),
         )
+
+    @property
+    def _categorical_fit_param(self) -> tuple[Optional[str], Optional[str]]:
+        """
+        Returns the name, and default value of the categorical features parameter from model's `fit` method .
+        """
+        return "categorical_feature", "auto"
+
+    @property
+    def _forecasting_type(self) -> ForecastingType:
+        """
+        Returns the model's type of forecasting.
+        """
+        return ForecastingType.REGRESSION
+
+
+class LightGBMCategoricalModel(LightGBMModel, CategoricalForecastingMixin):
+    def _create_model(self, **kwargs) -> lgb.LGBMClassifier:
+        return lgb.LGBMClassifier(**kwargs)
+
+    @property
+    def _forecasting_type(self) -> ForecastingType:
+        """
+        Returns the model's type of forecasting.
+        """
+        return ForecastingType.CATEGORICAL

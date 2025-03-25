@@ -247,6 +247,16 @@ class TestRegressionModels:
         0.65,  # QuantileXGBModel
     ]
 
+    xgb_w_categorical_covariates = XGBModel(
+        lags=1,
+        lags_past_covariates=1,
+        lags_future_covariates=[1],
+        output_chunk_length=1,
+        categorical_future_covariates=["fut_cov_promo_mechanism"],
+        categorical_past_covariates=["past_cov_cat_dummy"],
+        categorical_static_covariates=["product_id"],
+    )
+
     lgbm_w_categorical_covariates = NotImportedModule
     if lgbm_available:
         RegularLightGBMModel = partialclass(LightGBMModel, **lgbm_test_params)
@@ -292,6 +302,8 @@ class TestRegressionModels:
             0.7,  # QuantileLightGBMModel
             0.75,  # PoissonLightGBMModel
         ]
+
+    catboost_w_categorical_covariates = NotImportedModule
     if cb_available:
         RegularCatBoostModel = partialclass(
             CatBoostModel,
@@ -313,6 +325,18 @@ class TestRegressionModels:
             likelihood="gaussian",
             **cb_test_params,
         )
+
+        catboost_w_categorical_covariates = CatBoostModel(
+            lags=1,
+            lags_past_covariates=1,
+            lags_future_covariates=[1],
+            output_chunk_length=1,
+            categorical_future_covariates=["fut_cov_promo_mechanism"],
+            categorical_past_covariates=["past_cov_cat_dummy"],
+            categorical_static_covariates=["product_id"],
+            **cb_test_params,
+        )
+
         models += [
             RegularCatBoostModel,
             QuantileCatBoostModel,
@@ -1142,7 +1166,9 @@ class TestRegressionModels:
         )
         model_instance.fit(series=train_series, past_covariates=train_past_covariates)
         prediction = model_instance.predict(
-            n=len(test_series),
+            n=len(test_series)
+            if type(test_series) is TimeSeries
+            else len(test_series[0]),
             series=train_series,
             past_covariates=past_covariates,
         )
@@ -3266,8 +3292,53 @@ class TestRegressionModels:
             assert len(model.encoders.future_encoders) == 1
             assert isinstance(model.encoders.future_encoders[0], FutureCyclicEncoder)
 
-    @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
-    def test_quality_forecast_with_categorical_covariates(self):
+    @pytest.mark.parametrize(
+        "models",
+        (
+            ([
+                (
+                    XGBModel(lags=10, output_chunk_length=10, verbose=-1),
+                    XGBModel(
+                        categorical_static_covariates=["curve_type"],
+                        lags=10,
+                        output_chunk_length=10,
+                        verbose=-1,
+                    ),
+                )
+            ])
+            + (
+                [
+                    (
+                        LightGBMModel(lags=10, output_chunk_length=10, verbose=-1),
+                        LightGBMModel(
+                            categorical_static_covariates=["curve_type"],
+                            lags=10,
+                            output_chunk_length=10,
+                            verbose=-1,
+                        ),
+                    )
+                ]
+                if lgbm_available
+                else []
+            )
+            + (
+                [
+                    (
+                        CatBoostModel(lags=10, output_chunk_length=10, verbose=-1),
+                        CatBoostModel(
+                            categorical_static_covariates=["curve_type"],
+                            lags=10,
+                            output_chunk_length=10,
+                            verbose=-1,
+                        ),
+                    )
+                ]
+                if cb_available
+                else []
+            )
+        ),
+    )
+    def test_quality_forecast_with_categorical_covariates(self, models):
         """Test case: two time series, a full sine wave series and a sine wave series
         with some irregularities every other period. Only models which use categorical
         static covariates should be able to recognize the underlying curve type when input for prediction is only a
@@ -3299,14 +3370,6 @@ class TestRegressionModels:
             model.fit(train_series)
             return model.predict(n=int(period / 2), series=predict_series)
 
-        def get_model_params():
-            """generate model parameters"""
-            return {
-                "lags": int(period / 2),
-                "output_chunk_length": int(period / 2),
-                "verbose": -1,
-            }
-
         # test case without using categorical static covariates
         train_series_no_cat = [
             sine_series.with_static_covariates(None),
@@ -3314,77 +3377,80 @@ class TestRegressionModels:
         ]
         # test case using categorical static covariates
         train_series_cat = [sine_series, irregular_series]
-        for model_no_cat, model_cat in zip(
-            [LightGBMModel(**get_model_params())],
-            [
-                LightGBMModel(
-                    categorical_static_covariates=["curve_type"], **get_model_params()
-                ),
-            ],
-        ):
-            preds_no_cat = fit_predict(
-                model_no_cat,
-                train_series_no_cat,
-                predict_series=[series[:60] for series in train_series_no_cat],
-            )
-            preds_cat = fit_predict(
-                model_cat,
-                train_series_cat,
-                predict_series=[series[:60] for series in train_series_cat],
-            )
 
-            # categorical covariates make model aware of the underlying curve type -> improves rmse
-            rmses_no_cat = rmse(train_series_cat, preds_no_cat)
-            rmses_cat = rmse(train_series_cat, preds_cat)
-            assert all([
-                rmse_no_cat > rmse_cat
-                for rmse_no_cat, rmse_cat in zip(rmses_no_cat, rmses_cat)
-            ])
+        model_no_cat, model_cat = models
 
-    @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
+        preds_no_cat = fit_predict(
+            model_no_cat,
+            train_series_no_cat,
+            predict_series=[series[:60] for series in train_series_no_cat],
+        )
+        preds_cat = fit_predict(
+            model_cat,
+            train_series_cat,
+            predict_series=[series[:60] for series in train_series_cat],
+        )
+
+        # categorical covariates make model aware of the underlying curve type -> improves rmse
+        rmses_no_cat = rmse(train_series_cat, preds_no_cat)
+        rmses_cat = rmse(train_series_cat, preds_cat)
+        assert all([
+            rmse_no_cat > rmse_cat
+            for rmse_no_cat, rmse_cat in zip(rmses_no_cat, rmses_cat)
+        ])
+
     @pytest.mark.parametrize(
-        "model",
+        "model_cls",
         (
-            [
-                LightGBMModel(
-                    lags=1,
-                    lags_past_covariates=1,
-                    output_chunk_length=1,
-                    categorical_past_covariates=[
-                        "does_not_exist",
-                        "past_cov_cat_dummy",
-                    ],
-                    categorical_static_covariates=["product_id"],
-                    **lgbm_test_params,
-                ),
-                LightGBMModel(
-                    lags=1,
-                    lags_past_covariates=1,
-                    output_chunk_length=1,
-                    categorical_past_covariates=[
-                        "past_cov_cat_dummy",
-                    ],
-                    categorical_static_covariates=["does_not_exist"],
-                    **lgbm_test_params,
-                ),
-                LightGBMModel(
-                    lags=1,
-                    lags_past_covariates=1,
-                    output_chunk_length=1,
-                    categorical_future_covariates=["does_not_exist"],
-                    **lgbm_test_params,
-                ),
-            ]
-            if lgbm_available
-            else []
+            [XGBModel]
+            + ([LightGBMModel] if lgbm_available else [])
+            + ([CatBoostModel] if cb_available else [])
         ),
     )
-    def test_fit_with_categorical_features_raises_error(self, model):
+    def test_fit_with_categorical_features_raises_error(self, model_cls):
+        # test case: categorical static covariate specified but use_static_covariates is False
+        with pytest.raises(ValueError):
+            model_cls(
+                lags=1,
+                output_chunk_length=1,
+                categorical_static_covariates=["curve_type"],
+                use_static_covariates=False,
+            )
+
+        # test case: categorical past covariate specified but no lags_past_covariates
+        with pytest.raises(ValueError):
+            model_cls(
+                lags=1,
+                output_chunk_length=1,
+                categorical_past_covariates=["does_not_exist"],
+            )
+
+        # test case: categorical future covariate specified but no lags_future_covariates
+        with pytest.raises(ValueError):
+            model_cls(
+                lags=1,
+                lags_past_covariates=1,
+                output_chunk_length=1,
+                categorical_future_covariates=["does_not_exist"],
+            )
+
         (
             series,
             past_covariates,
             future_covariates,
         ) = self.inputs_for_tests_categorical_covariates
+
+        # test case: categorical past covariate does not exist in past covariates
+        model = model_cls(
+            lags=1,
+            lags_past_covariates=1,
+            output_chunk_length=1,
+            categorical_past_covariates=[
+                "does_not_exist",
+                "past_cov_cat_dummy",
+            ],
+            categorical_static_covariates=["product_id"],
+        )
         with pytest.raises(ValueError):
             model.fit(
                 series=series,
@@ -3392,8 +3458,30 @@ class TestRegressionModels:
                 future_covariates=future_covariates,
             )
 
-    @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
-    def test_get_categorical_features_helper(self):
+        # categorical static covariate does not exist in static covariates
+        model = model_cls(
+            lags=1,
+            lags_past_covariates=1,
+            output_chunk_length=1,
+            categorical_past_covariates=[
+                "past_cov_cat_dummy",
+            ],
+            categorical_static_covariates=["does_not_exist"],
+        )
+        with pytest.raises(ValueError):
+            model.fit(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
+
+    @pytest.mark.parametrize(
+        "model",
+        [xgb_w_categorical_covariates]
+        + ([catboost_w_categorical_covariates] if cb_available else [])
+        + ([lgbm_w_categorical_covariates] if lgbm_available else []),
+    )
+    def test_get_categorical_features_helper(self, model):
         """Test helper function responsible for retrieving indices of categorical features"""
         (
             series,
@@ -3403,7 +3491,7 @@ class TestRegressionModels:
         (
             indices,
             column_names,
-        ) = self.lgbm_w_categorical_covariates._get_categorical_features(
+        ) = model._get_categorical_features(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -3412,7 +3500,7 @@ class TestRegressionModels:
         assert column_names == [
             "past_cov_past_cov_cat_dummy_lag-1",
             "fut_cov_fut_cov_promo_mechanism_lag1",
-            "product_id",
+            "static_cov_product_id_lag0",
         ]
 
     @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
