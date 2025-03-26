@@ -414,7 +414,6 @@ class NaiveEnsembleModel(EnsembleModel):
 
     def _params_average(self, prediction: TimeSeries, series: TimeSeries) -> TimeSeries:
         """Average across the components after grouping by likelihood parameter, rename components"""
-        # str or torch Likelihood
         likelihood = self.forecasting_models[0].likelihood
         likelihood_n_params = likelihood.num_parameters
         n_forecasting_models = len(self.forecasting_models)

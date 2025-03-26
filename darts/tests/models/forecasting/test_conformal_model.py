@@ -157,7 +157,7 @@ class TestConformalModel:
         # pre-trained local model should work
         global_model.fit(series)
         model = ConformalNaiveModel(model=global_model, quantiles=q)
-        assert model.likelihood.likelihood_type is LikelihoodType.Quantile
+        assert model.likelihood.type is LikelihoodType.Quantile
 
         # non-centered quantiles
         with pytest.raises(ValueError) as exc:

@@ -50,7 +50,7 @@ from darts.utils.historical_forecasts import (
     _optimized_historical_forecasts_last_points_only,
     _process_historical_forecast_input,
 )
-from darts.utils.likelihood_models.sklearn import Likelihood, QuantileRegression
+from darts.utils.likelihood_models.sklearn import QuantileRegression, SKLearnLikelihood
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
 
@@ -551,8 +551,7 @@ class RegressionModel(GlobalForecastingModel):
             return self.model.estimators_[idx_estimator]
 
         # for quantile-models, the estimators are also grouped by quantiles
-        likelihood = self.likelihood
-        if not isinstance(likelihood, QuantileRegression):
+        if not isinstance(self.likelihood, QuantileRegression):
             raise_log(
                 ValueError(
                     "`quantile` is only supported for probabilistic models that "
@@ -1199,7 +1198,7 @@ class RegressionModel(GlobalForecastingModel):
                 points_preds=row,
                 input_series=input_tgt,
                 custom_components=(
-                    self.likelihood.likelihood_components_names(input_tgt)
+                    self.likelihood.components_names(input_tgt)
                     if predict_likelihood_parameters
                     else None
                 ),
@@ -1272,7 +1271,7 @@ class RegressionModel(GlobalForecastingModel):
         return self.model.__str__()
 
     @property
-    def likelihood(self) -> Optional[Likelihood]:
+    def likelihood(self) -> Optional[SKLearnLikelihood]:
         return getattr(self, "_likelihood", None)
 
     @property

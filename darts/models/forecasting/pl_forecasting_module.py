@@ -352,7 +352,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 [batch_prediction[batch_idx] for batch_prediction in batch_predictions],
                 input_series,
                 custom_columns=(
-                    self.likelihood.likelihood_components_names(input_series)
+                    self.likelihood.components_names(input_series)
                     if self.predict_likelihood_parameters
                     else None
                 ),

@@ -19,7 +19,7 @@ from darts.utils.utils import _check_quantiles
 logger = get_logger(__name__)
 
 
-class Likelihood(BaseLikelihood, ABC):
+class SKLearnLikelihood(BaseLikelihood, ABC):
     def __init__(
         self,
         likelihood_type: LikelihoodType,
@@ -27,7 +27,7 @@ class Likelihood(BaseLikelihood, ABC):
         n_outputs: int,
         random_state: Optional[int] = None,
     ):
-        """Base class for regression model likelihoods.
+        """Base class for sklearn wrapper (e.g. `RegressionModel`) likelihoods.
 
         Parameters
         ----------
@@ -124,7 +124,7 @@ class Likelihood(BaseLikelihood, ABC):
         """
 
 
-class GaussianLikelihood(Likelihood):
+class GaussianLikelihood(SKLearnLikelihood):
     def __init__(
         self,
         n_outputs: int,
@@ -223,7 +223,7 @@ class GaussianLikelihood(Likelihood):
         return model_output[:, :, component_medians].reshape(k, self._n_outputs, -1)
 
 
-class PoissonLikelihood(Likelihood):
+class PoissonLikelihood(SKLearnLikelihood):
     def __init__(
         self,
         n_outputs: int,
@@ -275,7 +275,7 @@ class PoissonLikelihood(Likelihood):
         return model_output
 
 
-class QuantileRegression(Likelihood):
+class QuantileRegression(SKLearnLikelihood):
     def __init__(
         self,
         n_outputs: int,
@@ -441,7 +441,7 @@ def _get_likelihood(
     n_outputs: int,
     random_state: Optional[int],
     quantiles: Optional[list[float]],
-) -> Optional[Likelihood]:
+) -> Optional[SKLearnLikelihood]:
     """Get the `Likelihood` object for `RegressionModel`.
 
     Parameters

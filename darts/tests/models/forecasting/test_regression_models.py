@@ -3727,7 +3727,7 @@ class TestProbabilisticRegressionModels:
             likelihood_expected = "gaussian"
         likelihood = model.likelihood
         assert isinstance(likelihood, BaseLikelihood)
-        assert likelihood.likelihood_type == LikelihoodType(likelihood_expected)
+        assert likelihood.type == LikelihoodType(likelihood_expected)
         model.fit(self.constant_noisy_multivar_ts)
         pred1 = model.predict(n=10, num_samples=2).values()
 

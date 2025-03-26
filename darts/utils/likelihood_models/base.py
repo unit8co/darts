@@ -56,14 +56,14 @@ class BaseLikelihood:
             "ignore_attrs_equality",
         ]
 
-    def likelihood_components_names(self, input_series: TimeSeries) -> list[str]:
+    def components_names(self, input_series: TimeSeries) -> list[str]:
         """Generates names for the parameters of the Likelihood."""
         return likelihood_component_names(
             components=input_series.components, parameter_names=self.parameter_names
         )
 
     @property
-    def likelihood_type(self) -> LikelihoodType:
+    def type(self) -> LikelihoodType:
         """Returns the likelihood type."""
         return self._likelihood_type
 

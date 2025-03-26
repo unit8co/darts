@@ -566,7 +566,7 @@ class EnsembleModel(GlobalForecastingModel):
         tmp_quantiles = None
         for m in self.forecasting_models:
             likelihood = m.likelihood
-            lkl_type = likelihood.likelihood_type
+            lkl_type = likelihood.type
             models_likelihood.add(lkl_type)
 
             # check the quantiles

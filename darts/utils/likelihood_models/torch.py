@@ -10,7 +10,7 @@ By default, all versions will be trained using their negative log likelihood as 
 (hence performing maximum likelihood estimation when training the model).
 However, most likelihoods also optionally support specifying time-independent "prior"
 beliefs about the distribution parameters.
-In such cases, the a KL-divergence term is added to the loss in order to regularise it in the
+In such cases, the KL-divergence term is added to the loss in order to regularise it in the
 direction of the specified prior distribution. (Note that this is technically not purely
 a Bayesian approach as the priors are actual parameters values, and not distributions).
 The parameter `prior_strength` controls the strength of the "prior" regularisation on the loss.
