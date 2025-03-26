@@ -355,3 +355,10 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
                 else self.output_chunk_length
             ),
         )
+
+    @property
+    def _categorical_fit_param(self) -> tuple[Optional[str], Optional[str]]:
+        """
+        Returns the name, and default value of the categorical features parameter from model's `fit` method .
+        """
+        return "categorical_feature", "auto"
