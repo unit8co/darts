@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import Any, BinaryIO, Callable, Optional, Union
 
-from darts.utils.likelihood_models.likelihood import (
+from darts.utils.likelihood_models.base import (
     BaseLikelihood,
     LikelihoodType,
     quantile_names,

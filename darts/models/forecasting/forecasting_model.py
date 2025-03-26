@@ -27,7 +27,7 @@ from itertools import product
 from random import sample
 from typing import Any, BinaryIO, Callable, Literal, Optional, Union
 
-from darts.utils.likelihood_models.likelihood import (
+from darts.utils.likelihood_models.base import (
     BaseLikelihood,
     likelihood_component_names,
     quantile_interval_names,

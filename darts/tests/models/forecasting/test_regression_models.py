@@ -32,7 +32,7 @@ from darts.models import (
     XGBModel,
 )
 from darts.utils import timeseries_generation as tg
-from darts.utils.likelihood_models.likelihood import BaseLikelihood, LikelihoodType
+from darts.utils.likelihood_models.base import BaseLikelihood, LikelihoodType
 from darts.utils.likelihood_models.sklearn import _get_likelihood
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import generate_index

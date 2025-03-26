@@ -17,7 +17,7 @@ import pandas as pd
 from darts import TimeSeries
 from darts.dataprocessing import dtw
 from darts.logging import get_logger, raise_log
-from darts.utils.likelihood_models.likelihood import (
+from darts.utils.likelihood_models.base import (
     likelihood_component_names,
     quantile_names,
 )

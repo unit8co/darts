@@ -9,7 +9,7 @@ from typing import Optional
 import numpy as np
 
 from darts.logging import get_logger, raise_log
-from darts.utils.likelihood_models.likelihood import (
+from darts.utils.likelihood_models.base import (
     BaseLikelihood,
     LikelihoodType,
     quantile_names,

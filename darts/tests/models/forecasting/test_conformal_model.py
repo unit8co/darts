@@ -22,7 +22,7 @@ from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import n_steps_between
 from darts.utils import timeseries_generation as tg
-from darts.utils.likelihood_models.likelihood import (
+from darts.utils.likelihood_models.base import (
     LikelihoodType,
     likelihood_component_names,
     quantile_interval_names,
