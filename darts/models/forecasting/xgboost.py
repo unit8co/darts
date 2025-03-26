@@ -63,6 +63,9 @@ class XGBModel(RegressionModel):
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        categorical_past_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_future_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_static_covariates: Optional[Union[str, list[str]]] = None,
         **kwargs,
     ):
         """XGBoost Model
@@ -156,6 +159,20 @@ class XGBModel(RegressionModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        categorical_past_covariates
+            Optionally, component name or list of component names specifying the past covariates that should be treated
+            as categorical by the underlying `xgb.XGBRegressor`. It's recommended that the components that
+            are treated as categorical are integer-encoded. For more information on how CatBoost handles categorical
+            features, visit: `Categorical feature support documentation
+            <https://xgboost.readthedocs.io/en/stable/tutorials/categorical.html>`_
+        categorical_future_covariates
+            Optionally, component name or list of component names specifying the future covariates that should be
+            treated as categorical by the underlying `xgb.XGBRegressor`. It's recommended that the components
+            that are treated as categorical are integer-encoded.
+        categorical_static_covariates
+            Optionally, string or list of strings specifying the static covariates that should be treated as categorical
+            by the underlying `xgb.XGBRegressor`. It's recommended that the static covariates that are
+            treated as categorical are integer-encoded.
         **kwargs
             Additional keyword arguments passed to `xgb.XGBRegressor`.
 
@@ -210,6 +227,19 @@ class XGBModel(RegressionModel):
             quantiles=quantiles,
         )
 
+        # Only enable categorical when necessary as fewer features are supported when enabled
+        self.kwargs["enable_categorical"] = (
+            (
+                categorical_past_covariates is not None
+                and lags_past_covariates is not None
+            )
+            or (
+                categorical_future_covariates is not None
+                and lags_future_covariates is not None
+            )
+            or (categorical_static_covariates is not None and use_static_covariates)
+        )
+
         super().__init__(
             lags=lags,
             lags_past_covariates=lags_past_covariates,
@@ -220,6 +250,9 @@ class XGBModel(RegressionModel):
             multi_models=multi_models,
             model=xgb.XGBRegressor(**self.kwargs),
             use_static_covariates=use_static_covariates,
+            categorical_past_covariates=categorical_past_covariates,
+            categorical_future_covariates=categorical_future_covariates,
+            categorical_static_covariates=categorical_static_covariates,
         )
 
     def fit(
@@ -346,3 +379,12 @@ class XGBModel(RegressionModel):
     def _supports_native_multioutput(self):
         # since xgboost==2.1.0, likelihoods do not support native multi output regression
         return super()._supports_native_multioutput and self.likelihood is None
+
+    @property
+    def _categorical_fit_param(self) -> tuple[Optional[str], Optional[str]]:
+        """
+        Returns the name, and default value of the categorical features parameter from model's `fit` method .
+        """
+        # XGBoost require to type categorical features as category
+        # but has no parameter to specify the categorical features
+        return None, self._categorical_features

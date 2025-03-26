@@ -283,6 +283,8 @@ class TestRegressionModels:
             0.7,  # QuantileLightGBMModel
             0.75,  # PoissonLightGBMModel
         ]
+
+    catboost_w_categorical_covariates = NotImportedModule
     if cb_available:
         RegularCatBoostModel = partialclass(
             CatBoostModel,
@@ -328,6 +330,17 @@ class TestRegressionModels:
             1.2,  # PoissonCatBoostModel
             0.75,  # NormalCatBoostModel
         ]
+
+        catboost_w_categorical_covariates = CatBoostModel(
+            lags=1,
+            lags_past_covariates=1,
+            lags_future_covariates=[1],
+            output_chunk_length=1,
+            categorical_future_covariates=["fut_cov_promo_mechanism"],
+            categorical_past_covariates=["past_cov_cat_dummy"],
+            categorical_static_covariates=["product_id"],
+            **cb_test_params,
+        )
 
     # dummy feature and target TimeSeries instances
     target_series, past_covariates, future_covariates = dummy_timeseries(
