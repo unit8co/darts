@@ -16,7 +16,7 @@ from typing import Optional, Union
 import lightgbm as lgb
 import numpy as np
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -362,3 +362,44 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         Returns the name, and default value of the categorical features parameter from model's `fit` method .
         """
         return "categorical_feature", "auto"
+
+    def _format_samples(self, samples, labels=None):
+        """
+        LightGBM do not require any specific formatting of the samples.
+        Categorical features will be cast to int32 by LightGBM:
+        - negative values will be treated as missing
+        - float will be rounded towards 0
+        - should be less than Int32.MaxValue
+        - best if consecutive integers starting from 0
+        See `lgbm categorical feature parameter
+            <https://lightgbm.readthedocs.io/en/latest/Parameters.html#categorical_feature>`_
+
+        Errors are raised in the first three cases to avoid unexpected behavior.
+        """
+
+        # Tranforms into pandas df and cast specific columns to categorical
+        if len(self._categorical_indices) != 0:
+            # Check if categorical features are integer-encoded
+            if np.any(samples[:, self._categorical_indices] % 1 != 0):
+                raise_log(
+                    ValueError(
+                        "LightGBM expects categorical features to be integer-encoded, decimal values found instead."
+                    )
+                )
+            # Check for negative values
+            if np.any(samples[:, self._categorical_indices] < 0):
+                raise_log(
+                    ValueError(
+                        "LightGBM expects categorical features to be positive integer, negative values found instead."
+                    )
+                )
+
+            # Check for maximum value
+            if np.any(samples[:, self._categorical_indices] > np.iinfo(np.int32).max):
+                raise_log(
+                    ValueError(
+                        "LightGBM expects categorical features to be less than Int32.MaxValue, values found are larger."
+                    )
+                )
+
+        return (samples, labels) if labels is not None else samples

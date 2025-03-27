@@ -426,6 +426,7 @@ class TestRegressionModels:
             elif promo_mechanism == 10:
                 return np.random.normal(20, 3)
 
+        # fut_cov_promo_mechanism and target_qty are encoded as integers
         date_range = pd.date_range(start="2020-01-01", end="2023-01-01", freq="D")
         df = (
             pd.DataFrame({
@@ -433,8 +434,12 @@ class TestRegressionModels:
                 "baseline": np.random.normal(100, 10, len(date_range)),
                 "fut_cov_promo_mechanism": np.random.randint(0, 11, len(date_range)),
                 "fut_cov_dummy": np.random.normal(10, 2, len(date_range)),
-                "past_cov_dummy": np.random.normal(10, 2, len(date_range)),
-                "past_cov_cat_dummy": np.random.normal(10, 2, len(date_range)),
+                "past_cov_dummy_neg_int": np.array([
+                    np.random.randint(-10, 0) for _ in range(len(date_range))
+                ]),
+                "past_cov_cat_dummy": np.array([
+                    np.random.randint(0, 10) for _ in range(len(date_range))
+                ]),
             })
             .assign(
                 target_qty=lambda _df: _df.baseline
@@ -450,7 +455,9 @@ class TestRegressionModels:
             static_covariates=pd.DataFrame({"product_id": [1]}),
         )
         past_covariates = TimeSeries.from_dataframe(
-            df, time_col="date", value_cols=["past_cov_dummy", "past_cov_cat_dummy"]
+            df,
+            time_col="date",
+            value_cols=["past_cov_dummy_neg_int", "past_cov_cat_dummy"],
         )
         future_covariates = TimeSeries.from_dataframe(
             df, time_col="date", value_cols=["fut_cov_promo_mechanism", "fut_cov_dummy"]
@@ -3388,30 +3395,42 @@ class TestRegressionModels:
     )
     def test_fit_with_categorical_features_raises_error(self, model_cls):
         # test case: categorical static covariate specified but use_static_covariates is False
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as error_msg:
             model_cls(
                 lags=1,
                 output_chunk_length=1,
                 categorical_static_covariates=["curve_type"],
                 use_static_covariates=False,
             )
+        assert (
+            str(error_msg.value)
+            == "`categorical_static_covariates` is declared but `use_static_covariates` is set to False."
+        )
 
         # test case: categorical past covariate specified but no lags_past_covariates
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as error_msg:
             model_cls(
                 lags=1,
                 output_chunk_length=1,
                 categorical_past_covariates=["does_not_exist"],
             )
+        assert (
+            str(error_msg.value)
+            == "`categorical_past_covariates` is declared but `lags_past_covariates` is not set."
+        )
 
         # test case: categorical future covariate specified but no lags_future_covariates
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as error_msg:
             model_cls(
                 lags=1,
                 lags_past_covariates=1,
                 output_chunk_length=1,
                 categorical_future_covariates=["does_not_exist"],
             )
+        assert (
+            str(error_msg.value)
+            == "`categorical_future_covariates` is declared but `lags_future_covariates` is not set."
+        )
 
         (
             series,
@@ -3430,12 +3449,15 @@ class TestRegressionModels:
             ],
             categorical_static_covariates=["product_id"],
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as error_msg:
             model.fit(
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
+        assert str(error_msg.value).endswith(
+            "not present in the `past_covariates` passed to the `fit()` call."
+        )
 
         # categorical static covariate does not exist in static covariates
         model = model_cls(
@@ -3447,11 +3469,50 @@ class TestRegressionModels:
             ],
             categorical_static_covariates=["does_not_exist"],
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as error_msg:
             model.fit(
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
+            )
+        assert str(error_msg.value).endswith(
+            "not present in the series' `static_covariates` passed to the `fit()` call."
+        )
+
+        # categorical covariate contains non-integers
+        model = model_cls(
+            lags_future_covariates=[1],
+            output_chunk_length=1,
+            categorical_future_covariates=[
+                "fut_cov_dummy",
+            ],
+        )
+        with pytest.raises(ValueError) as error_msg:
+            model.fit(
+                series=series,
+                future_covariates=future_covariates,
+            )
+        assert str(error_msg.value).endswith(
+            "expects categorical features to be integer-encoded, decimal values found instead."
+        )
+
+        if isinstance(model_cls, LightGBMModel):
+            # check for negative values
+            model = model_cls(
+                lags_past_covariates=1,
+                output_chunk_length=1,
+                categorical_past_covariates=[
+                    "past_cov_dummy_neg_int",
+                ],
+            )
+
+            with pytest.raises(ValueError) as error_msg:
+                model.fit(
+                    series=series,
+                    past_covariates=past_covariates,
+                )
+            assert str(error_msg.value).endswith(
+                "expects categorical features to be positive integer, negative values found instead."
             )
 
     @pytest.mark.parametrize(
@@ -3511,6 +3572,110 @@ class TestRegressionModels:
             cat_param_default,
         ) = self.lgbm_w_categorical_covariates._categorical_fit_param
         assert kwargs[cat_param_name] == [2, 3, 5]
+
+    @pytest.mark.skipif(not cb_available, reason="requires catboost")
+    def test_catboost_categorical_features_passed_to_fit_correctly(self):
+        """Test whether the categorical features are passed to CatboostRegressor"""
+
+        model = CatBoostModel(
+            lags=1,
+            lags_past_covariates=1,
+            lags_future_covariates=[1],
+            output_chunk_length=1,
+            categorical_future_covariates=["fut_cov_promo_mechanism"],
+            categorical_past_covariates=["past_cov_cat_dummy"],
+            categorical_static_covariates=["product_id"],
+        )
+
+        (
+            series,
+            past_covariates,
+            future_covariates,
+        ) = self.inputs_for_tests_categorical_covariates
+
+        original_fit = model.model.fit
+        intercepted_args = {}
+
+        def side_effect(*args, **kwargs):
+            intercepted_args["args"] = args
+            intercepted_args["kwargs"] = kwargs
+            return original_fit(*args, **kwargs)
+
+        with patch.object(
+            darts.models.forecasting.catboost_model.CatBoostRegressor,
+            "fit",
+            side_effect=side_effect,
+        ):
+            model.fit(
+                series=series.split_after(0.7)[0],
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
+
+            model_cat_indices = model.model.get_cat_feature_indices()
+            kwargs_cat_indices = intercepted_args["kwargs"]["cat_features"]
+            expected_cat_indices = [2, 3, 5]
+
+            for mci, kci, eci in zip(
+                model_cat_indices, kwargs_cat_indices, expected_cat_indices
+            ):
+                assert mci == kci == eci
+
+            X, y = intercepted_args["args"]
+            # all categorical features should be encoded as integers
+            for col in X[model_cat_indices].columns:
+                assert X[col].dtype == int
+
+    def test_xgb_categorical_features_passed_to_fit_correctly(self):
+        """Test whether the categorical features are passed to XGBRegressor"""
+
+        model = XGBModel(
+            lags=1,
+            lags_past_covariates=1,
+            lags_future_covariates=[1],
+            output_chunk_length=1,
+            categorical_future_covariates=["fut_cov_promo_mechanism"],
+            categorical_past_covariates=["past_cov_cat_dummy"],
+            categorical_static_covariates=["product_id"],
+        )
+
+        (
+            series,
+            past_covariates,
+            future_covariates,
+        ) = self.inputs_for_tests_categorical_covariates
+
+        original_fit = model.model.fit
+        intercepted_args = {}
+
+        def side_effect(*args, **kwargs):
+            intercepted_args["args"] = args
+            intercepted_args["kwargs"] = kwargs
+            return original_fit(*args, **kwargs)
+
+        with patch.object(
+            darts.models.forecasting.xgboost.xgb.XGBRegressor,
+            "fit",
+            side_effect=side_effect,
+        ):
+            model.fit(
+                series=series.split_after(0.7)[0],
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
+
+            # Get the arguments passed to the mocked super.fit() method
+            # args, kwargs = xgb_fit_patch.call_args
+            X, y = intercepted_args["args"]
+            features_types = ["c" if dt == "category" else dt for dt in X.dtypes]
+
+            # Get model types
+            model_types = model.model.get_booster().feature_types
+            assert model_types is not None
+            for ft, mt in zip(features_types, model_types):
+                assert ft == mt
+
+            # TODO check same encoding for multiple lags
 
     def helper_create_LinearModel(self, multi_models=True, extreme_lags=False):
         if not extreme_lags:

@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 
-from darts.logging import get_logger, raise_if_not
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -210,7 +210,6 @@ class XGBModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         self.quantiles = None
         self._likelihood = likelihood
         self._rng = None
-        self._categorical_features = None
 
         # parse likelihood
         available_likelihoods = ["poisson", "quantile"]  # to be extended
@@ -355,14 +354,20 @@ class XGBModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         CatBoost does not support categorical features to be typed as float.
         If categorical features are specified, pandas DataFrame is used to cast the categorical columns to category.
         """
-        _, cat_param = self._categorical_fit_param
 
         # Tranforms into pandas df and cast specific columns to categorical
-        if cat_param is not None:
+        if len(self._categorical_indices) != 0:
             pd_samples = pd.DataFrame(samples)
-            pd_samples[cat_param] = pd_samples[cat_param].apply(
-                lambda x: x.astype("category")
-            )
+            if np.any(pd_samples[self._categorical_indices] % 1 != 0):
+                raise_log(
+                    ValueError(
+                        "XGBoost expects categorical features to be integer-encoded, decimal values found instead."
+                    )
+                )
+            pd_samples[self._categorical_indices] = pd_samples[
+                self._categorical_indices
+            ].apply(lambda x: x.astype("category"))
+
             samples = pd_samples
 
         return (samples, labels) if labels is not None else samples
@@ -423,4 +428,4 @@ class XGBModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         """
         # XGBoost require to type categorical features as category
         # but has no parameter to specify the categorical features
-        return None, self._categorical_features
+        return None, self._categorical_indices

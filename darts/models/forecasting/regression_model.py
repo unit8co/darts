@@ -1845,19 +1845,19 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         if categorical_static_covariates is not None and not use_static_covariates:
             raise_log(
                 ValueError(
-                    "`categorical_static_covariates` is declared but `use_static_covariates` is set to False. "
+                    "`categorical_static_covariates` is declared but `use_static_covariates` is set to False."
                 )
             )
         if categorical_past_covariates is not None and lags_past_covariates is None:
             raise_log(
                 ValueError(
-                    "`categorical_past_covariates` is declared but `lags_past_covariates` is not set. "
+                    "`categorical_past_covariates` is declared but `lags_past_covariates` is not set."
                 )
             )
         if categorical_future_covariates is not None and lags_future_covariates is None:
             raise_log(
                 ValueError(
-                    "`categorical_future_covariates` is declared but `lags_future_covariates` is not set. "
+                    "`categorical_future_covariates` is declared but `lags_future_covariates` is not set."
                 )
             )
 
@@ -1876,6 +1876,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             if isinstance(categorical_static_covariates, str)
             else categorical_static_covariates
         )
+        self._categorical_indices = []  # Indices are set on fit
 
     def fit(
         self,
@@ -2061,7 +2062,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         Custom fit function for `RegressionModelWithCategoricalCovariates` models, adding logic to let the model
         handle categorical features directly.
 
-        Sub-classes should override `_format_samples` to format the columns listed in self._categorical_features
+        Sub-classes should override `_format_samples` to format the columns listed in self._categorical_indices
         accordingly to the model's requirements.
         """
         cat_col_indices, _ = self._get_categorical_features(
@@ -2069,15 +2070,11 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
+        self._categorical_indices = cat_col_indices
 
         # cat_param_name is None if model has no attribute to specify categorical features in `fit()`
         # cat_param_default is None if no default value to auto-detect categorical features is available in `fit()`
         cat_param_name, cat_param_default = self._categorical_fit_param
-
-        # Either indices of categorical features, default value for categorical attribute or None if not applicable
-        self._categorical_features = (
-            cat_col_indices if len(cat_col_indices) != 0 else cat_param_default
-        )
 
         # Add attributes in kwargs if applicable for model's `fit()` method
         if cat_param_name is not None and (

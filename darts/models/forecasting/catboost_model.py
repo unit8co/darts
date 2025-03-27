@@ -195,7 +195,6 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         self.quantiles = None
 
         self._output_chunk_length = output_chunk_length
-        self._categorical_features = None
 
         likelihood_map = {
             "quantile": None,
@@ -374,19 +373,20 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         CatBoost does not support categorical features to be typed as float (yet).
         If categorical features are specified, pandas DataFrame is used to cast the categorical columns to integer.
         """
-        _, cat_param = self._categorical_fit_param
+        _, cat_param_default = self._categorical_fit_param
 
         # Tranforms into pandas df and cast specific columns to categorical
-        if cat_param is not None:
+        if len(self._categorical_indices) != 0:
             pd_samples = pd.DataFrame(samples)
-            is_not_round = np.any(pd_samples[cat_param] % 1 != 0)
-            if is_not_round:
+            if np.any(pd_samples[self._categorical_indices] % 1 != 0):
                 raise_log(
                     ValueError(
                         "CatBoost expects categorical features to be integer-encoded, decimal values found instead."
                     )
                 )
-            pd_samples[cat_param] = pd_samples[cat_param].apply(lambda x: x.astype(int))
+            pd_samples[self._categorical_indices] = pd_samples[
+                self._categorical_indices
+            ].apply(lambda x: x.astype(int))
             samples = pd_samples
 
         return (samples, labels) if labels is not None else samples
@@ -478,4 +478,4 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         """
         Returns the name, and default value of the categorical features parameter from model's `fit` method .
         """
-        return "cat_features", self._categorical_features
+        return "cat_features", None
