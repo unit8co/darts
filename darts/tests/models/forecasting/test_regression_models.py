@@ -3496,7 +3496,7 @@ class TestRegressionModels:
             "expects categorical features to be integer-encoded, decimal values found instead."
         )
 
-        if isinstance(model_cls, LightGBMModel):
+        if model_cls == LightGBMModel:
             # check for negative values
             model = model_cls(
                 lags_past_covariates=1,
@@ -3513,6 +3513,24 @@ class TestRegressionModels:
                 )
             assert str(error_msg.value).endswith(
                 "expects categorical features to be positive integer, negative values found instead."
+            )
+
+            # check for value > int32.max
+            model = model_cls(
+                lags_past_covariates=1,
+                output_chunk_length=1,
+                categorical_past_covariates=[
+                    "past_cov_cat_dummy",
+                ],
+            )
+
+            with pytest.raises(ValueError) as error_msg:
+                model.fit(
+                    series=series,
+                    past_covariates=past_covariates + np.iinfo(np.int32).max,
+                )
+            assert str(error_msg.value).endswith(
+                "LightGBM expects categorical features to be less than Int32.MaxValue, values found are larger."
             )
 
     @pytest.mark.parametrize(

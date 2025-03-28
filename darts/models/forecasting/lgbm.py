@@ -363,21 +363,16 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         """
         return "categorical_feature", "auto"
 
-    def _format_samples(self, samples, labels=None):
+    def _validate_categorical_components(self, samples):
         """
-        LightGBM do not require any specific formatting of the samples.
         Categorical features will be cast to int32 by LightGBM:
         - negative values will be treated as missing
         - float will be rounded towards 0
         - should be less than Int32.MaxValue
         - best if consecutive integers starting from 0
-        See `lgbm categorical feature parameter
-            <https://lightgbm.readthedocs.io/en/latest/Parameters.html#categorical_feature>`_
 
         Errors are raised in the first three cases to avoid unexpected behavior.
         """
-
-        # Tranforms into pandas df and cast specific columns to categorical
         if len(self._categorical_indices) != 0:
             # Check if categorical features are integer-encoded
             if np.any(samples[:, self._categorical_indices] % 1 != 0):
@@ -401,5 +396,17 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
                         "LightGBM expects categorical features to be less than Int32.MaxValue, values found are larger."
                     )
                 )
+
+    def _format_samples(self, samples, labels=None):
+        """
+        LightGBM do not require any specific formatting of the samples.
+        However categorical features will be cast to int32 by LightGBM. To prevent unexpected behavior
+        we check that the categorical features are integer-encoded, positive and less than Int32.MaxValue.
+        See `lgbm categorical feature parameter
+            <https://lightgbm.readthedocs.io/en/latest/Parameters.html#categorical_feature>`_
+
+        """
+
+        self._validate_categorical_components(samples)
 
         return (samples, labels) if labels is not None else samples
