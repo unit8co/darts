@@ -1878,31 +1878,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         )
         self._categorical_indices = []  # Indices are set on fit
 
-    def fit(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        max_samples_per_ts: Optional[int] = None,
-        n_jobs_multioutput_wrapper: Optional[int] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        **kwargs,
-    ):
-        self._validate_categorical_covariates(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-        )
-        super().fit(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            max_samples_per_ts=max_samples_per_ts,
-            n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
-            sample_weight=sample_weight,
-            **kwargs,
-        )
-
     @property
     def _categorical_fit_param(self) -> tuple[Optional[str], Optional[str]]:
         """
@@ -1910,70 +1885,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         Should be overridden in subclasses.
         """
         return None, None
-
-    def _validate_categorical_covariates(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> None:
-        """
-        Checks that the categorical covariates are valid. Specifically, checks that the categorical covariates
-        of the model are a subset of all covariates.
-
-        Parameters
-        ----------
-        series
-            TimeSeries or Sequence[TimeSeries] object containing the target values.
-        past_covariates
-            Optionally, a series or sequence of series specifying past-observed covariates
-        future_covariates
-            Optionally, a series or sequence of series specifying future-known covariates
-        """
-        for categorical_covariates, covariates, cov_type in zip(
-            [self.categorical_past_covariates, self.categorical_future_covariates],
-            [past_covariates, future_covariates],
-            ["past_covariates", "future_covariates"],
-        ):
-            if categorical_covariates:
-                if not covariates:
-                    raise_log(
-                        ValueError(
-                            f"`categorical_{cov_type}` were declared at model creation but no "
-                            f"`{cov_type}` are passed to the `fit()` call."
-                        ),
-                    )
-                s = get_single_series(covariates)
-                if not set(categorical_covariates).issubset(set(s.components)):
-                    raise_log(
-                        ValueError(
-                            f"Some `categorical_{cov_type}` components "
-                            f"({set(categorical_covariates) - set(s.components)}) "
-                            f"declared at model creation are not present in the `{cov_type}` "
-                            f"passed to the `fit()` call."
-                        )
-                    )
-        if self.categorical_static_covariates:
-            s = get_single_series(series)
-            covariates = s.static_covariates
-            if not s.has_static_covariates:
-                raise_log(
-                    ValueError(
-                        "`categorical_static_covariates` were declared at model creation but `series`"
-                        "passed to the `fit()` call does not contain `static_covariates`."
-                    ),
-                )
-            if not set(self.categorical_static_covariates).issubset(
-                set(covariates.columns)
-            ):
-                raise_log(
-                    ValueError(
-                        f"Some `categorical_static_covariates` components "
-                        f"({set(self.categorical_static_covariates) - set(covariates.columns)}) "
-                        f"declared at model creation are not present in the series' `static_covariates` "
-                        f"passed to the `fit()` call."
-                    )
-                )
 
     def _get_categorical_features(
         self,
@@ -2041,10 +1952,23 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             indices = []
             col_names = []
             for cat_covs, features in zip(categorical_covariates, feature_list):
+                extracted_categorical_features = []
                 for i, (prefix, component, lag) in enumerate(features):
                     if component in cat_covs:
                         indices.append(index + i)
                         col_names.append(f"{prefix}_{component}_lag{lag}")
+                        extracted_categorical_features.append(component)
+                print(cat_covs, features, flush=True)
+
+                for comp in cat_covs:
+                    if comp not in extracted_categorical_features:
+                        raise_log(
+                            ValueError(
+                                f"Covariate '{comp}' is declared as categorical but not found in the features list. "
+                                f"Available feature(s): {set([comp for _, comp, _ in features])}"
+                            )
+                        )
+
                 index += len(features)
 
             return indices, col_names

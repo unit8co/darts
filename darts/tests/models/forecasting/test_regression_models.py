@@ -3393,6 +3393,38 @@ class TestRegressionModels:
             + ([CatBoostModel] if cb_available else [])
         ),
     )
+    def test_fit_with_categorical_features_and_encoders(self, model_cls):
+        series, _, _ = self.inputs_for_tests_categorical_covariates
+
+        # Categorical covariate supports encoder created covariates
+        model = model_cls(
+            lags=2,
+            lags_past_covariates=2,
+            add_encoders={"datetime_attribute": {"past": ["hour"]}},
+            categorical_past_covariates=["darts_enc_pc_dta_hour"],
+        )
+        model.fit(series)
+
+        # If the covariate is not created with the encoder an error is raised
+        model = model_cls(
+            lags=2,
+            lags_past_covariates=2,
+            categorical_past_covariates=["darts_enc_pc_dta_hour"],
+        )
+        with pytest.raises(ValueError) as error_msg:
+            model.fit(series)
+        assert str(error_msg.value).startswith(
+            "`past_covariates` is None in `fit()` method call, but `lags_past_covariates` is not None in constructor"
+        )
+
+    @pytest.mark.parametrize(
+        "model_cls",
+        (
+            [XGBModel]
+            + ([LightGBMModel] if lgbm_available else [])
+            + ([CatBoostModel] if cb_available else [])
+        ),
+    )
     def test_fit_with_categorical_features_raises_error(self, model_cls):
         # test case: categorical static covariate specified but use_static_covariates is False
         with pytest.raises(ValueError) as error_msg:
@@ -3453,10 +3485,9 @@ class TestRegressionModels:
             model.fit(
                 series=series,
                 past_covariates=past_covariates,
-                future_covariates=future_covariates,
             )
-        assert str(error_msg.value).endswith(
-            "not present in the `past_covariates` passed to the `fit()` call."
+        assert str(error_msg.value).startswith(
+            "Covariate 'does_not_exist' is declared as categorical but not found in the features list."
         )
 
         # categorical static covariate does not exist in static covariates
@@ -3473,10 +3504,9 @@ class TestRegressionModels:
             model.fit(
                 series=series,
                 past_covariates=past_covariates,
-                future_covariates=future_covariates,
             )
-        assert str(error_msg.value).endswith(
-            "not present in the series' `static_covariates` passed to the `fit()` call."
+        assert str(error_msg.value).startswith(
+            "Covariate 'does_not_exist' is declared as categorical but not found in the features list."
         )
 
         # categorical covariate contains non-integers
@@ -3561,41 +3591,31 @@ class TestRegressionModels:
             "static_cov_product_id_lag0",
         ]
 
-    @pytest.mark.skipif(not lgbm_available, reason="requires lightgbm")
-    @patch.object(
-        (
-            darts.models.forecasting.lgbm.lgb.LGBMRegressor
+    @pytest.mark.parametrize(
+        "model_cls_and_module",
+        [
+            (
+                XGBModel,
+                darts.models.forecasting.xgboost.xgb.XGBRegressor,
+            )
+        ]
+        + (
+            [(CatBoostModel, darts.models.forecasting.catboost_model.CatBoostRegressor)]
+            if cb_available
+            else []
+        )
+        + (
+            [(LightGBMModel, darts.models.forecasting.lgbm.lgb.LGBMRegressor)]
             if lgbm_available
-            else darts.models.utils.NotImportedModule
+            else []
         ),
-        "fit",
     )
-    def test_lgbm_categorical_features_passed_to_fit_correctly(self, lgb_fit_patch):
-        """Test whether the categorical features are passed to LightGBMRegressor"""
-        (
-            series,
-            past_covariates,
-            future_covariates,
-        ) = self.inputs_for_tests_categorical_covariates
-        self.lgbm_w_categorical_covariates.fit(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-        )
+    def test_categorical_features_passed_to_fit_correctly(self, model_cls_and_module):
+        """Test whether the categorical features are passed to fit correctly"""
 
-        # Check that mocked super.fit() method was called with correct categorical_feature argument
-        args, kwargs = lgb_fit_patch.call_args
-        (
-            cat_param_name,
-            cat_param_default,
-        ) = self.lgbm_w_categorical_covariates._categorical_fit_param
-        assert kwargs[cat_param_name] == [2, 3, 5]
+        model_cls, module = model_cls_and_module
 
-    @pytest.mark.skipif(not cb_available, reason="requires catboost")
-    def test_catboost_categorical_features_passed_to_fit_correctly(self):
-        """Test whether the categorical features are passed to CatboostRegressor"""
-
-        model = CatBoostModel(
+        model = model_cls(
             lags=1,
             lags_past_covariates=1,
             lags_future_covariates=[1],
@@ -3614,15 +3634,15 @@ class TestRegressionModels:
         original_fit = model.model.fit
         intercepted_args = {}
 
-        def side_effect(*args, **kwargs):
+        def intercept_fit_args(*args, **kwargs):
             intercepted_args["args"] = args
             intercepted_args["kwargs"] = kwargs
             return original_fit(*args, **kwargs)
 
         with patch.object(
-            darts.models.forecasting.catboost_model.CatBoostRegressor,
+            module,
             "fit",
-            side_effect=side_effect,
+            side_effect=intercept_fit_args,
         ):
             model.fit(
                 series=series.split_after(0.7)[0],
@@ -3630,70 +3650,40 @@ class TestRegressionModels:
                 future_covariates=future_covariates,
             )
 
-            model_cat_indices = model.model.get_cat_feature_indices()
-            kwargs_cat_indices = intercepted_args["kwargs"]["cat_features"]
             expected_cat_indices = [2, 3, 5]
+            if model_cls == CatBoostModel:
+                model_cat_indices = model.model.get_cat_feature_indices()
+                kwargs_cat_indices = intercepted_args["kwargs"]["cat_features"]
 
-            for mci, kci, eci in zip(
-                model_cat_indices, kwargs_cat_indices, expected_cat_indices
-            ):
-                assert mci == kci == eci
+                for mci, kci, eci in zip(
+                    model_cat_indices, kwargs_cat_indices, expected_cat_indices
+                ):
+                    assert mci == kci == eci
 
-            X, y = intercepted_args["args"]
-            # all categorical features should be encoded as integers
-            for col in X[model_cat_indices].columns:
-                assert X[col].dtype == int
+                X, y = intercepted_args["args"]
+                # all categorical features should be encoded as integers
+                for col in X[model_cat_indices].columns:
+                    assert X[col].dtype == int
+            elif model_cls == XGBModel:
+                # TODO check same encoding for multiple lags
+                # Get the arguments passed to the mocked super.fit() method
+                # args, kwargs = xgb_fit_patch.call_args
+                X, y = intercepted_args["args"]
+                features_types = ["c" if dt == "category" else dt for dt in X.dtypes]
+                assert expected_cat_indices == list(np.where(X.dtypes == "category")[0])
 
-    def test_xgb_categorical_features_passed_to_fit_correctly(self):
-        """Test whether the categorical features are passed to XGBRegressor"""
+                # Get model types
+                model_types = model.model.get_booster().feature_types
+                assert model_types is not None
+                for ft, mt in zip(features_types, model_types):
+                    assert ft == mt
 
-        model = XGBModel(
-            lags=1,
-            lags_past_covariates=1,
-            lags_future_covariates=[1],
-            output_chunk_length=1,
-            categorical_future_covariates=["fut_cov_promo_mechanism"],
-            categorical_past_covariates=["past_cov_cat_dummy"],
-            categorical_static_covariates=["product_id"],
-        )
-
-        (
-            series,
-            past_covariates,
-            future_covariates,
-        ) = self.inputs_for_tests_categorical_covariates
-
-        original_fit = model.model.fit
-        intercepted_args = {}
-
-        def side_effect(*args, **kwargs):
-            intercepted_args["args"] = args
-            intercepted_args["kwargs"] = kwargs
-            return original_fit(*args, **kwargs)
-
-        with patch.object(
-            darts.models.forecasting.xgboost.xgb.XGBRegressor,
-            "fit",
-            side_effect=side_effect,
-        ):
-            model.fit(
-                series=series.split_after(0.7)[0],
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-            )
-
-            # Get the arguments passed to the mocked super.fit() method
-            # args, kwargs = xgb_fit_patch.call_args
-            X, y = intercepted_args["args"]
-            features_types = ["c" if dt == "category" else dt for dt in X.dtypes]
-
-            # Get model types
-            model_types = model.model.get_booster().feature_types
-            assert model_types is not None
-            for ft, mt in zip(features_types, model_types):
-                assert ft == mt
-
-            # TODO check same encoding for multiple lags
+            elif model_cls == LightGBMModel:
+                # TODO add checks for model interpretation of fit args
+                cat_param_name, _ = model._categorical_fit_param
+                assert intercepted_args["kwargs"][cat_param_name] == [2, 3, 5]
+            else:
+                assert False, f"{model_cls} need to be tested for fit arguments"
 
     def helper_create_LinearModel(self, multi_models=True, extreme_lags=False):
         if not extreme_lags:
