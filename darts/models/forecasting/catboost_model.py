@@ -373,8 +373,6 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         CatBoost does not support categorical features to be typed as float (yet).
         If categorical features are specified, pandas DataFrame is used to cast the categorical columns to integer.
         """
-        _, cat_param_default = self._categorical_fit_param
-
         # Tranforms into pandas df and cast specific columns to categorical
         if len(self._categorical_indices) != 0:
             pd_samples = pd.DataFrame(samples)

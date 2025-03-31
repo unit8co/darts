@@ -373,29 +373,28 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
 
         Errors are raised in the first three cases to avoid unexpected behavior.
         """
-        if len(self._categorical_indices) != 0:
-            # Check if categorical features are integer-encoded
-            if np.any(samples[:, self._categorical_indices] % 1 != 0):
-                raise_log(
-                    ValueError(
-                        "LightGBM expects categorical features to be integer-encoded, decimal values found instead."
-                    )
+        # Check if categorical features are integer-encoded
+        if np.any(samples[:, self._categorical_indices] % 1 != 0):
+            raise_log(
+                ValueError(
+                    "LightGBM expects categorical features to be integer-encoded, decimal values found instead."
                 )
-            # Check for negative values
-            if np.any(samples[:, self._categorical_indices] < 0):
-                raise_log(
-                    ValueError(
-                        "LightGBM expects categorical features to be positive integer, negative values found instead."
-                    )
+            )
+        # Check for negative values
+        if np.any(samples[:, self._categorical_indices] < 0):
+            raise_log(
+                ValueError(
+                    "LightGBM expects categorical features to be positive integer, negative values found instead."
                 )
+            )
 
-            # Check for maximum value
-            if np.any(samples[:, self._categorical_indices] > np.iinfo(np.int32).max):
-                raise_log(
-                    ValueError(
-                        "LightGBM expects categorical features to be less than Int32.MaxValue, values found are larger."
-                    )
+        # Check for maximum value
+        if np.any(samples[:, self._categorical_indices] > np.iinfo(np.int32).max):
+            raise_log(
+                ValueError(
+                    "LightGBM expects categorical features to be less than Int32.MaxValue, values found are larger."
                 )
+            )
 
     def _format_samples(self, samples, labels=None):
         """
@@ -406,7 +405,7 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
             <https://lightgbm.readthedocs.io/en/latest/Parameters.html#categorical_feature>`_
 
         """
-
-        self._validate_categorical_components(samples)
+        if len(self._categorical_indices) != 0:
+            self._validate_categorical_components(samples)
 
         return (samples, labels) if labels is not None else samples
