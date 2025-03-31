@@ -365,7 +365,7 @@ class RegressionModel(GlobalForecastingModel):
 
                 if invalid_type:
                     raise_log(
-                        Exception(
+                        ValueError(
                             f"`{lags_name}` - `{comp_name}`: must be either a {supported_types}. "
                             f"Given : {type(comp_lags)}.",
                             logger,

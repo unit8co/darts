@@ -3496,7 +3496,9 @@ class TestRegressionModels:
                 future_covariates=future_covariates,
             )
         assert str(error_msg.value).endswith(
-            "expects categorical features to be integer-encoded, decimal values found instead."
+            "is expected to have a cardinality <= 255 but actually has a cardinality of 1096."
+            if isinstance(model.model, HistGradientBoostingRegressor)
+            else "expects categorical features to be integer-encoded, decimal values found instead."
         )
 
         if model_cls == LightGBMModel:
