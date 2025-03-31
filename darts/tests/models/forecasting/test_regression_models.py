@@ -31,6 +31,9 @@ from darts.models import (
     RegressionModel,
     XGBModel,
 )
+from darts.models.forecasting.regression_model import (
+    RegressionModelWithCategoricalCovariates,
+)
 from darts.utils import timeseries_generation as tg
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import generate_index
@@ -247,17 +250,6 @@ class TestRegressionModels:
         0.65,  # QuantileXGBModel
     ]
 
-    xgb_w_categorical_covariates = XGBModel(
-        lags=1,
-        lags_past_covariates=1,
-        lags_future_covariates=[1],
-        output_chunk_length=1,
-        categorical_future_covariates=["fut_cov_promo_mechanism"],
-        categorical_past_covariates=["past_cov_cat_dummy"],
-        categorical_static_covariates=["product_id"],
-    )
-
-    lgbm_w_categorical_covariates = NotImportedModule
     if lgbm_available:
         RegularLightGBMModel = partialclass(LightGBMModel, **lgbm_test_params)
         QuantileLightGBMModel = partialclass(
@@ -277,16 +269,6 @@ class TestRegressionModels:
             PoissonLightGBMModel,
         ]
 
-        lgbm_w_categorical_covariates = LightGBMModel(
-            lags=1,
-            lags_past_covariates=1,
-            lags_future_covariates=[1],
-            output_chunk_length=1,
-            categorical_future_covariates=["fut_cov_promo_mechanism"],
-            categorical_past_covariates=["past_cov_cat_dummy"],
-            categorical_static_covariates=["product_id"],
-            **lgbm_test_params,
-        )
         univariate_accuracies += [
             0.75,  # LightGBMModel
             0.75,  # QuantileLightGBMModel
@@ -303,7 +285,6 @@ class TestRegressionModels:
             0.75,  # PoissonLightGBMModel
         ]
 
-    catboost_w_categorical_covariates = NotImportedModule
     if cb_available:
         RegularCatBoostModel = partialclass(
             CatBoostModel,
@@ -349,17 +330,6 @@ class TestRegressionModels:
             1.2,  # PoissonCatBoostModel
             0.75,  # NormalCatBoostModel
         ]
-
-        catboost_w_categorical_covariates = CatBoostModel(
-            lags=1,
-            lags_past_covariates=1,
-            lags_future_covariates=[1],
-            output_chunk_length=1,
-            categorical_future_covariates=["fut_cov_promo_mechanism"],
-            categorical_past_covariates=["past_cov_cat_dummy"],
-            categorical_static_covariates=["product_id"],
-            **cb_test_params,
-        )
 
     # dummy feature and target TimeSeries instances
     target_series, past_covariates, future_covariates = dummy_timeseries(
@@ -3300,7 +3270,7 @@ class TestRegressionModels:
         "model_config",
         (
             product(
-                [XGBModel]
+                [RegressionModelWithCategoricalCovariates, XGBModel]
                 + ([LightGBMModel] if lgbm_available else [])
                 + ([CatBoostModel] if cb_available else []),
                 [
@@ -3308,12 +3278,12 @@ class TestRegressionModels:
                         "no_cat_kwargs": {
                             "lags": 10,
                             "output_chunk_length": 10,
-                            "verbose": -1,
+                            # "verbose": -1,
                         },
                         "cat_kwargs": {
                             "lags": 10,
                             "output_chunk_length": 10,
-                            "verbose": -1,
+                            # "verbose": -1,
                             "categorical_static_covariates": ["curve_type"],
                         },
                     }
@@ -3388,7 +3358,7 @@ class TestRegressionModels:
     @pytest.mark.parametrize(
         "model_cls",
         (
-            [XGBModel]
+            [RegressionModelWithCategoricalCovariates, XGBModel]
             + ([LightGBMModel] if lgbm_available else [])
             + ([CatBoostModel] if cb_available else [])
         ),
@@ -3420,7 +3390,10 @@ class TestRegressionModels:
     @pytest.mark.parametrize(
         "model_cls",
         (
-            [XGBModel]
+            [
+                RegressionModelWithCategoricalCovariates,
+                XGBModel,
+            ]
             + ([LightGBMModel] if lgbm_available else [])
             + ([CatBoostModel] if cb_available else [])
         ),
@@ -3564,13 +3537,23 @@ class TestRegressionModels:
             )
 
     @pytest.mark.parametrize(
-        "model",
-        [xgb_w_categorical_covariates]
-        + ([catboost_w_categorical_covariates] if cb_available else [])
-        + ([lgbm_w_categorical_covariates] if lgbm_available else []),
+        "model_cls",
+        [RegressionModelWithCategoricalCovariates, XGBModel]
+        + ([CatBoostModel] if cb_available else [])
+        + ([LightGBMModel] if lgbm_available else []),
     )
-    def test_get_categorical_features_helper(self, model):
+    def test_get_categorical_features_helper(self, model_cls):
         """Test helper function responsible for retrieving indices of categorical features"""
+
+        model = model_cls(
+            lags=1,
+            lags_past_covariates=1,
+            lags_future_covariates=[1],
+            output_chunk_length=1,
+            categorical_future_covariates=["fut_cov_promo_mechanism"],
+            categorical_past_covariates=["past_cov_cat_dummy"],
+            categorical_static_covariates=["product_id"],
+        )
         (
             series,
             past_covariates,
@@ -3597,7 +3580,11 @@ class TestRegressionModels:
             (
                 XGBModel,
                 darts.models.forecasting.xgboost.xgb.XGBRegressor,
-            )
+            ),
+            (
+                RegressionModelWithCategoricalCovariates,
+                darts.models.forecasting.regression_model.HistGradientBoostingRegressor,
+            ),
         ]
         + (
             [(CatBoostModel, darts.models.forecasting.catboost_model.CatBoostRegressor)]
@@ -3682,6 +3669,36 @@ class TestRegressionModels:
                 # TODO add checks for model interpretation of fit args
                 cat_param_name, _ = model._categorical_fit_param
                 assert intercepted_args["kwargs"][cat_param_name] == [2, 3, 5]
+            elif model_cls == RegressionModelWithCategoricalCovariates and isinstance(
+                model.model, HistGradientBoostingRegressor
+            ):
+                # By default HistGradientBoostingRegressor categorical_features is set to "from_dtype"
+                # Thus input is transformed to pandas dataframe
+                assert model.model.categorical_features == "from_dtype"
+                X, _ = intercepted_args["args"]
+                assert expected_cat_indices == list(np.where(X.dtypes == "category")[0])
+
+                # If categorical_features not set to "from_dtype"
+                # Indices of categorical features are given through a numpy array
+                model = model_cls(
+                    lags=1,
+                    lags_past_covariates=1,
+                    lags_future_covariates=[1],
+                    output_chunk_length=1,
+                    categorical_future_covariates=["fut_cov_promo_mechanism"],
+                    categorical_past_covariates=["past_cov_cat_dummy"],
+                    categorical_static_covariates=["product_id"],
+                    model=HistGradientBoostingRegressor(categorical_features=None),
+                )
+
+                model.fit(
+                    series=series.split_after(0.7)[0],
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                )
+
+                assert expected_cat_indices == model.model.categorical_features
+
             else:
                 assert False, f"{model_cls} need to be tested for fit arguments"
 

@@ -33,6 +33,8 @@ from typing import Callable, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator
+from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.utils.validation import has_fit_parameter
 
@@ -363,11 +365,11 @@ class RegressionModel(GlobalForecastingModel):
 
                 if invalid_type:
                     raise_log(
-                        ValueError(
+                        Exception(
                             f"`{lags_name}` - `{comp_name}`: must be either a {supported_types}. "
-                            f"Given : {type(comp_lags)}."
+                            f"Given : {type(comp_lags)}.",
+                            logger,
                         ),
-                        logger,
                     )
 
                 # extracting min and max lags va
@@ -1812,7 +1814,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn't
             support multi-output regression for multivariate timeseries, in which case one regressor
             will be used per component in the multivariate series.
-            If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
+            If None, defaults to: ``sklearn.ensemble.HistGradientBoostingRegressor()``.
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
@@ -1837,7 +1839,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
-            model=model,
+            model=model if model is not None else HistGradientBoostingRegressor(),
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
         )
@@ -1846,19 +1848,22 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             raise_log(
                 ValueError(
                     "`categorical_static_covariates` is declared but `use_static_covariates` is set to False."
-                )
+                ),
+                logger,
             )
         if categorical_past_covariates is not None and lags_past_covariates is None:
             raise_log(
                 ValueError(
                     "`categorical_past_covariates` is declared but `lags_past_covariates` is not set."
-                )
+                ),
+                logger,
             )
         if categorical_future_covariates is not None and lags_future_covariates is None:
             raise_log(
                 ValueError(
                     "`categorical_future_covariates` is declared but `lags_future_covariates` is not set."
-                )
+                ),
+                logger,
             )
 
         self.categorical_past_covariates = (
@@ -1966,7 +1971,8 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
                             ValueError(
                                 f"Covariate '{comp}' is declared as categorical but not found in the features list. "
                                 f"Available feature(s): {set([comp for _, comp, _ in features])}"
-                            )
+                            ),
+                            logger,
                         )
 
                 index += len(features)
@@ -2016,3 +2022,40 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             sample_weight=sample_weight,
             **kwargs,
         )
+
+    def _format_samples(self, samples, labels=None):
+        """
+        HistGradientBoostingRegressor is the only sklearn regressor to support categorical features natively
+        """
+
+        if len(self._categorical_indices) != 0:
+            model = (
+                self.model.estimator
+                if isinstance(self.model, MultiOutputRegressor)
+                else self.model
+            )
+            if isinstance(model, BaseEstimator) and isinstance(
+                model, HistGradientBoostingRegressor
+            ):
+                if model.categorical_features == "from_dtype":
+                    pd_samples = pd.DataFrame(samples)
+                    pd_samples[self._categorical_indices] = pd_samples[
+                        self._categorical_indices
+                    ].apply(lambda x: x.astype("category"))
+                    samples = pd_samples
+                else:
+                    if isinstance(self.model, MultiOutputRegressor):
+                        self.model.estimator.categorical_features = (
+                            self._categorical_indices
+                        )
+                    else:
+                        self.model.categorical_features = self._categorical_indices
+            else:
+                raise_log(
+                    Exception(
+                        "Categorical covariate support is not implemented for the model provided.",
+                    ),
+                    logger,
+                )
+
+        return (samples, labels) if labels is not None else samples
