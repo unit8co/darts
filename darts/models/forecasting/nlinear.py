@@ -175,7 +175,7 @@ class _NLinearModule(PLMixedCovariatesModule):
 
             if self.normalize:
                 # Reverse the normalization for the target
-                x = x + seq_last[:,:,:self.output_dim]
+                x = x + seq_last[:, :, : self.output_dim]
 
             x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
 
@@ -190,7 +190,7 @@ class NLinearModel(MixedCovariatesTorchModel):
         output_chunk_shift: int = 0,
         shared_weights: bool = False,
         const_init: bool = True,
-        normalize: bool = False,
+        normalize: bool = True,
         use_static_covariates: bool = True,
         **kwargs,
     ):
@@ -234,7 +234,8 @@ class NLinearModel(MixedCovariatesTorchModel):
             initialization is used (default='True').
         normalize
             Whether to apply the simple "normalization" proposed in the paper, which consists
-            in subtracting the last value of the input sequence from the input sequence. Default: False.
+            in subtracting the last value of the input sequence from the input sequence. This will
+            be done for the target series and past covariates but not future covariates. Default: True.
 
             .. note::
                 This cannot be applied to probabilistic models.
