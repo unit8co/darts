@@ -2077,7 +2077,7 @@ class TestTimeSeries:
         ts.to_csv("test.csv")
         pddf_mock.assert_called_once()
 
-    @patch("darts.timeseries.TimeSeries.pd_dataframe")
+    @patch("darts.timeseries.TimeSeries.to_dataframe")
     def test_to_csv_stochastic(self, pddf_mock):
         ts = TimeSeries(
             xr.DataArray(
