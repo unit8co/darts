@@ -113,8 +113,9 @@ class _NLinearModule(PLMixedCovariatesModule):
     ):
         """
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
-            is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
+            comes as tuple `(x, x_future, x_static)` where `x` is the past target, past covariates and
+            historic future covariate chunk and `x_future` is the (non-historic) future chunk.
+            Input dimensions are `(n_samples, n_time_steps, n_variables)`
         """
         x, x_future, x_static = x_in  # x: (batch, in_len, in_dim)
         batch, _, _ = x.shape
@@ -140,10 +141,11 @@ class _NLinearModule(PLMixedCovariatesModule):
             x = x.permute(0, 2, 1, 3)
         else:
             if self.normalize:
-                # get last values only for target features
-                seq_last = x[:, -1:, : self.output_dim].detach().clone()
-                # normalize the target features only (ignore the covariates)
-                x[:, :, : self.output_dim] = x[:, :, : self.output_dim] - seq_last
+                # get last values for all x but not future covariates
+                past_dim = self.input_dim - self.future_cov_dim
+                seq_last = x[:, -1:, :past_dim].detach().clone()
+                # normalize the input
+                x[:, :, :past_dim] -= seq_last
 
             x = self.layer(x.view(batch, -1))  # (batch, out_len * out_dim * nr_params)
             x = x.view(
@@ -171,10 +173,12 @@ class _NLinearModule(PLMixedCovariatesModule):
                     batch, self.output_chunk_length, self.output_dim * self.nr_params
                 )
 
-            x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
             if self.normalize:
-                # model only forecasts target components, no need to slice
-                x = x + seq_last.view(seq_last.shape + (1,))
+                # Reverse the normalization for the target
+                x = x + seq_last[:,:,:self.output_dim]
+
+            x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
+
         return x
 
 
