@@ -16,10 +16,11 @@ from typing import Optional, Union
 import lightgbm as lgb
 
 from darts.logging import get_logger
+from darts.models.forecasting.categorical_model import CategoricalForecastingMixin
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
-    RegressionModelWithCategoricalCovariates,
+    RegressionModelWithCategoricalFeatures,
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
@@ -32,7 +33,7 @@ from darts.utils.likelihood_models.sklearn import (
 logger = get_logger(__name__)
 
 
-class LightGBMModel(RegressionModelWithCategoricalCovariates):
+class LightGBMModel(RegressionModelWithCategoricalFeatures):
     def __init__(
         self,
         lags: Optional[LAGS_TYPE] = None,
@@ -215,12 +216,15 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates):
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             multi_models=multi_models,
-            model=lgb.LGBMRegressor(**self.kwargs),
+            model=self._create_model(**self.kwargs),
             use_static_covariates=use_static_covariates,
             categorical_past_covariates=categorical_past_covariates,
             categorical_future_covariates=categorical_future_covariates,
             categorical_static_covariates=categorical_static_covariates,
         )
+
+    def _create_model(self, **kwargs):
+        return lgb.LGBMRegressor(**kwargs)
 
     def fit(
         self,
@@ -345,3 +349,62 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates):
         Returns the name of the categorical features parameter from model's `fit` method .
         """
         return "categorical_feature"
+
+    @property
+    def _is_target_categorical(self) -> bool:
+        """ "
+        Returns if the target serie will be treated as categorical features when `lags` are provided.
+        """
+        return False
+
+
+class LightGBMCategoricalModel(LightGBMModel, CategoricalForecastingMixin):
+    def __init__(
+        self,
+        lags=None,
+        lags_past_covariates=None,
+        lags_future_covariates=None,
+        output_chunk_length=1,
+        output_chunk_shift=0,
+        add_encoders=None,
+        likelihood=None,
+        quantiles=None,
+        random_state=None,
+        multi_models=True,
+        use_static_covariates=True,
+        categorical_past_covariates=None,
+        categorical_future_covariates=None,
+        categorical_static_covariates=None,
+        **kwargs,
+    ):
+        # TODO adapt doc to categorical forecasting
+
+        self._validate_lags(lags=lags)
+
+        super().__init__(
+            lags=lags,
+            lags_past_covariates=lags_past_covariates,
+            lags_future_covariates=lags_future_covariates,
+            output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
+            add_encoders=add_encoders,
+            likelihood=likelihood,
+            quantiles=quantiles,
+            random_state=random_state,
+            multi_models=multi_models,
+            use_static_covariates=use_static_covariates,
+            categorical_past_covariates=categorical_past_covariates,
+            categorical_future_covariates=categorical_future_covariates,
+            categorical_static_covariates=categorical_static_covariates,
+            **kwargs,
+        )
+
+    def _create_model(self, **kwargs):
+        return lgb.LGBMClassifier(**kwargs)
+
+    @property
+    def _is_target_categorical(self) -> bool:
+        """ "
+        Returns if the target serie will be treated as categorical features when `lags` are provided.
+        """
+        return True

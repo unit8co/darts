@@ -12,11 +12,12 @@ from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
-from catboost import CatBoostRegressor, Pool
+from catboost import CatBoostClassifier, CatBoostRegressor, Pool
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_log
+from darts.models.forecasting.categorical_model import CategoricalForecastingMixin
 from darts.models.forecasting.regression_model import (
-    RegressionModelWithCategoricalCovariates,
+    RegressionModelWithCategoricalFeatures,
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
@@ -29,7 +30,7 @@ from darts.utils.likelihood_models.sklearn import (
 logger = get_logger(__name__)
 
 
-class CatBoostModel(RegressionModelWithCategoricalCovariates):
+class CatBoostModel(RegressionModelWithCategoricalFeatures):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -232,7 +233,7 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates):
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             multi_models=multi_models,
-            model=CatBoostRegressor(**kwargs),
+            model=self._create_model(**kwargs),
             use_static_covariates=use_static_covariates,
             categorical_past_covariates=categorical_past_covariates,
             categorical_future_covariates=categorical_future_covariates,
@@ -241,6 +242,9 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates):
 
         # if no loss provided, get the default loss from the model
         self.kwargs["loss_function"] = self.model.get_params().get("loss_function")
+
+    def _create_model(self, **kwargs):
+        return CatBoostRegressor(**kwargs)
 
     def fit(
         self,
@@ -429,3 +433,75 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates):
             samples = pd.DataFrame(samples)
             samples = samples.astype({col: int for col in self._categorical_indices})
         return samples, labels
+
+    @property
+    def _is_target_categorical(self) -> bool:
+        """ "
+        Returns if the target serie will be treated as categorical features when `lags` are provided.
+        """
+        return False
+
+
+class CatBoostCategoricalModel(CatBoostModel, CategoricalForecastingMixin):
+    def __init__(
+        self,
+        lags=None,
+        lags_past_covariates=None,
+        lags_future_covariates=None,
+        output_chunk_length=1,
+        output_chunk_shift=0,
+        add_encoders=None,
+        likelihood=None,
+        quantiles=None,
+        random_state=None,
+        multi_models=True,
+        use_static_covariates=True,
+        categorical_past_covariates=None,
+        categorical_future_covariates=None,
+        categorical_static_covariates=None,
+        **kwargs,
+    ):
+        self._validate_lags(lags=lags)
+
+        super().__init__(
+            lags=lags,
+            lags_past_covariates=lags_past_covariates,
+            lags_future_covariates=lags_future_covariates,
+            output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
+            add_encoders=add_encoders,
+            likelihood=likelihood,
+            quantiles=quantiles,
+            random_state=random_state,
+            multi_models=multi_models,
+            use_static_covariates=use_static_covariates,
+            categorical_past_covariates=categorical_past_covariates,
+            categorical_future_covariates=categorical_future_covariates,
+            categorical_static_covariates=categorical_static_covariates,
+            **kwargs,
+        )
+
+    def _create_model(self, **kwargs):
+        return CatBoostClassifier(**kwargs)
+
+    def _format_samples(self, samples, labels=None):
+        """
+        For some reason CatBoostClassifier does regression when given continuous labels
+        For consistency, an error is artificially raised on continuous labels
+        """
+        if labels is not None:
+            if np.any(labels % 1 != 0):
+                raise_log(
+                    ValueError(
+                        "Labels must be integer-encoded, decimal values found instead."
+                    ),
+                    logger=logger,
+                )
+        return super()._format_samples(samples=samples, labels=labels)
+
+    @property
+    def _is_target_categorical(self) -> bool:
+        """ "
+        Returns if the target serie will be treated as categorical features when `lags` are provided.
+        """
+        return True

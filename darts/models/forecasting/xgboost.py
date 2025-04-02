@@ -14,6 +14,7 @@ import numpy as np
 import xgboost as xgb
 
 from darts.logging import get_logger, raise_if_not
+from darts.models.forecasting.categorical_model import CategoricalForecastingMixin
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -248,12 +249,15 @@ class XGBModel(RegressionModel):
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             multi_models=multi_models,
-            model=xgb.XGBRegressor(**self.kwargs),
+            model=self._create_model(**self.kwargs),
             use_static_covariates=use_static_covariates,
             categorical_past_covariates=categorical_past_covariates,
             categorical_future_covariates=categorical_future_covariates,
             categorical_static_covariates=categorical_static_covariates,
         )
+
+    def _create_model(self, **kwargs):
+        return xgb.XGBRegressor(**kwargs)
 
     def fit(
         self,
@@ -380,11 +384,47 @@ class XGBModel(RegressionModel):
         # since xgboost==2.1.0, likelihoods do not support native multi output regression
         return super()._supports_native_multioutput and self.likelihood is None
 
+
+class XGBCategoricalModel(XGBModel, CategoricalForecastingMixin):
+    def __init__(
+        self,
+        lags=None,
+        lags_past_covariates=None,
+        lags_future_covariates=None,
+        output_chunk_length=1,
+        output_chunk_shift=0,
+        add_encoders=None,
+        likelihood=None,
+        quantiles=None,
+        random_state=None,
+        multi_models=True,
+        use_static_covariates=True,
+        **kwargs,
+    ):
+        # TODO adapt doc to categorical forecasting
+        self._validate_lags(lags=lags)
+
+        super().__init__(
+            lags=lags,
+            lags_past_covariates=lags_past_covariates,
+            lags_future_covariates=lags_future_covariates,
+            output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
+            add_encoders=add_encoders,
+            likelihood=likelihood,
+            quantiles=quantiles,
+            random_state=random_state,
+            multi_models=multi_models,
+            use_static_covariates=use_static_covariates,
+            **kwargs,
+        )
+
+    def _create_model(self, **kwargs):
+        return xgb.XGBClassifier(**kwargs)
+
     @property
-    def _categorical_fit_param(self) -> tuple[Optional[str], Optional[str]]:
+    def _is_target_categorical(self) -> bool:
+        """ "
+        Returns if the target serie will be treated as categorical features when `lags` are provided.
         """
-        Returns the name, and default value of the categorical features parameter from model's `fit` method .
-        """
-        # XGBoost require to type categorical features as category
-        # but has no parameter to specify the categorical features
-        return None, self._categorical_features
+        return False
