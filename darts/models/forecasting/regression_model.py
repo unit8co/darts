@@ -1715,7 +1715,7 @@ class _QuantileModelContainer(OrderedDict):
         super().__init__()
 
 
-class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
+class RegressionModelWithCategoricalFeatures(RegressionModel, ABC):
     def __init__(
         self,
         model,
@@ -1732,7 +1732,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
         categorical_static_covariates: Optional[Union[str, list[str]]] = None,
     ):
         """
-        Extension of `RegressionModel` for regression models that support categorical covariates.
+        Extension of `RegressionModel` for regression models that support categorical features.
 
         Parameters
         ----------
@@ -1879,14 +1879,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
         )
         self._categorical_indices = []  # Indices are set on fit
 
-    @property
-    @abstractmethod
-    def _categorical_fit_param(self) -> Optional[str]:
-        """
-        Returns the name of the categorical features parameter from model's `fit` method .
-        """
-        pass
-
     def _get_categorical_features(
         self,
         series: Union[Sequence[TimeSeries], TimeSeries],
@@ -1901,7 +1893,11 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
             in create_lagged_data.
         2. Get the indices of the categorical features in the list of features.
         """
+        target_ts = get_single_series(series)
         categorical_covariates = [
+            list(target_ts.components)
+            if self._is_target_categorical and self.lags.get("target") is not None
+            else [],
             self.categorical_past_covariates
             if self.categorical_past_covariates
             else [],
@@ -1917,7 +1913,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
         if sum(map(len, categorical_covariates)) == 0:
             return [], []
         else:
-            target_ts = get_single_series(series)
             past_covs_ts = get_single_series(past_covariates)
             fut_covs_ts = get_single_series(future_covariates)
 
@@ -1947,9 +1942,8 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
                 ),
             ]
 
-            # Target feature are not considered for categorical features
             # Keep track of feature list index to refer to the columns indices
-            index = len(feature_list.pop(0))
+            index = 0
             indices = []
             col_names = []
             for cat_covs, features in zip(categorical_covariates, feature_list):
@@ -1984,7 +1978,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
         **kwargs,
     ):
         """
-        Custom fit function for `RegressionModelWithCategoricalCovariates` models, adding logic to let the model
+        Custom fit function for `RegressionModelWithCategoricalFeatures` models, adding logic to let the model
         handle categorical features directly.
         """
         cat_col_indices, _ = self._get_categorical_features(
@@ -2016,12 +2010,29 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
             raise_log(
                 ValueError(
                     "Categorical features must be integer-encoded, decimal values found instead."
-                )
+                ),
+                logger=logger,
             )
 
     @abstractmethod
     def _format_samples(self, samples: np.ndarray, labels: Optional[np.ndarray] = None):
         """
         Format the categorical columns listed in self._categorical_indices accordingly to the model's requirements.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def _categorical_fit_param(self) -> Optional[str]:
+        """
+        Returns the name of the categorical features parameter from model's `fit` method .
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def _is_target_categorical(self) -> bool:
+        """ "
+        Returns if the target serie will be treated as categorical features when `lags` are provided.
         """
         pass
