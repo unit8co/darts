@@ -10,6 +10,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For users of the library:
 
 **Improved**
+- Added support for categorical covariate in  `CatBoostModel`. [#2733](https://github.com/unit8co/darts/pull/2750) by [Jonas Blanc](https://github.com/jonasblanc).
 
 **Removed**
 - 🔴 Removed deprecated method `TimeSeries.pd_dataframe()`. Use `TimeSeries.to_dataframe()` instead. [#2733](https://github.com/unit8co/darts/pull/2733) by [Dennis Bader](https://github.com/dennisbader).
@@ -21,6 +22,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Dependencies**
 
 ### For developers of the library:
+
+- 🔴 Made  `RegressionModelWithCategoricalCovariates` abstract, rewrote logic for categorical component names matching and refactored categorical covariate logic to make it easier to add categorical cov support to a model. [#2733](https://github.com/unit8co/darts/pull/2750) by [Jonas Blanc](https://github.com/jonasblanc).
 
 ## [0.34.0](https://github.com/unit8co/darts/tree/0.34.0) (2025-03-09)
 
