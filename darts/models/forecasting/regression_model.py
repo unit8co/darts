@@ -27,14 +27,13 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 
+from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Sequence
 from typing import Callable, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
-from sklearn.base import BaseEstimator
-from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.utils.validation import has_fit_parameter
 
@@ -368,8 +367,8 @@ class RegressionModel(GlobalForecastingModel):
                         ValueError(
                             f"`{lags_name}` - `{comp_name}`: must be either a {supported_types}. "
                             f"Given : {type(comp_lags)}.",
-                            logger,
                         ),
+                        logger,
                     )
 
                 # extracting min and max lags va
@@ -684,12 +683,10 @@ class RegressionModel(GlobalForecastingModel):
 
         return features, labels, sample_weights
 
-    def _format_samples(self, samples, labels=None):
+    def _format_samples(self, samples: np.ndarray, labels: Optional[np.ndarray] = None):
         """
         Let subclasses override this method to format the samples and labels before fitting the model.
         """
-        if labels is None:
-            return samples
         return samples, labels
 
     def _fit_model(
@@ -1236,7 +1233,7 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs,
     ) -> np.ndarray:
         """By default, the regression model returns a single sample."""
-        x = self._format_samples(x)
+        x, _ = self._format_samples(x)
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
         return prediction.reshape(k, self.pred_dim, -1)
@@ -1718,16 +1715,16 @@ class _QuantileModelContainer(OrderedDict):
         super().__init__()
 
 
-class RegressionModelWithCategoricalCovariates(RegressionModel):
+class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
     def __init__(
         self,
+        model,
         lags: Union[int, list] = None,
         lags_past_covariates: Union[int, list[int]] = None,
         lags_future_covariates: Union[tuple[int, int], list[int]] = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
-        model=None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
         categorical_past_covariates: Optional[Union[str, list[str]]] = None,
@@ -1739,6 +1736,10 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
 
         Parameters
         ----------
+        model
+            Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn't
+            support multi-output regression for multivariate timeseries, in which case one regressor
+            will be used per component in the multivariate series.
         lags
             Lagged target `series` values used to predict the next time step/s.
             If an integer, must be > 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`
@@ -1810,11 +1811,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
                     'tz': 'CET'
                 }
             ..
-        model
-            Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn't
-            support multi-output regression for multivariate timeseries, in which case one regressor
-            will be used per component in the multivariate series.
-            If None, defaults to: ``sklearn.ensemble.HistGradientBoostingRegressor()``.
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
@@ -1839,7 +1835,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
-            model=model if model is not None else HistGradientBoostingRegressor(),
+            model=model,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
         )
@@ -1884,12 +1880,12 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         self._categorical_indices = []  # Indices are set on fit
 
     @property
-    def _categorical_fit_param(self) -> tuple[Optional[str], Optional[str]]:
+    @abstractmethod
+    def _categorical_fit_param(self) -> Optional[str]:
         """
-        Returns the name, and default value of the categorical features parameter from model's `fit` method .
-        Should be overridden in subclasses.
+        Returns the name of the categorical features parameter from model's `fit` method .
         """
-        return None, None
+        pass
 
     def _get_categorical_features(
         self,
@@ -1963,7 +1959,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
                         indices.append(index + i)
                         col_names.append(f"{prefix}_{component}_lag{lag}")
                         extracted_categorical_features.append(component)
-                print(cat_covs, features, flush=True)
 
                 for comp in cat_covs:
                     if comp not in extracted_categorical_features:
@@ -1991,9 +1986,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         """
         Custom fit function for `RegressionModelWithCategoricalCovariates` models, adding logic to let the model
         handle categorical features directly.
-
-        Sub-classes should override `_format_samples` to format the columns listed in self._categorical_indices
-        accordingly to the model's requirements.
         """
         cat_col_indices, _ = self._get_categorical_features(
             series=series,
@@ -2003,16 +1995,11 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         self._categorical_indices = cat_col_indices
 
         # cat_param_name is None if model has no attribute to specify categorical features in `fit()`
-        # cat_param_default is None if no default value to auto-detect categorical features is available in `fit()`
-        cat_param_name, cat_param_default = self._categorical_fit_param
+        cat_param_name = self._categorical_fit_param
 
         # Add attributes in kwargs if applicable for model's `fit()` method
-        if cat_param_name is not None and (
-            len(cat_col_indices) != 0 or cat_param_default is not None
-        ):
-            kwargs[cat_param_name] = (
-                cat_col_indices if len(cat_col_indices) != 0 else cat_param_default
-            )
+        if cat_param_name is not None and len(cat_col_indices) > 0:
+            kwargs[cat_param_name] = cat_col_indices
 
         super()._fit_model(
             series=series,
@@ -2023,39 +2010,18 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             **kwargs,
         )
 
-    def _format_samples(self, samples, labels=None):
-        """
-        HistGradientBoostingRegressor is the only sklearn regressor to support categorical features natively
-        """
-
-        if len(self._categorical_indices) != 0:
-            model = (
-                self.model.estimator
-                if isinstance(self.model, MultiOutputRegressor)
-                else self.model
-            )
-            if isinstance(model, BaseEstimator) and isinstance(
-                model, HistGradientBoostingRegressor
-            ):
-                if model.categorical_features == "from_dtype":
-                    pd_samples = pd.DataFrame(samples)
-                    pd_samples[self._categorical_indices] = pd_samples[
-                        self._categorical_indices
-                    ].apply(lambda x: x.astype("category"))
-                    samples = pd_samples
-                else:
-                    if isinstance(self.model, MultiOutputRegressor):
-                        self.model.estimator.categorical_features = (
-                            self._categorical_indices
-                        )
-                    else:
-                        self.model.categorical_features = self._categorical_indices
-            else:
-                raise_log(
-                    Exception(
-                        "Categorical covariate support is not implemented for the model provided.",
-                    ),
-                    logger,
+    def _validate_categorical_components(self, samples):
+        """Check if categorical features are integer-encoded"""
+        if np.any(samples[:, self._categorical_indices] % 1 != 0):
+            raise_log(
+                ValueError(
+                    "Categorical features must be integer-encoded, decimal values found instead."
                 )
+            )
 
-        return (samples, labels) if labels is not None else samples
+    @abstractmethod
+    def _format_samples(self, samples: np.ndarray, labels: Optional[np.ndarray] = None):
+        """
+        Format the categorical columns listed in self._categorical_indices accordingly to the model's requirements.
+        """
+        pass

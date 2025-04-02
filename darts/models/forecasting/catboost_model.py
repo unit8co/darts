@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 from catboost import CatBoostRegressor, Pool
 
-from darts.logging import get_logger, raise_log
+from darts.logging import get_logger
 from darts.models.forecasting.regression_model import (
     RegressionModelWithCategoricalCovariates,
     _LikelihoodMixin,
@@ -139,18 +139,17 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         categorical_past_covariates
             Optionally, component name or list of component names specifying the past covariates that should be treated
-            as categorical by the underlying `CatBoostRegressor`. It's recommended that the components that
-            are treated as categorical are integer-encoded. For more information on how CatBoost handles categorical
-            features, visit: `Categorical feature support documentation
-            <https://catboost.ai/docs/en/features/categorical-features>`_
+            as categorical by the underlying `CatBoostRegressor`. The components that are specified as categorical
+            must be integer-encoded. For more information on how CatBoost handles categorical features,
+            visit: `Categorical feature support documentatio <https://catboost.ai/docs/en/features/categorical-features>`_
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
-            treated as categorical by the underlying `CatBoostRegressor`. It's recommended that the components
-            that are treated as categorical are integer-encoded.
+            treated as categorical by the underlying `CatBoostRegressor`. The components that
+            are specified as categorical must be integer-encoded
         categorical_static_covariates
             Optionally, string or list of strings specifying the static covariates that should be treated as categorical
-            by the underlying `CatBoostRegressor`. It's recommended that the static covariates that are
-            treated as categorical are integer-encoded.
+            by the underlying `CatBoostRegressor`. The components that
+            are specified as categorical must be integer-encoded.
         **kwargs
             Additional keyword arguments passed to `catboost.CatBoostRegressor`.
             Native multi-output support can be achieved by using an appropriate `loss_function` ('MultiRMSE',
@@ -354,7 +353,7 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
                 x, num_samples, predict_likelihood_parameters, **kwargs
             )
         else:
-            x = self._format_samples(x)
+            x, _ = self._format_samples(x)
             if self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
                 return self._predict_and_sample_likelihood(
                     x, num_samples, "normal", predict_likelihood_parameters, **kwargs
@@ -370,24 +369,18 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
 
     def _format_samples(self, samples, labels=None):
         """
-        CatBoost does not support categorical features to be typed as float (yet).
-        If categorical features are specified, pandas DataFrame is used to cast the categorical columns to integer.
+        CatBoost currently only supports categorical features as int.
+        If categorical features are specified, the samples are converted into a pandas DataFrame and categorical
+        columns are cast to integer.
         """
         # Tranforms into pandas df and cast specific columns to categorical
-        if len(self._categorical_indices) != 0:
-            pd_samples = pd.DataFrame(samples)
-            if np.any(pd_samples[self._categorical_indices] % 1 != 0):
-                raise_log(
-                    ValueError(
-                        "CatBoost expects categorical features to be integer-encoded, decimal values found instead."
-                    )
-                )
-            pd_samples[self._categorical_indices] = pd_samples[
-                self._categorical_indices
-            ].apply(lambda x: x.astype(int))
-            samples = pd_samples
 
-        return (samples, labels) if labels is not None else samples
+        if len(self._categorical_indices) != 0:
+            self._validate_categorical_components(samples)
+            samples = pd.DataFrame(samples)
+            samples = samples.astype({col: int for col in self._categorical_indices})
+
+        return samples, labels
 
     def _likelihood_components_names(
         self, input_series: TimeSeries
@@ -472,8 +465,8 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         )
 
     @property
-    def _categorical_fit_param(self) -> tuple[Optional[str], Optional[str]]:
+    def _categorical_fit_param(self) -> Optional[str]:
         """
-        Returns the name, and default value of the categorical features parameter from model's `fit` method .
+        Returns the name of the categorical features parameter from model's `fit` method .
         """
-        return "cat_features", None
+        return "cat_features"

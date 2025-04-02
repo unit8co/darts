@@ -31,9 +31,6 @@ from darts.models import (
     RegressionModel,
     XGBModel,
 )
-from darts.models.forecasting.regression_model import (
-    RegressionModelWithCategoricalCovariates,
-)
 from darts.utils import timeseries_generation as tg
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import generate_index
@@ -404,9 +401,7 @@ class TestRegressionModels:
                 "baseline": np.random.normal(100, 10, len(date_range)),
                 "fut_cov_promo_mechanism": np.random.randint(0, 11, len(date_range)),
                 "fut_cov_dummy": np.random.normal(10, 2, len(date_range)),
-                "past_cov_dummy_neg_int": np.array([
-                    np.random.randint(-10, 0) for _ in range(len(date_range))
-                ]),
+                "past_cov_dummy": np.random.normal(10, 2, len(date_range)),
                 "past_cov_cat_dummy": np.array([
                     np.random.randint(0, 10) for _ in range(len(date_range))
                 ]),
@@ -427,7 +422,7 @@ class TestRegressionModels:
         past_covariates = TimeSeries.from_dataframe(
             df,
             time_col="date",
-            value_cols=["past_cov_dummy_neg_int", "past_cov_cat_dummy"],
+            value_cols=["past_cov_dummy", "past_cov_cat_dummy"],
         )
         future_covariates = TimeSeries.from_dataframe(
             df, time_col="date", value_cols=["fut_cov_promo_mechanism", "fut_cov_dummy"]
@@ -3266,12 +3261,14 @@ class TestRegressionModels:
             assert len(model.encoders.future_encoders) == 1
             assert isinstance(model.encoders.future_encoders[0], FutureCyclicEncoder)
 
+    @pytest.mark.skipif(
+        not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
+    )
     @pytest.mark.parametrize(
         "model_config",
         (
             product(
-                [RegressionModelWithCategoricalCovariates, XGBModel]
-                + ([LightGBMModel] if lgbm_available else [])
+                ([LightGBMModel] if lgbm_available else [])
                 + ([CatBoostModel] if cb_available else []),
                 [
                     {
@@ -3358,7 +3355,7 @@ class TestRegressionModels:
     @pytest.mark.parametrize(
         "model_cls",
         (
-            [RegressionModelWithCategoricalCovariates, XGBModel]
+            [XGBModel]
             + ([LightGBMModel] if lgbm_available else [])
             + ([CatBoostModel] if cb_available else [])
         ),
@@ -3387,14 +3384,13 @@ class TestRegressionModels:
             "`past_covariates` is None in `fit()` method call, but `lags_past_covariates` is not None in constructor"
         )
 
+    @pytest.mark.skipif(
+        not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
+    )
     @pytest.mark.parametrize(
         "model_cls",
         (
-            [
-                RegressionModelWithCategoricalCovariates,
-                XGBModel,
-            ]
-            + ([LightGBMModel] if lgbm_available else [])
+            ([LightGBMModel] if lgbm_available else [])
             + ([CatBoostModel] if cb_available else [])
         ),
     )
@@ -3496,52 +3492,15 @@ class TestRegressionModels:
                 future_covariates=future_covariates,
             )
         assert str(error_msg.value).endswith(
-            "is expected to have a cardinality <= 255 but actually has a cardinality of 1096."
-            if isinstance(model.model, HistGradientBoostingRegressor)
-            else "expects categorical features to be integer-encoded, decimal values found instead."
+            "Categorical features must be integer-encoded, decimal values found instead."
         )
 
-        if model_cls == LightGBMModel:
-            # check for negative values
-            model = model_cls(
-                lags_past_covariates=1,
-                output_chunk_length=1,
-                categorical_past_covariates=[
-                    "past_cov_dummy_neg_int",
-                ],
-            )
-
-            with pytest.raises(ValueError) as error_msg:
-                model.fit(
-                    series=series,
-                    past_covariates=past_covariates,
-                )
-            assert str(error_msg.value).endswith(
-                "expects categorical features to be positive integer, negative values found instead."
-            )
-
-            # check for value > int32.max
-            model = model_cls(
-                lags_past_covariates=1,
-                output_chunk_length=1,
-                categorical_past_covariates=[
-                    "past_cov_cat_dummy",
-                ],
-            )
-
-            with pytest.raises(ValueError) as error_msg:
-                model.fit(
-                    series=series,
-                    past_covariates=past_covariates + np.iinfo(np.int32).max,
-                )
-            assert str(error_msg.value).endswith(
-                "LightGBM expects categorical features to be less than Int32.MaxValue, values found are larger."
-            )
-
+    @pytest.mark.skipif(
+        not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
+    )
     @pytest.mark.parametrize(
         "model_cls",
-        [RegressionModelWithCategoricalCovariates, XGBModel]
-        + ([CatBoostModel] if cb_available else [])
+        ([CatBoostModel] if cb_available else [])
         + ([LightGBMModel] if lgbm_available else []),
     )
     def test_get_categorical_features_helper(self, model_cls):
@@ -3576,19 +3535,12 @@ class TestRegressionModels:
             "static_cov_product_id_lag0",
         ]
 
+    @pytest.mark.skipif(
+        not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
+    )
     @pytest.mark.parametrize(
         "model_cls_and_module",
-        [
-            (
-                XGBModel,
-                darts.models.forecasting.xgboost.xgb.XGBRegressor,
-            ),
-            (
-                RegressionModelWithCategoricalCovariates,
-                darts.models.forecasting.regression_model.HistGradientBoostingRegressor,
-            ),
-        ]
-        + (
+        (
             [(CatBoostModel, darts.models.forecasting.catboost_model.CatBoostRegressor)]
             if cb_available
             else []
@@ -3653,54 +3605,10 @@ class TestRegressionModels:
                 # all categorical features should be encoded as integers
                 for col in X[model_cat_indices].columns:
                     assert X[col].dtype == int
-            elif model_cls == XGBModel:
-                # TODO check same encoding for multiple lags
-                # Get the arguments passed to the mocked super.fit() method
-                # args, kwargs = xgb_fit_patch.call_args
-                X, y = intercepted_args["args"]
-                features_types = ["c" if dt == "category" else dt for dt in X.dtypes]
-                assert expected_cat_indices == list(np.where(X.dtypes == "category")[0])
-
-                # Get model types
-                model_types = model.model.get_booster().feature_types
-                assert model_types is not None
-                for ft, mt in zip(features_types, model_types):
-                    assert ft == mt
-
             elif model_cls == LightGBMModel:
                 # TODO add checks for model interpretation of fit args
-                cat_param_name, _ = model._categorical_fit_param
+                cat_param_name = model._categorical_fit_param
                 assert intercepted_args["kwargs"][cat_param_name] == [2, 3, 5]
-            elif model_cls == RegressionModelWithCategoricalCovariates and isinstance(
-                model.model, HistGradientBoostingRegressor
-            ):
-                # By default HistGradientBoostingRegressor categorical_features is set to "from_dtype"
-                # Thus input is transformed to pandas dataframe
-                assert model.model.categorical_features == "from_dtype"
-                X, _ = intercepted_args["args"]
-                assert expected_cat_indices == list(np.where(X.dtypes == "category")[0])
-
-                # If categorical_features not set to "from_dtype"
-                # Indices of categorical features are given through a numpy array
-                model = model_cls(
-                    lags=1,
-                    lags_past_covariates=1,
-                    lags_future_covariates=[1],
-                    output_chunk_length=1,
-                    categorical_future_covariates=["fut_cov_promo_mechanism"],
-                    categorical_past_covariates=["past_cov_cat_dummy"],
-                    categorical_static_covariates=["product_id"],
-                    model=HistGradientBoostingRegressor(categorical_features=None),
-                )
-
-                model.fit(
-                    series=series.split_after(0.7)[0],
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
-                )
-
-                assert expected_cat_indices == model.model.categorical_features
-
             else:
                 assert False, f"{model_cls} need to be tested for fit arguments"
 
