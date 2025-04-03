@@ -180,6 +180,7 @@ class TestDlinearNlinearModels:
                 likelihood=lkl,
                 random_state=42,
                 **tfm_kwargs,
+                **kwargs,
             )
 
             model.fit(
@@ -250,6 +251,7 @@ class TestDlinearNlinearModels:
                 fut_cov2,
                 cls=model,
                 lkl=lkl,
+                **kwargs,
             )
             assert e1 <= 0.32
             assert e2 <= 0.28
