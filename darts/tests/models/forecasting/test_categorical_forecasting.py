@@ -144,12 +144,29 @@ class TestCategoricalForecasting:
     ]
 
     if lgbm_available:
-        classifiers.append((LightGBMCategoricalModel, {}))
+        classifiers.append((
+            LightGBMCategoricalModel,
+            {
+                "n_estimators": 1,
+                "max_depth": 1,
+                "num_leaves": 2,
+                "verbosity": -1,
+                "random_state": 42,
+            },
+        ))
         models_accuracies.append(1)
         models_multioutput.append(False)
 
     if cb_available:
-        classifiers.append((CatBoostCategoricalModel, {}))
+        classifiers.append((
+            CatBoostCategoricalModel,
+            {
+                "iterations": 1,
+                "depth": 1,
+                "verbose": -1,
+                "random_state": 42,
+            },
+        ))
         models_accuracies.append(1)
         models_multioutput.append(False)
 
@@ -219,7 +236,7 @@ class TestCategoricalForecasting:
         min_f1_model,
         model_params,
         idx,
-        mode,
+        multi_models,
         output_chunk_length,
     ):
         # for every model, test whether it predicts the target with a minimum f1 score
@@ -230,7 +247,7 @@ class TestCategoricalForecasting:
             lags=12,
             lags_past_covariates=2,
             output_chunk_length=output_chunk_length,
-            multi_models=mode,
+            multi_models=multi_models,
             **kwargs,
         )
         model_instance.fit(series=train_series, past_covariates=train_past_covariates)
@@ -271,7 +288,7 @@ class TestCategoricalForecasting:
         ),
     )
     def test_models_accuracy_univariate(self, config):
-        (model, idx), mode, ocl = config
+        (model, idx), multi_models, output_chunk_length = config
         # for every model, and different output_chunk_lengths test whether it predicts the univariate time series
         # as well as expected, accuracies are defined at the top of the class
         self.helper_test_models_accuracy(
@@ -280,8 +297,8 @@ class TestCategoricalForecasting:
             self.models_accuracies,
             model,
             idx,
-            mode,
-            ocl,
+            multi_models,
+            output_chunk_length,
         )
 
     @pytest.mark.parametrize(
@@ -296,7 +313,7 @@ class TestCategoricalForecasting:
         ),
     )
     def test_models_accuracy_multivariate(self, config):
-        (model, idx), mode, ocl = config
+        (model, idx), multi_models, output_chunk_length = config
         # for every model, and different output_chunk_lengths test whether it predicts the multivariate time series
         # as well as expected, accuracies are defined at the top of the class
         self.helper_test_models_accuracy(
@@ -305,8 +322,8 @@ class TestCategoricalForecasting:
             self.models_accuracies,
             model,
             idx,
-            mode,
-            ocl,
+            multi_models,
+            output_chunk_length,
         )
 
     @pytest.mark.parametrize(
