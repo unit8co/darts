@@ -218,10 +218,6 @@ class TestDlinearNlinearModels:
 
         train1, val1 = series1.split_after(0.7)
         train2, val2 = series2.split_after(0.7)
-        past_cov1 = train1.copy()
-        past_cov2 = train2.copy()
-        val_past_cov1 = val1.copy()
-        val_past_cov2 = val2.copy()
 
         for model, lkl in product(
             [DLinearModel, NLinearModel], [None, GaussianLikelihood()]
