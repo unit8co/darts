@@ -17,7 +17,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - 🔴 Removed model `AutoARIMA`. To support `numpy>=2.0.0`, we unfortunately had to remove the `pmdarima` dependency. Use `StatsForecastAutoARIMA` instead. [#2734](https://github.com/unit8co/darts/pull/2734) by [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
-- 🔴 Fixed `NLinearModel` for `normalize=True` also for the `shared_weighs=True` path (which was not covered in #2724). In addition, past covariates are now also normalized (but not feature covariates, see discussion #2699) and `normalize=True` is now the default. 
+- 🔴 Fixed `NLinearModel` for `normalize=True` also for the `shared_weighs=True` path (which was not covered in #2724). In addition, past covariates are now also normalized (but not feature covariates, see discussion #2699) and `normalize=True` is now the default.
 
 **Dependencies**
 
