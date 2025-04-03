@@ -235,11 +235,14 @@ class NLinearModel(MixedCovariatesTorchModel):
         normalize
             Whether to apply the simple "normalization" proposed in the paper, which consists
             in subtracting the last value of the input sequence from the input sequence. This will
-            be done for the target series and past covariates but not future covariates. Default: True.
+            be done for the target series and past covariates, but not future covariates because it would defeat the use
+            of encoders (see ``add_encoders``).
+            Without normalization, the models behaves like the simple Linear model proposed in the paper. Default: True.
 
             .. note::
                 This cannot be applied to probabilistic models.
             ..
+
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
