@@ -36,8 +36,11 @@ from darts.models.forecasting.forecasting_model import (
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import n_steps_between
 from darts.utils import timeseries_generation as tg
+from darts.utils.likelihood_models.base import (
+    likelihood_component_names,
+    quantile_names,
+)
 from darts.utils.ts_utils import SeriesType, get_series_seq_type
-from darts.utils.utils import likelihood_component_names, quantile_names
 
 if TORCH_AVAILABLE:
     import torch
@@ -56,7 +59,10 @@ if TORCH_AVAILABLE:
         TransformerModel,
         TSMixerModel,
     )
-    from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
+    from darts.utils.likelihood_models.torch import (
+        GaussianLikelihood,
+        QuantileRegression,
+    )
 
 models = [LinearRegressionModel, NaiveDrift]
 models_reg_no_cov_cls_kwargs = [

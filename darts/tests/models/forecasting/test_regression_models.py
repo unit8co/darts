@@ -32,6 +32,8 @@ from darts.models import (
     XGBModel,
 )
 from darts.utils import timeseries_generation as tg
+from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
+from darts.utils.likelihood_models.sklearn import _get_likelihood
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import generate_index
 
@@ -3849,6 +3851,16 @@ class TestProbabilisticRegressionModels:
                 },
                 0.05,
             ),
+            (
+                CatBoostModel,
+                {
+                    "lags": 2,
+                    "likelihood": "RMSEWithUncertainty",
+                    "multi_models": True,
+                    **cb_test_params,
+                },
+                0.05,
+            ),
         ]
 
     constant_ts = tg.constant_timeseries(length=200, value=0.5)
@@ -3857,12 +3869,40 @@ class TestProbabilisticRegressionModels:
     constant_noisy_multivar_ts = constant_noisy_ts.stack(constant_noisy_ts)
     num_samples = 5
 
+    def test_wrong_likelihood(self):
+        with pytest.raises(ValueError) as exc:
+            _ = LinearRegressionModel(lags=1, likelihood="does_not_exist")
+        assert (
+            str(exc.value)
+            == "Invalid `likelihood='does_not_exist'`. Must be one of ['quantile', 'poisson']"
+        )
+
+        with pytest.raises(ValueError) as exc:
+            _ = _get_likelihood(
+                likelihood="does_not_exist",
+                n_outputs=1,
+                random_state=None,
+                quantiles=None,
+            )
+        assert (
+            str(exc.value)
+            == "Invalid `likelihood='does_not_exist'`. Must be one of ('gaussian', 'poisson', 'quantile')"
+        )
+
     @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
     def test_fit_predict_determinism(self, config):
         (model_cls, model_kwargs, _), mode = config
         # whether the first predictions of two models initiated with the same random state are the same
         model_kwargs["multi_models"] = mode
         model = model_cls(**model_kwargs)
+
+        likelihood_expected = model_kwargs["likelihood"]
+        # catboost has two modes for gaussian
+        if likelihood_expected == "RMSEWithUncertainty":
+            likelihood_expected = "gaussian"
+        likelihood = model.likelihood
+        assert isinstance(likelihood, Likelihood)
+        assert likelihood.type == LikelihoodType(likelihood_expected)
         model.fit(self.constant_noisy_multivar_ts)
         pred1 = model.predict(n=10, num_samples=2).values()
 
