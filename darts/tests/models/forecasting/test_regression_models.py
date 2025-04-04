@@ -15,6 +15,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
 
 import darts
+import darts.utils.utils
 from darts import TimeSeries
 from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
@@ -26,7 +27,6 @@ from darts.models import (
     CatBoostModel,
     LightGBMModel,
     LinearRegressionModel,
-    NotImportedModule,
     RandomForest,
     RegressionModel,
     XGBModel,
@@ -35,7 +35,7 @@ from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
 from darts.utils.likelihood_models.sklearn import _get_likelihood
 from darts.utils.multioutput import MultiOutputRegressor
-from darts.utils.utils import generate_index
+from darts.utils.utils import NotImportedModule, generate_index
 
 logger = get_logger(__name__)
 

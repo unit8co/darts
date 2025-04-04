@@ -10,7 +10,7 @@ from darts.explainability.explainability_result import (
 )
 from darts.explainability.shap_explainer import ShapExplainer
 from darts.logging import get_logger
-from darts.models.utils import NotImportedModule
+from darts.utils.utils import NotImportedModule
 
 logger = get_logger(__name__)
 try:

@@ -21,9 +21,9 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
     LocalForecastingModel,
 )
-from darts.models.utils import TORCH_AVAILABLE
 from darts.timeseries import TimeSeries, concatenate
 from darts.utils.ts_utils import series2seq
+from darts.utils.utils import TORCH_AVAILABLE
 
 if TORCH_AVAILABLE:
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel

@@ -20,11 +20,11 @@ from darts.models import (
     ExponentialSmoothing,
     LightGBMModel,
     LinearRegressionModel,
-    NotImportedModule,
     RegressionModel,
     XGBModel,
 )
 from darts.utils.timeseries_generation import linear_timeseries
+from darts.utils.utils import NotImportedModule
 
 lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
 cb_available = not isinstance(CatBoostModel, NotImportedModule)
