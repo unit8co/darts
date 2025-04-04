@@ -581,7 +581,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         num_blocks
             The number of mixer blocks in the model. The number includes the first block and all subsequent blocks.
         activation
-            The activation function to use in the mixer layers (default="ReLU"`).
+            The activation function to use in the mixer layers (default='ReLU').
             Supported activations: ['ReLU', 'RReLU', 'PReLU', 'ELU', 'Softplus', 'Tanh', 'SELU', 'LeakyReLU', 'Sigmoid',
             'GELU']
         dropout
