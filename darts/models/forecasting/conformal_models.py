@@ -13,6 +13,12 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import Any, BinaryIO, Callable, Optional, Union
 
+from darts.utils.likelihood_models.base import (
+    Likelihood,
+    LikelihoodType,
+    quantile_names,
+)
+
 try:
     from typing import Literal
 except ImportError:
@@ -46,9 +52,7 @@ from darts.utils.ts_utils import (
 from darts.utils.utils import (
     _check_quantiles,
     generate_index,
-    likelihood_component_names,
     n_steps_between,
-    quantile_names,
     random_method,
     sample_from_quantiles,
 )
@@ -180,7 +184,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
         self.cal_num_samples = (
             cal_num_samples if model.supports_probabilistic_prediction else 1
         )
-        self._likelihood = "quantile"
+        self._likelihood = Likelihood(
+            likelihood_type=LikelihoodType.Quantile,
+            parameter_names=quantile_names(quantiles),
+        )
         self._fit_called = True
 
     def fit(
@@ -1251,7 +1258,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 inner_iterator = enumerate(s_hfcs[first_fc_idx:last_fc_idx:rel_stride])
 
             comp_names_out = (
-                self._cp_component_names(series_)
+                self.likelihood.component_names(series_)
                 if predict_likelihood_parameters
                 else None
             )
@@ -1426,12 +1433,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         """Gives the "per time step" metric and optional metric kwargs used to compute residuals /
         non-conformity scores."""
 
-    def _cp_component_names(self, input_series) -> list[str]:
-        """Gives the component names for generated forecasts."""
-        return likelihood_component_names(
-            input_series.components, quantile_names(self.quantiles)
-        )
-
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         super()._historical_forecasts_sanity_checks(*args, **kwargs, is_conformal=True)
 
@@ -1516,7 +1517,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         return self.model.considers_static_covariates
 
     @property
-    def likelihood(self) -> str:
+    def likelihood(self) -> Likelihood:
         return self._likelihood
 
 

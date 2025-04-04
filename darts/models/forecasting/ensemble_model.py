@@ -8,6 +8,8 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from typing import BinaryIO, Optional, Union
 
+from darts.utils.likelihood_models.base import LikelihoodType
+
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
@@ -563,19 +565,13 @@ class EnsembleModel(GlobalForecastingModel):
         lkl_same_params = True
         tmp_quantiles = None
         for m in self.forecasting_models:
-            # regression model likelihood is a string, torch-based model likelihoods is an object
-            likelihood = getattr(m, "likelihood")
-            is_obj_lkl = not isinstance(likelihood, str)
-            lkl_simplified_name = (
-                likelihood.simplified_name() if is_obj_lkl else likelihood
-            )
-            models_likelihood.add(lkl_simplified_name)
+            likelihood = m.likelihood
+            lkl_type = likelihood.type
+            models_likelihood.add(lkl_type)
 
             # check the quantiles
-            if lkl_simplified_name == "quantile":
-                quantiles: list[str] = (
-                    likelihood.quantiles if is_obj_lkl else m.quantiles
-                )
+            if lkl_type is LikelihoodType.Quantile:
+                quantiles: list[str] = likelihood.quantiles
                 if tmp_quantiles is None:
                     tmp_quantiles = quantiles
                 elif tmp_quantiles != quantiles:
