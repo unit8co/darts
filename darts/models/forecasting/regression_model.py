@@ -1198,7 +1198,7 @@ class RegressionModel(GlobalForecastingModel):
                 points_preds=row,
                 input_series=input_tgt,
                 custom_components=(
-                    self.likelihood.components_names(input_tgt)
+                    self.likelihood.component_names(input_tgt)
                     if predict_likelihood_parameters
                     else None
                 ),

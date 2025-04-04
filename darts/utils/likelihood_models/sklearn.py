@@ -153,37 +153,30 @@ class GaussianLikelihood(SKLearnLikelihood):
         )
 
     def sample(self, model_output: np.ndarray) -> np.ndarray:
-        # shape (n_components * output_chunk_length, n_samples, 2)
+        # shape (n_components * output_chunk_length, n_series * n_samples, 2)
         # [mu, sigma] on the last dimension, grouped by component
         n_entries, n_samples, n_params = model_output.shape
 
-        # treating each component separately
-        mu_sigma_list = [model_output[i, :, :] for i in range(n_entries)]
-
-        list_of_samples = [
-            self._rng.normal(
-                mu_sigma[:, 0],  # mean vector
-                mu_sigma[:, 1],  # diagonal covariance matrix
-            )
-            for mu_sigma in mu_sigma_list
-        ]
-
-        samples_transposed = np.array(list_of_samples).transpose()
-        samples_reshaped = samples_transposed.reshape(n_samples, self._n_outputs, -1)
-
-        return samples_reshaped
+        # get samples (n_components * output_chunk_length, n_series * n_samples)
+        samples = self._rng.normal(
+            model_output[:, :, 0],  # mean
+            model_output[:, :, 1],  # variance
+        )
+        # reshape to (n_series * n_samples, n_components * output_chunk_length)
+        samples = samples.transpose()
+        # reshape to (n_series * n_samples, output_chunk_length, n_components)
+        samples = samples.reshape(n_samples, self._n_outputs, -1)
+        return samples
 
     def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
+        # shape (n_components * output_chunk_length, n_series * n_samples, 2)
         # [mu, sigma] on the last dimension, grouped by component
-        shape = model_output.shape
-        n_samples = shape[1]
+        n_samples = model_output.shape[1]
 
-        # extract mu and sigma for each component
-        mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
-
-        # reshape to (n_samples, output_chunk_length, 2)
-        params_transposed = np.array(mu_sigma_list).transpose()
-        params_reshaped = params_transposed.reshape(n_samples, self._n_outputs, -1)
+        # reshape to (n_series * n_samples, output_chunk_length, n_components)
+        params_reshaped = model_output.transpose(1, 0, 2).reshape(
+            n_samples, self._n_outputs, -1
+        )
         return params_reshaped
 
     def _estimator_predict(
@@ -195,8 +188,8 @@ class GaussianLikelihood(SKLearnLikelihood):
         # returns samples computed from double-valued inputs [mean, variance].
         # `x` is of shape (n_series * n_samples, n_regression_features)
         # `model_output` is of shape:
-        #  - (num_samples, 2): if univariate & output_chunk_length == 1
-        #  - (2, num_samples, n_components * output_chunk_length): otherwise
+        #  - (n_series * n_samples, 2): if univariate & output_chunk_length == 1
+        #  - (2, n_series * n_samples, n_components * output_chunk_length): otherwise
         # where the axis with 2 dims is mu, sigma
         model_output = model.model.predict(x, **kwargs)
         output_dim = len(model_output.shape)
@@ -207,14 +200,14 @@ class GaussianLikelihood(SKLearnLikelihood):
             model_output = np.expand_dims(model_output, axis=0)
         else:
             # we transpose to get mu, sigma couples on last axis
-            # shape becomes: (n_components * output_chunk_length, num_samples, 2)
+            # shape becomes: (n_components * output_chunk_length, n_series * n_samples, 2)
             model_output = model_output.transpose()
 
-        # shape (n_components * output_chunk_length, num_samples, 2)
+        # shape (n_components * output_chunk_length, n_series * n_samples, 2)
         return model_output
 
     def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
-        # shape (n_components * output_chunk_length, num_samples, 2)
+        # shape (n_components * output_chunk_length, n_series * n_samples, 2)
         # [mu, sigma] on the last dimension, grouped by component
         k = model_output.shape[1]
         # extract mu (mean) per component
@@ -252,7 +245,7 @@ class PoissonLikelihood(SKLearnLikelihood):
         )
 
     def sample(self, model_output: np.ndarray) -> np.ndarray:
-        # model_output is of shape (n_series * n_samples, output_chunk_length, n_components)
+        # shape (n_series * n_samples, output_chunk_length, n_components)
         return self._rng.poisson(lam=model_output).astype(float)
 
     def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
@@ -266,7 +259,7 @@ class PoissonLikelihood(SKLearnLikelihood):
         **kwargs,
     ) -> np.ndarray:
         k = x.shape[0]
-        # shape (n_series * n_samples, output_chunk_length, n_components)
+        # returns shape (n_series * n_samples, output_chunk_length, n_components)
         return model.model.predict(x, **kwargs).reshape(k, self._n_outputs, -1)
 
     def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
@@ -383,9 +376,11 @@ class QuantileRegression(SKLearnLikelihood):
         return inter.squeeze(-1)
 
     def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
+        # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
         # quantiles on the last dimension, grouped by component
         k, n_times, n_components, n_quantiles = model_output.shape
         # last dim : [comp_1_q_1, ..., comp_1_q_n, ..., comp_n_q_1, ..., comp_n_q_n]
+        # shape (n_series * n_samples, output_chunk_length, n_components * n_quantiles)
         return model_output.reshape(k, n_times, n_components * n_quantiles)
 
     def _estimator_predict(
@@ -407,7 +402,7 @@ class QuantileRegression(SKLearnLikelihood):
         return model_outputs
 
     def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
-        # [mu, sigma] on the last dimension, grouped by component
+        # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
         k, n_times, n_components, n_quantiles = model_output.shape
         # extract the median quantiles per component
         component_medians = slice(self._median_idx, None, n_quantiles)

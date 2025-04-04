@@ -186,6 +186,7 @@ class CatBoostModel(RegressionModel):
             }
             _check_likelihood(likelihood, list(likelihood_map.keys()))
             if likelihood == "RMSEWithUncertainty":
+                # RMSEWithUncertainty returns mean and variance which is equivalent to gaussian
                 likelihood = "gaussian"
 
             if likelihood == "quantile":

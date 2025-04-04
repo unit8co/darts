@@ -1258,7 +1258,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 inner_iterator = enumerate(s_hfcs[first_fc_idx:last_fc_idx:rel_stride])
 
             comp_names_out = (
-                self.likelihood.components_names(series_)
+                self.likelihood.component_names(series_)
                 if predict_likelihood_parameters
                 else None
             )
