@@ -134,9 +134,19 @@ models_cls_kwargs_errs = [
         NLinearModel,
         {
             "n_epochs": 10,
+            "normalize": False,
             "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
         },
         50.0,
+    ),
+    (
+        NLinearModel,
+        {
+            "n_epochs": 10,
+            "normalize": True,
+            "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
+        },
+        80.0,
     ),
     (
         DLinearModel,
