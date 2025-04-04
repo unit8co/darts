@@ -543,7 +543,7 @@ class NHiTSModel(PastCovariatesTorchModel):
             prediction time).
         activation
             The activation function of encoder/decoder intermediate layer (default='ReLU').
-            Supported activations: ['ReLU','RReLU', 'PReLU', 'Softplus', 'Tanh', 'SELU', 'LeakyReLU',  'Sigmoid']
+            Supported activations: ['ReLU', 'RReLU', 'PReLU', 'ELU', 'Softplus', 'Tanh', 'SELU', 'LeakyReLU', 'Sigmoid', 'GELU']
         MaxPool1d
             Use MaxPool1d pooling. False uses AvgPool1d
         **kwargs
