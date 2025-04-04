@@ -581,8 +581,9 @@ class TSMixerModel(MixedCovariatesTorchModel):
         num_blocks
             The number of mixer blocks in the model. The number includes the first block and all subsequent blocks.
         activation
-            The name of the activation function to use in the mixer layers. Default: `"ReLU"`. Must be one of
-            `"ReLU", "RReLU", "PReLU", "ELU", "Softplus", "Tanh", "SELU", "LeakyReLU", "Sigmoid", "GELU"`.
+            The activation function to use in the mixer layers (default="ReLU"`).
+            Supported activations: ['ReLU', 'RReLU', 'PReLU', 'ELU', 'Softplus', 'Tanh', 'SELU', 'LeakyReLU', 'Sigmoid',
+            'GELU']
         dropout
             Fraction of neurons affected by dropout. This is compatible with Monte Carlo dropout at inference time
             for model uncertainty estimation (enabled with ``mc_dropout=True`` at prediction time).
