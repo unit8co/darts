@@ -54,8 +54,8 @@ from darts.utils.likelihood_models.torch import (
     CauchyLikelihood,
     GaussianLikelihood,
     LaplaceLikelihood,
-    Likelihood,
     QuantileRegression,
+    TorchLikelihood,
 )
 
 kwargs = {
@@ -2302,7 +2302,7 @@ class TestTorchForecastingModel:
         model_name: str = "unitest_model",
         add_encoders: Optional[dict] = None,
         save_checkpoints: bool = False,
-        likelihood: Optional[Likelihood] = None,
+        likelihood: Optional[TorchLikelihood] = None,
         output_chunk_length: int = 1,
         **kwargs,
     ):

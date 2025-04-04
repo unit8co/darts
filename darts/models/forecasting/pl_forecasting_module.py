@@ -17,7 +17,7 @@ from joblib import Parallel, delayed
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.components.layer_norm_variants import RINorm
 from darts.timeseries import TimeSeries
-from darts.utils.likelihood_models.torch import Likelihood
+from darts.utils.likelihood_models.torch import TorchLikelihood
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.torch import MonteCarloDropout
 
@@ -79,7 +79,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         torch_metrics: Optional[
             Union[torchmetrics.Metric, torchmetrics.MetricCollection]
         ] = None,
-        likelihood: Optional[Likelihood] = None,
+        likelihood: Optional[TorchLikelihood] = None,
         optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
         optimizer_kwargs: Optional[dict] = None,
         lr_scheduler_cls: Optional[torch.optim.lr_scheduler._LRScheduler] = None,

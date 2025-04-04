@@ -1,6 +1,6 @@
 """
-Likelihoods for Darts' Regression Models
------------------
+Likelihoods for Darts' `RegressionModel`
+----------------------------------------
 """
 
 from abc import ABC, abstractmethod
@@ -10,7 +10,7 @@ import numpy as np
 
 from darts.logging import get_logger, raise_log
 from darts.utils.likelihood_models.base import (
-    BaseLikelihood,
+    Likelihood,
     LikelihoodType,
     quantile_names,
 )
@@ -19,7 +19,7 @@ from darts.utils.utils import _check_quantiles
 logger = get_logger(__name__)
 
 
-class SKLearnLikelihood(BaseLikelihood, ABC):
+class SKLearnLikelihood(Likelihood, ABC):
     def __init__(
         self,
         likelihood_type: LikelihoodType,

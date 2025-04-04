@@ -1,6 +1,6 @@
 """
-Likelihood Models
------------------
+Likelihood Models for Darts' `TorchForecastingModel`
+----------------------------------------------------
 
 The likelihood models contain all the logic needed to train and use Darts' neural network models in
 a probabilistic way. This essentially means computing an appropriate training loss and sample from the
@@ -57,7 +57,7 @@ from torch.distributions.kl import kl_divergence
 
 from darts.logging import raise_if_not
 from darts.utils.likelihood_models.base import (
-    BaseLikelihood,
+    Likelihood,
     LikelihoodType,
     quantile_names,
 )
@@ -94,7 +94,7 @@ def _check_in_open_0_1_intvl(param, param_name=""):
     _check(param, lambda p: 0 < p < 1, param_name, "in the open interval (0, 1)")
 
 
-class Likelihood(BaseLikelihood, ABC):
+class TorchLikelihood(Likelihood, ABC):
     def __init__(
         self,
         likelihood_type: LikelihoodType,
@@ -222,7 +222,7 @@ class Likelihood(BaseLikelihood, ABC):
         }
 
 
-class GaussianLikelihood(Likelihood):
+class GaussianLikelihood(TorchLikelihood):
     def __init__(
         self, prior_mu=None, prior_sigma=None, prior_strength=1.0, beta_nll=0.0
     ):
@@ -304,7 +304,7 @@ class GaussianLikelihood(Likelihood):
         return mu, sigma
 
 
-class PoissonLikelihood(Likelihood):
+class PoissonLikelihood(TorchLikelihood):
     def __init__(self, prior_lambda=None, prior_strength=1.0):
         """
         Poisson distribution. Can typically be used to model event counts during time intervals, when the events
@@ -358,7 +358,7 @@ class PoissonLikelihood(Likelihood):
         return lmbda
 
 
-class NegativeBinomialLikelihood(Likelihood):
+class NegativeBinomialLikelihood(TorchLikelihood):
     def __init__(self):
         """
         Negative Binomial distribution.
@@ -415,7 +415,7 @@ class NegativeBinomialLikelihood(Likelihood):
         return mu, alpha
 
 
-class BernoulliLikelihood(Likelihood):
+class BernoulliLikelihood(TorchLikelihood):
     def __init__(self, prior_p=None, prior_strength=1.0):
         """
         Bernoulli distribution.
@@ -460,7 +460,7 @@ class BernoulliLikelihood(Likelihood):
         return p
 
 
-class BetaLikelihood(Likelihood):
+class BetaLikelihood(TorchLikelihood):
     def __init__(self, prior_alpha=None, prior_beta=None, prior_strength=1.0):
         """
         Beta distribution.
@@ -511,7 +511,7 @@ class BetaLikelihood(Likelihood):
         return alpha, beta
 
 
-class CauchyLikelihood(Likelihood):
+class CauchyLikelihood(TorchLikelihood):
     def __init__(self, prior_xzero=None, prior_gamma=None, prior_strength=1.0):
         """
         Cauchy Distribution.
@@ -567,7 +567,7 @@ class CauchyLikelihood(Likelihood):
         return xzero, gamma
 
 
-class ContinuousBernoulliLikelihood(Likelihood):
+class ContinuousBernoulliLikelihood(TorchLikelihood):
     def __init__(self, prior_lambda=None, prior_strength=1.0):
         """
         Continuous Bernoulli distribution.
@@ -613,7 +613,7 @@ class ContinuousBernoulliLikelihood(Likelihood):
         return lmbda
 
 
-class DirichletLikelihood(Likelihood):
+class DirichletLikelihood(TorchLikelihood):
     def __init__(self, prior_alphas=None, prior_strength=1.0):
         """
         Dirichlet distribution.
@@ -665,7 +665,7 @@ class DirichletLikelihood(Likelihood):
         return alphas
 
 
-class ExponentialLikelihood(Likelihood):
+class ExponentialLikelihood(TorchLikelihood):
     def __init__(self, prior_lambda=None, prior_strength=1.0):
         """
         Exponential distribution.
@@ -710,7 +710,7 @@ class ExponentialLikelihood(Likelihood):
         return lmbda
 
 
-class GammaLikelihood(Likelihood):
+class GammaLikelihood(TorchLikelihood):
     def __init__(self, prior_alpha=None, prior_beta=None, prior_strength=1.0):
         """
         Gamma distribution.
@@ -760,7 +760,7 @@ class GammaLikelihood(Likelihood):
         return alpha, beta
 
 
-class GeometricLikelihood(Likelihood):
+class GeometricLikelihood(TorchLikelihood):
     def __init__(self, prior_p=None, prior_strength=1.0):
         """
         Geometric distribution.
@@ -805,7 +805,7 @@ class GeometricLikelihood(Likelihood):
         return p
 
 
-class GumbelLikelihood(Likelihood):
+class GumbelLikelihood(TorchLikelihood):
     def __init__(self, prior_mu=None, prior_beta=None, prior_strength=1.0):
         """
         Gumbel distribution.
@@ -854,7 +854,7 @@ class GumbelLikelihood(Likelihood):
         return mu, beta
 
 
-class HalfNormalLikelihood(Likelihood):
+class HalfNormalLikelihood(TorchLikelihood):
     def __init__(self, prior_sigma=None, prior_strength=1.0):
         """
         Half-normal distribution.
@@ -899,7 +899,7 @@ class HalfNormalLikelihood(Likelihood):
         return sigma
 
 
-class LaplaceLikelihood(Likelihood):
+class LaplaceLikelihood(TorchLikelihood):
     def __init__(self, prior_mu=None, prior_b=None, prior_strength=1.0):
         """
         Laplace distribution.
@@ -948,7 +948,7 @@ class LaplaceLikelihood(Likelihood):
         return mu, b
 
 
-class LogNormalLikelihood(Likelihood):
+class LogNormalLikelihood(TorchLikelihood):
     def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.0):
         """
         Log-normal distribution.
@@ -997,7 +997,7 @@ class LogNormalLikelihood(Likelihood):
         return mu, sigma
 
 
-class WeibullLikelihood(Likelihood):
+class WeibullLikelihood(TorchLikelihood):
     def __init__(self, prior_strength=1.0):
         """
         Weibull distribution.
@@ -1041,7 +1041,7 @@ class WeibullLikelihood(Likelihood):
         return lmbda, k
 
 
-class QuantileRegression(Likelihood):
+class QuantileRegression(TorchLikelihood):
     def __init__(self, quantiles: Optional[list[float]] = None):
         """
         The "likelihood" corresponding to quantile regression.

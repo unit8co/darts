@@ -32,7 +32,7 @@ from darts.models import (
     XGBModel,
 )
 from darts.utils import timeseries_generation as tg
-from darts.utils.likelihood_models.base import BaseLikelihood, LikelihoodType
+from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
 from darts.utils.likelihood_models.sklearn import _get_likelihood
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import generate_index
@@ -3726,7 +3726,7 @@ class TestProbabilisticRegressionModels:
         if likelihood_expected == "RMSEWithUncertainty":
             likelihood_expected = "gaussian"
         likelihood = model.likelihood
-        assert isinstance(likelihood, BaseLikelihood)
+        assert isinstance(likelihood, Likelihood)
         assert likelihood.type == LikelihoodType(likelihood_expected)
         model.fit(self.constant_noisy_multivar_ts)
         pred1 = model.predict(n=10, num_samples=2).values()

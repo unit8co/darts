@@ -14,7 +14,7 @@ from collections.abc import Sequence
 from typing import Any, BinaryIO, Callable, Optional, Union
 
 from darts.utils.likelihood_models.base import (
-    BaseLikelihood,
+    Likelihood,
     LikelihoodType,
     quantile_names,
 )
@@ -184,7 +184,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         self.cal_num_samples = (
             cal_num_samples if model.supports_probabilistic_prediction else 1
         )
-        self._likelihood = BaseLikelihood(
+        self._likelihood = Likelihood(
             likelihood_type=LikelihoodType.Quantile,
             parameter_names=quantile_names(quantiles),
         )
@@ -1517,7 +1517,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         return self.model.considers_static_covariates
 
     @property
-    def likelihood(self) -> BaseLikelihood:
+    def likelihood(self) -> Likelihood:
         return self._likelihood
 
 

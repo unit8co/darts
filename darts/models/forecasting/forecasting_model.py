@@ -28,7 +28,7 @@ from random import sample
 from typing import Any, BinaryIO, Callable, Literal, Optional, Union
 
 from darts.utils.likelihood_models.base import (
-    BaseLikelihood,
+    Likelihood,
     likelihood_component_names,
     quantile_interval_names,
     quantile_names,
@@ -211,7 +211,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return True
 
     @property
-    def likelihood(self) -> Optional[BaseLikelihood]:
+    def likelihood(self) -> Optional[Likelihood]:
         """Returns the likelihood (if any) that the model uses for probabilistic forecasts."""
         return None
 

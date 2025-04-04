@@ -27,7 +27,7 @@ class LikelihoodType(Enum):
     Quantile = "quantile"
 
 
-class BaseLikelihood:
+class Likelihood:
     def __init__(
         self,
         likelihood_type: LikelihoodType,
@@ -82,7 +82,7 @@ class BaseLikelihood:
         # ignore the attributes listed in `ignore_attrs_equality`
         return {k: v for k, v in likelihood.__dict__.items() if k not in ignore_attrs}
 
-    def __eq__(self, other: "BaseLikelihood") -> bool:
+    def __eq__(self, other: "Likelihood") -> bool:
         """Defines (in)equality between two likelihood objects."""
         # ignore the attributes listed in `ignore_attrs_equality`
         if type(other) is type(self):
