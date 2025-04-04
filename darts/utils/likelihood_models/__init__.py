@@ -4,7 +4,7 @@ Likelihood Models
 """
 
 from darts.logging import get_logger
-from darts.models.utils import NotImportedModule
+from darts.utils.utils import NotImportedModule
 
 logger = get_logger(__name__)
 

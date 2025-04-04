@@ -44,7 +44,7 @@ try:
         TrainingDataset,
     )
 except ImportError:  # Torch is not available
-    from darts.models.utils import NotImportedModule
+    from darts.utils.utils import NotImportedModule
 
     HorizonBasedDataset = NotImportedModule(module_name="(Py)Torch", warn=False)
     DualCovariatesInferenceDataset = NotImportedModule(
