@@ -3596,6 +3596,12 @@ class TestRegressionModels:
                 model_cat_indices = model.model.get_cat_feature_indices()
                 kwargs_cat_indices = intercepted_args["kwargs"]["cat_features"]
 
+                assert (
+                    len(model_cat_indices)
+                    == len(kwargs_cat_indices)
+                    == len(expected_cat_indices)
+                )
+
                 for mci, kci, eci in zip(
                     model_cat_indices, kwargs_cat_indices, expected_cat_indices
                 ):
