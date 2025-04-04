@@ -143,15 +143,15 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
             as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as
             categorical must be integer-encoded. For more information on how LightGBM handles categorical
             features, visit: `Categorical feature support documentation
-            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_
+            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
             treated as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that
-            are specified as categorical must be integer-encoded
+            are specified as categorical must be integer-encoded.
         categorical_static_covariates
             Optionally, string or list of strings specifying the static covariates that should be treated as categorical
             by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as categorical
-            must be integer-encoded
+            must be integer-encoded.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
 
@@ -362,17 +362,3 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         Returns the name of the categorical features parameter from model's `fit` method .
         """
         return "categorical_feature"
-
-    def _format_samples(self, samples, labels=None):
-        """
-        LightGBM do not require any specific formatting of the samples.
-        However categorical features will be cast to int32 by LightGBM. To prevent unexpected behavior
-        we check that the categorical features are integer-encoded, positive and less than Int32.MaxValue.
-        See `lgbm categorical feature parameter
-            <https://lightgbm.readthedocs.io/en/latest/Parameters.html#categorical_feature>`_
-
-        """
-        if len(self._categorical_indices) != 0:
-            self._validate_categorical_components(samples)
-
-        return samples, labels

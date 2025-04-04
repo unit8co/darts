@@ -30,7 +30,7 @@ if their static covariates do not have the same size, the shorter ones are padde
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Sequence
-from typing import Callable, Literal, Optional, Union
+from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -366,7 +366,7 @@ class RegressionModel(GlobalForecastingModel):
                     raise_log(
                         ValueError(
                             f"`{lags_name}` - `{comp_name}`: must be either a {supported_types}. "
-                            f"Given : {type(comp_lags)}.",
+                            f"Given : {type(comp_lags)}."
                         ),
                         logger,
                     )
@@ -683,9 +683,11 @@ class RegressionModel(GlobalForecastingModel):
 
         return features, labels, sample_weights
 
-    def _format_samples(self, samples: np.ndarray, labels: Optional[np.ndarray] = None):
+    def _format_samples(
+        self, samples: np.ndarray, labels: Optional[np.ndarray] = None
+    ) -> tuple[Any, Any]:
         """
-        Let subclasses override this method to format the samples and labels before fitting the model.
+        Subclasses can override this method to format the samples and labels before fit and predict.
         """
         return samples, labels
 
@@ -1885,7 +1887,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
         """
         Returns the name of the categorical features parameter from model's `fit` method .
         """
-        pass
 
     def _get_categorical_features(
         self,
@@ -1902,6 +1903,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
         2. Get the indices of the categorical features in the list of features.
         """
         categorical_covariates = [
+            [],  # currently no categorical target components allowed
             self.categorical_past_covariates
             if self.categorical_past_covariates
             else [],
@@ -1913,66 +1915,77 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
             else [],
         ]
 
-        # If no categorical covariates are declared, return empty lists
-        if sum(map(len, categorical_covariates)) == 0:
+        # if no categorical covariates are declared, return empty lists
+        if sum(len(cat_cov) for cat_cov in categorical_covariates) == 0:
             return [], []
-        else:
-            target_ts = get_single_series(series)
-            past_covs_ts = get_single_series(past_covariates)
-            fut_covs_ts = get_single_series(future_covariates)
 
-            feature_list = [
+        target_ts = get_single_series(series)
+        past_covs_ts = get_single_series(past_covariates)
+        fut_covs_ts = get_single_series(future_covariates)
+
+        feature_list = [
+            [
+                ("target", component, lag)
+                for lag in self.lags.get("target", [])
+                for component in target_ts.components
+            ],
+            [
+                ("past_cov", component, lag)
+                for lag in self.lags.get("past", [])
+                for component in past_covs_ts.components
+            ],
+            [
+                ("fut_cov", component, lag)
+                for lag in self.lags.get("future", [])
+                for component in fut_covs_ts.components
+            ],
+            (
                 [
-                    ("target", component, lag)
-                    for lag in self.lags.get("target", [])
-                    for component in target_ts.components
-                ],
-                [
-                    ("past_cov", component, lag)
-                    for lag in self.lags.get("past", [])
-                    for component in past_covs_ts.components
-                ],
-                [
-                    ("fut_cov", component, lag)
-                    for lag in self.lags.get("future", [])
-                    for component in fut_covs_ts.components
-                ],
-                (
-                    [
-                        ("static_cov", component, 0)
-                        for component in list(target_ts.static_covariates.columns)
-                    ]
-                    if target_ts.has_static_covariates
-                    else []
-                ),
+                    ("static_cov", component, 0)
+                    for component in list(target_ts.static_covariates.columns)
+                ]
+                if target_ts.has_static_covariates
+                else []
+            ),
+        ]
+
+        # keep track of feature list index to refer to the columns indices
+        index = 0
+        indices = []
+        col_names = []
+        series_type = [
+            "series",
+            "past_covariates",
+            "future_covariates",
+            "static_covariates",
+        ]
+        for cat_covs, features, s_type in zip(
+            categorical_covariates, feature_list, series_type
+        ):
+            # extract all categorical feature indices
+            extracted_categorical_features = []
+            for prefix, component, lag in features:
+                if component in cat_covs:
+                    indices.append(index)
+                    col_names.append(f"{prefix}_{component}_lag{lag}")
+                    extracted_categorical_features.append(component)
+                index += 1
+
+            # check that all cat components were extracted
+            missing_comps = [
+                comp for comp in cat_covs if comp not in extracted_categorical_features
             ]
-
-            # Target feature are not considered for categorical features
-            # Keep track of feature list index to refer to the columns indices
-            index = len(feature_list.pop(0))
-            indices = []
-            col_names = []
-            for cat_covs, features in zip(categorical_covariates, feature_list):
-                extracted_categorical_features = []
-                for i, (prefix, component, lag) in enumerate(features):
-                    if component in cat_covs:
-                        indices.append(index + i)
-                        col_names.append(f"{prefix}_{component}_lag{lag}")
-                        extracted_categorical_features.append(component)
-
-                for comp in cat_covs:
-                    if comp not in extracted_categorical_features:
-                        raise_log(
-                            ValueError(
-                                f"Covariate '{comp}' is declared as categorical but not found in the features list. "
-                                f"Available feature(s): {set([comp for _, comp, _ in features])}"
-                            ),
-                            logger,
-                        )
-
-                index += len(features)
-
-            return indices, col_names
+            if missing_comps:
+                raise_log(
+                    ValueError(
+                        f"Some `categorical_{s_type}` components "
+                        f"({missing_comps}) declared at model creation are "
+                        f"not present in the `{s_type}` passed to the `fit()` call. "
+                        f"Available feature(s) are: {set([comp for _, comp, _ in features])}"
+                    ),
+                    logger=logger,
+                )
+        return indices, col_names
 
     def _fit_model(
         self,
@@ -2016,12 +2029,17 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
             raise_log(
                 ValueError(
                     "Categorical features must be integer-encoded, decimal values found instead."
-                )
+                ),
+                logger=logger,
             )
 
-    @abstractmethod
-    def _format_samples(self, samples: np.ndarray, labels: Optional[np.ndarray] = None):
+    def _format_samples(
+        self, samples: np.ndarray, labels: Optional[np.ndarray] = None
+    ) -> tuple[Any, Any]:
         """
-        Format the categorical columns listed in self._categorical_indices accordingly to the model's requirements.
+        Validate and format the categorical columns listed in self._categorical_indices accordingly to the model's
+        requirements.
         """
-        pass
+        if len(self._categorical_indices) != 0:
+            self._validate_categorical_components(samples)
+        return samples, labels

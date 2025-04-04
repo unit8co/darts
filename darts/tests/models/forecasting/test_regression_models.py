@@ -3456,7 +3456,8 @@ class TestRegressionModels:
                 past_covariates=past_covariates,
             )
         assert str(error_msg.value).startswith(
-            "Covariate 'does_not_exist' is declared as categorical but not found in the features list."
+            "Some `categorical_past_covariates` components (['does_not_exist']) declared at model creation "
+            "are not present in the `past_covariates` passed to the `fit()` call."
         )
 
         # categorical static covariate does not exist in static covariates
@@ -3475,7 +3476,8 @@ class TestRegressionModels:
                 past_covariates=past_covariates,
             )
         assert str(error_msg.value).startswith(
-            "Covariate 'does_not_exist' is declared as categorical but not found in the features list."
+            "Some `categorical_static_covariates` components (['does_not_exist']) declared at model creation "
+            "are not present in the `static_covariates` passed to the `fit()` call."
         )
 
         # categorical covariate contains non-integers

@@ -8,7 +8,7 @@ This implementation comes with the ability to produce probabilistic forecasts.
 """
 
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -141,11 +141,12 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
             Optionally, component name or list of component names specifying the past covariates that should be treated
             as categorical by the underlying `CatBoostRegressor`. The components that are specified as categorical
             must be integer-encoded. For more information on how CatBoost handles categorical features,
-            visit: `Categorical feature support documentatio <https://catboost.ai/docs/en/features/categorical-features>`_
+            visit: `Categorical feature support documentatio
+            <https://catboost.ai/docs/en/features/categorical-features>`_.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
             treated as categorical by the underlying `CatBoostRegressor`. The components that
-            are specified as categorical must be integer-encoded
+            are specified as categorical must be integer-encoded.
         categorical_static_covariates
             Optionally, string or list of strings specifying the static covariates that should be treated as categorical
             by the underlying `CatBoostRegressor`. The components that
@@ -367,19 +368,19 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
                     **kwargs,
                 )
 
-    def _format_samples(self, samples, labels=None):
+    def _format_samples(
+        self, samples: np.ndarray, labels: Optional[np.ndarray] = None
+    ) -> tuple[Any, Any]:
         """
         CatBoost currently only supports categorical features as int.
         If categorical features are specified, the samples are converted into a pandas DataFrame and categorical
         columns are cast to integer.
         """
-        # Tranforms into pandas df and cast specific columns to categorical
-
+        samples, labels = super()._format_samples(samples, labels=labels)
         if len(self._categorical_indices) != 0:
-            self._validate_categorical_components(samples)
+            # transform into pandas df and cast categorical columns to int
             samples = pd.DataFrame(samples)
             samples = samples.astype({col: int for col in self._categorical_indices})
-
         return samples, labels
 
     def _likelihood_components_names(
