@@ -27,7 +27,6 @@ from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
     NaiveSeasonal,
-    NotImportedModule,
     StatsForecastAutoARIMA,
 )
 from darts.models.forecasting.forecasting_model import (
@@ -41,6 +40,7 @@ from darts.utils.likelihood_models.base import (
     quantile_names,
 )
 from darts.utils.ts_utils import SeriesType, get_series_seq_type
+from darts.utils.utils import NotImportedModule
 
 if TORCH_AVAILABLE:
     import torch

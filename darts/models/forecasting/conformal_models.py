@@ -38,7 +38,6 @@ from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_log
 from darts.metrics.metrics import METRIC_TYPE
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.models.utils import TORCH_AVAILABLE
 from darts.utils import _build_tqdm_iterator, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _adjust_historical_forecasts_time_index,
@@ -50,6 +49,7 @@ from darts.utils.ts_utils import (
     series2seq,
 )
 from darts.utils.utils import (
+    TORCH_AVAILABLE,
     _check_quantiles,
     generate_index,
     n_steps_between,
