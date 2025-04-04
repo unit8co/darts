@@ -1,5 +1,6 @@
 import logging
 from itertools import product
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -17,6 +18,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
+import darts
 from darts.logging import get_logger
 from darts.models.forecasting.catboost_model import CatBoostCategoricalModel
 from darts.models.forecasting.categorical_model import CategoricalModel
@@ -514,3 +516,60 @@ class TestCategoricalForecasting:
                     )
                     for message in caplog.messages
                 ])
+
+    @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
+    def test_categorical_target_passed_to_fit_correctly(self, clf_params):
+        expected_cat_index = [0, 1]
+
+        clf, kwargs = clf_params
+        model = clf(lags=2, lags_past_covariates=2, **kwargs)
+
+        intercepted_args = {}
+        original_fit = model.model.fit
+
+        def intercept_fit_args(*args, **kwargs):
+            intercepted_args["args"] = args
+            intercepted_args["kwargs"] = kwargs
+            return original_fit(*args, **kwargs)
+
+        if model._is_target_categorical:
+            if clf == CatBoostCategoricalModel:
+                with patch.object(
+                    darts.models.forecasting.catboost_model.CatBoostClassifier,
+                    "fit",
+                    side_effect=intercept_fit_args,
+                ):
+                    model.fit(self.sine_univariate1_cat, self.sine_univariate2)
+
+                    model_cat_indices = model.model.get_cat_feature_indices()
+                    kwargs_cat_indices = intercepted_args["kwargs"]["cat_features"]
+
+                    assert (
+                        len(model_cat_indices)
+                        == len(kwargs_cat_indices)
+                        == len(expected_cat_index)
+                    )
+
+                    for mci, kci, eci in zip(
+                        model_cat_indices, kwargs_cat_indices, expected_cat_index
+                    ):
+                        assert mci == kci == eci
+
+                    X, y = intercepted_args["args"]
+                    # all categorical features should be encoded as integers
+                    for col in X[model_cat_indices].columns:
+                        assert X[col].dtype == int
+            elif clf == LightGBMCategoricalModel:
+                with patch.object(
+                    darts.models.forecasting.lgbm.lgb.LGBMClassifier,
+                    "fit",
+                    side_effect=intercept_fit_args,
+                ):
+                    model.fit(self.sine_univariate1_cat, self.sine_univariate2)
+
+                    cat_param_name = model._categorical_fit_param
+                    assert (
+                        intercepted_args["kwargs"][cat_param_name] == expected_cat_index
+                    )
+            else:
+                assert False, f"{clf} need to be tested for fit arguments"
