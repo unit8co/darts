@@ -8,13 +8,15 @@ This implementation comes with the ability to produce probabilistic forecasts.
 """
 
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
+import numpy as np
+import pandas as pd
 from catboost import CatBoostRegressor, Pool
 
 from darts.logging import get_logger
 from darts.models.forecasting.regression_model import (
-    RegressionModel,
+    RegressionModelWithCategoricalCovariates,
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
@@ -27,7 +29,7 @@ from darts.utils.likelihood_models.sklearn import (
 logger = get_logger(__name__)
 
 
-class CatBoostModel(RegressionModel):
+class CatBoostModel(RegressionModelWithCategoricalCovariates):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -41,6 +43,9 @@ class CatBoostModel(RegressionModel):
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        categorical_past_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_future_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_static_covariates: Optional[Union[str, list[str]]] = None,
         **kwargs,
     ):
         """CatBoost Model
@@ -137,6 +142,20 @@ class CatBoostModel(RegressionModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        categorical_past_covariates
+            Optionally, component name or list of component names specifying the past covariates that should be treated
+            as categorical by the underlying `CatBoostRegressor`. The components that are specified as categorical
+            must be integer-encoded. For more information on how CatBoost handles categorical features,
+            visit: `Categorical feature support documentatio
+            <https://catboost.ai/docs/en/features/categorical-features>`_.
+        categorical_future_covariates
+            Optionally, component name or list of component names specifying the future covariates that should be
+            treated as categorical by the underlying `CatBoostRegressor`. The components that
+            are specified as categorical must be integer-encoded.
+        categorical_static_covariates
+            Optionally, string or list of strings specifying the static covariates that should be treated as categorical
+            by the underlying `CatBoostRegressor`. The components that
+            are specified as categorical must be integer-encoded.
         **kwargs
             Additional keyword arguments passed to `catboost.CatBoostRegressor`.
             Native multi-output support can be achieved by using an appropriate `loss_function` ('MultiRMSE',
@@ -215,6 +234,9 @@ class CatBoostModel(RegressionModel):
             multi_models=multi_models,
             model=CatBoostRegressor(**kwargs),
             use_static_covariates=use_static_covariates,
+            categorical_past_covariates=categorical_past_covariates,
+            categorical_future_covariates=categorical_future_covariates,
+            categorical_static_covariates=categorical_static_covariates,
         )
 
         # if no loss provided, get the default loss from the model
@@ -385,3 +407,25 @@ class CatBoostModel(RegressionModel):
         return CatBoostRegressor._is_multiregression_objective(
             self.kwargs.get("loss_function")
         )
+
+    @property
+    def _categorical_fit_param(self) -> Optional[str]:
+        """
+        Returns the name of the categorical features parameter from model's `fit` method .
+        """
+        return "cat_features"
+
+    def _format_samples(
+        self, samples: np.ndarray, labels: Optional[np.ndarray] = None
+    ) -> tuple[Any, Any]:
+        """
+        CatBoost currently only supports categorical features as int.
+        If categorical features are specified, the samples are converted into a pandas DataFrame and categorical
+        columns are cast to integer.
+        """
+        samples, labels = super()._format_samples(samples, labels=labels)
+        if len(self._categorical_indices) != 0:
+            # transform into pandas df and cast categorical columns to int
+            samples = pd.DataFrame(samples)
+            samples = samples.astype({col: int for col in self._categorical_indices})
+        return samples, labels

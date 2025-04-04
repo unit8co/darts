@@ -144,18 +144,18 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates):
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         categorical_past_covariates
             Optionally, component name or list of component names specifying the past covariates that should be treated
-            as categorical by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the components that
-            are treated as categorical are integer-encoded. For more information on how LightGBM handles categorical
+            as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as
+            categorical must be integer-encoded. For more information on how LightGBM handles categorical
             features, visit: `Categorical feature support documentation
-            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_
+            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
-            treated as categorical by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the components
-            that are treated as categorical are integer-encoded.
+            treated as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that
+            are specified as categorical must be integer-encoded.
         categorical_static_covariates
             Optionally, string or list of strings specifying the static covariates that should be treated as categorical
-            by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the static covariates that are
-            treated as categorical are integer-encoded.
+            by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as categorical
+            must be integer-encoded.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
 
@@ -338,3 +338,10 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates):
                 else self.output_chunk_length
             ),
         )
+
+    @property
+    def _categorical_fit_param(self) -> Optional[str]:
+        """
+        Returns the name of the categorical features parameter from model's `fit` method .
+        """
+        return "categorical_feature"
