@@ -1,6 +1,6 @@
 """
-Likelihood Models for Darts' `TorchForecastingModel`
-----------------------------------------------------
+Likelihoods for `TorchForecastingModel`
+---------------------------------------
 
 The likelihood models contain all the logic needed to train and use Darts' neural network models in
 a probabilistic way. This essentially means computing an appropriate training loss and sample from the

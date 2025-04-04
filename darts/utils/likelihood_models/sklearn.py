@@ -1,6 +1,6 @@
 """
-Likelihoods for Darts' `RegressionModel`
-----------------------------------------
+Likelihoods for `RegressionModel`
+---------------------------------
 """
 
 from abc import ABC, abstractmethod
