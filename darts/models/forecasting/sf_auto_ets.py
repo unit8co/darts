@@ -1,5 +1,5 @@
 """
-StatsForecastAutoETS
+AutoETS
 -----------
 """
 
@@ -19,7 +19,7 @@ from darts.models.forecasting.forecasting_model import (
 )
 
 
-class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
+class AutoETS(FutureCovariatesLocalForecastingModel):
     def __init__(
         self, *autoets_args, add_encoders: Optional[dict] = None, **autoets_kwargs
     ):
@@ -74,13 +74,13 @@ class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.models import StatsForecastAutoETS
+        >>> from darts.models import AutoETS
         >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
         >>> series = AirPassengersDataset().load()
         >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
         >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
-        >>> # define StatsForecastAutoETS parameters
-        >>> model = StatsForecastAutoETS(season_length=12, model="AZZ")
+        >>> # define AutoETS parameters
+        >>> model = AutoETS(season_length=12, model="AZZ")
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
         >>> pred.values()
