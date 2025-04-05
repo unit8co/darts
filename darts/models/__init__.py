@@ -7,7 +7,7 @@ from darts.logging import get_logger
 
 logger = get_logger(__name__)
 
-from darts.models.utils import NotImportedModule
+from darts.utils.utils import NotImportedModule
 
 try:
     # `lightgbm` needs to be imported first to avoid segmentation fault

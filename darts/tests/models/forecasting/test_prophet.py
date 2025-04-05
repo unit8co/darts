@@ -6,9 +6,9 @@ import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.models import NotImportedModule, Prophet
+from darts.models import Prophet
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import freqs, generate_index
+from darts.utils.utils import NotImportedModule, freqs, generate_index
 
 logger = get_logger(__name__)
 

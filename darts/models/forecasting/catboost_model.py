@@ -8,19 +8,28 @@ This implementation comes with the ability to produce probabilistic forecasts.
 """
 
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
+import pandas as pd
 from catboost import CatBoostRegressor, Pool
 
 from darts.logging import get_logger
-from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
+from darts.models.forecasting.regression_model import (
+    RegressionModelWithCategoricalCovariates,
+    _QuantileModelContainer,
+)
 from darts.timeseries import TimeSeries
+from darts.utils.likelihood_models.sklearn import (
+    QuantileRegression,
+    _check_likelihood,
+    _get_likelihood,
+)
 
 logger = get_logger(__name__)
 
 
-class CatBoostModel(RegressionModel, _LikelihoodMixin):
+class CatBoostModel(RegressionModelWithCategoricalCovariates):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -29,11 +38,14 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
-        likelihood: str = None,
+        likelihood: Optional[str] = None,
         quantiles: list = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        categorical_past_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_future_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_static_covariates: Optional[Union[str, list[str]]] = None,
         **kwargs,
     ):
         """CatBoost Model
@@ -130,6 +142,20 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        categorical_past_covariates
+            Optionally, component name or list of component names specifying the past covariates that should be treated
+            as categorical by the underlying `CatBoostRegressor`. The components that are specified as categorical
+            must be integer-encoded. For more information on how CatBoost handles categorical features,
+            visit: `Categorical feature support documentatio
+            <https://catboost.ai/docs/en/features/categorical-features>`_.
+        categorical_future_covariates
+            Optionally, component name or list of component names specifying the future covariates that should be
+            treated as categorical by the underlying `CatBoostRegressor`. The components that
+            are specified as categorical must be integer-encoded.
+        categorical_static_covariates
+            Optionally, string or list of strings specifying the static covariates that should be treated as categorical
+            by the underlying `CatBoostRegressor`. The components that
+            are specified as categorical must be integer-encoded.
         **kwargs
             Additional keyword arguments passed to `catboost.CatBoostRegressor`.
             Native multi-output support can be achieved by using an appropriate `loss_function` ('MultiRMSE',
@@ -167,33 +193,32 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
-        self._median_idx = None
         self._model_container = None
-        self._rng = None
-        self._likelihood = likelihood
-        self.quantiles = None
 
-        self._output_chunk_length = output_chunk_length
-
-        likelihood_map = {
-            "quantile": None,
-            "poisson": "Poisson",
-            "gaussian": "RMSEWithUncertainty",
-            "RMSEWithUncertainty": "RMSEWithUncertainty",
-        }
-
-        available_likelihoods = list(likelihood_map.keys())
-
+        # parse likelihood
         if likelihood is not None:
-            self._check_likelihood(likelihood, available_likelihoods)
-            self._rng = np.random.default_rng(seed=random_state)  # seed for sampling
+            likelihood_map = {
+                "quantile": None,
+                "poisson": "Poisson",
+                "gaussian": "RMSEWithUncertainty",
+                "RMSEWithUncertainty": "RMSEWithUncertainty",
+            }
+            _check_likelihood(likelihood, list(likelihood_map.keys()))
+            if likelihood == "RMSEWithUncertainty":
+                # RMSEWithUncertainty returns mean and variance which is equivalent to gaussian
+                likelihood = "gaussian"
 
             if likelihood == "quantile":
-                self.quantiles, self._median_idx = self._prepare_quantiles(quantiles)
-                self._model_container = self._get_model_container()
-
+                self._model_container = _QuantileModelContainer()
             else:
                 self.kwargs["loss_function"] = likelihood_map[likelihood]
+
+        self._likelihood = _get_likelihood(
+            likelihood=likelihood,
+            n_outputs=output_chunk_length if multi_models else 1,
+            random_state=random_state,
+            quantiles=quantiles,
+        )
 
         # suppress writing catboost info files when user does not specifically ask to
         if "allow_writing_files" not in kwargs:
@@ -209,6 +234,9 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             multi_models=multi_models,
             model=CatBoostRegressor(**kwargs),
             use_static_covariates=use_static_covariates,
+            categorical_past_covariates=categorical_past_covariates,
+            categorical_future_covariates=categorical_future_covariates,
+            categorical_static_covariates=categorical_static_covariates,
         )
 
         # if no loss provided, get the default loss from the model
@@ -275,10 +303,11 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         **kwargs
             Additional kwargs passed to `catboost.CatboostRegressor.fit()`
         """
-        if self.likelihood == "quantile":
+        likelihood = self.likelihood
+        if isinstance(likelihood, QuantileRegression):
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
-            for quantile in self.quantiles:
+            for quantile in likelihood.quantiles:
                 this_quantile = str(quantile)
                 # translating to catboost argument
                 self.kwargs["loss_function"] = f"Quantile:alpha={this_quantile}"
@@ -316,42 +345,6 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         )
         return self
 
-    def _predict_and_sample(
-        self,
-        x: np.ndarray,
-        num_samples: int,
-        predict_likelihood_parameters: bool,
-        **kwargs,
-    ) -> np.ndarray:
-        """Override of RegressionModel's method to allow for the probabilistic case"""
-        if self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
-            return self._predict_and_sample_likelihood(
-                x, num_samples, "normal", predict_likelihood_parameters, **kwargs
-            )
-        elif self.likelihood is not None:
-            return self._predict_and_sample_likelihood(
-                x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
-            )
-        else:
-            return super()._predict_and_sample(
-                x, num_samples, predict_likelihood_parameters, **kwargs
-            )
-
-    def _likelihood_components_names(
-        self, input_series: TimeSeries
-    ) -> Optional[list[str]]:
-        """Override of RegressionModel's method to support the gaussian/normal likelihood"""
-        if self.likelihood == "quantile":
-            return self._quantiles_generate_components_names(input_series)
-        elif self.likelihood == "poisson":
-            return self._likelihood_generate_components_names(input_series, ["lamba"])
-        elif self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
-            return self._likelihood_generate_components_names(
-                input_series, ["mu", "sigma"]
-            )
-        else:
-            return None
-
     def _add_val_set_to_kwargs(
         self,
         kwargs: dict,
@@ -387,10 +380,6 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         return kwargs
 
     @property
-    def supports_probabilistic_prediction(self) -> bool:
-        return self.likelihood is not None
-
-    @property
     def supports_val_set(self) -> bool:
         return True
 
@@ -418,3 +407,25 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         return CatBoostRegressor._is_multiregression_objective(
             self.kwargs.get("loss_function")
         )
+
+    @property
+    def _categorical_fit_param(self) -> Optional[str]:
+        """
+        Returns the name of the categorical features parameter from model's `fit` method .
+        """
+        return "cat_features"
+
+    def _format_samples(
+        self, samples: np.ndarray, labels: Optional[np.ndarray] = None
+    ) -> tuple[Any, Any]:
+        """
+        CatBoost currently only supports categorical features as int.
+        If categorical features are specified, the samples are converted into a pandas DataFrame and categorical
+        columns are cast to integer.
+        """
+        samples, labels = super()._format_samples(samples, labels=labels)
+        if len(self._categorical_indices) != 0:
+            # transform into pandas df and cast categorical columns to int
+            samples = pd.DataFrame(samples)
+            samples = samples.astype({col: int for col in self._categorical_indices})
+        return samples, labels

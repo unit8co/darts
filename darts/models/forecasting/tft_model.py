@@ -34,7 +34,7 @@ from darts.utils.data import (
     MixedCovariatesTrainingDataset,
     TrainingDataset,
 )
-from darts.utils.likelihood_models import Likelihood, QuantileRegression
+from darts.utils.likelihood_models.torch import QuantileRegression, TorchLikelihood
 
 logger = get_logger(__name__)
 
@@ -670,7 +670,7 @@ class TFTModel(MixedCovariatesTorchModel):
         ] = None,
         add_relative_index: bool = False,
         loss_fn: Optional[nn.Module] = None,
-        likelihood: Optional[Likelihood] = None,
+        likelihood: Optional[TorchLikelihood] = None,
         norm_type: Union[str, nn.Module] = "LayerNorm",
         use_static_covariates: bool = True,
         **kwargs,
