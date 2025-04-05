@@ -1,6 +1,6 @@
 """
-Likelihoods for `RegressionModel`
----------------------------------
+Likelihoods for `StatsForecast` Models
+--------------------------------------
 """
 
 from abc import ABC, abstractmethod
@@ -18,8 +18,11 @@ from darts.utils.utils import _check_quantiles
 
 logger = get_logger(__name__)
 
+# In a normal distribution, 68.27 percentage of values lie within one standard deviation of the mean
+ONE_SIGMA_RULE = 68.27
 
-class SKLearnLikelihood(Likelihood, ABC):
+
+class StatsForecastLikelihood(Likelihood, ABC):
     def __init__(
         self,
         likelihood_type: LikelihoodType,
@@ -77,7 +80,7 @@ class SKLearnLikelihood(Likelihood, ABC):
         kwargs
             Some kwargs passed to the underlying estimator's `predict()` method.
         """
-        model_output = self._estimator_predict(model, x=x, **kwargs)
+        model_output = self._estimator_predict(model, x, **kwargs)
         if predict_likelihood_parameters:
             return self.predict_likelihood_parameters(model_output)
         elif num_samples == 1:
@@ -124,7 +127,7 @@ class SKLearnLikelihood(Likelihood, ABC):
         """
 
 
-class GaussianLikelihood(SKLearnLikelihood):
+class GaussianLikelihood(StatsForecastLikelihood):
     def __init__(
         self,
         n_outputs: int,
@@ -152,21 +155,8 @@ class GaussianLikelihood(SKLearnLikelihood):
             random_state=random_state,
         )
 
-    def sample(self, model_output: np.ndarray) -> np.ndarray:
-        # shape (n_components * output_chunk_length, n_series * n_samples, 2)
-        # [mu, sigma] on the last dimension, grouped by component
-        n_entries, n_samples, n_params = model_output.shape
-
-        # get samples (n_components * output_chunk_length, n_series * n_samples)
-        samples = self._rng.normal(
-            model_output[:, :, 0],  # mean
-            model_output[:, :, 1],  # variance
-        )
-        # reshape to (n_series * n_samples, n_components * output_chunk_length)
-        samples = samples.transpose()
-        # reshape to (n_series * n_samples, output_chunk_length, n_components)
-        samples = samples.reshape(n_samples, self._n_outputs, -1)
-        return samples
+    def sample(self, model_output: np.ndarray, num_samples) -> np.ndarray:
+        return _create_normal_samples(*model_output, num_samples)
 
     def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
         # shape (n_components * output_chunk_length, n_series * n_samples, 2)
@@ -183,28 +173,17 @@ class GaussianLikelihood(SKLearnLikelihood):
         self,
         model,
         x: np.ndarray,
+        n=1,  # TODO
         **kwargs,
     ) -> np.ndarray:
-        # returns samples computed from double-valued inputs [mean, variance].
-        # `x` is of shape (n_series * n_samples, n_regression_features)
-        # `model_output` is of shape:
-        #  - (n_series * n_samples, 2): if univariate & output_chunk_length == 1
-        #  - (2, n_series * n_samples, n_components * output_chunk_length): otherwise
-        # where the axis with 2 dims is mu, sigma
-        model_output = model.model.predict(x, **kwargs)
-        output_dim = len(model_output.shape)
-
-        # univariate & single-chunk output
-        if output_dim <= 2:
-            # embedding well shaped 2D output into 3D
-            model_output = np.expand_dims(model_output, axis=0)
-        else:
-            # we transpose to get mu, sigma couples on last axis
-            # shape becomes: (n_components * output_chunk_length, n_series * n_samples, 2)
-            model_output = model_output.transpose()
-
-        # shape (n_components * output_chunk_length, n_series * n_samples, 2)
-        return model_output
+        kwargs = {"X": x} if x is not None else {}
+        forecast_dict = model.model.predict(
+            h=n,
+            level=(ONE_SIGMA_RULE,),  # ask one std for the confidence interval.
+            **kwargs,
+        )
+        mu, std = _unpack_sf_dict(forecast_dict)
+        return mu, std
 
     def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
         # shape (n_components * output_chunk_length, n_series * n_samples, 2)
@@ -216,7 +195,7 @@ class GaussianLikelihood(SKLearnLikelihood):
         return model_output[:, :, component_medians].reshape(k, self._n_outputs, -1)
 
 
-class PoissonLikelihood(SKLearnLikelihood):
+class PoissonLikelihood(StatsForecastLikelihood):
     def __init__(
         self,
         n_outputs: int,
@@ -268,7 +247,7 @@ class PoissonLikelihood(SKLearnLikelihood):
         return model_output
 
 
-class QuantileRegression(SKLearnLikelihood):
+class QuantileRegression(StatsForecastLikelihood):
     def __init__(
         self,
         n_outputs: int,
@@ -412,6 +391,26 @@ class QuantileRegression(SKLearnLikelihood):
         )
 
 
+def _create_normal_samples(
+    mu: np.ndarray,
+    std: np.ndarray,
+    num_samples: int,
+) -> np.ndarray:
+    """Generate samples assuming a Normal distribution."""
+    samples = np.random.normal(loc=mu, scale=std, size=(num_samples, len(mu))).T
+    samples = np.expand_dims(samples, axis=1)
+    return samples
+
+
+def _unpack_sf_dict(
+    forecast_dict: dict,
+):
+    """Unpack the dictionary that is returned by the StatsForecast 'predict()' method."""
+    mu = forecast_dict["mean"]
+    std = forecast_dict[f"hi-{ONE_SIGMA_RULE}"] - mu
+    return mu, std
+
+
 def _check_likelihood(likelihood: str, available_likelihoods: list[str]):
     """Check whether the likelihood is supported.
 
@@ -436,7 +435,7 @@ def _get_likelihood(
     n_outputs: int,
     random_state: Optional[int],
     quantiles: Optional[list[float]],
-) -> Optional[SKLearnLikelihood]:
+) -> Optional[StatsForecastLikelihood]:
     """Get the `Likelihood` object for `RegressionModel`.
 
     Parameters
@@ -455,8 +454,6 @@ def _get_likelihood(
         return None
     elif likelihood == "gaussian":
         return GaussianLikelihood(n_outputs=n_outputs, random_state=random_state)
-    elif likelihood == "poisson":
-        return PoissonLikelihood(n_outputs=n_outputs, random_state=random_state)
     elif likelihood == "quantile":
         return QuantileRegression(
             n_outputs=n_outputs, random_state=random_state, quantiles=quantiles
