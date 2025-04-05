@@ -1,5 +1,5 @@
 """
-StatsForecastAutoMFLES
+AutoMFLES
 -----------
 """
 
@@ -16,7 +16,7 @@ from darts.models.forecasting.forecasting_model import (
 logger = get_logger(__name__)
 
 
-class StatsForecastAutoMFLES(FutureCovariatesLocalForecastingModel):
+class AutoMFLES(FutureCovariatesLocalForecastingModel):
     def __init__(
         self, *autoMFLES_args, add_encoders: Optional[dict] = None, **autoMFLES_kwargs
     ):
@@ -64,13 +64,13 @@ class StatsForecastAutoMFLES(FutureCovariatesLocalForecastingModel):
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.models import StatsForecastAutoMFLES
+        >>> from darts.models import AutoMFLES
         >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
         >>> series = AirPassengersDataset().load()
         >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
         >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
-        >>> # define StatsForecastAutoMFLES parameters
-        >>> model = StatsForecastAutoMFLES(season_length=12, test_size=12)
+        >>> # define AutoMFLES parameters
+        >>> model = AutoMFLES(season_length=12, test_size=12)
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
         >>> pred.values()
@@ -83,7 +83,7 @@ class StatsForecastAutoMFLES(FutureCovariatesLocalForecastingModel):
         """
         if "prediction_intervals" in autoMFLES_kwargs:
             logger.warning(
-                "StatsForecastAutoMFLES does not support probabilistic forecasting. "
+                "AutoMFLES does not support probabilistic forecasting. "
                 "`prediction_intervals` will be ignored."
             )
 

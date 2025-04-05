@@ -1,5 +1,5 @@
 """
-StatsForecastAutoTBATS
+AutoTBATS
 -----------
 """
 
@@ -14,7 +14,7 @@ from darts.models.components.statsforecast_utils import (
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
 
 
-class StatsForecastAutoTBATS(LocalForecastingModel):
+class AutoTBATS(LocalForecastingModel):
     def __init__(self, *autoTBATS_args, **autoTBATS_kwargs):
         """Auto-TBATS based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -40,10 +40,10 @@ class StatsForecastAutoTBATS(LocalForecastingModel):
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.models import StatsForecastAutoTBATS
+        >>> from darts.models import AutoTBATS
         >>> series = AirPassengersDataset().load()
-        >>> # define StatsForecastAutoTBATS parameters
-        >>> model = StatsForecastAutoTBATS(season_length=12)
+        >>> # define AutoTBATS parameters
+        >>> model = AutoTBATS(season_length=12)
         >>> model.fit(series)
         >>> pred = model.predict(6)
         >>> pred.values()

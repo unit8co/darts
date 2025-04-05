@@ -9,13 +9,13 @@ import pytest
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models import (
+    AutoARIMA,
     ExponentialSmoothing,
     LinearRegressionModel,
     NaiveDrift,
     NaiveEnsembleModel,
     NaiveSeasonal,
     RegressionEnsembleModel,
-    StatsForecastAutoARIMA,
     Theta,
 )
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
@@ -456,7 +456,7 @@ class TestEnsembleModels:
         # AutoARIMA support future covariates only
         local_ensemble_one_covs = NaiveEnsembleModel([
             NaiveDrift(),
-            StatsForecastAutoARIMA(),
+            AutoARIMA(),
         ])
         with pytest.raises(ValueError):
             local_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
@@ -473,7 +473,7 @@ class TestEnsembleModels:
 
         # both models support future covariates only
         mixed_ensemble_future_covs = NaiveEnsembleModel([
-            StatsForecastAutoARIMA(),
+            AutoARIMA(),
             RNNModel(12, n_epochs=1, **tfm_kwargs),
         ])
         mixed_ensemble_future_covs.fit(self.series1, future_covariates=self.series2)
