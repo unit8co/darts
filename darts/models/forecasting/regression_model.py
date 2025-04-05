@@ -27,6 +27,7 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 
+from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Sequence
 from typing import Any, Callable, Literal, Optional, Union
@@ -50,13 +51,9 @@ from darts.utils.historical_forecasts import (
     _optimized_historical_forecasts_last_points_only,
     _process_historical_forecast_input,
 )
+from darts.utils.likelihood_models.sklearn import QuantileRegression, SKLearnLikelihood
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
-from darts.utils.utils import (
-    _check_quantiles,
-    likelihood_component_names,
-    quantile_names,
-)
 
 logger = get_logger(__name__)
 
@@ -555,7 +552,7 @@ class RegressionModel(GlobalForecastingModel):
             return self.model.estimators_[idx_estimator]
 
         # for quantile-models, the estimators are also grouped by quantiles
-        if self.likelihood != "quantile":
+        if not isinstance(self.likelihood, QuantileRegression):
             raise_log(
                 ValueError(
                     "`quantile` is only supported for probabilistic models that "
@@ -682,6 +679,14 @@ class RegressionModel(GlobalForecastingModel):
 
         return features, labels, sample_weights
 
+    def _format_samples(
+        self, samples: np.ndarray, labels: Optional[np.ndarray] = None
+    ) -> tuple[Any, Any]:
+        """
+        Subclasses can override this method to format the samples and labels before fit and predict.
+        """
+        return samples, labels
+
     def _fit_model(
         self,
         series: Sequence[TimeSeries],
@@ -728,6 +733,9 @@ class RegressionModel(GlobalForecastingModel):
                     "`sample_weight` was ignored since underlying regression model's "
                     "`fit()` method does not support it."
                 )
+        training_samples, training_labels = self._format_samples(
+            training_samples, training_labels
+        )
         self.model.fit(
             training_samples, training_labels, **sample_weight_kwargs, **kwargs
         )
@@ -1139,10 +1147,11 @@ class RegressionModel(GlobalForecastingModel):
             covariate_matrices[cov_type] = np.repeat(data, num_samples, axis=0)
 
         # for concatenating target with predictions (or quantile parameters)
-        if predict_likelihood_parameters and self.likelihood is not None:
+        likelihood = self.likelihood
+        if predict_likelihood_parameters and likelihood is not None:
             # with `multi_models=False`, the predictions are concatenated with the past target, even if `n<=ocl`
             # to make things work, we just append the first predicted parameter (it will never be accessed)
-            sample_slice = slice(0, None, self.num_parameters)
+            sample_slice = slice(0, None, likelihood.num_parameters)
         else:
             sample_slice = slice(None)
 
@@ -1180,7 +1189,7 @@ class RegressionModel(GlobalForecastingModel):
             )
 
             # X has shape (n_series * n_samples, n_regression_features)
-            prediction = self._predict_and_sample(
+            prediction = self._predict(
                 X, num_samples, predict_likelihood_parameters, **kwargs
             )
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
@@ -1201,7 +1210,7 @@ class RegressionModel(GlobalForecastingModel):
                 points_preds=row,
                 input_series=input_tgt,
                 custom_components=(
-                    self._likelihood_components_names(input_tgt)
+                    self.likelihood.component_names(input_tgt)
                     if predict_likelihood_parameters
                     else None
                 ),
@@ -1215,14 +1224,29 @@ class RegressionModel(GlobalForecastingModel):
 
         return predictions[0] if called_with_single_series else predictions
 
-    def _predict_and_sample(
+    def _predict(
         self,
         x: np.ndarray,
         num_samples: int,
         predict_likelihood_parameters: bool,
         **kwargs,
     ) -> np.ndarray:
-        """By default, the regression model returns a single sample."""
+        """Generate predictions.
+
+        Generates deterministic predictions if no `Likelihood` was used.
+        Otherwise, generates probabilistic predictions. Either sampled from the predicted distribution,
+        or the predicted distribution parameters directly.
+        """
+        x, _ = self._format_samples(x)
+        if self.likelihood is not None:
+            return self.likelihood.predict(
+                model=self,
+                x=x,
+                num_samples=num_samples,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                **kwargs,
+            )
+
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
         return prediction.reshape(k, self.pred_dim, -1)
@@ -1260,7 +1284,7 @@ class RegressionModel(GlobalForecastingModel):
         return self.model.__str__()
 
     @property
-    def likelihood(self) -> Optional[str]:
+    def likelihood(self) -> Optional[SKLearnLikelihood]:
         return getattr(self, "_likelihood", None)
 
     @property
@@ -1274,6 +1298,10 @@ class RegressionModel(GlobalForecastingModel):
     @property
     def supports_static_covariates(self) -> bool:
         return True
+
+    @property
+    def supports_probabilistic_prediction(self) -> bool:
+        return self.likelihood is not None
 
     @property
     def supports_val_set(self) -> bool:
@@ -1399,321 +1427,21 @@ class RegressionModel(GlobalForecastingModel):
         return model.__sklearn_tags__().target_tags.multi_output
 
 
-class _LikelihoodMixin:
-    """
-    A class containing functions supporting quantile, poisson and gaussian regression, to be used as a mixin for some
-    `RegressionModel` subclasses.
-    """
-
-    @staticmethod
-    def _check_likelihood(likelihood, available_likelihoods):
-        raise_if_not(
-            likelihood in available_likelihoods,
-            f"If likelihood is specified it must be one of {available_likelihoods}",
-        )
-
-    @staticmethod
-    def _get_model_container():
-        return _QuantileModelContainer()
-
-    @staticmethod
-    def _prepare_quantiles(quantiles):
-        if quantiles is None:
-            quantiles = [
-                0.01,
-                0.05,
-                0.1,
-                0.25,
-                0.5,
-                0.75,
-                0.9,
-                0.95,
-                0.99,
-            ]
-        else:
-            quantiles = sorted(quantiles)
-            _check_quantiles(quantiles)
-        median_idx = quantiles.index(0.5)
-
-        return quantiles, median_idx
-
-    def _likelihood_components_names(
-        self, input_series: TimeSeries
-    ) -> Optional[list[str]]:
-        if self.likelihood == "quantile":
-            return self._quantiles_generate_components_names(input_series)
-        elif self.likelihood == "poisson":
-            return self._likelihood_generate_components_names(input_series, ["lambda"])
-        else:
-            return None
-
-    def _predict_quantile(
-        self,
-        x: np.ndarray,
-        num_samples: int,
-        predict_likelihood_parameters: bool,
-        **kwargs,
-    ) -> np.ndarray:
-        """
-        X is of shape (n_series * n_samples, n_regression_features)
-        """
-        k = x.shape[0]
-
-        # if predict_likelihood_parameters is True, all the quantiles must be predicted
-        if num_samples == 1 and not predict_likelihood_parameters:
-            # return median
-            fitted = self._model_container[0.5]
-            return fitted.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
-
-        model_outputs = []
-        for quantile, fitted in self._model_container.items():
-            self.model = fitted
-            # model output has shape (n_series * n_samples, output_chunk_length, n_components)
-            model_output = fitted.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
-            model_outputs.append(model_output)
-        model_outputs = np.stack(model_outputs, axis=-1)
-        # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
-        return model_outputs
-
-    def _predict_poisson(
-        self,
-        x: np.ndarray,
-        num_samples: int,
-        predict_likelihood_parameters: bool,
-        **kwargs,
-    ) -> np.ndarray:
-        """
-        X is of shape (n_series * n_samples, n_regression_features)
-        """
-        k = x.shape[0]
-        # shape (n_series * n_samples, output_chunk_length, n_components)
-        return self.model.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
-
-    def _predict_normal(
-        self,
-        x: np.ndarray,
-        num_samples: int,
-        predict_likelihood_parameters: bool,
-        **kwargs,
-    ) -> np.ndarray:
-        """Method intended for CatBoost's RMSEWithUncertainty loss. Returns samples
-        computed from double-valued inputs [mean, variance].
-        X is of shape (n_series * n_samples, n_regression_features)
-        """
-        k = x.shape[0]
-
-        # model_output shape:
-        # if univariate & output_chunk_length = 1: (num_samples, 2)
-        # else: (2, num_samples, n_components * output_chunk_length)
-        # where the axis with 2 dims is mu, sigma
-        model_output = self.model.predict(x, **kwargs)
-        output_dim = len(model_output.shape)
-
-        # deterministic case: we return the mean only
-        if num_samples == 1 and not predict_likelihood_parameters:
-            # univariate & single-chunk output
-            if output_dim <= 2:
-                output_slice = model_output[:, 0]
-            else:
-                output_slice = model_output[0, :, :]
-            return output_slice.reshape(k, self.pred_dim, -1)
-
-        # probabilistic case
-        # univariate & single-chunk output
-        if output_dim <= 2:
-            # embedding well shaped 2D output into 3D
-            model_output = np.expand_dims(model_output, axis=0)
-
-        else:
-            # we transpose to get mu, sigma couples on last axis
-            # shape becomes: (n_components * output_chunk_length, num_samples, 2)
-            model_output = model_output.transpose()
-
-        # shape (n_components * output_chunk_length, num_samples, 2)
-        return model_output
-
-    def _sampling_quantile(self, model_output: np.ndarray) -> np.ndarray:
-        """
-        Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted
-        quantiles closest to the sampled value.
-
-        model_output is of shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
-        """
-        k, n_timesteps, n_components, n_quantiles = model_output.shape
-
-        # obtain samples
-        probs = self._rng.uniform(
-            size=(
-                k,
-                n_timesteps,
-                n_components,
-                1,
-            )
-        )
-
-        # add dummy dim
-        probas = np.expand_dims(probs, axis=-2)
-
-        # tile and transpose
-        p = np.tile(probas, (1, 1, 1, n_quantiles, 1)).transpose((0, 1, 2, 4, 3))
-
-        # prepare quantiles
-        tquantiles = np.array(self.quantiles).reshape((1, 1, 1, -1))
-
-        # calculate index of the largest quantile smaller than the sampled value
-        left_idx = np.sum(p > tquantiles, axis=-1)
-
-        # obtain index of the smallest quantile larger than the sampled value
-        right_idx = left_idx + 1
-
-        # repeat the model output on the edges
-        repeat_count = [1] * n_quantiles
-        repeat_count[0] = 2
-        repeat_count[-1] = 2
-        repeat_count = np.array(repeat_count)
-        shifted_output = np.repeat(model_output, repeat_count, axis=-1)
-
-        # obtain model output values corresponding to the quantiles left and right of the sampled value
-        left_value = np.take_along_axis(shifted_output, left_idx, axis=-1)
-        right_value = np.take_along_axis(shifted_output, right_idx, axis=-1)
-
-        # add 0 and 1 to quantiles
-        ext_quantiles = [0.0] + self.quantiles + [1.0]
-        expanded_q = np.tile(np.array(ext_quantiles), left_idx.shape)
-
-        # calculate closest quantiles to the sampled value
-        left_q = np.take_along_axis(expanded_q, left_idx, axis=-1)
-        right_q = np.take_along_axis(expanded_q, right_idx, axis=-1)
-
-        # linear interpolation
-        weights = (probs - left_q) / (right_q - left_q)
-        inter = left_value + weights * (right_value - left_value)
-
-        # shape (n_series * n_samples, output_chunk_length, n_components * n_quantiles)
-        return inter.squeeze(-1)
-
-    def _sampling_poisson(self, model_output: np.ndarray) -> np.ndarray:
-        """
-        model_output is of shape (n_series * n_samples, output_chunk_length, n_components)
-        """
-        return self._rng.poisson(lam=model_output).astype(float)
-
-    def _sampling_normal(self, model_output: np.ndarray) -> np.ndarray:
-        """Sampling method for CatBoost's [mean, variance] output.
-        model_output is of shape (n_components * output_chunk_length, n_samples, 2) where the last dimension
-        contain mu and sigma.
-        """
-        n_entries, n_samples, n_params = model_output.shape
-
-        # treating each component separately
-        mu_sigma_list = [model_output[i, :, :] for i in range(n_entries)]
-
-        list_of_samples = [
-            self._rng.normal(
-                mu_sigma[:, 0],  # mean vector
-                mu_sigma[:, 1],  # diagonal covariance matrix
-            )
-            for mu_sigma in mu_sigma_list
-        ]
-
-        samples_transposed = np.array(list_of_samples).transpose()
-        samples_reshaped = samples_transposed.reshape(n_samples, self.pred_dim, -1)
-
-        return samples_reshaped
-
-    def _params_quantile(self, model_output: np.ndarray) -> np.ndarray:
-        """Quantiles on the last dimension, grouped by component"""
-        k, n_timesteps, n_components, n_quantiles = model_output.shape
-        # last dim : [comp_1_q_1, ..., comp_1_q_n, ..., comp_n_q_1, ..., comp_n_q_n]
-        return model_output.reshape(k, n_timesteps, n_components * n_quantiles)
-
-    def _params_poisson(self, model_output: np.ndarray) -> np.ndarray:
-        """Lambdas on the last dimension, grouped by component"""
-        return model_output
-
-    def _params_normal(self, model_output: np.ndarray) -> np.ndarray:
-        """[mu, sigma] on the last dimension, grouped by component"""
-        shape = model_output.shape
-        n_samples = shape[1]
-
-        # extract mu and sigma for each component
-        mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
-
-        # reshape to (n_samples, output_chunk_length, 2)
-        params_transposed = np.array(mu_sigma_list).transpose()
-        params_reshaped = params_transposed.reshape(n_samples, self.pred_dim, -1)
-        return params_reshaped
-
-    def _predict_and_sample_likelihood(
-        self,
-        x: np.ndarray,
-        num_samples: int,
-        likelihood: str,
-        predict_likelihood_parameters: bool,
-        **kwargs,
-    ) -> np.ndarray:
-        model_output = getattr(self, f"_predict_{likelihood}")(
-            x, num_samples, predict_likelihood_parameters, **kwargs
-        )
-        if predict_likelihood_parameters:
-            return getattr(self, f"_params_{likelihood}")(model_output)
-        else:
-            if num_samples == 1:
-                return model_output
-            else:
-                return getattr(self, f"_sampling_{likelihood}")(model_output)
-
-    def _num_parameters_quantile(self) -> int:
-        return len(self.quantiles)
-
-    def _num_parameters_poisson(self) -> int:
-        return 1
-
-    def _num_parameters_normal(self) -> int:
-        return 2
-
-    @property
-    def num_parameters(self) -> int:
-        """Mimic function of Likelihood class"""
-        likelihood = self.likelihood
-        if likelihood is None:
-            return 0
-        elif likelihood in ["gaussian", "RMSEWithUncertainty"]:
-            return self._num_parameters_normal()
-        else:
-            return getattr(self, f"_num_parameters_{likelihood}")()
-
-    def _quantiles_generate_components_names(
-        self, input_series: TimeSeries
-    ) -> list[str]:
-        return self._likelihood_generate_components_names(
-            input_series,
-            quantile_names(q=self._model_container.keys()),
-        )
-
-    def _likelihood_generate_components_names(
-        self, input_series: TimeSeries, parameter_names: list[str]
-    ) -> list[str]:
-        return likelihood_component_names(
-            components=input_series.components, parameter_names=parameter_names
-        )
-
-
 class _QuantileModelContainer(OrderedDict):
     def __init__(self):
         super().__init__()
 
 
-class RegressionModelWithCategoricalCovariates(RegressionModel):
+class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
     def __init__(
         self,
+        model,
         lags: Union[int, list] = None,
         lags_past_covariates: Union[int, list[int]] = None,
         lags_future_covariates: Union[tuple[int, int], list[int]] = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
-        model=None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
         categorical_past_covariates: Optional[Union[str, list[str]]] = None,
@@ -1725,6 +1453,10 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
 
         Parameters
         ----------
+        model
+            Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn't
+            support multi-output regression for multivariate timeseries, in which case one regressor
+            will be used per component in the multivariate series.
         lags
             Lagged target `series` values used to predict the next time step/s.
             If an integer, must be > 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`
@@ -1796,11 +1528,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
                     'tz': 'CET'
                 }
             ..
-        model
-            Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn't
-            support multi-output regression for multivariate timeseries, in which case one regressor
-            will be used per component in the multivariate series.
-            If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
@@ -1829,6 +1556,29 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
         )
+
+        if categorical_static_covariates is not None and not use_static_covariates:
+            raise_log(
+                ValueError(
+                    "`categorical_static_covariates` is declared but `use_static_covariates` is set to False."
+                ),
+                logger,
+            )
+        if categorical_past_covariates is not None and lags_past_covariates is None:
+            raise_log(
+                ValueError(
+                    "`categorical_past_covariates` is declared but `lags_past_covariates` is not set."
+                ),
+                logger,
+            )
+        if categorical_future_covariates is not None and lags_future_covariates is None:
+            raise_log(
+                ValueError(
+                    "`categorical_future_covariates` is declared but `lags_future_covariates` is not set."
+                ),
+                logger,
+            )
+
         self.categorical_past_covariates = (
             [categorical_past_covariates]
             if isinstance(categorical_past_covariates, str)
@@ -1844,103 +1594,14 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             if isinstance(categorical_static_covariates, str)
             else categorical_static_covariates
         )
-
-    def fit(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        max_samples_per_ts: Optional[int] = None,
-        n_jobs_multioutput_wrapper: Optional[int] = None,
-        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        **kwargs,
-    ):
-        self._validate_categorical_covariates(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-        )
-        super().fit(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            max_samples_per_ts=max_samples_per_ts,
-            n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
-            sample_weight=sample_weight,
-            **kwargs,
-        )
+        self._categorical_indices = []  # Indices are set on fit
 
     @property
-    def _categorical_fit_param(self) -> tuple[str, Any]:
+    @abstractmethod
+    def _categorical_fit_param(self) -> Optional[str]:
         """
-        Returns the name, and default value of the categorical features parameter from model's `fit` method .
-        Can be overridden in subclasses.
+        Returns the name of the categorical features parameter from model's `fit` method .
         """
-        return "categorical_feature", "auto"
-
-    def _validate_categorical_covariates(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> None:
-        """
-        Checks that the categorical covariates are valid. Specifically, checks that the categorical covariates
-        of the model are a subset of all covariates.
-
-        Parameters
-        ----------
-        series
-            TimeSeries or Sequence[TimeSeries] object containing the target values.
-        past_covariates
-            Optionally, a series or sequence of series specifying past-observed covariates
-        future_covariates
-            Optionally, a series or sequence of series specifying future-known covariates
-        """
-        for categorical_covariates, covariates, cov_type in zip(
-            [self.categorical_past_covariates, self.categorical_future_covariates],
-            [past_covariates, future_covariates],
-            ["past_covariates", "future_covariates"],
-        ):
-            if categorical_covariates:
-                if not covariates:
-                    raise_log(
-                        ValueError(
-                            f"`categorical_{cov_type}` were declared at model creation but no "
-                            f"`{cov_type}` are passed to the `fit()` call."
-                        ),
-                    )
-                s = get_single_series(covariates)
-                if not set(categorical_covariates).issubset(set(s.components)):
-                    raise_log(
-                        ValueError(
-                            f"Some `categorical_{cov_type}` components "
-                            f"({set(categorical_covariates) - set(s.components)}) "
-                            f"declared at model creation are not present in the `{cov_type}` "
-                            f"passed to the `fit()` call."
-                        )
-                    )
-        if self.categorical_static_covariates:
-            s = get_single_series(series)
-            covariates = s.static_covariates
-            if not s.has_static_covariates:
-                raise_log(
-                    ValueError(
-                        "`categorical_static_covariates` were declared at model creation but `series`"
-                        "passed to the `fit()` call does not contain `static_covariates`."
-                    ),
-                )
-            if not set(self.categorical_static_covariates).issubset(
-                set(covariates.columns)
-            ):
-                raise_log(
-                    ValueError(
-                        f"Some `categorical_static_covariates` components "
-                        f"({set(self.categorical_static_covariates) - set(covariates.columns)}) "
-                        f"declared at model creation are not present in the series' `static_covariates` "
-                        f"passed to the `fit()` call."
-                    )
-                )
 
     def _get_categorical_features(
         self,
@@ -1956,66 +1617,90 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             in create_lagged_data.
         2. Get the indices of the categorical features in the list of features.
         """
+        categorical_covariates = [
+            [],  # currently no categorical target components allowed
+            self.categorical_past_covariates
+            if self.categorical_past_covariates
+            else [],
+            self.categorical_future_covariates
+            if self.categorical_future_covariates
+            else [],
+            self.categorical_static_covariates
+            if self.categorical_static_covariates
+            else [],
+        ]
 
-        categorical_covariates = (
-            (
-                self.categorical_past_covariates
-                if self.categorical_past_covariates
-                else []
-            )
-            + (
-                self.categorical_future_covariates
-                if self.categorical_future_covariates
-                else []
-            )
-            + (
-                self.categorical_static_covariates
-                if self.categorical_static_covariates
-                else []
-            )
-        )
-
-        if not categorical_covariates:
+        # if no categorical covariates are declared, return empty lists
+        if sum(len(cat_cov) for cat_cov in categorical_covariates) == 0:
             return [], []
-        else:
-            target_ts = get_single_series(series)
-            past_covs_ts = get_single_series(past_covariates)
-            fut_covs_ts = get_single_series(future_covariates)
 
-            # We keep the creation order of the different lags/features in create_lagged_data
-            feature_list = (
+        target_ts = get_single_series(series)
+        past_covs_ts = get_single_series(past_covariates)
+        fut_covs_ts = get_single_series(future_covariates)
+
+        feature_list = [
+            [
+                ("target", component, lag)
+                for lag in self.lags.get("target", [])
+                for component in target_ts.components
+            ],
+            [
+                ("past_cov", component, lag)
+                for lag in self.lags.get("past", [])
+                for component in past_covs_ts.components
+            ],
+            [
+                ("fut_cov", component, lag)
+                for lag in self.lags.get("future", [])
+                for component in fut_covs_ts.components
+            ],
+            (
                 [
-                    f"target_{component}_lag{lag}"
-                    for lag in self.lags.get("target", [])
-                    for component in target_ts.components
+                    ("static_cov", component, 0)
+                    for component in list(target_ts.static_covariates.columns)
                 ]
-                + [
-                    f"past_cov_{component}_lag{lag}"
-                    for lag in self.lags.get("past", [])
-                    for component in past_covs_ts.components
-                ]
-                + [
-                    f"fut_cov_{component}_lag{lag}"
-                    for lag in self.lags.get("future", [])
-                    for component in fut_covs_ts.components
-                ]
-                + (
-                    list(target_ts.static_covariates.columns)
-                    if target_ts.has_static_covariates
-                    # if isinstance(target_ts.static_covariates, pd.DataFrame)
-                    else []
-                )
-            )
+                if target_ts.has_static_covariates
+                else []
+            ),
+        ]
 
-            indices = [
-                i
-                for i, col in enumerate(feature_list)
-                for cat in categorical_covariates
-                if cat and cat in col
+        # keep track of feature list index to refer to the columns indices
+        index = 0
+        indices = []
+        col_names = []
+        series_type = [
+            "series",
+            "past_covariates",
+            "future_covariates",
+            "static_covariates",
+        ]
+        for cat_covs, features, s_type in zip(
+            categorical_covariates, feature_list, series_type
+        ):
+            # extract all categorical feature indices
+            extracted_categorical_features = []
+            for prefix, component, lag in features:
+                if component in cat_covs:
+                    indices.append(index)
+                    col_names.append(f"{prefix}_{component}_lag{lag}")
+                    extracted_categorical_features.append(component)
+                index += 1
+
+            # check that all cat components were extracted
+            missing_comps = [
+                comp for comp in cat_covs if comp not in extracted_categorical_features
             ]
-            col_names = [feature_list[i] for i in indices]
-
-            return indices, col_names
+            if missing_comps:
+                raise_log(
+                    ValueError(
+                        f"Some `categorical_{s_type}` components "
+                        f"({missing_comps}) declared at model creation are "
+                        f"not present in the `{s_type}` passed to the `fit()` call. "
+                        f"Available feature(s) are: {set([comp for _, comp, _ in features])}"
+                    ),
+                    logger=logger,
+                )
+        return indices, col_names
 
     def _fit_model(
         self,
@@ -2035,11 +1720,15 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
+        self._categorical_indices = cat_col_indices
 
-        cat_param_name, cat_param_default = self._categorical_fit_param
-        kwargs[cat_param_name] = (
-            cat_col_indices if cat_col_indices else cat_param_default
-        )
+        # cat_param_name is None if model has no attribute to specify categorical features in `fit()`
+        cat_param_name = self._categorical_fit_param
+
+        # Add attributes in kwargs if applicable for model's `fit()` method
+        if cat_param_name is not None and len(cat_col_indices) > 0:
+            kwargs[cat_param_name] = cat_col_indices
+
         super()._fit_model(
             series=series,
             past_covariates=past_covariates,
@@ -2048,3 +1737,24 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             sample_weight=sample_weight,
             **kwargs,
         )
+
+    def _validate_categorical_components(self, samples):
+        """Check if categorical features are integer-encoded"""
+        if np.any(samples[:, self._categorical_indices] % 1 != 0):
+            raise_log(
+                ValueError(
+                    "Categorical features must be integer-encoded, decimal values found instead."
+                ),
+                logger=logger,
+            )
+
+    def _format_samples(
+        self, samples: np.ndarray, labels: Optional[np.ndarray] = None
+    ) -> tuple[Any, Any]:
+        """
+        Validate and format the categorical columns listed in self._categorical_indices accordingly to the model's
+        requirements.
+        """
+        if len(self._categorical_indices) != 0:
+            self._validate_categorical_components(samples)
+        return samples, labels

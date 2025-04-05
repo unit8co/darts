@@ -7,16 +7,18 @@ from pandas.tseries.offsets import CustomBusinessDay
 
 from darts import TimeSeries
 from darts.utils import _with_sanity_checks
+from darts.utils.likelihood_models.base import (
+    likelihood_component_names,
+    quantile_interval_names,
+    quantile_names,
+)
 from darts.utils.missing_values import extract_subseries
 from darts.utils.ts_utils import retain_period_common_to_all
 from darts.utils.utils import (
     expand_arr,
     freqs,
     generate_index,
-    likelihood_component_names,
     n_steps_between,
-    quantile_interval_names,
-    quantile_names,
     sample_from_quantiles,
 )
 
