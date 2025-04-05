@@ -97,6 +97,7 @@ multivariate_models = [
 dual_models = [
     ARIMA(),
     StatsForecastAutoARIMA(season_length=12),
+    StatsForecastAutoMFLES(season_length=12, test_size=12),
     StatsForecastAutoETS(season_length=12),
 ]
 

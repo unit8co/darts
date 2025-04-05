@@ -81,14 +81,13 @@ class StatsForecastAutoMFLES(FutureCovariatesLocalForecastingModel):
                [520.15305998],
                [593.38690019]])
         """
-        super().__init__(add_encoders=add_encoders)
-
         if "prediction_intervals" in autoMFLES_kwargs:
             logger.warning(
                 "StatsForecastAutoMFLES does not support probabilistic forecasting. "
                 "`prediction_intervals` will be ignored."
             )
 
+        super().__init__(add_encoders=add_encoders)
         self.model = SFAutoMFLES(*autoMFLES_args, **autoMFLES_kwargs)
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
@@ -131,4 +130,4 @@ class StatsForecastAutoMFLES(FutureCovariatesLocalForecastingModel):
 
     @property
     def supports_probabilistic_prediction(self) -> bool:
-        return True
+        return False
