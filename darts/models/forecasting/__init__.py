@@ -18,6 +18,7 @@ Statistical Models (`LocalForecastingModel <https://unit8co.github.io/darts/user
     - :class:`~darts.models.forecasting.exponential_smoothing.ExponentialSmoothing`
     - :class:`~darts.models.forecasting.sf_auto_ets.StatsForecastAutoETS`
     - :class:`~darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES`
+    - :class:`~darts.models.forecasting.sf_auto_mfles.StatsForecastAutoMFLES`
     - :class:`~darts.models.forecasting.tbats_model.BATS`
     - :class:`~darts.models.forecasting.tbats_model.TBATS`
     - :class:`~darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS`
