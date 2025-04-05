@@ -2098,7 +2098,7 @@ class TestTorchForecastingModel:
             length=model_kwargs["input_chunk_length"]
             + model_kwargs["output_chunk_length"]
             + 1
-        )  + tg.sine_timeseries(
+        ) + tg.sine_timeseries(
             length=model_kwargs["input_chunk_length"]
             + model_kwargs["output_chunk_length"]
             + 1
