@@ -33,6 +33,7 @@ from darts.models import (
     StatsForecastAutoARIMA,
     StatsForecastAutoCES,
     StatsForecastAutoETS,
+    StatsForecastAutoMFLES,
     StatsForecastAutoTBATS,
     StatsForecastAutoTheta,
     Theta,
@@ -62,6 +63,7 @@ models = [
     (StatsForecastAutoTheta(season_length=12), 5.5),
     (StatsForecastAutoCES(season_length=12, model="Z"), 7.3),
     (StatsForecastAutoETS(season_length=12, model="AAZ"), 7.3),
+    (StatsForecastAutoMFLES(season_length=12, test_size=12), 9.8),
     (StatsForecastAutoTBATS(season_length=12), 10),
     (Croston(version="classic"), 23),
     (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 23),
@@ -95,6 +97,7 @@ multivariate_models = [
 dual_models = [
     ARIMA(),
     StatsForecastAutoARIMA(season_length=12),
+    StatsForecastAutoMFLES(season_length=12, test_size=12),
     StatsForecastAutoETS(season_length=12),
 ]
 
