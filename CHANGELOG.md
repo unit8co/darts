@@ -21,6 +21,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - 🔴 Removed deprecated method `TimeSeries.pd_serise()`. Use `TimeSeries.to_series()` instead. [#2733](https://github.com/unit8co/darts/pull/2733) by [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
+- 🔴 Fixed `NLinearModel` for `normalize=True` also for the `shared_weighs=True` path (which was not covered in #2724). In addition, past covariates are now also normalized (but not feature covariates, see discussion #2699) and `normalize=True` is now the default.
 
 - Fixed a bug in `CatBoostModel` with `likelihood="gaussian"`, where predicting with `predict_likelihood_parameters=True` resulted in wrong ordering of the predicted parameters. [#2742](https://github.com/unit8co/darts/pull/2742) by [Dennis Bader](https://github.com/dennisbader).
 
