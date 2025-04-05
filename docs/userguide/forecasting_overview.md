@@ -179,7 +179,7 @@ pred.plot(label='forecast')
 
 ### Probabilistic neural networks
 All neural networks (torch-based models) in Darts have a rich support to estimate different kinds of probability distributions.
-When creating the model, it is possible to provide one of the *likelihood models* available in [darts.utils.likelihood_models](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html), which determine the distribution that will be estimated by the model.
+When creating the model, it is possible to provide one of the *likelihood models* available in [darts.utils.likelihood_models.torch](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html), which determine the distribution that will be estimated by the model.
 In such cases, the model will output the parameters of the distribution, and it will be trained by minimising the negative log-likelihood of the training samples.
 Most of the likelihood models also support prior values for the distribution's parameters, in which case the training loss is regularized by a Kullback-Leibler divergence term pushing the resulting distribution in the direction of the distribution specified by the prior parameters.
 The strength of this regularization term can also be specified when creating the likelihood model object.
@@ -191,7 +191,7 @@ from darts.datasets import AirPassengersDataset
 from darts import TimeSeries
 from darts.models import TCNModel
 from darts.dataprocessing.transformers import Scaler
-from darts.utils.likelihood_models import LaplaceLikelihood
+from darts.utils.likelihood_models.torch import LaplaceLikelihood
 
 series = AirPassengersDataset().load()
 train, val = series[:-36], series[-36:]
@@ -214,7 +214,7 @@ pred.plot(label='forecast')
 ![TCN Laplace regression](./images/probabilistic/example_tcn_laplace.png)
 
 
-It is also possible to perform quantile regression (using arbitrary quantiles) with neural networks, by using [darts.utils.likelihood_models.QuantileRegression](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression), in which case the network will be trained with the pinball loss. This produces an empirical non-parametric distribution, and it can often be a good option in practice, when one is not sure of the "real" distribution, or when fitting parametric likelihoods give poor results.
+It is also possible to perform quantile regression (using arbitrary quantiles) with neural networks, by using [darts.utils.likelihood_models.torch.QuantileRegression](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression), in which case the network will be trained with the pinball loss. This produces an empirical non-parametric distribution, and it can often be a good option in practice, when one is not sure of the "real" distribution, or when fitting parametric likelihoods give poor results.
 For example, the code snippet below is almost exactly the same as the preceding snippet; the only difference is that it now uses a `QuantileRegression` likelihood, which means that the neural network will be trained with a pinball loss, and its number of outputs will be dynamically configured to match the number of quantiles.
 
 ```python
@@ -222,7 +222,7 @@ from darts.datasets import AirPassengersDataset
 from darts import TimeSeries
 from darts.models import TCNModel
 from darts.dataprocessing.transformers import Scaler
-from darts.utils.likelihood_models import QuantileRegression
+from darts.utils.likelihood_models.torch import QuantileRegression
 
 series = AirPassengersDataset().load()
 train, val = series[:-36], series[-36:]
@@ -254,7 +254,7 @@ from darts.datasets import AirPassengersDataset
 from darts import TimeSeries
 from darts.models import TCNModel
 from darts.dataprocessing.transformers import Scaler
-from darts.utils.likelihood_models import QuantileRegression
+from darts.utils.likelihood_models.torch import QuantileRegression
 
 series = AirPassengersDataset().load()
 train, val = series[:-36], series[-36:]

@@ -16,11 +16,11 @@ from darts.models import (
     ExponentialSmoothing,
     LightGBMModel,
     LinearRegressionModel,
-    NotImportedModule,
     XGBModel,
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
+from darts.utils.utils import NotImportedModule
 
 logger = get_logger(__name__)
 
@@ -39,7 +39,7 @@ if TORCH_AVAILABLE:
         TSMixerModel,
     )
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
-    from darts.utils.likelihood_models import (
+    from darts.utils.likelihood_models.torch import (
         BernoulliLikelihood,
         BetaLikelihood,
         CauchyLikelihood,

@@ -27,7 +27,6 @@ from darts.models import (
     NaiveMean,
     NaiveMovingAverage,
     NaiveSeasonal,
-    NotImportedModule,
     Prophet,
     RandomForest,
     RegressionModel,
@@ -44,7 +43,13 @@ from darts.models.forecasting.forecasting_model import (
 )
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode, generate_index
+from darts.utils.utils import (
+    ModelMode,
+    NotImportedModule,
+    SeasonalityMode,
+    TrendMode,
+    generate_index,
+)
 
 logger = get_logger(__name__)
 

@@ -3,7 +3,7 @@ Additional util functions
 -------------------------
 """
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator
 from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
@@ -19,10 +19,19 @@ from tqdm.notebook import tqdm as tqdm_notebook
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 
+logger = get_logger(__name__)
+
 try:
     from IPython import get_ipython
 except ModuleNotFoundError:
     get_ipython = None
+
+try:
+    import torch  # noqa: F401
+
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
 
 logger = get_logger(__name__)
 
@@ -53,6 +62,25 @@ SUPPORTED_RESAMPLE_METHODS = [
     "sum",
     "var",
 ]
+
+
+class NotImportedModule:
+    """Helper class for handling import errors of optional dependencies."""
+
+    usable = False
+
+    def __init__(self, module_name: str, warn: bool = True):
+        self.error_message = (
+            f"The `{module_name}` module could not be imported. "
+            f"To enable {module_name} support in Darts, follow the detailed "
+            f"instructions in the installation guide: "
+            f"https://github.com/unit8co/darts/blob/master/INSTALL.md"
+        )
+        if warn:
+            logger.warning(self.error_message)
+
+    def __call__(self, *args, **kwargs):
+        raise_log(ImportError(self.error_message), logger=logger)
 
 
 # Enums
@@ -95,66 +123,6 @@ freqs = {
     "us": "us" if pd_above_v22 else "U",
     "ns": "ns" if pd_above_v22 else "N",
 }
-
-
-def likelihood_component_names(
-    components: Union[pd.Index, list[str]], parameter_names: list[str]
-):
-    """Generates formatted likelihood parameter names for components and parameter names.
-
-    The order of the returned names is: `[comp1_param_1, ... comp1_param_n, ..., comp_n_param_n]`.
-
-    Parameters
-    ----------
-    components
-        A sequence of component names to add to the beginning of the returned names.
-    parameter_names
-        A sequence of likelihood parameter names to add to the end of the returned names.
-    """
-    return [
-        f"{tgt_name}_{param_n}"
-        for tgt_name in components
-        for param_n in parameter_names
-    ]
-
-
-def quantile_names(q: Union[float, list[float]], component: Optional[str] = None):
-    """Generates formatted quantile names, optionally added to a component name.
-
-    Parameters
-    ----------
-    q
-        A float or list of floats with the quantiles to generate the names for.
-    component
-        Optionally, a component name to add to the beginning of the quantile names.
-    """
-    # predicted quantile text format
-    comp = f"{component}_" if component is not None else ""
-    if isinstance(q, float):
-        return f"{comp}q{q:.2f}"
-    else:
-        return [f"{comp}q{q_i:.2f}" for q_i in q]
-
-
-def quantile_interval_names(
-    q_interval: Union[tuple[float, float], Sequence[tuple[float, float]]],
-    component: Optional[str] = None,
-):
-    """Generates formatted quantile interval names, optionally added to a component name.
-
-    Parameters
-    ----------
-    q_interval
-        A tuple or multiple tuples with the (lower bound, upper bound) of the quantile intervals.
-    component
-        Optionally, a component name to add to the beginning of the quantile names.
-    """
-    # predicted quantile text format
-    comp = f"{component}_" if component is not None else ""
-    if isinstance(q_interval, tuple):
-        return f"{comp}q{q_interval[0]:.2f}_q{q_interval[1]:.2f}"
-    else:
-        return [f"{comp}q{q_lo:.2f}_q{q_hi:.2f}" for q_lo, q_hi in q_interval]
 
 
 def _build_tqdm_iterator(iterable, verbose, **kwargs):

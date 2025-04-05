@@ -408,7 +408,7 @@ class TransformerModel(PastCovariatesTorchModel):
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
         likelihood
-            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
+            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found

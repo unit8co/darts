@@ -50,12 +50,12 @@ from darts.models import (
 )
 from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
-from darts.utils.likelihood_models import (
+from darts.utils.likelihood_models.torch import (
     CauchyLikelihood,
     GaussianLikelihood,
     LaplaceLikelihood,
-    Likelihood,
     QuantileRegression,
+    TorchLikelihood,
 )
 
 kwargs = {
@@ -822,6 +822,7 @@ class TestTorchForecastingModel:
         )
         # check that weights from checkpoint give identical predictions as weights from manual save
         assert preds_manual_from_weights == preds_auto_from_weights
+
         # model with explicitly no likelihood
         model_no_likelihood = self.helper_create_DLinearModel(
             work_dir=tmpdir_fn, model_name="no_likelihood", likelihood=None
@@ -864,6 +865,21 @@ class TestTorchForecastingModel:
             "missing"
         )
 
+        # model with the same likelihood but different parameters (output remains the same so does not matter)
+        model_same_likelihood_other_prior = self.helper_create_DLinearModel(
+            work_dir=tmpdir_fn,
+            model_name="same_likelihood_other_prior",
+            likelihood=GaussianLikelihood(),
+        )
+        with pytest.raises(ValueError) as error_msg:
+            model_same_likelihood_other_prior.load_weights_from_checkpoint(
+                auto_name, work_dir=tmpdir_fn, best=False, map_location="cpu"
+            )
+        assert str(error_msg.value).startswith(
+            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
+            "incorrect"
+        )
+
         # model with a different likelihood
         model_other_likelihood = self.helper_create_DLinearModel(
             work_dir=tmpdir_fn,
@@ -872,21 +888,6 @@ class TestTorchForecastingModel:
         )
         with pytest.raises(ValueError) as error_msg:
             model_other_likelihood.load_weights(model_path_manual, map_location="cpu")
-        assert str(error_msg.value).startswith(
-            "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
-            "incorrect"
-        )
-
-        # model with the same likelihood but different parameters
-        model_same_likelihood_other_prior = self.helper_create_DLinearModel(
-            work_dir=tmpdir_fn,
-            model_name="same_likelihood_other_prior",
-            likelihood=GaussianLikelihood(),
-        )
-        with pytest.raises(ValueError) as error_msg:
-            model_same_likelihood_other_prior.load_weights(
-                model_path_manual, map_location="cpu"
-            )
         assert str(error_msg.value).startswith(
             "The values of the hyper-parameters in the model and loaded checkpoint should be identical.\n"
             "incorrect"
@@ -2305,7 +2306,7 @@ class TestTorchForecastingModel:
         model_name: str = "unitest_model",
         add_encoders: Optional[dict] = None,
         save_checkpoints: bool = False,
-        likelihood: Optional[Likelihood] = None,
+        likelihood: Optional[TorchLikelihood] = None,
         output_chunk_length: int = 1,
         **kwargs,
     ):

@@ -22,12 +22,13 @@ from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import n_steps_between
 from darts.utils import timeseries_generation as tg
-from darts.utils.timeseries_generation import linear_timeseries
-from darts.utils.utils import (
+from darts.utils.likelihood_models.base import (
+    LikelihoodType,
     likelihood_component_names,
     quantile_interval_names,
     quantile_names,
 )
+from darts.utils.timeseries_generation import linear_timeseries
 
 IN_LEN = 3
 OUT_LEN = 3
@@ -156,7 +157,7 @@ class TestConformalModel:
         # pre-trained local model should work
         global_model.fit(series)
         model = ConformalNaiveModel(model=global_model, quantiles=q)
-        assert model.likelihood == "quantile"
+        assert model.likelihood.type is LikelihoodType.Quantile
 
         # non-centered quantiles
         with pytest.raises(ValueError) as exc:

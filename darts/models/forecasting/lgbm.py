@@ -14,21 +14,25 @@ from collections.abc import Sequence
 from typing import Optional, Union
 
 import lightgbm as lgb
-import numpy as np
 
 from darts.logging import get_logger
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
     RegressionModelWithCategoricalCovariates,
-    _LikelihoodMixin,
+    _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
+from darts.utils.likelihood_models.sklearn import (
+    QuantileRegression,
+    _check_likelihood,
+    _get_likelihood,
+)
 
 logger = get_logger(__name__)
 
 
-class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
+class LightGBMModel(RegressionModelWithCategoricalCovariates):
     def __init__(
         self,
         lags: Optional[LAGS_TYPE] = None,
@@ -140,18 +144,18 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         categorical_past_covariates
             Optionally, component name or list of component names specifying the past covariates that should be treated
-            as categorical by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the components that
-            are treated as categorical are integer-encoded. For more information on how LightGBM handles categorical
+            as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as
+            categorical must be integer-encoded. For more information on how LightGBM handles categorical
             features, visit: `Categorical feature support documentation
-            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_
+            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
-            treated as categorical by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the components
-            that are treated as categorical are integer-encoded.
+            treated as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that
+            are specified as categorical must be integer-encoded.
         categorical_static_covariates
             Optionally, string or list of strings specifying the static covariates that should be treated as categorical
-            by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the static covariates that are
-            treated as categorical are integer-encoded.
+            by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as categorical
+            must be integer-encoded.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
 
@@ -187,22 +191,21 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
-        self._median_idx = None
         self._model_container = None
-        self.quantiles = None
-        self._likelihood = likelihood
-        self._rng = None
 
         # parse likelihood
-        available_likelihoods = ["quantile", "poisson"]  # to be extended
         if likelihood is not None:
-            self._check_likelihood(likelihood, available_likelihoods)
+            _check_likelihood(likelihood, ["quantile", "poisson"])
             self.kwargs["objective"] = likelihood
-            self._rng = np.random.default_rng(seed=random_state)  # seed for sampling
-
             if likelihood == "quantile":
-                self.quantiles, self._median_idx = self._prepare_quantiles(quantiles)
-                self._model_container = self._get_model_container()
+                self._model_container = _QuantileModelContainer()
+
+        self._likelihood = _get_likelihood(
+            likelihood=likelihood,
+            n_outputs=output_chunk_length if multi_models else 1,
+            random_state=random_state,
+            quantiles=quantiles,
+        )
 
         super().__init__(
             lags=lags,
@@ -277,10 +280,11 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
          **kwargs
             Additional kwargs passed to `lightgbm.LGBRegressor.fit()`
         """
-        if self.likelihood == "quantile":
+        likelihood = self.likelihood
+        if isinstance(likelihood, QuantileRegression):
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
-            for quantile in self.quantiles:
+            for quantile in likelihood.quantiles:
                 self.kwargs["alpha"] = quantile
                 self.model = lgb.LGBMRegressor(**self.kwargs)
                 super().fit(
@@ -314,27 +318,6 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         )
         return self
 
-    def _predict_and_sample(
-        self,
-        x: np.ndarray,
-        num_samples: int,
-        predict_likelihood_parameters: bool,
-        **kwargs,
-    ) -> np.ndarray:
-        """Override of RegressionModel's predict method to allow for the probabilistic case"""
-        if self.likelihood is not None:
-            return self._predict_and_sample_likelihood(
-                x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
-            )
-        else:
-            return super()._predict_and_sample(
-                x, num_samples, predict_likelihood_parameters, **kwargs
-            )
-
-    @property
-    def supports_probabilistic_prediction(self) -> bool:
-        return self.likelihood is not None
-
     @property
     def supports_val_set(self) -> bool:
         return True
@@ -355,3 +338,10 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
                 else self.output_chunk_length
             ),
         )
+
+    @property
+    def _categorical_fit_param(self) -> Optional[str]:
+        """
+        Returns the name of the categorical features parameter from model's `fit` method .
+        """
+        return "categorical_feature"

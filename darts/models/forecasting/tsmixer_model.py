@@ -581,8 +581,9 @@ class TSMixerModel(MixedCovariatesTorchModel):
         num_blocks
             The number of mixer blocks in the model. The number includes the first block and all subsequent blocks.
         activation
-            The name of the activation function to use in the mixer layers. Default: `"ReLU"`. Must be one of
-            `"ReLU", "RReLU", "PReLU", "ELU", "Softplus", "Tanh", "SELU", "LeakyReLU", "Sigmoid", "GELU"`.
+            The activation function to use in the mixer layers (default='ReLU').
+            Supported activations: ['ReLU', 'RReLU', 'PReLU', 'ELU', 'Softplus', 'Tanh', 'SELU', 'LeakyReLU', 'Sigmoid',
+            'GELU']
         dropout
             Fraction of neurons affected by dropout. This is compatible with Monte Carlo dropout at inference time
             for model uncertainty estimation (enabled with ``mc_dropout=True`` at prediction time).
@@ -604,7 +605,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
         likelihood
-            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
+            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
