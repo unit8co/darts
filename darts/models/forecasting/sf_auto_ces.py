@@ -1,5 +1,5 @@
 """
-StatsForecastAutoCES
+AutoCES
 -----------
 """
 
@@ -9,7 +9,7 @@ from darts import TimeSeries
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
 
 
-class StatsForecastAutoCES(LocalForecastingModel):
+class AutoCES(LocalForecastingModel):
     def __init__(self, *autoces_args, **autoces_kwargs):
         """Auto-CES based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -31,10 +31,10 @@ class StatsForecastAutoCES(LocalForecastingModel):
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.models import StatsForecastAutoCES
+        >>> from darts.models import AutoCES
         >>> series = AirPassengersDataset().load()
-        >>> # define StatsForecastAutoCES parameters
-        >>> model = StatsForecastAutoCES(season_length=12, model="Z")
+        >>> # define AutoCES parameters
+        >>> model = AutoCES(season_length=12, model="Z")
         >>> model.fit(series)
         >>> pred = model.predict(6)
         >>> pred.values()
