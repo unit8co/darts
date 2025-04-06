@@ -90,27 +90,27 @@ except ModuleNotFoundError:
 
 try:
     from darts.models.forecasting.croston import Croston
-    from darts.models.forecasting.sf_auto_arima import StatsForecastAutoARIMA
-    from darts.models.forecasting.sf_auto_ces import StatsForecastAutoCES
-    from darts.models.forecasting.sf_auto_ets import StatsForecastAutoETS
-    from darts.models.forecasting.sf_auto_mfles import StatsForecastAutoMFLES
-    from darts.models.forecasting.sf_auto_tbats import StatsForecastAutoTBATS
-    from darts.models.forecasting.sf_auto_theta import StatsForecastAutoTheta
+    from darts.models.forecasting.sf_auto_arima import AutoARIMA
+    from darts.models.forecasting.sf_auto_ces import AutoCES
+    from darts.models.forecasting.sf_auto_ets import AutoETS
+    from darts.models.forecasting.sf_auto_mfles import AutoMFLES
+    from darts.models.forecasting.sf_auto_tbats import AutoTBATS
+    from darts.models.forecasting.sf_auto_theta import AutoTheta
 
 except ImportError:
     logger.warning(
         "The StatsForecast module could not be imported. "
-        "To enable support for the StatsForecastAutoARIMA, "
-        "StatsForecastAutoETS and Croston models, please consider "
+        "To enable support for the AutoARIMA, "
+        "AutoETS and Croston models, please consider "
         "installing it."
     )
     Croston = NotImportedModule(module_name="StatsForecast", warn=False)
-    StatsForecastAutoARIMA = NotImportedModule(module_name="StatsForecast", warn=False)
-    StatsForecastAutoCES = NotImportedModule(module_name="StatsForecast", warn=False)
-    StatsForecastAutoETS = NotImportedModule(module_name="StatsForecast", warn=False)
-    StatsForecastAutoMFLES = NotImportedModule(module_name="StatsForecast", warn=False)
-    StatsForecastAutoTheta = NotImportedModule(module_name="StatsForecast", warn=False)
-    StatsForecastAutoTBATS = NotImportedModule(module_name="StatsForecast", warn=False)
+    AutoARIMA = NotImportedModule(module_name="StatsForecast", warn=False)
+    AutoCES = NotImportedModule(module_name="StatsForecast", warn=False)
+    AutoETS = NotImportedModule(module_name="StatsForecast", warn=False)
+    AutoMFLES = NotImportedModule(module_name="StatsForecast", warn=False)
+    AutoTheta = NotImportedModule(module_name="StatsForecast", warn=False)
+    AutoTBATS = NotImportedModule(module_name="StatsForecast", warn=False)
 
 try:
     from darts.models.forecasting.xgboost import XGBModel
@@ -158,12 +158,12 @@ __all__ = [
     "Prophet",
     "CatBoostModel",
     "Croston",
-    "StatsForecastAutoARIMA",
-    "StatsForecastAutoCES",
-    "StatsForecastAutoETS",
-    "StatsForecastAutoMFLES",
-    "StatsForecastAutoTheta",
-    "StatsForecastAutoTBATS",
+    "AutoARIMA",
+    "AutoCES",
+    "AutoETS",
+    "AutoMFLES",
+    "AutoTheta",
+    "AutoTBATS",
     "XGBModel",
     "GaussianProcessFilter",
     "KalmanFilter",
