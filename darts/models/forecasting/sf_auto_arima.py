@@ -7,18 +7,13 @@ from typing import Optional
 
 from statsforecast.models import AutoARIMA as SFAutoARIMA
 
-from darts import TimeSeries
 from darts.models.components.statsforecast_utils import (
-    create_normal_samples,
-    one_sigma_rule,
-    unpack_sf_dict,
+    StatsForecastFutureCovariatesLocalModel,
 )
-from darts.models.forecasting.forecasting_model import (
-    FutureCovariatesLocalForecastingModel,
-)
+from darts.utils.likelihood_models.statsforecast import QuantileRegression
 
 
-class AutoARIMA(FutureCovariatesLocalForecastingModel):
+class AutoARIMA(StatsForecastFutureCovariatesLocalModel):
     def __init__(
         self, *autoarima_args, add_encoders: Optional[dict] = None, **autoarima_kwargs
     ):
@@ -86,53 +81,14 @@ class AutoARIMA(FutureCovariatesLocalForecastingModel):
                [504.09229632],
                [555.06463942]])
         """
-        super().__init__(add_encoders=add_encoders)
-        self.model = SFAutoARIMA(*autoarima_args, **autoarima_kwargs)
-
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super()._fit(series, future_covariates)
-        self._assert_univariate(series)
-        series = self.training_series
-        self.model.fit(
-            series.values(copy=False).flatten(),
-            X=future_covariates.values(copy=False) if future_covariates else None,
-        )
-        return self
-
-    def _predict(
-        self,
-        n: int,
-        future_covariates: Optional[TimeSeries] = None,
-        num_samples: int = 1,
-        verbose: bool = False,
-    ):
-        super()._predict(n, future_covariates, num_samples)
-        forecast_dict = self.model.predict(
-            h=n,
-            X=future_covariates.values(copy=False) if future_covariates else None,
-            level=(one_sigma_rule,),  # ask one std for the confidence interval.
+        super().__init__(
+            model=SFAutoARIMA(*autoarima_args, **autoarima_kwargs),
+            likelihood=QuantileRegression(
+                quantiles=[0.05, 0.15865, 0.5, 0.84135, 0.95]
+            ),
+            add_encoders=add_encoders,
         )
 
-        mu, std = unpack_sf_dict(forecast_dict)
-        if num_samples > 1:
-            samples = create_normal_samples(mu, std, num_samples, n)
-        else:
-            samples = mu
-
-        return self._build_forecast_series(samples)
-
     @property
-    def supports_multivariate(self) -> bool:
-        return False
-
-    @property
-    def min_train_series_length(self) -> int:
-        return 10
-
-    @property
-    def _supports_range_index(self) -> bool:
-        return True
-
-    @property
-    def supports_probabilistic_prediction(self) -> bool:
+    def _supports_native_future_covariates(self) -> bool:
         return True

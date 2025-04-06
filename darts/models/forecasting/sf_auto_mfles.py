@@ -7,16 +7,15 @@ from typing import Optional
 
 from statsforecast.models import AutoMFLES as SFAutoMFLES
 
-from darts import TimeSeries
 from darts.logging import get_logger
-from darts.models.forecasting.forecasting_model import (
-    FutureCovariatesLocalForecastingModel,
+from darts.models.components.statsforecast_utils import (
+    StatsForecastFutureCovariatesLocalModel,
 )
 
 logger = get_logger(__name__)
 
 
-class AutoMFLES(FutureCovariatesLocalForecastingModel):
+class AutoMFLES(StatsForecastFutureCovariatesLocalModel):
     def __init__(
         self, *autoMFLES_args, add_encoders: Optional[dict] = None, **autoMFLES_kwargs
     ):
@@ -87,47 +86,12 @@ class AutoMFLES(FutureCovariatesLocalForecastingModel):
                 "`prediction_intervals` will be ignored."
             )
 
-        super().__init__(add_encoders=add_encoders)
-        self.model = SFAutoMFLES(*autoMFLES_args, **autoMFLES_kwargs)
-
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super()._fit(series, future_covariates)
-        self._assert_univariate(series)
-        series = self.training_series
-        self.model.fit(
-            series.values(copy=False).flatten(),
-            X=future_covariates.values(copy=False) if future_covariates else None,
-        )
-        return self
-
-    def _predict(
-        self,
-        n: int,
-        future_covariates: Optional[TimeSeries] = None,
-        num_samples: int = 1,
-        verbose: bool = False,
-    ):
-        super()._predict(n, future_covariates, num_samples)
-        forecast_dict = self.model.predict(
-            h=n,
-            X=future_covariates.values(copy=False) if future_covariates else None,
-            level=None,
+        super().__init__(
+            model=SFAutoMFLES(*autoMFLES_args, **autoMFLES_kwargs),
+            likelihood=None,  # does not support probabilistic forecasts
+            add_encoders=add_encoders,
         )
 
-        return self._build_forecast_series(forecast_dict["mean"])
-
     @property
-    def supports_multivariate(self) -> bool:
-        return False
-
-    @property
-    def min_train_series_length(self) -> int:
-        return 10
-
-    @property
-    def _supports_range_index(self) -> bool:
+    def _supports_native_future_covariates(self) -> bool:
         return True
-
-    @property
-    def supports_probabilistic_prediction(self) -> bool:
-        return False

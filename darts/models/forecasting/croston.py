@@ -103,7 +103,7 @@ class Croston(LocalForecastingModel):
 
         self.model.fit(
             y=series.values(copy=False).flatten(),
-            # X can be used to passe future covariates only when conformal prediction is used
+            # X can be used to pass future covariates only when conformal prediction is used
             X=None,
         )
 
@@ -118,7 +118,7 @@ class Croston(LocalForecastingModel):
         super().predict(n, num_samples)
         values = self.model.predict(
             h=n,
-            # X can be used to passe future covariates only when conformal prediction is used
+            # X can be used to pass future covariates only when conformal prediction is used
             X=None,
         )["mean"]
         return self._build_forecast_series(values)

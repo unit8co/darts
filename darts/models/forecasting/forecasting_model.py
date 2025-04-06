@@ -3231,6 +3231,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         verbose: bool = False,
         show_warnings: bool = True,
         **kwargs,
@@ -3249,6 +3250,10 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             contain at least the next `n` time steps/indices after the end of the training target series.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
+        predict_likelihood_parameters
+            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``.
         verbose
             Optionally, set the prediction verbosity. Not effective for all models.
         show_warnings
@@ -3302,7 +3307,11 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             )
 
         return self._predict(
-            n, future_covariates=future_covariates, num_samples=num_samples, **kwargs
+            n,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            **kwargs,
         )
 
     @abstractmethod

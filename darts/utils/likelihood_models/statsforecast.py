@@ -3,273 +3,31 @@ Likelihoods for `StatsForecast` Models
 --------------------------------------
 """
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Optional
 
 import numpy as np
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.utils.likelihood_models.base import (
     Likelihood,
     LikelihoodType,
     quantile_names,
 )
-from darts.utils.utils import _check_quantiles
+from darts.utils.utils import _check_quantiles, sample_from_quantiles
 
 logger = get_logger(__name__)
 
-# In a normal distribution, 68.27 percentage of values lie within one standard deviation of the mean
-ONE_SIGMA_RULE = 68.27
-
 
 class StatsForecastLikelihood(Likelihood, ABC):
-    def __init__(
-        self,
-        likelihood_type: LikelihoodType,
-        parameter_names: list[str],
-        n_outputs: int,
-        random_state: Optional[int] = None,
-    ):
-        """Base class for sklearn wrapper (e.g. `RegressionModel`) likelihoods.
+    def __init__(self, quantiles: list[float]):
+        """Base likelihood class for any Darts model that wraps a `statsforecast` model.
 
         Parameters
         ----------
-        likelihood_type
-            A pre-defined `LikelihoodType`.
-        parameter_names
-            The likelihood (distribution) parameter names.
-        n_outputs
-            The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
-            `output_chunk_length`.
-        random_state
-            Optionally, control the randomness of the sampling.
-        """
-        self._n_outputs = n_outputs
-        self._rng = np.random.default_rng(seed=random_state)
-        super().__init__(
-            likelihood_type=likelihood_type,
-            parameter_names=parameter_names,
-        )
-        # ignore additional attrs for equality tests
-        self.ignore_attrs_equality += ["_n_outputs", "_rng"]
-
-    def predict(
-        self,
-        model,
-        x: np.ndarray,
-        num_samples: int,
-        predict_likelihood_parameters: bool,
-        **kwargs,
-    ) -> np.ndarray:
-        """
-        Generates sampled or direct likelihood parameter predictions.
-
-        Parameters
-        ----------
-        model
-            The Darts `RegressionModel`.
-        x
-            The input feature array passed to the underlying estimator's `predict()` method.
-        num_samples
-            Number of times a prediction is sampled from the likelihood model / distribution.
-            If `1` and `predict_likelihood_parameters=False`, returns median / mean predictions.
-        predict_likelihood_parameters
-            If set to `True`, generates likelihood parameter predictions instead of sampling from the
-            likelihood model / distribution. Only supported with `num_samples = 1` and
-            `n<=output_chunk_length`.
-        kwargs
-            Some kwargs passed to the underlying estimator's `predict()` method.
-        """
-        model_output = self._estimator_predict(model, x, **kwargs)
-        if predict_likelihood_parameters:
-            return self.predict_likelihood_parameters(model_output)
-        elif num_samples == 1:
-            return self._get_median_prediction(model_output)
-        else:
-            return self.sample(model_output)
-
-    @abstractmethod
-    def sample(self, model_output: np.ndarray) -> np.ndarray:
-        """
-        Samples a prediction from the likelihood distribution and the predicted parameters.
-        """
-
-    @abstractmethod
-    def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
-        """
-        Returns the distribution parameters as a array, extracted from the raw model outputs.
-        """
-
-    @abstractmethod
-    def _estimator_predict(
-        self,
-        model,
-        x: np.ndarray,
-        **kwargs,
-    ) -> np.ndarray:
-        """
-        Computes the model output.
-
-        Parameters
-        ----------
-        model
-            The Darts `RegressionModel`.
-        x
-            The input feature array passed to the underlying estimator's `predict()` method.
-        kwargs
-            Some kwargs passed to the underlying estimator's `predict()` method.
-        """
-
-    @abstractmethod
-    def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
-        """
-        Gets the median prediction per component extracted from the model output.
-        """
-
-
-class GaussianLikelihood(StatsForecastLikelihood):
-    def __init__(
-        self,
-        n_outputs: int,
-        random_state: Optional[int] = None,
-    ):
-        """
-        Gaussian distribution [1]_.
-
-        Parameters
-        ----------
-        n_outputs
-            The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
-            `output_chunk_length`.
-        random_state
-            Optionally, control the randomness of the sampling.
-
-        References
-        ----------
-        .. [1] https://en.wikipedia.org/wiki/Normal_distribution
-        """
-        super().__init__(
-            likelihood_type=LikelihoodType.Gaussian,
-            parameter_names=["mu", "sigma"],
-            n_outputs=n_outputs,
-            random_state=random_state,
-        )
-
-    def sample(self, model_output: np.ndarray, num_samples) -> np.ndarray:
-        return _create_normal_samples(*model_output, num_samples)
-
-    def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
-        # shape (n_components * output_chunk_length, n_series * n_samples, 2)
-        # [mu, sigma] on the last dimension, grouped by component
-        n_samples = model_output.shape[1]
-
-        # reshape to (n_series * n_samples, output_chunk_length, n_components)
-        params_reshaped = model_output.transpose(1, 0, 2).reshape(
-            n_samples, self._n_outputs, -1
-        )
-        return params_reshaped
-
-    def _estimator_predict(
-        self,
-        model,
-        x: np.ndarray,
-        n=1,  # TODO
-        **kwargs,
-    ) -> np.ndarray:
-        kwargs = {"X": x} if x is not None else {}
-        forecast_dict = model.model.predict(
-            h=n,
-            level=(ONE_SIGMA_RULE,),  # ask one std for the confidence interval.
-            **kwargs,
-        )
-        mu, std = _unpack_sf_dict(forecast_dict)
-        return mu, std
-
-    def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
-        # shape (n_components * output_chunk_length, n_series * n_samples, 2)
-        # [mu, sigma] on the last dimension, grouped by component
-        k = model_output.shape[1]
-        # extract mu (mean) per component
-        component_medians = slice(0, None, self.num_parameters)
-        # shape (n_series * n_samples, output_chunk_length, n_components)
-        return model_output[:, :, component_medians].reshape(k, self._n_outputs, -1)
-
-
-class PoissonLikelihood(StatsForecastLikelihood):
-    def __init__(
-        self,
-        n_outputs: int,
-        random_state: Optional[int] = None,
-    ):
-        """
-        Poisson distribution [1]_.
-
-        Parameters
-        ----------
-        n_outputs
-            The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
-            `output_chunk_length`.
-        random_state
-            Optionally, control the randomness of the sampling.
-
-        References
-        ----------
-        .. [1] https://en.wikipedia.org/wiki/Poisson_distribution
-        """
-        super().__init__(
-            likelihood_type=LikelihoodType.Poisson,
-            parameter_names=["lambda"],
-            n_outputs=n_outputs,
-            random_state=random_state,
-        )
-
-    def sample(self, model_output: np.ndarray) -> np.ndarray:
-        # shape (n_series * n_samples, output_chunk_length, n_components)
-        return self._rng.poisson(lam=model_output).astype(float)
-
-    def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
-        # lambdas on the last dimension, grouped by component
-        return model_output
-
-    def _estimator_predict(
-        self,
-        model,
-        x: np.ndarray,
-        **kwargs,
-    ) -> np.ndarray:
-        k = x.shape[0]
-        # returns shape (n_series * n_samples, output_chunk_length, n_components)
-        return model.model.predict(x, **kwargs).reshape(k, self._n_outputs, -1)
-
-    def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
-        # shape (n_series * n_samples, output_chunk_length, n_components)
-        # lambda is already the median prediction
-        return model_output
-
-
-class QuantileRegression(StatsForecastLikelihood):
-    def __init__(
-        self,
-        n_outputs: int,
-        random_state: Optional[int] = None,
-        quantiles: Optional[list[float]] = None,
-    ):
-        """
-        Quantile Regression [1]_.
-
-        Parameters
-        ----------
-        n_outputs
-            The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
-            `output_chunk_length`.
-        random_state
-            Optionally, control the randomness of the sampling.
         quantiles
             A list of quantiles. Default: `[0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]`.
-
-        References
-        ----------
-        .. [1] https://en.wikipedia.org/wiki/Quantile_regression
         """
         if quantiles is None:
             quantiles = [
@@ -288,127 +46,157 @@ class QuantileRegression(StatsForecastLikelihood):
             _check_quantiles(quantiles)
         self.quantiles = quantiles
         self._median_idx = quantiles.index(0.5)
+        self.levels = [
+            round(100 * (q_h - q_l), 2)
+            for q_l, q_h in zip(
+                quantiles[: self._median_idx], quantiles[self._median_idx + 1 :][::-1]
+            )
+        ]
 
         super().__init__(
             likelihood_type=LikelihoodType.Quantile,
             parameter_names=quantile_names(self.quantiles),
-            n_outputs=n_outputs,
-            random_state=random_state,
         )
-        self.ignore_attrs_equality += ["_median_idx"]
+        # ignore additional attrs for equality tests
+        self.ignore_attrs_equality += ["_median_idx", "levels"]
 
-    def sample(self, model_output: np.ndarray) -> np.ndarray:
-        # model_output is of shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
-        # sample uniformly between [0, 1] (for each batch example) and return the
-        # linear interpolation between the fitted quantiles closest to the sampled value.
-        k, n_times, n_components, n_quantiles = model_output.shape
+    def predict(
+        self,
+        model,
+        n: int,
+        future_covariates: Optional[TimeSeries],
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
+    ) -> np.ndarray:
+        """
+        Generates sampled or direct likelihood parameter predictions.
 
-        # obtain samples
-        probs = self._rng.uniform(
-            size=(
-                k,
-                n_times,
-                n_components,
-                1,
-            )
+        Parameters
+        ----------
+        model
+            One of Darts' statsforecast models.
+        n
+            The number of time steps after the end of the training time series for which to produce predictions
+        future_covariates
+            Optionally, the future-known covariates series needed as inputs for the model.
+            They must match the covariates used for training in terms of dimension.
+        num_samples
+            Number of times a prediction is sampled from the likelihood model / distribution.
+            If `1` and `predict_likelihood_parameters=False`, returns median / mean predictions.
+        predict_likelihood_parameters
+            If set to `True`, generates likelihood parameter predictions instead of sampling from the
+            likelihood model / distribution. Only supported with `num_samples = 1` and
+            `n<=output_chunk_length`.
+        kwargs
+            Some kwargs passed to the underlying estimator's `predict()` method.
+        """
+        model_output = self._estimator_predict(
+            model, n=n, future_covariates=future_covariates, **kwargs
         )
+        if predict_likelihood_parameters:
+            return self.predict_likelihood_parameters(model_output)
+        elif num_samples == 1:
+            return self._get_median_prediction(model_output)
+        else:
+            return self.sample(model_output, num_samples=num_samples)
 
-        # add dummy dim
-        probas = np.expand_dims(probs, axis=-2)
-
-        # tile and transpose
-        p = np.tile(probas, (1, 1, 1, n_quantiles, 1)).transpose((0, 1, 2, 4, 3))
-
-        # prepare quantiles
-        tquantiles = np.array(self.quantiles).reshape((1, 1, 1, -1))
-
-        # calculate index of the largest quantile smaller than the sampled value
-        left_idx = np.sum(p > tquantiles, axis=-1)
-
-        # obtain index of the smallest quantile larger than the sampled value
-        right_idx = left_idx + 1
-
-        # repeat the model output on the edges
-        repeat_count = [1] * n_quantiles
-        repeat_count[0] = 2
-        repeat_count[-1] = 2
-        repeat_count = np.array(repeat_count)
-        shifted_output = np.repeat(model_output, repeat_count, axis=-1)
-
-        # obtain model output values corresponding to the quantiles left and right of the sampled value
-        left_value = np.take_along_axis(shifted_output, left_idx, axis=-1)
-        right_value = np.take_along_axis(shifted_output, right_idx, axis=-1)
-
-        # add 0 and 1 to quantiles
-        ext_quantiles = [0.0] + self.quantiles + [1.0]
-        expanded_q = np.tile(np.array(ext_quantiles), left_idx.shape)
-
-        # calculate closest quantiles to the sampled value
-        left_q = np.take_along_axis(expanded_q, left_idx, axis=-1)
-        right_q = np.take_along_axis(expanded_q, right_idx, axis=-1)
-
-        # linear interpolation
-        weights = (probs - left_q) / (right_q - left_q)
-        inter = left_value + weights * (right_value - left_value)
-
-        # shape (n_series * n_samples, output_chunk_length, n_components * n_quantiles)
-        return inter.squeeze(-1)
+    def sample(self, model_output: np.ndarray, num_samples: int) -> np.ndarray:
+        """
+        Samples a prediction from the likelihood distribution and the predicted parameters.
+        """
+        return sample_from_quantiles(
+            vals=model_output,
+            quantiles=np.array(self.quantiles),
+            num_samples=num_samples,
+        )
 
     def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
-        # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
-        # quantiles on the last dimension, grouped by component
-        k, n_times, n_components, n_quantiles = model_output.shape
-        # last dim : [comp_1_q_1, ..., comp_1_q_n, ..., comp_n_q_1, ..., comp_n_q_n]
-        # shape (n_series * n_samples, output_chunk_length, n_components * n_quantiles)
-        return model_output.reshape(k, n_times, n_components * n_quantiles)
+        """
+        Returns the distribution parameters as an array, extracted from the raw model outputs.
+        """
+        return model_output
 
     def _estimator_predict(
         self,
         model,
-        x: np.ndarray,
+        n: int,
+        future_covariates: Optional[TimeSeries],
         **kwargs,
     ) -> np.ndarray:
-        # `x` is of shape (n_series * n_samples, n_regression_features)
-        k = x.shape[0]
-        model_outputs = []
-        for quantile, fitted in model._model_container.items():
-            model.model = fitted
-            # model output has shape (n_series * n_samples, output_chunk_length, n_components)
-            model_output = fitted.predict(x, **kwargs).reshape(k, self._n_outputs, -1)
-            model_outputs.append(model_output)
-        model_outputs = np.stack(model_outputs, axis=-1)
-        # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
-        return model_outputs
+        """
+        Computes the model output.
+
+        Parameters
+        ----------
+        model
+            The Darts `RegressionModel`.
+        x
+            The input feature array passed to the underlying estimator's `predict()` method.
+        kwargs
+            Some kwargs passed to the underlying estimator's `predict()` method.
+        """
+        forecast_dict = model.model.predict(
+            h=n,
+            X=(
+                future_covariates.values(copy=False)
+                if future_covariates is not None
+                and model._supports_native_future_covariates
+                else None
+            ),
+            level=self.levels,  # ask one std for the confidence interval.
+        )
+        vals = _unpack_sf_dict(forecast_dict, levels=self.levels)
+        if (
+            future_covariates is not None
+            and not model._supports_native_future_covariates
+        ):
+            mu_linreg = model._linreg.predict(n, future_covariates=future_covariates)
+            mu_linreg_values = mu_linreg.values(copy=False).reshape(n, 1)
+            vals += mu_linreg_values
+        return vals
 
     def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
-        # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
-        k, n_times, n_components, n_quantiles = model_output.shape
-        # extract the median quantiles per component
-        component_medians = slice(self._median_idx, None, n_quantiles)
-        # shape (n_series * n_samples, output_chunk_length, n_components)
-        return model_output[:, :, :, component_medians].reshape(
-            k, n_times, n_components
-        )
+        """
+        Gets the median prediction per component extracted from the model output.
+        """
+        return model_output[:, self._median_idx]
 
 
-def _create_normal_samples(
-    mu: np.ndarray,
-    std: np.ndarray,
-    num_samples: int,
-) -> np.ndarray:
-    """Generate samples assuming a Normal distribution."""
-    samples = np.random.normal(loc=mu, scale=std, size=(num_samples, len(mu))).T
-    samples = np.expand_dims(samples, axis=1)
-    return samples
+class QuantileRegression(StatsForecastLikelihood):
+    def __init__(self, quantiles: Optional[list[float]] = None):
+        """
+        Quantile Regression [1]_.
+
+        Parameters
+        ----------
+        quantiles
+            A list of quantiles. Default: `[0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]`.
+
+        References
+        ----------
+        .. [1] https://en.wikipedia.org/wiki/Quantile_regression
+        """
+        super().__init__(quantiles=quantiles)
 
 
 def _unpack_sf_dict(
     forecast_dict: dict,
-):
-    """Unpack the dictionary that is returned by the StatsForecast 'predict()' method."""
-    mu = forecast_dict["mean"]
-    std = forecast_dict[f"hi-{ONE_SIGMA_RULE}"] - mu
-    return mu, std
+    levels: list[float],
+) -> np.ndarray:
+    """Unpack the dictionary that is returned by the StatsForecast 'predict()' method.
+
+    Into an array of quantile predictions with shape (n (horizon), n quantiles) ordered by increasing quantile.
+    """
+    mu = np.expand_dims(forecast_dict["mean"], -1)
+    lows = np.concatenate(
+        [np.expand_dims(forecast_dict[f"lo-{level}"], -1) for level in levels], axis=1
+    )
+    highs = np.concatenate(
+        [np.expand_dims(forecast_dict[f"hi-{level}"], -1) for level in levels[::-1]],
+        axis=1,
+    )
+    return np.concatenate([lows, mu, highs], axis=1)
 
 
 def _check_likelihood(likelihood: str, available_likelihoods: list[str]):
@@ -417,7 +205,7 @@ def _check_likelihood(likelihood: str, available_likelihoods: list[str]):
     Parameters
     ----------
     likelihood
-        The likelihood name. Must be one of ('gaussian', 'poisson', 'quantile').
+        The likelihood name. Must be one of ('quantile').
     available_likelihoods
         A list of supported likelihood names.
     """
@@ -432,8 +220,6 @@ def _check_likelihood(likelihood: str, available_likelihoods: list[str]):
 
 def _get_likelihood(
     likelihood: Optional[str],
-    n_outputs: int,
-    random_state: Optional[int],
     quantiles: Optional[list[float]],
 ) -> Optional[StatsForecastLikelihood]:
     """Get the `Likelihood` object for `RegressionModel`.
@@ -441,27 +227,16 @@ def _get_likelihood(
     Parameters
     ----------
     likelihood
-        The likelihood name. Must be one of ('gaussian', 'poisson', 'quantile').
-    n_outputs
-        The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
-        `output_chunk_length`.
-    random_state
-        Optionally, control the randomness of the sampling.
+        The likelihood name. Must be one of ('quantile').
     quantiles
         Optionally, a list of quantiles. Only effective for `likelihood='quantile'`.
     """
-    if likelihood is None:
-        return None
-    elif likelihood == "gaussian":
-        return GaussianLikelihood(n_outputs=n_outputs, random_state=random_state)
-    elif likelihood == "quantile":
-        return QuantileRegression(
-            n_outputs=n_outputs, random_state=random_state, quantiles=quantiles
-        )
+    if likelihood == "quantile":
+        return QuantileRegression(quantiles=quantiles)
     else:
         raise_log(
             ValueError(
-                f"Invalid `likelihood='{likelihood}'`. Must be one of ('gaussian', 'poisson', 'quantile')"
+                f"Invalid `likelihood='{likelihood}'`. Must be one of ('quantile')"
             ),
             logger=logger,
         )

@@ -3,14 +3,20 @@ AutoCES
 -----------
 """
 
+from typing import Optional
+
 from statsforecast.models import AutoCES as SFAutoCES
 
-from darts import TimeSeries
-from darts.models.forecasting.forecasting_model import LocalForecastingModel
+from darts.models.components.statsforecast_utils import (
+    StatsForecastFutureCovariatesLocalModel,
+)
+from darts.utils.likelihood_models.statsforecast import QuantileRegression
 
 
-class AutoCES(LocalForecastingModel):
-    def __init__(self, *autoces_args, **autoces_kwargs):
+class AutoCES(StatsForecastFutureCovariatesLocalModel):
+    def __init__(
+        self, *autoces_args, add_encoders: Optional[dict] = None, **autoces_kwargs
+    ):
         """Auto-CES based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
 
@@ -21,10 +27,39 @@ class AutoCES(LocalForecastingModel):
         <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoces>`_
         for the exhaustive documentation of the arguments.
 
+        In addition to the StatsForecast implementation, this model can handle future covariates. It does so by first
+        regressing the series against the future covariates using the :class:'LinearRegressionModel' model and then
+        running StatsForecast's AutoETS on the in-sample residuals from this original regression. This approach was
+        inspired by 'this post of Stephan Kolassa< https://stats.stackexchange.com/q/220885>'_.
+
         Parameters
         ----------
         autoces_args
             Positional arguments for ``statsforecasts.models.AutoCES``.
+        add_encoders
+            A large number of future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'future': ['relative']},
+                    'custom': {'future': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
+                }
+            ..
         autoces_kwargs
             Keyword arguments for ``statsforecasts.models.AutoCES``.
 
@@ -45,42 +80,14 @@ class AutoCES(LocalForecastingModel):
                [519.79962158],
                [586.47503662]])
         """
-        super().__init__()
-        self.model = SFAutoCES(*autoces_args, **autoces_kwargs)
-
-    def fit(self, series: TimeSeries):
-        super().fit(series)
-        self._assert_univariate(series)
-        series = self.training_series
-        self.model.fit(
-            series.values(copy=False).flatten(),
+        super().__init__(
+            model=SFAutoCES(*autoces_args, **autoces_kwargs),
+            likelihood=QuantileRegression(
+                quantiles=[0.05, 0.15865, 0.5, 0.84135, 0.95]
+            ),
+            add_encoders=add_encoders,
         )
-        return self
-
-    def predict(
-        self,
-        n: int,
-        num_samples: int = 1,
-        verbose: bool = False,
-        show_warnings: bool = True,
-    ):
-        super().predict(n, num_samples)
-        forecast_dict = self.model.predict(
-            h=n,
-        )
-
-        mu = forecast_dict["mean"]
-
-        return self._build_forecast_series(mu)
 
     @property
-    def supports_multivariate(self) -> bool:
+    def _supports_native_future_covariates(self) -> bool:
         return False
-
-    @property
-    def min_train_series_length(self) -> int:
-        return 10
-
-    @property
-    def _supports_range_index(self) -> bool:
-        return True
