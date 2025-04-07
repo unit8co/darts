@@ -242,7 +242,6 @@ class NLinearModel(MixedCovariatesTorchModel):
             .. note::
                 This cannot be applied to probabilistic models.
             ..
-
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
