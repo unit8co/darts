@@ -290,7 +290,7 @@ class TestCategoricalForecasting:
         ),
     )
     def test_models_accuracy_univariate(self, config):
-        (model, idx), multi_models, ocl = config
+        (model, idx), multi_models, output_chunk_length = config
         # for every model, and different output_chunk_lengths test whether it predicts the univariate time series
         # as well as expected, accuracies are defined at the top of the class
         self.helper_test_models_accuracy(
@@ -300,7 +300,7 @@ class TestCategoricalForecasting:
             model,
             idx,
             multi_models,
-            ocl,
+            output_chunk_length,
         )
 
     @pytest.mark.parametrize(
@@ -315,7 +315,7 @@ class TestCategoricalForecasting:
         ),
     )
     def test_models_accuracy_multivariate(self, config):
-        (model, idx), multi_models, ocl = config
+        (model, idx), multi_models, output_chunk_length = config
         # for every model, and different output_chunk_lengths test whether it predicts the multivariate time series
         # as well as expected, accuracies are defined at the top of the class
         self.helper_test_models_accuracy(
@@ -325,7 +325,7 @@ class TestCategoricalForecasting:
             model,
             idx,
             multi_models,
-            ocl,
+            output_chunk_length,
         )
 
     @pytest.mark.parametrize(

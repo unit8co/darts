@@ -186,11 +186,11 @@ class CatBoostModel(RegressionModelWithCategoricalFeatures):
         >>> pred = model.predict(6)
         >>> pred.values()
         array([[1006.4153701 ],
-               [1006.41907237],
-               [1006.30872957],
-               [1006.28614154],
-               [1006.22355514],
-               [1006.21607546]])
+                [1006.41907237],
+                [1006.30872957],
+                [1006.28614154],
+                [1006.22355514],
+                [1006.21607546]])
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs

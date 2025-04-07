@@ -284,7 +284,6 @@ class TestRegressionModels:
             0.75,  # PoissonLightGBMModel
         ]
 
-    catboost_w_categorical_covariates = NotImportedModule
     if cb_available:
         RegularCatBoostModel = partialclass(
             CatBoostModel,

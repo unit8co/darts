@@ -362,7 +362,7 @@ class RegressionModel(GlobalForecastingModel):
                     raise_log(
                         ValueError(
                             f"`{lags_name}` - `{comp_name}`: must be either a {supported_types}. "
-                            f"Given : {type(comp_lags)}."
+                            f"Given : {type(comp_lags)}.",
                         ),
                         logger,
                     )
