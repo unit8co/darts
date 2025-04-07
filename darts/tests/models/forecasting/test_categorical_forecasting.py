@@ -290,7 +290,7 @@ class TestCategoricalForecasting:
         ),
     )
     def test_models_accuracy_univariate(self, config):
-        (model, idx), multi_models, output_chunk_length = config
+        (model, idx), multi_models, ocl = config
         # for every model, and different output_chunk_lengths test whether it predicts the univariate time series
         # as well as expected, accuracies are defined at the top of the class
         self.helper_test_models_accuracy(
@@ -300,7 +300,7 @@ class TestCategoricalForecasting:
             model,
             idx,
             multi_models,
-            output_chunk_length,
+            ocl,
         )
 
     @pytest.mark.parametrize(
@@ -315,7 +315,7 @@ class TestCategoricalForecasting:
         ),
     )
     def test_models_accuracy_multivariate(self, config):
-        (model, idx), multi_models, output_chunk_length = config
+        (model, idx), multi_models, ocl = config
         # for every model, and different output_chunk_lengths test whether it predicts the multivariate time series
         # as well as expected, accuracies are defined at the top of the class
         self.helper_test_models_accuracy(
@@ -325,7 +325,7 @@ class TestCategoricalForecasting:
             model,
             idx,
             multi_models,
-            output_chunk_length,
+            ocl,
         )
 
     @pytest.mark.parametrize(
@@ -340,7 +340,7 @@ class TestCategoricalForecasting:
         ),
     )
     def test_models_accuracy_multiseries_multivariate(self, config):
-        (model, idx), mode, ocl = config
+        (model, idx), multi_models, ocl = config
         # for every model, and different output_chunk_lengths test whether it predicts the multiseries, multivariate
         # time series as well as expected, accuracies are defined at the top of the class
         self.helper_test_models_accuracy(
@@ -349,7 +349,7 @@ class TestCategoricalForecasting:
             self.models_accuracies,
             model,
             idx,
-            mode,
+            multi_models,
             ocl,
         )
 
@@ -386,7 +386,7 @@ class TestCategoricalForecasting:
         "config", product(process_model_list(classifiers), [True, False])
     )
     def test_models_runnability(self, config):
-        (model_cls, kwargs), mode = config
+        (model_cls, kwargs), multi_models = config
 
         train_y, test_y = self.sine_univariate1_cat.split_before(0.7)
 
@@ -396,7 +396,7 @@ class TestCategoricalForecasting:
         model_instance = model_cls(
             lags_future_covariates=(0, 3),
             lags_past_covariates=None,
-            multi_models=mode,
+            multi_models=multi_models,
             **kwargs,
         )
         with pytest.raises(ValueError):
@@ -407,7 +407,9 @@ class TestCategoricalForecasting:
                 future_covariates=self.sine_multivariate2,
             )
 
-        model_instance = model_cls(lags_past_covariates=3, multi_models=mode, **kwargs)
+        model_instance = model_cls(
+            lags_past_covariates=3, multi_models=multi_models, **kwargs
+        )
         with pytest.raises(ValueError):
             # testing lags_past_covariates but no past_covariates during fit
             model_instance.fit(series=self.sine_univariate1_cat)
@@ -416,7 +418,7 @@ class TestCategoricalForecasting:
         model_instance = model_cls(
             lags_past_covariates=4,
             lags_future_covariates=None,
-            multi_models=mode,
+            multi_models=multi_models,
             **kwargs,
         )
         with pytest.raises(ValueError):
@@ -430,7 +432,7 @@ class TestCategoricalForecasting:
         model_instance = model_cls(
             lags_past_covariates=4,
             lags_future_covariates=(0, 3),
-            multi_models=mode,
+            multi_models=multi_models,
             **kwargs,
         )
         with pytest.raises(ValueError):
@@ -441,7 +443,9 @@ class TestCategoricalForecasting:
             )
 
         # testing input_dim
-        model_instance = model_cls(lags_past_covariates=2, multi_models=mode, **kwargs)
+        model_instance = model_cls(
+            lags_past_covariates=2, multi_models=multi_models, **kwargs
+        )
         model_instance.fit(
             series=train_y,
             past_covariates=self.sine_univariate1.stack(self.sine_univariate1),
