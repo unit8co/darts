@@ -8,14 +8,12 @@ from typing import Optional
 from statsforecast.models import AutoMFLES as SFAutoMFLES
 
 from darts.logging import get_logger
-from darts.models.components.statsforecast_utils import (
-    StatsForecastFutureCovariatesLocalModel,
-)
+from darts.models.forecasting.sf_model import StatsForecastModel
 
 logger = get_logger(__name__)
 
 
-class AutoMFLES(StatsForecastFutureCovariatesLocalModel):
+class AutoMFLES(StatsForecastModel):
     def __init__(
         self, *autoMFLES_args, add_encoders: Optional[dict] = None, **autoMFLES_kwargs
     ):
@@ -94,4 +92,5 @@ class AutoMFLES(StatsForecastFutureCovariatesLocalModel):
 
     @property
     def _supports_native_future_covariates(self) -> bool:
+        # TODO: explain that we're waiting for statsforecast to add missing `uses_exog`
         return True

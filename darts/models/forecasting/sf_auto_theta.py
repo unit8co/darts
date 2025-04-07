@@ -7,13 +7,11 @@ from typing import Optional
 
 from statsforecast.models import AutoTheta as SFAutoTheta
 
-from darts.models.components.statsforecast_utils import (
-    StatsForecastFutureCovariatesLocalModel,
-)
+from darts.models.forecasting.sf_model import StatsForecastModel
 from darts.utils.likelihood_models.statsforecast import QuantileRegression
 
 
-class AutoTheta(StatsForecastFutureCovariatesLocalModel):
+class AutoTheta(StatsForecastModel):
     def __init__(
         self, *autotheta_args, add_encoders: Optional[dict] = None, **autotheta_kwargs
     ):
@@ -90,7 +88,3 @@ class AutoTheta(StatsForecastFutureCovariatesLocalModel):
             ),
             add_encoders=add_encoders,
         )
-
-    @property
-    def _supports_native_future_covariates(self) -> bool:
-        return False

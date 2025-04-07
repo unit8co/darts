@@ -89,13 +89,13 @@ except ModuleNotFoundError:
     CatBoostModel = NotImportedModule(module_name="CatBoost", warn=False)
 
 try:
-    from darts.models.forecasting.croston import Croston
     from darts.models.forecasting.sf_auto_arima import AutoARIMA
     from darts.models.forecasting.sf_auto_ces import AutoCES
     from darts.models.forecasting.sf_auto_ets import AutoETS
     from darts.models.forecasting.sf_auto_mfles import AutoMFLES
     from darts.models.forecasting.sf_auto_tbats import AutoTBATS
     from darts.models.forecasting.sf_auto_theta import AutoTheta
+    from darts.models.forecasting.sf_croston import Croston
 
 except ImportError:
     logger.warning(

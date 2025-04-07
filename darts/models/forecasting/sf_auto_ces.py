@@ -1,19 +1,17 @@
 """
 AutoCES
------------
+-------
 """
 
 from typing import Optional
 
 from statsforecast.models import AutoCES as SFAutoCES
 
-from darts.models.components.statsforecast_utils import (
-    StatsForecastFutureCovariatesLocalModel,
-)
+from darts.models.forecasting.sf_model import StatsForecastModel
 from darts.utils.likelihood_models.statsforecast import QuantileRegression
 
 
-class AutoCES(StatsForecastFutureCovariatesLocalModel):
+class AutoCES(StatsForecastModel):
     def __init__(
         self, *autoces_args, add_encoders: Optional[dict] = None, **autoces_kwargs
     ):
@@ -87,7 +85,3 @@ class AutoCES(StatsForecastFutureCovariatesLocalModel):
             ),
             add_encoders=add_encoders,
         )
-
-    @property
-    def _supports_native_future_covariates(self) -> bool:
-        return False

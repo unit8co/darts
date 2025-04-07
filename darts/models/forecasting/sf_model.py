@@ -1,5 +1,12 @@
-from abc import ABC, abstractmethod
+"""
+AutoARIMA
+---------
+"""
+
 from typing import Optional
+
+import numpy as np
+from statsforecast.models import _TS
 
 from darts import TimeSeries
 from darts.models import LinearRegressionModel
@@ -10,15 +17,65 @@ from darts.utils.likelihood_models.statsforecast import StatsForecastLikelihood
 from darts.utils.timeseries_generation import _build_forecast_series
 
 
-class StatsForecastFutureCovariatesLocalModel(
-    FutureCovariatesLocalForecastingModel, ABC
-):
+class StatsForecastModel(FutureCovariatesLocalForecastingModel):
     def __init__(
         self,
-        model,
-        likelihood: Optional[StatsForecastLikelihood],
+        model: _TS,
+        *args,
+        likelihood: Optional[StatsForecastLikelihood] = None,
         add_encoders: Optional[dict] = None,
+        **kwargs,
     ):
+        """StatsForecast Model.
+
+        Can be used to fit any `StatsForecast` model. For more information on available models, see the
+        `StatsForecast package <https://github.com/Nixtla/statsforecast>`_.
+
+        In addition to the StatsForecast models that do not support exogenous features natively, this model can handle
+        future covariates. It does so by first regressing the series against the future covariates using the
+        :class:'LinearRegressionModel' model and then running the StatsForecast model on the in-sample residuals from
+        this original regression. This approach was inspired by 'this post of Stephan Kolassa
+        <https://stats.stackexchange.com/q/220885>'_.
+
+        .. note::
+            Future covariates are not supported when the input series contain missing values.
+
+        Parameters
+        ----------
+        model
+            Any StatsForecast model.
+        args
+            Positional arguments to create an instance of `model`.
+        likelihood
+            Any of Darts' `StatsForecastLikelihood`.
+        add_encoders
+            A large number of future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'future': ['relative']},
+                    'custom': {'future': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
+                }
+            ..
+        kwargs
+            Keyword arguments to create an instance of `model`.
+        """
+
         self.model = model
         self._likelihood = likelihood
 
@@ -67,7 +124,11 @@ class StatsForecastFutureCovariatesLocalModel(
         **kwargs,
     ):
         super()._predict(n, future_covariates, num_samples)
+
+        series = self.training_series
+        comp_names_out = None
         if self.likelihood is not None:
+            # probabilistic forecast
             pred_vals = self.likelihood.predict(
                 model=self,
                 n=n,
@@ -76,19 +137,25 @@ class StatsForecastFutureCovariatesLocalModel(
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 **kwargs,
             )
+            comp_names_out = self.likelihood.component_names(series)
         else:
+            # mean forecast
             pred_vals = self.model.predict(
                 h=n,
                 X=future_covariates.values(copy=False) if future_covariates else None,
                 level=None,
-            )["mean"]
+            )
+            pred_vals = np.expand_dims(pred_vals["mean"], -1)
 
-        series = self.training_series
-        comp_names_out = (
-            self.likelihood.component_names(series)
-            if predict_likelihood_parameters
-            else None
-        )
+            if (
+                future_covariates is not None
+                and not self._supports_native_future_covariates
+            ):
+                # statsforecast model was trained on residuals, add the linear model predictions
+                mu_linreg = self._linreg.predict(n, future_covariates=future_covariates)
+                mu_linreg_values = mu_linreg.values(copy=False).reshape(n, 1)
+                pred_vals += mu_linreg_values
+
         return _build_forecast_series(
             points_preds=pred_vals,
             input_series=self.training_series,
@@ -114,9 +181,8 @@ class StatsForecastFutureCovariatesLocalModel(
         return self.likelihood is not None
 
     @property
-    @abstractmethod
     def _supports_native_future_covariates(self) -> bool:
-        return False
+        return self.model.uses_exog
 
     @property
     def likelihood(self) -> StatsForecastLikelihood:

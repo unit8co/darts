@@ -1,19 +1,17 @@
 """
 AutoARIMA
------------
+---------
 """
 
 from typing import Optional
 
 from statsforecast.models import AutoARIMA as SFAutoARIMA
 
-from darts.models.components.statsforecast_utils import (
-    StatsForecastFutureCovariatesLocalModel,
-)
+from darts.models.forecasting.sf_model import StatsForecastModel
 from darts.utils.likelihood_models.statsforecast import QuantileRegression
 
 
-class AutoARIMA(StatsForecastFutureCovariatesLocalModel):
+class AutoARIMA(StatsForecastModel):
     def __init__(
         self, *autoarima_args, add_encoders: Optional[dict] = None, **autoarima_kwargs
     ):
@@ -88,7 +86,3 @@ class AutoARIMA(StatsForecastFutureCovariatesLocalModel):
             ),
             add_encoders=add_encoders,
         )
-
-    @property
-    def _supports_native_future_covariates(self) -> bool:
-        return True
