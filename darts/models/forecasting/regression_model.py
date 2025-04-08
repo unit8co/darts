@@ -52,8 +52,9 @@ from darts.utils.historical_forecasts import (
     _process_historical_forecast_input,
 )
 from darts.utils.likelihood_models.sklearn import QuantileRegression, SKLearnLikelihood
-from darts.utils.multioutput import MultiOutputRegressor
+from darts.utils.multioutput import MultiOutputMixin, get_multioutput_estimator_cls
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
+from darts.utils.utils import ForecastingType
 
 logger = get_logger(__name__)
 
@@ -523,7 +524,7 @@ class RegressionModel(GlobalForecastingModel):
         quantile
             Optionally, for probabilistic model with `likelihood="quantile"`, a quantile value.
         """
-        if not isinstance(self.model, MultiOutputRegressor):
+        if not isinstance(self.model, MultiOutputMixin):
             logger.warning(
                 "Model supports multi-output; a single estimator forecasts all the horizons and components."
             )
@@ -589,8 +590,8 @@ class RegressionModel(GlobalForecastingModel):
             sample_weight=val_sample_weight,
             last_static_covariates_shape=self._static_covariates_shape,
         )
-        # create validation sets for MultiOutputRegressor
-        if val_labels.ndim == 2 and isinstance(self.model, MultiOutputRegressor):
+        # create validation sets for MultiOutputMixin
+        if val_labels.ndim == 2 and isinstance(self.model, MultiOutputMixin):
             val_sets, val_weights = [], []
             for i in range(val_labels.shape[1]):
                 val_sets.append((val_samples, val_labels[:, i]))
@@ -870,10 +871,10 @@ class RegressionModel(GlobalForecastingModel):
             self.output_chunk_length > 1 and self.multi_models
         )
 
-        # If multi-output required and model doesn't support it natively, wrap it in a MultiOutputRegressor
+        # If multi-output required and model doesn't support it natively, wrap it in a MultiOutputMixin
         if (
             requires_multioutput
-            and not isinstance(self.model, MultiOutputRegressor)
+            and not isinstance(self.model, MultiOutputMixin)
             and (
                 not self._supports_native_multioutput
                 or sample_weight
@@ -886,10 +887,11 @@ class RegressionModel(GlobalForecastingModel):
                 "eval_weight_name": val_weight_name,
                 "n_jobs": n_jobs_multioutput_wrapper,
             }
-            self.model = MultiOutputRegressor(self.model, **mor_kwargs)
+
+            self.model = get_multioutput_estimator_cls(self)(self.model, **mor_kwargs)
 
         if (
-            not isinstance(self.model, MultiOutputRegressor)
+            not isinstance(self.model, MultiOutputMixin)
             and n_jobs_multioutput_wrapper is not None
         ):
             logger.warning("Provided `n_jobs_multioutput_wrapper` wasn't used.")
@@ -1313,7 +1315,7 @@ class RegressionModel(GlobalForecastingModel):
         """Whether the model supports a validation set during training."""
         return (
             self.model.supports_sample_weight
-            if isinstance(self.model, MultiOutputRegressor)
+            if isinstance(self.model, MultiOutputMixin)
             else has_fit_parameter(self.model, "sample_weight")
         )
 
@@ -1421,10 +1423,17 @@ class RegressionModel(GlobalForecastingModel):
         """
         model = (
             self.model.estimator
-            if isinstance(self.model, MultiOutputRegressor)
+            if isinstance(self.model, MultiOutputMixin)
             else self.model
         )
         return model.__sklearn_tags__().target_tags.multi_output
+
+    @property
+    def _forecasting_type(self) -> ForecastingType:
+        """
+        Returns the forecasting type of the model
+        """
+        return ForecastingType.REGRESSION
 
 
 class _QuantileModelContainer(OrderedDict):
@@ -1770,7 +1779,6 @@ class RegressionModelWithCategoricalFeatures(RegressionModel, ABC):
         """
         Returns the name of the categorical features parameter from model's `fit` method .
         """
-        pass
 
     @property
     @abstractmethod
@@ -1778,4 +1786,3 @@ class RegressionModelWithCategoricalFeatures(RegressionModel, ABC):
         """ "
         Returns if the target serie will be treated as categorical features when `lags` are provided.
         """
-        pass

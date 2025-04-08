@@ -1,6 +1,7 @@
-from typing import Optional
+from typing import Callable, Optional
 
 from sklearn.base import is_classifier
+from sklearn.multioutput import MultiOutputClassifier as sk_MultiOutputClassifier
 from sklearn.multioutput import MultiOutputRegressor as sk_MultiOutputRegressor
 from sklearn.multioutput import _fit_estimator
 from sklearn.utils.multiclass import check_classification_targets
@@ -12,13 +13,15 @@ from sklearn.utils.validation import (
 )
 
 from darts.logging import get_logger, raise_log
+from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.utils.utils import ForecastingType
 
 logger = get_logger(__name__)
 
 
-class MultiOutputRegressor(sk_MultiOutputRegressor):
+class MultiOutputMixin:
     """
-    :class:`sklearn.utils.multioutput.MultiOutputRegressor` with a modified ``fit()`` method that also slices
+    Mixin for :class:`sklearn.utils.multioutput._MultiOutputEstimator` with a modified ``fit()`` method that also slices
     validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
     """
 
@@ -133,3 +136,26 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
         Whether model supports sample weight for training.
         """
         return has_fit_parameter(self.estimator, "sample_weight")
+
+
+class MultiOutputRegressor(MultiOutputMixin, sk_MultiOutputRegressor):
+    """
+    :class:`sklearn.utils.multioutput.MultiOutputClassifier` with a modified ``fit()`` method that also slices
+    validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
+    """
+
+
+class MultiOutputClassifier(MultiOutputMixin, sk_MultiOutputClassifier):
+    """
+    :class:`sklearn.utils.multioutput.MultiOutputClassifier` with a modified ``fit()`` method that also slices
+    validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
+    """
+
+
+get_multioutput_estimator_cls: Callable[[ForecastingModel], MultiOutputMixin] = (
+    lambda estimator: (
+        MultiOutputClassifier
+        if estimator._forecasting_type == ForecastingType.CATEGORICAL
+        else MultiOutputRegressor
+    )
+)

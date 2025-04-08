@@ -26,7 +26,7 @@ from darts.models.forecasting.lgbm import LightGBMCategoricalModel
 from darts.models.forecasting.xgboost import XGBCategoricalModel
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
-from darts.utils.multioutput import MultiOutputRegressor
+from darts.utils.multioutput import MultiOutputClassifier
 from darts.utils.utils import NotImportedModule
 
 lgbm_available = not isinstance(LightGBMCategoricalModel, NotImportedModule)
@@ -183,19 +183,19 @@ class TestCategoricalForecasting:
             CategoricalModel(model=LinearRegression())
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
-    def test_class_labels(self, clf_params):
+    def test_classes_labels(self, clf_params):
         clf, kwargs = clf_params
         model = clf(lags_past_covariates=5, **kwargs)
 
         # accessing classes_ before training raises an error
         with pytest.raises(AttributeError):
-            model.class_
+            model.classes_
 
         # training the model
         model.fit(
             series=self.sine_univariate1_cat, past_covariates=self.sine_univariate1
         )
-        assert [0, 1, 2] == list(model.class_)
+        assert [0, 1, 2] == list(model.classes_)
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
     def test_optional_static_covariates(self, clf_params):
@@ -358,7 +358,7 @@ class TestCategoricalForecasting:
         zip(process_model_list(classifiers), models_multioutput),
     )
     def test_multioutput_wrapper(self, model_params):
-        """Check that with input_chunk_length=1, wrapping in MultiOutputRegressor occurs only when necessary"""
+        """Check that with input_chunk_length=1, wrapping in MultiOutputClassifier occurs only when necessary"""
         (model_cls, kwargs), support_multioutput = model_params
         model = model_cls(
             lags_past_covariates=1,
@@ -368,7 +368,7 @@ class TestCategoricalForecasting:
             series=self.sine_multivariate1_cat, past_covariates=self.sine_multivariate2
         )
         if support_multioutput:
-            assert not isinstance(model.model, MultiOutputRegressor)
+            assert not isinstance(model.model, MultiOutputClassifier)
             # single estimator is responsible for both components
             assert (
                 model.model
@@ -376,7 +376,7 @@ class TestCategoricalForecasting:
                 == model.get_estimator(horizon=0, target_dim=1)
             )
         else:
-            assert isinstance(model.model, MultiOutputRegressor)
+            assert isinstance(model.model, MultiOutputClassifier)
             # one estimator (sub-model) per component
             assert model.get_estimator(horizon=0, target_dim=0) != model.get_estimator(
                 horizon=0, target_dim=1
