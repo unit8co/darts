@@ -24,6 +24,7 @@ from darts.models.forecasting.baselines import (
     NaiveMovingAverage,
     NaiveSeasonal,
 )
+from darts.models.forecasting.categorical_model import CategoricalModel
 from darts.models.forecasting.conformal_models import (
     ConformalNaiveModel,
     ConformalQRModel,
@@ -84,7 +85,10 @@ except ImportError:
     Prophet = NotImportedModule(module_name="Prophet", warn=False)
 
 try:
-    from darts.models.forecasting.catboost_model import CatBoostModel
+    from darts.models.forecasting.catboost_model import (
+        CatBoostCategoricalModel,
+        CatBoostModel,
+    )
 except ModuleNotFoundError:
     CatBoostModel = NotImportedModule(module_name="CatBoost", warn=False)
 
@@ -113,7 +117,7 @@ except ImportError:
     AutoTBATS = NotImportedModule(module_name="StatsForecast", warn=False)
 
 try:
-    from darts.models.forecasting.xgboost import XGBModel
+    from darts.models.forecasting.xgboost import XGBCategoricalModel, XGBModel
 except ImportError:
     XGBModel = NotImportedModule(module_name="XGBoost")
 
@@ -157,6 +161,8 @@ __all__ = [
     "TSMixerModel",
     "Prophet",
     "CatBoostModel",
+    "CatBoostCategoricalModel",
+    "CategoricalModel",
     "Croston",
     "AutoARIMA",
     "AutoCES",
@@ -165,6 +171,7 @@ __all__ = [
     "AutoTheta",
     "AutoTBATS",
     "XGBModel",
+    "XGBCategoricalModel",
     "GaussianProcessFilter",
     "KalmanFilter",
     "MovingAverageFilter",
