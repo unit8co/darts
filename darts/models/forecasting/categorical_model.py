@@ -8,13 +8,14 @@ from darts.logging import (
 from darts.models.forecasting.regression_model import (
     RegressionModel,
 )
+from darts.utils.utils import ForecastingType
 
 logger = get_logger(__name__)
 
 
 class CategoricalForecastingMixin:
     @property
-    def class_(self):
+    def classes_(self):
         """Returns the classes of the classifier model if the model was previously trained."""
         if not hasattr(self.model, "classes_") or self.model.classes_ is None:
             raise AttributeError("Model is not trained")
@@ -27,8 +28,15 @@ class CategoricalForecastingMixin:
                 "as a numerical feature when taking it as an input."
             )
 
+    @property
+    def _forecasting_type(self) -> ForecastingType:
+        """
+        Returns the forecasting type of the model
+        """
+        return ForecastingType.CATEGORICAL
 
-class CategoricalModel(RegressionModel, CategoricalForecastingMixin):
+
+class CategoricalModel(CategoricalForecastingMixin, RegressionModel):
     def __init__(self, model=None, lags=None, **kwargs):
         """Categorical Model
         Can be used to fit any scikit-learn-like classifier class to predict

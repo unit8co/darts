@@ -28,7 +28,6 @@ from darts.utils.likelihood_models.sklearn import (
     _check_likelihood,
     _get_likelihood,
 )
-from darts.utils.utils import ForecastingType
 
 logger = get_logger(__name__)
 
@@ -445,7 +444,7 @@ class CatBoostModel(RegressionModelWithCategoricalFeatures):
         return False
 
 
-class CatBoostCategoricalModel(CatBoostModel, CategoricalForecastingMixin):
+class CatBoostCategoricalModel(CategoricalForecastingMixin, CatBoostModel):
     def __init__(
         self,
         lags=None,
@@ -504,7 +503,7 @@ class CatBoostCategoricalModel(CatBoostModel, CategoricalForecastingMixin):
 
     @property
     def _is_target_categorical(self) -> bool:
-        """ "
+        """
         Returns if the target serie will be treated as categorical features when `lags` are provided.
         """
         return True
@@ -512,10 +511,3 @@ class CatBoostCategoricalModel(CatBoostModel, CategoricalForecastingMixin):
     @property
     def _supports_native_multioutput(self):
         return False  # TODO investigate  multi-output for CatBoostClassifier
-
-    @property
-    def _forecasting_type(self) -> ForecastingType:
-        """
-        Returns the forecasting type of the model
-        """
-        return ForecastingType.CATEGORICAL

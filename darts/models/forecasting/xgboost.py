@@ -27,7 +27,6 @@ from darts.utils.likelihood_models.sklearn import (
     _check_likelihood,
     _get_likelihood,
 )
-from darts.utils.utils import ForecastingType
 
 logger = get_logger(__name__)
 
@@ -353,7 +352,7 @@ class XGBModel(RegressionModel):
         return super()._supports_native_multioutput and self.likelihood is None
 
 
-class XGBCategoricalModel(XGBModel, CategoricalForecastingMixin):
+class XGBCategoricalModel(CategoricalForecastingMixin, XGBModel):
     def __init__(
         self,
         lags=None,
@@ -392,7 +391,7 @@ class XGBCategoricalModel(XGBModel, CategoricalForecastingMixin):
 
     @property
     def _is_target_categorical(self) -> bool:
-        """ "
+        """
         Returns if the target serie will be treated as categorical features when `lags` are provided.
         """
         return False
@@ -400,10 +399,3 @@ class XGBCategoricalModel(XGBModel, CategoricalForecastingMixin):
     @property
     def _supports_native_multioutput(self):
         return False  # investigate  multi-output for XGBoost
-
-    @property
-    def _forecasting_type(self) -> ForecastingType:
-        """
-        Returns the forecasting type of the model
-        """
-        return ForecastingType.CATEGORICAL

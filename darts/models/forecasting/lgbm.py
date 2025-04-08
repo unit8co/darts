@@ -29,7 +29,6 @@ from darts.utils.likelihood_models.sklearn import (
     _check_likelihood,
     _get_likelihood,
 )
-from darts.utils.utils import ForecastingType
 
 logger = get_logger(__name__)
 
@@ -359,7 +358,7 @@ class LightGBMModel(RegressionModelWithCategoricalFeatures):
         return False
 
 
-class LightGBMCategoricalModel(LightGBMModel, CategoricalForecastingMixin):
+class LightGBMCategoricalModel(CategoricalForecastingMixin, LightGBMModel):
     def __init__(
         self,
         lags=None,
@@ -405,18 +404,11 @@ class LightGBMCategoricalModel(LightGBMModel, CategoricalForecastingMixin):
 
     @property
     def _is_target_categorical(self) -> bool:
-        """ "
+        """
         Returns if the target serie will be treated as categorical features when `lags` are provided.
         """
         return True
 
     @property
     def _supports_native_multioutput(self):
-        return False  # investigate  multi-output for LightGBMClassifier
-
-    @property
-    def _forecasting_type(self) -> ForecastingType:
-        """
-        Returns the forecasting type of the model
-        """
-        return ForecastingType.CATEGORICAL
+        return False  # TODO investigate  multi-output for LightGBMClassifier
