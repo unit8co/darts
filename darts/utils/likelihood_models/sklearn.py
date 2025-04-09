@@ -418,7 +418,7 @@ def _check_likelihood(likelihood: str, available_likelihoods: list[str]):
     Parameters
     ----------
     likelihood
-        The likelihood name. Must be one of ('gaussian', 'poisson', 'quantile').
+        The likelihood name. Must be one of available_likelihoods.
     available_likelihoods
         A list of supported likelihood names.
     """

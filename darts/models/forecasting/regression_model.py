@@ -962,6 +962,10 @@ class RegressionModel(GlobalForecastingModel):
             max_samples_per_ts=max_samples_per_ts,
             **kwargs,
         )
+
+        likelihood = self.likelihood
+        if likelihood is not None:
+            likelihood.fit(self)
         return self
 
     def predict(

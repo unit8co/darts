@@ -25,6 +25,7 @@ class LikelihoodType(Enum):
     LogNormal = "lognormal"
     Weibull = "weibull"
     Quantile = "quantile"
+    ClassProbability = "class_probability"
 
 
 class Likelihood:
@@ -55,6 +56,10 @@ class Likelihood:
             "_parameter_names",
             "ignore_attrs_equality",
         ]
+
+    def fit(self, model):
+        """Fits the likelihood to the model."""
+        return self
 
     def component_names(self, input_series: TimeSeries) -> list[str]:
         """Generates names for the parameters of the Likelihood."""
