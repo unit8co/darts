@@ -408,17 +408,6 @@ class XGBCategoricalModel(CategoricalForecastingMixin, XGBModel):
     def _create_model(self, **kwargs):
         return xgb.XGBClassifier(**kwargs)
 
-    @property
-    def _is_target_categorical(self) -> bool:
-        """
-        Returns if the target serie will be treated as categorical features when `lags` are provided.
-        """
-        return False
-
-    @property
-    def _supports_native_multioutput(self):
-        return False  # investigate  multi-output for XGBoost
-
     def _set_likelihood(
         self,
         likelihood,
@@ -435,3 +424,14 @@ class XGBCategoricalModel(CategoricalForecastingMixin, XGBModel):
                 n_outputs=output_chunk_length if multi_models else 1,
                 random_state=random_state,
             )
+
+    @property
+    def _is_target_categorical(self) -> bool:
+        """
+        Returns if the target serie will be treated as categorical features when `lags` are provided.
+        """
+        return False
+
+    @property
+    def _supports_native_multioutput(self):
+        return False  # investigate  multi-output for XGBoost
