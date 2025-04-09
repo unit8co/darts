@@ -1024,9 +1024,10 @@ class TimeSeries:
         extract_time_col = [] if time_col is None else [time_col]
 
         if value_cols is None:
-            value_cols = df.columns.drop(
-                static_cov_cols + extract_metadata_cols + extract_time_col
-            ).tolist()
+            value_cols = list(
+                set(df.columns)
+                - set(static_cov_cols + extract_metadata_cols + extract_time_col)
+            )
         extract_value_cols = [value_cols] if isinstance(value_cols, str) else value_cols
 
         df = df[
@@ -1038,12 +1039,10 @@ class TimeSeries:
 
         if time_col:
             if isinstance(df[time_col].dtype, nw.Object) or isinstance(
-                df[time_col].dtype, nw.Datetime
+                df[time_col].dtype, nw.String
             ):
-                nw.maybe_set_index(df, index=pd.DatetimeIndex(df[time_col]))
-                df = df.drop(columns=time_col)
-            else:
-                nw.maybe_set_index(df, column_names=time_col)
+                df = df.with_columns(df[time_col].cast(nw.Datetime))
+            df = nw.maybe_set_index(df, column_names=time_col)
 
         df_index = nw.maybe_get_index(df)
         if df_index.is_monotonic_increasing:
@@ -1052,22 +1051,17 @@ class TimeSeries:
                 "results in time series groups with non-overlapping (time) index. You can ignore this warning if the "
                 "index represents the actual index of each individual time series group."
             )
-
         # sort on entire `df` to avoid having to sort individually later on
         else:
-            df = (
-                df.with_columns(df_index.alias("temp_col"))
-                .sort("temp_col")
-                .drop("temp_col")
-            )
+            df = df.sort(df_index.name)
 
-        groups = df.groupby(group_cols[0] if len(group_cols) == 1 else group_cols)
+        groups = df.group_by(group_cols[0] if len(group_cols) == 1 else group_cols)
 
         # build progress bar for iterator
         iterator = _build_tqdm_iterator(
             groups,
             verbose=verbose,
-            total=len(groups),
+            total=len(list(groups)),
             desc="Creating TimeSeries",
         )
 
@@ -1092,14 +1086,13 @@ class TimeSeries:
 
             if static_cols:
                 # use first value as static covariate (assume only one unique per group)
-                static_cov_vals += tuple(group[static_cols].values[0])
+                static_cov_vals += tuple(group[static_cols][0])
 
             metadata = None
             if metadata_cols:
                 # use first value as metadata (assume only one unique per group)
                 metadata = {
-                    col: val
-                    for col, val in zip(metadata_cols, group[metadata_cols].values[0])
+                    col: val for col, val in zip(metadata_cols, group[metadata_cols][0])
                 }
 
             return cls.from_dataframe(
