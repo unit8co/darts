@@ -22,6 +22,7 @@ from darts.models.forecasting.regression_model import (
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
+from darts.utils.likelihood_models.categorical import _get_categorical_likelihood
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
     _check_likelihood,
@@ -195,20 +196,15 @@ class XGBModel(RegressionModel):
         self.kwargs = kwargs
         self._model_container = None
 
-        # parse likelihood
-        if likelihood is not None:
-            _check_likelihood(likelihood, ["poisson", "quantile"])
-            if likelihood in {"poisson"}:
-                self.kwargs["objective"] = f"count:{likelihood}"
-            elif likelihood == "quantile":
-                self.kwargs["objective"] = "reg:quantileerror"
-                self._model_container = _QuantileModelContainer()
-
-        self._likelihood = _get_likelihood(
+        likelihood_kwrags = {}
+        if quantiles is not None:
+            likelihood_kwrags["quantiles"] = quantiles
+        self._set_likelihood(
             likelihood=likelihood,
-            n_outputs=output_chunk_length if multi_models else 1,
+            output_chunk_length=output_chunk_length,
             random_state=random_state,
-            quantiles=quantiles,
+            multi_models=multi_models,
+            **likelihood_kwrags,
         )
 
         super().__init__(
@@ -225,6 +221,30 @@ class XGBModel(RegressionModel):
 
     def _create_model(self, **kwargs):
         return xgb.XGBRegressor(**kwargs)
+
+    def _set_likelihood(
+        self,
+        likelihood,
+        output_chunk_length,
+        random_state,
+        multi_models,
+        quantiles=None,
+    ):
+        # parse likelihood
+        if likelihood is not None:
+            _check_likelihood(likelihood, ["poisson", "quantile"])
+            if likelihood in {"poisson"}:
+                self.kwargs["objective"] = f"count:{likelihood}"
+            elif likelihood == "quantile":
+                self.kwargs["objective"] = "reg:quantileerror"
+                self._model_container = _QuantileModelContainer()
+
+        self._likelihood = _get_likelihood(
+            likelihood=likelihood,
+            n_outputs=output_chunk_length if multi_models else 1,
+            random_state=random_state,
+            quantiles=quantiles,
+        )
 
     def fit(
         self,
@@ -292,7 +312,7 @@ class XGBModel(RegressionModel):
             self._model_container.clear()
             for quantile in likelihood.quantiles:
                 self.kwargs["quantile_alpha"] = quantile
-                self.model = xgb.XGBRegressor(**self.kwargs)
+                self.model = self._create_model(**self.kwargs)
                 super().fit(
                     series=series,
                     past_covariates=past_covariates,
@@ -362,7 +382,6 @@ class XGBCategoricalModel(CategoricalForecastingMixin, XGBModel):
         output_chunk_shift=0,
         add_encoders=None,
         likelihood=None,
-        quantiles=None,
         random_state=None,
         multi_models=True,
         use_static_covariates=True,
@@ -379,7 +398,7 @@ class XGBCategoricalModel(CategoricalForecastingMixin, XGBModel):
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             likelihood=likelihood,
-            quantiles=quantiles,
+            quantiles=None,
             random_state=random_state,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
@@ -399,3 +418,20 @@ class XGBCategoricalModel(CategoricalForecastingMixin, XGBModel):
     @property
     def _supports_native_multioutput(self):
         return False  # investigate  multi-output for XGBoost
+
+    def _set_likelihood(
+        self,
+        likelihood,
+        output_chunk_length,
+        random_state,
+        multi_models,
+    ):
+        if likelihood is not None:
+            _check_likelihood(likelihood, ["class_probability"])
+
+            # CatBoostModel only support regression likelihood
+            self._likelihood = _get_categorical_likelihood(
+                likelihood=likelihood,
+                n_outputs=output_chunk_length if multi_models else 1,
+                random_state=random_state,
+            )

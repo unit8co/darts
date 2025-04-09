@@ -23,6 +23,7 @@ from darts.models.forecasting.regression_model import (
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
+from darts.utils.likelihood_models.categorical import _get_categorical_likelihood
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
     _check_likelihood,
@@ -198,29 +199,15 @@ class CatBoostModel(RegressionModelWithCategoricalFeatures):
         self.kwargs = kwargs
         self._model_container = None
 
-        # parse likelihood
-        if likelihood is not None:
-            likelihood_map = {
-                "quantile": None,
-                "poisson": "Poisson",
-                "gaussian": "RMSEWithUncertainty",
-                "RMSEWithUncertainty": "RMSEWithUncertainty",
-            }
-            _check_likelihood(likelihood, list(likelihood_map.keys()))
-            if likelihood == "RMSEWithUncertainty":
-                # RMSEWithUncertainty returns mean and variance which is equivalent to gaussian
-                likelihood = "gaussian"
-
-            if likelihood == "quantile":
-                self._model_container = _QuantileModelContainer()
-            else:
-                self.kwargs["loss_function"] = likelihood_map[likelihood]
-
-        self._likelihood = _get_likelihood(
+        likelihood_kwrags = {}
+        if quantiles is not None:
+            likelihood_kwrags["quantiles"] = quantiles
+        self._set_likelihood(
             likelihood=likelihood,
-            n_outputs=output_chunk_length if multi_models else 1,
+            output_chunk_length=output_chunk_length,
             random_state=random_state,
-            quantiles=quantiles,
+            multi_models=multi_models,
+            **likelihood_kwrags,
         )
 
         # suppress writing catboost info files when user does not specifically ask to
@@ -247,6 +234,39 @@ class CatBoostModel(RegressionModelWithCategoricalFeatures):
 
     def _create_model(self, **kwargs):
         return CatBoostRegressor(**kwargs)
+
+    def _set_likelihood(
+        self,
+        likelihood,
+        output_chunk_length,
+        random_state,
+        multi_models,
+        quantiles=None,
+    ):
+        # parse likelihood
+        if likelihood is not None:
+            likelihood_map = {
+                "quantile": None,
+                "poisson": "Poisson",
+                "gaussian": "RMSEWithUncertainty",
+                "RMSEWithUncertainty": "RMSEWithUncertainty",
+            }
+            _check_likelihood(likelihood, list(likelihood_map.keys()))
+            if likelihood == "RMSEWithUncertainty":
+                # RMSEWithUncertainty returns mean and variance which is equivalent to gaussian
+                likelihood = "gaussian"
+
+            if likelihood == "quantile":
+                self._model_container = _QuantileModelContainer()
+            else:
+                self.kwargs["loss_function"] = likelihood_map[likelihood]
+
+        self._likelihood = _get_likelihood(
+            likelihood=likelihood,
+            n_outputs=output_chunk_length if multi_models else 1,
+            random_state=random_state,
+            quantiles=quantiles,
+        )
 
     def fit(
         self,
@@ -317,7 +337,7 @@ class CatBoostModel(RegressionModelWithCategoricalFeatures):
                 this_quantile = str(quantile)
                 # translating to catboost argument
                 self.kwargs["loss_function"] = f"Quantile:alpha={this_quantile}"
-                self.model = CatBoostRegressor(**self.kwargs)
+                self.model = self._create_model(**self.kwargs)
                 super().fit(
                     series=series,
                     past_covariates=past_covariates,
@@ -454,7 +474,6 @@ class CatBoostCategoricalModel(CategoricalForecastingMixin, CatBoostModel):
         output_chunk_shift=0,
         add_encoders=None,
         likelihood=None,
-        quantiles=None,
         random_state=None,
         multi_models=True,
         use_static_covariates=True,
@@ -473,7 +492,7 @@ class CatBoostCategoricalModel(CategoricalForecastingMixin, CatBoostModel):
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             likelihood=likelihood,
-            quantiles=quantiles,
+            quantiles=None,  # quantiles are not supported for CatBoostClassifier
             random_state=random_state,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
@@ -485,6 +504,23 @@ class CatBoostCategoricalModel(CategoricalForecastingMixin, CatBoostModel):
 
     def _create_model(self, **kwargs):
         return CatBoostClassifier(**kwargs)
+
+    def _set_likelihood(
+        self,
+        likelihood,
+        output_chunk_length,
+        random_state,
+        multi_models,
+    ):
+        if likelihood is not None:
+            _check_likelihood(likelihood, ["class_probability"])
+
+            # CatBoostModel only support regression likelihood
+            self._likelihood = _get_categorical_likelihood(
+                likelihood=likelihood,
+                n_outputs=output_chunk_length if multi_models else 1,
+                random_state=random_state,
+            )
 
     def _format_samples(self, samples, labels=None):
         """
