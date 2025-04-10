@@ -93,7 +93,7 @@ class TestCategoricalForecasting:
     sine_multiseries2 = [sine_univariate4, sine_univariate5, sine_univariate6]
 
     classifiers = [
-        (CategoricalModel, {}),
+        (LogisticRegression, {}),
         (KNeighborsClassifier, {"n_neighbors": 3}),
         (SVC, {"gamma": 2, "C": 1, "random_state": 42}),
         (GaussianProcessClassifier, {"kernel": 1.0 * RBF(1.0), "random_state": 42}),
