@@ -11,7 +11,7 @@ from darts.utils.utils import NotImportedModule
 
 try:
     # `lightgbm` needs to be imported first to avoid segmentation fault
-    from darts.models.forecasting.lgbm import LightGBMModel
+    from darts.models.forecasting.lgbm import LightGBMCategoricalModel, LightGBMModel
 except ModuleNotFoundError:
     LightGBMModel = NotImportedModule(module_name="LightGBM", warn=False)
 
@@ -128,6 +128,7 @@ from darts.models.filtering.moving_average_filter import MovingAverageFilter
 
 __all__ = [
     "LightGBMModel",
+    "LightGBMCategoricalModel",
     "ARIMA",
     "NaiveDrift",
     "NaiveMean",
