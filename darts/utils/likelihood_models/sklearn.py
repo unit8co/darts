@@ -4,7 +4,7 @@ Likelihoods for `RegressionModel`
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 
@@ -412,7 +412,9 @@ class QuantileRegression(SKLearnLikelihood):
         )
 
 
-def _check_likelihood(likelihood: str, available_likelihoods: list[str]):
+def _check_likelihood(
+    likelihood: str, available_likelihoods: list[Union[str, LikelihoodType]]
+) -> None:
     """Check whether the likelihood is supported.
 
     Parameters
@@ -420,8 +422,12 @@ def _check_likelihood(likelihood: str, available_likelihoods: list[str]):
     likelihood
         The likelihood name. Must be one of available_likelihoods.
     available_likelihoods
-        A list of supported likelihood names.
+        A list of supported likelihood types or names.
     """
+    available_likelihoods = [
+        likelihood.value if isinstance(likelihood, LikelihoodType) else likelihood
+        for likelihood in available_likelihoods
+    ]
     if likelihood not in available_likelihoods:
         raise_log(
             ValueError(
