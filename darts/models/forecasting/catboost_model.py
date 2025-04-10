@@ -483,7 +483,7 @@ class CatBoostCategoricalModel(CategoricalForecastingMixin, CatBoostModel):
         categorical_static_covariates=None,
         **kwargs,
     ):
-        """CatBoost Model
+        """CatBoost Model for categorical forecasting
 
         Parameters
         ----------
@@ -590,10 +590,7 @@ class CatBoostCategoricalModel(CategoricalForecastingMixin, CatBoostModel):
             by the underlying `CatBoostRegressor`. The components that
             are specified as categorical must be integer-encoded.
         **kwargs
-            Additional keyword arguments passed to `catboost.CatBoostRegressor`.
-            Native multi-output support can be achieved by using an appropriate `loss_function` ('MultiRMSE',
-            'MultiRMSEWithMissingValues'). Otherwise, Darts uses its `MultiOutputRegressor` wrapper to add multi-output
-            support.
+            Additional keyword arguments passed to `catboost.CatBoostClassifier`.
 
         Examples
         --------

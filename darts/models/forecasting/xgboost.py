@@ -22,6 +22,7 @@ from darts.models.forecasting.regression_model import (
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
+from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.categorical import _get_categorical_likelihood
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
@@ -232,10 +233,12 @@ class XGBModel(RegressionModel):
     ):
         # parse likelihood
         if likelihood is not None:
-            _check_likelihood(likelihood, ["poisson", "quantile"])
-            if likelihood in {"poisson"}:
+            _check_likelihood(
+                likelihood, [LikelihoodType.Poisson, LikelihoodType.Quantile]
+            )
+            if likelihood in {LikelihoodType.Poisson.value}:
                 self.kwargs["objective"] = f"count:{likelihood}"
-            elif likelihood == "quantile":
+            elif likelihood == LikelihoodType.Quantile.value:
                 self.kwargs["objective"] = "reg:quantileerror"
                 self._model_container = _QuantileModelContainer()
 
@@ -387,7 +390,133 @@ class XGBCategoricalModel(CategoricalForecastingMixin, XGBModel):
         use_static_covariates=True,
         **kwargs,
     ):
-        # TODO adapt doc to categorical forecasting
+        """XGBoost Model for categorical forecasting
+
+        Parameters
+        ----------
+        lags
+            Lagged target `series` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`
+            corresponds the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `series` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
+            This model treats the target `series` as numerical features when lags are provided,
+            as support for categorical features is not available for XGBModel.
+        lags_past_covariates
+            Lagged `past_covariates` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags_past_covariates` past lags; e.g. `(-1, -2, ..., -lags)`,
+            where `0` corresponds to the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `past_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
+        lags_future_covariates
+            Lagged `future_covariates` values used to predict the next time step/s. The lags are always relative to the
+            first step in the output chunk, even when `output_chunk_shift > 0`.
+            If a tuple of `(past, future)`, both values must be > 0. Uses the last `n=past` past lags and `n=future`
+            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0` corresponds the first
+            predicted time step of each sample. If `output_chunk_shift > 0`, the position of negative lags differ from
+            those of `lags` and `lags_past_covariates`. In this case a future lag `-5` would point at the same
+            step as a target lag of `-5 + output_chunk_shift`.
+            If a list of integers, uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
+            'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
+        output_chunk_length
+            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
+            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
+            one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
+            useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past and / or future covariates for prediction (depending on the model's covariate
+            support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input (history of target and past covariates) and
+            output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first
+            step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the
+            target `series`. If `output_chunk_shift` is set, the model cannot generate autoregressive predictions
+            (`n > output_chunk_length`).
+        add_encoders
+            A large number of past and future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'past': ['relative'], 'future': ['relative']},
+                    'custom': {'past': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
+                }
+            ..
+         likelihood
+            Can be set to 'classprobability'. If set, the model will be probabilistic,
+            allowing sampling at prediction time. Setting 'predict_likelihood_parameters' to 'True' in fit()
+            will predict class probabilities per component per time step.
+            This will overwrite any `objective` parameter.
+        random_state
+            Control the randomness in the fitting procedure and for sampling.
+            Default: ``None``.
+        multi_models
+            If True, a separate model will be trained for each future lag to predict. If False, a single model
+            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
+            `output_chunk_length - n` for each step `n`). Default: True.
+        use_static_covariates
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        **kwargs
+            Additional keyword arguments passed to `xgb.XGBClassifier`.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import XGBCategoricalModel
+        >>> series = WeatherDataset().load().resample("1D", method="mean")
+        >>> # predicting if it will rain or not
+        >>> target =  series['rain (mm)'][:105].map(lambda x: np.where(x > 0, 1, 0))
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 105)
+        >>> past_cov = series['T (degC)'][:105]
+        >>> # optionally, use future pressure (pretending this component is a forecast)
+        >>> future_cov = series['p (mbar)'][:111]
+        >>> # predict 6 "will rain" values using the 12 past values of pressure and temperature,
+        >>> # as well as the 6 pressure values corresponding to the forecasted period
+        >>> model = XGBCategoricalModel(
+        >>>     lags=12,
+        >>>     lags_past_covariates=12,
+        >>>     lags_future_covariates=[0,1,2,3,4,5],
+        >>>     output_chunk_length=6,
+        >>>     verbose=-1
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[0.],
+                [0.],
+                [0.],
+                [1.],
+                [0.],
+                [0.]])
+        """
         self._validate_lags(lags=lags)
 
         super().__init__(
@@ -416,7 +545,7 @@ class XGBCategoricalModel(CategoricalForecastingMixin, XGBModel):
         multi_models,
     ):
         if likelihood is not None:
-            _check_likelihood(likelihood, ["class_probability"])
+            _check_likelihood(likelihood, [LikelihoodType.ClassProbability])
 
             # CatBoostModel only support regression likelihood
             self._likelihood = _get_categorical_likelihood(
@@ -434,4 +563,8 @@ class XGBCategoricalModel(CategoricalForecastingMixin, XGBModel):
 
     @property
     def _supports_native_multioutput(self):
-        return False  # investigate  multi-output for XGBoost
+        # TODO add support for native multilabel
+        # https://xgboost.readthedocs.io/en/stable/tutorials/multioutput.html
+        # XGB supports multilabels prediction natively
+        # It requires the target to be one hot encoded this could be done in _format_samples
+        return False
