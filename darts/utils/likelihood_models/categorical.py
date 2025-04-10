@@ -137,7 +137,7 @@ def _get_categorical_likelihood(
     Parameters
     ----------
     likelihood
-        The likelihood name. Must be one of ('class_probability').
+        The likelihood name. Must be one of ('classprobability').
     n_outputs
         The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
         `output_chunk_length`.
@@ -146,14 +146,14 @@ def _get_categorical_likelihood(
     """
     if likelihood is None:
         return None
-    elif likelihood == "class_probability":
+    elif likelihood == LikelihoodType.ClassProbability.value:
         return ClassProbabilityLikelihood(
             n_outputs=n_outputs, random_state=random_state
         )
     else:
         raise_log(
             ValueError(
-                f"Invalid `likelihood='{likelihood}'`. Must be one of ('class_probability')"
+                f"Invalid `likelihood='{likelihood}'`. Must be one of ('{LikelihoodType.ClassProbability.value}')"
             ),
             logger=logger,
         )

@@ -90,7 +90,7 @@ class TestProbabilisticCategoricalModels:
         model = clf(lags=2, **kwargs)
         model_likelihood = clf(
             lags=2,
-            likelihood="class_probability",
+            likelihood="classprobability",
             **kwargs,
         )
         model.fit(self.sine_univariate1_cat)

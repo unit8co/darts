@@ -25,7 +25,7 @@ class LikelihoodType(Enum):
     LogNormal = "lognormal"
     Weibull = "weibull"
     Quantile = "quantile"
-    ClassProbability = "class_probability"
+    ClassProbability = "classprobability"
 
 
 class Likelihood:
