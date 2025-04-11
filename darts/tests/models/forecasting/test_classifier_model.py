@@ -20,17 +20,17 @@ from sklearn.tree import DecisionTreeClassifier
 
 import darts
 from darts.logging import get_logger
-from darts.models.forecasting.catboost_model import CatBoostCategoricalModel
-from darts.models.forecasting.categorical_model import CategoricalModel
-from darts.models.forecasting.lgbm import LightGBMCategoricalModel
-from darts.models.forecasting.xgboost import XGBCategoricalModel
+from darts.models.forecasting.catboost_model import CatBoostClassifierModel
+from darts.models.forecasting.classifier_model import SklearnClassifierModel
+from darts.models.forecasting.lgbm import LightGBMClassifierModel
+from darts.models.forecasting.xgboost import XGBClassifierModel
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
 from darts.utils.multioutput import MultiOutputClassifier
 from darts.utils.utils import NotImportedModule
 
-lgbm_available = not isinstance(LightGBMCategoricalModel, NotImportedModule)
-cb_available = not isinstance(CatBoostCategoricalModel, NotImportedModule)
+lgbm_available = not isinstance(LightGBMClassifierModel, NotImportedModule)
+cb_available = not isinstance(CatBoostClassifierModel, NotImportedModule)
 
 logger = get_logger(__name__)
 
@@ -38,7 +38,7 @@ logger = get_logger(__name__)
 def process_model_list(classifiers):
     for clf, kwargs in classifiers:
         if issubclass(clf, BaseEstimator):
-            yield (CategoricalModel, {"model": clf(**kwargs)})
+            yield (SklearnClassifierModel, {"model": clf(**kwargs)})
         else:
             yield (clf, kwargs)
 
@@ -67,7 +67,7 @@ def train_test_split(series, split_ts):
         return list(zip(*[ts.split_after(split_ts) for ts in series]))
 
 
-class TestCategoricalForecasting:
+class TestClassifierModel:
     np.random.seed(42)
 
     # shift sines to positive values so that they can be used as target for classification with classes [0, 1, 2]
@@ -107,7 +107,7 @@ class TestCategoricalForecasting:
         (GaussianNB, {}),
         (QuadraticDiscriminantAnalysis, {}),
         (
-            XGBCategoricalModel,
+            XGBClassifierModel,
             {
                 "n_estimators": 1,
                 "max_depth": 1,
@@ -118,7 +118,7 @@ class TestCategoricalForecasting:
     ]
 
     models_accuracies = [
-        1,  # CategoricalModel
+        1,  # SklearnClassifierModel
         1,  # KNeighborsClassifier
         1,  # SVC
         1,  # GaussianProcessClassifier
@@ -128,11 +128,11 @@ class TestCategoricalForecasting:
         1,  # AdaBoostClassifier
         1,  # GaussianNB
         1,  # QuadraticDiscriminantAnalysis
-        1,  # XGBCategoricalModel
+        1,  # XGBClassifierModel
     ]
 
     models_multioutput = [
-        False,  # CategoricalModel
+        False,  # SklearnClassifierModel
         True,  # KNeighborsClassifier
         False,  # SVC
         False,  # GaussianProcessClassifier
@@ -142,12 +142,12 @@ class TestCategoricalForecasting:
         False,  # AdaBoostClassifier
         False,  # GaussianNB
         False,  # QuadraticDiscriminantAnalysis
-        False,  # XGBCategoricalModel
+        False,  # XGBClassifierModel
     ]
 
     if lgbm_available:
         classifiers.append((
-            LightGBMCategoricalModel,
+            LightGBMClassifierModel,
             {
                 "n_estimators": 1,
                 "max_depth": 1,
@@ -161,7 +161,7 @@ class TestCategoricalForecasting:
 
     if cb_available:
         classifiers.append((
-            CatBoostCategoricalModel,
+            CatBoostClassifierModel,
             {
                 "iterations": 1,
                 "depth": 1,
@@ -180,7 +180,7 @@ class TestCategoricalForecasting:
 
         # accepts only classifier
         with pytest.raises(ValueError):
-            CategoricalModel(model=LinearRegression())
+            SklearnClassifierModel(model=LinearRegression())
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
     def test_classes_labels(self, clf_params):
@@ -469,14 +469,14 @@ class TestCategoricalForecasting:
         clf, kwargs = clf_params
         model = clf(lags_past_covariates=2, **kwargs)
 
-        # Categorical forecasting models do not accept continuous labels
+        # Classification forecasting models do not accept continuous labels
         with pytest.raises(ValueError):
             model.fit(
                 series=self.sine_univariate1, past_covariates=self.sine_univariate1
             )
 
-        # XGBCategoricalModel require labels to be integers between 0 and n_classes
-        if type(clf) is XGBCategoricalModel:
+        # XGBClassifierModel require labels to be integers between 0 and n_classes
+        if type(clf) is XGBClassifierModel:
             # negative labels
             with pytest.raises(ValueError):
                 model.fit(
@@ -537,7 +537,7 @@ class TestCategoricalForecasting:
             return original_fit(*args, **kwargs)
 
         if model._is_target_categorical:
-            if clf == CatBoostCategoricalModel:
+            if clf == CatBoostClassifierModel:
                 with patch.object(
                     darts.models.forecasting.catboost_model.CatBoostClassifier,
                     "fit",
@@ -563,7 +563,7 @@ class TestCategoricalForecasting:
                     # all categorical features should be encoded as integers
                     for col in X[model_cat_indices].columns:
                         assert X[col].dtype == int
-            elif clf == LightGBMCategoricalModel:
+            elif clf == LightGBMClassifierModel:
                 with patch.object(
                     darts.models.forecasting.lgbm.lgb.LGBMClassifier,
                     "fit",

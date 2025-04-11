@@ -2,19 +2,19 @@ import numpy as np
 import pytest
 
 from darts.logging import get_logger
-from darts.models.forecasting.catboost_model import CatBoostCategoricalModel
-from darts.models.forecasting.lgbm import LightGBMCategoricalModel
-from darts.models.forecasting.xgboost import XGBCategoricalModel
+from darts.models.forecasting.catboost_model import CatBoostClassifierModel
+from darts.models.forecasting.lgbm import LightGBMClassifierModel
+from darts.models.forecasting.xgboost import XGBClassifierModel
 from darts.utils import timeseries_generation as tg
 from darts.utils.utils import NotImportedModule
 
-lgbm_available = not isinstance(LightGBMCategoricalModel, NotImportedModule)
-cb_available = not isinstance(CatBoostCategoricalModel, NotImportedModule)
+lgbm_available = not isinstance(LightGBMClassifierModel, NotImportedModule)
+cb_available = not isinstance(CatBoostClassifierModel, NotImportedModule)
 
 logger = get_logger(__name__)
 
 
-class TestProbabilisticCategoricalModels:
+class TestProbabilisticClassifierModels:
     np.random.seed(42)
     # shift sines to positive values so that they can be used as target for classification with classes [0, 1, 2]
     sine_univariate1 = tg.sine_timeseries(length=100) + 1
@@ -40,7 +40,7 @@ class TestProbabilisticCategoricalModels:
 
     probabilistic_classifiers = [
         (
-            XGBCategoricalModel,
+            XGBClassifierModel,
             {
                 "n_estimators": 1,
                 "max_depth": 1,
@@ -54,7 +54,7 @@ class TestProbabilisticCategoricalModels:
 
     if lgbm_available:
         probabilistic_classifiers.append((
-            LightGBMCategoricalModel,
+            LightGBMClassifierModel,
             {
                 "n_estimators": 1,
                 "max_depth": 1,
@@ -68,7 +68,7 @@ class TestProbabilisticCategoricalModels:
 
     if cb_available:
         probabilistic_classifiers.append((
-            CatBoostCategoricalModel,
+            CatBoostClassifierModel,
             {
                 "iterations": 1,
                 "depth": 1,

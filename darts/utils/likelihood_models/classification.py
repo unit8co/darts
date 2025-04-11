@@ -127,12 +127,12 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
         return preds.reshape(model_output.shape[1], self._n_outputs, -1)
 
 
-def _get_categorical_likelihood(
+def _get_classification_likelihood(
     likelihood: Optional[str],
     n_outputs: int,
     random_state: Optional[int],
 ) -> Optional[SKLearnLikelihood]:
-    """Get the `Likelihood` object for `CategoricalModel`.
+    """Get the `Likelihood` object for classification forecasting task.
 
     Parameters
     ----------

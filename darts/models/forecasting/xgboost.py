@@ -14,7 +14,7 @@ import numpy as np
 import xgboost as xgb
 
 from darts.logging import get_logger, raise_if_not
-from darts.models.forecasting.categorical_model import CategoricalForecastingMixin
+from darts.models.forecasting.classifier_model import ClassificationForecastingMixin
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -23,7 +23,7 @@ from darts.models.forecasting.regression_model import (
 )
 from darts.timeseries import TimeSeries
 from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.categorical import _get_categorical_likelihood
+from darts.utils.likelihood_models.classification import _get_classification_likelihood
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
     _check_likelihood,
@@ -375,7 +375,7 @@ class XGBModel(RegressionModel):
         return super()._supports_native_multioutput and self.likelihood is None
 
 
-class XGBCategoricalModel(CategoricalForecastingMixin, XGBModel):
+class XGBClassifierModel(ClassificationForecastingMixin, XGBModel):
     def __init__(
         self,
         lags=None,
@@ -390,7 +390,7 @@ class XGBCategoricalModel(CategoricalForecastingMixin, XGBModel):
         use_static_covariates=True,
         **kwargs,
     ):
-        """XGBoost Model for categorical forecasting
+        """XGBoost Model for classification forecasting
 
         Parameters
         ----------
@@ -490,7 +490,7 @@ class XGBCategoricalModel(CategoricalForecastingMixin, XGBModel):
         --------
         >>> import numpy as np
         >>> from darts.datasets import WeatherDataset
-        >>> from darts.models import XGBCategoricalModel
+        >>> from darts.models import XGBClassifierModel
         >>> series = WeatherDataset().load().resample("1D", method="mean")
         >>> # predicting if it will rain or not
         >>> target =  series['rain (mm)'][:105].map(lambda x: np.where(x > 0, 1, 0))
@@ -500,7 +500,7 @@ class XGBCategoricalModel(CategoricalForecastingMixin, XGBModel):
         >>> future_cov = series['p (mbar)'][:111]
         >>> # predict 6 "will rain" values using the 12 past values of pressure and temperature,
         >>> # as well as the 6 pressure values corresponding to the forecasted period
-        >>> model = XGBCategoricalModel(
+        >>> model = XGBClassifierModel(
         >>>     lags=12,
         >>>     lags_past_covariates=12,
         >>>     lags_future_covariates=[0,1,2,3,4,5],
@@ -548,7 +548,7 @@ class XGBCategoricalModel(CategoricalForecastingMixin, XGBModel):
             _check_likelihood(likelihood, [LikelihoodType.ClassProbability])
 
             # CatBoostModel only support regression likelihood
-            self._likelihood = _get_categorical_likelihood(
+            self._likelihood = _get_classification_likelihood(
                 likelihood=likelihood,
                 n_outputs=output_chunk_length if multi_models else 1,
                 random_state=random_state,

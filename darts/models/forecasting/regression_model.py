@@ -54,7 +54,7 @@ from darts.utils.historical_forecasts import (
 from darts.utils.likelihood_models.sklearn import QuantileRegression, SKLearnLikelihood
 from darts.utils.multioutput import MultiOutputMixin, get_multioutput_estimator_cls
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
-from darts.utils.utils import ForecastingType
+from darts.utils.utils import ModelType
 
 logger = get_logger(__name__)
 
@@ -1433,11 +1433,8 @@ class RegressionModel(GlobalForecastingModel):
         return model.__sklearn_tags__().target_tags.multi_output
 
     @property
-    def _forecasting_type(self) -> ForecastingType:
-        """
-        Returns the forecasting type of the model
-        """
-        return ForecastingType.REGRESSION
+    def _model_type(self) -> ModelType:
+        return ModelType.FORECASTING_REGRESSOR
 
 
 class _QuantileModelContainer(OrderedDict):

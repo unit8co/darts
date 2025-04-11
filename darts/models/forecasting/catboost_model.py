@@ -15,8 +15,8 @@ import pandas as pd
 from catboost import CatBoostClassifier, CatBoostRegressor, Pool
 
 from darts.logging import get_logger, raise_log
-from darts.models.forecasting.categorical_model import (
-    CategoricalForecastingMixin,
+from darts.models.forecasting.classifier_model import (
+    ClassificationForecastingMixin,
 )
 from darts.models.forecasting.regression_model import (
     RegressionModelWithCategoricalFeatures,
@@ -24,7 +24,7 @@ from darts.models.forecasting.regression_model import (
 )
 from darts.timeseries import TimeSeries
 from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.categorical import _get_categorical_likelihood
+from darts.utils.likelihood_models.classification import _get_classification_likelihood
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
     _check_likelihood,
@@ -465,7 +465,7 @@ class CatBoostModel(RegressionModelWithCategoricalFeatures):
         return False
 
 
-class CatBoostCategoricalModel(CategoricalForecastingMixin, CatBoostModel):
+class CatBoostClassifierModel(ClassificationForecastingMixin, CatBoostModel):
     def __init__(
         self,
         lags=None,
@@ -483,7 +483,7 @@ class CatBoostCategoricalModel(CategoricalForecastingMixin, CatBoostModel):
         categorical_static_covariates=None,
         **kwargs,
     ):
-        """CatBoost Model for categorical forecasting
+        """CatBoost Model for classification forecasting
 
         Parameters
         ----------
@@ -596,7 +596,7 @@ class CatBoostCategoricalModel(CategoricalForecastingMixin, CatBoostModel):
         --------
         >>> import numpy as np
         >>> from darts.datasets import WeatherDataset
-        >>> from darts.models import CatBoostCategoricalModel
+        >>> from darts.models import CatBoostClassifierModel
         >>> series = WeatherDataset().load().resample("1D", method="mean")
         >>> # predicting if it will rain or not
         >>> target =  series['rain (mm)'][:105].map(lambda x: np.where(x > 0, 1, 0))
@@ -606,7 +606,7 @@ class CatBoostCategoricalModel(CategoricalForecastingMixin, CatBoostModel):
         >>> future_cov = series['p (mbar)'][:111]
         >>> # predict 6 "will rain" values using the 12 past values of pressure and temperature,
         >>> # as well as the 6 pressure values corresponding to the forecasted period
-        >>> model = CatBoostCategoricalModel(
+        >>> model = CatBoostClassifierModel(
         >>>     lags=12,
         >>>     lags_past_covariates=12,
         >>>     lags_future_covariates=[0,1,2,3,4,5],
@@ -655,13 +655,13 @@ class CatBoostCategoricalModel(CategoricalForecastingMixin, CatBoostModel):
     ):
         """
         Check and set the likelihood.
-        Only ClassProbability is supported for CatBoostCategoricalModel.
+        Only ClassProbability is supported for CatBoostClassifierModel.
         """
         if likelihood is not None:
             _check_likelihood(likelihood, [LikelihoodType.ClassProbability])
 
             # CatBoostModel only support regression likelihood
-            self._likelihood = _get_categorical_likelihood(
+            self._likelihood = _get_classification_likelihood(
                 likelihood=likelihood,
                 n_outputs=output_chunk_length if multi_models else 1,
                 random_state=random_state,

@@ -10,14 +10,14 @@ from darts.logging import (
 from darts.models.forecasting.regression_model import (
     RegressionModel,
 )
-from darts.utils.utils import ForecastingType
+from darts.utils.utils import ModelType
 
 logger = get_logger(__name__)
 
 
-class CategoricalForecastingMixin:
+class ClassificationForecastingMixin:
     """
-    Mixin for categorical forecasting models
+    Mixin for classification forecasting models
     """
 
     @property
@@ -35,14 +35,11 @@ class CategoricalForecastingMixin:
             )
 
     @property
-    def _forecasting_type(self) -> ForecastingType:
-        """
-        Returns the forecasting type of the model
-        """
-        return ForecastingType.CATEGORICAL
+    def _model_type(self) -> ModelType:
+        return ModelType.FORECASTING_CLASSIFIER
 
 
-class CategoricalModel(CategoricalForecastingMixin, RegressionModel):
+class SklearnClassifierModel(ClassificationForecastingMixin, RegressionModel):
     def __init__(
         self,
         model,
@@ -56,7 +53,7 @@ class CategoricalModel(CategoricalForecastingMixin, RegressionModel):
         use_static_covariates: bool = True,
     ):
         """
-        CategoricalModel for categorical forecasting using any scikit-learn-like classifier.
+        SklearnClassifierModel for classification forecasting using any scikit-learn-like classifier.
 
         Parameters
         ----------
@@ -149,7 +146,7 @@ class CategoricalModel(CategoricalForecastingMixin, RegressionModel):
         if not is_classifier(model):
             raise_log(
                 ValueError(
-                    "CategoricalModel must be initialized with a classifier model"
+                    "SklearnClassifierModel must be initialized with a classifier model"
                 ),
                 logger,
             )

@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Optional
 
 from sklearn.base import is_classifier
 from sklearn.multioutput import MultiOutputClassifier as sk_MultiOutputClassifier
@@ -14,7 +14,7 @@ from sklearn.utils.validation import (
 
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
-from darts.utils.utils import ForecastingType
+from darts.utils.utils import ModelType
 
 logger = get_logger(__name__)
 
@@ -199,10 +199,16 @@ class MultiOutputClassifier(sk_MultiOutputClassifier, MultiOutputMixin):
         return self
 
 
-get_multioutput_estimator_cls: Callable[[ForecastingModel], MultiOutputMixin] = (
-    lambda estimator: (
-        MultiOutputClassifier
-        if estimator._forecasting_type == ForecastingType.CATEGORICAL
-        else MultiOutputRegressor
-    )
-)
+def get_multioutput_estimator_cls(model: ForecastingModel) -> MultiOutputMixin:
+    if model._model_type == ModelType.FORECASTING_REGRESSOR:
+        return MultiOutputRegressor
+    elif model._model_type == ModelType.FORECASTING_CLASSIFIER:
+        return MultiOutputClassifier
+    else:
+        raise_log(
+            ValueError(
+                "Model type must be one of ['ModelType.FORECASTING_REGRESSOR', 'ModelType.FORECASTING_CLASSIFIER'] "
+                "to be supported by multioutput wrapper."
+                f"{model._model_type} received instead."
+            )
+        )

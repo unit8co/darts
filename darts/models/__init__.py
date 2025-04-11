@@ -11,7 +11,7 @@ from darts.utils.utils import NotImportedModule
 
 try:
     # `lightgbm` needs to be imported first to avoid segmentation fault
-    from darts.models.forecasting.lgbm import LightGBMCategoricalModel, LightGBMModel
+    from darts.models.forecasting.lgbm import LightGBMClassifierModel, LightGBMModel
 except ModuleNotFoundError:
     LightGBMModel = NotImportedModule(module_name="LightGBM", warn=False)
 
@@ -24,7 +24,7 @@ from darts.models.forecasting.baselines import (
     NaiveMovingAverage,
     NaiveSeasonal,
 )
-from darts.models.forecasting.categorical_model import CategoricalModel
+from darts.models.forecasting.classifier_model import SklearnClassifierModel
 from darts.models.forecasting.conformal_models import (
     ConformalNaiveModel,
     ConformalQRModel,
@@ -86,7 +86,7 @@ except ImportError:
 
 try:
     from darts.models.forecasting.catboost_model import (
-        CatBoostCategoricalModel,
+        CatBoostClassifierModel,
         CatBoostModel,
     )
 except ModuleNotFoundError:
@@ -117,7 +117,7 @@ except ImportError:
     AutoTBATS = NotImportedModule(module_name="StatsForecast", warn=False)
 
 try:
-    from darts.models.forecasting.xgboost import XGBCategoricalModel, XGBModel
+    from darts.models.forecasting.xgboost import XGBClassifierModel, XGBModel
 except ImportError:
     XGBModel = NotImportedModule(module_name="XGBoost")
 
@@ -128,7 +128,7 @@ from darts.models.filtering.moving_average_filter import MovingAverageFilter
 
 __all__ = [
     "LightGBMModel",
-    "LightGBMCategoricalModel",
+    "LightGBMClassifierModel",
     "ARIMA",
     "NaiveDrift",
     "NaiveMean",
@@ -162,8 +162,8 @@ __all__ = [
     "TSMixerModel",
     "Prophet",
     "CatBoostModel",
-    "CatBoostCategoricalModel",
-    "CategoricalModel",
+    "CatBoostClassifierModel",
+    "SklearnClassifierModel",
     "Croston",
     "AutoARIMA",
     "AutoCES",
@@ -172,7 +172,7 @@ __all__ = [
     "AutoTheta",
     "AutoTBATS",
     "XGBModel",
-    "XGBCategoricalModel",
+    "XGBClassifierModel",
     "GaussianProcessFilter",
     "KalmanFilter",
     "MovingAverageFilter",
