@@ -1052,8 +1052,8 @@ class TimeSeries:
                 "index represents the actual index of each individual time series group."
             )
         # sort on entire `df` to avoid having to sort individually later on
-        else:
-            df = df.sort(df_index.name)
+        # else:
+        #     df = df.sort([df_index.name] + static_cov_cols)
 
         groups = df.group_by(group_cols[0] if len(group_cols) == 1 else group_cols)
 
@@ -1086,13 +1086,14 @@ class TimeSeries:
 
             if static_cols:
                 # use first value as static covariate (assume only one unique per group)
-                static_cov_vals += tuple(group[static_cols][0])
+                static_cov_vals += tuple(group[static_cols].row(0))
 
             metadata = None
             if metadata_cols:
                 # use first value as metadata (assume only one unique per group)
                 metadata = {
-                    col: val for col, val in zip(metadata_cols, group[metadata_cols][0])
+                    col: val
+                    for col, val in zip(metadata_cols, group[metadata_cols].row(0))
                 }
 
             return cls.from_dataframe(

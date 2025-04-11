@@ -161,6 +161,7 @@ class TestTimeSeriesStaticCovariate:
             value_cols=value_cols,
             metadata_cols=["st1", "constant"],
         )
+        # print(ts_groups1)
         assert len(ts_groups1) == self.n_groups
         for i, ts in enumerate(ts_groups1):
             assert ts.static_covariates.index.equals(
@@ -169,7 +170,6 @@ class TestTimeSeriesStaticCovariate:
             assert ts.static_covariates.shape == (1, 1)
             assert ts.static_covariates.columns.equals(pd.Index(["st1"]))
             assert (ts.static_covariates_values(copy=False) == [[i]]).all()
-            print(ts.metadata)
             assert ts.metadata == {"st1": i, "constant": 1}
 
         # multivariate static covs: only group by "st1", keep static covs "st1", "constant"
