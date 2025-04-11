@@ -126,10 +126,10 @@ class TestTimeSeriesStaticCovariate:
         values = np.arange(len(group))
 
         if index_type == "int":
-            index_expected = pd.RangeIndex(3)
+            index_expected = pd.RangeIndex(3, name="time")
             time = [2, 1, 0, 0, 1, 2]
         else:
-            index_expected = pd.date_range("2024-01-01", periods=3)
+            index_expected = pd.date_range("2024-01-01", periods=3, name="time")
             time = index_expected[::-1].append(index_expected)
             if index_type == "str":
                 time = time.astype(str)
@@ -161,6 +161,7 @@ class TestTimeSeriesStaticCovariate:
             value_cols=value_cols,
             metadata_cols=["st1", "constant"],
         )
+        # print(ts_groups1)
         assert len(ts_groups1) == self.n_groups
         for i, ts in enumerate(ts_groups1):
             assert ts.static_covariates.index.equals(
