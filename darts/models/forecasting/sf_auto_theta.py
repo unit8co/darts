@@ -1,5 +1,5 @@
 """
-StatsForecastAutoTheta
+AutoTheta
 -----------
 """
 
@@ -14,7 +14,7 @@ from darts.models.components.statsforecast_utils import (
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
 
 
-class StatsForecastAutoTheta(LocalForecastingModel):
+class AutoTheta(LocalForecastingModel):
     def __init__(self, *autotheta_args, **autotheta_kwargs):
         """Auto-Theta based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -39,10 +39,10 @@ class StatsForecastAutoTheta(LocalForecastingModel):
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.models import StatsForecastAutoTheta
+        >>> from darts.models import AutoTheta
         >>> series = AirPassengersDataset().load()
-        >>> # define StatsForecastAutoTheta parameters
-        >>> model = StatsForecastAutoTheta(season_length=12)
+        >>> # define AutoTheta parameters
+        >>> model = AutoTheta(season_length=12)
         >>> model.fit(series)
         >>> pred = model.predict(6)
         >>> pred.values()

@@ -146,7 +146,7 @@ class TestTimeSeriesGeneration:
             periods=365 * 3, freq="D", start=pd.Timestamp("2014-12-24")
         )
         time_index_3 = pd.date_range(
-            periods=10, freq=freqs["YE"], start=pd.Timestamp("1950-01-01")
+            periods=10, freq=freqs["YE"], start=pd.Timestamp("1960-01-01")
         ) + pd.Timedelta(days=1)
 
         # testing we have at least one holiday flag in each year

@@ -21,13 +21,13 @@ from darts.dataprocessing.transformers import (
 from darts.datasets import AirPassengersDataset
 from darts.models import (
     ARIMA,
+    AutoARIMA,
     CatBoostModel,
     ConformalNaiveModel,
     LightGBMModel,
     LinearRegressionModel,
     NaiveDrift,
     NaiveSeasonal,
-    StatsForecastAutoARIMA,
 )
 from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
@@ -580,7 +580,7 @@ class TestHistoricalforecast:
         )
 
     def test_historical_forecasts_future_cov_local_models(self):
-        model = StatsForecastAutoARIMA()
+        model = AutoARIMA()
         assert model.min_train_series_length == 10
         series = tg.sine_timeseries(length=11)
         res = model.historical_forecasts(
