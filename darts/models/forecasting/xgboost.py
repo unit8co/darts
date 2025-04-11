@@ -467,11 +467,6 @@ class XGBClassifierModel(ClassificationForecastingMixin, XGBModel):
                     'tz': 'CET'
                 }
             ..
-         likelihood
-            Can be set to 'classprobability'. If set, the model will be probabilistic,
-            allowing sampling at prediction time. Setting 'predict_likelihood_parameters' to 'True' in fit()
-            will predict class probabilities per component per time step.
-            This will overwrite any `objective` parameter.
         random_state
             Control the randomness in the fitting procedure and for sampling.
             Default: ``None``.
@@ -519,6 +514,9 @@ class XGBClassifierModel(ClassificationForecastingMixin, XGBModel):
         """
         self._validate_lags(lags=lags)
 
+        # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood
+        # this allow users to predict class probabilities,
+        # by setting `predict_likelihood_parameters`to `True` in `predict()`
         super().__init__(
             lags=lags,
             lags_past_covariates=lags_past_covariates,
@@ -526,7 +524,7 @@ class XGBClassifierModel(ClassificationForecastingMixin, XGBModel):
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
-            likelihood=likelihood,
+            likelihood=LikelihoodType.ClassProbability.value,
             quantiles=None,
             random_state=random_state,
             multi_models=multi_models,

@@ -2,6 +2,7 @@ from typing import Optional, Union
 
 from sklearn.base import is_classifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
 
 from darts.logging import (
     get_logger,
@@ -10,6 +11,7 @@ from darts.logging import (
 from darts.models.forecasting.regression_model import (
     RegressionModel,
 )
+from darts.utils.likelihood_models.classification import ClassProbabilityLikelihood
 from darts.utils.utils import ModelType
 
 logger = get_logger(__name__)
@@ -49,6 +51,7 @@ class SklearnClassifierModel(ClassificationForecastingMixin, RegressionModel):
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
+        random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
     ):
@@ -133,6 +136,9 @@ class SklearnClassifierModel(ClassificationForecastingMixin, RegressionModel):
                     'tz': 'CET'
                 }
             ..
+        random_state
+            Control the randomness in the fitting procedure and for sampling.
+            Default: ``None``.
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
@@ -150,8 +156,19 @@ class SklearnClassifierModel(ClassificationForecastingMixin, RegressionModel):
                 ),
                 logger,
             )
+        if not hasattr(model, "predict_proba"):
+            logger.warning(
+                "Set 'probability' to 'True' in SVC to be able to predict class probabilities "
+                if isinstance(model) == SVC
+                else "Received model has no 'predict_proba' function"
+                " this model won't be able to predict class probabilities"
+            )
 
         self._validate_lags(lags)
+        self._likelihood = ClassProbabilityLikelihood(
+            n_outputs=output_chunk_length if multi_models else 1,
+            random_state=random_state,
+        )
 
         super().__init__(
             model=model,

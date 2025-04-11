@@ -95,7 +95,7 @@ class TestClassifierModel:
     classifiers = [
         (LogisticRegression, {}),
         (KNeighborsClassifier, {"n_neighbors": 3}),
-        (SVC, {"gamma": 2, "C": 1, "random_state": 42}),
+        (SVC, {"gamma": 2, "C": 1, "random_state": 42, "probability": True}),
         (GaussianProcessClassifier, {"kernel": 1.0 * RBF(1.0), "random_state": 42}),
         (DecisionTreeClassifier, {"max_depth": 5, "random_state": 42}),
         (
