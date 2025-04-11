@@ -1041,7 +1041,7 @@ class TimeSeries:
             if isinstance(df[time_col].dtype, nw.Object) or isinstance(
                 df[time_col].dtype, nw.String
             ):
-                df = df.with_columns(df[time_col].cast(nw.Datetime))
+                df = df.with_columns(df[time_col].cast(nw.Datetime(time_unit="ns")))
             df = nw.maybe_set_index(df, column_names=time_col)
 
         df_index = nw.maybe_get_index(df)
