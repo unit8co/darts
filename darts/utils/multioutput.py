@@ -1,6 +1,7 @@
 from typing import Optional
 
 from sklearn.base import is_classifier
+from sklearn.multioutput import MultiOutputClassifier as sk_MultiOutputClassifier
 from sklearn.multioutput import MultiOutputRegressor as sk_MultiOutputRegressor
 from sklearn.multioutput import _fit_estimator
 from sklearn.utils.multiclass import check_classification_targets
@@ -12,58 +13,19 @@ from sklearn.utils.validation import (
 )
 
 from darts.logging import get_logger, raise_log
+from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.utils.utils import ModelType
 
 logger = get_logger(__name__)
 
 
-class MultiOutputRegressor(sk_MultiOutputRegressor):
+class MultiOutputMixin:
     """
-    :class:`sklearn.utils.multioutput.MultiOutputRegressor` with a modified ``fit()`` method that also slices
+    Mixin for :class:`sklearn.utils.multioutput._MultiOutputEstimator` with a modified ``fit()`` method that also slices
     validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
     """
 
-    def __init__(
-        self,
-        *args,
-        eval_set_name: Optional[str] = None,
-        eval_weight_name: Optional[str] = None,
-        **kwargs,
-    ):
-        super().__init__(*args, **kwargs)
-        self.eval_set_name_ = eval_set_name
-        self.eval_weight_name_ = eval_weight_name
-        self.estimators_ = None
-        self.n_features_in_ = None
-        self.feature_names_in_ = None
-
-    def fit(self, X, y, sample_weight=None, **fit_params):
-        """Fit the model to data, separately for each output variable.
-
-        Parameters
-        ----------
-        X : {array-like, sparse matrix} of shape (n_samples, n_features)
-            The input data.
-
-        y : {array-like, sparse matrix} of shape (n_samples, n_outputs)
-            Multi-output targets. An indicator matrix turns on multilabel
-            estimation.
-
-        sample_weight : array-like of shape (n_samples, n_outputs), default=None
-            Sample weights. If `None`, then samples are equally weighted.
-            Only supported if the underlying regressor supports sample
-            weights.
-
-        **fit_params : dict of string -> object
-            Parameters passed to the ``estimator.fit`` method of each step.
-
-            .. versionadded:: 0.23
-
-        Returns
-        -------
-        self : object
-            Returns a fitted instance.
-        """
-
+    def _parallel_fit(self, X, y, sample_weight=None, **fit_params):
         if not hasattr(self.estimator, "fit"):
             raise_log(
                 ValueError("The base estimator should implement a fit method"),
@@ -133,3 +95,120 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
         Whether model supports sample weight for training.
         """
         return has_fit_parameter(self.estimator, "sample_weight")
+
+
+class MultiOutputRegressor(sk_MultiOutputRegressor, MultiOutputMixin):
+    """
+    :class:`sklearn.utils.multioutput.MultiOutputClassifier` with a modified ``fit()`` method that also slices
+    validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
+    """
+
+    def __init__(
+        self,
+        *args,
+        eval_set_name: Optional[str] = None,
+        eval_weight_name: Optional[str] = None,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.eval_set_name_ = eval_set_name
+        self.eval_weight_name_ = eval_weight_name
+        self.estimators_ = None
+        self.n_features_in_ = None
+        self.feature_names_in_ = None
+
+    def fit(self, X, y, sample_weight=None, **fit_params):
+        """Fit the model to data, separately for each output variable.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            The input data.
+
+        y : {array-like, sparse matrix} of shape (n_samples, n_outputs)
+            Multi-output targets. An indicator matrix turns on multilabel
+            estimation.
+
+        sample_weight : array-like of shape (n_samples, n_outputs), default=None
+            Sample weights. If `None`, then samples are equally weighted.
+            Only supported if the underlying regressor supports sample
+            weights.
+
+        **fit_params : dict of string -> object
+            Parameters passed to the ``estimator.fit`` method of each step.
+
+            .. versionadded:: 0.23
+
+        Returns
+        -------
+        self : object
+            Returns a fitted instance.
+        """
+
+        return self._parallel_fit(X=X, y=y, sample_weight=sample_weight, **fit_params)
+
+
+class MultiOutputClassifier(sk_MultiOutputClassifier, MultiOutputMixin):
+    """
+    :class:`sklearn.utils.multioutput.MultiOutputClassifier` with a modified ``fit()`` method that also slices
+    validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
+    """
+
+    def __init__(
+        self,
+        *args,
+        eval_set_name: Optional[str] = None,
+        eval_weight_name: Optional[str] = None,
+        **kwargs,
+    ):
+        super().__init__(*args, **kwargs)
+        self.eval_set_name_ = eval_set_name
+        self.eval_weight_name_ = eval_weight_name
+        self.estimators_ = None
+        self.n_features_in_ = None
+        self.feature_names_in_ = None
+
+    def fit(self, X, y, sample_weight=None, **fit_params):
+        """Fit the model to data, separately for each output variable.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            The input data.
+
+        y : {array-like, sparse matrix} of shape (n_samples, n_outputs)
+            Multi-labels targets.
+
+        sample_weight : array-like of shape (n_samples, n_outputs), default=None
+            Sample weights. If `None`, then samples are equally weighted.
+            Only supported if the underlying regressor supports sample
+            weights.
+
+        **fit_params : dict of string -> object
+            Parameters passed to the ``estimator.fit`` method of each step.
+
+            .. versionadded:: 0.23
+
+        Returns
+        -------
+        self : object
+            Returns a fitted instance.
+        """
+        self = self._parallel_fit(X=X, y=y, sample_weight=sample_weight, **fit_params)
+        self.classes_ = [estimator.classes_ for estimator in self.estimators_]
+        return self
+
+
+def get_multioutput_estimator_cls(model: ForecastingModel) -> type[MultiOutputMixin]:
+    if model._model_type == ModelType.FORECASTING_REGRESSOR:
+        return MultiOutputRegressor
+    elif model._model_type == ModelType.FORECASTING_CLASSIFIER:
+        return MultiOutputClassifier
+    else:
+        raise_log(
+            ValueError(
+                "Model type must be one of ['ModelType.FORECASTING_REGRESSOR', 'ModelType.FORECASTING_CLASSIFIER'] "
+                "to be supported by multioutput wrapper."
+                f"{model._model_type} received instead."
+            )
+        )

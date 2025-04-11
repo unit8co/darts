@@ -12,14 +12,19 @@ from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
-from catboost import CatBoostRegressor, Pool
+from catboost import CatBoostClassifier, CatBoostRegressor, Pool
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_log
+from darts.models.forecasting.classifier_model import (
+    ClassificationForecastingMixin,
+)
 from darts.models.forecasting.regression_model import (
-    RegressionModelWithCategoricalCovariates,
+    RegressionModelWithCategoricalFeatures,
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
+from darts.utils.likelihood_models.base import LikelihoodType
+from darts.utils.likelihood_models.classification import _get_classification_likelihood
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
     _check_likelihood,
@@ -29,7 +34,7 @@ from darts.utils.likelihood_models.sklearn import (
 logger = get_logger(__name__)
 
 
-class CatBoostModel(RegressionModelWithCategoricalCovariates):
+class CatBoostModel(RegressionModelWithCategoricalFeatures):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -185,16 +190,60 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates):
         >>> pred = model.predict(6)
         >>> pred.values()
         array([[1006.4153701 ],
-               [1006.41907237],
-               [1006.30872957],
-               [1006.28614154],
-               [1006.22355514],
-               [1006.21607546]])
+                [1006.41907237],
+                [1006.30872957],
+                [1006.28614154],
+                [1006.22355514],
+                [1006.21607546]])
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
         self._model_container = None
 
+        likelihood_kwrags = {}
+        if quantiles is not None:
+            likelihood_kwrags["quantiles"] = quantiles
+        self._set_likelihood(
+            likelihood=likelihood,
+            output_chunk_length=output_chunk_length,
+            random_state=random_state,
+            multi_models=multi_models,
+            **likelihood_kwrags,
+        )
+
+        # suppress writing catboost info files when user does not specifically ask to
+        if "allow_writing_files" not in kwargs:
+            kwargs["allow_writing_files"] = False
+
+        super().__init__(
+            lags=lags,
+            lags_past_covariates=lags_past_covariates,
+            lags_future_covariates=lags_future_covariates,
+            output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
+            add_encoders=add_encoders,
+            multi_models=multi_models,
+            model=self._create_model(**kwargs),
+            use_static_covariates=use_static_covariates,
+            categorical_past_covariates=categorical_past_covariates,
+            categorical_future_covariates=categorical_future_covariates,
+            categorical_static_covariates=categorical_static_covariates,
+        )
+
+        # if no loss provided, get the default loss from the model
+        self.kwargs["loss_function"] = self.model.get_params().get("loss_function")
+
+    def _create_model(self, **kwargs):
+        return CatBoostRegressor(**kwargs)
+
+    def _set_likelihood(
+        self,
+        likelihood,
+        output_chunk_length,
+        random_state,
+        multi_models,
+        quantiles=None,
+    ):
         # parse likelihood
         if likelihood is not None:
             likelihood_map = {
@@ -219,28 +268,6 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates):
             random_state=random_state,
             quantiles=quantiles,
         )
-
-        # suppress writing catboost info files when user does not specifically ask to
-        if "allow_writing_files" not in kwargs:
-            kwargs["allow_writing_files"] = False
-
-        super().__init__(
-            lags=lags,
-            lags_past_covariates=lags_past_covariates,
-            lags_future_covariates=lags_future_covariates,
-            output_chunk_length=output_chunk_length,
-            output_chunk_shift=output_chunk_shift,
-            add_encoders=add_encoders,
-            multi_models=multi_models,
-            model=CatBoostRegressor(**kwargs),
-            use_static_covariates=use_static_covariates,
-            categorical_past_covariates=categorical_past_covariates,
-            categorical_future_covariates=categorical_future_covariates,
-            categorical_static_covariates=categorical_static_covariates,
-        )
-
-        # if no loss provided, get the default loss from the model
-        self.kwargs["loss_function"] = self.model.get_params().get("loss_function")
 
     def fit(
         self,
@@ -311,7 +338,7 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates):
                 this_quantile = str(quantile)
                 # translating to catboost argument
                 self.kwargs["loss_function"] = f"Quantile:alpha={this_quantile}"
-                self.model = CatBoostRegressor(**self.kwargs)
+                self.model = self._create_model(**self.kwargs)
                 super().fit(
                     series=series,
                     past_covariates=past_covariates,
@@ -429,3 +456,240 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates):
             samples = pd.DataFrame(samples)
             samples = samples.astype({col: int for col in self._categorical_indices})
         return samples, labels
+
+    @property
+    def _is_target_categorical(self) -> bool:
+        """ "
+        Returns if the target serie will be treated as categorical features when `lags` are provided.
+        """
+        return False
+
+
+class CatBoostClassifierModel(ClassificationForecastingMixin, CatBoostModel):
+    def __init__(
+        self,
+        lags=None,
+        lags_past_covariates=None,
+        lags_future_covariates=None,
+        output_chunk_length=1,
+        output_chunk_shift=0,
+        add_encoders=None,
+        random_state=None,
+        multi_models=True,
+        use_static_covariates=True,
+        categorical_past_covariates=None,
+        categorical_future_covariates=None,
+        categorical_static_covariates=None,
+        **kwargs,
+    ):
+        """CatBoost Model for classification forecasting
+
+        Parameters
+        ----------
+        lags
+            Lagged target `series` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`
+            corresponds the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `series` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
+            This model treats the target `series` as categorical features when lags are provided.
+        lags_past_covariates
+            Lagged `past_covariates` values used to predict the next time step/s.
+            If an integer, must be > 0. Uses the last `n=lags_past_covariates` past lags; e.g. `(-1, -2, ..., -lags)`,
+            where `0` corresponds to the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
+            If a list of integers, each value must be < 0. Uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `past_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (integer or list of integers). The
+            key 'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
+        lags_future_covariates
+            Lagged `future_covariates` values used to predict the next time step/s. The lags are always relative to the
+            first step in the output chunk, even when `output_chunk_shift > 0`.
+            If a tuple of `(past, future)`, both values must be > 0. Uses the last `n=past` past lags and `n=future`
+            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0` corresponds the first
+            predicted time step of each sample. If `output_chunk_shift > 0`, the position of negative lags differ from
+            those of `lags` and `lags_past_covariates`. In this case a future lag `-5` would point at the same
+            step as a target lag of `-5 + output_chunk_shift`.
+            If a list of integers, uses only the specified values as lags.
+            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series when
+            using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
+            'default_lags' can be used to provide default lags for un-specified components. Raises and error if some
+            components are missing and the 'default_lags' key is not provided.
+        output_chunk_length
+            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast
+            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a
+            one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents auto-regression. This is
+            useful when the covariates don't extend far enough into the future, or to prohibit the model from using
+            future values of past and / or future covariates for prediction (depending on the model's covariate
+            support).
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input (history of target and past covariates) and
+            output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first
+            step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the
+            target `series`. If `output_chunk_shift` is set, the model cannot generate autoregressive predictions
+            (`n > output_chunk_length`).
+        add_encoders
+            A large number of past and future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'past': ['relative'], 'future': ['relative']},
+                    'custom': {'past': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
+                }
+            ..
+        random_state
+            Control the randomness in the fitting procedure and for sampling.
+            Default: ``None``.
+        multi_models
+            If True, a separate model will be trained for each future lag to predict. If False, a single model
+            is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
+            `output_chunk_length - n` for each step `n`). Default: True.
+        use_static_covariates
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        categorical_past_covariates
+            Optionally, component name or list of component names specifying the past covariates that should be treated
+            as categorical by the underlying `CatBoostRegressor`. The components that are specified as categorical
+            must be integer-encoded. For more information on how CatBoost handles categorical features,
+            visit: `Categorical feature support documentatio
+            <https://catboost.ai/docs/en/features/categorical-features>`_.
+        categorical_future_covariates
+            Optionally, component name or list of component names specifying the future covariates that should be
+            treated as categorical by the underlying `CatBoostRegressor`. The components that
+            are specified as categorical must be integer-encoded.
+        categorical_static_covariates
+            Optionally, string or list of strings specifying the static covariates that should be treated as categorical
+            by the underlying `CatBoostRegressor`. The components that
+            are specified as categorical must be integer-encoded.
+        **kwargs
+            Additional keyword arguments passed to `catboost.CatBoostClassifier`.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import CatBoostClassifierModel
+        >>> series = WeatherDataset().load().resample("1D", method="mean")
+        >>> # predicting if it will rain or not
+        >>> target =  series['rain (mm)'][:105].map(lambda x: np.where(x > 0, 1, 0))
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 105)
+        >>> past_cov = series['T (degC)'][:105]
+        >>> # optionally, use future pressure (pretending this component is a forecast)
+        >>> future_cov = series['p (mbar)'][:111]
+        >>> # predict 6 "will rain" values using the 12 past values of pressure and temperature,
+        >>> # as well as the 6 pressure values corresponding to the forecasted period
+        >>> model = CatBoostClassifierModel(
+        >>>     lags=12,
+        >>>     lags_past_covariates=12,
+        >>>     lags_future_covariates=[0,1,2,3,4,5],
+        >>>     output_chunk_length=6
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[0.],
+                [0.],
+                [0.],
+                [1.],
+                [1.],
+                [1.]])
+        """
+        self._validate_lags(lags=lags)
+
+        # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood
+        # this allow users to predict class probabilities,
+        # by setting `predict_likelihood_parameters`to `True` in `predict()`
+        super().__init__(
+            lags=lags,
+            lags_past_covariates=lags_past_covariates,
+            lags_future_covariates=lags_future_covariates,
+            output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
+            add_encoders=add_encoders,
+            likelihood=LikelihoodType.ClassProbability.value,
+            quantiles=None,  # quantiles are not supported for CatBoostClassifier
+            random_state=random_state,
+            multi_models=multi_models,
+            use_static_covariates=use_static_covariates,
+            categorical_past_covariates=categorical_past_covariates,
+            categorical_future_covariates=categorical_future_covariates,
+            categorical_static_covariates=categorical_static_covariates,
+            **kwargs,
+        )
+
+    def _create_model(self, **kwargs):
+        """Instanciate the underlying CatBoostClassifier model"""
+        return CatBoostClassifier(**kwargs)
+
+    def _set_likelihood(
+        self,
+        likelihood,
+        output_chunk_length,
+        random_state,
+        multi_models,
+    ):
+        """
+        Check and set the likelihood.
+        Only ClassProbability is supported for CatBoostClassifierModel.
+        """
+        if likelihood is not None:
+            _check_likelihood(likelihood, [LikelihoodType.ClassProbability])
+
+            # CatBoostModel only support regression likelihood
+            self._likelihood = _get_classification_likelihood(
+                likelihood=likelihood,
+                n_outputs=output_chunk_length if multi_models else 1,
+                random_state=random_state,
+            )
+
+    def _format_samples(self, samples, labels=None):
+        """
+        For some reason CatBoostClassifier does regression when given continuous labels
+        For consistency, an error is artificially raised on continuous labels
+        """
+        if labels is not None:
+            if np.any(labels % 1 != 0):
+                raise_log(
+                    ValueError(
+                        "Labels must be integer-encoded, decimal values found instead."
+                    ),
+                    logger=logger,
+                )
+        return super()._format_samples(samples=samples, labels=labels)
+
+    @property
+    def _is_target_categorical(self) -> bool:
+        """
+        Returns if the target serie will be treated as categorical features when `lags` are provided.
+        """
+        return True
+
+    @property
+    def _supports_native_multioutput(self):
+        # TODO add support for native multilabel
+        # https://catboost.ai/docs/en/concepts/python-reference_catboostclassifier_fit#y
+        # CatBoost supports some multilabels prediction natively
+        # It requires specific target encoding this could be done in _format_samples
+        return False

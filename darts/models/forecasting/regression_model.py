@@ -52,8 +52,9 @@ from darts.utils.historical_forecasts import (
     _process_historical_forecast_input,
 )
 from darts.utils.likelihood_models.sklearn import QuantileRegression, SKLearnLikelihood
-from darts.utils.multioutput import MultiOutputRegressor
+from darts.utils.multioutput import MultiOutputMixin, get_multioutput_estimator_cls
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
+from darts.utils.utils import ModelType
 
 logger = get_logger(__name__)
 
@@ -362,7 +363,7 @@ class RegressionModel(GlobalForecastingModel):
                     raise_log(
                         ValueError(
                             f"`{lags_name}` - `{comp_name}`: must be either a {supported_types}. "
-                            f"Given : {type(comp_lags)}."
+                            f"Given : {type(comp_lags)}.",
                         ),
                         logger,
                     )
@@ -523,7 +524,7 @@ class RegressionModel(GlobalForecastingModel):
         quantile
             Optionally, for probabilistic model with `likelihood="quantile"`, a quantile value.
         """
-        if not isinstance(self.model, MultiOutputRegressor):
+        if not isinstance(self.model, MultiOutputMixin):
             logger.warning(
                 "Model supports multi-output; a single estimator forecasts all the horizons and components."
             )
@@ -589,8 +590,8 @@ class RegressionModel(GlobalForecastingModel):
             sample_weight=val_sample_weight,
             last_static_covariates_shape=self._static_covariates_shape,
         )
-        # create validation sets for MultiOutputRegressor
-        if val_labels.ndim == 2 and isinstance(self.model, MultiOutputRegressor):
+        # create validation sets for MultiOutputMixin
+        if val_labels.ndim == 2 and isinstance(self.model, MultiOutputMixin):
             val_sets, val_weights = [], []
             for i in range(val_labels.shape[1]):
                 val_sets.append((val_samples, val_labels[:, i]))
@@ -870,10 +871,10 @@ class RegressionModel(GlobalForecastingModel):
             self.output_chunk_length > 1 and self.multi_models
         )
 
-        # If multi-output required and model doesn't support it natively, wrap it in a MultiOutputRegressor
+        # If multi-output required and model doesn't support it natively, wrap it in a MultiOutputMixin
         if (
             requires_multioutput
-            and not isinstance(self.model, MultiOutputRegressor)
+            and not isinstance(self.model, MultiOutputMixin)
             and (
                 not self._supports_native_multioutput
                 or sample_weight
@@ -886,10 +887,11 @@ class RegressionModel(GlobalForecastingModel):
                 "eval_weight_name": val_weight_name,
                 "n_jobs": n_jobs_multioutput_wrapper,
             }
-            self.model = MultiOutputRegressor(self.model, **mor_kwargs)
+
+            self.model = get_multioutput_estimator_cls(self)(self.model, **mor_kwargs)
 
         if (
-            not isinstance(self.model, MultiOutputRegressor)
+            not isinstance(self.model, MultiOutputMixin)
             and n_jobs_multioutput_wrapper is not None
         ):
             logger.warning("Provided `n_jobs_multioutput_wrapper` wasn't used.")
@@ -960,6 +962,10 @@ class RegressionModel(GlobalForecastingModel):
             max_samples_per_ts=max_samples_per_ts,
             **kwargs,
         )
+
+        likelihood = self.likelihood
+        if likelihood is not None:
+            likelihood.fit(self)
         return self
 
     def predict(
@@ -1313,7 +1319,7 @@ class RegressionModel(GlobalForecastingModel):
         """Whether the model supports a validation set during training."""
         return (
             self.model.supports_sample_weight
-            if isinstance(self.model, MultiOutputRegressor)
+            if isinstance(self.model, MultiOutputMixin)
             else has_fit_parameter(self.model, "sample_weight")
         )
 
@@ -1421,10 +1427,14 @@ class RegressionModel(GlobalForecastingModel):
         """
         model = (
             self.model.estimator
-            if isinstance(self.model, MultiOutputRegressor)
+            if isinstance(self.model, MultiOutputMixin)
             else self.model
         )
         return model.__sklearn_tags__().target_tags.multi_output
+
+    @property
+    def _model_type(self) -> ModelType:
+        return ModelType.FORECASTING_REGRESSOR
 
 
 class _QuantileModelContainer(OrderedDict):
@@ -1432,7 +1442,7 @@ class _QuantileModelContainer(OrderedDict):
         super().__init__()
 
 
-class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
+class RegressionModelWithCategoricalFeatures(RegressionModel, ABC):
     def __init__(
         self,
         model,
@@ -1449,7 +1459,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
         categorical_static_covariates: Optional[Union[str, list[str]]] = None,
     ):
         """
-        Extension of `RegressionModel` for regression models that support categorical covariates.
+        Extension of `RegressionModel` for regression models that support categorical features.
 
         Parameters
         ----------
@@ -1617,8 +1627,11 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
             in create_lagged_data.
         2. Get the indices of the categorical features in the list of features.
         """
+        target_ts = get_single_series(series)
         categorical_covariates = [
-            [],  # currently no categorical target components allowed
+            list(target_ts.components)
+            if self._is_target_categorical and self.lags.get("target") is not None
+            else [],
             self.categorical_past_covariates
             if self.categorical_past_covariates
             else [],
@@ -1634,7 +1647,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
         if sum(len(cat_cov) for cat_cov in categorical_covariates) == 0:
             return [], []
 
-        target_ts = get_single_series(series)
         past_covs_ts = get_single_series(past_covariates)
         fut_covs_ts = get_single_series(future_covariates)
 
@@ -1712,8 +1724,11 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
         **kwargs,
     ):
         """
-        Custom fit function for `RegressionModelWithCategoricalCovariates` models, adding logic to let the model
+        Custom fit function for `RegressionModelWithCategoricalFeatures` models, adding logic to let the model
         handle categorical features directly.
+
+        Sub-classes can override `_format_samples` to format the columns listed in self._categorical_features
+        according to the model's requirements.
         """
         cat_col_indices, _ = self._get_categorical_features(
             series=series,
@@ -1758,3 +1773,17 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
         if len(self._categorical_indices) != 0:
             self._validate_categorical_components(samples)
         return samples, labels
+
+    @property
+    @abstractmethod
+    def _categorical_fit_param(self) -> Optional[str]:
+        """
+        Returns the name of the categorical features parameter from model's `fit` method .
+        """
+
+    @property
+    @abstractmethod
+    def _is_target_categorical(self) -> bool:
+        """ "
+        Returns if the target serie will be treated as categorical features when `lags` are provided.
+        """

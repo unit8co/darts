@@ -712,3 +712,8 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
         return result
 
     return decorator
+
+
+class ModelType(Enum):
+    FORECASTING_REGRESSOR = "forecasting_regressor"
+    FORECASTING_CLASSIFIER = "forecating_classifier"
