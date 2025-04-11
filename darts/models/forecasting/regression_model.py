@@ -1727,8 +1727,8 @@ class RegressionModelWithCategoricalFeatures(RegressionModel, ABC):
         Custom fit function for `RegressionModelWithCategoricalFeatures` models, adding logic to let the model
         handle categorical features directly.
 
-        Sub-classes should override `_format_samples` to format the columns listed in self._categorical_features
-        accordingly to the model's requirements.
+        Sub-classes can override `_format_samples` to format the columns listed in self._categorical_features
+        according to the model's requirements.
         """
         cat_col_indices, _ = self._get_categorical_features(
             series=series,
