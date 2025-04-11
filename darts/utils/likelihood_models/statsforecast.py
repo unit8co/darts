@@ -91,8 +91,11 @@ class StatsForecastLikelihood(Likelihood, ABC):
         kwargs
             Some kwargs passed to the underlying estimator's `predict()` method.
         """
+        levels = (
+            self.levels if num_samples > 1 or predict_likelihood_parameters else None
+        )
         model_output = self._estimator_predict(
-            model, n=n, future_covariates=future_covariates, **kwargs
+            model, n=n, future_covariates=future_covariates, levels=levels, **kwargs
         )
         if predict_likelihood_parameters:
             return self.predict_likelihood_parameters(model_output)
@@ -122,6 +125,7 @@ class StatsForecastLikelihood(Likelihood, ABC):
         model,
         n: int,
         future_covariates: Optional[TimeSeries],
+        levels: Optional[list[float]],
         **kwargs,
     ) -> np.ndarray:
         """
@@ -130,9 +134,14 @@ class StatsForecastLikelihood(Likelihood, ABC):
         Parameters
         ----------
         model
-            The Darts `RegressionModel`.
-        x
-            The input feature array passed to the underlying estimator's `predict()` method.
+            One of Darts' statsforecast models.
+        n
+            The number of time steps after the end of the training time series for which to produce predictions
+        future_covariates
+            Optionally, the future-known covariates series needed as inputs for the model.
+            They must match the covariates used for training in terms of dimension.
+        levels
+            The confidence levels (0. - 100.) for the prediction intervals.
         kwargs
             Some kwargs passed to the underlying estimator's `predict()` method.
         """
@@ -144,9 +153,9 @@ class StatsForecastLikelihood(Likelihood, ABC):
                 and model._supports_native_future_covariates
                 else None
             ),
-            level=self.levels,  # ask one std for the confidence interval.
+            level=levels,  # ask one std for the confidence interval.
         )
-        vals = _unpack_sf_dict(forecast_dict, levels=self.levels)
+        vals = _unpack_sf_dict(forecast_dict, levels=levels)
         if (
             future_covariates is not None
             and not model._supports_native_future_covariates
@@ -182,13 +191,16 @@ class QuantileRegression(StatsForecastLikelihood):
 
 def _unpack_sf_dict(
     forecast_dict: dict,
-    levels: list[float],
+    levels: Optional[list[float]],
 ) -> np.ndarray:
     """Unpack the dictionary that is returned by the StatsForecast 'predict()' method.
 
     Into an array of quantile predictions with shape (n (horizon), n quantiles) ordered by increasing quantile.
     """
     mu = np.expand_dims(forecast_dict["mean"], -1)
+    if levels is None:
+        return mu
+
     lows = np.concatenate(
         [np.expand_dims(forecast_dict[f"lo-{level}"], -1) for level in levels], axis=1
     )

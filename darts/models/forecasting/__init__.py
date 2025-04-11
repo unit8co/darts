@@ -16,6 +16,7 @@ Statistical Models (`LocalForecastingModel <https://unit8co.github.io/darts/user
     - :class:`~darts.models.forecasting.varima.VARIMA`
     - :class:`~darts.models.forecasting.sf_auto_arima.AutoARIMA`
     - :class:`~darts.models.forecasting.exponential_smoothing.ExponentialSmoothing`
+    - :class:`~darts.models.forecasting.sf_model.StatsForecastModel`
     - :class:`~darts.models.forecasting.sf_auto_ets.AutoETS`
     - :class:`~darts.models.forecasting.sf_auto_ces.AutoCES`
     - :class:`~darts.models.forecasting.sf_auto_mfles.AutoMFLES`

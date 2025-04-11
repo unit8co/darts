@@ -21,10 +21,8 @@ class StatsForecastModel(FutureCovariatesLocalForecastingModel):
     def __init__(
         self,
         model: _TS,
-        *args,
         likelihood: Optional[StatsForecastLikelihood] = None,
         add_encoders: Optional[dict] = None,
-        **kwargs,
     ):
         """StatsForecast Model.
 
@@ -44,8 +42,6 @@ class StatsForecastModel(FutureCovariatesLocalForecastingModel):
         ----------
         model
             Any StatsForecast model.
-        args
-            Positional arguments to create an instance of `model`.
         likelihood
             Any of Darts' `StatsForecastLikelihood`.
         add_encoders
@@ -72,8 +68,27 @@ class StatsForecastModel(FutureCovariatesLocalForecastingModel):
                     'tz': 'CET'
                 }
             ..
-        kwargs
-            Keyword arguments to create an instance of `model`.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import StatsForecastModel
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
+        >>> from statsforecast.models import AutoARIMA
+        >>> series = AirPassengersDataset().load()
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
+        >>> # define AutoARIMA parameters
+        >>> model = StatsForecastModel(model=AutoARIMA(season_length=12))
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6, future_covariates=future_cov)
+        >>> pred.values()
+        array([[450.55179949],
+               [415.00597806],
+               [454.61353249],
+               [486.51218795],
+               [504.09229632],
+               [555.06463942]])
         """
 
         self.model = model
@@ -137,7 +152,8 @@ class StatsForecastModel(FutureCovariatesLocalForecastingModel):
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 **kwargs,
             )
-            comp_names_out = self.likelihood.component_names(series)
+            if predict_likelihood_parameters:
+                comp_names_out = self.likelihood.component_names(series)
         else:
             # mean forecast
             pred_vals = self.model.predict(

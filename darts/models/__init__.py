@@ -96,6 +96,7 @@ try:
     from darts.models.forecasting.sf_auto_tbats import AutoTBATS
     from darts.models.forecasting.sf_auto_theta import AutoTheta
     from darts.models.forecasting.sf_croston import Croston
+    from darts.models.forecasting.sf_model import StatsForecastModel
 
 except ImportError:
     logger.warning(
@@ -104,6 +105,7 @@ except ImportError:
         "AutoETS and Croston models, please consider "
         "installing it."
     )
+    StatsForecastModel = NotImportedModule(module_name="StatsForecast", warn=False)
     Croston = NotImportedModule(module_name="StatsForecast", warn=False)
     AutoARIMA = NotImportedModule(module_name="StatsForecast", warn=False)
     AutoCES = NotImportedModule(module_name="StatsForecast", warn=False)
