@@ -127,7 +127,7 @@ class _NLinearModule(PLMixedCovariatesModule):
             x = x.permute(0, 2, 1)  # (batch, out_dim, in_len)
 
             if self.normalize:
-                seq_last = x[:, :, -1:].clone()  # (batch, out_dim, 1)
+                seq_last = x[:, :, -1:].detach().clone()  # (batch, out_dim, 1)
                 x = x - seq_last
 
             x = self.layer(x)  # (batch, out_dim, out_len * nr_params)
@@ -144,7 +144,7 @@ class _NLinearModule(PLMixedCovariatesModule):
             if self.normalize:
                 # get last values for all x but not future covariates
                 past_dim = self.input_dim - self.future_cov_dim
-                seq_last = x[:, -1:, :past_dim].clone()
+                seq_last = x[:, -1:, :past_dim].detach().clone()
                 # normalize the input
                 x[:, :, :past_dim] -= seq_last
 

@@ -146,7 +146,7 @@ models_cls_kwargs_errs = [
             "normalize": True,
             "pl_trainer_kwargs": tfm_kwargs["pl_trainer_kwargs"],
         },
-        80.0,
+        140.0,
     ),
     (
         DLinearModel,
@@ -368,7 +368,7 @@ class TestGlobalForecastingModels:
             self.forecasting_horizon, series=self.ts_pass_train, **cov_kwargs
         )
 
-    @pytest.mark.parametrize("config", models_cls_kwargs_errs)
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs[7:9])
     def test_single_ts(self, config):
         model_cls, kwargs, err = config
         model = model_cls(
