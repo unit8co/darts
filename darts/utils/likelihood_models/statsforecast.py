@@ -108,4 +108,4 @@ class QuantilePrediction(Likelihood, ABC):
         """
         Gets the median prediction per component extracted from the model output.
         """
-        return model_output[:, self._median_idx]
+        return model_output

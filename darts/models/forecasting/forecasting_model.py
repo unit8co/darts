@@ -280,7 +280,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @property
     @abstractmethod
-    def supports_transferrable_series_prediction(self) -> bool:
+    def supports_transferable_series_prediction(self) -> bool:
         """
         Whether the model supports prediction for any input `series`.
         """
@@ -425,7 +425,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         add_kwargs = {}
         # not all models supports input `series` at inference
-        if self.supports_transferrable_series_prediction:
+        if self.supports_transferable_series_prediction:
             add_kwargs["series"] = series
 
         # even if predict() accepts covariates, the model might not support them at inference
@@ -2881,7 +2881,7 @@ class LocalForecastingModel(ForecastingModel, ABC):
         return -self.min_train_series_length, -1, None, None, None, None, 0, None
 
     @property
-    def supports_transferrable_series_prediction(self) -> bool:
+    def supports_transferable_series_prediction(self) -> bool:
         """
         Whether the model supports prediction for any input `series`.
         """
@@ -3113,7 +3113,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         return True
 
     @property
-    def supports_transferrable_series_prediction(self) -> bool:
+    def supports_transferable_series_prediction(self) -> bool:
         """
         Whether the model supports prediction for any input `series`.
         """
@@ -3320,6 +3320,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         verbose: bool = False,
         **kwargs,
     ) -> TimeSeries:
@@ -3406,6 +3407,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         series: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         verbose: bool = False,
         show_warnings: bool = True,
         **kwargs,
@@ -3432,6 +3434,10 @@ class TransferableFutureCovariatesLocalForecastingModel(
             to the new target series (historic future covariates), plus the next `n` time steps/indices after the end.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
+        predict_likelihood_parameters
+            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``.
         verbose
             Optionally, set the prediction verbosity. Not effective for all models.
         show_warnings
@@ -3484,6 +3490,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
             historic_future_covariates=historic_future_covariates,
             future_covariates=future_covariates,
             num_samples=num_samples,
+            predict_likelihood_parameters=predict_likelihood_parameters,
             **kwargs,
         )
 
@@ -3523,6 +3530,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         historic_future_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         verbose: bool = False,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
@@ -3530,7 +3538,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         """
 
     @property
-    def supports_transferrable_series_prediction(self) -> bool:
+    def supports_transferable_series_prediction(self) -> bool:
         """
         Whether the model supports prediction for any input `series`.
         """
