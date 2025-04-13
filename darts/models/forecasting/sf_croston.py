@@ -3,6 +3,7 @@ Croston method
 --------------
 """
 
+import copy
 from typing import Optional
 
 from statsforecast.models import TSB as CrostonTSB
@@ -22,6 +23,7 @@ class Croston(StatsForecastModel):
         alpha_p: float = None,
         add_encoders: Optional[dict] = None,
         quantiles: Optional[list[float]] = None,
+        **kwargs,
     ):
         """An implementation of the `Croston method
         <https://otexts.com/fpp3/counts.html>`_ for intermittent
@@ -85,6 +87,8 @@ class Croston(StatsForecastModel):
         quantiles
             Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
+        kwargs
+            Keyword arguments for ``statsforecasts.models.Croston*``.
 
         References
         ----------
@@ -119,12 +123,13 @@ class Croston(StatsForecastModel):
                 logger=logger,
             )
 
+        kwargs = copy.deepcopy(kwargs)
         if version == "classic":
-            model = CrostonClassic()
+            model_cls = CrostonClassic
         elif version == "optimized":
-            model = CrostonOptimized()
+            model_cls = CrostonOptimized
         elif version == "sba":
-            model = CrostonSBA()
+            model_cls = CrostonSBA
         else:
             if alpha_d is None or alpha_p is None:
                 raise_log(
@@ -133,12 +138,13 @@ class Croston(StatsForecastModel):
                     ),
                     logger=logger,
                 )
-            self.alpha_d = alpha_d
-            self.alpha_p = alpha_p
-            model = CrostonTSB(alpha_d=self.alpha_d, alpha_p=self.alpha_p)
+            kwargs["alpha_d"] = alpha_d
+            kwargs["alpha_p"] = alpha_p
+            model_cls = CrostonTSB
 
+        model = model_cls(**kwargs)
         super().__init__(
             model=model,
-            quantiles=quantiles,  # does not support probabilistic forecasts
+            quantiles=quantiles,
             add_encoders=add_encoders,
         )

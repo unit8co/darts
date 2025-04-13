@@ -13,10 +13,10 @@ from darts.models.forecasting.sf_model import StatsForecastModel
 class AutoETS(StatsForecastModel):
     def __init__(
         self,
-        *autoets_args,
+        *args,
         add_encoders: Optional[dict] = None,
         quantiles: Optional[list[float]] = None,
-        **autoets_kwargs,
+        **kwargs,
     ):
         """ETS based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -36,7 +36,7 @@ class AutoETS(StatsForecastModel):
 
         Parameters
         ----------
-        autoets_args
+        args
             Positional arguments for ``statsforecasts.models.AutoETS``.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
@@ -68,7 +68,7 @@ class AutoETS(StatsForecastModel):
         quantiles
             Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
-        autoets_kwargs
+        kwargs
             Keyword arguments for ``statsforecasts.models.AutoETS``.
 
         Examples
@@ -92,7 +92,7 @@ class AutoETS(StatsForecastModel):
                [549.88974472]])
         """
         super().__init__(
-            model=SFAutoETS(*autoets_args, **autoets_kwargs),
+            model=SFAutoETS(*args, **kwargs),
             quantiles=quantiles,
             add_encoders=add_encoders,
         )

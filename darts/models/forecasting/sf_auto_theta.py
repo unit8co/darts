@@ -13,10 +13,10 @@ from darts.models.forecasting.sf_model import StatsForecastModel
 class AutoTheta(StatsForecastModel):
     def __init__(
         self,
-        *autotheta_args,
+        *args,
         add_encoders: Optional[dict] = None,
         quantiles: Optional[list[float]] = None,
-        **autotheta_kwargs,
+        **kwargs,
     ):
         """Auto-Theta based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -38,7 +38,7 @@ class AutoTheta(StatsForecastModel):
 
         Parameters
         ----------
-        autotheta_args
+        args
             Positional arguments for ``statsforecasts.models.AutoTheta``.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
@@ -67,7 +67,7 @@ class AutoTheta(StatsForecastModel):
         quantiles
             Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
-        autotheta_kwargs
+        kwargs
             Keyword arguments for ``statsforecasts.models.AutoTheta``.
 
         Examples
@@ -88,7 +88,7 @@ class AutoTheta(StatsForecastModel):
                [555.57902659]])
         """
         super().__init__(
-            model=SFAutoTheta(*autotheta_args, **autotheta_kwargs),
+            model=SFAutoTheta(*args, **kwargs),
             quantiles=quantiles,
             add_encoders=add_encoders,
         )

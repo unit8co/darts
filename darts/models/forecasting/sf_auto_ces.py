@@ -13,10 +13,10 @@ from darts.models.forecasting.sf_model import StatsForecastModel
 class AutoCES(StatsForecastModel):
     def __init__(
         self,
-        *autoces_args,
+        *args,
         add_encoders: Optional[dict] = None,
         quantiles: Optional[list[float]] = None,
-        **autoces_kwargs,
+        **kwargs,
     ):
         """Auto-CES based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -35,7 +35,7 @@ class AutoCES(StatsForecastModel):
 
         Parameters
         ----------
-        autoces_args
+        args
             Positional arguments for ``statsforecasts.models.AutoCES``.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
@@ -64,7 +64,7 @@ class AutoCES(StatsForecastModel):
         quantiles
             Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
-        autoces_kwargs
+        kwargs
             Keyword arguments for ``statsforecasts.models.AutoCES``.
 
         Examples
@@ -85,7 +85,7 @@ class AutoCES(StatsForecastModel):
                [586.47503662]])
         """
         super().__init__(
-            model=SFAutoCES(*autoces_args, **autoces_kwargs),
+            model=SFAutoCES(*args, **kwargs),
             quantiles=quantiles,
             add_encoders=add_encoders,
         )

@@ -13,10 +13,10 @@ from darts.models.forecasting.sf_model import StatsForecastModel
 class AutoTBATS(StatsForecastModel):
     def __init__(
         self,
-        *autoTBATS_args,
+        *args,
         add_encoders: Optional[dict] = None,
         quantiles: Optional[list[float]] = None,
-        **autoTBATS_kwargs,
+        **kwargs,
     ):
         """Auto-TBATS based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -43,7 +43,7 @@ class AutoTBATS(StatsForecastModel):
 
         Parameters
         ----------
-        autoTBATS_args
+        args
             Positional arguments for ``statsforecasts.models.AutoTBATS``.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
@@ -72,7 +72,7 @@ class AutoTBATS(StatsForecastModel):
         quantiles
             Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
-        autoTBATS_kwargs
+        kwargs
             Keyword arguments for ``statsforecasts.models.AutoTBATS``.
 
         Examples
@@ -93,7 +93,7 @@ class AutoTBATS(StatsForecastModel):
                [570.33881522]])
         """
         super().__init__(
-            model=SFAutoTBATS(*autoTBATS_args, **autoTBATS_kwargs),
+            model=SFAutoTBATS(*args, **kwargs),
             quantiles=quantiles,
             add_encoders=add_encoders,
         )

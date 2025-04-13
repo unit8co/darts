@@ -16,10 +16,10 @@ logger = get_logger(__name__)
 class AutoMFLES(StatsForecastModel):
     def __init__(
         self,
-        *autoMFLES_args,
+        *args,
         add_encoders: Optional[dict] = None,
         quantiles: Optional[list[float]] = None,
-        **autoMFLES_kwargs,
+        **kwargs,
     ):
         """Auto-MFLES based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -37,7 +37,7 @@ class AutoMFLES(StatsForecastModel):
 
         Parameters
         ----------
-        autoMFLES_args
+        args
             Positional arguments for ``statsforecasts.models.AutoMFLES``.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
@@ -66,7 +66,7 @@ class AutoMFLES(StatsForecastModel):
         quantiles
             Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
-        autoMFLES_kwargs
+        kwargs
             Keyword arguments for ``statsforecasts.models.AutoMFLES``.
 
         Examples
@@ -89,14 +89,8 @@ class AutoMFLES(StatsForecastModel):
                [520.15305998],
                [593.38690019]])
         """
-        if "prediction_intervals" in autoMFLES_kwargs:
-            logger.warning(
-                "AutoMFLES does not support probabilistic forecasting. "
-                "`prediction_intervals` will be ignored."
-            )
-
         super().__init__(
-            model=SFAutoMFLES(*autoMFLES_args, **autoMFLES_kwargs),
+            model=SFAutoMFLES(*args, **kwargs),
             quantiles=quantiles,
             add_encoders=add_encoders,
         )

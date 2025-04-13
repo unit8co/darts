@@ -13,10 +13,10 @@ from darts.models.forecasting.sf_model import StatsForecastModel
 class AutoARIMA(StatsForecastModel):
     def __init__(
         self,
-        *autoarima_args,
+        *args,
         add_encoders: Optional[dict] = None,
         quantiles: Optional[list[float]] = None,
-        **autoarima_kwargs,
+        **kwargs,
     ):
         """Auto-ARIMA based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -33,7 +33,7 @@ class AutoARIMA(StatsForecastModel):
 
         Parameters
         ----------
-        autoarima_args
+        args
             Positional arguments for ``statsforecasts.models.AutoARIMA``.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
@@ -63,7 +63,7 @@ class AutoARIMA(StatsForecastModel):
             Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
 
-        autoarima_kwargs
+        kwargs
             Keyword arguments for ``statsforecasts.models.AutoARIMA``.
 
         Examples
@@ -87,7 +87,7 @@ class AutoARIMA(StatsForecastModel):
                [555.06463942]])
         """
         super().__init__(
-            model=SFAutoARIMA(*autoarima_args, **autoarima_kwargs),
+            model=SFAutoARIMA(*args, **kwargs),
             quantiles=quantiles,
             add_encoders=add_encoders,
         )
