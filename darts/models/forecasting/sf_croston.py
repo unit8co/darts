@@ -21,6 +21,7 @@ class Croston(StatsForecastModel):
         alpha_d: float = None,
         alpha_p: float = None,
         add_encoders: Optional[dict] = None,
+        quantiles: Optional[list[float]] = None,
     ):
         """An implementation of the `Croston method
         <https://otexts.com/fpp3/counts.html>`_ for intermittent
@@ -33,6 +34,10 @@ class Croston(StatsForecastModel):
         regressing the series against the future covariates using the :class:'LinearRegressionModel' model and then
         running StatsForecast's AutoETS on the in-sample residuals from this original regression. This approach was
         inspired by 'this post of Stephan Kolassa< https://stats.stackexchange.com/q/220885>'_.
+
+        This model comes with transferrable `series` support (applying the fitted model to a new input `series` at
+        prediction time). It adds support by re-fitting a copy of the model on the new series and then generating the
+        forecast for it using the StatsForecast model's `forecast()` method.
 
         .. note::
             Future covariates are not supported when the input series contain missing values.
@@ -77,6 +82,9 @@ class Croston(StatsForecastModel):
                     'tz': 'CET'
                 }
             ..
+        quantiles
+            Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
+            with `num_samples > 1` or `predict_likelihood_parameters=True`.
 
         References
         ----------
@@ -131,6 +139,6 @@ class Croston(StatsForecastModel):
 
         super().__init__(
             model=model,
-            likelihood=None,  # does not support probabilistic forecasts
+            quantiles=quantiles,  # does not support probabilistic forecasts
             add_encoders=add_encoders,
         )

@@ -8,12 +8,15 @@ from typing import Optional
 from statsforecast.models import AutoETS as SFAutoETS
 
 from darts.models.forecasting.sf_model import StatsForecastModel
-from darts.utils.likelihood_models.statsforecast import QuantileRegression
 
 
 class AutoETS(StatsForecastModel):
     def __init__(
-        self, *autoets_args, add_encoders: Optional[dict] = None, **autoets_kwargs
+        self,
+        *autoets_args,
+        add_encoders: Optional[dict] = None,
+        quantiles: Optional[list[float]] = None,
+        **autoets_kwargs,
     ):
         """ETS based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -59,6 +62,12 @@ class AutoETS(StatsForecastModel):
                     'tz': 'CET'
                 }
             ..
+        quantiles
+            Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
+            with `num_samples > 1` or `predict_likelihood_parameters=True`.
+        quantiles
+            Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
+            with `num_samples > 1` or `predict_likelihood_parameters=True`.
         autoets_kwargs
             Keyword arguments for ``statsforecasts.models.AutoETS``.
 
@@ -84,8 +93,6 @@ class AutoETS(StatsForecastModel):
         """
         super().__init__(
             model=SFAutoETS(*autoets_args, **autoets_kwargs),
-            likelihood=QuantileRegression(
-                quantiles=[0.05, 0.15865, 0.5, 0.84135, 0.95]
-            ),
+            quantiles=quantiles,
             add_encoders=add_encoders,
         )

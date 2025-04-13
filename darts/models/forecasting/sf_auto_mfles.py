@@ -15,7 +15,11 @@ logger = get_logger(__name__)
 
 class AutoMFLES(StatsForecastModel):
     def __init__(
-        self, *autoMFLES_args, add_encoders: Optional[dict] = None, **autoMFLES_kwargs
+        self,
+        *autoMFLES_args,
+        add_encoders: Optional[dict] = None,
+        quantiles: Optional[list[float]] = None,
+        **autoMFLES_kwargs,
     ):
         """Auto-MFLES based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -26,6 +30,10 @@ class AutoMFLES(StatsForecastModel):
         We refer to the `statsforecast AutoMFLES documentation
         <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#mfles>`_
         for the exhaustive documentation of the arguments.
+
+        This model comes with transferrable `series` support (applying the fitted model to a new input `series` at
+        prediction time). It adds support by re-fitting a copy of the model on the new series and then generating the
+        forecast for it using the StatsForecast model's `forecast()` method.
 
         Parameters
         ----------
@@ -55,6 +63,9 @@ class AutoMFLES(StatsForecastModel):
                     'tz': 'CET'
                 }
             ..
+        quantiles
+            Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
+            with `num_samples > 1` or `predict_likelihood_parameters=True`.
         autoMFLES_kwargs
             Keyword arguments for ``statsforecasts.models.AutoMFLES``.
 
@@ -86,11 +97,11 @@ class AutoMFLES(StatsForecastModel):
 
         super().__init__(
             model=SFAutoMFLES(*autoMFLES_args, **autoMFLES_kwargs),
-            likelihood=None,  # does not support probabilistic forecasts
+            quantiles=quantiles,
             add_encoders=add_encoders,
         )
 
     @property
     def _supports_native_future_covariates(self) -> bool:
-        # TODO: explain that we're waiting for statsforecast to add missing `uses_exog`
+        # StatsForecast didn't set the `use_exog=True` flag for AutoMFLES even though it supports it.
         return True

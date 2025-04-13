@@ -8,12 +8,15 @@ from typing import Optional
 from statsforecast.models import AutoCES as SFAutoCES
 
 from darts.models.forecasting.sf_model import StatsForecastModel
-from darts.utils.likelihood_models.statsforecast import QuantileRegression
 
 
 class AutoCES(StatsForecastModel):
     def __init__(
-        self, *autoces_args, add_encoders: Optional[dict] = None, **autoces_kwargs
+        self,
+        *autoces_args,
+        add_encoders: Optional[dict] = None,
+        quantiles: Optional[list[float]] = None,
+        **autoces_kwargs,
     ):
         """Auto-CES based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -58,6 +61,9 @@ class AutoCES(StatsForecastModel):
                     'tz': 'CET'
                 }
             ..
+        quantiles
+            Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
+            with `num_samples > 1` or `predict_likelihood_parameters=True`.
         autoces_kwargs
             Keyword arguments for ``statsforecasts.models.AutoCES``.
 
@@ -80,8 +86,6 @@ class AutoCES(StatsForecastModel):
         """
         super().__init__(
             model=SFAutoCES(*autoces_args, **autoces_kwargs),
-            likelihood=QuantileRegression(
-                quantiles=[0.05, 0.15865, 0.5, 0.84135, 0.95]
-            ),
+            quantiles=quantiles,
             add_encoders=add_encoders,
         )

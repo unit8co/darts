@@ -8,12 +8,15 @@ from typing import Optional
 from statsforecast.models import AutoTheta as SFAutoTheta
 
 from darts.models.forecasting.sf_model import StatsForecastModel
-from darts.utils.likelihood_models.statsforecast import QuantileRegression
 
 
 class AutoTheta(StatsForecastModel):
     def __init__(
-        self, *autotheta_args, add_encoders: Optional[dict] = None, **autotheta_kwargs
+        self,
+        *autotheta_args,
+        add_encoders: Optional[dict] = None,
+        quantiles: Optional[list[float]] = None,
+        **autotheta_kwargs,
     ):
         """Auto-Theta based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -61,6 +64,9 @@ class AutoTheta(StatsForecastModel):
                     'tz': 'CET'
                 }
             ..
+        quantiles
+            Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
+            with `num_samples > 1` or `predict_likelihood_parameters=True`.
         autotheta_kwargs
             Keyword arguments for ``statsforecasts.models.AutoTheta``.
 
@@ -83,8 +89,6 @@ class AutoTheta(StatsForecastModel):
         """
         super().__init__(
             model=SFAutoTheta(*autotheta_args, **autotheta_kwargs),
-            likelihood=QuantileRegression(
-                quantiles=[0.05, 0.15865, 0.5, 0.84135, 0.95]
-            ),
+            quantiles=quantiles,
             add_encoders=add_encoders,
         )

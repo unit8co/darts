@@ -8,12 +8,15 @@ from typing import Optional
 from statsforecast.models import AutoARIMA as SFAutoARIMA
 
 from darts.models.forecasting.sf_model import StatsForecastModel
-from darts.utils.likelihood_models.statsforecast import QuantileRegression
 
 
 class AutoARIMA(StatsForecastModel):
     def __init__(
-        self, *autoarima_args, add_encoders: Optional[dict] = None, **autoarima_kwargs
+        self,
+        *autoarima_args,
+        add_encoders: Optional[dict] = None,
+        quantiles: Optional[list[float]] = None,
+        **autoarima_kwargs,
     ):
         """Auto-ARIMA based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -56,6 +59,10 @@ class AutoARIMA(StatsForecastModel):
                     'tz': 'CET'
                 }
             ..
+        quantiles
+            Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
+            with `num_samples > 1` or `predict_likelihood_parameters=True`.
+
         autoarima_kwargs
             Keyword arguments for ``statsforecasts.models.AutoARIMA``.
 
@@ -81,8 +88,6 @@ class AutoARIMA(StatsForecastModel):
         """
         super().__init__(
             model=SFAutoARIMA(*autoarima_args, **autoarima_kwargs),
-            likelihood=QuantileRegression(
-                quantiles=[0.05, 0.15865, 0.5, 0.84135, 0.95]
-            ),
+            quantiles=quantiles,
             add_encoders=add_encoders,
         )

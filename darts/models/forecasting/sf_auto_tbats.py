@@ -8,12 +8,15 @@ from typing import Optional
 from statsforecast.models import AutoTBATS as SFAutoTBATS
 
 from darts.models.forecasting.sf_model import StatsForecastModel
-from darts.utils.likelihood_models.statsforecast import QuantileRegression
 
 
 class AutoTBATS(StatsForecastModel):
     def __init__(
-        self, *autoTBATS_args, add_encoders: Optional[dict] = None, **autoTBATS_kwargs
+        self,
+        *autoTBATS_args,
+        add_encoders: Optional[dict] = None,
+        quantiles: Optional[list[float]] = None,
+        **autoTBATS_kwargs,
     ):
         """Auto-TBATS based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -33,6 +36,10 @@ class AutoTBATS(StatsForecastModel):
         regressing the series against the future covariates using the :class:'LinearRegressionModel' model and then
         running StatsForecast's AutoETS on the in-sample residuals from this original regression. This approach was
         inspired by 'this post of Stephan Kolassa< https://stats.stackexchange.com/q/220885>'_.
+
+        This model comes with transferrable `series` support (applying the fitted model to a new input `series` at
+        prediction time). It adds support by re-fitting a copy of the model on the new series and then generating the
+        forecast for it using the StatsForecast model's `forecast()` method.
 
         Parameters
         ----------
@@ -62,6 +69,9 @@ class AutoTBATS(StatsForecastModel):
                     'tz': 'CET'
                 }
             ..
+        quantiles
+            Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
+            with `num_samples > 1` or `predict_likelihood_parameters=True`.
         autoTBATS_kwargs
             Keyword arguments for ``statsforecasts.models.AutoTBATS``.
 
@@ -84,8 +94,6 @@ class AutoTBATS(StatsForecastModel):
         """
         super().__init__(
             model=SFAutoTBATS(*autoTBATS_args, **autoTBATS_kwargs),
-            likelihood=QuantileRegression(
-                quantiles=[0.05, 0.15865, 0.5, 0.84135, 0.95]
-            ),
+            quantiles=quantiles,
             add_encoders=add_encoders,
         )
