@@ -289,6 +289,10 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
     def likelihood(self) -> QuantilePrediction:
         return self._likelihood
 
+    @property
+    def _supports_non_retrainable_historical_forecasts(self) -> bool:
+        return hasattr(self.model, "forward")
+
 
 class _SFModel(_TS):
     def fit(self, *args, **kwargs): ...
