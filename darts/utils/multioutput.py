@@ -157,7 +157,7 @@ class MultiOutputClassifier(MultiOutputMixin, sk_MultiOutputClassifier):
         return self
 
 
-def get_multioutput_estimator_cls(model: ForecastingModel) -> MultiOutputMixin:
+def get_multioutput_estimator_cls(model: ForecastingModel) -> type[MultiOutputMixin]:
     if model._model_type == ModelType.FORECASTING_REGRESSOR:
         return MultiOutputRegressor
     elif model._model_type == ModelType.FORECASTING_CLASSIFIER:
