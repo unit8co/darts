@@ -75,7 +75,7 @@ jobs:
 
       - name: "Run tests"
         run: |
-          pytest darts/tests/models/forecasting/test_RNN.py
+          pytest --durations=50 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
 
       - name: "Codecov upload"
         if: ${{ matrix.flavour == 'all' }}
