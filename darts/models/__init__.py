@@ -33,6 +33,9 @@ from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
 from darts.models.forecasting.kalman_forecaster import KalmanForecaster
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
+from darts.models.forecasting.multivariate_forecasting_model_wrapper import (
+    MultivariateForecastingModelWrapper,
+)
 from darts.models.forecasting.random_forest import RandomForest
 from darts.models.forecasting.regression_ensemble_model import RegressionEnsembleModel
 from darts.models.forecasting.regression_model import RegressionModel
@@ -146,6 +149,7 @@ __all__ = [
     "GlobalNaiveAggregate",
     "GlobalNaiveDrift",
     "GlobalNaiveSeasonal",
+    "MultivariateForecastingModelWrapper",
     "NBEATSModel",
     "NHiTSModel",
     "NLinearModel",
