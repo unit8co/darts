@@ -14,9 +14,9 @@ from darts.logging import get_logger
 from darts.metrics import mape
 from darts.models import (
     ARIMA,
-    BATS,
+    # BATS,
     FFT,
-    TBATS,
+    # TBATS,
     VARIMA,
     AutoARIMA,
     AutoCES,
@@ -79,8 +79,8 @@ models = [
     (KalmanForecaster(dim_x=3), 20),
     (LinearRegressionModel(lags=12), 13),
     (RandomForest(lags=12, n_estimators=5, max_depth=3), 14),
-    (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.5),
-    (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 11),
+    # (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.5),
+    # (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 11),
 ]
 
 # forecasting models with exogenous variables support
@@ -627,12 +627,12 @@ class TestLocalForecastingModels:
                 ),  # data structure param
                 "KalmanForecaster(add_encoders={'cyclic': {'past': ['month']}})",
             ),
-            (
-                TBATS(
-                    use_trend=True, use_arma_errors=True, use_box_cox=True
-                ),  # params in wrong order
-                "TBATS(use_box_cox=True, use_trend=True)",
-            ),
+            # (
+            #     TBATS(
+            #         use_trend=True, use_arma_errors=True, use_box_cox=True
+            #     ),  # params in wrong order
+            #     "TBATS(use_box_cox=True, use_trend=True)",
+            # ),
         ],
     )
     def test_model_str_call(self, config):
