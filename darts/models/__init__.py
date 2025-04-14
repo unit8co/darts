@@ -166,6 +166,7 @@ __all__ = [
     "AutoMFLES",
     "AutoTheta",
     "AutoTBATS",
+    "StatsForecastModel",
     "XGBModel",
     "GaussianProcessFilter",
     "KalmanFilter",
