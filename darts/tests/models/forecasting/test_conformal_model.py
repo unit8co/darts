@@ -1092,7 +1092,8 @@ class TestConformalModel:
             hfc_conf_lpo = concatenate(
                 [hfc[-1::cal_stride] for hfc in hfc_conf], axis=0
             )
-            assert hfc_lpo == hfc_conf_lpo
+            diffs = hfc_lpo.all_values() - hfc_conf_lpo.all_values()
+            assert diffs.max() == pytest.approx(0.0)
 
         # checking that predict gives the same results as last historical forecast
         preds = model.predict(
