@@ -24,11 +24,11 @@ from darts.models.forecasting.regression_model import (
 )
 from darts.timeseries import TimeSeries
 from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.classification import _get_classification_likelihood
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
     SKLearnLikelihood,
     _check_likelihood,
+    _get_classification_likelihood,
     _get_likelihood,
 )
 

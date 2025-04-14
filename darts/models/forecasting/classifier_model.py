@@ -12,7 +12,7 @@ from darts.models.forecasting.regression_model import (
     RegressionModel,
     RegressionModelWithCategoricalFeatures,
 )
-from darts.utils.likelihood_models.classification import ClassProbabilityLikelihood
+from darts.utils.likelihood_models.sklearn import ClassProbabilityLikelihood
 from darts.utils.utils import ModelType
 
 logger = get_logger(__name__)
