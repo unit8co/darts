@@ -75,7 +75,7 @@ jobs:
 
       - name: "Run tests"
         run: |
-          pytest darts/tests/utils/test_timeseries_generation.py
+          pytest darts/tests/datasets/test_dataset_loaders.py darts/tests/utils/test_timeseries_generation.py
 
       - name: "Codecov upload"
         if: ${{ matrix.flavour == 'all' }}
