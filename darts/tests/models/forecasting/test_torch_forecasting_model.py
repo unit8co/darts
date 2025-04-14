@@ -1249,9 +1249,7 @@ class TestTorchForecastingModel:
         ckpt_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
         # barebone model
         model = DLinearModel(
-            input_chunk_length=4,
-            output_chunk_length=1,
-            n_epochs=1,
+            input_chunk_length=4, output_chunk_length=1, n_epochs=1, **tfm_kwargs
         )
         model.fit(ts_float32)
         model.save(ckpt_path)
