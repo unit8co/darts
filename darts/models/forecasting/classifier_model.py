@@ -10,6 +10,7 @@ from darts.logging import (
 )
 from darts.models.forecasting.regression_model import (
     RegressionModel,
+    RegressionModelWithCategoricalFeatures,
 )
 from darts.utils.likelihood_models.classification import ClassProbabilityLikelihood
 from darts.utils.utils import ModelType
@@ -19,7 +20,7 @@ logger = get_logger(__name__)
 
 class ClassificationForecastingMixin:
     """
-    Mixin for classification forecasting models
+    Mixin for sklearn-like classification forecasting models
     """
 
     @property
@@ -29,8 +30,16 @@ class ClassificationForecastingMixin:
             raise AttributeError("Model is not trained")
         return self.model.classes_
 
-    def _validate_lags(self, lags):
-        if lags is not None and not self._is_target_categorical:
+    def _validate_lags(self, lags, lags_future_covariates, lags_past_covariates):
+        super()._validate_lags(
+            lags=lags,
+            lags_future_covariates=lags_future_covariates,
+            lags_past_covariates=lags_past_covariates,
+        )
+
+        if lags is not None and not isinstance(
+            self, RegressionModelWithCategoricalFeatures
+        ):
             logger.warning(
                 "This model will treat the target `series` data/label "
                 "as a numerical feature when taking it as an input."
@@ -41,10 +50,10 @@ class ClassificationForecastingMixin:
         return ModelType.FORECASTING_CLASSIFIER
 
 
-class SklearnClassifierModel(ClassificationForecastingMixin, RegressionModel):
+class SKLearnClassifierModel(ClassificationForecastingMixin, RegressionModel):
     def __init__(
         self,
-        model,
+        model=None,
         lags: Union[int, list] = None,
         lags_past_covariates: Union[int, list[int]] = None,
         lags_future_covariates: Union[tuple[int, int], list[int]] = None,
@@ -55,8 +64,10 @@ class SklearnClassifierModel(ClassificationForecastingMixin, RegressionModel):
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
     ):
-        """
-        SklearnClassifierModel for classification forecasting using any scikit-learn-like classifier.
+        """SKLearn Classifier Model
+
+        Can be used to fit any scikit-learn-like classifier class to predict the target time series with categorical
+        values from lagged values.
 
         Parameters
         ----------
@@ -64,6 +75,7 @@ class SklearnClassifierModel(ClassificationForecastingMixin, RegressionModel):
             Scikit-learn-like classifier model with ``fit()`` and ``predict()`` methods. Also possible to use model
             that doesn't support multi-label classification for multivariate timeseries, in which case one classifier
             will be used per component in the multivariate series.
+            If `None`, defaults to: ``sklearn.linear_model.LogisticRegression(n_jobs=-1)``.
         lags
             Lagged target `series` values used to predict the next time step/s.
             If an integer, must be > 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`
@@ -146,13 +158,45 @@ class SklearnClassifierModel(ClassificationForecastingMixin, RegressionModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import SKLearnClassifierModel
+        >>> from sklearn.neighbors import KNeighborsClassifier
+        >>> series = WeatherDataset().load().resample("1D", method="mean")
+        >>> # predicting if it will rain or not
+        >>> target =  series['rain (mm)'][:105].map(lambda x: np.where(x > 0, 1, 0))
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 105)
+        >>> past_cov = series['T (degC)'][:105]
+        >>> # optionally, use future pressure (pretending this component is a forecast)
+        >>> future_cov = series['p (mbar)'][:111]
+        >>> # predict 6 "will rain" values using the 12 past values of pressure and temperature,
+        >>> # as well as the 6 pressure values corresponding to the forecasted period
+        >>> model = SKLearnClassifierModel(
+        >>>     model=KNeighborsClassifier(),
+        >>>     lags=12,
+        >>>     lags_past_covariates=12,
+        >>>     lags_future_covariates=[0,1,2,3,4,5],
+        >>>     output_chunk_length=6
+        >>> )
+        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> pred.values()
+        array([[0.],
+                [0.],
+                [0.],
+                [1.],
+                [1.],
+                [0.]])
         """
 
         model = model if model is not None else LogisticRegression(n_jobs=-1)
         if not is_classifier(model):
             raise_log(
                 ValueError(
-                    "SklearnClassifierModel must be initialized with a classifier model"
+                    "`SKLearnClassifierModel` must be initialized with a classifier `model`."
                 ),
                 logger,
             )
@@ -164,7 +208,6 @@ class SklearnClassifierModel(ClassificationForecastingMixin, RegressionModel):
                 " this model won't be able to predict class probabilities"
             )
 
-        self._validate_lags(lags)
         self._likelihood = ClassProbabilityLikelihood(
             n_outputs=output_chunk_length if multi_models else 1,
             random_state=random_state,
@@ -181,10 +224,3 @@ class SklearnClassifierModel(ClassificationForecastingMixin, RegressionModel):
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
         )
-
-    @property
-    def _is_target_categorical(self) -> bool:
-        """
-        Returns if the target serie will be treated as categorical features when `lags` are provided.
-        """
-        return False

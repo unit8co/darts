@@ -21,8 +21,11 @@ from sklearn.tree import DecisionTreeClassifier
 import darts
 from darts.logging import get_logger
 from darts.models.forecasting.catboost_model import CatBoostClassifierModel
-from darts.models.forecasting.classifier_model import SklearnClassifierModel
+from darts.models.forecasting.classifier_model import SKLearnClassifierModel
 from darts.models.forecasting.lgbm import LightGBMClassifierModel
+from darts.models.forecasting.regression_model import (
+    RegressionModelWithCategoricalFeatures,
+)
 from darts.models.forecasting.xgboost import XGBClassifierModel
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
@@ -38,7 +41,7 @@ logger = get_logger(__name__)
 def process_model_list(classifiers):
     for clf, kwargs in classifiers:
         if issubclass(clf, BaseEstimator):
-            yield (SklearnClassifierModel, {"model": clf(**kwargs)})
+            yield (SKLearnClassifierModel, {"model": clf(**kwargs)})
         else:
             yield (clf, kwargs)
 
@@ -118,7 +121,7 @@ class TestClassifierModel:
     ]
 
     models_accuracies = [
-        1,  # SklearnClassifierModel
+        1,  # SKLearnClassifierModel
         1,  # KNeighborsClassifier
         1,  # SVC
         1,  # GaussianProcessClassifier
@@ -132,7 +135,7 @@ class TestClassifierModel:
     ]
 
     models_multioutput = [
-        False,  # SklearnClassifierModel
+        False,  # SKLearnClassifierModel
         True,  # KNeighborsClassifier
         False,  # SVC
         False,  # GaussianProcessClassifier
@@ -180,7 +183,7 @@ class TestClassifierModel:
 
         # accepts only classifier
         with pytest.raises(ValueError):
-            SklearnClassifierModel(model=LinearRegression())
+            SKLearnClassifierModel(model=LinearRegression())
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
     def test_classes_labels(self, clf_params):
@@ -508,7 +511,7 @@ class TestClassifierModel:
         clf, kwargs = clf_params
         with caplog.at_level(logging.WARNING):
             model = clf(lags=2, **kwargs)
-            if model._is_target_categorical:
+            if isinstance(model, RegressionModelWithCategoricalFeatures):
                 assert not any(
                     record.levelname == "WARNING" for record in caplog.records
                 )
@@ -536,7 +539,7 @@ class TestClassifierModel:
             intercepted_args["kwargs"] = kwargs
             return original_fit(*args, **kwargs)
 
-        if model._is_target_categorical:
+        if isinstance(model, RegressionModelWithCategoricalFeatures):
             if clf == CatBoostClassifierModel:
                 with patch.object(
                     darts.models.forecasting.catboost_model.CatBoostClassifier,

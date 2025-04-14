@@ -27,6 +27,7 @@ from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.classification import _get_classification_likelihood
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
+    SKLearnLikelihood,
     _check_likelihood,
     _get_likelihood,
 )
@@ -190,25 +191,25 @@ class CatBoostModel(RegressionModelWithCategoricalFeatures):
         >>> pred = model.predict(6)
         >>> pred.values()
         array([[1006.4153701 ],
-                [1006.41907237],
-                [1006.30872957],
-                [1006.28614154],
-                [1006.22355514],
-                [1006.21607546]])
+               [1006.41907237],
+               [1006.30872957],
+               [1006.28614154],
+               [1006.22355514],
+               [1006.21607546]])
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
         self._model_container = None
 
-        likelihood_kwrags = {}
+        likelihood_kwargs = {}
         if quantiles is not None:
-            likelihood_kwrags["quantiles"] = quantiles
+            likelihood_kwargs["quantiles"] = quantiles
         self._set_likelihood(
             likelihood=likelihood,
             output_chunk_length=output_chunk_length,
             random_state=random_state,
             multi_models=multi_models,
-            **likelihood_kwrags,
+            **likelihood_kwargs,
         )
 
         # suppress writing catboost info files when user does not specifically ask to
@@ -233,7 +234,8 @@ class CatBoostModel(RegressionModelWithCategoricalFeatures):
         # if no loss provided, get the default loss from the model
         self.kwargs["loss_function"] = self.model.get_params().get("loss_function")
 
-    def _create_model(self, **kwargs):
+    @staticmethod
+    def _create_model(**kwargs):
         return CatBoostRegressor(**kwargs)
 
     def _set_likelihood(
@@ -262,6 +264,7 @@ class CatBoostModel(RegressionModelWithCategoricalFeatures):
             else:
                 self.kwargs["loss_function"] = likelihood_map[likelihood]
 
+        self._likelihood: Optional[SKLearnLikelihood] = None
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
@@ -457,13 +460,6 @@ class CatBoostModel(RegressionModelWithCategoricalFeatures):
             samples = samples.astype({col: int for col in self._categorical_indices})
         return samples, labels
 
-    @property
-    def _is_target_categorical(self) -> bool:
-        """ "
-        Returns if the target serie will be treated as categorical features when `lags` are provided.
-        """
-        return False
-
 
 class CatBoostClassifierModel(ClassificationForecastingMixin, CatBoostModel):
     def __init__(
@@ -616,7 +612,6 @@ class CatBoostClassifierModel(ClassificationForecastingMixin, CatBoostModel):
                 [1.],
                 [1.]])
         """
-        self._validate_lags(lags=lags)
 
         # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood
         # this allow users to predict class probabilities,
@@ -639,8 +634,9 @@ class CatBoostClassifierModel(ClassificationForecastingMixin, CatBoostModel):
             **kwargs,
         )
 
-    def _create_model(self, **kwargs):
-        """Instanciate the underlying CatBoostClassifier model"""
+    @staticmethod
+    def _create_model(**kwargs):
+        """Instantiate the underlying CatBoostClassifier model"""
         return CatBoostClassifier(**kwargs)
 
     def _set_likelihood(
@@ -649,6 +645,7 @@ class CatBoostClassifierModel(ClassificationForecastingMixin, CatBoostModel):
         output_chunk_length,
         random_state,
         multi_models,
+        quantiles=None,
     ):
         """
         Check and set the likelihood.
@@ -673,18 +670,12 @@ class CatBoostClassifierModel(ClassificationForecastingMixin, CatBoostModel):
             if np.any(labels % 1 != 0):
                 raise_log(
                     ValueError(
-                        "Labels must be integer-encoded, decimal values found instead."
+                        "Target series must only contain integer-like values. "
+                        "Found decimal values instead."
                     ),
                     logger=logger,
                 )
         return super()._format_samples(samples=samples, labels=labels)
-
-    @property
-    def _is_target_categorical(self) -> bool:
-        """
-        Returns if the target serie will be treated as categorical features when `lags` are provided.
-        """
-        return True
 
     @property
     def _supports_native_multioutput(self):

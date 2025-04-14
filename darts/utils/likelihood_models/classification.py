@@ -52,14 +52,12 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
             )
 
         classes = model.classes_
-        if type(classes) is not list:
+        if not isinstance(classes, list):
             classes = [classes]
         self._classes = classes
 
-        unqiue_classes = {label for classes in classes for label in classes}
-        self._parameter_names = [
-            f"probability_class_{int(label)}" for label in unqiue_classes
-        ]
+        unique_classes = {label for classes in classes for label in classes}
+        self._parameter_names = [f"p_{int(label)}" for label in unique_classes]
         return self
 
     def _estimator_predict(
@@ -68,7 +66,6 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
         x: np.ndarray,
         **kwargs,
     ) -> np.ndarray:
-        # TODO support multi-output with inequal number of classes
         model_output = np.array(model.model.predict_proba(x, **kwargs))
 
         output_dim = len(model_output.shape)
@@ -105,7 +102,7 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
         """
         n_samples = model_output.shape[1]
 
-        # reshape to (n_series * n_samples, output_chunk_length, n_components)
+        # reshape to (n_series * n_samples, output_chunk_length, n_components * n_classes)
         params_reshaped = model_output.transpose(1, 0, 2).reshape(
             n_samples, self._n_outputs, -1
         )

@@ -26,6 +26,7 @@ from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.classification import _get_classification_likelihood
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
+    SKLearnLikelihood,
     _check_likelihood,
     _get_likelihood,
 )
@@ -197,15 +198,16 @@ class XGBModel(RegressionModel):
         self.kwargs = kwargs
         self._model_container = None
 
-        likelihood_kwrags = {}
+        likelihood_kwargs = {}
         if quantiles is not None:
-            likelihood_kwrags["quantiles"] = quantiles
+            likelihood_kwargs["quantiles"] = quantiles
+        self._likelihood: Optional[SKLearnLikelihood] = None
         self._set_likelihood(
             likelihood=likelihood,
             output_chunk_length=output_chunk_length,
             random_state=random_state,
             multi_models=multi_models,
-            **likelihood_kwrags,
+            **likelihood_kwargs,
         )
 
         super().__init__(
@@ -220,7 +222,8 @@ class XGBModel(RegressionModel):
             use_static_covariates=use_static_covariates,
         )
 
-    def _create_model(self, **kwargs):
+    @staticmethod
+    def _create_model(**kwargs):
         return xgb.XGBRegressor(**kwargs)
 
     def _set_likelihood(
@@ -512,7 +515,6 @@ class XGBClassifierModel(ClassificationForecastingMixin, XGBModel):
                 [0.],
                 [0.]])
         """
-        self._validate_lags(lags=lags)
 
         # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood
         # this allow users to predict class probabilities,
@@ -532,7 +534,8 @@ class XGBClassifierModel(ClassificationForecastingMixin, XGBModel):
             **kwargs,
         )
 
-    def _create_model(self, **kwargs):
+    @staticmethod
+    def _create_model(**kwargs):
         return xgb.XGBClassifier(**kwargs)
 
     def _set_likelihood(
@@ -541,6 +544,7 @@ class XGBClassifierModel(ClassificationForecastingMixin, XGBModel):
         output_chunk_length,
         random_state,
         multi_models,
+        quantiles=None,
     ):
         if likelihood is not None:
             _check_likelihood(likelihood, [LikelihoodType.ClassProbability])
@@ -551,13 +555,6 @@ class XGBClassifierModel(ClassificationForecastingMixin, XGBModel):
                 n_outputs=output_chunk_length if multi_models else 1,
                 random_state=random_state,
             )
-
-    @property
-    def _is_target_categorical(self) -> bool:
-        """
-        Returns if the target serie will be treated as categorical features when `lags` are provided.
-        """
-        return False
 
     @property
     def _supports_native_multioutput(self):

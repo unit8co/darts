@@ -24,7 +24,7 @@ from darts.models.forecasting.baselines import (
     NaiveMovingAverage,
     NaiveSeasonal,
 )
-from darts.models.forecasting.classifier_model import SklearnClassifierModel
+from darts.models.forecasting.classifier_model import SKLearnClassifierModel
 from darts.models.forecasting.conformal_models import (
     ConformalNaiveModel,
     ConformalQRModel,
@@ -163,7 +163,7 @@ __all__ = [
     "Prophet",
     "CatBoostModel",
     "CatBoostClassifierModel",
-    "SklearnClassifierModel",
+    "SKLearnClassifierModel",
     "Croston",
     "AutoARIMA",
     "AutoCES",

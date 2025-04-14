@@ -233,11 +233,10 @@ class RegressionModel(GlobalForecastingModel):
             )
 
         # check lags
-        raise_if(
-            (lags is None)
-            and (lags_future_covariates is None)
-            and (lags_past_covariates is None),
-            "At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None.",
+        self._validate_lags(
+            lags=lags,
+            lags_future_covariates=lags_future_covariates,
+            lags_past_covariates=lags_past_covariates,
         )
 
         # convert lags arguments to list of int
@@ -250,6 +249,14 @@ class RegressionModel(GlobalForecastingModel):
         )
 
         self.pred_dim = self.output_chunk_length if self.multi_models else 1
+
+    def _validate_lags(self, lags, lags_future_covariates, lags_past_covariates):
+        raise_if(
+            (lags is None)
+            and (lags_future_covariates is None)
+            and (lags_past_covariates is None),
+            "At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None.",
+        )
 
     @staticmethod
     def _generate_lags(
@@ -363,7 +370,7 @@ class RegressionModel(GlobalForecastingModel):
                     raise_log(
                         ValueError(
                             f"`{lags_name}` - `{comp_name}`: must be either a {supported_types}. "
-                            f"Given : {type(comp_lags)}.",
+                            f"Given : {type(comp_lags)}."
                         ),
                         logger,
                     )
@@ -1606,13 +1613,6 @@ class RegressionModelWithCategoricalFeatures(RegressionModel, ABC):
         )
         self._categorical_indices = []  # Indices are set on fit
 
-    @property
-    @abstractmethod
-    def _categorical_fit_param(self) -> Optional[str]:
-        """
-        Returns the name of the categorical features parameter from model's `fit` method .
-        """
-
     def _get_categorical_features(
         self,
         series: Union[Sequence[TimeSeries], TimeSeries],
@@ -1630,7 +1630,8 @@ class RegressionModelWithCategoricalFeatures(RegressionModel, ABC):
         target_ts = get_single_series(series)
         categorical_covariates = [
             list(target_ts.components)
-            if self._is_target_categorical and self.lags.get("target") is not None
+            if self._get_lags("target") is not None
+            and self._model_type == ModelType.FORECASTING_CLASSIFIER
             else [],
             self.categorical_past_covariates
             if self.categorical_past_covariates
@@ -1779,11 +1780,4 @@ class RegressionModelWithCategoricalFeatures(RegressionModel, ABC):
     def _categorical_fit_param(self) -> Optional[str]:
         """
         Returns the name of the categorical features parameter from model's `fit` method .
-        """
-
-    @property
-    @abstractmethod
-    def _is_target_categorical(self) -> bool:
-        """ "
-        Returns if the target serie will be treated as categorical features when `lags` are provided.
         """

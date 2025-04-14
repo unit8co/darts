@@ -28,6 +28,7 @@ from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.classification import _get_classification_likelihood
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
+    SKLearnLikelihood,
     _check_likelihood,
     _get_likelihood,
 )
@@ -196,15 +197,16 @@ class LightGBMModel(RegressionModelWithCategoricalFeatures):
         self.kwargs = kwargs
         self._model_container = None
 
-        likelihood_kwrags = {}
+        likelihood_kwargs = {}
         if quantiles is not None:
-            likelihood_kwrags["quantiles"] = quantiles
+            likelihood_kwargs["quantiles"] = quantiles
+        self._likelihood: Optional[SKLearnLikelihood] = None
         self._set_likelihood(
             likelihood=likelihood,
             output_chunk_length=output_chunk_length,
             random_state=random_state,
             multi_models=multi_models,
-            **likelihood_kwrags,
+            **likelihood_kwargs,
         )
 
         super().__init__(
@@ -222,7 +224,8 @@ class LightGBMModel(RegressionModelWithCategoricalFeatures):
             categorical_static_covariates=categorical_static_covariates,
         )
 
-    def _create_model(self, **kwargs):
+    @staticmethod
+    def _create_model(**kwargs):
         return lgb.LGBMRegressor(**kwargs)
 
     def _set_likelihood(
@@ -372,13 +375,6 @@ class LightGBMModel(RegressionModelWithCategoricalFeatures):
         Returns the name of the categorical features parameter from model's `fit` method .
         """
         return "categorical_feature"
-
-    @property
-    def _is_target_categorical(self) -> bool:
-        """ "
-        Returns if the target serie will be treated as categorical features when `lags` are provided.
-        """
-        return False
 
 
 class LightGBMClassifierModel(ClassificationForecastingMixin, LightGBMModel):
@@ -535,8 +531,6 @@ class LightGBMClassifierModel(ClassificationForecastingMixin, LightGBMModel):
                 [0.]])
         """
 
-        self._validate_lags(lags=lags)
-
         # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood
         # this allow users to predict class probabilities,
         # by setting `predict_likelihood_parameters`to `True` in `predict()`
@@ -558,7 +552,8 @@ class LightGBMClassifierModel(ClassificationForecastingMixin, LightGBMModel):
             **kwargs,
         )
 
-    def _create_model(self, **kwargs):
+    @staticmethod
+    def _create_model(**kwargs):
         return lgb.LGBMClassifier(**kwargs)
 
     def _set_likelihood(
@@ -567,6 +562,7 @@ class LightGBMClassifierModel(ClassificationForecastingMixin, LightGBMModel):
         output_chunk_length,
         random_state,
         multi_models,
+        quantiles=None,
     ):
         """
         Check and set the likelihood.
@@ -581,13 +577,6 @@ class LightGBMClassifierModel(ClassificationForecastingMixin, LightGBMModel):
                 n_outputs=output_chunk_length if multi_models else 1,
                 random_state=random_state,
             )
-
-    @property
-    def _is_target_categorical(self) -> bool:
-        """
-        Returns if the target serie will be treated as categorical features when `lags` are provided.
-        """
-        return True
 
     @property
     def _supports_native_multioutput(self):

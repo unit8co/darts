@@ -420,7 +420,7 @@ def _check_likelihood(
     Parameters
     ----------
     likelihood
-        The likelihood name. Must be one of available_likelihoods.
+        The likelihood name. Must be one of `available_likelihoods`.
     available_likelihoods
         A list of supported likelihood types or names.
     """
