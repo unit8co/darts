@@ -75,7 +75,7 @@ jobs:
 
       - name: "Run tests"
         run: |
-          pytest --durations=50 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
+          pytest --durations=50 --cov=darts --cov-config=.coveragerc --cov-report=xml --junitxml=test-results.xml darts/tests
 
       - name: "Codecov upload"
         if: ${{ matrix.flavour == 'all' }}
@@ -83,6 +83,12 @@ jobs:
         with:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: "Upload test results"
+        if: ${{ matrix.flavour == 'all' }}
+        uses: codecov/test-results-action@v1
+        with:
+          files: test-results.xml
 
   docs:
     runs-on: ubuntu-latest
