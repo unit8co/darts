@@ -1,3 +1,7 @@
+import locale
+
+locale.setlocale(locale.LC_ALL, "C")
+
 import itertools
 import warnings
 from collections.abc import Sequence
