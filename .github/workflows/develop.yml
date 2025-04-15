@@ -66,10 +66,6 @@ jobs:
           # install latest dependencies (potentially updating cached dependencies)
           pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
-      - name: "Install libomp (for LightGBM)"
-        run: |
-          ./.github/scripts/libomp-${{ runner.os }}.sh
-
       - name: "Run tests"
         run: |
           pytest --durations=50 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
@@ -119,10 +115,6 @@ jobs:
           # install latest dependencies (potentially updating cached dependencies)
           pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
-      - name: "Install libomp (for LightGBM)"
-        run: |
-          ./.github/scripts/libomp-${{ runner.os }}.sh
-
       - name: "Install Locally"
         run: |
           pip install .
@@ -167,10 +159,6 @@ jobs:
         run: |
           # install latest dependencies (potentially updating cached dependencies)
           pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
-
-      - name: "Install libomp (for LightGBM)"
-        run: |
-          ./.github/scripts/libomp-${{ runner.os }}.sh
 
       - name: "Install Locally"
         run: |
