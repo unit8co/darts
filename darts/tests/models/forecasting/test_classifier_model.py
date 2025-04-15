@@ -198,7 +198,31 @@ class TestClassifierModel:
         model.fit(
             series=self.sine_univariate1_cat, past_covariates=self.sine_univariate1
         )
-        assert [0, 1, 2] == list(model.classes_)
+        assert ([0, 1, 2] == model.classes_).all()
+
+        if clf == XGBClassifierModel:
+            # XGB requires class labels to be consecutive from 0
+            multivariate_cat_diff_labels = self.sine_univariate1_cat.stack(
+                self.sine_univariate1_cat
+            )
+            expected_classes = [np.array([0, 1, 2]), np.array([0, 1, 2])]
+        else:
+            multivariate_cat_diff_labels = self.sine_univariate1_cat.stack(
+                self.sine_univariate1_cat + 3
+            )
+            expected_classes = [np.array([0, 1, 2]), np.array([3, 4, 5])]
+
+        multi_model = clf(lags_past_covariates=5, **kwargs)
+        multi_model.fit(
+            series=multivariate_cat_diff_labels, past_covariates=self.sine_univariate1
+        )
+        assert len(multi_model.classes_) == len(expected_classes)
+        assert np.array([
+            (model_classes == series_classes).all()
+            for model_classes, series_classes in zip(
+                multi_model.classes_, expected_classes
+            )
+        ]).all()
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
     def test_optional_static_covariates(self, clf_params):
