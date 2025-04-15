@@ -163,11 +163,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         series = series if series is not None else self.training_series
         comp_names_out = None
 
-        pred_vals = self.likelihood.predict(
-            model_output,
-            num_samples=num_samples,
-            predict_likelihood_parameters=predict_likelihood_parameters,
-        )
+        pred_vals = self.likelihood.predict(model_output, num_samples=num_samples)
         if predict_likelihood_parameters:
             comp_names_out = self.likelihood.component_names(series)
 
@@ -194,10 +190,15 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         ----------
         n
             The number of time steps after the end of the training time series for which to produce predictions
+        series
+            The series whose future values will be predicted. If the statsforecast model has a `forward` method then
+            the previously fitted model will be used for prediction, otherwise a copy of the model will be fitted to
+            predict the new series.
         historic_future_covariates
-            Optionally,
+            Optionally, the historic part of the future-known covariates series that is overlapping with `series`.
+            They must match the covariates used for training in terms of dimension.
         future_covariates
-            Optionally, the future-known covariates series needed as inputs for the model.
+            Optionally, the future-known covariates series that extends to at least `n` steps after the end of `series`.
             They must match the covariates used for training in terms of dimension.
         levels
             The confidence levels (0. - 100.) for the prediction intervals.

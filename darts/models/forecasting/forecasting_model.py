@@ -2828,6 +2828,39 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         )
         return []
 
+    def _sanity_check_predict_likelihood_parameters(
+        self, n: int, output_chunk_length: Union[int, None], num_samples: int
+    ):
+        """Verify that the assumptions for likelihood parameters prediction are verified:
+        - Probabilistic models fitted with a likelihood
+        - `num_samples=1`
+        - `n <= output_chunk_length`
+        """
+        if not self.supports_likelihood_parameter_prediction:
+            raise_log(
+                ValueError(
+                    "`predict_likelihood_parameters=True` is only supported for probabilistic models fitted with "
+                    "a likelihood."
+                ),
+                logger,
+            )
+        if num_samples != 1:
+            raise_log(
+                ValueError(
+                    f"`predict_likelihood_parameters=True` is only supported for `num_samples=1`, "
+                    f"received {num_samples}."
+                ),
+                logger,
+            )
+        if output_chunk_length is not None and n > output_chunk_length:
+            raise_log(
+                ValueError(
+                    "`predict_likelihood_parameters=True` is only supported for `n` smaller than or equal to "
+                    "`output_chunk_length`."
+                ),
+                logger,
+            )
+
 
 class LocalForecastingModel(ForecastingModel, ABC):
     """The base class for "local" forecasting models, handling only single univariate time series.
@@ -3126,39 +3159,6 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         """
         return True
 
-    def _sanity_check_predict_likelihood_parameters(
-        self, n: int, output_chunk_length: Union[int, None], num_samples: int
-    ):
-        """Verify that the assumptions for likelihood parameters prediction are verified:
-        - Probabilistic models fitted with a likelihood
-        - `num_samples=1`
-        - `n <= output_chunk_length`
-        """
-        if not self.supports_likelihood_parameter_prediction:
-            raise_log(
-                ValueError(
-                    "`predict_likelihood_parameters=True` is only supported for probabilistic models fitted with "
-                    "a likelihood."
-                ),
-                logger,
-            )
-        if num_samples != 1:
-            raise_log(
-                ValueError(
-                    f"`predict_likelihood_parameters=True` is only supported for `num_samples=1`, "
-                    f"received {num_samples}."
-                ),
-                logger,
-            )
-        if output_chunk_length is not None and n > output_chunk_length:
-            raise_log(
-                ValueError(
-                    "`predict_likelihood_parameters=True` is only supported for `n` smaller than or equal to "
-                    "`output_chunk_length`."
-                ),
-                logger,
-            )
-
 
 class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
     """The base class for future covariates "local" forecasting models, handling single uni- or multivariate target
@@ -3263,8 +3263,11 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
-
         super().predict(n, num_samples)
+        if predict_likelihood_parameters:
+            self._sanity_check_predict_likelihood_parameters(
+                n, self.output_chunk_length, num_samples
+            )
 
         # avoid generating encodings again if subclass has already generated them
         if not self._supress_generate_predict_encoding:

@@ -65,9 +65,6 @@ class AutoETS(StatsForecastModel):
         quantiles
             Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
-        quantiles
-            Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
-            with `num_samples > 1` or `predict_likelihood_parameters=True`.
         kwargs
             Keyword arguments for ``statsforecasts.models.AutoETS``.
 

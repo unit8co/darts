@@ -60,12 +60,7 @@ class QuantilePrediction(Likelihood, ABC):
         # ignore additional attrs for equality tests
         self.ignore_attrs_equality += ["_median_idx", "levels"]
 
-    def predict(
-        self,
-        model_output: np.ndarray,
-        num_samples: int,
-        predict_likelihood_parameters: bool,
-    ) -> np.ndarray:
+    def predict(self, model_output: np.ndarray, num_samples: int) -> np.ndarray:
         """
         Generates sampled or direct likelihood parameter predictions.
 
@@ -76,17 +71,13 @@ class QuantilePrediction(Likelihood, ABC):
         num_samples
             Number of times a prediction is sampled from the likelihood model / distribution.
             If `1` and `predict_likelihood_parameters=False`, returns median / mean predictions.
-        predict_likelihood_parameters
-            If set to `True`, generates likelihood parameter predictions instead of sampling from the
-            likelihood model / distribution. Only supported with `num_samples = 1` and
-            `n<=output_chunk_length`.
         """
-        if predict_likelihood_parameters:
-            return self.predict_likelihood_parameters(model_output)
-        elif num_samples == 1:
-            return self._get_median_prediction(model_output)
-        else:
+        if num_samples > 1:
             return self.sample(model_output, num_samples=num_samples)
+
+        # likelihood parameters or median prediction are handled by the `levels` parameter in
+        # `StatsForecastModel._predict()`
+        return model_output
 
     def sample(self, model_output: np.ndarray, num_samples: int) -> np.ndarray:
         """
@@ -97,15 +88,3 @@ class QuantilePrediction(Likelihood, ABC):
             quantiles=np.array(self.quantiles),
             num_samples=num_samples,
         )
-
-    def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
-        """
-        Returns the distribution parameters as an array, extracted from the raw model outputs.
-        """
-        return model_output
-
-    def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
-        """
-        Gets the median prediction per component extracted from the model output.
-        """
-        return model_output
