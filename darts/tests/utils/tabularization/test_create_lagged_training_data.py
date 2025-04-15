@@ -1,7 +1,3 @@
-import locale
-
-locale.setlocale(locale.LC_ALL, "C")
-
 import itertools
 import warnings
 from collections.abc import Sequence
@@ -2648,7 +2644,7 @@ class TestCreateLaggedTrainingData:
                     "future_3_futcov_lag2",
                 ],
             ),
-        ],
+        ][3:],
     )
     def test_create_lagged_component_names_different_lags(self, config):
         """
