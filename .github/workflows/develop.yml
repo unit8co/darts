@@ -48,9 +48,6 @@ jobs:
       - name: "Compile Dependency Versions"
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          if [ "${{ matrix.os }}" == "macos-14" ]; then
-            source $HOME/.local/bin/env
-          fi
           uv pip compile requirements/dev-all.txt requirements/optional.txt > requirements-latest.txt
 
       - name: "Cache python environment"
