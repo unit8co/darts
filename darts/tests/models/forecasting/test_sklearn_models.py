@@ -28,7 +28,7 @@ from darts.models import (
     LightGBMModel,
     LinearRegressionModel,
     RandomForest,
-    RegressionModel,
+    SKLearnModel,
     XGBModel,
 )
 from darts.utils import timeseries_generation as tg
@@ -182,10 +182,10 @@ cb_test_params = {
 }
 
 
-class TestRegressionModels:
+class TestSKLearnModels:
     np.random.seed(42)
     # default regression models
-    models = [RandomForest, LinearRegressionModel, RegressionModel]
+    models = [RandomForest, LinearRegressionModel, SKLearnModel]
 
     # register likelihood regression models
     QuantileLinearRegressionModel = partialclass(
@@ -210,7 +210,7 @@ class TestRegressionModels:
         **xgb_test_params,
     )
     KNeighborsRegressorModel = partialclass(
-        RegressionModel,
+        SKLearnModel,
         model=KNeighborsRegressor(n_neighbors=1),
     )
     # targets for poisson regression must be positive, so we exclude them for some tests
@@ -224,7 +224,7 @@ class TestRegressionModels:
     univariate_accuracies = [
         0.03,  # RandomForest
         1e-13,  # LinearRegressionModel
-        1e-13,  # RegressionModel
+        1e-13,  # SKLearnModel
         0.8,  # QuantileLinearRegressionModel
         0.4,  # PoissonLinearRegressionModel
         0.75,  # PoissonXGBModel
@@ -233,7 +233,7 @@ class TestRegressionModels:
     multivariate_accuracies = [
         0.3,  # RandomForest
         1e-13,  # LinearRegressionModel
-        1e-13,  # RegressionModel
+        1e-13,  # SKLearnModel
         0.8,  # QuantileLinearRegressionModel
         0.4,  # PoissonLinearRegressionModel
         0.75,  # PoissonXGBModel
@@ -242,7 +242,7 @@ class TestRegressionModels:
     multivariate_multiseries_accuracies = [
         0.05,  # RandomForest
         1e-13,  # LinearRegressionModel
-        1e-13,  # RegressionModel
+        1e-13,  # SKLearnModel
         0.8,  # QuantileLinearRegressionModel
         0.4,  # PoissonLinearRegressionModel
         0.85,  # PoissonXGBModel
@@ -515,7 +515,7 @@ class TestRegressionModels:
     def test_training_data_creation(self, mode):
         """testing _get_training_data function"""
         # lags defined using lists of integers
-        model_instance = RegressionModel(
+        model_instance = SKLearnModel(
             lags=self.lags_1["target"],
             lags_past_covariates=self.lags_1["past"],
             lags_future_covariates=self.lags_1["future"],
@@ -565,7 +565,7 @@ class TestRegressionModels:
 
         # lags defined using dictionaries
         # cannot use 'default_lags' because it's converted in `fit()`, before calling `_created_lagged_data`
-        model_instance = RegressionModel(
+        model_instance = SKLearnModel(
             lags={"0-trgt-0": [-4, -3], "0-trgt-1": [-3, -2], "0-trgt-2": [-2, -1]},
             lags_past_covariates={"0-pcov-0": [-10], "0-pcov-1": [-7]},
             lags_future_covariates={"0-fcov-0": (2, 2)},
@@ -1320,11 +1320,11 @@ class TestRegressionModels:
     @pytest.mark.parametrize(
         "config",
         [
-            (RegressionModel(lags=4), True),
-            (RegressionModel(lags=4, model=LinearRegression()), True),
-            (RegressionModel(lags=4, model=RandomForestRegressor()), True),
+            (SKLearnModel(lags=4), True),
+            (SKLearnModel(lags=4, model=LinearRegression()), True),
+            (SKLearnModel(lags=4, model=RandomForestRegressor()), True),
             (
-                RegressionModel(lags=4, model=HistGradientBoostingRegressor()),
+                SKLearnModel(lags=4, model=HistGradientBoostingRegressor()),
                 False,
             ),
         ],
@@ -1350,7 +1350,7 @@ class TestRegressionModels:
 
     model_configs_multioutput = [
         (
-            RegressionModel,
+            SKLearnModel,
             {"lags": 4, "model": LinearRegression()},
             True,
         ),
@@ -1566,7 +1566,7 @@ class TestRegressionModels:
         )
 
         # univariate, deterministic, ocl > 2
-        m = RegressionModel(
+        m = SKLearnModel(
             model=HistGradientBoostingRegressor(),
             lags=2,
             output_chunk_length=2,
@@ -1624,12 +1624,10 @@ class TestRegressionModels:
     def test_regression_model(self, mode):
         lags = 4
         models = [
-            RegressionModel(lags=lags, multi_models=mode),
-            RegressionModel(lags=lags, model=LinearRegression(), multi_models=mode),
-            RegressionModel(
-                lags=lags, model=RandomForestRegressor(), multi_models=mode
-            ),
-            RegressionModel(
+            SKLearnModel(lags=lags, multi_models=mode),
+            SKLearnModel(lags=lags, model=LinearRegression(), multi_models=mode),
+            SKLearnModel(lags=lags, model=RandomForestRegressor(), multi_models=mode),
+            SKLearnModel(
                 lags=lags, model=HistGradientBoostingRegressor(), multi_models=mode
             ),
         ]
@@ -1643,7 +1641,7 @@ class TestRegressionModels:
     def test_multiple_ts(self, mode):
         lags = 4
         lags_past_covariates = 3
-        model = RegressionModel(
+        model = SKLearnModel(
             lags=lags, lags_past_covariates=lags_past_covariates, multi_models=mode
         )
 
@@ -1712,7 +1710,7 @@ class TestRegressionModels:
         # testing improved denoise with multiple TS
 
         # test 1: with single TS, 2 covariates should be better than one
-        model = RegressionModel(lags=3, lags_past_covariates=5, multi_models=mode)
+        model = SKLearnModel(lags=3, lags_past_covariates=5, multi_models=mode)
         model.fit([target_train_1_noise], [past_covariates])
 
         prediction_past_only = model.predict(
@@ -1721,7 +1719,7 @@ class TestRegressionModels:
             past_covariates=[past_covariates] * 2,
         )
 
-        model = RegressionModel(
+        model = SKLearnModel(
             lags=3,
             lags_past_covariates=5,
             lags_future_covariates=(5, 0),
@@ -1748,7 +1746,7 @@ class TestRegressionModels:
 
         assert error_past_only > error_both
         # test 2: with both covariates, 2 TS should learn more than one (with little noise)
-        model = RegressionModel(
+        model = SKLearnModel(
             lags=3,
             lags_past_covariates=5,
             lags_future_covariates=(5, 0),
@@ -1917,7 +1915,7 @@ class TestRegressionModels:
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_only_future_covariates(self, mode):
-        model = RegressionModel(lags_future_covariates=[-2], multi_models=mode)
+        model = SKLearnModel(lags_future_covariates=[-2], multi_models=mode)
 
         target_series = tg.linear_timeseries(start_value=0, end_value=49, length=50)
         covariates = tg.linear_timeseries(start_value=100, end_value=149, length=50)
@@ -1967,7 +1965,7 @@ class TestRegressionModels:
             start_value=200, end_value=300, length=50
         )
 
-        model = RegressionModel(
+        model = SKLearnModel(
             lags_past_covariates=[-10],
             lags_future_covariates=[-5, 5],
             output_chunk_length=7,
@@ -1982,7 +1980,7 @@ class TestRegressionModels:
 
         n = 10
 
-        model = RegressionModel(
+        model = SKLearnModel(
             lags_past_covariates=[-10],
             lags_future_covariates=[-4, 3],
             output_chunk_length=output_chunk_length,
@@ -2906,7 +2904,7 @@ class TestRegressionModels:
         "config",
         product(
             [
-                (RegressionModel, {}),
+                (SKLearnModel, {}),
                 (LinearRegressionModel, {}),
                 (XGBModel, xgb_test_params),
             ]
@@ -3747,7 +3745,7 @@ class TestRegressionModels:
         return series, past_cov, future_cov
 
 
-class TestProbabilisticRegressionModels:
+class TestProbabilisticSKLearnModels:
     models_cls_kwargs_errs = [
         (
             LinearRegressionModel,
@@ -4017,7 +4015,7 @@ class TestProbabilisticRegressionModels:
             series,
             past_covariates,
             future_covariates,
-        ) = TestRegressionModels.inputs_for_tests_categorical_covariates()
+        ) = TestSKLearnModels.inputs_for_tests_categorical_covariates()
 
         model.fit(
             series=series,

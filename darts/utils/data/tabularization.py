@@ -695,7 +695,7 @@ def add_static_covariates_to_lagged_data(
     last_shape: Optional[tuple[int, int]] = None,
 ) -> Union[np.ndarray, Sequence[np.ndarray]]:
     """
-    Add static covariates to the features' table for RegressionModels.
+    Add static covariates to the features' table for SKLearnModels.
     If `uses_static_covariates=True`, all target series used in `fit()` and `predict()` must have static
     covariates with identical dimensionality. Otherwise, will not consider static covariates.
 
@@ -1351,7 +1351,7 @@ def _create_lagged_data_autoregression(
     num_samples: int,
 ) -> np.ndarray:
     """Extract lagged data from target, past covariates and future covariates for auto-regression
-    with RegressionModels.
+    with SKLearnModels.
     """
     series_length = len(target_series)
     X = []

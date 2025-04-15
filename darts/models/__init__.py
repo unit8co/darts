@@ -35,7 +35,7 @@ from darts.models.forecasting.kalman_forecaster import KalmanForecaster
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.random_forest import RandomForest
 from darts.models.forecasting.regression_ensemble_model import RegressionEnsembleModel
-from darts.models.forecasting.regression_model import RegressionModel
+from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.models.forecasting.tbats_model import BATS, TBATS
 from darts.models.forecasting.theta import FourTheta, Theta
 from darts.models.forecasting.varima import VARIMA
@@ -135,7 +135,7 @@ __all__ = [
     "LinearRegressionModel",
     "RandomForest",
     "RegressionEnsembleModel",
-    "RegressionModel",
+    "SKLearnModel",
     "BATS",
     "TBATS",
     "FourTheta",

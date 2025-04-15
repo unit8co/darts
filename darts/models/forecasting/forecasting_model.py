@@ -486,7 +486,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         See examples below.
 
         If the model wasn't fitted with:
-            - target (concerning RegressionModels only): then the first element should be `None`.
+            - target (concerning SKLearnModels only): then the first element should be `None`.
 
             - past covariates: then the third and fourth elements should be `None`.
 
@@ -2637,17 +2637,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         Saves the model under a given path or file handle.
 
-        Example for saving and loading a :class:`RegressionModel`:
+        Example for saving and loading a :class:`SKLearnModel`:
 
             .. highlight:: python
             .. code-block:: python
 
-                from darts.models import RegressionModel
+                from darts.models import SKLearnModel
 
-                model = RegressionModel(lags=4)
+                model = SKLearnModel(lags=4)
 
                 model.save("my_model.pkl")
-                model_loaded = RegressionModel.load("my_model.pkl")
+                model_loaded = SKLearnModel.load("my_model.pkl")
             ..
 
         Parameters
@@ -2655,7 +2655,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         path
             Path or file handle under which to save the model at its current state. If no path is specified, the model
             is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
-            E.g., ``"RegressionModel_2020-01-01_12_00_00.pkl"``.
+            E.g., ``"SKLearnModel_2020-01-01_12_00_00.pkl"``.
         clean
             Whether to store a cleaned version of the model. Only effective for global forecasting models.
             If `True`, the training series and covariates are removed.

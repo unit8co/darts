@@ -30,7 +30,7 @@ Statistical Models (`LocalForecastingModel <https://unit8co.github.io/darts/user
     - :class:`~darts.models.forecasting.kalman_forecaster.KalmanForecaster`
     - :class:`~darts.models.forecasting.croston.Croston`
 Regression Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
-    - :class:`~darts.models.forecasting.regression_model.RegressionModel`
+    - :class:`~darts.models.forecasting.sklearn_model.SKLearnModel`
     - :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel`
     - :class:`~darts.models.forecasting.random_forest.RandomForest`
     - :class:`~darts.models.forecasting.lgbm.LightGBMModel`

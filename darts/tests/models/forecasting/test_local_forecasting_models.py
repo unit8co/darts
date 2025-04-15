@@ -35,7 +35,7 @@ from darts.models import (
     NaiveSeasonal,
     Prophet,
     RandomForest,
-    RegressionModel,
+    SKLearnModel,
     Theta,
 )
 from darts.models.forecasting.forecasting_model import (
@@ -209,7 +209,7 @@ class TestLocalForecastingModels:
     @pytest.mark.parametrize("config", models)
     def test_models_runnability(self, config):
         model, _ = config
-        if not isinstance(model, RegressionModel):
+        if not isinstance(model, SKLearnModel):
             assert isinstance(model, LocalForecastingModel)
         prediction = model.fit(self.ts_gaussian).predict(self.forecasting_horizon)
         assert len(prediction) == self.forecasting_horizon
