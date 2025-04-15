@@ -75,4 +75,4 @@ jobs:
 
       - name: "Run tests"
         run: |
-          pytest darts/tests/utils/tabularization/test_create_lagged_training_data.py -k "test_create_lagged_component_names_different_lags"
+          pytest darts/tests/utils/tabularization/test_create_lagged_training_data.py
