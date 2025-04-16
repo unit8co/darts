@@ -16,7 +16,7 @@ from typing import Optional, Union
 import lightgbm as lgb
 
 from darts.logging import get_logger
-from darts.models.forecasting.classifier_model import ClassificationForecastingMixin
+from darts.models.forecasting.classifier_model import _ForecastingClassifierMixin
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -377,22 +377,22 @@ class LightGBMModel(RegressionModelWithCategoricalFeatures):
         return "categorical_feature"
 
 
-class LightGBMClassifierModel(ClassificationForecastingMixin, LightGBMModel):
+class LightGBMClassifierModel(_ForecastingClassifierMixin, LightGBMModel):
     def __init__(
         self,
-        lags=None,
-        lags_past_covariates=None,
-        lags_future_covariates=None,
-        output_chunk_length=1,
-        output_chunk_shift=0,
-        add_encoders=None,
-        likelihood=None,
-        random_state=None,
-        multi_models=True,
-        use_static_covariates=True,
-        categorical_past_covariates=None,
-        categorical_future_covariates=None,
-        categorical_static_covariates=None,
+        lags: Union[int, list] = None,
+        lags_past_covariates: Union[int, list[int]] = None,
+        lags_future_covariates: Union[tuple[int, int], list[int]] = None,
+        output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
+        add_encoders: Optional[dict] = None,
+        likelihood: Optional[str] = LikelihoodType.ClassProbability.value,
+        random_state: Optional[int] = None,
+        multi_models: Optional[bool] = True,
+        use_static_covariates: bool = True,
+        categorical_past_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_future_covariates: Optional[Union[str, list[str]]] = None,
+        categorical_static_covariates: Optional[Union[str, list[str]]] = None,
         **kwargs,
     ):
         """LGBM Model for classification forecasting
@@ -471,6 +471,10 @@ class LightGBMClassifierModel(ClassificationForecastingMixin, LightGBMModel):
                     'tz': 'CET'
                 }
             ..
+        likelihood
+            'classprobability' or ``None``. If set to 'classprobability', setting `predict_likelihood_parameters`
+            in `predict()` will forecast class probabilities.
+            Default: 'classprobability'
         random_state
             Control the randomness in the fitting procedure and for sampling.
             Default: ``None``.
@@ -541,7 +545,7 @@ class LightGBMClassifierModel(ClassificationForecastingMixin, LightGBMModel):
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
-            likelihood=LikelihoodType.ClassProbability.value,
+            likelihood=likelihood,
             quantiles=None,  # quantiles are not supported for LightGBMClassifierModel
             random_state=random_state,
             multi_models=multi_models,

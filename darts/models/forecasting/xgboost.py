@@ -14,7 +14,7 @@ import numpy as np
 import xgboost as xgb
 
 from darts.logging import get_logger, raise_if_not
-from darts.models.forecasting.classifier_model import ClassificationForecastingMixin
+from darts.models.forecasting.classifier_model import _ForecastingClassifierMixin
 from darts.models.forecasting.regression_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -378,19 +378,19 @@ class XGBModel(RegressionModel):
         return super()._supports_native_multioutput and self.likelihood is None
 
 
-class XGBClassifierModel(ClassificationForecastingMixin, XGBModel):
+class XGBClassifierModel(_ForecastingClassifierMixin, XGBModel):
     def __init__(
         self,
-        lags=None,
-        lags_past_covariates=None,
-        lags_future_covariates=None,
-        output_chunk_length=1,
-        output_chunk_shift=0,
-        add_encoders=None,
-        likelihood=None,
-        random_state=None,
-        multi_models=True,
-        use_static_covariates=True,
+        lags: Union[int, list] = None,
+        lags_past_covariates: Union[int, list[int]] = None,
+        lags_future_covariates: Union[tuple[int, int], list[int]] = None,
+        output_chunk_length: int = 1,
+        output_chunk_shift: int = 0,
+        add_encoders: Optional[dict] = None,
+        likelihood: Optional[str] = LikelihoodType.ClassProbability.value,
+        random_state: Optional[int] = None,
+        multi_models: Optional[bool] = True,
+        use_static_covariates: bool = True,
         **kwargs,
     ):
         """XGBoost Model for classification forecasting
@@ -470,6 +470,10 @@ class XGBClassifierModel(ClassificationForecastingMixin, XGBModel):
                     'tz': 'CET'
                 }
             ..
+        likelihood
+            'classprobability' or ``None``. If set to 'classprobability', setting `predict_likelihood_parameters`
+            in `predict()` will forecast class probabilities.
+            Default: 'classprobability'
         random_state
             Control the randomness in the fitting procedure and for sampling.
             Default: ``None``.
@@ -526,7 +530,7 @@ class XGBClassifierModel(ClassificationForecastingMixin, XGBModel):
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
-            likelihood=LikelihoodType.ClassProbability.value,
+            likelihood=likelihood,
             quantiles=None,
             random_state=random_state,
             multi_models=multi_models,
@@ -558,8 +562,4 @@ class XGBClassifierModel(ClassificationForecastingMixin, XGBModel):
 
     @property
     def _supports_native_multioutput(self):
-        # TODO add support for native multilabel
-        # https://xgboost.readthedocs.io/en/stable/tutorials/multioutput.html
-        # XGB supports multilabels prediction natively
-        # It requires the target to be one hot encoded this could be done in _format_samples
         return False

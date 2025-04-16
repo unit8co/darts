@@ -12,13 +12,16 @@ from darts.models.forecasting.regression_model import (
     RegressionModel,
     RegressionModelWithCategoricalFeatures,
 )
-from darts.utils.likelihood_models.sklearn import ClassProbabilityLikelihood
+from darts.utils.likelihood_models.base import LikelihoodType
+from darts.utils.likelihood_models.sklearn import (
+    _get_classification_likelihood,
+)
 from darts.utils.utils import ModelType
 
 logger = get_logger(__name__)
 
 
-class ClassificationForecastingMixin:
+class _ForecastingClassifierMixin:
     """
     Mixin for sklearn-like classification forecasting models
     """
@@ -50,7 +53,7 @@ class ClassificationForecastingMixin:
         return ModelType.FORECASTING_CLASSIFIER
 
 
-class SKLearnClassifierModel(ClassificationForecastingMixin, RegressionModel):
+class SKLearnClassifierModel(_ForecastingClassifierMixin, RegressionModel):
     def __init__(
         self,
         model=None,
@@ -61,6 +64,7 @@ class SKLearnClassifierModel(ClassificationForecastingMixin, RegressionModel):
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
         random_state: Optional[int] = None,
+        likelihood: Optional[str] = LikelihoodType.ClassProbability.value,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
     ):
@@ -148,6 +152,10 @@ class SKLearnClassifierModel(ClassificationForecastingMixin, RegressionModel):
                     'tz': 'CET'
                 }
             ..
+        likelihood
+            'classprobability' or ``None``. If set to 'classprobability', setting `predict_likelihood_parameters`
+            in `predict()` will forecast class probabilities.
+            Default: 'classprobability'
         random_state
             Control the randomness in the fitting procedure and for sampling.
             Default: ``None``.
@@ -208,7 +216,8 @@ class SKLearnClassifierModel(ClassificationForecastingMixin, RegressionModel):
                 " this model won't be able to predict class probabilities"
             )
 
-        self._likelihood = ClassProbabilityLikelihood(
+        self._likelihood = _get_classification_likelihood(
+            likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
             random_state=random_state,
         )
