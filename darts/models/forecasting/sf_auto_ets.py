@@ -41,6 +41,10 @@ class AutoETS(StatsForecastModel):
 
           - Generate sampled forecasts from these quantiles by setting `num_samples >> 1`.
 
+        - **Conformal prediction:** In addition to the native probabilistic support, you can perform conformal
+          prediction / forecasting by setting `prediction_intervals` at model creation. Then predict the in the same
+          way as described above.
+
         - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.
           Darts adds support by re-fitting a copy of the model on the new series and then generating the forecast for it
           using the StatsForecast model's `forecast()` method.
