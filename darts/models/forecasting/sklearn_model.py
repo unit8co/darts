@@ -1,7 +1,7 @@
 """
-Regression Model
-----------------
-A `RegressionModel` forecasts future values of a target series based on
+SKLearn Model
+-------------
+A `SKLearnModel` forecasts future values of a target series based on
 
 * The target series (past lags only)
 
@@ -63,7 +63,7 @@ FUTURE_LAGS_TYPE = Union[
 ]
 
 
-class RegressionModel(GlobalForecastingModel):
+class SKLearnModel(GlobalForecastingModel):
     def __init__(
         self,
         lags: Optional[LAGS_TYPE] = None,
@@ -169,7 +169,7 @@ class RegressionModel(GlobalForecastingModel):
         Examples
         --------
         >>> from darts.datasets import WeatherDataset
-        >>> from darts.models import RegressionModel
+        >>> from darts.models import SKLearnModel
         >>> from sklearn.linear_model import Ridge
         >>> series = WeatherDataset().load()
         >>> # predicting atmospheric pressure
@@ -179,7 +179,7 @@ class RegressionModel(GlobalForecastingModel):
         >>> # optionally, use future temperatures (pretending this component is a forecast)
         >>> future_cov = series['T (degC)'][:106]
         >>> # wrap around the sklearn Ridge model
-        >>> model = RegressionModel(
+        >>> model = SKLearnModel(
         >>>     model=Ridge(),
         >>>     lags=12,
         >>>     lags_past_covariates=4,
@@ -1359,7 +1359,7 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """
-        For RegressionModels we create the lagged prediction data once per series using a moving window.
+        For SKLearnModels we create the lagged prediction data once per series using a moving window.
         With this, we can avoid having to recreate the tabular input data and call `model.predict()` for each
         forecastable index and series.
         Additionally, there is a dedicated subroutines for `last_points_only=True` and `last_points_only=False`.
@@ -1432,7 +1432,7 @@ class _QuantileModelContainer(OrderedDict):
         super().__init__()
 
 
-class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
+class SKLearnModelWithCategoricalCovariates(SKLearnModel, ABC):
     def __init__(
         self,
         model,
@@ -1449,7 +1449,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
         categorical_static_covariates: Optional[Union[str, list[str]]] = None,
     ):
         """
-        Extension of `RegressionModel` for regression models that support categorical covariates.
+        Extension of `SKLearnModel` for regression models that support categorical covariates.
 
         Parameters
         ----------
@@ -1712,7 +1712,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel, ABC):
         **kwargs,
     ):
         """
-        Custom fit function for `RegressionModelWithCategoricalCovariates` models, adding logic to let the model
+        Custom fit function for `SKLearnModelWithCategoricalCovariates` models, adding logic to let the model
         handle categorical features directly.
         """
         cat_col_indices, _ = self._get_categorical_features(
