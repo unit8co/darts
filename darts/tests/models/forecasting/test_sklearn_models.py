@@ -5,6 +5,7 @@ import logging
 import math
 from copy import deepcopy
 from itertools import product
+from typing import Optional
 from unittest.mock import patch
 
 import numpy as np
@@ -33,6 +34,10 @@ from darts.models import (
     SKLearnModel,
     XGBModel,
 )
+from darts.models.forecasting.sklearn_model import (
+    RegressionModelWithCategoricalCovariates,
+    SKLearnModelWithCategoricalCovariates,
+)
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
 from darts.utils.likelihood_models.sklearn import _get_likelihood
@@ -44,6 +49,16 @@ logger = get_logger(__name__)
 # replace catboost and lgbm with xgb in case of core requirements
 cb_available = not isinstance(CatBoostModel, NotImportedModule)
 lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
+
+
+class RegressionModelWCC(RegressionModelWithCategoricalCovariates):
+    def _categorical_fit_param(self) -> Optional[str]:
+        return ""
+
+
+class SKLearnModelWCC(SKLearnModelWithCategoricalCovariates):
+    def _categorical_fit_param(self) -> Optional[str]:
+        return ""
 
 
 def train_test_split(series, split_ts):
@@ -437,26 +452,45 @@ class TestSKLearnModels:
         "config",
         [
             (RegressionModel, SKLearnModel, {}),
-            # (
-            #     RegressionModelWithCategoricalCovariates,
-            #     SKLearnModelWithCategoricalCovariates,
-            #     {},
-            # ),
+            (
+                RegressionModelWCC,
+                SKLearnModelWCC,
+                {},
+            ),
             (RandomForest, RandomForestModel, {"random_state": 42}),
         ],
     )
     def test_rename_model_have_same_behavior_than_deprecated(self, config, caplog):
         deprecated_cls, new_cls, kwargs = config
         with caplog.at_level(logging.WARNING):
-            deprecated_model = deprecated_cls(lags=2, lags_past_covariates=1, **kwargs)
+            if deprecated_cls == RegressionModelWCC:
+                deprecated_model = deprecated_cls(
+                    lags=2, lags_past_covariates=1, model=LinearRegression(), **kwargs
+                )
+            else:
+                deprecated_model = deprecated_cls(
+                    lags=2, lags_past_covariates=1, **kwargs
+                )
         assert len(caplog.records) == 1
         assert caplog.records[0].levelname == "WARNING"
+
         assert caplog.records[0].message == (
-            f"DeprecationWarning: `{deprecated_cls.__name__}` is deprecated and will be removed in a future version. "
+            "DeprecationWarning: `RegressionModelWithCategoricalCovariates`"
+            " is deprecated and will be removed in a future version. "
+            "Use `SKLearnModelWithCategoricalCovariates` instead."
+            if deprecated_cls == RegressionModelWCC
+            else f"DeprecationWarning: `{deprecated_cls.__name__}` is deprecated and"
+            " will be removed in a future version. "
             f"Use `{new_cls.__name__}` instead."
         )
 
-        new_model = new_cls(lags=2, lags_past_covariates=1, **kwargs)
+        if new_cls == SKLearnModelWCC:
+            new_model = new_cls(
+                lags=2, lags_past_covariates=1, model=LinearRegression(), **kwargs
+            )
+
+        else:
+            new_model = new_cls(lags=2, lags_past_covariates=1, **kwargs)
 
         deprecated_model.fit(
             self.sine_univariate1.drop_after(50), self.sine_univariate2
