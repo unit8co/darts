@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -13,6 +15,7 @@ from darts.models import (
     AutoARIMA,
     AutoETS,
     AutoMFLES,
+    Croston,
     LinearRegressionModel,
     StatsForecastModel,
 )
@@ -52,6 +55,14 @@ class TestSFModels:
         # series only
         model = model_cls(**kwargs)
         model_1 = model.untrained_model().fit(series)
+
+        # passing fc but model trained without
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict(n=n, future_covariates=fc)
+        assert str(exc.value).startswith(
+            "The model was trained without future covariates"
+        )
+
         pred_11 = model_1.predict(n=n).all_values()
         pred_12 = model_1.predict(n=n, series=series).all_values()
         np.testing.assert_array_almost_equal(pred_11, pred_12)
@@ -62,6 +73,15 @@ class TestSFModels:
 
         # with future covariates
         model_2 = model.untrained_model().fit(series, future_covariates=fc)
+
+        # using fc with wrong dimensionality
+        with pytest.raises(ValueError) as exc:
+            _ = model_2.predict(n=n, future_covariates=fc.stack(fc))
+        assert str(exc.value).startswith(
+            "The `future_covariates` passed to `predict()` must have "
+            "the same number of components"
+        )
+
         pred_21 = model_2.predict(n=n).all_values()
         pred_22 = model_2.predict(n=n, series=series).all_values()
         pred_23 = model_2.predict(n=n, series=series, future_covariates=fc).all_values()
@@ -90,6 +110,15 @@ class TestSFModels:
             add_encoders={"datetime_attribute": {"future": "year"}}, **kwargs
         )
         model_4.fit(series, future_covariates=fc)
+
+        # using fc with wrong dimensionality and encodings
+        with pytest.raises(ValueError) as exc:
+            _ = model_4.predict(n=n, future_covariates=fc.stack(fc))
+        assert str(exc.value).startswith(
+            "The `future_covariates` passed to `predict()` must have "
+            "the same number of components"
+        )
+
         pred_41 = model_4.predict(n=n).all_values()
         pred_42 = model_4.predict(n=n, series=series).all_values()
         pred_43 = model_4.predict(n=n, series=series, future_covariates=fc).all_values()
@@ -259,3 +288,67 @@ class TestSFModels:
 
         # check if the linear regression was fit on the same data by checking if the coefficients are equal
         assert model._linreg.model.coef_ == linreg.model.coef_
+
+    def test_croston_creation(self):
+        with pytest.raises(ValueError) as exc:
+            _ = Croston(version="does_not_exist")
+        assert str(exc.value).startswith(
+            'The provided "version" parameter must be set to'
+        )
+
+        with pytest.raises(ValueError) as exc:
+            _ = Croston(version="tsb", alpha_d=None)
+        assert str(exc.value).startswith(
+            'alpha_d and alpha_p must be specified when using "tsb".'
+        )
+
+        _ = Croston(version="optimized")
+        _ = Croston(version="sba")
+        _ = Croston(version="tsb", alpha_d=0.1, alpha_p=0.1)
+
+    def test_historical_forecasts_no_retrain(self):
+        n, stride = 6, 12
+        series = self.series[:52]
+        model = AutoARIMA()
+        model.fit(series)
+        hist_fc = model.historical_forecasts(
+            forecast_horizon=n,
+            series=series,
+            retrain=False,
+            stride=12,
+            overlap_end=False,
+        )
+        expected_fcs = math.ceil(
+            (len(series) - model.min_train_series_length - n + 1) / stride
+        )
+        assert len(hist_fc) == expected_fcs
+
+    def test_no_multivariate_support(self):
+        model = AutoARIMA()
+        assert not model.supports_multivariate
+
+        with pytest.raises(ValueError) as exc:
+            model.fit(self.series.stack(self.series))
+        assert (
+            str(exc.value)
+            == "Model `AutoARIMA` only supports univariate TimeSeries instances"
+        )
+
+    def test_wrong_covariates(self):
+        # using fc with wrong dimensionality
+        n = 12
+        series = self.series[:24]
+        fc = self.fc[: 24 + n]
+        model = AutoARIMA()
+        model.fit(series, future_covariates=fc)
+
+        # fc start too late
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict(n=n, future_covariates=fc[1:])
+        exc_expected = "must contain at least the same timesteps"
+        assert exc_expected in str(exc.value)
+
+        # fc end too early
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict(n=n, future_covariates=fc[:-1])
+        assert exc_expected in str(exc.value)

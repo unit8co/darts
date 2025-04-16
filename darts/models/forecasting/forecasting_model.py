@@ -3287,32 +3287,19 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
 
         if future_covariates is not None:
             start = self.training_series.end_time() + self.training_series.freq
-
-            invalid_time_span_error = (
-                f"For the given forecasting horizon `n={n}`, the provided `future_covariates` "
-                f"series must contain at least the next `n={n}` time steps/indices after the "
-                f"end of the target `series` that was used to train the model."
-            )
-
-            # we raise an error here already to avoid getting error from empty TimeSeries creation
-            raise_if_not(
-                future_covariates.end_time() >= start, invalid_time_span_error, logger
-            )
-
-            offset = (
-                n - 1
-                if isinstance(future_covariates.time_index, pd.DatetimeIndex)
-                else n
-            )
-            future_covariates = future_covariates.slice(
-                start, start + offset * self.training_series.freq
-            )
-
-            raise_if_not(
-                len(future_covariates) == n,
-                invalid_time_span_error,
-                logger,
-            )
+            offset = n - 1 if future_covariates.has_datetime_index else n
+            future_covariates = future_covariates[
+                start : start + offset * self.training_series.freq
+            ]
+            if len(future_covariates) != n:
+                raise_log(
+                    ValueError(
+                        f"For the given forecasting horizon `n={n}`, the provided `future_covariates` "
+                        f"series must contain at least the next `n={n}` time steps/indices after the "
+                        f"end of the target `series` that was used to train the model."
+                    ),
+                    logger=logger,
+                )
 
         return self._predict(
             n,
@@ -3349,34 +3336,28 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
     ]:
         return None, None, False, True, None, None
 
-    def _verify_passed_predict_covariates(self, future_covariates):
+    def _verify_passed_predict_covariates(self, future_covariates: TimeSeries):
         """Simple check if user supplied/did not supply covariates as done at fitting time."""
         if self.uses_future_covariates:
-            if future_covariates is None:
+            # at this point future covariates are available, either passed from user or retrieved from
+            # covariates used during training
+            if (
+                future_covariates.n_components
+                != self.future_covariate_series.n_components
+            ):
+                n_expected = self.future_covariate_series.n_components
+                n_actual = future_covariates.n_components
+                if self.encoders is not None and self.encoders.encoding_available:
+                    n_encodings = self.encoders.encoding_n_components[1]
+                    n_expected -= n_encodings
+                    n_actual -= n_encodings
                 raise_log(
                     ValueError(
-                        "The model was trained with future covariates. Some matching `future_covariates` "
-                        "must be passed to `predict()`."
+                        f"The `future_covariates` passed to `predict()` must have the same number "
+                        f"of components / columns as the `future_covariates` used to train the model. "
+                        f"Received number of components `{n_actual}`, excepted {n_expected}."
                     )
                 )
-            else:
-                if (
-                    future_covariates.n_components
-                    != self.future_covariate_series.n_components
-                ):
-                    n_expected = self.future_covariate_series.n_components
-                    n_actual = future_covariates.n_components
-                    if self.encoders is not None and self.encoders.encoding_available:
-                        n_encodings = self.encoders.encoding_n_components[1]
-                        n_expected -= n_encodings
-                        n_actual -= n_encodings
-                    raise_log(
-                        ValueError(
-                            f"The `future_covariates` passed to `predict()` must have the same number "
-                            f"of components / columns as the `future_covariates` used to train the model. "
-                            f"Received number of components `{n_actual}`, excepted {n_expected}."
-                        )
-                    )
         elif future_covariates is not None:
             raise_log(
                 ValueError(
@@ -3488,25 +3469,20 @@ class TransferableFutureCovariatesLocalForecastingModel(
 
         historic_future_covariates = None
 
-        if series is not None and future_covariates:
-            raise_if_not(
-                future_covariates.start_time() <= series.start_time()
-                and future_covariates.end_time() >= series.end_time() + n * series.freq,
-                "The provided `future_covariates` related to the new target series must contain at least the same time"
-                "steps/indices as the target `series` + `n`.",
-                logger,
-            )
-            # splitting the future covariates
-            (
-                historic_future_covariates,
-                future_covariates,
-            ) = future_covariates.split_after(series.end_time())
-
-            # in case future covariates have more values on the left end side that we don't need
-            if not series.has_same_time_as(historic_future_covariates):
-                historic_future_covariates = historic_future_covariates.slice_intersect(
-                    series
+        if future_covariates is not None:
+            series_ = series or self.training_series
+            if (
+                future_covariates.start_time() > series_.start_time()
+                or future_covariates.end_time() < series_.end_time() + n * series_.freq
+            ):
+                raise_log(
+                    ValueError(
+                        "The provided `future_covariates` related to the new target series must contain at "
+                        "least the same timesteps/indices as the target `series` + `n`."
+                    ),
+                    logger=logger,
                 )
+            historic_future_covariates = future_covariates.slice_intersect(series_)
 
         # FutureCovariatesLocalForecastingModel performs some checks on self.training_series. We temporary replace
         # that with the new ts
