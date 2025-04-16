@@ -26,24 +26,42 @@ class Croston(StatsForecastModel):
         random_state: Optional[int] = None,
         **kwargs,
     ):
-        """An implementation of the `Croston method
-        <https://otexts.com/fpp3/counts.html>`_ for intermittent
-        count series.
+        """Croston method as presented `in this paper <https://otexts.com/fpp3/counts.html>`_ and based on the
+        `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
 
-        Relying on the implementation of `Statsforecasts package
-        <https://github.com/Nixtla/statsforecast>`_.
+        We refer to the StatsForecast documentation of
+        `CrostonClassic <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#crostonclassic>`_,
+        `CrostonOptimized <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#crostonoptimized>`_,
+        `CrostonSBA <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#crostonsba>`_, and
+        `Teunter-Syntetos-Babai <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#tsb>`_.
 
-        In addition to the StatsForecast implementation, this model can handle future covariates. It does so by first
-        regressing the series against the future covariates using the :class:'LinearRegressionModel' model and then
-        running StatsForecast's AutoETS on the in-sample residuals from this original regression. This approach was
-        inspired by 'this post of Stephan Kolassa< https://stats.stackexchange.com/q/220885>'_.
+        In addition to univariate deterministic forecasting, it comes with additional support:
 
-        This model comes with transferrable `series` support (applying the fitted model to a new input `series` at
-        prediction time). It adds support by re-fitting a copy of the model on the new series and then generating the
-        forecast for it using the StatsForecast model's `forecast()` method.
+        - **Future covariates:** Use exogenous features to potentially improve predictive accuracy.
+          Darts adds support by first regressing the series against the future covariates using a
+          :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
+          StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
+          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`_.
+
+        - **Probabilstic / Conformal forecasting:** Probabilstic forecasting can be performed using conformal
+          prediction. To activate it, simply set `prediction_intervals` at model creation. To generate probabilistic
+          forecasts, you can set the following parameters when calling
+          :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:
+
+          - Forecast quantile values directly by setting `predict_likelihood_parameters=True`.
+
+          - Generate sampled forecasts from these quantiles by setting `num_samples >> 1`.
+
+        - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.
+          Darts adds support by re-fitting a copy of the model on the new series and then generating the forecast for it
+          using the StatsForecast model's `forecast()` method.
 
         .. note::
             Future covariates are not supported when the input series contain missing values.
+
+        .. note::
+            The first model call might take more time than all subsequent calls as the model relies on Numba and jit
+            compilation.
 
         Parameters
         ----------

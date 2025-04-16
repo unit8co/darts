@@ -22,19 +22,37 @@ class AutoMFLES(StatsForecastModel):
         random_state: Optional[int] = None,
         **kwargs,
     ):
-        """Auto-MFLES based on `Statsforecasts package
-        <https://github.com/Nixtla/statsforecast>`_.
+        """Auto-MFLES based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
 
         Automatically selects the best MFLES model from all feasible combinations of the parameters
-        `seasonality_weights`, `smoother`, `ma`, and `seasonal_period`. Selection is made using the sMAPE by default.
+        `seasonality_weights`, `smoother`, `ma`, and `seasonal_period`. Selection is made using the sMAPE metric by
+        default. We refer to the `StatsForecast documentation
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#automfles>`_ for the exhaustive documentation
+        of the arguments.
 
-        We refer to the `statsforecast AutoMFLES documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#mfles>`_
-        for the exhaustive documentation of the arguments.
+        In addition to univariate deterministic forecasting, it comes with additional support:
 
-        This model comes with transferrable `series` support (applying the fitted model to a new input `series` at
-        prediction time). It adds support by re-fitting a copy of the model on the new series and then generating the
-        forecast for it using the StatsForecast model's `forecast()` method.
+        - **Future covariates:** Use exogenous features to potentially improve predictive accuracy.
+
+        - **Probabilstic / Conformal forecasting:** Probabilstic forecasting can be performed using conformal
+          prediction. To activate it, simply set `prediction_intervals` at model creation. To generate probabilistic
+          forecasts, you can set the following parameters when calling
+          :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:
+
+          - Forecast quantile values directly by setting `predict_likelihood_parameters=True`.
+
+          - Generate sampled forecasts from these quantiles by setting `num_samples >> 1`.
+
+        - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.
+          Darts adds support by re-fitting a copy of the model on the new series and then generating the forecast for it
+          using the StatsForecast model's `forecast()` method.
+
+        .. note::
+            Future covariates are not supported when the input series contain missing values.
+
+        .. note::
+            The first model call might take more time than all subsequent calls as the model relies on Numba and jit
+            compilation.
 
         Parameters
         ----------

@@ -42,17 +42,21 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
           - It either uses the base model's native exogenous features, or
 
           - It adds future covariates support by first regressing the series against the future covariates using a
-            :class:'LinearRegressionModel' model and then running the StatsForecast model on the in-sample residuals
-            from this original regression. This approach was inspired by `this post of Stephan Kolassa
-            <https://stats.stackexchange.com/q/220885>`_.
+            :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
+            StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
+            `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`_.
 
         - **Probabilstic forecasting:** Some base models might require setting `prediction_intervals` at `model`
           creation to support probabilistic forecasting. To generate probabilistic forecasts, you can set the following
-          parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`.
+          parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:
 
           - Forecast quantile values directly by setting `predict_likelihood_parameters=True`.
 
           - Generate sampled forecasts from these quantiles by setting `num_samples >> 1`.
+
+        - **Conformal prediction:** In addition to the native probabilistic support, you can perform conformal
+          prediction / forecasting by setting `prediction_intervals` at model creation. Then predict the in the same
+          way as described above.
 
         - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.
 

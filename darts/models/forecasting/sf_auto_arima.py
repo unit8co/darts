@@ -19,18 +19,36 @@ class AutoARIMA(StatsForecastModel):
         random_state: Optional[int] = None,
         **kwargs,
     ):
-        """Auto-ARIMA based on `Statsforecasts package
-        <https://github.com/Nixtla/statsforecast>`_.
+        """Auto-ARIMA based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
 
-        This implementation can perform faster than the :class:`AutoARIMA` model,
-        but typically requires more time on the first call, because it relies
-        on Numba and jit compilation.
+        Automatically selects the best AutoRegressive Integrated Moving Average (ARIMA) using an information criterion.
+        We refer to the `StatsForecast documentation
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoarima>`_ for the exhaustive documentation
+        of the arguments.
 
-        It is probabilistic, whereas :class:`AutoARIMA` is not.
+        In addition to univariate deterministic forecasting, it comes with additional support:
 
-        We refer to the `statsforecast AutoARIMA documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoarima>`_
-        for the exhaustive documentation of the arguments.
+        - **Future covariates:** Use exogenous features to potentially improve predictive accuracy.
+
+        - **Probabilstic forecasting:** To generate probabilistic forecasts, you can set the following
+          parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:
+
+          - Forecast quantile values directly by setting `predict_likelihood_parameters=True`.
+
+          - Generate sampled forecasts from these quantiles by setting `num_samples >> 1`.
+
+        - **Conformal prediction:** In addition to the native probabilistic support, you can perform conformal
+          prediction / forecasting by setting `prediction_intervals` at model creation. Then predict the in the same
+          way as described above.
+
+        - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.
+
+        .. note::
+            Future covariates are not supported when the input series contain missing values.
+
+        .. note::
+            The first model call might take more time than all subsequent calls as the model relies on Numba and jit
+            compilation.
 
         Parameters
         ----------

@@ -19,23 +19,40 @@ class AutoTheta(StatsForecastModel):
         random_state: Optional[int] = None,
         **kwargs,
     ):
-        """Auto-Theta based on `Statsforecasts package
-        <https://github.com/Nixtla/statsforecast>`_.
+        """Auto-Theta based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
 
-        Automatically selects the best Theta (Standard Theta Model (‘STM’), Optimized Theta Model (‘OTM’),
-        Dynamic Standard Theta Model (‘DSTM’), Dynamic Optimized Theta Model (‘DOTM’)) model using mse.
-        <https://www.sciencedirect.com/science/article/pii/S0169207016300243>
+        Automatically selects the best Theta model using an information criterion.
+        We refer to the `StatsForecast documentation
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotheta>`_ for the exhaustive documentation
+        of the arguments.
 
-        It is probabilistic, whereas :class:`FourTheta` is not.
+        In addition to univariate deterministic forecasting, it comes with additional support:
 
-        We refer to the `statsforecast AutoTheta documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotheta>`_
-        for the exhaustive documentation of the arguments.
+        - **Future covariates:** Use exogenous features to potentially improve predictive accuracy.
+          Darts adds support by first regressing the series against the future covariates using a
+          :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
+          StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
+          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`_.
 
-        In addition to the StatsForecast implementation, this model can handle future covariates. It does so by first
-        regressing the series against the future covariates using the :class:'LinearRegressionModel' model and then
-        running StatsForecast's AutoETS on the in-sample residuals from this original regression. This approach was
-        inspired by 'this post of Stephan Kolassa< https://stats.stackexchange.com/q/220885>'_.
+        - **Probabilstic forecasting:** To generate probabilistic forecasts, you can set the following
+          parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:
+
+          - Forecast quantile values directly by setting `predict_likelihood_parameters=True`.
+
+          - Generate sampled forecasts from these quantiles by setting `num_samples >> 1`.
+
+        - **Conformal prediction:** In addition to the native probabilistic support, you can perform conformal
+          prediction / forecasting by setting `prediction_intervals` at model creation. Then predict the in the same
+          way as described above.
+
+        - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.
+
+        .. note::
+            Future covariates are not supported when the input series contain missing values.
+
+        .. note::
+            The first model call might take more time than all subsequent calls as the model relies on Numba and jit
+            compilation.
 
         Parameters
         ----------
