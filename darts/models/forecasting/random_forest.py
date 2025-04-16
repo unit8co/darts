@@ -19,7 +19,7 @@ from typing import Optional
 
 from sklearn.ensemble import RandomForestRegressor
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_deprecation_warning
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
@@ -326,13 +326,13 @@ class RandomForest(RandomForestModel):
                [1006.05465]])
         """
 
-        logger.warning(
+        raise_deprecation_warning(
             "`RandomForest` is deprecated and will be removed in a future version. "
             "Use `RandomForestModel` instead.",
-            DeprecationWarning,
+            logger,
         )
 
-        super.__init__(
+        super().__init__(
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,

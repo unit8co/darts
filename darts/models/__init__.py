@@ -33,9 +33,9 @@ from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
 from darts.models.forecasting.kalman_forecaster import KalmanForecaster
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
-from darts.models.forecasting.random_forest import RandomForestModel
+from darts.models.forecasting.random_forest import RandomForest, RandomForestModel
 from darts.models.forecasting.regression_ensemble_model import RegressionEnsembleModel
-from darts.models.forecasting.sklearn_model import SKLearnModel
+from darts.models.forecasting.sklearn_model import RegressionModel, SKLearnModel
 from darts.models.forecasting.tbats_model import BATS, TBATS
 from darts.models.forecasting.theta import FourTheta, Theta
 from darts.models.forecasting.varima import VARIMA
@@ -133,9 +133,11 @@ __all__ = [
     "FFT",
     "KalmanForecaster",
     "LinearRegressionModel",
+    "RandomForest",
     "RandomForestModel",
     "RegressionEnsembleModel",
     "SKLearnModel",
+    "RegressionModel",
     "BATS",
     "TBATS",
     "FourTheta",

@@ -27,7 +27,9 @@ from darts.models import (
     CatBoostModel,
     LightGBMModel,
     LinearRegressionModel,
+    RandomForest,
     RandomForestModel,
+    RegressionModel,
     SKLearnModel,
     XGBModel,
 )
@@ -430,6 +432,41 @@ class TestSKLearnModels:
         )
 
         return series, past_covariates, future_covariates
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (RegressionModel, SKLearnModel, {}),
+            # (
+            #     RegressionModelWithCategoricalCovariates,
+            #     SKLearnModelWithCategoricalCovariates,
+            #     {},
+            # ),
+            (RandomForest, RandomForestModel, {"random_state": 42}),
+        ],
+    )
+    def test_rename_model_have_same_behavior_than_deprecated(self, config, caplog):
+        deprecated_cls, new_cls, kwargs = config
+        with caplog.at_level(logging.WARNING):
+            deprecated_model = deprecated_cls(lags=2, lags_past_covariates=1, **kwargs)
+        assert len(caplog.records) == 1
+        assert caplog.records[0].levelname == "WARNING"
+        assert caplog.records[0].message == (
+            f"DeprecationWarning: `{deprecated_cls.__name__}` is deprecated and will be removed in a future version. "
+            f"Use `{new_cls.__name__}` instead."
+        )
+
+        new_model = new_cls(lags=2, lags_past_covariates=1, **kwargs)
+
+        deprecated_model.fit(
+            self.sine_univariate1.drop_after(50), self.sine_univariate2
+        )
+        new_model.fit(self.sine_univariate1.drop_after(50), self.sine_univariate2)
+
+        print(new_model.predict(5))
+        print(deprecated_model.predict(5))
+
+        assert new_model.predict(5) == deprecated_model.predict(5)
 
     @pytest.mark.parametrize("config", product(models, [True, False]))
     def test_model_construction(self, config):
