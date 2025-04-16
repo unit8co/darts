@@ -34,7 +34,7 @@ from darts.models import (
     NaiveMovingAverage,
     NaiveSeasonal,
     Prophet,
-    RandomForest,
+    RandomForestModel,
     SKLearnModel,
     Theta,
 )
@@ -78,7 +78,7 @@ models = [
     (FFT(trend="poly"), 13),
     (KalmanForecaster(dim_x=3), 20),
     (LinearRegressionModel(lags=12), 13),
-    (RandomForest(lags=12, n_estimators=5, max_depth=3), 14),
+    (RandomForestModel(lags=12, n_estimators=5, max_depth=3), 14),
     (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.5),
     (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 11),
 ]

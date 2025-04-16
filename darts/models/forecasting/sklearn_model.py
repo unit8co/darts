@@ -15,7 +15,7 @@ A `SKLearnModel` forecasts future values of a target series based on
 The regression models are learned in a supervised way, and they can wrap around any "scikit-learn like" regression model
 acting on tabular data having ``fit()`` and ``predict()`` methods.
 
-Darts also provides :class:`LinearRegressionModel` and :class:`RandomForest`, which are regression models
+Darts also provides :class:`LinearRegressionModel` and :class:`RandomForestModel`, which are regression models
 wrapping around scikit-learn linear regression and random forest regression, respectively.
 
 Behind the scenes this model is tabularizing the time series data to make it work with regression models.

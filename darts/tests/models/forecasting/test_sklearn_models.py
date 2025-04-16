@@ -27,7 +27,7 @@ from darts.models import (
     CatBoostModel,
     LightGBMModel,
     LinearRegressionModel,
-    RandomForest,
+    RandomForestModel,
     SKLearnModel,
     XGBModel,
 )
@@ -185,7 +185,7 @@ cb_test_params = {
 class TestSKLearnModels:
     np.random.seed(42)
     # default regression models
-    models = [RandomForest, LinearRegressionModel, SKLearnModel]
+    models = [RandomForestModel, LinearRegressionModel, SKLearnModel]
 
     # register likelihood regression models
     QuantileLinearRegressionModel = partialclass(
@@ -222,7 +222,7 @@ class TestSKLearnModels:
     ])
 
     univariate_accuracies = [
-        0.03,  # RandomForest
+        0.03,  # RandomForestModel
         1e-13,  # LinearRegressionModel
         1e-13,  # SKLearnModel
         0.8,  # QuantileLinearRegressionModel
@@ -231,7 +231,7 @@ class TestSKLearnModels:
         0.75,  # QuantileXGBModel
     ]
     multivariate_accuracies = [
-        0.3,  # RandomForest
+        0.3,  # RandomForestModel
         1e-13,  # LinearRegressionModel
         1e-13,  # SKLearnModel
         0.8,  # QuantileLinearRegressionModel
@@ -240,7 +240,7 @@ class TestSKLearnModels:
         0.75,  # QuantileXGBModel
     ]
     multivariate_multiseries_accuracies = [
-        0.05,  # RandomForest
+        0.05,  # RandomForestModel
         1e-13,  # LinearRegressionModel
         1e-13,  # SKLearnModel
         0.8,  # QuantileLinearRegressionModel
@@ -889,7 +889,7 @@ class TestSKLearnModels:
 
     def test_static_cov_accuracy(self):
         """
-        Tests that `RandomForest` regression model reproduces same behaviour as
+        Tests that `RandomForestModel` regression model reproduces same behaviour as
         `examples/15-static-covariates.ipynb` notebook; see this notebook for
         further details. Notebook is also hosted online at:
         https://unit8co.github.io/darts/examples/15-static-covariates.html
@@ -927,14 +927,14 @@ class TestSKLearnModels:
 
         # when
         fitting_series = [series[:60] for series in train_series_no_cov]
-        model_no_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_no_static_cov = RandomForestModel(lags=period // 2, bootstrap=False)
         model_no_static_cov.fit(fitting_series)
         pred_no_static_cov = model_no_static_cov.predict(
             n=period, series=fitting_series
         )
 
         fitting_series = [series[:60] for series in train_series_static_cov]
-        model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_static_cov = RandomForestModel(lags=period // 2, bootstrap=False)
         model_static_cov.fit(fitting_series)
         pred_static_cov = model_static_cov.predict(n=period, series=fitting_series)
         # then
@@ -949,7 +949,7 @@ class TestSKLearnModels:
             train_series_no_cov[0][: (60 - period)],
             train_series_no_cov[1][:60],
         ]
-        model_no_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_no_static_cov = RandomForestModel(lags=period // 2, bootstrap=False)
         model_no_static_cov.fit(fitting_series)
         pred_no_static_cov = model_no_static_cov.predict(
             n=period, series=fitting_series
@@ -968,7 +968,7 @@ class TestSKLearnModels:
             train_series_static_cov[0][: (60 - period)],
             train_series_static_cov[1][:60],
         ]
-        model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_static_cov = RandomForestModel(lags=period // 2, bootstrap=False)
         model_static_cov.fit(fitting_series)
 
         # multiple univariates series with different names with same static cov, will take name of first series
@@ -1776,7 +1776,7 @@ class TestSKLearnModels:
         product(
             [
                 (LinearRegressionModel, {}),
-                (RandomForest, {"bootstrap": False}),
+                (RandomForestModel, {"bootstrap": False}),
                 (XGBModel, xgb_test_params),
                 (KNeighborsRegressorModel, {}),  # no weights support
             ]
@@ -1830,7 +1830,7 @@ class TestSKLearnModels:
         product(
             [
                 (LinearRegressionModel, {}),
-                (RandomForest, {"bootstrap": False}),
+                (RandomForestModel, {"bootstrap": False}),
                 (XGBModel, xgb_test_params),
                 (KNeighborsRegressorModel, {}),  # no weights support
             ]
@@ -1870,7 +1870,7 @@ class TestSKLearnModels:
         "config",
         [
             (LinearRegressionModel, {}),
-            (RandomForest, {"bootstrap": False}),
+            (RandomForestModel, {"bootstrap": False}),
             (XGBModel, xgb_test_params),
             (KNeighborsRegressorModel, {}),  # no weights support
         ]
