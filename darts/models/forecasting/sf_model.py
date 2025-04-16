@@ -8,42 +8,59 @@ from typing import Optional
 import numpy as np
 from statsforecast.models import _TS
 
-from darts import TimeSeries
+from darts import TimeSeries, concatenate
+from darts.logging import get_logger
 from darts.models import LinearRegressionModel
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
 from darts.utils.likelihood_models.statsforecast import QuantilePrediction
 from darts.utils.timeseries_generation import _build_forecast_series
+from darts.utils.utils import random_method
+
+logger = get_logger(__name__)
 
 
 class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
+    @random_method
     def __init__(
         self,
         model: _TS,
         add_encoders: Optional[dict] = None,
         quantiles: Optional[list[float]] = None,
+        random_state: Optional[int] = None,
     ):
         """StatsForecast Model.
 
-        Can be used to fit any `StatsForecast` model. For more information on available models, see the
-        `StatsForecast package <https://github.com/Nixtla/statsforecast>`_.
+        Can be used to fit any `StatsForecast` base model. For more information on available models, see the
+        `StatsForecast package <https://nixtlaverse.nixtla.io/statsforecast/index.html>`_.
 
-        All models come with future covariates support:
+        In addition to univariate deterministic forecasting, our `StatsForecastModel` comes with additional support:
 
-        - It either uses the model's native exogenous features, or
-        - It adds future covariates support by first regressing the series against the future covariates using a
-          :class:'LinearRegressionModel' model and then running the StatsForecast model on the in-sample residuals from
-          this original regression. This approach was inspired by 'this post of Stephan Kolassa
-          <https://stats.stackexchange.com/q/220885>'_.
+        - **Future covariates:** Use exogenous features to potentially improve predictive accuracy.
 
-        All models come with transferrable `series` support (applying the fitted model to a new input `series` at
-        prediction time):
+          - It either uses the base model's native exogenous features, or
 
-        - It either uses the model's native transferrable series support (StatsForecast models that have support the
-          `forward()` method), or
-        - It adds support by re-fitting a copy of the model on the new series and then generating the forecast for it
-          using the StatsForecast model's `forecast()` method.
+          - It adds future covariates support by first regressing the series against the future covariates using a
+            :class:'LinearRegressionModel' model and then running the StatsForecast model on the in-sample residuals
+            from this original regression. This approach was inspired by `this post of Stephan Kolassa
+            <https://stats.stackexchange.com/q/220885>`_.
+
+        - **Probabilstic forecasting:** Some base models might require setting `prediction_intervals` at `model`
+          creation to support probabilistic forecasting. To generate probabilistic forecasts, you can set the following
+          parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`.
+
+          - Forecast quantile values directly by setting `predict_likelihood_parameters=True`.
+
+          - Generate sampled forecasts from these quantiles by setting `num_samples >> 1`.
+
+        - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.
+
+          - It either uses the base model's native transferrable series support (StatsForecast models that support the
+            `forward()` method), or
+
+          - It adds support by re-fitting a copy of the model on the new series and then generating the forecast for it
+            using the StatsForecast model's `forecast()` method.
 
         .. note::
             Future covariates are not supported when the input series contain missing values.
@@ -79,6 +96,8 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         quantiles
             Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
+        random_state
+            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
 
         Examples
         --------
@@ -118,9 +137,9 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
             target = series.values(copy=False).flatten()
         else:
             # perform OLS and get in-sample residuals
-            target, self._linreg = self._get_target_residuals(
-                series, future_covariates, fit=True
-            )
+            self._linreg = LinearRegressionModel(lags_future_covariates=[0])
+            self._linreg.fit(series, future_covariates=future_covariates)
+            target = self._get_target_residuals(series, future_covariates)
 
         self.model.fit(
             target,
@@ -133,6 +152,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         )
         return self
 
+    @random_method
     def _predict(
         self,
         n: int,
@@ -147,6 +167,37 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
             n, series, historic_future_covariates, future_covariates, num_samples
         )
 
+        if series is not None and not self._supports_native_transferable_series:
+            # if model doesn't support transferable series forecasts, we fit and predict using a copy of the model
+            if future_covariates is not None:
+                # merge covariates
+                future_covariates = concatenate(
+                    [historic_future_covariates, future_covariates], axis=0
+                )
+
+                encoders = self.encoders
+                if encoders is not None and encoders.encoding_available:
+                    # drop encoded covariates from the covariates
+                    future_covariates = encoders._drop_encoded_components(
+                        covariates=future_covariates,
+                        components=encoders.future_components,
+                    )
+
+            return (
+                self.untrained_model()
+                .fit(
+                    series=series,
+                    future_covariates=future_covariates,
+                )
+                .predict(
+                    n=n,
+                    num_samples=num_samples,
+                    predict_likelihood_parameters=predict_likelihood_parameters,
+                    verbose=verbose,
+                )
+            )
+
+        # confidence levels for prediction intervals
         levels = (
             self.likelihood.levels
             if num_samples > 1 or predict_likelihood_parameters
@@ -161,9 +212,11 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         )
 
         series = series if series is not None else self.training_series
-        comp_names_out = None
 
+        # likelihood takes care of probabilistic forecasts
         pred_vals = self.likelihood.predict(model_output, num_samples=num_samples)
+
+        comp_names_out = None
         if predict_likelihood_parameters:
             comp_names_out = self.likelihood.component_names(series)
 
@@ -185,6 +238,9 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
     ) -> np.ndarray:
         """
         Computes the model output.
+
+        When this method is called, it is guaranteed that either `series` is None, or that the
+        model supports transferable series forecasting (model has a forward method).
 
         Parameters
         ----------
@@ -213,19 +269,15 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
 
         x_future = future_covariates.values(copy=False) if native_cov_support else None
 
-        linreg_model = self._linreg
         if series is None:
             forecast_dict = self.model.predict(h=n, X=x_future, level=levels)
         else:
-            # if model has a `forward` method, it supports transferable prediction series
-            # (uses fitted model to forecast new series). Otherwise, we use the `forecast` method which
-            # performs `fit` (re-fit) and `predict()`
-            has_forward = hasattr(self.model, "forward")
+            # model has a `forward` method, it supports transferable prediction series (uses
+            # fitted model to forecast new series)
             if custom_cov_support:
-                target, linreg_model = self._get_target_residuals(
+                target = self._get_target_residuals(
                     series,
                     historic_future_covariates,
-                    fit=not has_forward,  # refit if underlying model will be re-fit
                 )
             else:
                 target = series.values(copy=False).flatten()
@@ -235,15 +287,16 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
                 if native_cov_support
                 else None
             )
-            fc_method = self.model.forward if has_forward else self.model.forecast
-            forecast_dict = fc_method(
+            forecast_dict = self.model.forward(
                 y=target, h=n, X=x_historic, X_future=x_future, level=levels
             )
 
         vals = _unpack_sf_dict(forecast_dict, levels=levels)
         if custom_cov_support:
             # sf model was trained on residuals, add back the remainder
-            mu_linreg = linreg_model.predict(n, future_covariates=future_covariates)
+            mu_linreg = self._linreg.predict(
+                n, series=series, future_covariates=future_covariates
+            )
             mu_linreg_values = mu_linreg.values(copy=False).reshape(n, 1)
             vals += mu_linreg_values
         return vals
@@ -252,19 +305,13 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         self,
         series: TimeSeries,
         future_covariates: TimeSeries,
-        fit: bool,
-    ) -> tuple[np.ndarray, LinearRegressionModel]:
+    ) -> np.ndarray:
         """Computes the OLS residuals for predicting the target series from `future_covariates`."""
-        if fit:
-            model = LinearRegressionModel(lags_future_covariates=[0])
-            model.fit(series, future_covariates=future_covariates)
-        else:
-            model = self._linreg
-        fitted_values = model.model.predict(
+        fitted_values = self._linreg.model.predict(
             X=future_covariates.slice_intersect_values(series, copy=False)[:, :, 0]
         )
         residuals = series.values(copy=False).flatten() - fitted_values
-        return residuals, model
+        return residuals
 
     @property
     def supports_multivariate(self) -> bool:
@@ -283,6 +330,10 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         return self.likelihood is not None
 
     @property
+    def _supports_native_transferable_series(self) -> bool:
+        return hasattr(self.model, "forward")
+
+    @property
     def _supports_native_future_covariates(self) -> bool:
         return self.model.uses_exog
 
@@ -292,10 +343,12 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
 
     @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
-        return hasattr(self.model, "forward")
+        return self._supports_native_transferable_series
 
 
 class _SFModel(_TS):
+    """This serves as a protocol for expected StatsForecast model API."""
+
     def fit(self, *args, **kwargs): ...
 
     def predict(self, *args, **kwargs) -> dict: ...

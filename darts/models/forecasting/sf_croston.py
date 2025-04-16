@@ -23,6 +23,7 @@ class Croston(StatsForecastModel):
         alpha_p: float = None,
         add_encoders: Optional[dict] = None,
         quantiles: Optional[list[float]] = None,
+        random_state: Optional[int] = None,
         **kwargs,
     ):
         """An implementation of the `Croston method
@@ -87,6 +88,8 @@ class Croston(StatsForecastModel):
         quantiles
             Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
+        random_state
+            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
         kwargs
             Keyword arguments for ``statsforecasts.models.Croston*``.
 
@@ -147,4 +150,5 @@ class Croston(StatsForecastModel):
             model=model,
             quantiles=quantiles,
             add_encoders=add_encoders,
+            random_state=random_state,
         )

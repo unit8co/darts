@@ -27,9 +27,9 @@ Statistical Models (`LocalForecastingModel <https://unit8co.github.io/darts/user
     - :class:`~darts.models.forecasting.theta.FourTheta`
     - :class:`~darts.models.forecasting.sf_auto_theta.AutoTheta`
     - :class:`~darts.models.forecasting.prophet_model.Prophet`
-    - :class:`~Fast Fourier Transform) <darts.models.forecasting.fft.FFT`
+    - :class:`~darts.models.forecasting.fft.FFT`
     - :class:`~darts.models.forecasting.kalman_forecaster.KalmanForecaster`
-    - :class:`~darts.models.forecasting.croston.Croston`
+    - :class:`~darts.models.forecasting.sf_croston.Croston`
 Regression Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
     - :class:`~darts.models.forecasting.regression_model.RegressionModel`
     - :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel`

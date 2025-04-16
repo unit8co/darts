@@ -1,18 +1,9 @@
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.linear_model import LinearRegression
-from statsforecast.models import ADIDA as SF_ADIDA
-from statsforecast.models import GARCH as SF_GARCH
-from statsforecast.models import MSTL as SF_MSTL
-from statsforecast.models import AutoARIMA as SF_AutoARIMA
 from statsforecast.models import AutoETS as SF_AutoETS
-from statsforecast.models import AutoRegressive as SF_AutoRegressive
-from statsforecast.models import SeasonalNaive as SF_SeasonalNaive
 from statsforecast.models import SimpleExponentialSmoothing as SF_ETS
-from statsforecast.models import SimpleExponentialSmoothing as SF_SETS
-from statsforecast.models import SklearnModel as SF_SklearnModel
-from statsforecast.models import Theta as SF_Theta
+from statsforecast.utils import ConformalIntervals
 
 import darts.utils.timeseries_generation as tg
 from darts import TimeSeries
@@ -20,38 +11,12 @@ from darts.datasets import AirPassengersDataset
 from darts.metrics import mae
 from darts.models import (
     AutoARIMA,
-    AutoCES,
     AutoETS,
     AutoMFLES,
-    AutoTBATS,
-    AutoTheta,
-    Croston,
     LinearRegressionModel,
     StatsForecastModel,
 )
-
-sf_models = [
-    (SF_AutoARIMA, {"season_length": 12}),
-    (SF_AutoRegressive, {"lags": 12}),
-    (SF_Theta, {"season_length": 12}),
-    (SF_MSTL, {"season_length": 12}),
-    (SF_GARCH, {}),
-    (SF_SeasonalNaive, {"season_length": 12}),
-    (SF_SETS, {"alpha": 0.1}),
-    (SF_ADIDA, {}),
-    (SF_SklearnModel, {"model": LinearRegression()}),
-]
-
-darts_models = [
-    (AutoARIMA, {"season_length": 12}),
-    (AutoETS, {"season_length": 12}),
-    (AutoCES, {"season_length": 12}),
-    (AutoTheta, {"season_length": 12}),
-    (AutoTBATS, {"season_length": 12}),
-    (AutoMFLES, {"season_length": 12, "test_size": 12}),
-    (Croston, {}),
-    (StatsForecastModel, {"model": SF_AutoARIMA(season_length=12)}),
-]
+from darts.utils.likelihood_models.statsforecast import QuantilePrediction
 
 
 class TestSFModels:
@@ -59,7 +24,7 @@ class TestSFModels:
     series, _ = series.split_after(pd.Timestamp("19570101"))
 
     fc = tg.datetime_attribute_timeseries(
-        series, attribute="month", cyclic=True, add_length=12
+        series, attribute="month", cyclic=True, add_length=12, dtype=np.float32
     )
     # as future covariates we want a trend
     trend_values = np.arange(start=1, stop=len(series) + 1)
@@ -68,29 +33,179 @@ class TestSFModels:
     )
 
     @pytest.mark.parametrize(
-        "model",
+        "config",
         [
             # comment: (transferable series support type, future cov support type)
-            AutoARIMA(season_length=12),  # (native, native),
-            AutoMFLES(season_length=12, test_size=12),  # (custom, native)
-            AutoETS(season_length=12),  # (native, custom)
-            StatsForecastModel(SF_ETS(alpha=0.1)),  # (custom, custom)
-        ][1:2],
+            (AutoARIMA, {"season_length": 12}),  # (native, native)
+            (AutoMFLES, {"season_length": 12, "test_size": 12}),  # (custom, native)
+            (AutoETS, {"season_length": 12}),  # (native, custom)
+            (StatsForecastModel, {"model": SF_ETS(alpha=0.1)}),  # (custom, custom)
+        ],
     )
-    def test_transferrable_series(self, model):
+    def test_transferable_series_forecast(self, config):
+        model_cls, kwargs = config
+
         n = 12
         series = self.series[:24]
         fc = self.fc[: 24 + n]
-        model_1 = model.untrained_model().fit(series)
-        pred_11 = model_1.predict(n=n)
-        pred_12 = model_1.predict(n=n, series=series)
-        assert pred_11 == pred_12
 
+        # series only
+        model = model_cls(**kwargs)
+        model_1 = model.untrained_model().fit(series)
+        pred_11 = model_1.predict(n=n).all_values()
+        pred_12 = model_1.predict(n=n, series=series).all_values()
+        np.testing.assert_array_almost_equal(pred_11, pred_12)
+
+        pred_13 = model_1.predict(n=n, series=series[:12]).all_values()
+        with pytest.raises(AssertionError):
+            np.testing.assert_array_almost_equal(pred_11, pred_13)
+
+        # with future covariates
         model_2 = model.untrained_model().fit(series, future_covariates=fc)
-        pred_21 = model_2.predict(n=n)
-        pred_22 = model_2.predict(n=n, series=series)
-        pred_23 = model_2.predict(n=n, series=series, future_covariates=fc)
-        assert pred_21 == pred_22 == pred_23
+        pred_21 = model_2.predict(n=n).all_values()
+        pred_22 = model_2.predict(n=n, series=series).all_values()
+        pred_23 = model_2.predict(n=n, series=series, future_covariates=fc).all_values()
+        np.testing.assert_array_almost_equal(pred_21, pred_22)
+        np.testing.assert_array_almost_equal(pred_22, pred_23)
+
+        pred_24 = model_2.predict(n=n, series=series[:12]).all_values()
+        with pytest.raises(AssertionError):
+            np.testing.assert_array_almost_equal(pred_21, pred_24)
+
+        # with future covariates gives different results as without
+        with pytest.raises(AssertionError):
+            np.testing.assert_array_almost_equal(pred_21, pred_11)
+
+        # with future encodings only
+        model_3 = model_cls(add_encoders={"cyclic": {"future": "month"}}, **kwargs)
+        model_3.fit(series)
+        pred_31 = model_3.predict(n=n).all_values()
+        pred_32 = model_3.predict(n=n, series=series).all_values()
+        np.testing.assert_array_almost_equal(pred_31, pred_32)
+        # same results as model trained with explicit future covariates
+        np.testing.assert_array_almost_equal(pred_31, pred_21)
+
+        # with future covariates and future encodings
+        model_4 = model_cls(
+            add_encoders={"datetime_attribute": {"future": "year"}}, **kwargs
+        )
+        model_4.fit(series, future_covariates=fc)
+        pred_41 = model_4.predict(n=n).all_values()
+        pred_42 = model_4.predict(n=n, series=series).all_values()
+        pred_43 = model_4.predict(n=n, series=series, future_covariates=fc).all_values()
+        np.testing.assert_array_almost_equal(pred_41, pred_42)
+        np.testing.assert_array_almost_equal(pred_42, pred_43)
+
+        # more future covariates gives different results
+        with pytest.raises(AssertionError):
+            np.testing.assert_array_almost_equal(pred_41, pred_21)
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # comment: (transferable series support type, future cov support type, probabilistic support type)
+            (AutoARIMA, {"season_length": 12}, False),  # (native, native, native)
+            (
+                AutoMFLES,
+                {"season_length": 12, "test_size": 12},
+                True,
+            ),  # (custom, native, conformal)
+            (AutoETS, {"season_length": 12}, False),  # (native, custom, native)
+            (
+                StatsForecastModel,
+                {"model": SF_ETS(alpha=0.1)},
+                True,
+            ),  # (custom, custom, conformal)
+        ],
+    )
+    def test_probabilistic_support(self, config):
+        """Tests likelihood predictions."""
+        model_cls, kwargs, requires_conformal = config
+
+        n = 12
+        quantiles = [0.1, 0.5, 0.9]
+        med_idx = 1
+        series = self.series[:24]
+
+        kwargs["quantiles"] = quantiles
+        kwargs["random_state"] = 42
+        model = model_cls(**kwargs)
+
+        # check the quantile likelihood
+        assert isinstance(model.likelihood, QuantilePrediction)
+        assert model.likelihood.quantiles == quantiles
+        assert model.likelihood.levels == [80.00]  # (q high - q low)
+
+        model.fit(series)
+
+        if requires_conformal:
+            # model requires setting `prediction_intervals` at model creation for prob. support
+            with pytest.raises(Exception):
+                model.predict(n=n, num_samples=2)
+            with pytest.raises(Exception):
+                model.predict(n=n, predict_likelihood_parameters=True)
+
+            ci = ConformalIntervals()
+            if isinstance(model, AutoMFLES):
+                kwargs["prediction_intervals"] = ci
+            else:
+                kwargs["model"] = SF_ETS(alpha=0.1, prediction_intervals=ci)
+            model = model_cls(**kwargs).fit(series)
+
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict(n=n, num_samples=2, predict_likelihood_parameters=True)
+        assert str(exc.value).startswith(
+            "`predict_likelihood_parameters=True` is only supported for `num_samples=1`"
+        )
+
+        # series only
+        pred_mean1 = model.predict(n=n).all_values()
+        pred_mean2 = model.predict(n=n, num_samples=1).all_values()
+        # mean (num_samples=1) is the default
+        np.testing.assert_array_almost_equal(pred_mean1, pred_mean2)
+
+        # direct quantile prediction
+        pred_params = model.predict(n=n, predict_likelihood_parameters=True)
+        # same with transferable series
+        pred_params_tf = model.predict(
+            n=n, predict_likelihood_parameters=True, series=series
+        )
+        assert pred_params == pred_params_tf
+        assert pred_params.n_samples == 1
+        # one component for each quantile
+        name = series.components[0]
+        q_names = [name + f"_{q_name}" for q_name in ["q0.10", "q0.50", "q0.90"]]
+        assert list(pred_params.components) == q_names
+
+        # center quantile is the mean
+        pred_params = pred_params.all_values()
+        np.testing.assert_array_almost_equal(pred_mean1[:, 0], pred_params[:, med_idx])
+        # low quantile is below mean
+        assert np.all(pred_params[:, 0] < pred_params[:, med_idx])
+        # high quantile is above mean
+        assert np.all(pred_params[:, 2] > pred_params[:, med_idx])
+
+        # drawing samples from quantiles
+        model = model.untrained_model().fit(series)
+        pred_sample = model.predict(n=n, num_samples=10000).all_values()
+        # quantiles from samples is approximately the quantile prediction
+        assert pred_sample.shape[2] == 10000
+        for idx, q in enumerate(quantiles):
+            q_pred = np.quantile(pred_sample, q=q, axis=2)
+            max_q_diff = np.abs(pred_params[:, idx] - q_pred).max()
+            assert max_q_diff < 2.0
+
+        # reproducible samples when call order is the same (and also with transferable series)
+        model = model.untrained_model().fit(series)
+        pred_sample_2 = model.predict(
+            n=n, num_samples=10000, series=series
+        ).all_values()
+        assert (pred_sample == pred_sample_2).all()
+
+        # different samples when call order changes
+        pred_sample_3 = model.predict(n=n, num_samples=10000).all_values()
+        with pytest.raises(AssertionError):
+            np.testing.assert_array_almost_equal(pred_sample, pred_sample_3)
 
     @pytest.mark.parametrize(
         "model",

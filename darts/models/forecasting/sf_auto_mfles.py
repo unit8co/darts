@@ -19,6 +19,7 @@ class AutoMFLES(StatsForecastModel):
         *args,
         add_encoders: Optional[dict] = None,
         quantiles: Optional[list[float]] = None,
+        random_state: Optional[int] = None,
         **kwargs,
     ):
         """Auto-MFLES based on `Statsforecasts package
@@ -66,6 +67,8 @@ class AutoMFLES(StatsForecastModel):
         quantiles
             Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
+        random_state
+            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
         kwargs
             Keyword arguments for ``statsforecasts.models.AutoMFLES``.
 
@@ -93,6 +96,7 @@ class AutoMFLES(StatsForecastModel):
             model=SFAutoMFLES(*args, **kwargs),
             quantiles=quantiles,
             add_encoders=add_encoders,
+            random_state=random_state,
         )
 
     @property

@@ -16,6 +16,7 @@ class AutoTBATS(StatsForecastModel):
         *args,
         add_encoders: Optional[dict] = None,
         quantiles: Optional[list[float]] = None,
+        random_state: Optional[int] = None,
         **kwargs,
     ):
         """Auto-TBATS based on `Statsforecasts package
@@ -72,6 +73,8 @@ class AutoTBATS(StatsForecastModel):
         quantiles
             Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
+        random_state
+            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
         kwargs
             Keyword arguments for ``statsforecasts.models.AutoTBATS``.
 
@@ -96,4 +99,5 @@ class AutoTBATS(StatsForecastModel):
             model=SFAutoTBATS(*args, **kwargs),
             quantiles=quantiles,
             add_encoders=add_encoders,
+            random_state=random_state,
         )

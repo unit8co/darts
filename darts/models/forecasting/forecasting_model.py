@@ -3088,15 +3088,15 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         if self.uses_past_covariates and past_covariates is None:
             raise_log(
                 ValueError(
-                    "The model has been trained with past covariates. Some matching past_covariates "
-                    "have to be provided to `predict()`."
+                    "The model was trained with past covariates. Some matching past_covariates "
+                    "must be passed to `predict()`."
                 )
             )
         if self.uses_future_covariates and future_covariates is None:
             raise_log(
                 ValueError(
-                    "The model has been trained with future covariates. Some matching future_covariates "
-                    "have to be provided to `predict()`."
+                    "The model was trained with future covariates. Some matching future_covariates "
+                    "must be passed to `predict()`."
                 )
             )
         if (
@@ -3105,7 +3105,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         ):
             raise_log(
                 ValueError(
-                    "The model has been trained with static covariates. Some matching static covariates "
+                    "The model was trained with static covariates. Some matching static covariates "
                     "must be embedded in the target `series` passed to `predict()`."
                 )
             )
@@ -3194,20 +3194,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             Fitted model.
         """
 
-        if future_covariates is not None:
-            if not series.has_same_time_as(future_covariates):
-                # fit() expects future_covariates to have same time as the target, so we intersect it here
-                future_covariates = future_covariates.slice_intersect(series)
-
-            raise_if_not(
-                series.has_same_time_as(future_covariates),
-                "The provided `future_covariates` series must contain at least the same time steps/"
-                "indices as the target `series`.",
-                logger=logger,
-            )
-            self._expect_future_covariates = True
-            self._uses_future_covariates = True
-
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
             _, future_covariates = self.generate_fit_encodings(
@@ -3216,8 +3202,24 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                 future_covariates=future_covariates,
             )
 
-        super().fit(series)
+        if future_covariates is not None:
+            future_covariates_copy = future_covariates
+            if not series.has_same_time_as(future_covariates):
+                # fit() expects future_covariates to have same time as the target, so we intersect it here
+                future_covariates = future_covariates.slice_intersect(series)
 
+            if len(future_covariates) != len(series):
+                raise_log(
+                    ValueError(
+                        "The provided `future_covariates` series must contain at least the same time steps/"
+                        "indices as the target `series`."
+                    ),
+                    logger=logger,
+                )
+            self.future_covariate_series = future_covariates_copy
+            self._uses_future_covariates = True
+
+        super().fit(series)
         return self._fit(series, future_covariates=future_covariates)
 
     @abstractmethod
@@ -3270,8 +3272,10 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             )
 
         # avoid generating encodings again if subclass has already generated them
+        future_covariates = future_covariates or self.future_covariate_series
         if not self._supress_generate_predict_encoding:
-            self._verify_passed_predict_covariates(future_covariates)
+            # stored future covariates already contain the encodings: this is not a problem as the
+            # encoders regenerate the encodings
             if self.encoders is not None and self.encoders.encoding_available:
                 _, future_covariates = self.generate_predict_encodings(
                     n=n,
@@ -3279,6 +3283,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                     past_covariates=None,
                     future_covariates=future_covariates,
                 )
+        self._verify_passed_predict_covariates(future_covariates)
 
         if future_covariates is not None:
             start = self.training_series.end_time() + self.training_series.freq
@@ -3346,18 +3351,37 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
 
     def _verify_passed_predict_covariates(self, future_covariates):
         """Simple check if user supplied/did not supply covariates as done at fitting time."""
-        if self._expect_future_covariates and future_covariates is None:
-            raise_log(
-                ValueError(
-                    "The model has been trained with `future_covariates` variable. Some matching "
-                    "`future_covariates` variables have to be provided to `predict()`."
+        if self.uses_future_covariates:
+            if future_covariates is None:
+                raise_log(
+                    ValueError(
+                        "The model was trained with future covariates. Some matching `future_covariates` "
+                        "must be passed to `predict()`."
+                    )
                 )
-            )
-        if not self._expect_future_covariates and future_covariates is not None:
+            else:
+                if (
+                    future_covariates.n_components
+                    != self.future_covariate_series.n_components
+                ):
+                    n_expected = self.future_covariate_series.n_components
+                    n_actual = future_covariates.n_components
+                    if self.encoders is not None and self.encoders.encoding_available:
+                        n_encodings = self.encoders.encoding_n_components[1]
+                        n_expected -= n_encodings
+                        n_actual -= n_encodings
+                    raise_log(
+                        ValueError(
+                            f"The `future_covariates` passed to `predict()` must have the same number "
+                            f"of components / columns as the `future_covariates` used to train the model. "
+                            f"Received number of components `{n_actual}`, excepted {n_expected}."
+                        )
+                    )
+        elif future_covariates is not None:
             raise_log(
                 ValueError(
-                    "The model has been trained without `future_covariates` variable, but the "
-                    "`future_covariates` parameter provided to `predict()` is not None.",
+                    "The model was trained without future covariates, but future `future_covariates` "
+                    "were provided to `predict()`."
                 )
             )
 
@@ -3450,7 +3474,9 @@ class TransferableFutureCovariatesLocalForecastingModel(
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
-        self._verify_passed_predict_covariates(future_covariates)
+        future_covariates = future_covariates or self.future_covariate_series
+        # stored future covariates already contain the encodings: this is not a problem as the
+        # encoders regenerate the encodings
         if self.encoders is not None and self.encoders.encoding_available:
             _, future_covariates = self.generate_predict_encodings(
                 n=n,
@@ -3458,6 +3484,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
                 past_covariates=None,
                 future_covariates=future_covariates,
             )
+        self._verify_passed_predict_covariates(future_covariates)
 
         historic_future_covariates = None
 
