@@ -29,7 +29,7 @@ from darts.models.forecasting.sklearn_model import (
 logger = get_logger(__name__)
 
 
-class RandomForest(SKLearnModel):
+class RandomForestModel(SKLearnModel):
     def __init__(
         self,
         lags: Optional[LAGS_TYPE] = None,
@@ -133,12 +133,12 @@ class RandomForest(SKLearnModel):
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         **kwargs
-            Additional keyword arguments passed to `sklearn.ensemble.RandomForest`.
+            Additional keyword arguments passed to `sklearn.ensemble.RandomForestRegressor`.
 
         Examples
         --------
         >>> from darts.datasets import WeatherDataset
-        >>> from darts.models import RandomForest
+        >>> from darts.models import RandomForestModel
         >>> series = WeatherDataset().load()
         >>> # predicting atmospheric pressure
         >>> target = series['p (mbar)'][:100]
@@ -147,7 +147,7 @@ class RandomForest(SKLearnModel):
         >>> # optionally, use future temperatures (pretending this component is a forecast)
         >>> future_cov = series['T (degC)'][:106]
         >>> # random forest with 200 trees trained with MAE
-        >>> model = RandomForest(
+        >>> model = RandomForestModel(
         >>>     lags=12,
         >>>     lags_past_covariates=12,
         >>>     lags_future_covariates=[0,1,2,3,4,5],
