@@ -685,6 +685,8 @@ class RegressionModel(GlobalForecastingModel):
         ):
             sample_weights = sample_weights.ravel()
 
+        features, labels = self._format_samples(features, labels)
+
         return features, labels, sample_weights
 
     def _format_samples(
@@ -741,9 +743,6 @@ class RegressionModel(GlobalForecastingModel):
                     "`sample_weight` was ignored since underlying regression model's "
                     "`fit()` method does not support it."
                 )
-        training_samples, training_labels = self._format_samples(
-            training_samples, training_labels
-        )
         self.model.fit(
             training_samples, training_labels, **sample_weight_kwargs, **kwargs
         )
