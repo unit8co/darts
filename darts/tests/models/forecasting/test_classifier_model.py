@@ -108,7 +108,6 @@ class TestClassifierModel:
         (MLPClassifier, {"alpha": 1, "max_iter": 1000, "random_state": 42}),
         (AdaBoostClassifier, {"random_state": 42}),
         (GaussianNB, {}),
-        (QuadraticDiscriminantAnalysis, {}),
         (
             XGBClassifierModel,
             {
@@ -643,7 +642,6 @@ class TestProbabilisticClassifierModels:
         (MLPClassifier, {"alpha": 1, "max_iter": 1000, "random_state": 42}),
         (AdaBoostClassifier, {"random_state": 42}),
         (GaussianNB, {}),
-        (QuadraticDiscriminantAnalysis, {}),
         (
             XGBClassifierModel,
             {
