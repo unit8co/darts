@@ -409,6 +409,33 @@ class TestClassifierModel:
             )
 
     @pytest.mark.parametrize(
+        "config",
+        product(
+            [
+                model_config
+                for multi_out, model_config in zip(
+                    models_multioutput, process_model_list(classifiers)
+                )
+                if not multi_out
+            ],
+            [1, 2],
+            [True, False],
+        ),
+    )
+    def test_multioutput_validation(self, config):
+        """Check that models not supporting multi-output are properly wrapped when ocl>1"""
+        (model_cls, model_kwargs), ocl, multi_models = config
+        train, val = self.sine_univariate1_cat.split_after(0.6)
+        model = model_cls(
+            **model_kwargs, lags=4, output_chunk_length=ocl, multi_models=multi_models
+        )
+        model.fit(series=train, val_series=val)
+        if model.output_chunk_length > 1 and model.multi_models:
+            assert isinstance(model.model, MultiOutputClassifier)
+        else:
+            assert not isinstance(model.model, MultiOutputClassifier)
+
+    @pytest.mark.parametrize(
         "config", product(process_model_list(classifiers), [True, False])
     )
     def test_models_runnability(self, config):
