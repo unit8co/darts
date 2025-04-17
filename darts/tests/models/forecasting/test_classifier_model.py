@@ -18,7 +18,6 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
-import darts
 from darts.logging import get_logger
 from darts.models.forecasting.catboost_model import CatBoostClassifierModel
 from darts.models.forecasting.classifier_model import SKLearnClassifierModel
@@ -197,7 +196,14 @@ class TestClassifierModel:
         model.fit(
             series=self.sine_univariate1_cat, past_covariates=self.sine_univariate1
         )
+        # classes_ is a numpy array
+        assert isinstance(model.classes_, np.ndarray)
         assert ([0, 1, 2] == model.classes_).all()
+
+    @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
+    def test_multiclass_classes(self, clf_params):
+        clf, kwargs = clf_params
+        model = clf(lags_past_covariates=5, **kwargs)
 
         if clf == XGBClassifierModel:
             # XGB requires class labels to be consecutive from 0
@@ -211,16 +217,18 @@ class TestClassifierModel:
             )
             expected_classes = [np.array([0, 1, 2]), np.array([3, 4, 5])]
 
-        multi_model = clf(lags_past_covariates=5, **kwargs)
-        multi_model.fit(
+        model.fit(
             series=multivariate_cat_diff_labels, past_covariates=self.sine_univariate1
         )
-        assert len(multi_model.classes_) == len(expected_classes)
+        # check that classes are stored as list of np.ndarrays
+        # for both MultiOutputClassifier and native multi-class classifiers
+        assert isinstance(model.classes_, list)
+        assert isinstance(model.classes_[0], np.ndarray)
+        # check that classes correspond to the classes in the series
+        assert len(model.classes_) == len(expected_classes)
         assert np.array([
             (model_classes == series_classes).all()
-            for model_classes, series_classes in zip(
-                multi_model.classes_, expected_classes
-            )
+            for model_classes, series_classes in zip(model.classes_, expected_classes)
         ]).all()
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
@@ -443,8 +451,6 @@ class TestClassifierModel:
 
         train_y, test_y = self.sine_univariate1_cat.split_before(0.7)
 
-        # TODO settings lags should either raise an error or a warning
-
         # testing past covariates
         model_instance = model_cls(
             lags_future_covariates=(0, 3),
@@ -574,10 +580,15 @@ class TestClassifierModel:
                     for message in caplog.messages
                 ])
 
-    @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
+    @pytest.mark.parametrize(
+        "clf_params",
+        [
+            (model, config)
+            for model, config in process_model_list(classifiers)
+            if issubclass(model, RegressionModelWithCategoricalFeatures)
+        ],
+    )
     def test_categorical_target_passed_to_fit_correctly(self, clf_params):
-        expected_cat_index = [0, 1]
-
         clf, kwargs = clf_params
         model = clf(lags=2, lags_past_covariates=2, **kwargs)
 
@@ -589,45 +600,31 @@ class TestClassifierModel:
             intercepted_args["kwargs"] = kwargs
             return original_fit(*args, **kwargs)
 
-        if isinstance(model, RegressionModelWithCategoricalFeatures):
+        # target is categorical by default for classifiers supporting it
+        expected_cat_indices = [0, 1]
+        with patch.object(
+            model.model.__class__,
+            "fit",
+            side_effect=intercept_fit_args,
+        ):
+            model.fit(self.sine_univariate1_cat, self.sine_univariate2)
+
+            cat_param_name = model._categorical_fit_param
+            # check that the categorical index is passed to the fit method and that it is correct
+            assert intercepted_args["kwargs"][cat_param_name] == expected_cat_indices
+
             if clf == CatBoostClassifierModel:
-                with patch.object(
-                    darts.models.forecasting.catboost_model.CatBoostClassifier,
-                    "fit",
-                    side_effect=intercept_fit_args,
-                ):
-                    model.fit(self.sine_univariate1_cat, self.sine_univariate2)
+                # check model has the correct categorical features
+                assert model.model.get_cat_feature_indices() == expected_cat_indices
 
-                    model_cat_indices = model.model.get_cat_feature_indices()
-                    kwargs_cat_indices = intercepted_args["kwargs"]["cat_features"]
-
-                    assert (
-                        len(model_cat_indices)
-                        == len(kwargs_cat_indices)
-                        == len(expected_cat_index)
-                    )
-
-                    for mci, kci, eci in zip(
-                        model_cat_indices, kwargs_cat_indices, expected_cat_index
-                    ):
-                        assert mci == kci == eci
-
-                    X, y = intercepted_args["args"]
-                    # all categorical features should be encoded as integers
-                    for col in X[model_cat_indices].columns:
-                        assert X[col].dtype == int
+                X, y = intercepted_args["args"]
+                # all categorical features should be encoded as integers
+                assert isinstance(X, pd.DataFrame)
+                for i, col in enumerate(X.columns):
+                    assert X[col].dtype == (int if i in expected_cat_indices else float)
             elif clf == LightGBMClassifierModel:
-                with patch.object(
-                    darts.models.forecasting.lgbm.lgb.LGBMClassifier,
-                    "fit",
-                    side_effect=intercept_fit_args,
-                ):
-                    model.fit(self.sine_univariate1_cat, self.sine_univariate2)
-
-                    cat_param_name = model._categorical_fit_param
-                    assert (
-                        intercepted_args["kwargs"][cat_param_name] == expected_cat_index
-                    )
+                X, y = intercepted_args["args"]
+                assert isinstance(X, np.ndarray)
             else:
                 assert False, f"{clf} need to be tested for fit arguments"
 
