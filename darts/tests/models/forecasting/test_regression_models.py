@@ -3631,7 +3631,7 @@ class TestRegressionModels:
 
                 assert model_cat_indices == kwargs_cat_indices == expected_cat_indices
 
-                # all evals set have correct cat fetaure indices
+                # all evals set have correct cat feature indices
                 eval_set_indices = [
                     pool.get_cat_feature_indices()
                     for pool in intercepted_args["kwargs"][eval_set_param_name]
