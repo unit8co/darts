@@ -374,6 +374,7 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates):
                     data=val_set[0],
                     label=val_set[1],
                     weight=val_weights[i] if val_weights is not None else None,
+                    cat_features=self._categorical_indices,
                 )
             )
         kwargs[val_set_name] = val_pools
