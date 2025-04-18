@@ -20,8 +20,7 @@ Statistical Models (`LocalForecastingModel <https://unit8co.github.io/darts/user
     - :class:`~darts.models.forecasting.sf_auto_ets.AutoETS`
     - :class:`~darts.models.forecasting.sf_auto_ces.AutoCES`
     - :class:`~darts.models.forecasting.sf_auto_mfles.AutoMFLES`
-    - :class:`~darts.models.forecasting.tbats_model.BATS`
-    - :class:`~darts.models.forecasting.tbats_model.TBATS`
+    - :class:`~darts.models.forecasting.sf_tbats.TBATS`
     - :class:`~darts.models.forecasting.sf_auto_tbats.AutoTBATS`
     - :class:`~darts.models.forecasting.theta.Theta`
     - :class:`~darts.models.forecasting.theta.FourTheta`
