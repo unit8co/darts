@@ -46,8 +46,6 @@ class AutoETS(StatsForecastModel):
           way as described above.
 
         - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.
-          Darts adds support by re-fitting a copy of the model on the new series and then generating the forecast for it
-          using the StatsForecast model's `forecast()` method.
 
         .. note::
             Future covariates are not supported when the input series contain missing values.

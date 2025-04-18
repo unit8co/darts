@@ -45,8 +45,8 @@ class TBATS(StatsForecastModel):
           - Generate sampled forecasts from these quantiles by setting `num_samples >> 1`.
 
         - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.
-          Darts adds support by re-fitting a copy of the model on the new series and then generating the forecast for it
-          using the StatsForecast model's `forecast()` method.
+          Darts adds support by first fitting a copy of the model on the new series, and then using that model to
+          generate the corresponding forecast.
 
         .. note::
             Future covariates are not supported when the input series contain missing values.
@@ -96,7 +96,7 @@ class TBATS(StatsForecastModel):
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.models import TBATS
         >>> series = AirPassengersDataset().load()
-        >>> # define AutoTBATS parameters
+        >>> # define TBATS parameters
         >>> model = TBATS(season_length=12)
         >>> model.fit(series)
         >>> pred = model.predict(6)
