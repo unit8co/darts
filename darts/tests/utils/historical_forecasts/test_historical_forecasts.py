@@ -320,6 +320,8 @@ if TORCH_AVAILABLE:
 else:
     models_torch_cls_kwargs = []
 
+PROPHET_AVAILABLE = not isinstance(Prophet, NotImportedModule)
+
 
 class TestHistoricalforecast:
     np.random.seed(42)
@@ -578,6 +580,7 @@ class TestHistoricalforecast:
             "Model prediction does not support `past_covariates`"
         )
 
+    @pytest.mark.skipif(not PROPHET_AVAILABLE, reason="requires prophet")
     def test_historical_forecasts_future_cov_local_models(self):
         model = Prophet()
         series = tg.sine_timeseries(length=model.min_train_series_length + 1)
