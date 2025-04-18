@@ -15,7 +15,6 @@ from darts.logging import get_logger
 from darts.metrics import mape
 from darts.models import (
     ARIMA,
-    BATS,
     FFT,
     TBATS,
     VARIMA,
@@ -67,7 +66,7 @@ models = [
     (AutoCES(season_length=12, model="Z"), 7.3),
     (AutoETS(season_length=12, model="AAZ"), 7.3),
     (AutoMFLES(season_length=12, test_size=12), 9.8),
-    (AutoTBATS(season_length=12), 10),
+    (AutoTBATS(season_length=12), 10.0),
     (Croston(version="classic"), 23),
     (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 23),
     (Theta(), 11),
@@ -82,8 +81,10 @@ models = [
     (KalmanForecaster(dim_x=3), 20),
     (LinearRegressionModel(lags=12), 13),
     (RandomForest(lags=12, n_estimators=5, max_depth=3), 14),
-    (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.5),
-    (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 11),
+    (
+        TBATS(season_length=12, use_trend=True, use_arma_errors=True, use_boxcox=True),
+        10,
+    ),
 ]
 
 # forecasting models with exogenous variables support
@@ -637,9 +638,12 @@ class TestLocalForecastingModels:
             ),
             (
                 TBATS(
-                    use_trend=True, use_arma_errors=True, use_box_cox=True
-                ),  # params in wrong order
-                "TBATS(use_box_cox=True, use_trend=True)",
+                    season_length=12,
+                    use_trend=True,
+                    use_arma_errors=True,
+                    use_boxcox=True,
+                ),
+                "TBATS(season_length=12, use_trend=True, use_arma_errors=True, use_boxcox=True)",
             ),
         ],
     )
